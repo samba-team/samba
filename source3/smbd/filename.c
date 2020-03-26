@@ -1695,13 +1695,14 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				uint32_t ucf_flags,
 				time_t *twrp,
 				bool *ppath_contains_wcard,
-				struct smb_filename **pp_smb_fname)
+				struct smb_filename **_smb_fname)
 {
+	struct smb_filename *smb_fname = NULL;
 	const char *name = NULL;
 	char *twrp_name = NULL;
 	NTSTATUS status;
 
-	*pp_smb_fname = NULL;
+	*_smb_fname = NULL;
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
 		bool path_contains_wcard = false;
@@ -1727,13 +1728,14 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	}
 
 	if (is_fake_file_path(name_in)) {
-		*pp_smb_fname = synthetic_smb_fname_split(ctx,
+		smb_fname = synthetic_smb_fname_split(ctx,
 					name_in,
 					(ucf_flags & UCF_POSIX_PATHNAMES));
-		if (*pp_smb_fname == NULL) {
+		if (smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*pp_smb_fname)->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
+		smb_fname->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
+		*_smb_fname = smb_fname;
 		return NT_STATUS_OK;
 	}
 
@@ -1767,7 +1769,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		name = twrp_name;
 	}
 
-	status = unix_convert(ctx, conn, name, pp_smb_fname, ucf_flags);
+	status = unix_convert(ctx, conn, name, &smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert_internal: unix_convert failed "
 			"for name %s with %s\n",
@@ -1779,26 +1781,33 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	TALLOC_FREE(twrp_name);
 
 	if ((ucf_flags & UCF_UNIX_NAME_LOOKUP) &&
-			VALID_STAT((*pp_smb_fname)->st) &&
-			S_ISLNK((*pp_smb_fname)->st.st_ex_mode)) {
-		return check_veto_path(conn, (*pp_smb_fname));
+			VALID_STAT(smb_fname->st) &&
+			S_ISLNK(smb_fname->st.st_ex_mode)) {
+		status = check_veto_path(conn, smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(smb_fname);
+			return status;
+		}
+		*_smb_fname = smb_fname;
+		return NT_STATUS_OK;
 	}
 
 	if (!smbreq) {
-		status = check_name(conn, (*pp_smb_fname));
+		status = check_name(conn, smb_fname);
 	} else {
 		status = check_name_with_privilege(conn, smbreq,
-				(*pp_smb_fname));
+				smb_fname);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("filename_convert_internal: check_name failed "
 			"for name %s with %s\n",
-			smb_fname_str_dbg(*pp_smb_fname),
+			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status) ));
-		TALLOC_FREE(*pp_smb_fname);
+		TALLOC_FREE(smb_fname);
 		return status;
 	}
 
+	*_smb_fname = smb_fname;
 	return status;
 }
 
