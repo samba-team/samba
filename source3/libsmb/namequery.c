@@ -1166,11 +1166,7 @@ int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 	for (i = 0; i < count; i++) {
 		while (i < count &&
 				is_zero_addr(&iplist[i].ss)) {
-			if (count-i-1>0) {
-				memmove(&iplist[i],
-					&iplist[i+1],
-					(count-i-1)*sizeof(struct ip_service));
-			}
+			ARRAY_DEL_ELEMENT(iplist, i, count);
 			count--;
 		}
 	}
