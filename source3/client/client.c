@@ -5223,7 +5223,6 @@ static int set_remote_times(const char *filename,
  */
 static int cmd_utimes(void)
 {
-	const extern char *cmd_ptr;
 	char *buf;
 	char *fname = NULL;
 	struct timespec times[4] = {{0}};
@@ -5357,7 +5356,6 @@ int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
  */
 int cmd_setmode(void)
 {
-	const extern char *cmd_ptr;
 	char *buf;
 	char *fname = NULL;
 	uint16_t attr[2] = {0};
