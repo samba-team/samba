@@ -7083,6 +7083,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	uint32_t len;
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	const char *dst_original_lcomp = NULL;
 	uint32_t ucf_flags = UCF_SAVE_LCOMP |
 		ucf_flags_from_smb_request(req);
 	NTSTATUS status = NT_STATUS_OK;
@@ -7156,18 +7157,19 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
+	}
 
-		/*
-		 * Set the original last component, since
-		 * rename_internals_fsp() requires it.
-		 */
-		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
-							      newname);
-		if (smb_fname_dst->original_lcomp == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-
+	/*
+	 * Set the original last component, since
+	 * rename_internals_fsp() requires it.
+	 */
+	dst_original_lcomp = get_original_lcomp(smb_fname_dst,
+					conn,
+					newname,
+					ucf_flags);
+	if (dst_original_lcomp == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	DEBUG(10,("smb2_file_rename_information: "
@@ -7177,7 +7179,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	status = rename_internals_fsp(conn,
 				fsp,
 				smb_fname_dst,
-				smb_fname_dst->original_lcomp,
+				dst_original_lcomp,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
 				overwrite);
 
