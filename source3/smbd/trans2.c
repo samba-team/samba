@@ -7326,18 +7326,6 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	DEBUG(10,("smb_file_rename_information: got name |%s|\n",
 				newname));
 
-	if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
-		status = resolve_dfspath_wcard(ctx, conn,
-				       newname,
-				       UCF_COND_ALLOW_WCARD_LCOMP,
-				       !conn->sconn->using_smb2,
-				       &newname,
-				       &dest_has_wcard);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -7415,8 +7403,13 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = unix_convert(ctx, conn, base_name, &smb_fname_dst,
-					ucf_flags);
+		status = filename_convert(ctx,
+					  conn,
+					  base_name,
+					  ucf_flags,
+					  NULL,
+					  NULL,
+					  &smb_fname_dst);
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
