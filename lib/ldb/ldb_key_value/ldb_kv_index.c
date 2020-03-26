@@ -3266,9 +3266,7 @@ int ldb_kv_index_del_value(struct ldb_module *module,
 	}
 
 	j = (unsigned int) i;
-	if (j != list->count - 1) {
-		memmove(&list->dn[j], &list->dn[j+1], sizeof(list->dn[0])*(list->count - (j+1)));
-	}
+	ARRAY_DEL_ELEMENT(list->dn, j, list->count);
 	list->count--;
 	if (list->count == 0) {
 		talloc_free(list->dn);
