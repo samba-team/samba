@@ -588,10 +588,10 @@ all_failed:
  */
 bool
 SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
-            time_t create_time,
-            time_t access_time,
-            time_t write_time,
-            time_t change_time,
+            struct timespec create_time,
+            struct timespec access_time,
+            struct timespec write_time,
+            struct timespec change_time,
             uint16_t mode)
 {
         uint16_t fd;
@@ -606,10 +606,10 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
          */
         if (srv->no_pathinfo ||
             !NT_STATUS_IS_OK(cli_setpathinfo_basic(srv->cli, path,
-						   create_time,
-						   access_time,
-						   write_time,
-						   change_time,
+						   create_time.tv_sec,
+						   access_time.tv_sec,
+						   write_time.tv_sec,
+						   change_time.tv_sec,
 						   mode))) {
 
                 /*
@@ -634,9 +634,9 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 
                 /* Set the new attributes */
                 ret = NT_STATUS_IS_OK(cli_setattrE(srv->cli, fd,
-                                   change_time,
-                                   access_time,
-                                   write_time));
+                                   change_time.tv_sec,
+                                   access_time.tv_sec,
+                                   write_time.tv_sec));
 
                 /* Close the file */
                 cli_close(srv->cli, fd);

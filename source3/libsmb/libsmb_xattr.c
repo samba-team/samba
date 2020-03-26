@@ -1796,17 +1796,26 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                 /* get a DOS Attribute Descriptor with current attributes */
                 dad = dos_attr_query(context, talloc_tos(), path, srv);
                 if (dad) {
+			bool ok;
+
                         /* Overwrite old with new, using what was provided */
                         dos_attr_parse(context, dad, srv, namevalue);
 
                         /* Set the new DOS attributes */
-                        if (! SMBC_setatr(context, srv, path,
-                                          dad->create_time,
-                                          dad->access_time,
-                                          dad->write_time,
-                                          dad->change_time,
-                                          dad->mode)) {
-
+			ok = SMBC_setatr(
+				context,
+				srv,
+				path,
+				(struct timespec) {
+					.tv_sec = dad->create_time },
+				(struct timespec) {
+					.tv_sec = dad->access_time },
+				(struct timespec) {
+					.tv_sec = dad->write_time },
+				(struct timespec) {
+					.tv_sec = dad->change_time },
+				dad->mode);
+			if (!ok) {
                                 /* cause failure if NT failed too */
                                 dad = NULL; 
                         }
@@ -1951,12 +1960,19 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                                 dos_attr_parse(context, dad, srv, namevalue);
 
                                 /* Set the new DOS attributes */
-                                ret2 = SMBC_setatr(context, srv, path,
-                                                   dad->create_time,
-                                                   dad->access_time,
-                                                   dad->write_time,
-                                                   dad->change_time,
-                                                   dad->mode);
+				ret2 = SMBC_setatr(
+					context,
+					srv,
+					path,
+					(struct timespec) {
+						.tv_sec = dad->create_time },
+					(struct timespec) {
+						.tv_sec = dad->access_time },
+					(struct timespec) {
+						.tv_sec = dad->write_time },
+					(struct timespec) {
+						.tv_sec = dad->change_time },
+					dad->mode);
 
                                 /* ret2 has True (success) / False (failure) */
                                 if (ret2) {

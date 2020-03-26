@@ -2051,6 +2051,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
         time_t write_time;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
 	if (!context || !context->internal->initialized) {
 
@@ -2126,8 +2127,16 @@ SMBC_utimes_ctx(SMBCCTX *context,
 		return -1;      /* errno set by SMBC_server */
 	}
 
-        if (!SMBC_setatr(context, srv, path,
-                         0, access_time, write_time, 0, 0)) {
+	ok = SMBC_setatr(
+		context,
+		srv,
+		path,
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT },
+		(struct timespec) { .tv_sec = access_time },
+		(struct timespec) { .tv_sec = write_time },
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT },
+		0);
+	if (!ok) {
 		TALLOC_FREE(frame);
                 return -1;      /* errno set by SMBC_setatr */
         }
