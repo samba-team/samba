@@ -378,6 +378,60 @@ static struct share_mode_data *share_mode_memcache_fetch(
 	return d;
 }
 
+/*
+ * 132 is the sizeof an ndr-encoded struct share_mode_entry_buf.
+ * Reading/writing entries will immediately error out if this
+ * size differs (push/pull is done without allocs).
+ */
+
+struct share_mode_entry_buf {
+	uint8_t buf[132];
+};
+#define SHARE_MODE_ENTRY_SIZE (sizeof(struct share_mode_entry_buf))
+
+static bool share_mode_entry_put(
+	const struct share_mode_entry *e,
+	struct share_mode_entry_buf *dst)
+{
+	DATA_BLOB blob = { .data = dst->buf, .length = sizeof(dst->buf) };
+	enum ndr_err_code ndr_err;
+
+	if (DEBUGLEVEL>=10) {
+		DBG_DEBUG("share_mode_entry:\n");
+		NDR_PRINT_DEBUG(share_mode_entry, discard_const_p(void, e));
+	}
+
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&blob,
+		e,
+		(ndr_push_flags_fn_t)ndr_push_share_mode_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_share_mode_entry failed: %s\n",
+			    ndr_errstr(ndr_err));
+		return false;
+	}
+
+	return true;
+}
+
+static bool share_mode_entry_get(
+	const uint8_t ptr[SHARE_MODE_ENTRY_SIZE], struct share_mode_entry *e)
+{
+	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
+	DATA_BLOB blob = {
+		.data = discard_const_p(uint8_t, ptr),
+		.length = SHARE_MODE_ENTRY_SIZE,
+	};
+
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		&blob, e, (ndr_pull_flags_fn_t)ndr_pull_share_mode_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_pull_share_mode_entry failed\n");
+		return false;
+	}
+	return true;
+}
+
 /*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
@@ -1486,60 +1540,6 @@ static int share_mode_entry_cmp(
 		return (share_file_id1 < share_file_id2) ? -1 : 1;
 	}
 	return 0;
-}
-
-/*
- * 132 is the sizeof an ndr-encoded struct share_mode_entry_buf.
- * Reading/writing entries will immediately error out if this
- * size differs (push/pull is done without allocs).
- */
-
-struct share_mode_entry_buf {
-	uint8_t buf[132];
-};
-#define SHARE_MODE_ENTRY_SIZE (sizeof(struct share_mode_entry_buf))
-
-static bool share_mode_entry_put(
-	const struct share_mode_entry *e,
-	struct share_mode_entry_buf *dst)
-{
-	DATA_BLOB blob = { .data = dst->buf, .length = sizeof(dst->buf) };
-	enum ndr_err_code ndr_err;
-
-	if (DEBUGLEVEL>=10) {
-		DBG_DEBUG("share_mode_entry:\n");
-		NDR_PRINT_DEBUG(share_mode_entry, discard_const_p(void, e));
-	}
-
-	ndr_err = ndr_push_struct_into_fixed_blob(
-		&blob,
-		e,
-		(ndr_push_flags_fn_t)ndr_push_share_mode_entry);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_WARNING("ndr_push_share_mode_entry failed: %s\n",
-			    ndr_errstr(ndr_err));
-		return false;
-	}
-
-	return true;
-}
-
-static bool share_mode_entry_get(
-	const uint8_t ptr[SHARE_MODE_ENTRY_SIZE], struct share_mode_entry *e)
-{
-	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
-	DATA_BLOB blob = {
-		.data = discard_const_p(uint8_t, ptr),
-		.length = SHARE_MODE_ENTRY_SIZE,
-	};
-
-	ndr_err = ndr_pull_struct_blob_all_noalloc(
-		&blob, e, (ndr_pull_flags_fn_t)ndr_pull_share_mode_entry);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_WARNING("ndr_pull_share_mode_entry failed\n");
-		return false;
-	}
-	return true;
 }
 
 static size_t share_mode_entry_find(
