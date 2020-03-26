@@ -3244,9 +3244,7 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 				if (nt_ace_list[i].access_mask == 0) {
 					nt_ace_list[j].flags = SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 								(i_inh ? SEC_ACE_FLAG_INHERITED_ACE : 0);
-					if (num_aces - i - 1 > 0)
-						memmove(&nt_ace_list[i], &nt_ace_list[i+1], (num_aces-i-1) *
-								sizeof(struct security_ace));
+					ARRAY_DEL_ELEMENT(nt_ace_list, i, num_aces);
 
 					DEBUG(10,("merge_default_aces: Merging zero access ACE %u onto ACE %u.\n",
 						(unsigned int)i, (unsigned int)j ));
@@ -3258,9 +3256,7 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 
 					nt_ace_list[i].flags = SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 								(i_inh ? SEC_ACE_FLAG_INHERITED_ACE : 0);
-					if (num_aces - j - 1 > 0)
-						memmove(&nt_ace_list[j], &nt_ace_list[j+1], (num_aces-j-1) *
-								sizeof(struct security_ace));
+					ARRAY_DEL_ELEMENT(nt_ace_list, j, num_aces);
 
 					DEBUG(10,("merge_default_aces: Merging ACE %u onto ACE %u.\n",
 						(unsigned int)j, (unsigned int)i ));
