@@ -58,12 +58,6 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			time_t *write_time,
 			off_t *size,
 			uint16_t *mode);
-NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
-			       time_t create_time,
-			       time_t access_time,
-			       time_t write_time,
-			       time_t change_time,
-			       uint16_t mode);
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec create_time,
 			     struct timespec access_time,
