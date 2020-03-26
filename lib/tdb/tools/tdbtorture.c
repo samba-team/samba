@@ -467,8 +467,7 @@ int main(int argc, char * const *argv)
 				error_count++;
 			}
 		}
-		memmove(&pids[j], &pids[j+1],
-			(num_procs - j - 1)*sizeof(pids[0]));
+		ARRAY_DEL_ELEMENT(pids, j, num_procs);
 		num_procs--;
 	}
 
