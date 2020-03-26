@@ -5181,41 +5181,6 @@ static int cmd_show_connect( void )
 }
 
 /**
- * set_remote_times - set times of a remote file
- * @filename: path to the file name
- * @create_time: New create time
- * @access_time: New access time
- * @write_time: New write time
- * @change_time: New metadata change time
- *
- * Update the file times with the ones provided.
- */
-static int set_remote_times(const char *filename,
-			    struct timespec *create_time,
-			    struct timespec *access_time,
-			    struct timespec *write_time,
-			    struct timespec *change_time)
-{
-	extern struct cli_state *cli;
-	NTSTATUS status;
-
-	status = cli_setpathinfo_ext(cli,
-				filename,
-				create_time,
-				access_time,
-				write_time,
-				change_time,
-				-1);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("cli_setpathinfo_basic failed: %s\n",
-			 nt_errstr(status));
-		return 1;
-	}
-
-	return 0;
-}
-
-/**
  * cmd_utimes - interactive command to set the four times
  *
  * Read a filename and four times from the client command line and update
@@ -5231,6 +5196,8 @@ static int cmd_utimes(void)
 	int err = 0;
 	bool ok;
 	TALLOC_CTX *ctx = talloc_new(NULL);
+	NTSTATUS status;
+
 	if (ctx == NULL) {
 		return 1;
 	}
@@ -5307,7 +5274,14 @@ static int cmd_utimes(void)
 		   timespec_string_buf(&times[2], false, &tbuf[2]),
 		   timespec_string_buf(&times[3], false, &tbuf[3])));
 
-	set_remote_times(fname, &times[0], &times[1], &times[2], &times[3]);
+	status = cli_setpathinfo_ext(
+		cli, fname, &times[0], &times[1], &times[2], &times[3], -1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_setpathinfo_ext failed: %s\n",
+			 nt_errstr(status));
+		err = 1;
+		goto out;
+	}
 out:
 	talloc_free(ctx);
 	return err;
