@@ -604,11 +604,10 @@ skip:
 
 				if (dsc->linkIncrVal == false) {
 					if (flags & DSDB_RMD_FLAG_DELETED) {
-						if (k < (el->num_values - 1)) {
-							memmove(el->values + k,
-									el->values + (k + 1),
-									((el->num_values - 1) - k)*sizeof(*el->values));
-						}
+						ARRAY_DEL_ELEMENT(
+							el->values,
+							k,
+							el->num_values);
 						el->num_values--;
 					}
 				}
