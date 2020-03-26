@@ -4075,7 +4075,7 @@ static bool run_attrtest(int dummy)
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	/* Check cli_setpathinfo_basic() */
+	/* Check cli_setpathinfo_ext() */
 	/* Re-create the file. */
 	status = cli_openx(cli, fname,
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
@@ -4086,17 +4086,18 @@ static bool run_attrtest(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	status = cli_setpathinfo_basic(cli,
-					fname,
-					0, /* create */
-					0, /* access */
-					0, /* write */
-					0, /* change */
-					FILE_ATTRIBUTE_SYSTEM |
-					FILE_ATTRIBUTE_HIDDEN |
-					FILE_ATTRIBUTE_READONLY);
+	status = cli_setpathinfo_ext(
+		cli,
+		fname,
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* create */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* write */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
+		FILE_ATTRIBUTE_SYSTEM |
+		FILE_ATTRIBUTE_HIDDEN |
+		FILE_ATTRIBUTE_READONLY);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_setpathinfo_basic failed with %s\n",
+		printf("cli_setpathinfo_ext failed with %s\n",
 			nt_errstr(status));
 		correct = false;
 	}
@@ -4112,15 +4113,16 @@ static bool run_attrtest(int dummy)
 	}
 
 	/* Setting to FILE_ATTRIBUTE_NORMAL should be ignored. */
-	status = cli_setpathinfo_basic(cli,
-					fname,
-					0, /* create */
-					0, /* access */
-					0, /* write */
-					0, /* change */
-					FILE_ATTRIBUTE_NORMAL);
+	status = cli_setpathinfo_ext(
+		cli,
+		fname,
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* create */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* write */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
+		FILE_ATTRIBUTE_NORMAL);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_setpathinfo_basic failed with %s\n",
+		printf("cli_setpathinfo_ext failed with %s\n",
 			nt_errstr(status));
 		correct = false;
 	}
@@ -4136,15 +4138,16 @@ static bool run_attrtest(int dummy)
 	}
 
 	/* Setting to (uint16_t)-1 should also be ignored. */
-	status = cli_setpathinfo_basic(cli,
-					fname,
-					0, /* create */
-					0, /* access */
-					0, /* write */
-					0, /* change */
-					(uint16_t)-1);
+	status = cli_setpathinfo_ext(
+		cli,
+		fname,
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* create */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* write */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
+		(uint16_t)-1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_setpathinfo_basic failed with %s\n",
+		printf("cli_setpathinfo_ext failed with %s\n",
 			nt_errstr(status));
 		correct = false;
 	}
@@ -4160,15 +4163,16 @@ static bool run_attrtest(int dummy)
 	}
 
 	/* Setting to 0 should clear them all. */
-	status = cli_setpathinfo_basic(cli,
-					fname,
-					0, /* create */
-					0, /* access */
-					0, /* write */
-					0, /* change */
-					0);
+	status = cli_setpathinfo_ext(
+		cli,
+		fname,
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* create */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* write */
+		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
+		0);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_setpathinfo_basic failed with %s\n",
+		printf("cli_setpathinfo_ext failed with %s\n",
 			nt_errstr(status));
 		correct = false;
 	}
