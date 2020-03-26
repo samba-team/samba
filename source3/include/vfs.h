@@ -293,6 +293,7 @@
 /* Change to Version 43 - will ship with 4.13. */
 /* Version 43 - Remove deferred_close from struct files_struct */
 /* Version 43 - Remove SMB_VFS_OPENDIR() */
+/* Version 43 - Remove original_lcomp from struct smb_filename */
 
 #define SMB_VFS_INTERFACE_VERSION 43
 
@@ -639,7 +640,6 @@ struct smb_file_time {
 struct smb_filename {
 	char *base_name;
 	char *stream_name;
-	char *original_lcomp;
 	uint32_t flags;
 	SMB_STRUCT_STAT st;
 };
