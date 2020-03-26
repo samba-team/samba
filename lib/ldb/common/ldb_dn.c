@@ -2062,12 +2062,10 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			} else {
-				if (i != (dn->ext_comp_num - 1)) {
-					memmove(&dn->ext_components[i],
-						&dn->ext_components[i+1],
-						((dn->ext_comp_num-1) - i) *
-						  sizeof(*dn->ext_components));
-				}
+				ARRAY_DEL_ELEMENT(
+					dn->ext_components,
+					i,
+					dn->ext_comp_num);
 				dn->ext_comp_num--;
 
 				dn->ext_components = talloc_realloc(dn,
