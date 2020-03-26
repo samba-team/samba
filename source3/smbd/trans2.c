@@ -7293,6 +7293,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32_t len;
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	const char *dst_original_lcomp = NULL;
 	bool dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
@@ -7361,12 +7362,14 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		/*
-		 * Set the original last component, since
+		 * Get the original last component, since
 		 * rename_internals_fsp() requires it.
 		 */
-		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
-							      newname);
-		if (smb_fname_dst->original_lcomp == NULL) {
+		dst_original_lcomp = get_original_lcomp(smb_fname_dst,
+					conn,
+					newname,
+					0);
+		if (dst_original_lcomp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
@@ -7442,6 +7445,14 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				goto out;
 			}
 		}
+		dst_original_lcomp = get_original_lcomp(smb_fname_dst,
+					conn,
+					newname,
+					ucf_flags);
+		if (dst_original_lcomp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 	}
 
 	if (fsp) {
@@ -7452,7 +7463,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
-					smb_fname_dst->original_lcomp,
+					dst_original_lcomp,
 					0,
 					overwrite);
 	} else {
@@ -7465,7 +7476,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					req,
 					smb_fname_src,
 					smb_fname_dst,
-					smb_fname_dst->original_lcomp,
+					dst_original_lcomp,
 					0,
 					overwrite,
 					false,
