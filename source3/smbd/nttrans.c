@@ -1585,6 +1585,7 @@ void reply_ntrename(struct smb_request *req)
 	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
+	const char *dst_original_lcomp = NULL;
 	const char *p;
 	NTSTATUS status;
 	bool src_has_wcard = False;
@@ -1685,6 +1686,16 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
+	/* Get the last component of the destination for rename_internals(). */
+	dst_original_lcomp = get_original_lcomp(ctx,
+					conn,
+					newname,
+					ucf_flags_dst);
+	if (dst_original_lcomp == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	if (stream_rename) {
 		/* smb_fname_new must be the same as smb_fname_old. */
 		TALLOC_FREE(smb_fname_new->base_name);
@@ -1707,7 +1718,7 @@ void reply_ntrename(struct smb_request *req)
 						req,
 						smb_fname_old,
 						smb_fname_new,
-						smb_fname_new->original_lcomp,
+						dst_original_lcomp,
 						attrs,
 						false,
 						src_has_wcard,
