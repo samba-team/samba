@@ -366,8 +366,7 @@ static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
 	/* there can be multiple ace's for one trustee */
 	for (i=0;i<acl->num_aces;i++) {
 		if (dom_sid_equal(trustee, &acl->aces[i].trustee)) {
-			memmove(&acl->aces[i], &acl->aces[i+1],
-				sizeof(acl->aces[i]) * (acl->num_aces - (i+1)));
+			ARRAY_DEL_ELEMENT(acl->aces, i, acl->num_aces);
 			acl->num_aces--;
 			if (acl->num_aces == 0) {
 				acl->aces = NULL;
