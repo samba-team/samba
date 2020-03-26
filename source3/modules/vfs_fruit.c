@@ -404,11 +404,7 @@ static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	}
 
 	TALLOC_FREE(tmp[i].name);
-	if (*num_streams - 1 > i) {
-		memmove(&tmp[i], &tmp[i+1],
-			(*num_streams - i - 1) * sizeof(struct stream_struct));
-	}
-
+	ARRAY_DEL_ELEMENT(tmp, i, *num_streams);
 	*num_streams -= 1;
 	return true;
 }
