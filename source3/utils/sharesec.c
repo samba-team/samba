@@ -145,10 +145,8 @@ static void sort_acl(struct security_acl *the_acl)
 	for (i=1;i<the_acl->num_aces;) {
 		if (security_ace_equal(&the_acl->aces[i-1],
 				       &the_acl->aces[i])) {
-			int j;
-			for (j=i; j<the_acl->num_aces-1; j++) {
-				the_acl->aces[j] = the_acl->aces[j+1];
-			}
+			ARRAY_DEL_ELEMENT(
+				the_acl->aces, i, the_acl->num_aces);
 			the_acl->num_aces--;
 		} else {
 			i++;
