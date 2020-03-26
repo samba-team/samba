@@ -2729,7 +2729,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	struct smbd_server_connection *sconn = req->sconn;
-	uint32_t ucf_flags = UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP |
+	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
 	bool as_root = false;
@@ -7084,8 +7084,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
-	uint32_t ucf_flags = UCF_SAVE_LCOMP |
-		ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -7200,8 +7199,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint32_t ucf_flags = UCF_SAVE_LCOMP |
-		ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -7381,8 +7379,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * the newname instead.
 		 */
 		char *base_name = NULL;
-		uint32_t ucf_flags = UCF_SAVE_LCOMP |
-			ucf_flags_from_smb_request(req);
+		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 
 		if (dest_has_wcard) {
 			ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;

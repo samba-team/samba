@@ -402,8 +402,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		const char *fullpath;
 		char tmpbuf[PATH_MAX];
 		char *to_free = NULL;
-		uint32_t ucf_flags = UCF_SAVE_LCOMP |
-				     UCF_ALWAYS_ALLOW_WCARD_LCOMP |
+		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 				     (state->smbreq->posix_pathnames ?
 					UCF_POSIX_PATHNAMES : 0);
 

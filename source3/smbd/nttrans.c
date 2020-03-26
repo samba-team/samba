@@ -1646,7 +1646,7 @@ void reply_ntrename(struct smb_request *req)
 	 */
 	if (rename_type == RENAME_FLAG_RENAME) {
 		ucf_flags_src |= UCF_COND_ALLOW_WCARD_LCOMP;
-		ucf_flags_dst |= UCF_COND_ALLOW_WCARD_LCOMP | UCF_SAVE_LCOMP;
+		ucf_flags_dst |= UCF_COND_ALLOW_WCARD_LCOMP;
 	}
 
 	/* rename_internals() calls unix_convert(), so don't call it here. */

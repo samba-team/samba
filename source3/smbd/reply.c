@@ -8296,7 +8296,6 @@ void reply_mv(struct smb_request *req)
 			UCF_UNIX_NAME_LOOKUP :
 			UCF_COND_ALLOW_WCARD_LCOMP);
 	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req) |
-		UCF_SAVE_LCOMP |
 		(req->posix_pathnames ?
 			0 :
 			UCF_COND_ALLOW_WCARD_LCOMP);
