@@ -995,11 +995,7 @@ static int ldb_kv_msg_delete_element(struct ldb_module *module,
 				return ret;
 			}
 
-			if (i<el->num_values-1) {
-				memmove(&el->values[i], &el->values[i+1],
-					sizeof(el->values[i])*
-						(el->num_values-(i+1)));
-			}
+			ARRAY_DEL_ELEMENT(el->values, i, el->num_values);
 			el->num_values--;
 
 			/* per definition we find in a canonicalised message an
