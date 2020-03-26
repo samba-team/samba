@@ -605,12 +605,12 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
          * attributes manipulated.
          */
         if (srv->no_pathinfo ||
-            !NT_STATUS_IS_OK(cli_setpathinfo_basic(srv->cli, path,
-						   create_time.tv_sec,
-						   access_time.tv_sec,
-						   write_time.tv_sec,
-						   change_time.tv_sec,
-						   mode))) {
+            !NT_STATUS_IS_OK(cli_setpathinfo_ext(srv->cli, path,
+						 create_time,
+						 access_time,
+						 write_time,
+						 change_time,
+						 mode))) {
 
                 /*
                  * setpathinfo is not supported; go to plan B.
