@@ -1707,6 +1707,7 @@ void reply_ntrename(struct smb_request *req)
 						req,
 						smb_fname_old,
 						smb_fname_new,
+						smb_fname_new->original_lcomp,
 						attrs,
 						false,
 						src_has_wcard,

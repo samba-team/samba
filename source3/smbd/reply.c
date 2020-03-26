@@ -7900,6 +7900,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			struct smb_request *req,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
+			const char *dst_original_lcomp,
 			uint32_t attrs,
 			bool replace_if_exists,
 			bool src_has_wild,
@@ -7998,7 +7999,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  conn->short_case_preserve,
 			  smb_fname_str_dbg(smb_fname_src),
 			  smb_fname_str_dbg(smb_fname_dst),
-			  smb_fname_dst->original_lcomp));
+			  dst_original_lcomp));
 
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
@@ -8065,7 +8066,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
-					smb_fname_dst->original_lcomp,
+					dst_original_lcomp,
 					attrs,
 					replace_if_exists);
 
@@ -8393,6 +8394,7 @@ void reply_mv(struct smb_request *req)
 				req,
 				smb_fname_src,
 				smb_fname_dst,
+				smb_fname_dst->original_lcomp,
 				attrs,
 				false,
 				src_has_wcard,
