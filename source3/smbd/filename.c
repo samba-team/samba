@@ -445,9 +445,6 @@ Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we
 didn't get any fatal errors that should immediately terminate the calling SMB
 processing whilst resolving.
 
-If the UCF_SAVE_LCOMP flag is passed in, then the unmodified last component
-of the pathname is set in smb_filename->original_lcomp.
-
 If UCF_ALWAYS_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard was detected
 and should be allowed in the last component of the path only.
 
@@ -477,7 +474,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
 	bool allow_wcard_last_component =
 	    (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
-	bool save_last_component = ucf_flags & UCF_SAVE_LCOMP;
 	bool snapshot_path = (ucf_flags & UCF_GMT_PATHNAME);
 	NTSTATUS status;
 	int ret = -1;
@@ -573,25 +569,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		DBG_ERR("normalize_filename_case %s failed\n",
 				smb_fname->base_name);
 		goto err;
-	}
-
-	/*
-	 * Ensure saved_last_component is valid even if file exists.
-	 */
-
-	if(save_last_component) {
-		end = strrchr_m(smb_fname->base_name, '/');
-		if (end) {
-			smb_fname->original_lcomp = talloc_strdup(smb_fname,
-								  end + 1);
-		} else {
-			smb_fname->original_lcomp =
-			    talloc_strdup(smb_fname, smb_fname->base_name);
-		}
-		if (smb_fname->original_lcomp == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err;
-		}
 	}
 
 	/*
@@ -854,17 +831,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 */
 		if (end) {
 			*end = 0;
-		}
-
-		if (save_last_component) {
-			TALLOC_FREE(smb_fname->original_lcomp);
-			smb_fname->original_lcomp = talloc_strdup(smb_fname,
-							end ? end + 1 : start);
-			if (!smb_fname->original_lcomp) {
-				DBG_ERR("talloc failed\n");
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
-			}
 		}
 
 		/* The name cannot have a component of "." */
