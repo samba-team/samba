@@ -796,10 +796,10 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 }
 
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
-			     const struct timespec *create_time,
-			     const struct timespec *access_time,
-			     const struct timespec *write_time,
-			     const struct timespec *change_time,
+			     struct timespec create_time,
+			     struct timespec access_time,
+			     struct timespec write_time,
+			     struct timespec change_time,
 			     uint16_t mode)
 {
 	unsigned int data_len = 0;
@@ -811,16 +811,20 @@ NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 	/*
 	 * Add the create, last access, modification, and status change times
 	 */
-	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, create_time);
+	put_long_date_full_timespec(
+		TIMESTAMP_SET_NT_OR_BETTER, p, &create_time);
 	p += 8;
 
-	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, access_time);
+	put_long_date_full_timespec(
+		TIMESTAMP_SET_NT_OR_BETTER, p, &access_time);
 	p += 8;
 
-	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, write_time);
+	put_long_date_full_timespec(
+		TIMESTAMP_SET_NT_OR_BETTER, p, &write_time);
 	p += 8;
 
-	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, change_time);
+	put_long_date_full_timespec(
+		TIMESTAMP_SET_NT_OR_BETTER, p, &change_time);
 	p += 8;
 
 	if (mode == (uint16_t)-1 || mode == FILE_ATTRIBUTE_NORMAL) {
