@@ -62,6 +62,7 @@ struct ctdb_vacuum_child_context {
 struct ctdb_vacuum_handle {
 	struct ctdb_db_context *ctdb_db;
 	uint32_t fast_path_count;
+	uint32_t vacuum_interval;
 };
 
 
@@ -1331,10 +1332,12 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 	ctdb->vacuumer = NULL;
 
 	if (child_ctx->scheduled) {
+		vacuum_handle->vacuum_interval = get_vacuum_interval(ctdb_db);
+
 		tevent_add_timer(
 			ctdb->ev,
 			vacuum_handle,
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			timeval_current_ofs(vacuum_handle->vacuum_interval, 0),
 			ctdb_vacuum_event,
 			vacuum_handle);
 	}
@@ -1516,8 +1519,11 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_vacuum_child_context *child_ctx = NULL;
 	uint32_t fast_path_max = ctdb->tunable.vacuum_fast_path_count;
+	uint32_t vacuum_interval = get_vacuum_interval(ctdb_db);
 	bool full_vacuum_run = false;
 	int ret;
+
+	vacuum_handle->vacuum_interval = vacuum_interval;
 
 	if (vacuum_handle->fast_path_count >= fast_path_max) {
 		if (fast_path_max > 0) {
@@ -1551,7 +1557,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 		tevent_add_timer(ctdb->ev,
 				 vacuum_handle,
 				 timeval_current_ofs(
-					 get_vacuum_interval(ctdb_db), 0),
+					 vacuum_handle->vacuum_interval, 0),
 				 ctdb_vacuum_event,
 				 vacuum_handle);
 	}
@@ -1678,12 +1684,13 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 
 	vacuum_handle->ctdb_db = ctdb_db;
 	vacuum_handle->fast_path_count = 0;
+	vacuum_handle->vacuum_interval = get_vacuum_interval(ctdb_db);
 
 	ctdb_db->vacuum_handle = vacuum_handle;
 
 	tevent_add_timer(ctdb_db->ctdb->ev,
 			 vacuum_handle,
-			 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			 timeval_current_ofs(vacuum_handle->vacuum_interval, 0),
 			 ctdb_vacuum_event,
 			 vacuum_handle);
 
