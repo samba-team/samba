@@ -1575,7 +1575,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		state->update_name = NULL;
 	}
 
-	tmp_ctx = talloc_new(NULL);
+	tmp_ctx = talloc_new(state);
 	if (tmp_ctx == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: no memory");
 		result = ISC_FALSE;
