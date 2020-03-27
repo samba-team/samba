@@ -2609,7 +2609,6 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 		wbc_status = wbcCtxLogoffUserEx(ctx->wbc_ctx, &logoff, &error);
 		retval = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 						     user, "wbcLogoffUser");
-		wbcFreeMemory(error);
 		wbcFreeMemory(logoff.blobs);
 		logoff.blobs = NULL;
 
@@ -2629,6 +2628,7 @@ out:
 		retval = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 		     user, "wbcLogoffUser");
 	}
+	wbcFreeMemory(error);
 
 	/*
 	 * Delete the krb5 ccname variable from the PAM environment
