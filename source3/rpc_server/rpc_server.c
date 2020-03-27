@@ -190,7 +190,7 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
 	state->endpoint = e;
-	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->dce_ctx = dce_ctx;
 	state->termination_fn = term_fn;
 	state->termination_data = term_data;
 
@@ -368,7 +368,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
 	state->endpoint = e;
-	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->dce_ctx = dce_ctx;
 	state->termination_fn = term_fn;
 	state->termination_data = term_data;
 
@@ -589,7 +589,7 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	state->fd = -1;
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
-	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->dce_ctx = dce_ctx;
 	state->endpoint = e;
 	state->termination_fn = term_fn;
 	state->termination_data = termination_data;
