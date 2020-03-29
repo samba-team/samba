@@ -617,7 +617,12 @@ static void test_free_list_stale_reader(void **state)
 		ret = ldb_kv->kv_ops->finish_write(ldb_kv);
 		assert_int_equal(ret, LDB_SUCCESS);
 	}
-	assert_int_equal(ret, LDB_ERR_BUSY);
+	/*
+	 * We now do an explicit clear of stale readers at the start of a
+	 * write transaction so should not get LDB_ERR_BUSY any more
+	 * assert_int_equal(ret, LDB_ERR_BUSY);
+	 */
+	assert_int_equal(ret, LDB_SUCCESS);
 	assert_int_not_equal(i, 0);
 
 	/*

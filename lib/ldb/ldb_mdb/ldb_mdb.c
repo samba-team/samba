@@ -641,6 +641,23 @@ static int lmdb_transaction_start(struct ldb_kv_private *ldb_kv)
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
+	/*
+	 * Clear out any stale readers
+	 */
+	{
+		int stale;
+		mdb_reader_check(lmdb->env, &stale);
+		if (stale > 0) {
+			ldb_debug(
+				lmdb->ldb,
+				LDB_DEBUG_ERROR,
+				"LMDB Stale readers, deleted (%d)",
+				stale);
+		}
+	}
+
+
+
 	ltx_head = lmdb_private_trans_head(lmdb);
 
 	tx_parent = lmdb_trans_get_tx(ltx_head);
