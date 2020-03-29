@@ -58,6 +58,10 @@ include:
   tags:
     - docker
     - shared
+  cache:
+    key: ccache.${CI_JOB_NAME}
+    paths:
+      - ccache
   before_script:
     - uname -a
     - lsb_release -a
@@ -76,11 +80,18 @@ include:
     - echo "${SAMBA_CI_CONTAINER_TAG}" > /tmp/sha1sum-tag.txt
     - diff -u bootstrap/sha1sum.txt /tmp/sha1sum-tag.txt
     - diff -u bootstrap/sha1sum.txt /sha1sum.txt
+    - export CCACHE_BASEDIR="${PWD}"
+    - export CCACHE_DIR="${PWD}/ccache" && mkdir -pv "$CCACHE_DIR"
+    - export CC="ccache cc"
+    - export CXX="ccache c++"
+    - ccache -z -M 500M
+    - ccache -s
   after_script:
     - mount
     - df -h
     - cat /proc/swaps
     - free -h
+    - CCACHE_BASEDIR="${PWD}" CCACHE_DIR="${PWD}/ccache" ccache -s -c
   artifacts:
     expire_in: 1 week
     paths:
