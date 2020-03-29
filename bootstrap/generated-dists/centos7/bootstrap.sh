@@ -22,6 +22,7 @@ yum install -y \
     bind-utils \
     binutils \
     bison \
+    ccache \
     chrpath \
     compat-gnutls34-devel \
     cups-devel \
@@ -99,6 +100,7 @@ yum install -y \
     systemd-devel \
     tar \
     tree \
+    wget \
     which \
     xfsprogs-devel \
     yum-utils \

@@ -19,6 +19,7 @@ apt-get -y install \
     binutils \
     bison \
     build-essential \
+    ccache \
     chrpath \
     curl \
     debhelper \
@@ -99,6 +100,7 @@ apt-get -y install \
     tar \
     tree \
     uuid-dev \
+    wget \
     xfslibs-dev \
     xsltproc \
     zlib1g-dev

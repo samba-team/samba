@@ -36,6 +36,7 @@ COMMON = [
     'autoconf',
     'binutils',
     'bison',
+    'ccache',
     'curl',
     'chrpath',
     'flex',
@@ -56,6 +57,7 @@ COMMON = [
     'sudo',  # docker images has no sudo by default
     'tar',
     'tree',
+    'wget',
 ]
 
 

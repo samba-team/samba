@@ -19,6 +19,7 @@ zypper --non-interactive install \
     bind-utils \
     binutils \
     bison \
+    ccache \
     chrpath \
     cups-devel \
     curl \
@@ -95,6 +96,7 @@ zypper --non-interactive install \
     systemd-devel \
     tar \
     tree \
+    wget \
     which \
     xfsprogs-devel \
     yum-utils \

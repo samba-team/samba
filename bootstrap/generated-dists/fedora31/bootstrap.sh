@@ -19,6 +19,7 @@ dnf install -y \
     bind-utils \
     binutils \
     bison \
+    ccache \
     chrpath \
     cups-devel \
     curl \
@@ -103,6 +104,7 @@ dnf install -y \
     systemd-devel \
     tar \
     tree \
+    wget \
     which \
     xfsprogs-devel \
     yum-utils \

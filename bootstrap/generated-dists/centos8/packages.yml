@@ -8,6 +8,7 @@ packages:
   - bind-utils
   - binutils
   - bison
+  - ccache
   - chrpath
   - cups-devel
   - curl
@@ -88,6 +89,7 @@ packages:
   - systemd-devel
   - tar
   - tree
+  - wget
   - which
   - xfsprogs-devel
   - yum-utils

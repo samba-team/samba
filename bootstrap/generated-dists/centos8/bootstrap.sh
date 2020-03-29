@@ -23,6 +23,7 @@ yum install -y \
     bind-utils \
     binutils \
     bison \
+    ccache \
     chrpath \
     cups-devel \
     curl \
@@ -103,6 +104,7 @@ yum install -y \
     systemd-devel \
     tar \
     tree \
+    wget \
     which \
     xfsprogs-devel \
     yum-utils \
