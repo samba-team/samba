@@ -947,8 +947,8 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 				  crec->ctdb_ctx->db_id,
 				  CTDB_CTRL_FLAG_NOREPLY, /* flags */
 				  indata,
+				  NULL, /* mem_ctx */
 				  NULL, /* outdata */
-				  NULL, /* errmsg */
 				  &cstatus);
 	talloc_free(indata.dptr);
 
