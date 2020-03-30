@@ -3346,15 +3346,12 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 ****************************************************************************/
 
 struct ftrunc_state {
-	uint16_t setup;
-	uint8_t param[6];
 	uint8_t data[8];
 };
 
 static void cli_ftruncate_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
-					 NULL, 0, NULL, NULL, 0, NULL);
+	NTSTATUS status = cli_setfileinfo_recv(subreq);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
@@ -3372,35 +3369,17 @@ struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	/* Setup setup word. */
-	SSVAL(&state->setup, 0, TRANSACT2_SETFILEINFO);
-
-	/* Setup param array. */
-	SSVAL(state->param,0,fnum);
-	SSVAL(state->param,2,SMB_SET_FILE_END_OF_FILE_INFO);
-	SSVAL(state->param,4,0);
-
 	/* Setup data array. */
         SBVAL(state->data, 0, size);
 
-	subreq = cli_trans_send(state,			/* mem ctx. */
-				ev,			/* event ctx. */
-				cli,			/* cli_state. */
-				0,			/* additional_flags2 */
-				SMBtrans2,		/* cmd. */
-				NULL,			/* pipe name. */
-				-1,			/* fid. */
-				0,			/* function. */
-				0,			/* flags. */
-				&state->setup,		/* setup. */
-				1,			/* num setup uint16_t words. */
-				0,			/* max returned setup. */
-				state->param,		/* param. */
-				6,			/* num param. */
-				2,			/* max returned param. */
-				state->data,		/* data. */
-				8,			/* num data. */
-				0);			/* max returned data. */
+	subreq = cli_setfileinfo_send(
+		state,
+		ev,
+		cli,
+		fnum,
+		SMB_SET_FILE_END_OF_FILE_INFO,
+		state->data,
+		sizeof(state->data));
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
