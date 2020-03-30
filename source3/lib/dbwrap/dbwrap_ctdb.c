@@ -1825,6 +1825,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	char *db_path;
 	struct loadparm_context *lp_ctx;
 	TDB_DATA data;
+	TDB_DATA outdata = {0};
 	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 	int32_t cstatus;
 	int ret;
@@ -1897,7 +1898,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	ret = ctdbd_control_local(messaging_ctdb_connection(),
 				  CTDB_CONTROL_DB_OPEN_FLAGS,
-				  0, 0, data, NULL, &data, &cstatus);
+				  0, 0, data, NULL, &outdata, &cstatus);
 	if (ret != 0) {
 		DBG_ERR(" ctdb control for db_open_flags "
 			 "failed: %s\n", strerror(ret));
@@ -1905,13 +1906,15 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (cstatus != 0 || data.dsize != sizeof(int)) {
+	if (cstatus != 0 || outdata.dsize != sizeof(int)) {
 		DBG_ERR("ctdb_control for db_open_flags failed\n");
+		TALLOC_FREE(outdata.dptr);
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	tdb_flags = *(int *)data.dptr;
+	tdb_flags = *(int *)outdata.dptr;
+	TALLOC_FREE(outdata.dptr);
 
 	if (!result->persistent) {
 		ret = ctdb_async_ctx_init(NULL, messaging_tevent_context(msg_ctx));
