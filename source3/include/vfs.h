@@ -543,7 +543,6 @@ typedef struct connection_struct {
 } connection_struct;
 
 struct smbd_smb2_request;
-struct privilege_paths;
 struct referral;
 
 struct smb_request {
@@ -599,12 +598,6 @@ struct smb_request {
 	 * Back pointer to smb2 request.
 	 */
 	struct smbd_smb2_request *smb2req;
-
-	/*
-	 * Pathnames used if request done
-	 * under privilege.
-	 */
-	struct privilege_paths *priv_paths;
 
 	/*
 	 * Request list for chained requests, we're part of it.

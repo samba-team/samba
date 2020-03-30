@@ -632,7 +632,6 @@ static bool init_smb_request(struct smb_request *req,
 	}
 	req->chain_fsp = NULL;
 	req->smb2req = NULL;
-	req->priv_paths = NULL;
 	req->chain = NULL;
 	req->posix_pathnames = lp_posix_pathnames();
 	smb_init_perfcount_data(&req->pcd);

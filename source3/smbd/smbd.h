@@ -26,15 +26,6 @@ struct dptr_struct;
 #include "smbd/proto.h"
 #include "locking/proto.h"
 
-/*
- * Pathnames used if request done
- * under privilege.
- */
-struct privilege_paths {
-	struct smb_filename parent_name;
-	struct smb_filename file_name;
-};
-
 struct trans_state {
 	struct trans_state *next, *prev;
 	uint64_t vuid; /* SMB2 compat */

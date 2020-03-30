@@ -1025,19 +1025,14 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	struct smb_filename *resolved_fname = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
-	struct privilege_paths *priv_paths = NULL;
 	int ret;
+	struct smb_filename parent_name = { 0 };
+	struct smb_filename file_name = { 0 };
 
 	DEBUG(3,("check_reduced_name_with_privilege [%s] [%s]\n",
 			smb_fname->base_name,
 			conn->connectpath));
 
-
-	priv_paths = talloc_zero(smbreq, struct privilege_paths);
-	if (!priv_paths) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
 
 	if (!parent_dirname(ctx, smb_fname->base_name,
 			&dir_name, &last_component)) {
@@ -1045,16 +1040,14 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
-	priv_paths->parent_name.base_name = talloc_strdup(priv_paths, dir_name);
-	priv_paths->file_name.base_name = talloc_strdup(priv_paths, last_component);
-
-	if (priv_paths->parent_name.base_name == NULL ||
-			priv_paths->file_name.base_name == NULL) {
+	parent_name.base_name = dir_name;
+	file_name.base_name = talloc_strdup(ctx, last_component);
+	if (file_name.base_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
-	if (SMB_VFS_STAT(conn, &priv_paths->parent_name) != 0) {
+	if (SMB_VFS_STAT(conn, &parent_name) != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
@@ -1065,7 +1058,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
-	if (vfs_ChDir(conn, &priv_paths->parent_name) == -1) {
+	if (vfs_ChDir(conn, &parent_name) == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
@@ -1092,7 +1085,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	}
 
 	DEBUG(10,("check_reduced_name_with_privilege: realpath [%s] -> [%s]\n",
-		priv_paths->parent_name.base_name,
+		parent_name.base_name,
 		resolved_name));
 
 	/* Now check the stat value is the same. */
@@ -1102,11 +1095,11 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	}
 
 	/* Ensure we're pointing at the same place. */
-	if (!check_same_stat(&smb_fname_cwd->st, &priv_paths->parent_name.st)) {
+	if (!check_same_stat(&smb_fname_cwd->st, &parent_name.st)) {
 		DEBUG(0,("check_reduced_name_with_privilege: "
 			"device/inode/uid/gid on directory %s changed. "
 			"Denying access !\n",
-			priv_paths->parent_name.base_name));
+			parent_name.base_name));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto err;
 	}
@@ -1153,30 +1146,30 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	/* Now ensure that the last component either doesn't
 	   exist, or is *NOT* a symlink. */
 
-	ret = SMB_VFS_LSTAT(conn, &priv_paths->file_name);
+	ret = SMB_VFS_LSTAT(conn, &file_name);
 	if (ret == -1) {
 		/* Errno must be ENOENT for this be ok. */
 		if (errno != ENOENT) {
 			status = map_nt_error_from_unix(errno);
 			DEBUG(2, ("check_reduced_name_with_privilege: "
 				"LSTAT on %s failed with %s\n",
-				priv_paths->file_name.base_name,
+				file_name.base_name,
 				nt_errstr(status)));
 			goto err;
 		}
 	}
 
-	if (VALID_STAT(priv_paths->file_name.st) &&
-			S_ISLNK(priv_paths->file_name.st.st_ex_mode)) {
+	if (VALID_STAT(file_name.st) &&
+	    S_ISLNK(file_name.st.st_ex_mode))
+	{
 		DEBUG(2, ("check_reduced_name_with_privilege: "
 			"Last component %s is a symlink. Denying"
 			"access.\n",
-			priv_paths->file_name.base_name));
+			file_name.base_name));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto err;
 	}
 
-	smbreq->priv_paths = priv_paths;
 	status = NT_STATUS_OK;
 
   err:
@@ -1186,9 +1179,6 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		TALLOC_FREE(saved_dir_fname);
 	}
 	TALLOC_FREE(resolved_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(priv_paths);
-	}
 	TALLOC_FREE(dir_name);
 	return status;
 }
