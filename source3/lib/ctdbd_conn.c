@@ -834,7 +834,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for getdbpath failed: %s\n",
 			  strerror(ret)));
-		return NULL;
+		TALLOC_FREE(rdata.dptr);
 	}
 
 	return (char *)rdata.dptr;
