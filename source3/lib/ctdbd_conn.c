@@ -847,7 +847,7 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 		    const char *name, uint32_t *db_id, bool persistent)
 {
 	int ret;
-	TDB_DATA data;
+	TDB_DATA data = {0};
 	int32_t cstatus;
 
 	data = string_term_tdb_data(name);
@@ -865,6 +865,7 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 
 	if (cstatus != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,(__location__ " ctdb_control for db_attach failed\n"));
+		TALLOC_FREE(data.dptr);
 		return EIO;
 	}
 
