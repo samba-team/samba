@@ -242,7 +242,7 @@ static int get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 {
 	int32_t cstatus=-1;
-	TDB_DATA outdata;
+	TDB_DATA outdata = {0};
 	struct ctdb_node_map_old *m;
 	bool ok = false;
 	uint32_t i;
@@ -256,7 +256,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	}
 	if ((cstatus != 0) || (outdata.dptr == NULL)) {
 		DEBUG(2, ("Received invalid ctdb data\n"));
-		return false;
+		goto fail;
 	}
 
 	m = (struct ctdb_node_map_old *)outdata.dptr;
