@@ -34,6 +34,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "../libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/time_basic.h"
 
 /*
  * Routine to open a directory
@@ -2047,8 +2048,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        time_t access_time;
-        time_t write_time;
+	struct timespec access_time, write_time;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ok;
@@ -2067,31 +2067,19 @@ SMBC_utimes_ctx(SMBCCTX *context,
 	}
 
         if (tbuf == NULL) {
-                access_time = write_time = time(NULL);
+                access_time = write_time = timespec_current();
         } else {
-                access_time = tbuf[0].tv_sec;
-                write_time = tbuf[1].tv_sec;
+		access_time = convert_timeval_to_timespec(tbuf[0]);
+                write_time = convert_timeval_to_timespec(tbuf[1]);
         }
 
         if (DEBUGLVL(4)) {
-                char *p;
-                char atimebuf[32];
-                char mtimebuf[32];
-
-                strncpy(atimebuf, ctime(&access_time), sizeof(atimebuf) - 1);
-                atimebuf[sizeof(atimebuf) - 1] = '\0';
-                if ((p = strchr(atimebuf, '\n')) != NULL) {
-                        *p = '\0';
-                }
-
-                strncpy(mtimebuf, ctime(&write_time), sizeof(mtimebuf) - 1);
-                mtimebuf[sizeof(mtimebuf) - 1] = '\0';
-                if ((p = strchr(mtimebuf, '\n')) != NULL) {
-                        *p = '\0';
-                }
+		struct timeval_buf abuf, wbuf;
 
                 dbgtext("smbc_utimes(%s, atime = %s mtime = %s)\n",
-                        fname, atimebuf, mtimebuf);
+                        fname,
+			timespec_string_buf(&access_time, false, &abuf),
+			timespec_string_buf(&write_time, false, &wbuf));
         }
 
 	if (SMBC_parse_path(frame,
@@ -2132,8 +2120,8 @@ SMBC_utimes_ctx(SMBCCTX *context,
 		srv,
 		path,
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT },
-		(struct timespec) { .tv_sec = access_time },
-		(struct timespec) { .tv_sec = write_time },
+		access_time,
+		write_time,
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT },
 		0);
 	if (!ok) {
