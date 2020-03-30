@@ -741,6 +741,144 @@ NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 		cli, SMB_FILE_BASIC_INFORMATION, fname, buf, sizeof(buf));
 }
 
+struct cli_setfileinfo_ext_state {
+	uint8_t data[40];
+	DATA_BLOB in_data;
+};
+
+static void cli_setfileinfo_ext_done(struct tevent_req *subreq);
+static void cli_setfileinfo_ext_done2(struct tevent_req *subreq);
+
+struct tevent_req *cli_setfileinfo_ext_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	struct timespec create_time,
+	struct timespec access_time,
+	struct timespec write_time,
+	struct timespec change_time,
+	uint16_t mode)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_setfileinfo_ext_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_setfileinfo_ext_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	prep_basic_information_buf(
+		state->data,
+		create_time,
+		access_time,
+		write_time,
+		change_time,
+		mode);
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		state->in_data = (DATA_BLOB) {
+			.data = state->data, .length = sizeof(state->data),
+		};
+
+		subreq = cli_smb2_set_info_fnum_send(
+			state,
+			ev,
+			cli,
+			fnum,
+			SMB2_0_INFO_FILE,
+			SMB_FILE_BASIC_INFORMATION - 1000,
+			&state->in_data,
+			0);	/* in_additional_info */
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, cli_setfileinfo_ext_done2, req);
+		return req;
+	}
+
+	subreq = cli_setfileinfo_send(
+		state,
+		ev,
+		cli,
+		fnum,
+		SMB_FILE_BASIC_INFORMATION,
+		state->data,
+		sizeof(state->data));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_setfileinfo_ext_done, req);
+	return req;
+}
+
+static void cli_setfileinfo_ext_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setfileinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_setfileinfo_ext_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_set_info_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_setfileinfo_ext_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_setfileinfo_ext(
+	struct cli_state *cli,
+	uint16_t fnum,
+	struct timespec create_time,
+	struct timespec access_time,
+	struct timespec write_time,
+	struct timespec change_time,
+	uint16_t mode)
+{
+	TALLOC_CTX *frame = NULL;
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	frame = talloc_stackframe();
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_setfileinfo_ext_send(
+		ev,
+		ev,
+		cli,
+		fnum,
+		create_time,
+		access_time,
+		write_time,
+		change_time,
+		mode);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_setfileinfo_ext_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  Send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level.
 ****************************************************************************/
