@@ -149,6 +149,83 @@ NTSTATUS cli_setpathinfo(struct cli_state *cli,
 	return status;
 }
 
+struct cli_setfileinfo_state {
+	uint16_t setup;
+	uint8_t param[6];
+};
+
+static void cli_setfileinfo_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_setfileinfo_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint16_t level,
+	uint8_t *data,
+	size_t data_len)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_setfileinfo_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_setfileinfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	PUSH_LE_U16(&state->setup, 0, TRANSACT2_SETFILEINFO);
+
+	PUSH_LE_U16(state->param, 0, fnum);
+	PUSH_LE_U16(state->param, 2, level);
+
+	subreq = cli_trans_send(state,		/* mem ctx. */
+				ev,		/* event ctx. */
+				cli,		/* cli_state. */
+				0,		/* additional_flags2 */
+				SMBtrans2,	/* cmd. */
+				NULL,		/* pipe name. */
+				-1,		/* fid. */
+				0,		/* function. */
+				0,		/* flags. */
+				&state->setup,	/* setup. */
+				1,		/* num setup uint16_t words. */
+				0,		/* max returned setup. */
+				state->param,	/* param. */
+				6,		/* num param. */
+				2,		/* max returned param. */
+				data,		/* data. */
+				data_len,	/* num data. */
+				0);		/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_setfileinfo_done, req);
+	return req;
+}
+
+static void cli_setfileinfo_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_trans_recv(
+		subreq,		/* req */
+		NULL,		/* mem_ctx */
+		NULL,		/* recv_flags2 */
+		NULL,		/* setup */
+		0,		/* min_setup */
+		NULL,		/* num_setup */
+		NULL,		/* param */
+		0,		/* min_param */
+		NULL,		/* num_param */
+		NULL,		/* data */
+		0,		/* min_data */
+		NULL);		/* num_data */
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_setfileinfo_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
  Creates new name (sym)linked to link_target.

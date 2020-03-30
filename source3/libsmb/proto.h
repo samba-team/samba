@@ -251,6 +251,15 @@ NTSTATUS cli_setpathinfo(struct cli_state *cli,
 			 const char *path,
 			 uint8_t *data,
 			 size_t data_len);
+struct tevent_req *cli_setfileinfo_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint16_t level,
+	uint8_t *data,
+	size_t data_len);
+NTSTATUS cli_setfileinfo_recv(struct tevent_req *req);
 
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
