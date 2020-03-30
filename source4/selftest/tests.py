@@ -382,6 +382,8 @@ for t in libsmbclient:
     url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
     if t == "libsmbclient.list_shares":
         url = "smb://$USERNAME:$PASSWORD@$SERVER"
+    if t == "libsmbclient.utimes":
+        url += "/utimes.txt"
 
     libsmbclient_testargs = [
         '//$SERVER/tmp',

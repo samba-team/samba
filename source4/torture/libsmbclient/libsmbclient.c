@@ -1206,6 +1206,53 @@ out:
 	return ok;
 }
 
+static bool torture_libsmbclient_utimes(struct torture_context *tctx)
+{
+	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	SMBCCTX *ctx = NULL;
+	struct stat st;
+	int fhandle, ret;
+	struct timeval tbuf[2];
+	bool ok;
+
+	if (smburl == NULL) {
+		torture_fail(tctx,
+			     "option --option=torture:smburl="
+			     "smb://user:password@server missing\n");
+	}
+
+	ok = torture_libsmbclient_init_context(tctx, &ctx);
+	torture_assert(tctx, ok, "Failed to init context");
+	smbc_set_context(ctx);
+
+	fhandle = smbc_open(smburl, O_RDWR|O_CREAT, 0644);
+	torture_assert_int_not_equal(tctx, fhandle, -1, "smbc_open failed");
+
+	ret = smbc_fstat(fhandle, &st);
+	torture_assert_int_not_equal(tctx, ret, -1, "smbc_fstat failed");
+
+	tbuf[0] = convert_timespec_to_timeval(st.st_atim);
+	tbuf[1] = convert_timespec_to_timeval(st.st_mtim);
+
+	tbuf[1].tv_usec += 100000; /* 100 msec */
+
+	ret = smbc_utimes(smburl, tbuf);
+	torture_assert_int_not_equal(tctx, ret, -1, "smbc_utimes failed");
+
+	ret = smbc_fstat(fhandle, &st);
+	torture_assert_int_not_equal(tctx, ret, -1, "smbc_fstat failed");
+
+	torture_assert_int_equal(
+		tctx,
+		st.st_mtim.tv_nsec / 1000,
+		tbuf[1].tv_usec,
+		"smbc_utimes did not update msec");
+
+	smbc_close(fhandle);
+	smbc_unlink(smburl);
+	return true;
+}
+
 NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
@@ -1225,6 +1272,8 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 		torture_libsmbclient_readdirplus_seek);
 	torture_suite_add_simple_test(suite, "readdirplus2",
 		torture_libsmbclient_readdirplus2);
+	torture_suite_add_simple_test(
+		suite, "utimes", torture_libsmbclient_utimes);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
