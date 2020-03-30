@@ -3,6 +3,7 @@
 stages:
   - images
   - build
+  - analysis
   - report
 
 variables:
@@ -256,6 +257,40 @@ pages:
   only:
     variables:
       - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == "--enable-coverage"
+
+# Coverity Scan
+coverity:
+  stage: analysis
+  image: $SAMBA_CI_CONTAINER_IMAGE_fedora32
+  tags:
+    - docker
+    - shared
+  script:
+    - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
+    - tar xf /tmp/coverity_tool.tgz
+    - ./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc
+    - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
+    - tar czf cov-int.tar.gz cov-int
+    - curl
+      --form token=$COVERITY_SCAN_TOKEN
+      --form email=$COVERITY_SCAN_EMAIL
+      --form file=@cov-int.tar.gz
+      --form version="`git describe --tags`"
+      --form description="CI build"
+      https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME
+  only:
+    refs:
+      - master
+      - schedules
+    variables:
+      - $COVERITY_SCAN_TOKEN != null
+      - $COVERITY_SCAN_PROJECT_NAME != null
+      - $COVERITY_SCAN_EMAIL != null
+  artifacts:
+    expire_in: 1 week
+    when: on_failure
+    paths:
+      - cov-int/*.txt
 
 #
 # We build samba-o3 on all supported distributions
