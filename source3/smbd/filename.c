@@ -1896,7 +1896,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
  * @param twrp		Optional VSS time
  * @param p_cont_wcard	If not NULL, will be set to true if the dfs path
  *			resolution detects a wildcard.
- * @param pp_smb_fname	The final converted name will be allocated if the
+ * @param _smb_fname	The final converted name will be allocated if the
  *			return is NT_STATUS_OK.
  *
  * @return NT_STATUS_OK if all operations completed successfully, appropriate
