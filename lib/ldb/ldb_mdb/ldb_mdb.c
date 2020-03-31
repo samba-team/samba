@@ -645,7 +645,7 @@ static int lmdb_transaction_start(struct ldb_kv_private *ldb_kv)
 	 * Clear out any stale readers
 	 */
 	{
-		int stale;
+		int stale = 0;
 		mdb_reader_check(lmdb->env, &stale);
 		if (stale > 0) {
 			ldb_debug(
