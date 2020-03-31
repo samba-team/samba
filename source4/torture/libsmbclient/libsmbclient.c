@@ -89,6 +89,7 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 	SMBCCTX *ctx = NULL;
 	SMBCCTX *p = NULL;
 	bool ok = true;
+	int dbglevel = DEBUGLEVEL;
 
 	ctx = smbc_new_context();
 	torture_assert_not_null_goto(tctx,
@@ -104,7 +105,7 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				     out,
 				     "Failed to initialize context");
 
-	smbc_setDebug(ctx, DEBUGLEVEL);
+	smbc_setDebug(ctx, dbglevel);
 	smbc_setOptionDebugToStderr(ctx, 1);
 
 	if (workgroup != NULL) {
