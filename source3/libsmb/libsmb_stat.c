@@ -102,18 +102,18 @@ void setup_stat(struct stat *st,
 	}
 
 	st->st_dev = dev;
-	st->st_atime = convert_timespec_to_time_t(access_time_ts);
-	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
-	st->st_mtime = convert_timespec_to_time_t(write_time_ts);
+	st->st_atim = access_time_ts;
+	st->st_ctim = change_time_ts;
+	st->st_mtim = write_time_ts;
 }
 
 void setup_stat_from_stat_ex(const struct stat_ex *stex,
 			     const char *fname,
 			     struct stat *st)
 {
-	st->st_atime = convert_timespec_to_time_t(stex->st_ex_atime);
-	st->st_ctime = convert_timespec_to_time_t(stex->st_ex_ctime);
-	st->st_mtime = convert_timespec_to_time_t(stex->st_ex_mtime);
+	st->st_atim = stex->st_ex_atime;
+	st->st_ctim = stex->st_ex_ctime;
+	st->st_mtim = stex->st_ex_mtime;
 
 	st->st_mode = stex->st_ex_mode;
 	st->st_size = stex->st_ex_size;
