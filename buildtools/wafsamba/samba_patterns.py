@@ -23,6 +23,7 @@ def SAMBA_MKVERSION(bld, target, source='VERSION'):
     # git revision) included in the version.
     t = bld.SAMBA_GENERATOR('VERSION',
                             rule=write_version_header,
+                            group='setup',
                             source=source,
                             target=target,
                             always=bld.is_install)
