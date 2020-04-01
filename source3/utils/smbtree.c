@@ -339,7 +339,6 @@ int main(int argc, char *argv[])
 	pc = poptGetContext("smbtree", argc, argv_const, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
-	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
 
 	/* Now do our stuff */
