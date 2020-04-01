@@ -274,7 +274,7 @@ ubuntu1804-samba-o3:
   extends: .samba-o3-template
   image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1804
 
-.ubuntu2004-samba-o3:
+ubuntu2004-samba-o3:
   extends: .samba-o3-template
   image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu2004
 
