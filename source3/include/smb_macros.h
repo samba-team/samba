@@ -64,7 +64,8 @@
  */
 #define CHECK_READ_SMB2(fsp) \
 	(((fsp)->fh->fd != -1) && \
-	 ((fsp)->can_read || (fsp->access_mask & FILE_EXECUTE)))
+	 ((fsp)->can_read || \
+	  (fsp->access_mask & FILE_EXECUTE)))
 
 /* An IOCTL readability check (validating read access
  * when the IOCTL code requires it)
