@@ -44,9 +44,11 @@
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
 
-#define CHECK_READ(fsp,req) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
-			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
-			 (fsp->access_mask & FILE_EXECUTE))))
+#define CHECK_READ(fsp,req) \
+	(((fsp)->fh->fd != -1) && \
+	 ((fsp)->can_read || \
+	  ((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
+	   (fsp->access_mask & FILE_EXECUTE))))
 
 /*
  * This is not documented in revision 49 of [MS-SMB2] but should be added in a
