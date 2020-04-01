@@ -455,7 +455,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	if (fsp->kernel_share_modes_taken) {
+	if (fsp->fsp_flags.kernel_share_modes_taken) {
 		int ret_flock;
 
 		/*
@@ -468,7 +468,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 				  fsp_str_dbg(fsp), strerror(errno));
 		}
 
-		fsp->kernel_share_modes_taken = false;
+		fsp->fsp_flags.kernel_share_modes_taken = false;
 	}
 
 
@@ -509,7 +509,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		pop_sec_ctx();
 	}
 
-	if (fsp->kernel_share_modes_taken) {
+	if (fsp->fsp_flags.kernel_share_modes_taken) {
 		int ret_flock;
 
 		/* remove filesystem sharemodes */

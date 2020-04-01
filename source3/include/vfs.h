@@ -357,7 +357,9 @@ typedef struct files_struct {
 	uint64_t vuid; /* SMB2 compat */
 	struct timeval open_time;
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	bool kernel_share_modes_taken;
+	struct {
+		bool kernel_share_modes_taken : 1;
+	} fsp_flags;
 
 	bool update_write_time_triggered;
 	struct tevent_timer *update_write_time_event;
