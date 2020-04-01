@@ -77,7 +77,9 @@
 	(((fsp)->fh->fd != -1) && \
 	 ((fsp)->can_read))
 
-#define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))
+#define CHECK_WRITE(fsp) \
+	((fsp)->can_write && \
+	 ((fsp)->fh->fd != -1))
 
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
