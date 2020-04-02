@@ -7847,7 +7847,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			}
 		}
 
-		notify_rename(conn, fsp->is_directory, fsp->fsp_name,
+		notify_rename(conn,
+			      fsp->is_directory,
+			      fsp->fsp_name,
 			      smb_fname_dst);
 
 		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
