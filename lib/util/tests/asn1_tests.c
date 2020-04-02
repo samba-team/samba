@@ -330,7 +330,7 @@ static bool test_asn1_Integer(struct torture_context *tctx)
 		DATA_BLOB blob;
 		int val;
 
-		data = asn1_init(mem_ctx);
+		data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 		if (!data) {
 			goto err;
 		}

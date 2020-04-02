@@ -76,7 +76,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 static bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
 	bool ret = false;
-	struct asn1_data *data = asn1_init(NULL);
+	struct asn1_data *data = asn1_init(NULL, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 

@@ -296,7 +296,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 		return ret;
 	}
 
-	asn1 = asn1_init(mem_ctx);
+	asn1 = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	if (asn1 == NULL) {
 		return -1;
 	}
@@ -339,7 +339,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 
 ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_data *spnego)
 {
-	struct asn1_data *asn1 = asn1_init(mem_ctx);
+	struct asn1_data *asn1 = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	ssize_t ret = -1;
 
 	if (asn1 == NULL) {
@@ -411,7 +411,7 @@ bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *blob)
 {
 	bool ret = false;
-	struct asn1_data *asn1 = asn1_init(mem_ctx);
+	struct asn1_data *asn1 = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (asn1 == NULL) {
 		return false;

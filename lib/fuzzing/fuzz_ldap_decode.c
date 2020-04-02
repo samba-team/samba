@@ -34,7 +34,11 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	struct ldap_message *ldap_msg;
 	NTSTATUS status;
 
-	asn1 = asn1_init(mem_ctx);
+	/*
+	 * Need to limit the max parse tree depth to 250 to prevent
+	 * ASAN detecting stack overflows.
+	 */
+	asn1 = asn1_init(mem_ctx, 250);
 	if (!asn1) {
 		goto out;
 	}
