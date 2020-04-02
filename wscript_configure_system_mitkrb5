@@ -79,6 +79,7 @@ if conf.env.KRB5_CONFIG:
 
     if parse_version(krb5_version) < parse_version('1.18'):
         conf.DEFINE('HAVE_MIT_KRB5_PRE_1_18', 1)
+    conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
 
 conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')

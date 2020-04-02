@@ -4,4 +4,5 @@ if not conf.env['FLEX']:
 if not conf.env['BISON']:
     conf.fatal("Embedded Heimdal build requires bison but it was not found.  Install bison or use --with-system-mitkrb5 or --with-system-heimdalkrb5")
 
+conf.define('USING_EMBEDDED_HEIMDAL', 1)
 conf.RECURSE('source4/heimdal_build')
