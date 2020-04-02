@@ -1292,7 +1292,7 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 		return true;
 	}
 
-	fsp->write_time_forced = true;
+	fsp->fsp_flags.write_time_forced = true;
 	TALLOC_FREE(fsp->update_write_time_event);
 
 	return set_sticky_write_time_path(fsp->file_id, mtime);

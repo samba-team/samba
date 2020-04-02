@@ -361,11 +361,11 @@ typedef struct files_struct {
 		bool kernel_share_modes_taken : 1;
 		bool update_write_time_triggered : 1;
 		bool update_write_time_on_close : 1;
+		bool write_time_forced : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
 	struct timespec close_write_time;
-	bool write_time_forced;
 
 	int oplock_type;
 

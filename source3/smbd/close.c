@@ -313,7 +313,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		remove_oplock(fsp);
 	}
 
-	if (fsp->write_time_forced) {
+	if (fsp->fsp_flags.write_time_forced) {
 		struct timespec ts;
 
 		DEBUG(10,("close_remove_share_mode: write time forced "
@@ -555,7 +555,7 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 	if (is_omit_timespec(&ts)) {
 		return;
 	}
-	fsp->write_time_forced = false;
+	fsp->fsp_flags.write_time_forced = false;
 	fsp->fsp_flags.update_write_time_on_close = true;
 	fsp->close_write_time = ts;
 }

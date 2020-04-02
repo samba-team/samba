@@ -132,7 +132,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 		return;
 	}
 
-	if (fsp->write_time_forced) {
+	if (fsp->fsp_flags.write_time_forced) {
 		/* No point - "sticky" write times
 		 * in effect.
 		 */
@@ -179,7 +179,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 		return;
 	}
 
-        if (fsp->write_time_forced) {
+        if (fsp->fsp_flags.write_time_forced) {
 		/*
 		 * No point - "sticky" write times
 		 * in effect.

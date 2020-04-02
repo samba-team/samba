@@ -105,7 +105,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 		fsp->fsp_flags.update_write_time_triggered;
 	cookie.update_write_time_on_close =
 		fsp->fsp_flags.update_write_time_on_close;
-	cookie.write_time_forced = fsp->write_time_forced;
+	cookie.write_time_forced = fsp->fsp_flags.write_time_forced;
 	cookie.close_write_time = full_timespec_to_nt_time(
 		&fsp->close_write_time);
 
@@ -210,7 +210,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 
 		init_smb_file_time(&ft);
 
-		if (fsp->write_time_forced) {
+		if (fsp->fsp_flags.write_time_forced) {
 			ft.mtime = nt_time_to_full_timespec(
 				lck->data->changed_write_time);
 		} else if (fsp->fsp_flags.update_write_time_on_close) {
@@ -258,7 +258,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		fsp->fsp_flags.update_write_time_triggered;
 	cookie.update_write_time_on_close =
 		fsp->fsp_flags.update_write_time_on_close;
-	cookie.write_time_forced = fsp->write_time_forced;
+	cookie.write_time_forced = fsp->fsp_flags.write_time_forced;
 	cookie.close_write_time = full_timespec_to_nt_time(
 		&fsp->close_write_time);
 
@@ -756,7 +756,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		cookie.update_write_time_triggered;
 	fsp->fsp_flags.update_write_time_on_close =
 		cookie.update_write_time_on_close;
-	fsp->write_time_forced = cookie.write_time_forced;
+	fsp->fsp_flags.write_time_forced = cookie.write_time_forced;
 	fsp->close_write_time = nt_time_to_full_timespec(
 		cookie.close_write_time);
 
