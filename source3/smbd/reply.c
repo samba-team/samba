@@ -549,14 +549,15 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 
 static int get_socket_port(int fd)
 {
-	struct sockaddr_storage sa;
-	socklen_t length = sizeof(sa);
+	struct samba_sockaddr saddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 
 	if (fd == -1) {
 		return -1;
 	}
 
-	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+	if (getsockname(fd, &saddr.u.sa, &saddr.sa_socklen) < 0) {
 		int level = (errno == ENOTCONN) ? 2 : 0;
 		DEBUG(level, ("getsockname failed. Error was %s\n",
 			       strerror(errno)));
@@ -564,14 +565,12 @@ static int get_socket_port(int fd)
 	}
 
 #if defined(HAVE_IPV6)
-	if (sa.ss_family == AF_INET6) {
-		struct sockaddr_in6 *sa_in6 = (struct sockaddr_in6 *)&sa;
-		return ntohs(sa_in6->sin6_port);
+	if (saddr.u.sa.sa_family == AF_INET6) {
+		return ntohs(saddr.u.in6.sin6_port);
 	}
 #endif
-	if (sa.ss_family == AF_INET) {
-		struct sockaddr_in *sa_in = (struct sockaddr_in *)&sa;
-		return ntohs(sa_in->sin_port);
+	if (saddr.u.sa.sa_family == AF_INET) {
+		return ntohs(saddr.u.in.sin_port);
 	}
 	return -1;
 }
