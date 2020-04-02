@@ -240,7 +240,9 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	}
 
 	if ((in_flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) &&
-	    (fsp->initial_delete_on_close || fsp->delete_on_close)) {
+	    (fsp->initial_delete_on_close ||
+	     fsp->delete_on_close))
+	{
 		/*
 		 * We might be deleting the file. Ensure we
 		 * return valid data from before the file got
