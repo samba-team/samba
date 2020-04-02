@@ -1243,7 +1243,7 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status;
 	struct files_struct *base_fsp = fsp->base_fsp;
 
-	if(fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
 	} else if (fsp->fake_file_handle != NULL) {
 		status = close_fake_file(req, fsp);

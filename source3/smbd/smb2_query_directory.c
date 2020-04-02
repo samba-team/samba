@@ -293,7 +293,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (!fsp->is_directory) {
+	if (!fsp->fsp_flags.is_directory) {
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return tevent_req_post(req, ev);
 	}

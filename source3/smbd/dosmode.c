@@ -1152,7 +1152,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		DEBUG(9, ("invalid attempt to %s sparse flag on dir %s\n",
 			  (sparse ? "set" : "clear"),
 			  smb_fname_str_dbg(fsp->fsp_name)));

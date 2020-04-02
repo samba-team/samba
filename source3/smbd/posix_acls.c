@@ -1707,7 +1707,7 @@ static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
 	 * DLIST_ADD_END) as NT ACLs are order dependent.
 	 */
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 
 		/*
 		 * We can only add to the default POSIX ACE list if the ACE is
@@ -1870,7 +1870,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 					canon_ace **ppdir_ace,
 					const struct security_acl *dacl)
 {
-	bool all_aces_are_inherit_only = (fsp->is_directory ? True : False);
+	bool all_aces_are_inherit_only = (fsp->fsp_flags.is_directory);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 	canon_ace *current_ace = NULL;
@@ -2131,7 +2131,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		}
 	}
 
-	if (fsp->is_directory && all_aces_are_inherit_only) {
+	if (fsp->fsp_flags.is_directory && all_aces_are_inherit_only) {
 		/*
 		 * Windows 2000 is doing one of these weird 'inherit acl'
 		 * traverses to conserve NTFS ACL resources. Just pretend
@@ -2558,7 +2558,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 		&file_ace,
 		false,
 		fsp->conn->params,
-		fsp->is_directory,
+		fsp->fsp_flags.is_directory,
 		pfile_owner_sid,
 		pfile_grp_sid,
 		pst);
@@ -2576,7 +2576,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 			&dir_ace,
 			true,
 			fsp->conn->params,
-			fsp->is_directory,
+			fsp->fsp_flags.is_directory,
 			pfile_owner_sid,
 			pfile_grp_sid,
 			pst);
@@ -3026,7 +3026,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 	 * Finally apply it to the file or directory.
 	 */
 
-	if(default_ace || fsp->is_directory || fsp->fh->fd == -1) {
+	if (default_ace || fsp->fsp_flags.is_directory || fsp->fh->fd == -1) {
 		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name,
 					     the_acl_type, the_acl) == -1) {
 			/*
@@ -3215,7 +3215,7 @@ static bool convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
 	/* The owner must have at least read access. */
 
 	*posix_perms |= S_IRUSR;
-	if (fsp->is_directory)
+	if (fsp->fsp_flags.is_directory)
 		*posix_perms |= (S_IWUSR|S_IXUSR);
 
 	DEBUG(10,("convert_canon_ace_to_posix_perms: converted u=%o,g=%o,w=%o "
@@ -3490,7 +3490,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 		  fsp_str_dbg(fsp)));
 
 	/* can it happen that fsp_name == NULL ? */
-	if (fsp->is_directory ||  fsp->fh->fd == -1) {
+	if (fsp->fsp_flags.is_directory ||  fsp->fh->fd == -1) {
 		status = posix_get_nt_acl(fsp->conn, fsp->fsp_name,
 					  security_info, mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
@@ -3878,7 +3878,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 		}
 	}
 
-	if (acl_perms && acl_set_support && fsp->is_directory) {
+	if (acl_perms && acl_set_support && fsp->fsp_flags.is_directory) {
 		if (dir_ace_list) {
 			if (set_acl_as_root) {
 				become_root();
@@ -4380,7 +4380,7 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 	NTSTATUS status;
 	int ret;
 
-	if (!fsp->is_directory) {
+	if (!fsp->fsp_flags.is_directory) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -4781,7 +4781,7 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	int ret;
 
 	/* This ensures that we also consider the default ACL */
-	if (fsp->is_directory ||  fsp->fh->fd == -1) {
+	if (fsp->fsp_flags.is_directory ||  fsp->fh->fd == -1) {
 		return posix_sys_acl_blob_get_file(handle,
 						fsp->fsp_name,
 						mem_ctx,

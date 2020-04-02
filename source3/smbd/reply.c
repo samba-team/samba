@@ -500,7 +500,7 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 	if (!check_fsp_open(conn, req, fsp)) {
 		return False;
 	}
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
 		return False;
 	}
@@ -524,7 +524,7 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 		return false;
 	}
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		return false;
 	}
 
@@ -4003,7 +4003,7 @@ void reply_readbraw(struct smb_request *req)
 	    conn == NULL ||
 	    conn != fsp->conn ||
 	    req->vuid != fsp->vuid ||
-	    fsp->is_directory ||
+	    fsp->fsp_flags.is_directory ||
 	    fsp->fh->fd == -1)
 	{
 		/*
@@ -6032,11 +6032,12 @@ void reply_close(struct smb_request *smb1req)
 	}
 
 	DBG_NOTICE("Close %s fd=%d %s (numopen=%d)\n",
-		  fsp->is_directory ? "directory" : "file",
+		  fsp->fsp_flags.is_directory ?
+		  "directory" : "file",
 		  fsp->fh->fd, fsp_fnum_dbg(fsp),
 		  conn->num_files_open);
 
-	if (!fsp->is_directory) {
+	if (!fsp->fsp_flags.is_directory) {
 		time_t t;
 
 		/*
@@ -7830,7 +7831,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 
-		if (!fsp->is_directory &&
+		if (!fsp->fsp_flags.is_directory &&
 		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn)))) {
@@ -7848,7 +7849,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		}
 
 		notify_rename(conn,
-			      fsp->is_directory,
+			      fsp->fsp_flags.is_directory,
 			      fsp->fsp_name,
 			      smb_fname_dst);
 

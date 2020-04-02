@@ -5003,7 +5003,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 		 * We can only have default POSIX ACLs on
 		 * directories.
 		 */
-		if (!fsp->is_directory) {
+		if (!fsp->fsp_flags.is_directory) {
 			DBG_INFO("Non-directory open %s\n",
 				fsp_str_dbg(fsp));
 			status = NT_STATUS_INVALID_HANDLE;
@@ -7598,7 +7598,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	}
 
 	/* If we have a default acl, this *must* be a directory. */
-	if (valid_def_acls && !fsp->is_directory) {
+	if (valid_def_acls && !fsp->fsp_flags.is_directory) {
 		DBG_INFO("Can't set default acls on "
 			 "non-directory %s\n",
 			 fsp_str_dbg(fsp));

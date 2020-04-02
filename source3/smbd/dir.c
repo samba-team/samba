@@ -1376,7 +1376,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (!fsp->is_directory) {
+	if (!fsp->fsp_flags.is_directory) {
 		errno = EBADF;
 		goto fail;
 	}

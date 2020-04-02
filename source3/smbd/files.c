@@ -208,7 +208,7 @@ NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 	fsp->access_mask = FILE_LIST_DIRECTORY;
-	fsp->is_directory = true;
+	fsp->fsp_flags.is_directory = true;
 
 	*_fsp = fsp;
 	return NT_STATUS_OK;
@@ -794,7 +794,7 @@ NTSTATUS dup_file_fsp(
 		CAN_WRITE(from->conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
 	to->fsp_flags.modified = from->fsp_flags.modified;
-	to->is_directory = from->is_directory;
+	to->fsp_flags.is_directory = from->fsp_flags.is_directory;
 	to->aio_write_behind = from->aio_write_behind;
 
 	return fsp_set_smb_fname(to, from->fsp_name);

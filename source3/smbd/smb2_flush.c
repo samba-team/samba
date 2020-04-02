@@ -152,7 +152,7 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		bool allow_dir_flush = false;
 		uint32_t flush_access = FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY;
 
-		if (!fsp->is_directory) {
+		if (!fsp->fsp_flags.is_directory) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
 		}

@@ -2987,7 +2987,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	struct stream_struct *tmp_streams = NULL;
 	int ret;
 
-	if ((fsp != NULL) && (fsp->is_directory)) {
+	if ((fsp != NULL) && (fsp->fsp_flags.is_directory)) {
 		/*
 		 * No default streams on directories
 		 */

@@ -70,7 +70,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -695,7 +695,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	/*
 	 * no durables for directories
 	 */
-	fsp->is_directory = false;
+	fsp->fsp_flags.is_directory = false;
 	/*
 	 * For normal files, can_lock == !is_directory
 	 */

@@ -614,7 +614,7 @@ static int non_widelink_open(struct connection_struct *conn,
 	const char *final_component = NULL;
 	bool ok;
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		parent_dir = talloc_strdup(talloc_tos(), smb_fname->base_name);
 		if (parent_dir == NULL) {
 			saved_errno = errno;
@@ -1437,7 +1437,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->print_file = NULL;
 	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
+	fsp->fsp_flags.is_directory = false;
 	if (conn->aio_write_behind_list &&
 	    is_in_path(smb_fname->base_name, conn->aio_write_behind_list,
 		       conn->case_sensitive)) {
@@ -4405,7 +4405,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->fsp_flags.modified = false;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = True;
+	fsp->fsp_flags.is_directory = true;
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
 	}
@@ -4863,7 +4863,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	}
 
 	inheritable_components = sd_has_inheritable_components(parent_desc,
-					fsp->is_directory);
+					fsp->fsp_flags.is_directory);
 
 	if (!inheritable_components && !inherit_owner) {
 		TALLOC_FREE(frame);
@@ -4984,7 +4984,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 			parent_desc,
 			owner_sid,
 			group_sid,
-			fsp->is_directory);
+			fsp->fsp_flags.is_directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -5637,7 +5637,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	if (!fsp->is_directory && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+	if (!fsp->fsp_flags.is_directory &&
+	    S_ISDIR(fsp->fsp_name->st.st_ex_mode))
+	{
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
@@ -5645,7 +5647,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if ((allocation_size > (uint64_t)fsp->fsp_name->st.st_ex_size)
-		    && !(fsp->is_directory))
+		    && !(fsp->fsp_flags.is_directory))
 		{
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, allocation_size);
@@ -5782,7 +5784,7 @@ static NTSTATUS get_relative_fid_filename(
 		goto out;
 	}
 
-	if (!dir_fsp->is_directory) {
+	if (!dir_fsp->fsp_flags.is_directory) {
 
 		/*
 		 * Check to see if this is a mac fork of some kind.

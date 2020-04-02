@@ -3946,7 +3946,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	fsp = *result;
 
 	if (global_fruit_config.nego_aapl) {
-		if (config->posix_rename && fsp->is_directory) {
+		if (config->posix_rename && fsp->fsp_flags.is_directory) {
 			/*
 			 * Enable POSIX directory rename behaviour
 			 */
@@ -3975,8 +3975,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		fio->created = true;
 	}
 
-	if (is_named_stream(smb_fname)
-	    || fsp->is_directory) {
+	if (is_named_stream(smb_fname) || fsp->fsp_flags.is_directory) {
 		return status;
 	}
 

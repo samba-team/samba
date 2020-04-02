@@ -719,12 +719,12 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		SSVAL(p,2,file_status);
 	}
 	p += 4;
-	SCVAL(p,0,fsp->is_directory ? 1 : 0);
+	SCVAL(p,0,fsp->fsp_flags.is_directory ? 1 : 0);
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32_t perms = 0;
 		p += 25;
-		if (fsp->is_directory ||
+		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
 		    can_write_to_file(conn, smb_fname)) {
 			perms = FILE_GENERIC_ALL;
@@ -1374,12 +1374,12 @@ static void call_nt_transact_create(connection_struct *conn,
 		SSVAL(p,2,file_status);
 	}
 	p += 4;
-	SCVAL(p,0,fsp->is_directory ? 1 : 0);
+	SCVAL(p,0,fsp->fsp_flags.is_directory ? 1 : 0);
 
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint32_t perms = 0;
 		p += 25;
-		if (fsp->is_directory ||
+		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
 		    can_write_to_file(conn, smb_fname)) {
 			perms = FILE_GENERIC_ALL;
@@ -1837,7 +1837,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		TALLOC_FREE(filter_string);
 	}
 
-	if((!fsp->is_directory) || (conn != fsp->conn)) {
+	if((!fsp->fsp_flags.is_directory) || (conn != fsp->conn)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}

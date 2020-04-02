@@ -380,7 +380,7 @@ static int ceph_snap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 		goto err_out;
 	}
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 		parent_dir = fsp->fsp_name->base_name;
 	} else {
 		ret = ceph_snap_get_parent_path(handle->conn->connectpath,

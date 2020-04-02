@@ -255,7 +255,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(filter_string);
 	}
 
-	if ((!fsp->is_directory) || (conn != fsp->conn)) {
+	if ((!fsp->fsp_flags.is_directory) || (conn != fsp->conn)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}

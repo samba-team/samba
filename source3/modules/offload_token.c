@@ -280,13 +280,13 @@ NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (src_fsp->is_directory) {
+	if (src_fsp->fsp_flags.is_directory) {
 		DBG_INFO("copy chunk no read on src directory handle (%s).\n",
 			 smb_fname_str_dbg(src_fsp->fsp_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (dst_fsp->is_directory) {
+	if (dst_fsp->fsp_flags.is_directory) {
 		DBG_INFO("copy chunk no read on dst directory handle (%s).\n",
 			 smb_fname_str_dbg(dst_fsp->fsp_name));
 		return NT_STATUS_ACCESS_DENIED;

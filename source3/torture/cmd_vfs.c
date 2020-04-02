@@ -428,7 +428,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->print_file = NULL;
 	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
+	fsp->fsp_flags.is_directory = false;
 
 	vfs->files[fsp->fh->fd] = fsp;
 	printf("open: fd=%d\n", fsp->fh->fd);
@@ -1656,8 +1656,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	fsp->print_file = NULL;
 	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
-
+	fsp->fsp_flags.is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
 
 	sd = sddl_decode(talloc_tos(), argv[2], get_global_sam_sid());
 	if (!sd) {

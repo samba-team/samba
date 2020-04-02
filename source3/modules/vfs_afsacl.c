@@ -930,7 +930,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!fsp->is_directory) {
+	if (!fsp->fsp_flags.is_directory) {
 		/* We need to get the name of the directory containing the
 		 * file, this is where the AFS acls live */
 		char *p = strrchr(name, '/');
@@ -951,7 +951,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	split_afs_acl(&old_afs_acl, &dir_acl, &file_acl);
 
-	if (fsp->is_directory) {
+	if (fsp->fsp_flags.is_directory) {
 
 		if (!strequal(fileacls, "yes")) {
 			/* Throw away file acls, we depend on the
