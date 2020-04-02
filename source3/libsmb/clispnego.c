@@ -50,7 +50,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 		*secblob = data_blob_null;
 	}
 
-	data = asn1_init(talloc_tos());
+	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 	if (data == NULL) {
 		return false;
 	}
@@ -171,7 +171,7 @@ DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const ui
 	ASN1_DATA *data;
 	DATA_BLOB ret = data_blob_null;
 
-	data = asn1_init(talloc_tos());
+	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 	if (data == NULL) {
 		return data_blob_null;
 	}

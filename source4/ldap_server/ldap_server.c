@@ -560,7 +560,7 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	asn1 = asn1_init(call);
+	asn1 = asn1_init(call, ASN1_MAX_TREE_DEPTH);
 	if (asn1 == NULL) {
 		ldapsrv_terminate_connection(conn, "no memory");
 		return;

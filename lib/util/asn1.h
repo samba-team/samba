@@ -45,7 +45,14 @@ typedef struct asn1_data ASN1_DATA;
 
 #define ASN1_MAX_OIDS 20
 
-struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx);
+/*
+ * The maximum permitted depth for an ASN.1 parse tree, the limit is chosen
+ * to align with the value for windows. Note that this value will trigger
+ * ASAN stack overflow errors.
+ */
+#define ASN1_MAX_TREE_DEPTH 512
+
+struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx, unsigned max_depth);
 void asn1_free(struct asn1_data *data);
 bool asn1_has_error(const struct asn1_data *data);
 void asn1_set_error(struct asn1_data *data);
