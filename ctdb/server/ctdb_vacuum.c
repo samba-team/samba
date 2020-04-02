@@ -1523,6 +1523,22 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	bool full_vacuum_run = false;
 	int ret;
 
+	if (vacuum_interval > vacuum_handle->vacuum_interval) {
+		uint32_t d = vacuum_interval - vacuum_handle->vacuum_interval;
+
+		DBG_INFO("Vacuum interval increased from "
+			 "%"PRIu32" to %"PRIu32", rescheduling\n",
+			 vacuum_handle->vacuum_interval,
+			 vacuum_interval);
+		vacuum_handle->vacuum_interval = vacuum_interval;
+		tevent_add_timer(ctdb->ev,
+				 vacuum_handle,
+				 timeval_current_ofs(d, 0),
+				 ctdb_vacuum_event,
+				 vacuum_handle);
+		return;
+	}
+
 	vacuum_handle->vacuum_interval = vacuum_interval;
 
 	if (vacuum_handle->fast_path_count >= fast_path_max) {
