@@ -178,7 +178,7 @@ NTSTATUS query_lock(files_struct *fsp,
 {
 	struct byte_range_lock *br_lck = NULL;
 
-	if (!fsp->can_lock) {
+	if (!fsp->fsp_flags.can_lock) {
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -306,7 +306,7 @@ NTSTATUS do_lock(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	if (!fsp->can_lock) {
+	if (!fsp->fsp_flags.can_lock) {
 		if (fsp->is_directory) {
 			return NT_STATUS_INVALID_DEVICE_REQUEST;
 		}
@@ -362,7 +362,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
 
-	if (!fsp->can_lock) {
+	if (!fsp->fsp_flags.can_lock) {
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 

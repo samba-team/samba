@@ -699,7 +699,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	/*
 	 * For normal files, can_lock == !is_directory
 	 */
-	fsp->can_lock = true;
+	fsp->fsp_flags.can_lock = true;
 	/*
 	 * We do not support aio write behind for smb2
 	 */

@@ -362,6 +362,7 @@ typedef struct files_struct {
 		bool update_write_time_triggered : 1;
 		bool update_write_time_on_close : 1;
 		bool write_time_forced : 1;
+		bool can_lock : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -382,7 +383,6 @@ typedef struct files_struct {
 	struct lock_struct last_lock_failure;
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
-	bool can_lock;
 	bool can_read;
 	bool can_write;
 	bool modified;

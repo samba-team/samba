@@ -1429,7 +1429,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
-	fsp->can_lock = True;
+	fsp->fsp_flags.can_lock = true;
 	fsp->can_read = ((access_mask & FILE_READ_DATA) != 0);
 	fsp->can_write =
 		CAN_WRITE(conn) &&
@@ -4391,7 +4391,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_dname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
-	fsp->can_lock = False;
+	fsp->fsp_flags.can_lock = false;
 	fsp->can_read = False;
 	fsp->can_write = False;
 

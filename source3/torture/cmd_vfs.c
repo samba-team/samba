@@ -422,7 +422,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->file_id = vfs_file_id_from_sbuf(vfs->conn, &smb_fname->st);
 	fsp->vuid = UID_FIELD_INVALID;
 	fsp->file_pid = 0;
-	fsp->can_lock = True;
+	fsp->fsp_flags.can_lock = true;
 	fsp->can_read = True;
 	fsp->can_write =
 		CAN_WRITE(vfs->conn);
@@ -1651,7 +1651,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	fsp->file_id = vfs_file_id_from_sbuf(vfs->conn, &smb_fname->st);
 	fsp->vuid = UID_FIELD_INVALID;
 	fsp->file_pid = 0;
-	fsp->can_lock = True;
+	fsp->fsp_flags.can_lock = true;
 	fsp->can_read = True;
 	fsp->can_write = True;
 	fsp->print_file = NULL;

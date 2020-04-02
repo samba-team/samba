@@ -193,7 +193,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->vuid = UID_FIELD_INVALID;
 	fsp->file_pid = 0;
-	fsp->can_lock = True;
+	fsp->fsp_flags.can_lock = true;
 	fsp->can_read = True;
 	fsp->can_write = True;
 	fsp->print_file = NULL;

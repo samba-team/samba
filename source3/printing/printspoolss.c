@@ -228,7 +228,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	fsp->fh->fd = fd;
 
 	fsp->vuid = current_vuid;
-	fsp->can_lock = false;
+	fsp->fsp_flags.can_lock = false;
 	fsp->can_read = false;
 	fsp->access_mask = FILE_GENERIC_WRITE;
 	fsp->can_write = true;
