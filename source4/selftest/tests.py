@@ -1376,6 +1376,8 @@ plantestsuite("librpc.ndr.ndr", "none",
               [os.path.join(bindir(), "test_ndr")])
 plantestsuite("librpc.ndr.ndr_macros", "none",
               [os.path.join(bindir(), "test_ndr_macros")])
+plantestsuite("libcli.ldap.ldap_message", "none",
+              [os.path.join(bindir(), "test_ldap_message")])
 
 # process restart and limit tests, these break the environment so need to run
 # in their own specific environment
