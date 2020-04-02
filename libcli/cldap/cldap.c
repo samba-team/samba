@@ -229,7 +229,7 @@ static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 		goto error;
 	}
 
-	asn1 = asn1_init(in);
+	asn1 = asn1_init(in, ASN1_MAX_TREE_DEPTH);
 	if (!asn1) {
 		goto nomem;
 	}

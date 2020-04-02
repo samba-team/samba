@@ -11370,7 +11370,7 @@ tldap_build_extended_control(enum tldap_extended_val val)
 	ZERO_STRUCT(empty_control);
 
 	if (val != EXTENDED_NONE) {
-		data = asn1_init(talloc_tos());
+		data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 
 		if (!data) {
 			return NULL;

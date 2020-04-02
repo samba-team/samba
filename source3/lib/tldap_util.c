@@ -644,7 +644,7 @@ static struct tevent_req *tldap_ship_paged_search(
 	struct tldap_control *pgctrl;
 	struct asn1_data *asn1 = NULL;
 
-	asn1 = asn1_init(state);
+	asn1 = asn1_init(state, ASN1_MAX_TREE_DEPTH);
 	if (asn1 == NULL) {
 		return NULL;
 	}
@@ -783,7 +783,7 @@ static void tldap_search_paged_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(state->cookie.data);
 
-	asn1 = asn1_init(talloc_tos());
+	asn1 = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 	if (tevent_req_nomem(asn1, req)) {
 		return;
 	}
