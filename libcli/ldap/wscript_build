@@ -6,3 +6,18 @@ bld.SAMBA_LIBRARY('cli-ldap-common',
                   private_headers='ldap_message.h ldap_errors.h ldap_ndr.h',
                   deps='samba-util asn1util NDR_SECURITY tevent',
                   private_library=True)
+
+bld.SAMBA_BINARY(
+    'test_ldap_message',
+    source='tests/ldap_message_test.c',
+    deps='''
+        cmocka
+        talloc
+        ldb
+        samba-util
+        asn1util
+        NDR_SECURITY
+        cli-ldap
+    ''',
+    for_selftest=True
+)
