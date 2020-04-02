@@ -359,9 +359,9 @@ typedef struct files_struct {
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	struct {
 		bool kernel_share_modes_taken : 1;
+		bool update_write_time_triggered : 1;
 	} fsp_flags;
 
-	bool update_write_time_triggered;
 	struct tevent_timer *update_write_time_event;
 	bool update_write_time_on_close;
 	struct timespec close_write_time;

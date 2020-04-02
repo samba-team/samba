@@ -144,7 +144,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 
 	fsp->update_write_time_on_close = true;
 
-	if (fsp->update_write_time_triggered) {
+	if (fsp->fsp_flags.update_write_time_triggered) {
 		/*
 		 * We only update the write time after 2 seconds
 		 * on the first normal write. After that
@@ -152,7 +152,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 		 */
 		return;
 	}
-	fsp->update_write_time_triggered = true;
+	fsp->fsp_flags.update_write_time_triggered = true;
 
 	delay = lp_parm_int(SNUM(fsp->conn),
 			    "smbd", "writetimeupdatedelay",
@@ -192,7 +192,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 		  fsp_str_dbg(fsp)));
 
 	/* After an immediate update, reset the trigger. */
-	fsp->update_write_time_triggered = true;
+	fsp->fsp_flags.update_write_time_triggered = true;
         fsp->update_write_time_on_close = false;
 
 	ft.mtime = timespec_current();
