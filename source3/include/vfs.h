@@ -360,10 +360,10 @@ typedef struct files_struct {
 	struct {
 		bool kernel_share_modes_taken : 1;
 		bool update_write_time_triggered : 1;
+		bool update_write_time_on_close : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
-	bool update_write_time_on_close;
 	struct timespec close_write_time;
 	bool write_time_forced;
 

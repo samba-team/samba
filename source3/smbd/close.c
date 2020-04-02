@@ -321,7 +321,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			fsp_str_dbg(fsp)));
 		ts = nt_time_to_full_timespec(lck->data->changed_write_time);
 		set_close_write_time(fsp, ts);
-	} else if (fsp->update_write_time_on_close) {
+	} else if (fsp->fsp_flags.update_write_time_on_close) {
 		/* Someone had a pending write. */
 		if (is_omit_timespec(&fsp->close_write_time)) {
 			DEBUG(10,("close_remove_share_mode: update to current time "
@@ -383,7 +383,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	/*
 	 * Don't try to update the write time when we delete the file
 	 */
-	fsp->update_write_time_on_close = false;
+	fsp->fsp_flags.update_write_time_on_close = false;
 
 	got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
 					&del_nt_token, &del_token);
@@ -556,7 +556,7 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 		return;
 	}
 	fsp->write_time_forced = false;
-	fsp->update_write_time_on_close = true;
+	fsp->fsp_flags.update_write_time_on_close = true;
 	fsp->close_write_time = ts;
 }
 
@@ -568,7 +568,7 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 
 	init_smb_file_time(&ft);
 
-	if (!fsp->update_write_time_on_close) {
+	if (!(fsp->fsp_flags.update_write_time_on_close)) {
 		return NT_STATUS_OK;
 	}
 

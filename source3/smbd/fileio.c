@@ -142,7 +142,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 	/* We need to remember someone did a write
 	 * and update to current time on close. */
 
-	fsp->update_write_time_on_close = true;
+	fsp->fsp_flags.update_write_time_on_close = true;
 
 	if (fsp->fsp_flags.update_write_time_triggered) {
 		/*
@@ -193,7 +193,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 
 	/* After an immediate update, reset the trigger. */
 	fsp->fsp_flags.update_write_time_triggered = true;
-        fsp->update_write_time_on_close = false;
+        fsp->fsp_flags.update_write_time_on_close = false;
 
 	ft.mtime = timespec_current();
 

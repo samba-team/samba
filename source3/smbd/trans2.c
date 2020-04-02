@@ -8351,7 +8351,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		 * We're setting the time explicitly for UNIX.
 		 * Cancel any pending changes over all handles.
 		 */
-		all_fsps->update_write_time_on_close = false;
+		all_fsps->fsp_flags.update_write_time_on_close = false;
 		TALLOC_FREE(all_fsps->update_write_time_event);
 	}
 
