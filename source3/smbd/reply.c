@@ -3999,9 +3999,13 @@ void reply_readbraw(struct smb_request *req)
 	 * not a NTSTATUS.
 	 */
 
-	if (!fsp || !conn || conn != fsp->conn ||
-			req->vuid != fsp->vuid ||
-			fsp->is_directory || fsp->fh->fd == -1) {
+	if (fsp == NULL ||
+	    conn == NULL ||
+	    conn != fsp->conn ||
+	    req->vuid != fsp->vuid ||
+	    fsp->is_directory ||
+	    fsp->fh->fd == -1)
+	{
 		/*
 		 * fsp could be NULL here so use the value from the packet. JRA.
 		 */
