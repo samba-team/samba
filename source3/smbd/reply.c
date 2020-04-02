@@ -5717,7 +5717,7 @@ static struct files_struct *file_sync_one_fn(struct files_struct *fsp,
 	}
 	sync_file(conn, fsp, True /* write through */);
 
-	if (fsp->modified) {
+	if (fsp->fsp_flags.modified) {
 		trigger_write_time_update_immediate(fsp);
 	}
 
@@ -5759,7 +5759,7 @@ void reply_flush(struct smb_request *req)
 			END_PROFILE(SMBflush);
 			return;
 		}
-		if (fsp->modified) {
+		if (fsp->fsp_flags.modified) {
 			trigger_write_time_update_immediate(fsp);
 		}
 	}
@@ -9524,7 +9524,7 @@ void reply_setattrE(struct smb_request *req)
 		goto out;
 	}
 
-	if (fsp->modified) {
+	if (fsp->fsp_flags.modified) {
 		trigger_write_time_update_immediate(fsp);
 	}
 

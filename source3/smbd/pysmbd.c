@@ -197,7 +197,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->fsp_flags.can_read = true;
 	fsp->fsp_flags.can_write = true;
 	fsp->print_file = NULL;
-	fsp->modified = False;
+	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
 

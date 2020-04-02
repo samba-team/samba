@@ -1335,7 +1335,7 @@ static int virusfilter_vfs_close(
 	 * If close failed, file likely doesn't exist, do not try to scan.
 	 */
 	if (close_result == -1 && close_errno == EBADF) {
-		if (fsp->modified) {
+		if (fsp->fsp_flags.modified) {
 			DBG_DEBUG("Removing cache entry (if existent): "
 				  "fname: %s\n", fname);
 			virusfilter_cache_remove(config->cache,
@@ -1350,7 +1350,7 @@ static int virusfilter_vfs_close(
 	}
 
 	if (is_named_stream(fsp->fsp_name)) {
-		if (config->scan_on_open && fsp->modified) {
+		if (config->scan_on_open && fsp->fsp_flags.modified) {
 			if (config->cache) {
 				DBG_DEBUG("Removing cache entry (if existent)"
 					  ": fname: %s\n", fname);
@@ -1365,7 +1365,7 @@ static int virusfilter_vfs_close(
 	}
 
 	if (!config->scan_on_close) {
-		if (config->scan_on_open && fsp->modified) {
+		if (config->scan_on_open && fsp->fsp_flags.modified) {
 			if (config->cache) {
 				DBG_DEBUG("Removing cache entry (if existent)"
 					  ": fname: %s\n", fname);
@@ -1379,7 +1379,7 @@ static int virusfilter_vfs_close(
 		return close_result;
 	}
 
-	if (!fsp->modified) {
+	if (!fsp->fsp_flags.modified) {
 		DBG_NOTICE("Not scanned: File not modified: %s/%s\n",
 			   cwd_fname, fname);
 

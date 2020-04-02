@@ -220,7 +220,7 @@ static void smbd_smb2_flush_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(vfs_aio_state.error));
 		return;
 	}
-	if (state->fsp->modified) {
+	if (state->fsp->fsp_flags.modified) {
 		trigger_write_time_update_immediate(state->fsp);
 	}
 	tevent_req_done(req);

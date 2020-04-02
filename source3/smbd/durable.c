@@ -691,7 +691,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	 * TODO:
 	 * Do we need to store the modified flag in the DB?
 	 */
-	fsp->modified = false;
+	fsp->fsp_flags.modified = false;
 	/*
 	 * no durables for directories
 	 */

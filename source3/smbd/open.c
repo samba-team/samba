@@ -1435,7 +1435,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		CAN_WRITE(conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
 	fsp->print_file = NULL;
-	fsp->modified = False;
+	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	if (conn->aio_write_behind_list &&
@@ -4402,7 +4402,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	 */
 	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
 	fsp->print_file = NULL;
-	fsp->modified = False;
+	fsp->fsp_flags.modified = false;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;

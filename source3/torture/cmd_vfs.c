@@ -426,7 +426,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->fsp_flags.can_read = true;
 	fsp->fsp_flags.can_write = CAN_WRITE(vfs->conn);
 	fsp->print_file = NULL;
-	fsp->modified = False;
+	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 
@@ -1654,7 +1654,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	fsp->fsp_flags.can_read = true;
 	fsp->fsp_flags.can_write = true;
 	fsp->print_file = NULL;
-	fsp->modified = False;
+	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
 

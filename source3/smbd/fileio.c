@@ -210,11 +210,11 @@ void mark_file_modified(files_struct *fsp)
 
 	trigger_write_time_update(fsp);
 
-	if (fsp->modified) {
+	if (fsp->fsp_flags.modified) {
 		return;
 	}
 
-	fsp->modified = true;
+	fsp->fsp_flags.modified = true;
 
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		return;

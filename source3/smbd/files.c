@@ -793,7 +793,7 @@ NTSTATUS dup_file_fsp(
 	to->fsp_flags.can_write =
 		CAN_WRITE(from->conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
-	to->modified = from->modified;
+	to->fsp_flags.modified = from->fsp_flags.modified;
 	to->is_directory = from->is_directory;
 	to->aio_write_behind = from->aio_write_behind;
 
