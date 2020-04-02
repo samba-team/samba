@@ -789,7 +789,7 @@ NTSTATUS dup_file_fsp(
 	to->access_mask = access_mask;
 	to->oplock_type = from->oplock_type;
 	to->fsp_flags.can_lock = from->fsp_flags.can_lock;
-	to->can_read = ((access_mask & FILE_READ_DATA) != 0);
+	to->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) != 0);
 	to->can_write =
 		CAN_WRITE(from->conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);

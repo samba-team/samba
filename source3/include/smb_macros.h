@@ -46,7 +46,7 @@
 
 #define CHECK_READ(fsp,req) \
 	(((fsp)->fh->fd != -1) && \
-	 ((fsp)->can_read || \
+	 (((fsp)->fsp_flags.can_read) || \
 	  ((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
 	   (fsp->access_mask & FILE_EXECUTE))))
 
@@ -64,7 +64,7 @@
  */
 #define CHECK_READ_SMB2(fsp) \
 	(((fsp)->fh->fd != -1) && \
-	 ((fsp)->can_read || \
+	 (((fsp)->fsp_flags.can_read) || \
 	  (fsp->access_mask & FILE_EXECUTE)))
 
 /* An IOCTL readability check (validating read access
@@ -75,7 +75,7 @@
  */
 #define CHECK_READ_IOCTL(fsp) \
 	(((fsp)->fh->fd != -1) && \
-	 ((fsp)->can_read))
+	 (((fsp)->fsp_flags.can_read)))
 
 #define CHECK_WRITE(fsp) \
 	((fsp)->can_write && \

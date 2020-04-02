@@ -194,7 +194,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->vuid = UID_FIELD_INVALID;
 	fsp->file_pid = 0;
 	fsp->fsp_flags.can_lock = true;
-	fsp->can_read = True;
+	fsp->fsp_flags.can_read = true;
 	fsp->can_write = True;
 	fsp->print_file = NULL;
 	fsp->modified = False;

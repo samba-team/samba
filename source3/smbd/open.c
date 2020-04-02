@@ -1430,7 +1430,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->fsp_flags.can_lock = true;
-	fsp->can_read = ((access_mask & FILE_READ_DATA) != 0);
+	fsp->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) != 0);
 	fsp->can_write =
 		CAN_WRITE(conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
@@ -1447,7 +1447,8 @@ static NTSTATUS open_file(files_struct *fsp,
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
 		 conn->session_info->unix_info->unix_name,
 		 smb_fname_str_dbg(smb_fname),
-		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
+		 BOOLSTR(fsp->fsp_flags.can_read),
+		 BOOLSTR(fsp->can_write),
 		 conn->num_files_open));
 
 	errno = 0;
@@ -4392,7 +4393,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->fsp_flags.can_lock = false;
-	fsp->can_read = False;
+	fsp->fsp_flags.can_read = false;
 	fsp->can_write = False;
 
 	fsp->fh->private_options = 0;

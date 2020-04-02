@@ -4018,7 +4018,7 @@ void reply_readbraw(struct smb_request *req)
 	}
 
 	/* Do a "by hand" version of CHECK_READ. */
-	if (!(fsp->can_read ||
+	if (!(fsp->fsp_flags.can_read ||
 			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) &&
 				(fsp->access_mask & FILE_EXECUTE)))) {
 		DEBUG(3,("reply_readbraw: fnum %d not readable.\n",
