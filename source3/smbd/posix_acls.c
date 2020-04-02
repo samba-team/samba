@@ -2490,6 +2490,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 {
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	bool ok;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
@@ -2552,8 +2553,16 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "file ace - before valid", file_ace);
 
-	if (!ensure_canon_entry_valid_on_set(fsp->conn, &file_ace, false, fsp->conn->params,
-			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst)) {
+	ok = ensure_canon_entry_valid_on_set(
+		fsp->conn,
+		&file_ace,
+		false,
+		fsp->conn->params,
+		fsp->is_directory,
+		pfile_owner_sid,
+		pfile_grp_sid,
+		pst);
+	if (!ok) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2561,11 +2570,21 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "dir ace - before valid", dir_ace);
 
-	if (dir_ace && !ensure_canon_entry_valid_on_set(fsp->conn, &dir_ace, true, fsp->conn->params,
-			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst)) {
-		free_canon_ace_list(file_ace);
-		free_canon_ace_list(dir_ace);
-		return False;
+	if (dir_ace != NULL) {
+		ok = ensure_canon_entry_valid_on_set(
+			fsp->conn,
+			&dir_ace,
+			true,
+			fsp->conn->params,
+			fsp->is_directory,
+			pfile_owner_sid,
+			pfile_grp_sid,
+			pst);
+		if (!ok) {
+			free_canon_ace_list(file_ace);
+			free_canon_ace_list(dir_ace);
+			return False;
+		}
 	}
 
 	print_canon_ace_list( "file ace - return", file_ace);
