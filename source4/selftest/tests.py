@@ -1287,6 +1287,8 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit.errors", "none",
               [os.path.join(bindir(), "test_group_audit_errors")])
 plantestsuite("samba4.dcerpc.dnsserver.dnsutils", "none",
               [os.path.join(bindir(), "test_rpc_dns_server_dnsutils")])
+plantestsuite("libcli.ldap.ldap_message", "none",
+              [os.path.join(bindir(), "test_ldap_message")])
 
 # process restart and limit tests, these break the environment so need to run
 # in their own specific environment
