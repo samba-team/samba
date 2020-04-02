@@ -2767,7 +2767,7 @@ static ssize_t shadow_copy2_pwrite(vfs_handle_struct *handle,
 
 	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	if (nwritten == -1) {
-		if (errno == EBADF && fsp->can_write) {
+		if (errno == EBADF && fsp->fsp_flags.can_write) {
 			errno = EROFS;
 		}
 	}
@@ -2840,7 +2840,7 @@ static ssize_t shadow_copy2_pwrite_recv(struct tevent_req *req,
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		if ((vfs_aio_state->error == EBADF) &&
-		    state->fsp->can_write)
+		    state->fsp->fsp_flags.can_write)
 		{
 			vfs_aio_state->error = EROFS;
 			errno = EROFS;

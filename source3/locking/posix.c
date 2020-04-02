@@ -51,7 +51,7 @@ static struct db_context *posix_pending_close_db;
 
 static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 {
-	if((lock_type == WRITE_LOCK) && !fsp->can_write) {
+	if ((lock_type == WRITE_LOCK) && !fsp->fsp_flags.can_write) {
 		/*
 		 * Many UNIX's cannot get a write lock on a file opened read-only.
 		 * Win32 locking semantics allow this.

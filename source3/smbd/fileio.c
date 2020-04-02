@@ -256,7 +256,7 @@ ssize_t write_file(struct smb_request *req,
 		return t;
 	}
 
-	if (!fsp->can_write) {
+	if (!fsp->fsp_flags.can_write) {
 		errno = EPERM;
 		return -1;
 	}

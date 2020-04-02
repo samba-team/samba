@@ -280,7 +280,7 @@ static int syncops_close(vfs_handle_struct *handle, files_struct *fsp)
 				struct syncops_config_data,
 				return -1);
 
-	if (fsp->can_write && config->onclose) {
+	if (fsp->fsp_flags.can_write && config->onclose) {
 		/* ideally we'd only do this if we have written some
 		 data, but there is no flag for that in fsp yet. */
 		fsync(fsp->fh->fd);

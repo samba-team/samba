@@ -424,8 +424,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->file_pid = 0;
 	fsp->fsp_flags.can_lock = true;
 	fsp->fsp_flags.can_read = true;
-	fsp->can_write =
-		CAN_WRITE(vfs->conn);
+	fsp->fsp_flags.can_write = CAN_WRITE(vfs->conn);
 	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
@@ -1653,7 +1652,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	fsp->file_pid = 0;
 	fsp->fsp_flags.can_lock = true;
 	fsp->fsp_flags.can_read = true;
-	fsp->can_write = True;
+	fsp->fsp_flags.can_write = true;
 	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;

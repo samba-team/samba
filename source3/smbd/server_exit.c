@@ -44,7 +44,7 @@ static struct files_struct *log_writeable_file_fn(
 	bool *found = (bool *)private_data;
 	char *path;
 
-	if (!fsp->can_write) {
+	if (!fsp->fsp_flags.can_write) {
 		return NULL;
 	}
 	if (!(*found)) {

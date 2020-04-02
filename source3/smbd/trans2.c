@@ -7685,7 +7685,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			break;
 		case POSIX_LOCK_TYPE_WRITE:
 			/* Return the right POSIX-mappable error code for files opened read-only. */
-			if (!fsp->can_write) {
+			if (!fsp->fsp_flags.can_write) {
 				return NT_STATUS_INVALID_HANDLE;
 			}
 			lock_type = WRITE_LOCK;

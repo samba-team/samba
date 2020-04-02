@@ -195,7 +195,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->file_pid = 0;
 	fsp->fsp_flags.can_lock = true;
 	fsp->fsp_flags.can_read = true;
-	fsp->can_write = True;
+	fsp->fsp_flags.can_write = true;
 	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;

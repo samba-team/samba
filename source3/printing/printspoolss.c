@@ -231,7 +231,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	fsp->fsp_flags.can_lock = false;
 	fsp->fsp_flags.can_read = false;
 	fsp->access_mask = FILE_GENERIC_WRITE;
-	fsp->can_write = true;
+	fsp->fsp_flags.can_write = true;
 	fsp->modified = false;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
