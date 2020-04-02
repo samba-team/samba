@@ -390,7 +390,7 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 			  const struct ldap_control_handler *control_handlers,
 			  DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	int i, j;
 
 	if (!data) return false;

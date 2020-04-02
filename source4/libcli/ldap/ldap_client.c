@@ -284,7 +284,7 @@ static void ldap_connection_recv_done(struct tevent_req *subreq)
 		return;
 	}
 
-	asn1 = asn1_init(conn);
+	asn1 = asn1_init(conn, ASN1_MAX_TREE_DEPTH);
 	if (asn1 == NULL) {
 		TALLOC_FREE(msg);
 		ldap_error_handler(conn, NT_STATUS_NO_MEMORY);
