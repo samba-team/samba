@@ -585,7 +585,7 @@ int fd_close_posix(const struct files_struct *fsp)
 
 	if (!lp_locking(fsp->conn->params) ||
 	    !lp_posix_locking(fsp->conn->params) ||
-	    fsp->use_ofd_locks)
+	    fsp->fsp_flags.use_ofd_locks)
 	{
 		/*
 		 * No locking or POSIX to worry about or we are using POSIX

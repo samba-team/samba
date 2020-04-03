@@ -2730,7 +2730,7 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 
 	START_PROFILE(syscall_fcntl_lock);
 
-	if (fsp->use_ofd_locks) {
+	if (fsp->fsp_flags.use_ofd_locks) {
 		op = map_process_lock_to_ofd_lock(op);
 	}
 
@@ -2800,7 +2800,7 @@ static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t 
 
 	START_PROFILE(syscall_fcntl_getlock);
 
-	if (fsp->use_ofd_locks) {
+	if (fsp->fsp_flags.use_ofd_locks) {
 		op = map_process_lock_to_ofd_lock(op);
 	}
 

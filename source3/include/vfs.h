@@ -372,6 +372,7 @@ typedef struct files_struct {
 		bool delete_on_close : 1;
 		bool is_sparse : 1;
 		bool backup_intent : 1;
+		bool use_ofd_locks : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -393,7 +394,6 @@ typedef struct files_struct {
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
 	uint64_t posix_flags;
-	bool use_ofd_locks; /* Are we using open file description locks ? */
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
