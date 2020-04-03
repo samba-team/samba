@@ -371,6 +371,7 @@ typedef struct files_struct {
 		bool initial_delete_on_close : 1;
 		bool delete_on_close : 1;
 		bool is_sparse : 1;
+		bool backup_intent : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -392,8 +393,6 @@ typedef struct files_struct {
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
 	uint64_t posix_flags;
-	bool backup_intent; /* Handle was successfully opened with backup intent
-				and opener has privilege to do so. */
 	bool use_ofd_locks; /* Are we using open file description locks ? */
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
