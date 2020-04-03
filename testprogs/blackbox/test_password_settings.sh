@@ -44,12 +44,7 @@ do_kinit() {
 	password="$2"
 	shift
 	shift
-	if test -x $samba_bindir/samba4kinit; then
-		echo $password > $PREFIX/tmpuserpassfile
-		$samba_kinit --password-file=$PREFIX/tmpuserpassfile $principal $@
-	else
-		echo $password | $samba_kinit $principal $@
-	fi
+	kerberos_kinit "$samba_kinit" "$principal" "$password" $@
 }
 
 test_smbpasswd()

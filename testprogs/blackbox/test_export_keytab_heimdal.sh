@@ -27,9 +27,9 @@ newuser="$samba_tool user create"
 DNSDOMAIN=$(echo $REALM | tr '[:upper:]' '[:lower:]')
 SERVER_FQDN="$SERVER.$DNSDOMAIN"
 
-samba4kinit=kinit
+samba4kinit_binary=kinit
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 . `dirname $0`/subunit.sh
@@ -82,6 +82,7 @@ testit "dump keytab from domain for user principal with SPN as UPN" $VALGRIND $P
 test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-3" "http/testupnspn.$DNSDOMAIN@$REALM" 3
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 
 testit "kinit with keytab as user" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
@@ -93,15 +94,18 @@ testit "kinit with keytab as user (2)" $VALGRIND $samba4kinit --keytab=$PREFIX/t
 test_smbclient "Test login with user kerberos ccache as user (2)" 'ls' "$unc"  --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpadminccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 
 testit "kinit with keytab as $USERNAME" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpspnupnccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 testit "kinit with SPN from keytab" $VALGRIND $samba4kinit -k -t $PREFIX/tmpkeytab-3 http/testupnspn.$DNSDOMAIN || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpadminccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 
 testit "del user" $VALGRIND $PYTHON $samba_tool user delete nettestuser -k yes $@ || failed=`expr $failed + 1`

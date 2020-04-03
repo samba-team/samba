@@ -24,9 +24,9 @@ failed=0
 
 samba_tool="$VALGRIND $PYTHON $BINDIR/samba-tool"
 
-samba4kinit=kinit
+samba4kinit_binary=kinit
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 samba4kgetcred=kgetcred
@@ -40,6 +40,7 @@ fi
 ocache="$PREFIX/tmpoutcache"
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
 

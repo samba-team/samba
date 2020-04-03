@@ -98,7 +98,7 @@ kerberos_kinit() {
 	if [ "${kbase}" = "samba4kinit" ]; then
 		kpassfile=$(mktemp)
 		echo $password > ${kpassfile}
-		$kinit_tool --password-file=${kpassfile} $principal $@
+		$kinit_tool -c ${KRB5CCNAME} --password-file=${kpassfile} $principal $@
 		status=$?
 		rm -f ${kpassfile}
 	else

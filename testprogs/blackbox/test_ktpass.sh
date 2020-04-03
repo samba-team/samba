@@ -16,9 +16,9 @@ shift 1
 samba_tool="$BINDIR/samba-tool"
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit=kinit
+samba4kinit_binary=kinit
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 CONFIG="--configfile=$PREFIX/etc/smb.conf"
@@ -28,6 +28,7 @@ TESTUSER="ktpassUser"
 testit "user create" $PYTHON $samba_tool user create $CONFIG $TESTUSER testp@ssw0Rd || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 echo "testp@ssw0Rd" >$PREFIX/tmppassfile
 testit "kinit with passwd" $samba4kinit -e arcfour-hmac-md5 --password-file=$PREFIX/tmppassfile   $TESTUSER@SAMBA.EXAMPLE.COM   || failed=`expr $failed + 1`

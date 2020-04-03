@@ -24,11 +24,11 @@ failed=0
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
 
-samba4kinit=kinit
+samba4kinit_binary=kinit
 heimdal=0
 if test -x $BINDIR/samba4kinit; then
 	heimdal=1
-	samba4kinit=bin/samba4kinit
+	samba4kinit_binary=bin/samba4kinit
 fi
 
 
@@ -59,6 +59,7 @@ test_drs() {
 enctype="-e $ENCTYPE"
 
 KRB5CCNAME="$PREFIX/tmpccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -f $KRB5CCNAME
 

@@ -42,8 +42,7 @@ do_kinit() {
 	password="$2"
 	shift
 	shift
-	echo $password > $PREFIX/tmppassfile
-	$samba_kinit --password-file=$PREFIX/tmppassfile $principal $@
+	kerberos_kinit "$samba_kinit" "$principal" "$password" $@
 }
 
 UID_WRAPPER_ROOT=1

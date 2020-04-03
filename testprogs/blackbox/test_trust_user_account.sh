@@ -20,9 +20,9 @@ shift 5
 samba_tool="$BINDIR/samba-tool"
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit="kinit -k"
+samba4kinit_binary="kinit -k"
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit="$BINDIR/samba4kinit --use-keytab"
+	samba4kinit_binary="$BINDIR/samba4kinit --use-keytab"
 fi
 
 KEYTAB="$PREFIX/tmptda.keytab"
@@ -33,6 +33,7 @@ export KRB5_TRACE
 testit "retrieve keytab for TDA of $REMOTE_REALM" $PYTHON $samba_tool domain exportkeytab $KEYTAB $CONFIGURATION --principal "$REMOTE_FLAT\$@$OUR_REALM" || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmptda.ccache"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 
 rm -f $KRB5CCNAME

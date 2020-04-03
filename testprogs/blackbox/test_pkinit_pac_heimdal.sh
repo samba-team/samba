@@ -21,9 +21,9 @@ failed=0
 
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit=kinit
+samba4kinit_binary=kinit
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 smbtorture4="$samba4bindir/smbtorture --basedir=$SELFTEST_TMPDIR"
@@ -36,18 +36,15 @@ unc="//$SERVER/tmp"
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -f $KRB5CCNAME_PATH
-PASSFILE_PATH="$PREFIX/tmppassfile"
-rm -f $PASSFILE_PATH
-echo $PASSWORD > $PASSFILE_PATH
 
 USER_PRINCIPAL_NAME=`echo "${USERNAME}@${REALM}" | tr A-Z a-z`
 PKUSER="--pk-user=FILE:$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-cert.pem,$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-private-key.pem"
 
-testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable --cache=$KRB5CCNAME $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP1 remote.pac verification" $smbtorture4 ncacn_np:$SERVER rpc.pac --workgroup=$DOMAIN -U$USERNAME%$PASSWORD --option=torture:pkinit_ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
-rm -f $PASSFILE_PATH
 rm -f $KRB5CCNAME_PATH
 exit $failed

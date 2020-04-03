@@ -23,9 +23,9 @@ failed=0
 
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-samba4kinit=kinit
+samba4kinit_binary=kinit
 if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 samba_tool="$samba4bindir/samba-tool"
@@ -53,6 +53,7 @@ unc="//$SERVER/tmp"
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -f $KRB5CCNAME_PATH
 PASSFILE_PATH="$PREFIX/tmppassfile"

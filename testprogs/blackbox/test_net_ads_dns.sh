@@ -20,19 +20,11 @@ shift 6
 failed=0
 
 samba4bindir="$BINDIR"
-samba4kinit=kinit
-if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
-fi
 
 samba_tool="$samba4bindir/samba-tool"
 net_tool="$samba4bindir/net"
 smbpasswd="$samba4bindir/smbpasswd"
 texpect="$samba4bindir/texpect"
-samba4kpasswd=kpasswd
-if test -x $BINDIR/samba4kpasswd; then
-	samba4kpasswd=$BINDIR/samba4kpasswd
-fi
 ldbsearch="$samba4bindir/ldbsearch"
 ldbmodify="$samba4bindir/ldbmodify"
 

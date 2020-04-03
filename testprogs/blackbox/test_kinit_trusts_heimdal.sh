@@ -27,9 +27,9 @@ shift 3
 failed=0
 
 samba4bindir="$BINDIR"
-samba4kinit=kinit
-if test -x $samba4bindir/samba4kinit; then
-	samba4kinit=$samba4bindir/samba4kinit
+samba4kinit_binary=kinit
+if test -x $BINDIR/samba4kinit; then
+	samba4kinit_binary=$BINDIR/samba4kinit
 fi
 
 smbclient="$samba4bindir/smbclient"
@@ -46,6 +46,7 @@ enctype="-e $ENCTYPE"
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+samba4kinit="$samba4kinit_binary -c $KRB5CCNAME"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
 
