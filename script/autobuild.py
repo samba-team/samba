@@ -456,6 +456,16 @@ tasks = {
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
 
+    # Test fips compliance
+    "samba-ad-dc-fips": [
+        ("random-sleep", random_sleep(1, 1)),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=["ad_dc_fips"])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
     # run the backup/restore testenvs separately as they're fairly standalone
     # (and CI seems to max out at ~8 different DCs running at once)
     "samba-ad-dc-backup": [
@@ -816,6 +826,7 @@ defaulttasks.remove("pass")
 defaulttasks.remove("fail")
 defaulttasks.remove("samba-test-only")
 defaulttasks.remove("samba-fuzz")
+defaulttasks.remove("samba-ad-dc-fips")
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
