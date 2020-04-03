@@ -3998,9 +3998,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* Determine sparse flag. */
 	if (posix_open) {
 		/* POSIX opens are sparse by default. */
-		fsp->is_sparse = true;
+		fsp->fsp_flags.is_sparse = true;
 	} else {
-		fsp->is_sparse =
+		fsp->fsp_flags.is_sparse =
 			(existing_dos_attributes & FILE_ATTRIBUTE_SPARSE);
 	}
 

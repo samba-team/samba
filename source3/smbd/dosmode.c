@@ -1197,7 +1197,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 		     fsp->fsp_name->base_name);
 
-	fsp->is_sparse = sparse;
+	fsp->fsp_flags.is_sparse = sparse;
 
 	return NT_STATUS_OK;
 }

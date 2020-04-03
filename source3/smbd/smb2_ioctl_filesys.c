@@ -154,7 +154,7 @@ static NTSTATUS fsctl_dup_extents_check_sparse(struct files_struct *src_fsp,
 	 * is non-sparse, then FSCTL_DUPLICATE_EXTENTS_TO_FILE completes
 	 * successfully.
 	 */
-	if ((src_fsp->is_sparse) && (!dst_fsp->is_sparse)) {
+	if (src_fsp->fsp_flags.is_sparse && !dst_fsp->fsp_flags.is_sparse) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -509,7 +509,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (!fsp->is_sparse && lp_strict_allocate(SNUM(fsp->conn))) {
+	if (!fsp->fsp_flags.is_sparse && lp_strict_allocate(SNUM(fsp->conn))) {
 		/*
 		 * File marked non-sparse and "strict allocate" is enabled -
 		 * allocate the range that we just punched out.
@@ -699,7 +699,7 @@ static NTSTATUS fsctl_qar(TALLOC_CTX *mem_ctx,
 	max_off = MIN(sbuf.st_ex_size,
 		      qar_req.buf.file_off + qar_req.buf.len) - 1;
 
-	if (!fsp->is_sparse) {
+	if (!fsp->fsp_flags.is_sparse) {
 		struct file_alloced_range_buf qar_buf;
 
 		/* file is non-sparse, claim file_off->max_off is allocated */

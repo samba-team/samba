@@ -2073,7 +2073,7 @@ static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 			      off_t offset, off_t len)
 {
 	if (mode == (VFS_FALLOCATE_FL_PUNCH_HOLE|VFS_FALLOCATE_FL_KEEP_SIZE) &&
-	    !fsp->is_sparse &&
+	    !fsp->fsp_flags.is_sparse &&
 	    lp_strict_allocate(SNUM(fsp->conn))) {
 		/*
 		 * This is from a ZERO_DATA request on a non-sparse

@@ -73,7 +73,7 @@ static ssize_t real_write_file(struct smb_request *req,
 	fsp->fh->pos = pos;
 	if (pos &&
 	    lp_strict_allocate(SNUM(fsp->conn)) &&
-	    !fsp->is_sparse)
+	    !fsp->fsp_flags.is_sparse)
 	{
 		if (vfs_fill_sparse(fsp, pos) == -1) {
 			return -1;
