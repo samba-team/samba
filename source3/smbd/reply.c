@@ -2712,7 +2712,7 @@ static struct tevent_req *reply_ulogoffX_send(struct smb_request *smb1req,
 		 * This will prevent any more IO being
 		 * done on it.
 		 */
-		fsp->closing = true;
+		fsp->fsp_flags.closing = true;
 
 		if (fsp->num_aio_requests > 0) {
 			/*
@@ -5847,7 +5847,7 @@ static struct tevent_req *reply_exit_send(struct smb_request *smb1req)
 		 * This will prevent any more IO being
 		 * done on it.
 		 */
-		fsp->closing = true;
+		fsp->fsp_flags.closing = true;
 
 		if (fsp->num_aio_requests > 0) {
 			/*
@@ -5974,7 +5974,7 @@ static void reply_exit_done(struct tevent_req *req)
 		if (fsp->vuid != smb1req->vuid) {
 			continue;
 		}
-		if (!fsp->closing) {
+		if (!fsp->fsp_flags.closing) {
 			continue;
 		}
 
@@ -6119,7 +6119,7 @@ static struct tevent_req *reply_close_send(struct smb_request *smb1req,
 	 * This will prevent any more IO being
 	 * done on it.
 	 */
-	fsp->closing = true;
+	fsp->fsp_flags.closing = true;
 
 	/*
 	 * Now wait until all aio requests on this fsp are
@@ -6564,7 +6564,7 @@ static struct tevent_req *reply_tdis_send(struct smb_request *smb1req)
 		 * done on it. Not strictly needed, but
 		 * doesn't hurt to flag it as closing.
 		 */
-		fsp->closing = true;
+		fsp->fsp_flags.closing = true;
 
 		if (fsp->num_aio_requests > 0) {
 			/*

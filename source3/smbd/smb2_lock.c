@@ -629,7 +629,7 @@ static bool smbd_smb2_lock_cancel(struct tevent_req *req)
 	 * the status is NT_STATUS_RANGE_NOT_LOCKED instead of
 	 * NT_STATUS_CANCELLED.
 	 */
-	if (state->fsp->closing ||
+	if (state->fsp->fsp_flags.closing ||
 	    !NT_STATUS_IS_OK(smb2req->session->status) ||
 	    !NT_STATUS_IS_OK(smb2req->tcon->status)) {
 		tevent_req_nterror(req, NT_STATUS_RANGE_NOT_LOCKED);

@@ -327,7 +327,7 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 	state->in_fsp = in_fsp;
 	state->in_flags = in_flags;
 
-	in_fsp->closing = true;
+	in_fsp->fsp_flags.closing = true;
 
 	i = 0;
 	while (i < in_fsp->num_aio_requests) {

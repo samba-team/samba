@@ -373,6 +373,7 @@ typedef struct files_struct {
 		bool is_sparse : 1;
 		bool backup_intent : 1;
 		bool use_ofd_locks : 1;
+		bool closing : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -430,7 +431,6 @@ typedef struct files_struct {
 	 */
 	unsigned num_aio_requests;
 	struct tevent_req **aio_requests;
-	bool closing;
 
 	/*
 	 * Requests waiting for smb1 byte range locks. They are

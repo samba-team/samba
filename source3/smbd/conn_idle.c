@@ -174,7 +174,7 @@ static struct tevent_req *conn_force_tdis_send(connection_struct *conn)
 		 * done on it. Not strictly needed, but
 		 * doesn't hurt to flag it as closing.
 		 */
-		fsp->closing = true;
+		fsp->fsp_flags.closing = true;
 
 		if (fsp->num_aio_requests > 0) {
 			/*
