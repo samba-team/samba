@@ -237,6 +237,23 @@ testit "leave+createcomputer" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_P
 
 testit "Remove OU=Servers" $VALGRIND $ldbdel -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER "OU=Servers,$base_dn"
 
+#
+# Test createupn option of 'net ads join'
+#
+testit "join+createupn" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD createupn="host/test-$HOSTNAME@$REALM" || failed=`expr $failed + 1`
+
+testit_grep "checkupn" "userPrincipalName: host/test-$HOSTNAME@$REALM" $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -s base -b "CN=$HOSTNAME,CN=Computers,$base_dn" || failed=`expr $failed + 1`
+
+dedicated_keytab_file="$PREFIX_ABS/test_net_create_dedicated_krb5.keytab"
+
+testit "create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+testit_grep "checkupn+keytab" "host/test-$HOSTNAME@$REALM" $net_tool ads keytab list --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+rm -f $dedicated_keytab_file
+
+testit "leave+createupn" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
 rm -rf $BASEDIR/$WORKDIR
 
 exit $failed
