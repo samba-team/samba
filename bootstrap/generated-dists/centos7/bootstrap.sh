@@ -72,6 +72,7 @@ yum install -y \
     patch \
     perl-Archive-Tar \
     perl-ExtUtils-MakeMaker \
+    perl-JSON \
     perl-JSON-Parse \
     perl-Parse-Yapp \
     perl-Test-Base \
