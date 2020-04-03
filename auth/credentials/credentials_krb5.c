@@ -686,7 +686,7 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 		bool expired = false;
 		ret = smb_krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context,
 					       cred->ccache->ccache, &lifetime);
-		if (ret == KRB5_CC_END) {
+		if (ret == KRB5_CC_END || ret == ENOENT) {
 			/* If we have a particular ccache set, without
 			 * an initial ticket, then assume there is a
 			 * good reason */
