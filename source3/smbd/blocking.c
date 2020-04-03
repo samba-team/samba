@@ -167,7 +167,7 @@ static void smbd_smb1_do_locks_setup_timeout(
 		state->timeout = lp_lock_spin_time();
 	}
 
-	if ((fsp->lock_failure_seen) &&
+	if (fsp->fsp_flags.lock_failure_seen &&
 	    (blocker->offset == fsp->lock_failure_offset)) {
 		/*
 		 * Delay repeated lock attempts on the same
@@ -652,7 +652,7 @@ NTSTATUS smbd_smb1_do_locks_recv(struct tevent_req *req)
 		DBG_DEBUG("Setting lock_failure_offset=%"PRIu64"\n",
 			  blocker->offset);
 
-		fsp->lock_failure_seen = true;
+		fsp->fsp_flags.lock_failure_seen = true;
 		fsp->lock_failure_offset = blocker->offset;
 		return status;
 	}

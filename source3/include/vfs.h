@@ -294,6 +294,25 @@
 /* Version 43 - Remove deferred_close from struct files_struct */
 /* Version 43 - Remove SMB_VFS_OPENDIR() */
 /* Version 43 - Remove original_lcomp from struct smb_filename */
+/* Version 43 - files_struct flags:
+		bool kernel_share_modes_taken
+		bool update_write_time_triggered
+		bool update_write_time_on_close
+		bool write_time_forced
+		bool can_lock
+		bool can_read
+		bool can_write
+		bool modified
+		bool is_directory
+		bool aio_write_behind
+		bool initial_delete_on_close
+		bool delete_on_close
+		bool is_sparse
+		bool backup_intent
+		bool use_ofd_locks
+		bool closing
+		bool lock_failure_seen
+		changed to bitfields. */
 
 #define SMB_VFS_INTERFACE_VERSION 43
 
@@ -374,6 +393,7 @@ typedef struct files_struct {
 		bool backup_intent : 1;
 		bool use_ofd_locks : 1;
 		bool closing : 1;
+		bool lock_failure_seen : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -444,7 +464,6 @@ typedef struct files_struct {
 	 * SMB1 remembers lock failures and delays repeated blocking
 	 * lock attempts on the same offset.
 	 */
-	bool lock_failure_seen;
 	uint64_t lock_failure_offset;
 } files_struct;
 
