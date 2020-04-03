@@ -1137,7 +1137,8 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	for (fsp = file_find_di_first(conn->sconn, id); fsp;
 		     fsp = file_find_di_next(fsp)) {
 		if (fsp->access_mask & DELETE_ACCESS &&
-				fsp->delete_on_close) {
+		    fsp->fsp_flags.delete_on_close)
+		{
 			/* We did open this for delete,
 			 * allow the delete as root.
 			 */

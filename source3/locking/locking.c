@@ -941,7 +941,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 
 	TALLOC_FREE(lck);
 
-	fsp->delete_on_close = delete_on_close;
+	fsp->fsp_flags.delete_on_close = delete_on_close;
 
 	return True;
 }

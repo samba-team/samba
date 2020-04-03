@@ -183,7 +183,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	if (fsp->fsp_flags.initial_delete_on_close) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-	if (fsp->delete_on_close) {
+	if (fsp->fsp_flags.delete_on_close) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
