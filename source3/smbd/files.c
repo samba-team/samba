@@ -795,7 +795,7 @@ NTSTATUS dup_file_fsp(
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
 	to->fsp_flags.modified = from->fsp_flags.modified;
 	to->fsp_flags.is_directory = from->fsp_flags.is_directory;
-	to->aio_write_behind = from->aio_write_behind;
+	to->fsp_flags.aio_write_behind = from->fsp_flags.aio_write_behind;
 
 	return fsp_set_smb_fname(to, from->fsp_name);
 }

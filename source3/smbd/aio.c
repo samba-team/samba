@@ -490,7 +490,8 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
 	if (!aio_ex->write_through && !lp_sync_always(SNUM(fsp->conn))
-	    && fsp->aio_write_behind) {
+	    && fsp->fsp_flags.aio_write_behind)
+	{
 		/* Lie to the client and immediately claim we finished the
 		 * write. */
 	        SSVAL(aio_ex->outbuf.data,smb_vwv2,numtowrite);
@@ -542,7 +543,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 
 	mark_file_modified(fsp);
 
-	if (fsp->aio_write_behind) {
+	if (fsp->fsp_flags.aio_write_behind) {
 
 		if (nwritten != numtowrite) {
 			if (nwritten == -1) {

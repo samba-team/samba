@@ -703,7 +703,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	/*
 	 * We do not support aio write behind for smb2
 	 */
-	fsp->aio_write_behind = false;
+	fsp->fsp_flags.aio_write_behind = false;
 	fsp->oplock_type = e.op_type;
 
 	if (fsp->oplock_type == LEASE_OPLOCK) {

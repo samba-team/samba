@@ -1441,7 +1441,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	if (conn->aio_write_behind_list &&
 	    is_in_path(smb_fname->base_name, conn->aio_write_behind_list,
 		       conn->case_sensitive)) {
-		fsp->aio_write_behind = True;
+		fsp->fsp_flags.aio_write_behind = true;
 	}
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
