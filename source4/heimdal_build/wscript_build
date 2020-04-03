@@ -404,7 +404,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/roken ../heimdal/include ../heimdal_build/include',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         group='compiler_libraries',
         deps='LIBREPLACE_HOSTCC',
         )
@@ -904,7 +903,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
         'lib/asn1/asn1parse.c lib/asn1/lex.l lib/asn1/main.c',
         use_hostcc=True,
         use_global_deps=False,
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1',
         group='build_compilers',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
@@ -920,7 +918,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         use_global_deps=False,
         includes='../heimdal/lib/com_err',
         group='build_compilers',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
         )
