@@ -1373,6 +1373,7 @@ char *ads_parent_dn(const char *dn)
 		"userAccountControl",
 		"DnsHostName",
 		"ServicePrincipalName",
+		"userPrincipalName",
 		"unicodePwd",
 
 		/* Additional attributes Samba checks */
