@@ -368,6 +368,7 @@ typedef struct files_struct {
 		bool modified : 1;
 		bool is_directory : 1;
 		bool aio_write_behind : 1;
+		bool initial_delete_on_close : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -388,7 +389,6 @@ typedef struct files_struct {
 	struct lock_struct last_lock_failure;
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
-	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool delete_on_close;
 	uint64_t posix_flags;
 	bool is_sparse;

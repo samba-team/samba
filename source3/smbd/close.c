@@ -338,7 +338,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	if (fsp->initial_delete_on_close &&
+	if (fsp->fsp_flags.initial_delete_on_close &&
 			!is_delete_on_close_set(lck, fsp->name_hash)) {
 		bool became_user = False;
 
@@ -1126,7 +1126,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp->initial_delete_on_close) {
+	if (fsp->fsp_flags.initial_delete_on_close) {
 		bool became_user = False;
 
 		/* Initial delete on close was set - for

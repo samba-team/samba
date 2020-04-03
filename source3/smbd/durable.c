@@ -180,7 +180,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	 * For now let it be simple and do not keep
 	 * delete on close files durable open
 	 */
-	if (fsp->initial_delete_on_close) {
+	if (fsp->fsp_flags.initial_delete_on_close) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	if (fsp->delete_on_close) {
