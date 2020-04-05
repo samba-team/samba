@@ -4915,10 +4915,6 @@ static bool browse_host(bool sort)
 		return true;
 	}
 
-	if (lp_client_min_protocol() > PROTOCOL_NT1) {
-		return false;
-	}
-
 	if (smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1) {
 		return false;
 	}
