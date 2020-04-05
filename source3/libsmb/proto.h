@@ -129,9 +129,6 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct sockaddr_storage *mb_ip,
 				const struct user_auth_info *user_info,
 				char **pp_workgroup_out);
-struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
-					const struct user_auth_info *user_info,
-					char **pp_workgroup_out);
 
 /* The following definitions come from libsmb/clidfs.c  */
 
