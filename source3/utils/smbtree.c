@@ -213,7 +213,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 	WERROR werr;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr1 ctr1;
-	int i;
+	uint32_t i;
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
 	struct dcerpc_binding_handle *b;
