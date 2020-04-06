@@ -1,4 +1,79 @@
                    ==============================
+                   Release Notes for Samba 4.12.1
+                           April 07, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+
+
+Changes since 4.12.0
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14295: nmblib: Avoid undefined behaviour in handle_name_ptrs().
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 14296: samba-tool group: Handle group names with special chars
+     correctly.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14293: Add missing check for DMAPI offline status in async DOS
+     attributes.
+   * BUG 14295: Starting ctdb node that was powered off hard before results in
+     recovery loop.
+   * BUG 14307: smbd: Ignore set NTACL requests which contain S-1-5-88 NFS ACEs.
+   * BUG 14316: vfs_recycle: Prevent flooding the log if we're called on
+     non-existant paths.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14313: librpc: Fix IDL for svcctl_ChangeServiceConfigW.
+   * BUG 14327: nsswitch: Fix use-after-free causing segfault in 
+     _pam_delete_cred.
+
+o  Art M. Gallagher <repos@artmg.net>
+   * BUG 13622: fruit:time machine max size is broken on arm.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14294: CTDB recovery corner cases can cause record resurrection and
+     node banning.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 14332: s3/utils: Fix double free error with smbtree. 
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14294: CTDB recovery corner cases can cause record resurrection and
+     node banning.
+   * BUG 14295: Starting ctdb node that was powered off hard before results in
+     recovery loop.
+   * BUG 14324: CTDB recovery daemon can crash due to dereference of NULL
+     pointer.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.12.0
                            March 03, 2020
 		   ==============================
