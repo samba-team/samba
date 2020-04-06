@@ -196,6 +196,7 @@ NTSTATUS create_internal_dirfsp(connection_struct *conn,
 
 	fsp->access_mask = FILE_LIST_DIRECTORY;
 	fsp->fsp_flags.is_directory = true;
+	fsp->fsp_flags.is_dirfsp = true;
 
 	*_fsp = fsp;
 	return NT_STATUS_OK;

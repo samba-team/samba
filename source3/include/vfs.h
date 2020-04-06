@@ -396,6 +396,7 @@ typedef struct files_struct {
 		bool can_write : 1;
 		bool modified : 1;
 		bool is_directory : 1;
+		bool is_dirfsp : 1;
 		bool aio_write_behind : 1;
 		bool initial_delete_on_close : 1;
 		bool delete_on_close : 1;
