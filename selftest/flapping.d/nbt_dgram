@@ -4,4 +4,6 @@
 # specific) Best guess is the order of test having being
 # changed (as a result of test moving env) or some other
 # strange env related side affect is causing this.
+^samba3.nbt.dgram.ntlogon\(ad_dc\)
 ^samba3.nbt.dgram.netlogon\(ad_dc\)
+^samba3.nbt.dgram.netlogon2\(ad_dc\)
