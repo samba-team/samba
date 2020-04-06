@@ -3229,9 +3229,12 @@ static bool lpcfg_load_internal(struct loadparm_context *lp_ctx,
 	char *n2;
 	bool bRetval;
 
-	filename = talloc_strdup(lp_ctx, filename);
+	if (lp_ctx->szConfigFile != NULL) {
+		talloc_free(discard_const_p(char, lp_ctx->szConfigFile));
+		lp_ctx->szConfigFile = NULL;
+	}
 
-	lp_ctx->szConfigFile = filename;
+	lp_ctx->szConfigFile = talloc_strdup(lp_ctx, filename);
 
 	if (lp_ctx->s3_fns) {
 		return lp_ctx->s3_fns->load(filename);
