@@ -760,7 +760,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	}
 
 	/* Ensure path is below share definition. */
-	if (!lp_widelinks(SNUM(conn))) {
+	{
 		struct smb_filename *conn_rootdir_fname = NULL;
 		const char *conn_rootdir = SMB_VFS_CONNECTPATH(conn,
 						smb_fname);
@@ -796,8 +796,6 @@ NTSTATUS fd_open(struct connection_struct *conn,
 		if (saved_errno != 0) {
 			errno = saved_errno;
 		}
-	} else {
-		fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	}
 
 	if (fsp->fh->fd == -1) {
