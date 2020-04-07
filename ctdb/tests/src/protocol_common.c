@@ -323,6 +323,19 @@ void verify_ctdb_db_vacuum(struct ctdb_db_vacuum *p1,
 	verify_ctdb_bool(&p1->full_vacuum_run, &p2->full_vacuum_run);
 }
 
+void fill_ctdb_echo_data(TALLOC_CTX *mem_ctx, struct ctdb_echo_data *p)
+{
+	fill_ctdb_uint32(&p->timeout);
+	fill_tdb_data(mem_ctx, &p->buf);
+}
+
+void verify_ctdb_echo_data(struct ctdb_echo_data *p1,
+			    struct ctdb_echo_data *p2)
+{
+	verify_ctdb_uint32(&p1->timeout, &p2->timeout);
+	verify_tdb_data(&p1->buf, &p2->buf);
+}
+
 void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p)
 {
 	p->rsn = rand64();

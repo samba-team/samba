@@ -1303,6 +1303,78 @@ fail:
 	return ret;
 }
 
+size_t ctdb_echo_data_len(struct ctdb_echo_data *in)
+{
+	/*
+	 * No overflow check, none of the routines in this file do it
+	 * and there's no way to report it anyway.
+	 */
+	return ctdb_uint32_len(&in->timeout) + ctdb_tdb_datan_len(&in->buf);
+}
+
+void ctdb_echo_data_push(struct ctdb_echo_data *in,
+			 uint8_t *buf,
+			 size_t *npush)
+{
+	size_t offset = 0, np;
+
+	/*
+	 * No overflow check, none of the routines in this file do it
+	 * and there's no way to report it anyway.
+	 */
+
+	ctdb_uint32_push(&in->timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&in->buf, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+int ctdb_echo_data_pull(uint8_t *buf,
+			size_t buflen,
+			TALLOC_CTX *mem_ctx,
+			struct ctdb_echo_data **out,
+			size_t *npull)
+{
+	struct ctdb_echo_data *val;
+	size_t offset = 0, np;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_echo_data);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_uint32_pull(buf+offset,
+			       buflen-offset,
+			       &val->timeout,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_tdb_datan_pull(buf+offset,
+				  buflen-offset,
+				  val,
+				  &val->buf,
+				  &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
+	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
+}
+
 size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *in)
 {
 	return ctdb_uint64_len(&in->rsn) +

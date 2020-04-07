@@ -68,6 +68,10 @@ void fill_ctdb_db_vacuum(TALLOC_CTX *mem_ctx, struct ctdb_db_vacuum *p);
 void verify_ctdb_db_vacuum(struct ctdb_db_vacuum *p1,
 			   struct ctdb_db_vacuum *p2);
 
+void fill_ctdb_echo_data(TALLOC_CTX *mem_ctx, struct ctdb_echo_data *p);
+void verify_ctdb_echo_data(struct ctdb_echo_data *p1,
+			   struct ctdb_echo_data *p2);
+
 void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p);
 void verify_ctdb_ltdb_header(struct ctdb_ltdb_header *p1,
 			     struct ctdb_ltdb_header *p2);
