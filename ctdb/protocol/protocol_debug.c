@@ -244,6 +244,7 @@ static void ctdb_opcode_print(uint32_t opcode, FILE *fp)
 		{ CTDB_CONTROL_TUNNEL_DEREGISTER, "TUNNEL_DEREGISTER" },
 		{ CTDB_CONTROL_VACUUM_FETCH, "VACUUM_FETCH" },
 		{ CTDB_CONTROL_DB_VACUUM, "DB_VACUUM" },
+		{ CTDB_CONTROL_ECHO_DATA, "ECHO_DATA" },
 		{ MAP_END, "" },
 	};
 

@@ -611,6 +611,10 @@ void ctdb_req_control_db_vacuum(struct ctdb_req_control *request,
 				struct ctdb_db_vacuum *db_vacuum);
 int ctdb_reply_control_db_vacuum(struct ctdb_reply_control *reply);
 
+void ctdb_req_control_echo_data(struct ctdb_req_control *request,
+				struct ctdb_echo_data *echo_data);
+int ctdb_reply_control_echo_data(struct ctdb_reply_control *reply);
+
 /* From protocol/protocol_debug.c */
 
 void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);

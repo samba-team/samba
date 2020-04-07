@@ -415,6 +415,10 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_DB_VACUUM:
 		len = ctdb_db_vacuum_len(cd->data.db_vacuum);
 		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		len = ctdb_echo_data_len(cd->data.echo_data);
+		break;
 	}
 
 	return len;
@@ -697,6 +701,10 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_DB_VACUUM:
 		ctdb_db_vacuum_push(cd->data.db_vacuum, buf, &np);
+		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		ctdb_echo_data_push(cd->data.echo_data, buf, &np);
 		break;
 	}
 
@@ -1033,6 +1041,14 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 					  buflen,
 					  mem_ctx,
 					  &cd->data.db_vacuum,
+					  &np);
+		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		ret = ctdb_echo_data_pull(buf,
+					  buflen,
+					  mem_ctx,
+					  &cd->data.echo_data,
 					  &np);
 		break;
 	}
@@ -1398,6 +1414,10 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_DB_VACUUM:
 		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		len = ctdb_echo_data_len(cd->data.echo_data);
+		break;
 	}
 
 	return len;
@@ -1557,6 +1577,10 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_VACUUM:
+		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		ctdb_echo_data_push(cd->data.echo_data, buf, &np);
 		break;
 	}
 
@@ -1747,6 +1771,14 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_VACUUM:
+		break;
+
+	case CTDB_CONTROL_ECHO_DATA:
+		ret = ctdb_echo_data_pull(buf,
+					  buflen,
+					  mem_ctx,
+					  &cd->data.echo_data,
+					  &np);
 		break;
 	}
 
