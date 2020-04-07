@@ -535,6 +535,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	uid_t effuid;
 	gid_t effgid;
 	NTSTATUS status;
+	bool ok;
 
 	fstrcpy(dev, pdev);
 
@@ -796,21 +797,20 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 /* ROOT Activites: */
 
 	/*
-	 * If widelinks are disallowed we need to canonicalise the connect
+	 * Canonicalise the connect
 	 * path here to ensure we don't have any symlinks in the
 	 * connectpath. We will be checking all paths on this connection are
 	 * below this directory. We must do this after the VFS init as we
 	 * depend on the realpath() pointer in the vfs table. JRA.
 	 */
-	if (!lp_widelinks(snum)) {
-		if (!canonicalize_connect_path(conn)) {
-			DBG_ERR("canonicalize_connect_path failed "
-			"for service %s, path %s\n",
-				lp_const_servicename(snum),
-				conn->connectpath);
-			status = NT_STATUS_BAD_NETWORK_NAME;
-			goto err_root_exit;
-		}
+	ok = canonicalize_connect_path(conn);
+	if (!ok) {
+		DBG_ERR("canonicalize_connect_path failed "
+		"for service %s, path %s\n",
+			lp_const_servicename(snum),
+			conn->connectpath);
+		status = NT_STATUS_BAD_NETWORK_NAME;
+		goto err_root_exit;
 	}
 
 	/* Add veto/hide lists */
