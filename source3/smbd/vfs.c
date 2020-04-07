@@ -365,6 +365,22 @@ bool smbd_vfs_init(connection_struct *conn)
 		return True;
 	}
 
+	if (lp_widelinks(SNUM(conn))) {
+		/*
+		 * As the widelinks logic is now moving into a
+		 * vfs_widelinks module, we need to custom load
+		 * it after the default module is initialized.
+		 * That way no changes to smb.conf files are
+		 * needed.
+		 */
+		bool ok = vfs_init_custom(conn, "widelinks");
+		if (!ok) {
+			DBG_ERR("widelinks enabled and vfs_init_custom "
+				"failed for vfs_widelinks module\n");
+			return false;
+		}
+	}
+
 	vfs_objects = lp_vfs_objects(SNUM(conn));
 
 	/* Override VFS functions if 'vfs object' was not specified*/
