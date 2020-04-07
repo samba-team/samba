@@ -1221,6 +1221,8 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	char *resolved_name = NULL;
 	char *new_fname = NULL;
 	bool allow_symlinks = true;
+	const char *conn_rootdir;
+	size_t rootdir_len;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
@@ -1296,100 +1298,96 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	}
 
 	/* Common widelinks and symlinks checks. */
-	{
-		const char *conn_rootdir;
-		size_t rootdir_len;
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
+	if (conn_rootdir == NULL) {
+		DBG_NOTICE("Could not get conn_rootdir\n");
+		TALLOC_FREE(resolved_fname);
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
-		conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
-		if (conn_rootdir == NULL) {
-			DEBUG(2, ("check_reduced_name: Could not get "
-				"conn_rootdir\n"));
+	rootdir_len = strlen(conn_rootdir);
+
+	/*
+	 * In the case of rootdir_len == 1, we know that
+	 * conn_rootdir is "/", and we also know that
+	 * resolved_name starts with a slash.  So, in this
+	 * corner case, resolved_name is automatically a
+	 * sub-directory of the conn_rootdir. Thus we can skip
+	 * the string comparison and the next character checks
+	 * (which are even wrong in this case).
+	 */
+	if (rootdir_len != 1) {
+		bool matched;
+
+		matched = (strncmp(conn_rootdir, resolved_name,
+				rootdir_len) == 0);
+		if (!matched || (resolved_name[rootdir_len] != '/' &&
+				 resolved_name[rootdir_len] != '\0')) {
+			DBG_NOTICE("Bad access attempt: %s is a symlink "
+				"outside the "
+				"share path\n"
+				"conn_rootdir =%s\n"
+				"resolved_name=%s\n",
+				fname,
+				conn_rootdir,
+				resolved_name);
+			TALLOC_FREE(resolved_fname);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	/* Extra checks if all symlinks are disallowed. */
+	allow_symlinks = lp_follow_symlinks(SNUM(conn));
+	if (!allow_symlinks) {
+		/* fname can't have changed in resolved_path. */
+		const char *p = &resolved_name[rootdir_len];
+
+		/*
+		 * UNIX filesystem semantics, names consisting
+		 * only of "." or ".." CANNOT be symlinks.
+		 */
+		if (ISDOT(fname) || ISDOTDOT(fname)) {
+			goto out;
+		}
+
+		if (*p != '/') {
+			DBG_NOTICE("logic error (%c) "
+				"in resolved_name: %s\n",
+				*p,
+				fname);
 			TALLOC_FREE(resolved_fname);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		rootdir_len = strlen(conn_rootdir);
+		p++;
 
 		/*
-		 * In the case of rootdir_len == 1, we know that
-		 * conn_rootdir is "/", and we also know that
-		 * resolved_name starts with a slash.  So, in this
-		 * corner case, resolved_name is automatically a
-		 * sub-directory of the conn_rootdir. Thus we can skip
-		 * the string comparison and the next character checks
-		 * (which are even wrong in this case).
+		 * If cwd_name is present and not ".",
+		 * then fname is relative to that, not
+		 * the root of the share. Make sure the
+		 * path we check is the one the client
+		 * sent (cwd_name+fname).
 		 */
-		if (rootdir_len != 1) {
-			bool matched;
-
-			matched = (strncmp(conn_rootdir, resolved_name,
-					rootdir_len) == 0);
-			if (!matched || (resolved_name[rootdir_len] != '/' &&
-					 resolved_name[rootdir_len] != '\0')) {
-				DEBUG(2, ("check_reduced_name: Bad access "
-					"attempt: %s is a symlink outside the "
-					"share path\n", fname));
-				DEBUGADD(2, ("conn_rootdir =%s\n",
-					     conn_rootdir));
-				DEBUGADD(2, ("resolved_name=%s\n",
-					     resolved_name));
+		if (cwd_name != NULL && !ISDOT(cwd_name)) {
+			new_fname = talloc_asprintf(ctx,
+						"%s/%s",
+						cwd_name,
+						fname);
+			if (new_fname == NULL) {
 				TALLOC_FREE(resolved_fname);
-				return NT_STATUS_ACCESS_DENIED;
+				return NT_STATUS_NO_MEMORY;
 			}
+			fname = new_fname;
 		}
 
-		/* Extra checks if all symlinks are disallowed. */
-		allow_symlinks = lp_follow_symlinks(SNUM(conn));
-		if (!allow_symlinks) {
-			/* fname can't have changed in resolved_path. */
-			const char *p = &resolved_name[rootdir_len];
-
-			/*
-			 * UNIX filesystem semantics, names consisting
-			 * only of "." or ".." CANNOT be symlinks.
-			 */
-			if (ISDOT(fname) || ISDOTDOT(fname)) {
-				goto out;
-			}
-
-			if (*p != '/') {
-				DEBUG(2, ("check_reduced_name: logic error (%c) "
-					"in resolved_name: %s\n",
-					*p,
-					fname));
-				TALLOC_FREE(resolved_fname);
-				return NT_STATUS_ACCESS_DENIED;
-			}
-
-			p++;
-
-			/*
-			 * If cwd_name is present and not ".",
-			 * then fname is relative to that, not
-			 * the root of the share. Make sure the
-			 * path we check is the one the client
-			 * sent (cwd_name+fname).
-			 */
-			if (cwd_name != NULL && !ISDOT(cwd_name)) {
-				new_fname = talloc_asprintf(ctx,
-							"%s/%s",
-							cwd_name,
-							fname);
-				if (new_fname == NULL) {
-					TALLOC_FREE(resolved_fname);
-					return NT_STATUS_NO_MEMORY;
-				}
-				fname = new_fname;
-			}
-
-			if (strcmp(fname, p)!=0) {
-				DEBUG(2, ("check_reduced_name: Bad access "
-					"attempt: %s is a symlink to %s\n",
-					  fname, p));
-				TALLOC_FREE(resolved_fname);
-				TALLOC_FREE(new_fname);
-				return NT_STATUS_ACCESS_DENIED;
-			}
+		if (strcmp(fname, p)!=0) {
+			DBG_NOTICE("Bad access "
+				"attempt: %s is a symlink to %s\n",
+				fname,
+				p);
+			TALLOC_FREE(resolved_fname);
+			TALLOC_FREE(new_fname);
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
