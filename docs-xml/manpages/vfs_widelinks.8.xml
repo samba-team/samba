@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_widelinks.8">
+
+<refmeta>
+	<refentrytitle>vfs_widelinks</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_widelinks</refname>
+	<refpurpose>make a Samba share ignore filesystem symbolic links inside a share</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = widelinks</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>vfs_widelinks</command> VFS module
+	hides the existence of symbolic links in the filesystem
+	inside a share. It is used in Samba verson 4.13 and above
+	to implement the <filename>smb.conf</filename>"wide links = yes"
+	functionality that used to be inside the core smbd code.
+	The module should not be loaded explicitly by smb.conf
+	as part of the "vfs objects =" parameter, but is loaded
+	implicitly when "wide links = yes" is enabled. This is
+	to prevent existing smb.conf files from having to be
+	modified to keep the existing insecure "wide links"
+	functionality on a share.
+	</para>
+	<para>Please note that "wide links = yes" functionality
+	is a deliberately insecure option, and should never be
+	used in Samba installations. On Linux, bind mounts can
+	be used instead to implement anything "wide links = yes"
+	can enable. This module has been created to provide
+	backwards compatibility with existing users of
+	"wide links = yes" installations, but this use cannot be
+	recommended and is not endorsed by the Samba developers.
+	</para>
+	<para>Note that this implicit loading may become explicit
+	in a later Samba release, and administrators wishing to
+	keep the insecure "wide links" functionality may have
+	to add this module into their "vfs objects =" module
+	list. The Samba project release notes and this manpage
+	will be updated to reflect this when this change is made.
+	</para>
+
+	<para>This module is stackable.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>No examples listed. This module is implicitly loaded
+	by smbd as needed.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>

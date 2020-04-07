@@ -108,6 +108,7 @@ vfs_module_manpages = ['vfs_acl_tdb',
                        'vfs_tsmsm',
                        'vfs_unityed_media',
                        'vfs_virusfilter',
+                       'vfs_widelinks',
                        'vfs_worm',
                        'vfs_xattr_tdb',
                        'vfs_zfsacl' ]
