@@ -291,6 +291,15 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return req;
 	}
 
+	/*
+	 * writev_trigger tries a nonblocking write. If that succeeds,
+	 * we can't directly notify the callback to call
+	 * writev_recv. The callback would TALLOC_FREE(req) after
+	 * calling writev_recv even before writev_trigger can inspect
+	 * it for success.
+	 */
+	tevent_req_defer_callback(req, ev);
+
 	state->queue_entry = tevent_queue_add_optimize_empty(
 		queue, ev, req, writev_trigger, NULL);
 	if (tevent_req_nomem(state->queue_entry, req)) {
