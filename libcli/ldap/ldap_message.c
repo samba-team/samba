@@ -1162,6 +1162,7 @@ static bool ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 /* This routine returns LDAP status codes */
 
 _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
+			      const struct ldap_request_limits *limits,
 			      const struct ldap_control_handler *control_handlers,
 			      struct ldap_message *msg)
 {
