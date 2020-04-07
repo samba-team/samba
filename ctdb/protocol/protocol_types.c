@@ -1281,7 +1281,7 @@ int ctdb_db_vacuum_pull(uint8_t *buf,
 			       &val->db_id,
 			       &np);
 	if (ret != 0) {
-		goto fail;;
+		goto fail;
 	}
 	offset += np;
 
