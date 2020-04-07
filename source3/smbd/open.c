@@ -749,6 +749,9 @@ NTSTATUS fd_open(struct connection_struct *conn,
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *conn_rootdir_fname = NULL;
+	const char *conn_rootdir;
+	int saved_errno = 0;
 
 	/*
 	 * Never follow symlinks on a POSIX client. The
@@ -760,42 +763,38 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	}
 
 	/* Ensure path is below share definition. */
-	{
-		struct smb_filename *conn_rootdir_fname = NULL;
-		const char *conn_rootdir = SMB_VFS_CONNECTPATH(conn,
-						smb_fname);
-		int saved_errno = 0;
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn,
+					smb_fname);
 
-		if (conn_rootdir == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		conn_rootdir_fname = synthetic_smb_fname(talloc_tos(),
-						conn_rootdir,
-						NULL,
-						NULL,
-						0);
-		if (conn_rootdir_fname == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/*
-		 * Only follow symlinks within a share
-		 * definition.
-		 */
-		fsp->fh->fd = non_widelink_open(conn,
-					conn_rootdir_fname,
-					fsp,
-					smb_fname,
-					flags,
-					mode,
+	if (conn_rootdir == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	conn_rootdir_fname = synthetic_smb_fname(talloc_tos(),
+					conn_rootdir,
+					NULL,
+					NULL,
 					0);
-		if (fsp->fh->fd == -1) {
-			saved_errno = errno;
-		}
-		TALLOC_FREE(conn_rootdir_fname);
-		if (saved_errno != 0) {
-			errno = saved_errno;
-		}
+	if (conn_rootdir_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Only follow symlinks within a share
+	 * definition.
+	 */
+	fsp->fh->fd = non_widelink_open(conn,
+				conn_rootdir_fname,
+				fsp,
+				smb_fname,
+				flags,
+				mode,
+				0);
+	if (fsp->fh->fd == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(conn_rootdir_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
 	}
 
 	if (fsp->fh->fd == -1) {
