@@ -460,7 +460,6 @@ static int link_errno_convert(int err)
 }
 
 static int non_widelink_open(struct connection_struct *conn,
-			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -472,13 +471,14 @@ static int non_widelink_open(struct connection_struct *conn,
 ****************************************************************************/
 
 static int process_symlink_open(struct connection_struct *conn,
-			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
 			mode_t mode,
 			unsigned int link_depth)
 {
+	const char *conn_rootdir = NULL;
+	struct smb_filename conn_rootdir_fname;
 	int fd = -1;
 	char *link_target = NULL;
 	int link_len = -1;
@@ -488,6 +488,15 @@ static int process_symlink_open(struct connection_struct *conn,
 	char *resolved_name = NULL;
 	bool matched = false;
 	int saved_errno = 0;
+
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
+	if (conn_rootdir == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	conn_rootdir_fname = (struct smb_filename) {
+		.base_name = discard_const_p(char, conn_rootdir),
+	};
 
 	/*
 	 * Ensure we don't get stuck in a symlink loop.
@@ -539,9 +548,9 @@ static int process_symlink_open(struct connection_struct *conn,
 	 * does not end in '/'. FIXME ! Should we
 	 * smb_assert this ?
 	 */
-	rootdir_len = strlen(conn_rootdir_fname->base_name);
+	rootdir_len = strlen(conn_rootdir_fname.base_name);
 
-	matched = (strncmp(conn_rootdir_fname->base_name,
+	matched = (strncmp(conn_rootdir_fname.base_name,
 				resolved_name,
 				rootdir_len) == 0);
 	if (!matched) {
@@ -576,13 +585,12 @@ static int process_symlink_open(struct connection_struct *conn,
 	}
 
 	/* Ensure we operate from the root of the share. */
-	if (vfs_ChDir(conn, conn_rootdir_fname) == -1) {
+	if (vfs_ChDir(conn, &conn_rootdir_fname) == -1) {
 		goto out;
 	}
 
 	/* And do it all again.. */
 	fd = non_widelink_open(conn,
-				conn_rootdir_fname,
 				fsp,
 				smb_fname,
 				flags,
@@ -614,7 +622,6 @@ static int process_symlink_open(struct connection_struct *conn,
 ****************************************************************************/
 
 static int non_widelink_open(struct connection_struct *conn,
-			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -710,7 +717,6 @@ static int non_widelink_open(struct connection_struct *conn,
 			 * to ensure it's under the share definition.
 			 */
 			fd = process_symlink_open(conn,
-					conn_rootdir_fname,
 					fsp,
 					smb_fname_rel,
 					flags,
@@ -760,8 +766,6 @@ NTSTATUS fd_open(struct connection_struct *conn,
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
-	struct smb_filename *conn_rootdir_fname = NULL;
-	const char *conn_rootdir;
 	int saved_errno = 0;
 
 	/*
@@ -773,29 +777,11 @@ NTSTATUS fd_open(struct connection_struct *conn,
 		flags |= O_NOFOLLOW;
 	}
 
-	/* Ensure path is below share definition. */
-	conn_rootdir = SMB_VFS_CONNECTPATH(conn,
-					smb_fname);
-
-	if (conn_rootdir == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	conn_rootdir_fname = synthetic_smb_fname(talloc_tos(),
-					conn_rootdir,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (conn_rootdir_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/*
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
 	fsp->fh->fd = non_widelink_open(conn,
-				conn_rootdir_fname,
 				fsp,
 				smb_fname,
 				flags,
@@ -804,7 +790,6 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	if (fsp->fh->fd == -1) {
 		saved_errno = errno;
 	}
-	TALLOC_FREE(conn_rootdir_fname);
 	if (saved_errno != 0) {
 		errno = saved_errno;
 	}
