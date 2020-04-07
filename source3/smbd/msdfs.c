@@ -365,13 +365,6 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	talloc_free(conn->origpath);
-	conn->origpath = talloc_strdup(conn, conn->connectpath);
-	if (conn->origpath == NULL) {
-		conn_free(conn);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
 	conn->tcon_done = true;
 	*pconn = talloc_move(ctx, &conn);

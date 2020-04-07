@@ -144,9 +144,6 @@ bool chdir_current_service(connection_struct *conn)
 	const struct smb_filename connectpath_fname = {
 		.base_name = conn->connectpath,
 	};
-	const struct smb_filename origpath_fname = {
-		.base_name = conn->origpath,
-	};
 	int saved_errno = 0;
 	char *utok_str = NULL;
 	int ret;
@@ -168,18 +165,6 @@ bool chdir_current_service(connection_struct *conn)
 
 	DBG_ERR("vfs_ChDir(%s) failed: %s. Current token: %s\n",
 		conn->connectpath,
-		strerror(saved_errno),
-		utok_str);
-
-	ret = vfs_ChDir(conn, &origpath_fname);
-	if (ret == 0) {
-		TALLOC_FREE(utok_str);
-		return true;
-	}
-	saved_errno = errno;
-
-	DBG_ERR("vfs_ChDir(%s) failed: %s. Current token: %s\n",
-		conn->origpath,
 		strerror(saved_errno),
 		utok_str);
 
@@ -859,9 +844,6 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		goto err_root_exit;
 	}
 	conn->base_share_dev = smb_fname_cpath->st.st_ex_dev;
-
-	talloc_free(conn->origpath);
-	conn->origpath = talloc_strdup(conn, conn->connectpath);
 
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted within a share path have

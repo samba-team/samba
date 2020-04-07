@@ -528,7 +528,6 @@ typedef struct connection_struct {
 	   and directories when setting time ? */
 	enum timestamp_set_resolution ts_res;
 	char *connectpath;
-	char *origpath;
 	struct files_struct *cwd_fsp; /* Working directory. */
 	bool tcon_done;
 

@@ -84,12 +84,6 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 		TALLOC_FREE(conn);
 		return NULL;
 	}
-	conn->origpath = talloc_strdup(conn, "");
-	if (conn->origpath == NULL) {
-		DBG_ERR("talloc_zero failed\n");
-		TALLOC_FREE(conn);
-		return NULL;
-	}
 	conn->cwd_fsp = talloc_zero(conn, struct files_struct);
 	if (conn->cwd_fsp == NULL) {
 		DBG_ERR("talloc_zero failed\n");
