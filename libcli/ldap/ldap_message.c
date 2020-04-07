@@ -1259,7 +1259,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
 		int sizelimit, timelimit;
 		const char **attrs = NULL;
+		size_t request_size = asn1_get_length(data);
 		msg->type = LDAP_TAG_SearchRequest;
+		if (request_size > limits->max_search_size) {
+			goto prot_err;
+		}
 		if (!asn1_start_tag(data, tag)) goto prot_err;
 		if (!asn1_read_OctetString_talloc(msg, data, &r->basedn)) goto prot_err;
 		if (!asn1_read_enumerated(data, (int *)(void *)&(r->scope))) goto prot_err;

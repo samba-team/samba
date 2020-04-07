@@ -106,5 +106,6 @@ bool asn1_extract_blob(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		       DATA_BLOB *pblob);
 void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len);
 int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
+size_t asn1_get_length(const struct asn1_data *asn1);
 
 #endif /* _ASN_1_H */
