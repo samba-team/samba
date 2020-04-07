@@ -341,22 +341,21 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	if (fsp->fsp_flags.initial_delete_on_close &&
 			!is_delete_on_close_set(lck, fsp->name_hash)) {
-		bool became_user = False;
+		struct auth_session_info *session_info = NULL;
 
 		/* Initial delete on close was set and no one else
 		 * wrote a real delete on close. */
 
-		if (get_current_vuid(conn) != fsp->vuid) {
-			become_user_without_service(conn, fsp->vuid);
-			became_user = True;
+		status = smbXsrv_session_info_lookup(conn->sconn->client,
+						     fsp->vuid,
+						     &session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		fsp->fsp_flags.delete_on_close = true;
 		set_delete_on_close_lck(fsp, lck,
-				get_current_nttok(conn),
-				get_current_utok(conn));
-		if (became_user) {
-			unbecome_user_without_service();
-		}
+					session_info->security_token,
+					session_info->unix_token);
 	}
 
 	delete_file = is_delete_on_close_set(lck, fsp->name_hash) &&
