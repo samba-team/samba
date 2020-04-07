@@ -1138,25 +1138,25 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	}
 
 	if (fsp->fsp_flags.initial_delete_on_close) {
-		bool became_user = False;
+		struct auth_session_info *session_info = NULL;
 
 		/* Initial delete on close was set - for
 		 * directories we don't care if anyone else
 		 * wrote a real delete on close. */
 
-		if (get_current_vuid(fsp->conn) != fsp->vuid) {
-			become_user_without_service(fsp->conn, fsp->vuid);
-			became_user = True;
+		status = smbXsrv_session_info_lookup(fsp->conn->sconn->client,
+						     fsp->vuid,
+						     &session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_INTERNAL_ERROR;
 		}
+
 		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
 					       fsp->fsp_name->base_name);
 		set_delete_on_close_lck(fsp, lck,
-				get_current_nttok(fsp->conn),
-				get_current_utok(fsp->conn));
+					session_info->security_token,
+					session_info->unix_token);
 		fsp->fsp_flags.delete_on_close = true;
-		if (became_user) {
-			unbecome_user_without_service();
-		}
 	}
 
 	delete_dir = get_delete_on_close_token(
