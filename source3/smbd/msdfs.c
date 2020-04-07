@@ -254,6 +254,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	const char *vfs_user;
 	struct smbd_server_connection *sconn;
 	const char *servicename = lp_const_servicename(snum);
+	bool ok;
 
 	sconn = talloc_zero(ctx, struct smbd_server_connection);
 	if (sconn == NULL) {
@@ -357,12 +358,11 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!lp_widelinks(snum)) {
-		if (!canonicalize_connect_path(conn)) {
-			DBG_ERR("Failed to canonicalize sharepath\n");
-			conn_free(conn);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	ok = canonicalize_connect_path(conn);
+	if (!ok) {
+		DBG_ERR("Failed to canonicalize sharepath\n");
+		conn_free(conn);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	talloc_free(conn->origpath);
