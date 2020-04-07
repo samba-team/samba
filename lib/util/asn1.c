@@ -1175,3 +1175,10 @@ int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 	*packet_size = size;
 	return 0;
 }
+
+/*
+ * Get the length of the ASN.1 data
+ */
+size_t asn1_get_length(const struct asn1_data *asn1) {
+	return asn1->length;
+}
