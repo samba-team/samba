@@ -1221,7 +1221,6 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	char *resolved_name = NULL;
 	char *new_fname = NULL;
 	bool allow_symlinks = true;
-	bool allow_widelinks = false;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
@@ -1296,11 +1295,8 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
-	allow_widelinks = lp_widelinks(SNUM(conn));
-	allow_symlinks = lp_follow_symlinks(SNUM(conn));
-
 	/* Common widelinks and symlinks checks. */
-	if (!allow_widelinks || !allow_symlinks) {
+	{
 		const char *conn_rootdir;
 		size_t rootdir_len;
 
@@ -1343,6 +1339,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		}
 
 		/* Extra checks if all symlinks are disallowed. */
+		allow_symlinks = lp_follow_symlinks(SNUM(conn));
 		if (!allow_symlinks) {
 			/* fname can't have changed in resolved_path. */
 			const char *p = &resolved_name[rootdir_len];
