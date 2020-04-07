@@ -961,6 +961,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.ldap_max_anonymous_request_size = 256000;
 	Globals.ldap_max_authenticated_request_size = 16777216;
+	Globals.ldap_max_search_request_size = 256000;
 
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();

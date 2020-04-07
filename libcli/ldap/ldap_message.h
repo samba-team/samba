@@ -213,10 +213,15 @@ struct ldap_control_handler {
 	bool (*encode)(void *mem_ctx, void *in, DATA_BLOB *out);
 };
 
+struct ldap_request_limits {
+	unsigned max_search_size;
+};
+
 struct asn1_data;
 
 struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
 NTSTATUS ldap_decode(struct asn1_data *data,
+	             const struct ldap_request_limits *limits,
 		     const struct ldap_control_handler *control_handlers,
 		     struct ldap_message *msg);
 bool ldap_encode(struct ldap_message *msg,

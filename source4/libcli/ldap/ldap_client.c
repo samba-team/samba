@@ -277,6 +277,7 @@ static void ldap_connection_recv_done(struct tevent_req *subreq)
 	struct ldap_message *msg;
 	struct asn1_data *asn1;
 	DATA_BLOB blob;
+	struct ldap_request_limits limits = {0};
 
 	msg = talloc_zero(conn, struct ldap_message);
 	if (msg == NULL) {
@@ -306,7 +307,7 @@ static void ldap_connection_recv_done(struct tevent_req *subreq)
 
 	asn1_load_nocopy(asn1, blob.data, blob.length);
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), msg);
+	status = ldap_decode(asn1, &limits, samba_ldap_control_handlers(), msg);
 	asn1_free(asn1);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(msg);
