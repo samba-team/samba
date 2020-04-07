@@ -538,6 +538,7 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 	struct asn1_data *asn1;
 	DATA_BLOB blob;
 	int ret = LDAP_SUCCESS;
+	struct ldap_request_limits limits = {0};
 
 	conn->sockets.read_req = NULL;
 
@@ -593,8 +594,13 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(),
-			     call->request);
+	limits.max_search_size =
+		lpcfg_ldap_max_search_request_size(conn->lp_ctx);
+	status = ldap_decode(
+		asn1,
+		&limits,
+		samba_ldap_control_handlers(),
+		call->request);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldapsrv_terminate_connection(conn, nt_errstr(status));
 		return;

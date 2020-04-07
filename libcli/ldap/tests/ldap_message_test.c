@@ -117,6 +117,9 @@ static void test_empty_input(void **state)
 	NTSTATUS status;
 	uint8_t buf[0];
 	size_t len = 0;
+	struct ldap_request_limits limits = {
+		.max_search_size = 256000,
+	};
 
 
 	asn1 = asn1_init(test_ctx, ASN1_MAX_TREE_DEPTH);
@@ -127,7 +130,8 @@ static void test_empty_input(void **state)
 	ldap_msg = talloc(test_ctx, struct ldap_message);
 	assert_non_null(ldap_msg);
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
+	status = ldap_decode(
+		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 	assert_ldap_status_equal(LDAP_PROTOCOL_ERROR, status);
 }
 
@@ -149,6 +153,9 @@ static void test_recursion_depth_large(void **state)
 	uint8_t *buffer = NULL;
 	const size_t BUFF_SIZE = 1048576;
 	size_t len;
+	struct ldap_request_limits limits = {
+		.max_search_size = 256000,
+	};
 
 
 	/*
@@ -169,7 +176,8 @@ static void test_recursion_depth_large(void **state)
 	ldap_msg = talloc(test_ctx, struct ldap_message);
 	assert_non_null(ldap_msg);
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
+	status = ldap_decode(
+		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 	assert_ldap_status_equal(LDAP_PROTOCOL_ERROR, status);
 }
 
@@ -189,6 +197,9 @@ static void test_recursion_depth_equals_max(void **state)
 	uint8_t *buffer = NULL;
 	const size_t BUFF_SIZE = 1048576;
 	size_t len;
+	struct ldap_request_limits limits = {
+		.max_search_size = 256000,
+	};
 
 
 	buffer = talloc_zero_array(test_ctx, uint8_t, BUFF_SIZE);
@@ -205,7 +216,8 @@ static void test_recursion_depth_equals_max(void **state)
 	ldap_msg = talloc(test_ctx, struct ldap_message);
 	assert_non_null(ldap_msg);
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
+	status = ldap_decode(
+		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 	assert_true(NT_STATUS_IS_OK(status));
 }
 
@@ -225,6 +237,9 @@ static void test_recursion_depth_greater_than_max(void **state)
 	uint8_t *buffer = NULL;
 	const size_t BUFF_SIZE = 1048576;
 	size_t len;
+	struct ldap_request_limits limits = {
+		.max_search_size = 256000,
+	};
 
 
 	buffer = talloc_zero_array(test_ctx, uint8_t, BUFF_SIZE);
@@ -241,7 +256,8 @@ static void test_recursion_depth_greater_than_max(void **state)
 	ldap_msg = talloc(test_ctx, struct ldap_message);
 	assert_non_null(ldap_msg);
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
+	status = ldap_decode(
+		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 	assert_ldap_status_equal(LDAP_PROTOCOL_ERROR, status);
 }
 

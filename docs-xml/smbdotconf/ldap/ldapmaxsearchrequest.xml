@@ -1,0 +1,18 @@
+<samba:parameter name="ldap max search request size"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This parameter specifies the maximum permitted size (in bytes)
+		for an LDAP search request. 
+	</para>
+
+	<para>
+		If the request size exceeds this limit the request will be
+		rejected.
+	</para>
+</description>
+<value type="default">256000</value>
+<value type="example">4194304</value>
+</samba:parameter>
