@@ -640,6 +640,16 @@ bool asn1_start_tag(struct asn1_data *data, uint8_t tag)
 	uint8_t b;
 	struct nesting *nesting;
 
+	/*
+	 * Check the depth of the parse tree and prevent it from growing
+	 * too large.
+	 */
+	data->depth++;
+	if (data->depth > data->max_depth) {
+		data->has_error = true;
+		return false;
+	}
+
 	if (!asn1_read_uint8(data, &b))
 		return false;
 
@@ -696,6 +706,9 @@ bool asn1_end_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 
+	if (data->depth > 0) {
+		data->depth--;
+	}
 	/* make sure we read it all */
 	if (asn1_tag_remaining(data) != 0) {
 		data->has_error = true;
