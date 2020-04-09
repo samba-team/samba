@@ -44,10 +44,12 @@ class SimpleKerberosTests(RawKerberosTest):
     def test_simple(self):
         user_creds = self.get_user_creds()
         user = user_creds.get_username()
-        realm = user_creds.get_realm()
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_account = krbtgt_creds.get_username()
+        realm = krbtgt_creds.get_realm()
 
         cname = self.PrincipalName_create(name_type=1, names=[user])
-        sname = self.PrincipalName_create(name_type=2, names=["krbtgt", realm])
+        sname = self.PrincipalName_create(name_type=2, names=[krbtgt_account, realm])
 
         till = self.get_KerberosTime(offset=36000)
 
