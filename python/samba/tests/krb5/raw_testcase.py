@@ -263,6 +263,11 @@ class RawKerberosTest(TestCaseInTempDir):
         self.do_asn1_print = False
         self.do_hexdump = False
 
+        strict_checking = samba.tests.env_get_var_value('STRICT_CHECKING', allow_missing=True)
+        if strict_checking is None:
+            strict_checking = '1'
+        self.strict_checking = bool(int(strict_checking))
+
         self.host = samba.tests.env_get_var_value('SERVER')
 
         self.s = None
