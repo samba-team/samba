@@ -386,14 +386,14 @@ PA-ENC-TS-ENC           ::= SEQUENCE {
 }
 
 ETYPE-INFO-ENTRY        ::= SEQUENCE {
-        etype           [0] Int32,
+        etype           [0] EncryptionType, --Int32 EncryptionType --
         salt            [1] OCTET STRING OPTIONAL
 }
 
 ETYPE-INFO              ::= SEQUENCE OF ETYPE-INFO-ENTRY
 
 ETYPE-INFO2-ENTRY       ::= SEQUENCE {
-        etype           [0] Int32,
+        etype           [0] EncryptionType, --Int32 EncryptionType --
         salt            [1] KerberosString OPTIONAL,
         s2kparams       [2] OCTET STRING OPTIONAL
 }
@@ -425,9 +425,48 @@ PA-S4U2Self ::= SEQUENCE {
         auth            [3] KerberosString
 }
 
+--
+--
+-- MS-KILE Start
 
+KERB-ERROR-DATA ::= SEQUENCE {
+        data-type [1] KerbErrorDataType,
+        data-value [2] OCTET STRING OPTIONAL
+}
 
+KerbErrorDataType ::= INTEGER
 
+KERB-PA-PAC-REQUEST ::= SEQUENCE {
+        include-pac[0] BOOLEAN --If TRUE, and no pac present, include PAC.
+                               --If FALSE, and PAC present, remove PAC
+}
+
+KERB-LOCAL ::= OCTET STRING -- Implementation-specific data which MUST be
+                            -- ignored if Kerberos client is not local.
+
+KERB-AD-RESTRICTION-ENTRY ::= SEQUENCE {
+        restriction-type [0] Int32,
+        restriction [1] OCTET STRING -- LSAP_TOKEN_INFO_INTEGRITY structure
+}
+
+PA-SUPPORTED-ENCTYPES ::= Int32 -- Supported Encryption Types Bit Field --
+
+PACOptionFlags ::= KerberosFlags -- Claims (0)
+                                 -- Branch Aware (1)
+                                 -- Forward to Full DC (2)
+                                 -- Resource Based Constrained Delegation (3)
+PA-PAC-OPTIONS ::= SEQUENCE {
+        options [0] PACOptionFlags
+}
+-- Note: KerberosFlags ::= BIT STRING (SIZE (32..MAX))
+-- minimum number of bits shall be sent, but no fewer than 32
+
+KERB-KEY-LIST-REQ ::= SEQUENCE OF EncryptionType -- Int32 encryption type --
+KERB-KEY-LIST-REP ::= SEQUENCE OF EncryptionKey
+
+-- MS-KILE End
+--
+--
 
 --
 --
@@ -502,6 +541,15 @@ KDCOptionsValues      ::= BIT STRING { -- KerberosFlags
 }
 KDCOptionsSequence ::= SEQUENCE {
         dummy [0] KDCOptionsValues
+}
+
+APOptionsValues ::= BIT STRING { -- KerberosFlags
+        reserved(0),
+        use-session-key(1),
+        mutual-required(2)
+}
+APOptionsSequence ::= SEQUENCE {
+        dummy [0] APOptionsValues
 }
 
 MessageTypeValues ::= INTEGER {
@@ -667,6 +715,24 @@ EncryptionTypeValues ::= INTEGER {
 }
 EncryptionTypeSequence ::= SEQUENCE {
         dummy [0] EncryptionTypeValues
+}
+
+KerbErrorDataTypeValues ::= INTEGER {
+        kERB-AP-ERR-TYPE-SKEW-RECOVERY(2),
+        kERB-ERR-TYPE-EXTENDED(3)
+}
+KerbErrorDataTypeSequence ::= SEQUENCE {
+        dummy [0] KerbErrorDataTypeValues
+}
+
+PACOptionFlagsValues ::= BIT STRING { -- KerberosFlags
+        claims(0),
+        branch-aware(1),
+        forward-to-full-dc(2),
+        resource-based-constrained-delegation(3)
+}
+PACOptionFlagsSequence ::= SEQUENCE {
+        dummy [0] PACOptionFlagsValues
 }
 
 END
