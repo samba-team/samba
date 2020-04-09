@@ -481,7 +481,6 @@ static int process_symlink_open(struct connection_struct *conn,
 {
 	int fd = -1;
 	char *link_target = NULL;
-	struct smb_filename target_fname = {0};
 	int link_len = -1;
 	struct smb_filename *oldwd_fname = NULL;
 	size_t rootdir_len = 0;
@@ -506,7 +505,19 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	/* Read the link target. */
+	/*
+	 * Read the link target. We do this just to verify that smb_fname indeed
+	 * points at a symbolic link and return the SMB_VFS_READLINKAT() errno
+	 * and failure in case smb_fname is NOT a symlink.
+	 *
+	 * The caller needs this piece of information to distinguish two cases
+	 * where open() fails with errno=ENOTDIR, cf the comment in
+	 * non_widelink_open().
+	 *
+	 * We rely on SMB_VFS_REALPATH() to resolve the path including the
+	 * symlink. Once we have SMB_VFS_STATX() or something similar in our VFS
+	 * we may want to use that instead of SMB_VFS_READLINKAT().
+	 */
 	link_len = SMB_VFS_READLINKAT(conn,
 				conn->cwd_fsp,
 				smb_fname,
@@ -516,15 +527,8 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	/* Ensure it's at least null terminated. */
-	link_target[link_len] = '\0';
-	target_fname = (struct smb_filename) {
-		.base_name = link_target,
-		.twrp = smb_fname->twrp,
-	};
-
 	/* Convert to an absolute path. */
-	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), &target_fname);
+	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), smb_fname);
 	if (resolved_fname == NULL) {
 		goto out;
 	}
