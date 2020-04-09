@@ -455,6 +455,7 @@ NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
 NTSTATUS open_internal_dirfsp_at(connection_struct *conn,
 				 struct files_struct *dirfsp,
 				 const struct smb_filename *smb_dname,
+				 int open_flags,
 				 struct files_struct **_fsp);
 
 /* The following definitions come from smbd/ipc.c  */

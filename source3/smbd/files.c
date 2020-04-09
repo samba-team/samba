@@ -225,10 +225,10 @@ NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
 NTSTATUS open_internal_dirfsp_at(connection_struct *conn,
 				 struct files_struct *dirfsp,
 				 const struct smb_filename *smb_dname,
+				 int open_flags,
 				 struct files_struct **_fsp)
 {
 	struct files_struct *fsp = NULL;
-	int open_flags = O_RDONLY;
 	NTSTATUS status;
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
