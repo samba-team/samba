@@ -1437,7 +1437,7 @@ static struct PyModuleDef moduledef = {
 PyTypeObject PyCredentials = {
 	.tp_name = "credentials.Credentials",
 	.tp_new = py_creds_new,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_methods = py_creds_methods,
 };
 
