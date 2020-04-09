@@ -1,0 +1,126 @@
+<samba:parameter name="client smb encrypt"
+		 context="G"
+		 type="enum"
+		 enumlist="enum_smb_encryption_vals"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This parameter controls whether a client should try or is required
+	to use SMB encryption. It has different effects depending on whether
+	the connection uses SMB1 or SMB3:
+	</para>
+
+	<itemizedlist>
+	<listitem>
+		<para>
+		If the connection uses SMB1, then this option controls the use
+		of a Samba-specific extension to the SMB protocol introduced in
+		Samba 3.2 that makes use of the Unix extensions.
+		</para>
+	</listitem>
+
+	<listitem>
+		<para>
+		If the connection uses SMB2 or newer, then this option controls
+		the use of the SMB-level encryption that is supported in SMB
+		version 3.0 and above and available in Windows 8 and newer.
+		</para>
+	</listitem>
+	</itemizedlist>
+
+	<para>
+		This parameter can be set globally. Possible values are
+
+		<emphasis>off</emphasis>,
+		<emphasis>if_required</emphasis>,
+		<emphasis>desired</emphasis>,
+		and
+		<emphasis>required</emphasis>.
+		A special value is <emphasis>default</emphasis> which is
+		the implicit default setting of <emphasis>if_required</emphasis>.
+	</para>
+
+	<variablelist>
+		<varlistentry>
+		<term><emphasis>Effects for SMB1</emphasis></term>
+		<listitem>
+		<para>
+		The Samba-specific encryption of SMB1 connections is an
+		extension to the SMB protocol negotiated as part of the UNIX
+		extensions.  SMB encryption uses the GSSAPI (SSPI on Windows)
+		ability to encrypt and sign every request/response in a SMB
+		protocol stream. When enabled it provides a secure method of
+		SMB/CIFS communication, similar to an ssh protected session, but
+		using SMB/CIFS authentication to negotiate encryption and
+		signing keys. Currently this is only supported smbclient of by
+		Samba 3.2 and newer. Windows does not support this feature.
+		</para>
+
+		<para>
+		When set to default, SMB encryption is probed, but not
+		enforced.  When set to required, SMB encryption is required and
+		if set to disabled, SMB encryption can not be negotiated.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><emphasis>Effects for SMB3 and newer</emphasis></term>
+		<listitem>
+		<para>
+		Native SMB transport encryption is available in SMB version 3.0
+		or newer. It is only used by Samba if
+		<emphasis>client max protocol</emphasis> is set to
+		<emphasis>SMB3</emphasis> or newer.
+		</para>
+
+		<para>
+		These features can be controlled with settings of
+		<emphasis>client smb encrypt</emphasis> as follows:
+		</para>
+
+		<itemizedlist>
+			<listitem>
+			<para>
+			Leaving it as default, explicitly setting
+			<emphasis>default</emphasis>, or setting it to
+			<emphasis>if_required</emphasis> globally will enable
+			negotiation of encryption but will not turn on
+			data encryption globally.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+			Setting it to <emphasis>desired</emphasis> globally
+			will enable negotiation and will turn on data encryption
+			on sessions and share connections for those servers
+			that support it.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+			Setting it to <emphasis>required</emphasis> globally
+			will enable negotiation and turn on data encryption
+			on sessions and share connections. Clients that do
+			not support encryption will be denied access to the
+			server.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+			Setting it to <emphasis>off</emphasis> globally will
+			completely disable the encryption feature for all
+			connections.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+</description>
+
+<value type="default">default</value>
+</samba:parameter>
