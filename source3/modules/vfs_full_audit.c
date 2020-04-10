@@ -293,6 +293,7 @@ static struct {
 	{ SMB_VFS_OP_FALLOCATE,"fallocate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
 	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
+	{ SMB_VFS_OP_FCNTL,	"fcntl" },
 	{ SMB_VFS_OP_LINUX_SETLEASE, "linux_setlease" },
 	{ SMB_VFS_OP_GETLOCK,	"getlock" },
 	{ SMB_VFS_OP_SYMLINKAT,	"symlinkat" },
