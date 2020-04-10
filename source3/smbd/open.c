@@ -4153,7 +4153,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	status = check_parent_access(conn,
-				     conn->cwd_fsp,
+				     *dirfsp,
 				     smb_dname,
 				     access_mask);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -4166,7 +4166,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	ret = SMB_VFS_MKDIRAT(conn,
-			      conn->cwd_fsp,
+			      *dirfsp,
 			      smb_dname,
 			      mode);
 	if (ret != 0) {
