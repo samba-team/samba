@@ -1234,7 +1234,7 @@ static bool torture_libsmbclient_utimes(struct torture_context *tctx)
 	tbuf[0] = convert_timespec_to_timeval(st.st_atim);
 	tbuf[1] = convert_timespec_to_timeval(st.st_mtim);
 
-	tbuf[1].tv_usec += 100000; /* 100 msec */
+	tbuf[1] = timeval_add(&tbuf[1], 0, 100000); /* 100 msec */
 
 	ret = smbc_utimes(smburl, tbuf);
 	torture_assert_int_not_equal(tctx, ret, -1, "smbc_utimes failed");
