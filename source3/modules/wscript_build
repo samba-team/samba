@@ -91,6 +91,11 @@ bld.SAMBA3_MODULE('vfs_full_audit',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_full_audit'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_full_audit'))
 
+bld.SAMBA3_BINARY('test_vfs_full_audit',
+                  source='test_vfs_full_audit.c',
+                  deps='smbd_base cmocka',
+                  for_selftest=True)
+
 bld.SAMBA3_MODULE('vfs_fake_perms',
                  subsystem='vfs',
                  source='vfs_fake_perms.c',
