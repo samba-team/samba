@@ -506,6 +506,10 @@ plantestsuite("samba3.test_vfs_widelinks", "none",
               [os.path.join(bindir(), "test_vfs_widelinks"),
                "$SMB_CONF_PATH"])
 
+plantestsuite("samba3.test_vfs_full_audit", "none",
+              [os.path.join(bindir(), "test_vfs_full_audit"),
+               "$SMB_CONF_PATH"])
+
 plantestsuite(
     "samba3.resolvconf", "none",
     [os.path.join(samba3srcdir, "script/tests/test_resolvconf.sh")])
