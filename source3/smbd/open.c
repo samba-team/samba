@@ -1118,7 +1118,6 @@ static NTSTATUS fd_open_atomic(struct connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS open_file(files_struct *fsp,
-			  connection_struct *conn,
 			  struct smb_request *req,
 			  struct smb_filename *parent_dir,
 			  int flags,
@@ -1127,6 +1126,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			  uint32_t open_access_mask, /* what we're actually using in the open. */
 			  bool *p_file_created)
 {
+	connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
@@ -3679,7 +3679,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	fsp_open = open_file(fsp, conn, req, parent_dir_fname,
+	fsp_open = open_file(fsp, req, parent_dir_fname,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask, &new_file_created);
 
