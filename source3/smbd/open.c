@@ -4111,6 +4111,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 }
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
+			       struct files_struct **dirfsp,
 			       struct smb_filename *smb_dname,
 			       uint32_t file_attributes)
 {
@@ -4124,6 +4125,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
 	int ret;
 	bool ok;
+
+	SMB_ASSERT(*dirfsp == conn->cwd_fsp);
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
@@ -4343,7 +4346,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 				return status;
 			}
 
-			status = mkdir_internal(conn, smb_dname,
+			status = mkdir_internal(conn, dirfsp, smb_dname,
 						file_attributes);
 
 			if (!NT_STATUS_IS_OK(status)) {
@@ -4367,7 +4370,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 				status = NT_STATUS_OK;
 				info = FILE_WAS_OPENED;
 			} else {
-				status = mkdir_internal(conn, smb_dname,
+				status = mkdir_internal(conn, dirfsp, smb_dname,
 						file_attributes);
 
 				if (NT_STATUS_IS_OK(status)) {
