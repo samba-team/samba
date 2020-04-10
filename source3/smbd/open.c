@@ -1023,12 +1023,12 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
  file was created or not.
 ****************************************************************************/
 
-static NTSTATUS fd_open_atomic(struct connection_struct *conn,
-			       files_struct *fsp,
+static NTSTATUS fd_open_atomic(files_struct *fsp,
 			       int flags,
 			       mode_t mode,
 			       bool *file_created)
 {
+	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
@@ -1290,8 +1290,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = fd_open_atomic(conn,
-					fsp,
+		status = fd_open_atomic(fsp,
 					local_flags & ~O_TRUNC,
 					unx_mode,
 					p_file_created);
