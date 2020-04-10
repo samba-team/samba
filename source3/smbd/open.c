@@ -759,11 +759,11 @@ static int non_widelink_open(struct connection_struct *conn,
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
-NTSTATUS fd_open(struct connection_struct *conn,
-		 files_struct *fsp,
+NTSTATUS fd_open(files_struct *fsp,
 		 int flags,
 		 mode_t mode)
 {
+	struct connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
 	int saved_errno = 0;
@@ -1028,7 +1028,6 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 			       mode_t mode,
 			       bool *file_created)
 {
-	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
@@ -1038,7 +1037,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		status = fd_open(conn, fsp, flags, mode);
+		status = fd_open(fsp, flags, mode);
 		*file_created = false;
 		return status;
 	}
@@ -1047,7 +1046,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * Fail if already exists, just pass through.
 		 */
-		status = fd_open(conn, fsp, flags, mode);
+		status = fd_open(fsp, flags, mode);
 
 		/*
 		 * Here we've opened with O_CREAT|O_EXCL. If that went
@@ -1087,7 +1086,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = fd_open(conn, fsp, curr_flags, mode);
+	status = fd_open(fsp, curr_flags, mode);
 	if (NT_STATUS_IS_OK(status)) {
 		*file_created = !file_existed;
 		return NT_STATUS_OK;
@@ -1106,7 +1105,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 			curr_flags = flags | O_EXCL;
 		}
 
-		status = fd_open(conn, fsp, curr_flags, mode);
+		status = fd_open(fsp, curr_flags, mode);
 	}
 
 	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
@@ -4506,7 +4505,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	flags |= O_DIRECTORY;
 #endif
 
-	status = fd_open(conn, fsp, flags, 0);
+	status = fd_open(fsp, flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for "
 			"%s (%s)\n",
