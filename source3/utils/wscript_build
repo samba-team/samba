@@ -29,7 +29,7 @@ bld.SAMBA3_BINARY('smbtree',
                  deps='''
                  talloc
                  smbconf
-                 libsmb
+                 smbclient
                  msrpc3
                  popt_samba3_cmdline
                  RPC_NDR_SRVSVC''')

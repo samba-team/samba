@@ -28,309 +28,46 @@
 #include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "nameserv.h"
-
-static int use_bcast;
+#include "libsmbclient.h"
 
 /* How low can we go? */
 
 enum tree_level {LEV_WORKGROUP, LEV_SERVER, LEV_SHARE};
 static enum tree_level level = LEV_SHARE;
 
-/* Holds a list of workgroups or servers */
-
-struct smb_name_list {
-        struct smb_name_list *prev, *next;
-        char *name, *comment;
-        uint32_t server_type;
-};
-
-static struct smb_name_list *workgroups, *servers, *shares;
-
-static void free_name_list(struct smb_name_list *list)
+static void get_auth_data_with_context_fn(
+	SMBCCTX *context,
+	const char *server,
+	const char *share,
+	char *domain,
+	int domain_len,
+	char *user,
+	int user_len,
+	char *password,
+	int password_len)
 {
-        while(list)
-                DLIST_REMOVE(list, list);
-}
+	struct user_auth_info *auth = popt_get_cmdline_auth_info();
+	size_t len;
 
-static void add_name(const char *machine_name, uint32_t server_type,
-                     const char *comment, void *state)
-{
-        struct smb_name_list **name_list = (struct smb_name_list **)state;
-        struct smb_name_list *new_name;
-
-        new_name = SMB_MALLOC_P(struct smb_name_list);
-
-        if (!new_name)
-                return;
-
-        ZERO_STRUCTP(new_name);
-
-	new_name->name = SMB_STRDUP(machine_name);
-	new_name->comment = SMB_STRDUP(comment);
-        new_name->server_type = server_type;
-
-	if (!new_name->name || !new_name->comment) {
-		SAFE_FREE(new_name->name);
-		SAFE_FREE(new_name->comment);
-		SAFE_FREE(new_name);
+	if (auth == NULL) {
 		return;
 	}
 
-        DLIST_ADD(*name_list, new_name);
-}
-
-/*
- * Return the IP address and workgroup of a master browser on the network, and
- * connect to it.
- */
-
-static struct cli_state *get_ipc_connect_master_ip_bcast(
-	TALLOC_CTX *ctx,
-	const struct user_auth_info *user_info,
-	char **pp_workgroup_out)
-{
-	struct sockaddr_storage *ip_list;
-	struct cli_state *cli;
-	int i, count;
-	NTSTATUS status;
-
-	*pp_workgroup_out = NULL;
-
-        DEBUG(99, ("Do broadcast lookup for workgroups on local network\n"));
-
-        /* Go looking for workgroups by broadcasting on the local network */
-
-	status = name_resolve_bcast(
-		MSBROWSE, 1, talloc_tos(), &ip_list, &count);
-        if (!NT_STATUS_IS_OK(status)) {
-                DEBUG(99, ("No master browsers responded: %s\n",
-			   nt_errstr(status)));
-                return NULL;
-        }
-
-	for (i = 0; i < count; i++) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &ip_list[i]);
-		DEBUG(99, ("Found master browser %s\n", addr));
-
-		cli = get_ipc_connect_master_ip(
-			ctx, &ip_list[i], user_info, pp_workgroup_out);
-		if (cli != NULL) {
-			return(cli);
-		}
+	len = strlcpy(domain, get_cmdline_auth_info_domain(auth), domain_len);
+	if ((int)len >= domain_len) {
+		return;
 	}
-
-	return NULL;
-}
-
-/****************************************************************************
-  display tree of smb workgroups, servers and shares
-****************************************************************************/
-static bool get_workgroups(const struct user_auth_info *user_info)
-{
-        struct cli_state *cli;
-        struct sockaddr_storage server_ss;
-	TALLOC_CTX *ctx = talloc_tos();
-	char *master_workgroup = NULL;
-
-        /* Try to connect to a #1d name of our current workgroup.  If that
-           doesn't work broadcast for a master browser and then jump off
-           that workgroup. */
-
-	master_workgroup = talloc_strdup(ctx, lp_workgroup());
-	if (!master_workgroup) {
-		return false;
+	len = strlcpy(
+		user, get_cmdline_auth_info_username(auth), user_len);
+	if ((int)len >= user_len) {
+		return;
 	}
-
-	if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ss)) {
-		DEBUG(4,("Unable to find master browser for workgroup %s, "
-			 "falling back to broadcast\n",
-			 master_workgroup));
-		use_bcast = true;
+	len = strlcpy(
+		password, get_cmdline_auth_info_password(auth), password_len);
+	if ((int)len >= password_len) {
+		/* pointless, but what can you do... */
+		return;
 	}
-
-	if (!use_bcast) {
-		char addr[INET6_ADDRSTRLEN];
-
-		print_sockaddr(addr, sizeof(addr), &server_ss);
-
-		cli = get_ipc_connect(addr, &server_ss, user_info);
-		if (cli == NULL) {
-			return false;
-		}
-	} else {
-		cli = get_ipc_connect_master_ip_bcast(talloc_tos(),
-						      user_info,
-						      &master_workgroup);
-		if (cli == NULL) {
-			DEBUG(4, ("Unable to find master browser by "
-				  "broadcast\n"));
-			return false;
-		}
-	}
-
-        if (!cli_NetServerEnum(cli, master_workgroup,
-                               SV_TYPE_DOMAIN_ENUM, add_name, &workgroups))
-                return False;
-
-        return True;
-}
-
-/* Retrieve the list of servers for a given workgroup */
-
-static bool get_servers(char *workgroup, const struct user_auth_info *user_info)
-{
-        struct cli_state *cli;
-        struct sockaddr_storage server_ss;
-	char addr[INET6_ADDRSTRLEN];
-
-        /* Open an IPC$ connection to the master browser for the workgroup */
-
-        if (!find_master_ip(workgroup, &server_ss)) {
-                DEBUG(4, ("Cannot find master browser for workgroup %s\n",
-                          workgroup));
-                return False;
-        }
-
-	print_sockaddr(addr, sizeof(addr), &server_ss);
-        if (!(cli = get_ipc_connect(addr, &server_ss, user_info)))
-                return False;
-
-        if (!cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, add_name,
-                               &servers))
-                return False;
-
-        return True;
-}
-
-static bool get_rpc_shares(struct cli_state *cli,
-			   void (*fn)(const char *, uint32_t, const char *, void *),
-			   void *state)
-{
-	NTSTATUS status;
-	struct rpc_pipe_client *pipe_hnd = NULL;
-	TALLOC_CTX *mem_ctx;
-	WERROR werr;
-	struct srvsvc_NetShareInfoCtr info_ctr;
-	struct srvsvc_NetShareCtr1 ctr1;
-	uint32_t i;
-	uint32_t resume_handle = 0;
-	uint32_t total_entries = 0;
-	struct dcerpc_binding_handle *b;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return False;
-	}
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc,
-					  &pipe_hnd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not connect to srvsvc pipe: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(mem_ctx);
-		return False;
-	}
-
-	b = pipe_hnd->binding_handle;
-
-	ZERO_STRUCT(info_ctr);
-	ZERO_STRUCT(ctr1);
-
-	info_ctr.level = 1;
-	info_ctr.ctr.ctr1 = &ctr1;
-
-	status = dcerpc_srvsvc_NetShareEnumAll(b, mem_ctx,
-					       pipe_hnd->desthost,
-					       &info_ctr,
-					       0xffffffff,
-					       &total_entries,
-					       &resume_handle,
-					       &werr);
-
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
-		TALLOC_FREE(mem_ctx);
-		TALLOC_FREE(pipe_hnd);
-		return False;
-	}
-
-	for (i=0; i < info_ctr.ctr.ctr1->count; i++) {
-		struct srvsvc_NetShareInfo1 info = info_ctr.ctr.ctr1->array[i];
-		fn(info.name, info.type, info.comment, state);
-	}
-
-	TALLOC_FREE(mem_ctx);
-	TALLOC_FREE(pipe_hnd);
-	return True;
-}
-
-
-static bool get_shares(char *server_name, const struct user_auth_info *user_info)
-{
-        struct cli_state *cli;
-
-        if (!(cli = get_ipc_connect(server_name, NULL, user_info)))
-                return False;
-
-	if (get_rpc_shares(cli, add_name, &shares))
-		return True;
-
-	if (smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1) {
-		return false;
-	}
-
-        if (!cli_RNetShareEnum(cli, add_name, &shares))
-                return False;
-
-        return True;
-}
-
-static bool print_tree(const struct user_auth_info *user_info)
-{
-        struct smb_name_list *wg, *sv, *sh;
-
-        /* List workgroups */
-
-        if (!get_workgroups(user_info))
-                return False;
-
-        for (wg = workgroups; wg; wg = wg->next) {
-
-                printf("%s\n", wg->name);
-
-                /* List servers */
-
-                free_name_list(servers);
-                servers = NULL;
-
-                if (level == LEV_WORKGROUP || 
-                    !get_servers(wg->name, user_info))
-                        continue;
-
-                for (sv = servers; sv; sv = sv->next) {
-
-                        printf("\t\\\\%-15s\t\t%s\n", 
-			       sv->name, sv->comment);
-
-                        /* List shares */
-
-                        free_name_list(shares);
-                        shares = NULL;
-
-                        if (level == LEV_SERVER ||
-                            !get_shares(sv->name, user_info))
-                                continue;
-
-                        for (sh = shares; sh; sh = sh->next) {
-                                printf("\t\t\\\\%s\\%-15s\t%s\n", 
-				       sv->name, sh->name, sh->comment);
-                        }
-                }
-        }
-
-        return True;
 }
 
 /****************************************************************************
@@ -342,14 +79,6 @@ int main(int argc, char *argv[])
 	const char **argv_const = discard_const_p(const char *, argv);
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{
-			.longName   = "broadcast",
-			.shortName  = 'b',
-			.argInfo    = POPT_ARG_VAL,
-			.arg        = &use_bcast,
-			.val        = True,
-			.descrip    = "Use broadcast instead of using the master browser" ,
-		},
 		{
 			.longName   = "domains",
 			.shortName  = 'D',
@@ -371,8 +100,12 @@ int main(int argc, char *argv[])
 		POPT_TABLEEND
 	};
 	poptContext pc;
-	int result = 1;
-
+	SMBCCTX *ctx = NULL;
+	SMBCFILE *workgroups = NULL;
+	struct smbc_dirent *dirent = NULL;
+	bool ok;
+	int ret, result = 1;
+	int debuglevel;
 
 	/* Initialise samba stuff */
 	smb_init_locale();
@@ -388,9 +121,136 @@ int main(int argc, char *argv[])
 	while(poptGetNextOpt(pc) != -1);
 	popt_burn_cmdline_password(argc, argv);
 
-	/* Now do our stuff */
+	debuglevel = DEBUGLEVEL;
 
-        if (!print_tree(popt_get_cmdline_auth_info())) {
+	ctx = smbc_new_context();
+	if (ctx == NULL) {
+		perror("smbc_new_context");
+		goto fail;
+	}
+	ret = smbc_setConfiguration(ctx, get_dyn_CONFIGFILE());
+	if (ret == -1) {
+		perror("smbc_setConfiguration");
+		goto fail;
+	}
+	smbc_setDebug(ctx, debuglevel);
+	ok = smbc_setOptionProtocols(ctx, NULL, "NT1");
+	if (!ok) {
+		perror("smbc_setOptionProtocols");
+		goto fail;
+	}
+	smbc_setFunctionAuthDataWithContext(
+		ctx, get_auth_data_with_context_fn);
+
+	ok = smbc_init_context(ctx);
+	if (!ok) {
+		perror("smbc_init_context");
+		goto fail;
+	}
+
+	workgroups = smbc_getFunctionOpendir(ctx)(ctx, "smb://");
+	if (workgroups == NULL) {
+		perror("smbc_opendir");
+		goto fail;
+	}
+
+	while ((dirent = smbc_getFunctionReaddir(ctx)(ctx, workgroups))
+	       != NULL) {
+		char *url = NULL;
+		SMBCFILE *servers = NULL;
+
+		if (dirent->smbc_type != SMBC_WORKGROUP) {
+			continue;
+		}
+
+		printf("%s\n", dirent->name);
+
+		if (level == LEV_WORKGROUP) {
+			continue;
+		}
+
+		url = talloc_asprintf(
+			talloc_tos(), "smb://%s/", dirent->name);
+		if (url == NULL) {
+			perror("talloc_asprintf");
+			goto fail;
+		}
+
+		servers = smbc_getFunctionOpendir(ctx)(ctx, url);
+		if (servers == NULL) {
+			perror("smbc_opendir");
+			goto fail;
+		}
+		TALLOC_FREE(url);
+
+		while ((dirent = smbc_getFunctionReaddir(ctx)(ctx, servers))
+		       != NULL) {
+			SMBCFILE *shares = NULL;
+			char *servername = NULL;
+
+			if (dirent->smbc_type != SMBC_SERVER) {
+				continue;
+			}
+
+			printf("\t\\\\%-15s\t\t%s\n",
+			       dirent->name,
+			       dirent->comment);
+
+			if (level == LEV_SERVER) {
+				continue;
+			}
+
+			/*
+			 * The subsequent readdir for shares will
+			 * overwrite the "server" readdir
+			 */
+			servername = talloc_strdup(talloc_tos(), dirent->name);
+			if (servername == NULL) {
+				continue;
+			}
+
+			url = talloc_asprintf(
+				talloc_tos(), "smb://%s/", servername);
+			if (url == NULL) {
+				perror("talloc_asprintf");
+				goto fail;
+			}
+
+			shares = smbc_getFunctionOpendir(ctx)(ctx, url);
+			if (shares == NULL) {
+				perror("smbc_opendir");
+				goto fail;
+			}
+
+			while ((dirent = smbc_getFunctionReaddir(
+					ctx)(ctx, shares))
+			       != NULL) {
+				printf("\t\t\\\\%s\\%-15s\t%s\n",
+				       servername,
+				       dirent->name,
+				       dirent->comment);
+			}
+
+			ret = smbc_getFunctionClosedir(ctx)(ctx, shares);
+			if (ret == -1) {
+				perror("smbc_closedir");
+				goto fail;
+			}
+
+			TALLOC_FREE(servername);
+			TALLOC_FREE(url);
+		}
+
+		ret = smbc_getFunctionClosedir(ctx)(ctx, servers);
+		if (ret == -1) {
+			perror("smbc_closedir");
+			goto fail;
+		}
+	}
+
+	ret = smbc_getFunctionClosedir(ctx)(ctx, workgroups);
+	if (ret == -1) {
+		perror("smbc_closedir");
 		goto fail;
 	}
 
@@ -398,6 +258,10 @@ int main(int argc, char *argv[])
 
 	result = 0;
 fail:
+	if (ctx != NULL) {
+		smbc_free_context(ctx, 0);
+		ctx = NULL;
+	}
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return result;

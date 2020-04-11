@@ -20,7 +20,6 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbtree</command>
-		<arg choice="opt">-b</arg>
 		<arg choice="opt">-D</arg>
 		<arg choice="opt">-S</arg>
 	</cmdsynopsis>
@@ -45,13 +44,6 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
-		<varlistentry>
-		<term>-b|--broadcast</term>
-		<listitem><para>Query network nodes by sending requests 
-		as broadcasts instead of querying the local master browser.
-		</para></listitem>
-		</varlistentry>
-
 		<varlistentry>
 		<term>-D|--domains</term>
 		<listitem><para>Only print a list of all 
