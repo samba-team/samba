@@ -371,6 +371,8 @@ int main(int argc, char *argv[])
 		POPT_TABLEEND
 	};
 	poptContext pc;
+	int result = 1;
+
 
 	/* Initialise samba stuff */
 	smb_init_locale();
@@ -389,13 +391,14 @@ int main(int argc, char *argv[])
 	/* Now do our stuff */
 
         if (!print_tree(popt_get_cmdline_auth_info())) {
-		poptFreeContext(pc);
-		TALLOC_FREE(frame);
-                return 1;
+		goto fail;
 	}
 
 	popt_free_cmdline_auth_info();
+
+	result = 0;
+fail:
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
-	return 0;
+	return result;
 }
