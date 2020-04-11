@@ -530,7 +530,7 @@ sub boilerplate_ep_server($)
 	$self->pidl("static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)");
 	$self->pidl("{");
 	$self->indent();
-	$self->pidl("int i;");
+	$self->pidl("uint32_t i;");
 	$self->pidl("NTSTATUS ret;");
 	$self->pidl("struct dcerpc_binding *binding;");
 	$self->pidl("");
