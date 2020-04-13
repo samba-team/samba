@@ -747,12 +747,14 @@ fail:
  filesystem sd.
 *******************************************************************/
 
-NTSTATUS get_nt_acl_common(
-	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+NTSTATUS get_nt_acl_common_at(
+	NTSTATUS (*get_acl_blob_at_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,
+				    struct files_struct *dirfsp,
 				    const struct smb_filename *smb_fname,
 				    DATA_BLOB *pblob),
 	vfs_handle_struct *handle,
+	struct files_struct *dirfsp,
 	const struct smb_filename *smb_fname_in,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
@@ -770,7 +772,11 @@ NTSTATUS get_nt_acl_common(
 
 	DBG_DEBUG("name=%s\n", smb_fname_in->base_name);
 
-	status = get_acl_blob_fn(mem_ctx, handle, smb_fname_in, &blob);
+	status = get_acl_blob_at_fn(mem_ctx,
+				handle,
+				dirfsp,
+				smb_fname_in,
+				&blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
 					      handle,

@@ -122,8 +122,9 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	return map_nt_error_from_unix(errno);
 }
 
-static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
+static NTSTATUS get_acl_blob_at(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob)
 {
@@ -374,8 +375,13 @@ static NTSTATUS acl_xattr_get_nt_acl(vfs_handle_struct *handle,
 				     struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	status = get_nt_acl_common(get_acl_blob, handle, smb_fname,
-				   security_info, mem_ctx, ppdesc);
+	status = get_nt_acl_common_at(get_acl_blob_at,
+				handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				security_info,
+				mem_ctx,
+				ppdesc);
 	return status;
 }
 
