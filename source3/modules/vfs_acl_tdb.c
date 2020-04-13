@@ -108,6 +108,54 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 	return status;
 }
 
+#if 0
+/*******************************************************************
+ Pull a security descriptor from an fsp into a DATA_BLOB from a tdb store.
+*******************************************************************/
+
+static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
+			vfs_handle_struct *handle,
+			files_struct *fsp,
+			DATA_BLOB *pblob)
+{
+	uint8_t id_buf[16];
+	TDB_DATA data;
+	struct file_id id;
+	struct db_context *db = acl_db;
+	NTSTATUS status = NT_STATUS_OK;
+
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	id = vfs_file_id_from_sbuf(handle->conn, &fsp->fsp_name->st);
+
+	/* For backwards compatibility only store the dev/inode. */
+	push_file_id_16((char *)id_buf, &id);
+
+	status = dbwrap_fetch(db,
+			      ctx,
+			      make_tdb_data(id_buf, sizeof(id_buf)),
+			      &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	pblob->data = data.dptr;
+	pblob->length = data.dsize;
+
+	DBG_DEBUG("returned %u bytes from file %s\n",
+		(unsigned int)data.dsize,
+		fsp_str_dbg(fsp));
+
+	if (pblob->length == 0 || pblob->data == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+	return NT_STATUS_OK;
+}
+#endif
+
 /*******************************************************************
  Pull a security descriptor into a DATA_BLOB from a tdb store.
 *******************************************************************/
