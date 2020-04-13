@@ -159,9 +159,12 @@ bool directory_has_default_acl(connection_struct *conn,
 	unsigned int i;
 	NTSTATUS status;
 
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
-					     SECINFO_DACL, talloc_tos(),
-					     &secdesc);
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+				dirfsp,
+				smb_fname,
+				SECINFO_DACL,
+				talloc_tos(),
+				&secdesc);
 
 	if (!NT_STATUS_IS_OK(status) ||
 			secdesc == NULL ||
