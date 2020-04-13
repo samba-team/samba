@@ -363,7 +363,7 @@ static NTSTATUS acl_xattr_fget_nt_acl(vfs_handle_struct *handle,
 				      struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	status = get_nt_acl_common(get_acl_blob, handle, fsp, NULL,
+	status = fget_nt_acl_common(fget_acl_blob, handle, fsp,
 				   security_info, mem_ctx, ppdesc);
 	return status;
 }
