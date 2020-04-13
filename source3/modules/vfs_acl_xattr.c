@@ -124,7 +124,6 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
-			files_struct *fsp,
 			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob)
 {
@@ -145,7 +144,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	val = tmp;
 
 	sizeret =
-	    getxattr_do(handle, fsp, smb_fname, XATTR_NTACL_NAME, val, size);
+	    getxattr_do(handle, NULL, smb_fname, XATTR_NTACL_NAME, val, size);
 
 	if (sizeret >= 0) {
 		pblob->data = val;
@@ -159,7 +158,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 
 	/* Too small, try again. */
 	sizeret =
-	    getxattr_do(handle, fsp, smb_fname, XATTR_NTACL_NAME, NULL, 0);
+	    getxattr_do(handle, NULL, smb_fname, XATTR_NTACL_NAME, NULL, 0);
 	if (sizeret < 0) {
 		goto err;
 	}
@@ -375,7 +374,7 @@ static NTSTATUS acl_xattr_get_nt_acl(vfs_handle_struct *handle,
 				     struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	status = get_nt_acl_common(get_acl_blob, handle, NULL, smb_fname,
+	status = get_nt_acl_common(get_acl_blob, handle, smb_fname,
 				   security_info, mem_ctx, ppdesc);
 	return status;
 }

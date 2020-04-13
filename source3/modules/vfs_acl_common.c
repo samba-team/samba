@@ -593,6 +593,7 @@ fail:
 	return status;
 }
 
+#if 0
 static NTSTATUS stat_fsp_or_smb_fname(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      const struct smb_filename *smb_fname,
@@ -634,6 +635,7 @@ static NTSTATUS stat_fsp_or_smb_fname(vfs_handle_struct *handle,
 
 	return NT_STATUS_OK;
 }
+#endif
 
 /*******************************************************************
  Pull a DATA_BLOB from an xattr given an fsp.
@@ -792,11 +794,9 @@ fail:
 NTSTATUS get_nt_acl_common(
 	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,
-				    files_struct *fsp,
 				    const struct smb_filename *smb_fname,
 				    DATA_BLOB *pblob),
 	vfs_handle_struct *handle,
-	files_struct *fsp,
 	const struct smb_filename *smb_fname_in,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
@@ -805,7 +805,6 @@ NTSTATUS get_nt_acl_common(
 	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
-	const struct smb_filename *smb_fname = NULL;
 	bool psd_is_from_fs = false;
 	struct acl_common_config *config = NULL;
 
@@ -813,27 +812,21 @@ NTSTATUS get_nt_acl_common(
 				struct acl_common_config,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	if (fsp && smb_fname_in == NULL) {
-		smb_fname = fsp->fsp_name;
-	} else {
-		smb_fname = smb_fname_in;
-	}
+	DBG_DEBUG("name=%s\n", smb_fname_in->base_name);
 
-	DBG_DEBUG("name=%s\n", smb_fname->base_name);
-
-	status = get_acl_blob_fn(mem_ctx, handle, fsp, smb_fname, &blob);
+	status = get_acl_blob_fn(mem_ctx, handle, smb_fname_in, &blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
 					      handle,
-					      fsp,
-					      smb_fname,
+					      NULL,
+					      smb_fname_in,
 					      &blob,
 					      &psd,
 					      &psd_is_from_fs);
 		TALLOC_FREE(blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("ACL validation for [%s] failed\n",
-				  smb_fname->base_name);
+				  smb_fname_in->base_name);
 			goto fail;
 		}
 	}
@@ -845,42 +838,36 @@ NTSTATUS get_nt_acl_common(
 
 		if (config->ignore_system_acls) {
 			SMB_STRUCT_STAT sbuf;
-			SMB_STRUCT_STAT *psbuf = &sbuf;
+			int ret;
 
-			status = stat_fsp_or_smb_fname(handle, fsp, smb_fname,
-						       &sbuf, &psbuf);
-			if (!NT_STATUS_IS_OK(status)) {
+			ret = vfs_stat_smb_basename(handle->conn,
+					smb_fname_in,
+					&sbuf);
+			if (ret == -1) {
+				status = map_nt_error_from_unix(errno);
 				goto fail;
 			}
 
 			status = make_default_filesystem_acl(
 				mem_ctx,
 				config->default_acl_style,
-				smb_fname->base_name,
-				psbuf,
+				smb_fname_in->base_name,
+				&sbuf,
 				&psd);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
 		} else {
-			if (fsp) {
-				status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-								  fsp,
-								  security_info,
-								  mem_ctx,
-								  &psd);
-			} else {
-				status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-								 smb_fname,
-								 security_info,
-								 mem_ctx,
-								 &psd);
-			}
+			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+							 smb_fname_in,
+							 security_info,
+							 mem_ctx,
+							 &psd);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_DEBUG("get_next_acl for file %s "
 					  "returned %s\n",
-					  smb_fname->base_name,
+					  smb_fname_in->base_name,
 					  nt_errstr(status));
 				goto fail;
 			}
@@ -891,8 +878,8 @@ NTSTATUS get_nt_acl_common(
 
 	if (psd_is_from_fs) {
 		SMB_STRUCT_STAT sbuf;
-		SMB_STRUCT_STAT *psbuf = &sbuf;
 		bool is_directory = false;
+		int ret;
 
 		/*
 		 * We're returning the underlying ACL from the
@@ -900,19 +887,21 @@ NTSTATUS get_nt_acl_common(
 		 * inheritable ACE entries we have to fake them.
 		 */
 
-		status = stat_fsp_or_smb_fname(handle, fsp, smb_fname,
-					       &sbuf, &psbuf);
-		if (!NT_STATUS_IS_OK(status)) {
+		ret = vfs_stat_smb_basename(handle->conn,
+				smb_fname_in,
+				&sbuf);
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
 			goto fail;
 		}
 
-		is_directory = S_ISDIR(psbuf->st_ex_mode);
+		is_directory = S_ISDIR(sbuf.st_ex_mode);
 
 		if (is_directory && !sd_has_inheritable_components(psd, true)) {
 			status = add_directory_inheritable_components(
 				handle,
-				smb_fname->base_name,
-				psbuf,
+				smb_fname_in->base_name,
+				&sbuf,
 				psd);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
@@ -944,7 +933,7 @@ NTSTATUS get_nt_acl_common(
 
 	if (DEBUGLEVEL >= 10) {
 		DBG_DEBUG("returning acl for %s is:\n",
-			  smb_fname->base_name);
+			  smb_fname_in->base_name);
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 

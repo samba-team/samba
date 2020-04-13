@@ -160,7 +160,6 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
-			files_struct *fsp,
 			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob)
 {
@@ -170,19 +169,15 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	struct db_context *db = acl_db;
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT sbuf;
+	int ret;
 
 	ZERO_STRUCT(sbuf);
 
-	if (fsp) {
-		status = vfs_stat_fsp(fsp);
-		sbuf = fsp->fsp_name->st;
-	} else {
-		int ret = vfs_stat_smb_basename(handle->conn,
+	ret = vfs_stat_smb_basename(handle->conn,
 				smb_fname,
 				&sbuf);
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-		}
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -205,8 +200,8 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	pblob->data = data.dptr;
 	pblob->length = data.dsize;
 
-	DEBUG(10,("get_acl_blob: returned %u bytes from file %s\n",
-		(unsigned int)data.dsize, smb_fname->base_name ));
+	DBG_DEBUG("returned %u bytes from file %s\n",
+		(unsigned int)data.dsize, smb_fname->base_name );
 
 	if (pblob->length == 0 || pblob->data == NULL) {
 		return NT_STATUS_NOT_FOUND;
@@ -466,7 +461,7 @@ static NTSTATUS acl_tdb_get_nt_acl(vfs_handle_struct *handle,
 				   struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	status = get_nt_acl_common(get_acl_blob, handle, NULL, smb_fname,
+	status = get_nt_acl_common(get_acl_blob, handle, smb_fname,
 				   security_info, mem_ctx, ppdesc);
 	return status;
 }
