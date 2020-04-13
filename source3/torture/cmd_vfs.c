@@ -1553,9 +1553,12 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(vfs->conn, smb_fname,
-				    SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
-				    talloc_tos(), &sd);
+	status = SMB_VFS_GET_NT_ACL_AT(vfs->conn,
+				vfs->conn->cwd_fsp,
+				smb_fname,
+				SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
+				talloc_tos(),
+				&sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("get_nt_acl returned (%s)\n", nt_errstr(status));
 		return status;
