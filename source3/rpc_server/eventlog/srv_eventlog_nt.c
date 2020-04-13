@@ -127,13 +127,14 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(c->conn,
+	status = SMB_VFS_GET_NT_ACL_AT(c->conn,
+				c->conn->cwd_fsp,
 				smb_fname,
 				security_info_wanted,
 				ctx,
 				sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL returned %s.\n",
+		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL_AT returned %s.\n",
 			  nt_errstr(status)));
 	}
 
