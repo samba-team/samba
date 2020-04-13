@@ -1055,6 +1055,49 @@ catia_get_nt_acl(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS catia_get_nt_acl_at(struct vfs_handle_struct *handle,
+				    struct files_struct *dirfsp,
+				    const struct smb_filename *smb_fname,
+				    uint32_t security_info,
+				    TALLOC_CTX *mem_ctx,
+				    struct security_descriptor **ppdesc)
+{
+	char *mapped_name = NULL;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *mapped_smb_fname = NULL;
+	NTSTATUS status;
+
+	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
+
+	status = catia_string_replace_allocate(handle->conn,
+				path, &mapped_name, vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return status;
+	}
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					&smb_fname->st,
+					smb_fname->twrp,
+					smb_fname->flags);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+					dirfsp,
+					mapped_smb_fname,
+					security_info,
+					mem_ctx,
+					ppdesc);
+	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(mapped_smb_fname);
+
+	return status;
+}
+
 static SMB_ACL_T
 catia_sys_acl_get_file(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
@@ -2485,6 +2528,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* NT ACL operations. */
 	.get_nt_acl_fn = catia_get_nt_acl,
+	.get_nt_acl_at_fn = catia_get_nt_acl_at,
 	.fget_nt_acl_fn = catia_fget_nt_acl,
 	.fset_nt_acl_fn = catia_fset_nt_acl,
 
