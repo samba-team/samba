@@ -1946,6 +1946,70 @@ out:
 }
 
 /*
+ * Success: return NT_STATUS_OK
+ * Failure: return NT status error
+ * In this case, "name" is a path.
+ */
+static NTSTATUS mh_get_nt_acl_at(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			uint32_t security_info,
+			TALLOC_CTX *mem_ctx,
+			struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	char *clientPath;
+	struct smb_filename *client_smb_fname = NULL;
+	TALLOC_CTX *ctx;
+
+	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
+
+	DEBUG(MH_INFO_DEBUG, ("Entering mh_get_nt_acl_at\n"));
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+					dirfsp,
+					smb_fname,
+					security_info,
+					mem_ctx,
+					ppdesc);
+		goto out;
+	}
+
+	clientPath = NULL;
+	ctx = talloc_tos();
+
+	if (alloc_get_client_path(handle, ctx,
+				smb_fname->base_name,
+				&clientPath)) {
+		status = map_nt_error_from_unix(errno);
+		goto err;
+	}
+
+	client_smb_fname = synthetic_smb_fname(talloc_tos(),
+					clientPath,
+					NULL,
+					NULL,
+					smb_fname->twrp,
+					smb_fname->flags);
+	if (client_smb_fname == NULL) {
+		TALLOC_FREE(clientPath);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+					dirfsp,
+					client_smb_fname,
+					security_info,
+					mem_ctx,
+					ppdesc);
+err:
+	TALLOC_FREE(clientPath);
+	TALLOC_FREE(client_smb_fname);
+out:
+	return status;
+}
+
+/*
  * Success: return acl pointer
  * Failure: set errno, return NULL
  */
@@ -2230,6 +2294,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	/* NT ACL operations. */
 
 	.get_nt_acl_fn = mh_get_nt_acl,
+	.get_nt_acl_at_fn = mh_get_nt_acl_at,
 
 	/* POSIX ACL operations. */
 
