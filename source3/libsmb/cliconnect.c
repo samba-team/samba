@@ -3799,7 +3799,8 @@ struct cli_state *get_ipc_connect(char *server,
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
-	} else if (is_ipaddress(server)) {
+	}
+	if (is_ipaddress(server)) {
 	    /* windows 9* needs a correct NMB name for connections */
 	    fstring remote_name;
 
