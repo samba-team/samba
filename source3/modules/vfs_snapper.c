@@ -2378,6 +2378,65 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS snapper_gmt_get_nt_acl_at(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *fname,
+				uint32_t security_info,
+				TALLOC_CTX *mem_ctx,
+				struct security_descriptor **ppdesc)
+{
+	time_t timestamp;
+	char *stripped;
+	NTSTATUS status;
+	char *conv;
+	struct smb_filename *smb_fname = NULL;
+	bool ok;
+
+	ok = snapper_gmt_strip_snapshot(talloc_tos(),
+					handle,
+					fname,
+					&timestamp,
+					&stripped);
+	if (!ok) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+						dirfsp,
+						fname,
+						security_info,
+						mem_ctx,
+						ppdesc);
+	}
+	conv = snapper_gmt_convert(talloc_tos(),
+					handle,
+					stripped,
+					timestamp);
+	TALLOC_FREE(stripped);
+	if (conv == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL,
+					0,
+					fname->flags);
+	TALLOC_FREE(conv);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+					dirfsp,
+					smb_fname,
+					security_info,
+					mem_ctx,
+					ppdesc);
+	TALLOC_FREE(smb_fname);
+	return status;
+}
+
 static int snapper_gmt_mkdirat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *fname,
@@ -2755,6 +2814,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.mknodat_fn = snapper_gmt_mknodat,
 	.realpath_fn = snapper_gmt_realpath,
 	.get_nt_acl_fn = snapper_gmt_get_nt_acl,
+	.get_nt_acl_at_fn = snapper_gmt_get_nt_acl_at,
 	.mkdirat_fn = snapper_gmt_mkdirat,
 	.getxattr_fn = snapper_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
