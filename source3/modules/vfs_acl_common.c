@@ -636,6 +636,154 @@ static NTSTATUS stat_fsp_or_smb_fname(vfs_handle_struct *handle,
 }
 
 /*******************************************************************
+ Pull a DATA_BLOB from an xattr given an fsp.
+ If the hash doesn't match, or doesn't exist - return the underlying
+ filesystem sd.
+*******************************************************************/
+
+NTSTATUS fget_nt_acl_common(
+	NTSTATUS (*fget_acl_blob_fn)(TALLOC_CTX *ctx,
+				    vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    DATA_BLOB *pblob),
+	vfs_handle_struct *handle,
+	files_struct *fsp,
+	uint32_t security_info,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **ppdesc)
+{
+	DATA_BLOB blob = data_blob_null;
+	NTSTATUS status;
+	struct security_descriptor *psd = NULL;
+	const struct smb_filename *smb_fname = fsp->fsp_name;
+	bool psd_is_from_fs = false;
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	DBG_DEBUG("name=%s\n", smb_fname->base_name);
+
+	status = fget_acl_blob_fn(mem_ctx, handle, fsp, &blob);
+	if (NT_STATUS_IS_OK(status)) {
+		status = validate_nt_acl_blob(mem_ctx,
+					      handle,
+					      fsp,
+					      smb_fname,
+					      &blob,
+					      &psd,
+					      &psd_is_from_fs);
+		TALLOC_FREE(blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("ACL validation for [%s] failed\n",
+				  smb_fname->base_name);
+			goto fail;
+		}
+	}
+
+	if (psd == NULL) {
+		/* Get the full underlying sd, as we failed to get the
+		 * blob for the hash, or the revision/hash type wasn't
+		 * known */
+
+		if (config->ignore_system_acls) {
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
+			status = make_default_filesystem_acl(
+				mem_ctx,
+				config->default_acl_style,
+				smb_fname->base_name,
+				&fsp->fsp_name->st,
+				&psd);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+		} else {
+			status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+							  fsp,
+							  security_info,
+							  mem_ctx,
+							  &psd);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("get_next_acl for file %s "
+					  "returned %s\n",
+					  smb_fname->base_name,
+					  nt_errstr(status));
+				goto fail;
+			}
+
+			psd_is_from_fs = true;
+		}
+	}
+
+	if (psd_is_from_fs) {
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		/*
+		 * We're returning the underlying ACL from the
+		 * filesystem. If it's a directory, and has no
+		 * inheritable ACE entries we have to fake them.
+		 */
+
+		if (fsp->fsp_flags.is_directory &&
+				!sd_has_inheritable_components(psd, true)) {
+			status = add_directory_inheritable_components(
+				handle,
+				smb_fname->base_name,
+				&fsp->fsp_name->st,
+				psd);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+		}
+
+		/*
+		 * The underlying POSIX module always sets the
+		 * ~SEC_DESC_DACL_PROTECTED bit, as ACLs can't be inherited in
+		 * this way under POSIX. Remove it for Windows-style ACLs.
+		 */
+		psd->type &= ~SEC_DESC_DACL_PROTECTED;
+	}
+
+	if (!(security_info & SECINFO_OWNER)) {
+		psd->owner_sid = NULL;
+	}
+	if (!(security_info & SECINFO_GROUP)) {
+		psd->group_sid = NULL;
+	}
+	if (!(security_info & SECINFO_DACL)) {
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
+		psd->dacl = NULL;
+	}
+	if (!(security_info & SECINFO_SACL)) {
+		psd->type &= ~SEC_DESC_SACL_PRESENT;
+		psd->sacl = NULL;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("returning acl for %s is:\n",
+			  smb_fname->base_name);
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
+	*ppdesc = psd;
+
+	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(psd);
+	return status;
+}
+
+/*******************************************************************
  Pull a DATA_BLOB from an xattr given a pathname.
  If the hash doesn't match, or doesn't exist - return the underlying
  filesystem sd.

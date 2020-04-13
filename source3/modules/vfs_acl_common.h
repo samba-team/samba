@@ -60,6 +60,17 @@ NTSTATUS get_nt_acl_common(
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc);
 
+NTSTATUS fget_nt_acl_common(
+	NTSTATUS (*fget_acl_blob_fn)(TALLOC_CTX *ctx,
+				    vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    DATA_BLOB *pblob),
+	vfs_handle_struct *handle,
+	files_struct *fsp,
+	uint32_t security_info,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **ppdesc);
+
 NTSTATUS fset_nt_acl_common(
 	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,
