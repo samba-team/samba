@@ -271,13 +271,15 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn,
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				security_info_wanted,
 				mem_ctx,
 				sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("get_nt_acl_conn: get_nt_acl returned %s.\n", nt_errstr(status)));
+		DBG_ERR("get_nt_acl_at returned %s.\n",
+			nt_errstr(status));
 	}
 
 	TALLOC_FREE(frame);
