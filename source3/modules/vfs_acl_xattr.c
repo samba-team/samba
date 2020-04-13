@@ -64,7 +64,6 @@ static ssize_t getxattr_do(vfs_handle_struct *handle,
 	return sizeret;
 }
 
-#if 0
 static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
 			files_struct *fsp,
@@ -122,7 +121,6 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	TALLOC_FREE(val);
 	return map_nt_error_from_unix(errno);
 }
-#endif
 
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
@@ -388,7 +386,7 @@ static NTSTATUS acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 				      const struct security_descriptor *psd)
 {
 	NTSTATUS status;
-	status = fset_nt_acl_common(get_acl_blob, store_acl_blob_fsp,
+	status = fset_nt_acl_common(fget_acl_blob, store_acl_blob_fsp,
 				    ACL_MODULE_NAME,
 				    handle, fsp, security_info_sent, psd);
 	return status;

@@ -108,7 +108,6 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 	return status;
 }
 
-#if 0
 /*******************************************************************
  Pull a security descriptor from an fsp into a DATA_BLOB from a tdb store.
 *******************************************************************/
@@ -154,7 +153,6 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	}
 	return NT_STATUS_OK;
 }
-#endif
 
 /*******************************************************************
  Pull a security descriptor into a DATA_BLOB from a tdb store.
@@ -479,7 +477,7 @@ static NTSTATUS acl_tdb_fset_nt_acl(vfs_handle_struct *handle,
 				    const struct security_descriptor *psd)
 {
 	NTSTATUS status;
-	status = fset_nt_acl_common(get_acl_blob, store_acl_blob_fsp,
+	status = fset_nt_acl_common(fget_acl_blob, store_acl_blob_fsp,
 				    ACL_MODULE_NAME,
 				    handle, fsp, security_info_sent, psd);
 	return status;

@@ -1054,10 +1054,9 @@ static NTSTATUS store_v3_blob(
 *********************************************************************/
 
 NTSTATUS fset_nt_acl_common(
-	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+	NTSTATUS (*fget_acl_blob_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const struct smb_filename *smb_fname,
 				    DATA_BLOB *pblob),
 	NTSTATUS (*store_acl_blob_fsp_fn)(vfs_handle_struct *handle,
 					  files_struct *fsp,
@@ -1086,8 +1085,7 @@ NTSTATUS fset_nt_acl_common(
 			discard_const_p(struct security_descriptor, orig_psd));
 	}
 
-	status = get_nt_acl_common(get_acl_blob_fn, handle, fsp,
-			NULL,
+	status = fget_nt_acl_common(fget_acl_blob_fn, handle, fsp,
 			SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL,
 				     frame,
 			&psd);

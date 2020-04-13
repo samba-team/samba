@@ -72,10 +72,9 @@ NTSTATUS fget_nt_acl_common(
 	struct security_descriptor **ppdesc);
 
 NTSTATUS fset_nt_acl_common(
-	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+	NTSTATUS (*fget_acl_blob_fn)(TALLOC_CTX *ctx,
 				    vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const struct smb_filename *smb_fname,
 				    DATA_BLOB *pblob),
 	NTSTATUS (*store_acl_blob_fsp_fn)(vfs_handle_struct *handle,
 					  files_struct *fsp,
