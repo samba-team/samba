@@ -463,7 +463,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                           libsmb/clifsinfo.c
                           libsmb/clidfs.c
                           libsmb/clioplock.c
-                          libsmb/clirap2.c
                           libsmb/async_smb.c
                           libsmb/reparse_symlink.c
                           libsmb/clisymlink.c

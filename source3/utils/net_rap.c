@@ -27,7 +27,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "utils/net.h"
 #include "libsmb/libsmb.h"
-#include "libsmb/clirap.h"
+#include "clirap2.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 /* The following messages were for error checking that is not properly

@@ -43,7 +43,7 @@
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
-#include "libsmb/clirap.h"
+#include "clirap2.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"
 #include "../libcli/smb/smbXcli_base.h"

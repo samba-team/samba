@@ -182,6 +182,7 @@ bld.SAMBA3_BINARY('net',
                  source='''net.c
                  net_ads.c
                  net_help.c
+                 clirap2.c
                  net_rap.c
                  net_rpc.c
                  net_rpc_samsync.c

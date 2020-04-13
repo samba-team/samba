@@ -79,7 +79,7 @@
 #include "libsmb/libsmb.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../librpc/gen_ndr/svcctl.h"
-#include "libsmb/clirap.h"
+#include "clirap2.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 #define WORDSIZE 2
@@ -183,7 +183,7 @@ static size_t rap_getstringf(char *src, char *dest, size_t l, size_t dlen, char 
 		len = l;
 	}
 	if (len) {
-	 	pull_ascii(dest,src,len,len,STR_ASCII);
+		pull_ascii(dest,src,len,len,STR_ASCII);
 	}
 	return l;
 }
