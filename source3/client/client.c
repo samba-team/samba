@@ -5237,13 +5237,17 @@ static int cmd_utimes(void)
 
 		ret = strptime(s, "%y:%m:%d-%H:%M:%S", &tm);
 
+		if (ret == NULL) {
+			ret = strptime(s, "%Y:%m:%d-%H:%M:%S", &tm);
+		}
+
 		/* We could not match all the chars, so print error */
 		if (ret == NULL || *ret != 0) {
 			d_printf("Invalid date format: %s\n", s);
 			d_printf("utimes <filename> <create-time> "
 				"<access-time> <write-time> <change-time>\n");
-			d_printf("Dates should be in YY:MM:DD-HH:MM:SS format "
-				"or -1 for no change\n");
+			d_printf("Dates should be in [YY]YY:MM:DD-HH:MM:SS "
+				 "format or -1 for no change\n");
 			err = 1;
 			goto out;
 		}
