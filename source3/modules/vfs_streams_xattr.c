@@ -1457,8 +1457,12 @@ static NTSTATUS streams_xattr_fget_nt_acl(vfs_handle_struct *handle,
 						mem_ctx, ppdesc);
 	}
 
-	return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp->base_fsp->fsp_name,
-				       security_info, mem_ctx, ppdesc);
+	return SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+					handle->conn->cwd_fsp,
+					fsp->base_fsp->fsp_name,
+					security_info,
+					mem_ctx,
+					ppdesc);
 }
 
 static NTSTATUS streams_xattr_fset_nt_acl(vfs_handle_struct *handle,
