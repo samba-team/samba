@@ -147,10 +147,14 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+			dirfsp,
+			smb_fname,
 			(SECINFO_OWNER |
-			SECINFO_GROUP |
-			 SECINFO_DACL), talloc_tos(), &sd);
+				SECINFO_GROUP |
+				SECINFO_DACL),
+			talloc_tos(),
+			&sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
