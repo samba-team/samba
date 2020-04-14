@@ -409,12 +409,13 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
  * need it as well.
  **/
 static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
-				     vfs_handle_struct *handle,
-				     files_struct *fsp,
-				     const struct smb_filename *smb_fname,
-				     const DATA_BLOB *blob,
-				     struct security_descriptor **ppsd,
-				     bool *psd_is_from_fs)
+				vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const DATA_BLOB *blob,
+				struct security_descriptor **ppsd,
+				bool *psd_is_from_fs)
 {
 	NTSTATUS status;
 	uint16_t hash_type = XATTR_SD_HASH_TYPE_NONE;
@@ -626,12 +627,13 @@ NTSTATUS fget_nt_acl_common(
 	status = fget_acl_blob_fn(mem_ctx, handle, fsp, &blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
-					      handle,
-					      fsp,
-					      smb_fname,
-					      &blob,
-					      &psd,
-					      &psd_is_from_fs);
+					handle,
+					fsp,
+					NULL,
+					smb_fname,
+					&blob,
+					&psd,
+					&psd_is_from_fs);
 		TALLOC_FREE(blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("ACL validation for [%s] failed\n",
@@ -779,12 +781,13 @@ NTSTATUS get_nt_acl_common_at(
 				&blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
-					      handle,
-					      NULL,
-					      smb_fname_in,
-					      &blob,
-					      &psd,
-					      &psd_is_from_fs);
+					handle,
+					NULL,
+					dirfsp,
+					smb_fname_in,
+					&blob,
+					&psd,
+					&psd_is_from_fs);
 		TALLOC_FREE(blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("ACL validation for [%s] failed\n",
