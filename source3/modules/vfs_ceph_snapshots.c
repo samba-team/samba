@@ -1164,56 +1164,6 @@ static struct smb_filename *ceph_snap_gmt_realpath(vfs_handle_struct *handle,
 	return result_fname;
 }
 
-/*
- * XXX this should have gone through open() conversion, so why do we need
- * a handler here? posix_fget_nt_acl() falls back to posix_get_nt_acl() for
- * dirs (or fd == -1).
- */
-static NTSTATUS ceph_snap_gmt_fget_nt_acl(vfs_handle_struct *handle,
-					struct files_struct *fsp,
-					uint32_t security_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
-	struct smb_filename *smb_fname;
-	int ret;
-	NTSTATUS status;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					fsp->fsp_name->base_name,
-					&timestamp, stripped, sizeof(stripped));
-	if (ret < 0) {
-		return map_nt_error_from_unix(-ret);
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
-						mem_ctx,
-						ppdesc);
-	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		return map_nt_error_from_unix(-ret);
-	}
-
-	smb_fname = synthetic_smb_fname(mem_ctx,
-					conv,
-					NULL,
-					NULL,
-					fsp->fsp_name->flags);
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
-					 mem_ctx, ppdesc);
-	TALLOC_FREE(smb_fname);
-	return status;
-}
-
 static NTSTATUS ceph_snap_gmt_get_nt_acl(vfs_handle_struct *handle,
 				       const struct smb_filename *csmb_fname,
 				       uint32_t security_info,
@@ -1570,7 +1520,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
-	.fget_nt_acl_fn = ceph_snap_gmt_fget_nt_acl,
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
 	.mkdirat_fn = ceph_snap_gmt_mkdirat,
 	.getxattr_fn = ceph_snap_gmt_getxattr,
