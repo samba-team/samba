@@ -96,6 +96,16 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 		TALLOC_FREE(conn);
 		return NULL;
 	}
+	conn->cwd_fsp->fsp_name = synthetic_smb_fname(conn->cwd_fsp,
+						      ".",
+						      NULL,
+						      NULL,
+						      0,
+						      0);
+	if (conn->cwd_fsp->fsp_name == NULL) {
+		TALLOC_FREE(conn);
+		return NULL;
+	}
 	conn->cwd_fsp->fh = talloc_zero(conn->cwd_fsp, struct fd_handle);
 	if (conn->cwd_fsp->fh == NULL) {
 		DBG_ERR("talloc_zero failed\n");

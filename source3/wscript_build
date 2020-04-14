@@ -589,7 +589,7 @@ bld.SAMBA3_LIBRARY('smbconf',
 
 bld.SAMBA3_LIBRARY('smbd_conn',
                    source='smbd/conn.c',
-                   deps='samba3-util samba-util',
+                   deps='samba3-util samba-util FNAME_UTIL',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('sysquotas',
