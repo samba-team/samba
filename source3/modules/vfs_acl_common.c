@@ -824,11 +824,12 @@ NTSTATUS get_nt_acl_common_at(
 				goto fail;
 			}
 		} else {
-			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-							 smb_fname_in,
-							 security_info,
-							 mem_ctx,
-							 &psd);
+			status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+						dirfsp,
+						smb_fname_in,
+						security_info,
+						mem_ctx,
+						&psd);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_DEBUG("get_next_acl for file %s "
