@@ -5233,9 +5233,9 @@ static int cmd_utimes(void)
 			times[time_count] = make_omit_timespec();
 			time_count++;
 			continue;
-		} else {
-			ret = strptime(s, "%y:%m:%d-%H:%M:%S", &tm);
 		}
+
+		ret = strptime(s, "%y:%m:%d-%H:%M:%S", &tm);
 
 		/* We could not match all the chars, so print error */
 		if (ret == NULL || *ret != 0) {
