@@ -864,6 +864,12 @@ for env in ["ad_dc_ntvfs:local", "ad_dc:local",
             "promoted_dc:local"]:
     planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol", py3_compatible=True)
 
+planoldpythontestsuite("ad_dc",
+                       "samba.tests.ldap_raw",
+                       py3_compatible= True,
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       environ={'TEST_ENV': 'ad_dc'})
+
 planoldpythontestsuite("none", "samba.tests.blackbox.undoguididx")
 
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
