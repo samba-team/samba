@@ -3062,11 +3062,14 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
-				    (SECINFO_OWNER |
-				     SECINFO_GROUP |
-				     SECINFO_DACL),
-				    talloc_tos(), &sd);
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+				dirfsp,
+				smb_fname,
+				(SECINFO_OWNER |
+					SECINFO_GROUP |
+					SECINFO_DACL),
+				talloc_tos(),
+				&sd);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
