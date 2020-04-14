@@ -3489,14 +3489,6 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	DEBUG(10,("posix_fget_nt_acl: called for file %s\n",
 		  fsp_str_dbg(fsp)));
 
-	/* can it happen that fsp_name == NULL ? */
-	if (fsp->fsp_flags.is_directory ||  fsp->fh->fd == -1) {
-		status = posix_get_nt_acl(fsp->conn, fsp->fsp_name,
-					  security_info, mem_ctx, ppdesc);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
 	/* Get the stat struct for the owner info. */
 	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 		TALLOC_FREE(frame);
