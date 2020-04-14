@@ -538,11 +538,12 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 							  mem_ctx,
 							  &psd_fs);
 		} else {
-			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-							 smb_fname,
-							 HASH_SECURITY_INFO,
-							 mem_ctx,
-							 &psd_fs);
+			status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
+							dirfsp,
+							smb_fname,
+							HASH_SECURITY_INFO,
+							mem_ctx,
+							&psd_fs);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
