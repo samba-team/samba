@@ -307,17 +307,18 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 		goto out;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn,
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+				dirfsp,
 				parent_dir,
 				SECINFO_DACL,
 				frame,
 				&parent_sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("check_parent_access: SMB_VFS_GET_NT_ACL failed for "
+		DBG_INFO("SMB_VFS_GET_NT_ACL_AT failed for "
 			"%s with error %s\n",
 			smb_fname_str_dbg(parent_dir),
-			nt_errstr(status)));
+			nt_errstr(status));
 		goto out;
 	}
 
