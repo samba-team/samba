@@ -788,6 +788,10 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const SMB_STRUCT_STAT *psbuf,
 					 NTTIME twrp,
 					 uint32_t flags);
+struct smb_filename *full_path_from_dirfsp_atname(
+	TALLOC_CTX *mem_ctx,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *atname);
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 						const char *fname,
 						bool posix_path);

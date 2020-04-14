@@ -2034,3 +2034,41 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
 					0,
 					pp_smb_fname);
 }
+
+/*
+ * Build the full path from a dirfsp and dirfsp relative name
+ */
+struct smb_filename *full_path_from_dirfsp_atname(
+	TALLOC_CTX *mem_ctx,
+	const struct files_struct *dirfsp,
+	const struct smb_filename *atname)
+{
+	struct smb_filename *fname = NULL;
+	char *path = NULL;
+
+	if (dirfsp == dirfsp->conn->cwd_fsp ||
+	    ISDOT(dirfsp->fsp_name->base_name))
+	{
+		path = talloc_strdup(mem_ctx, atname->base_name);
+	} else {
+		path = talloc_asprintf(mem_ctx, "%s/%s",
+				       dirfsp->fsp_name->base_name,
+				       atname->base_name);
+	}
+	if (path == NULL) {
+		return NULL;
+	}
+
+	fname = synthetic_smb_fname(mem_ctx,
+				    path,
+				    atname->stream_name,
+				    &atname->st,
+				    atname->twrp,
+				    atname->flags);
+	TALLOC_FREE(path);
+	if (fname == NULL) {
+		return NULL;
+	}
+
+	return fname;
+}
