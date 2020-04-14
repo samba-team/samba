@@ -4908,11 +4908,12 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(fsp->conn,
-				    parent_dir,
-				    (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
-				    frame,
-				    &parent_desc);
+	status = SMB_VFS_GET_NT_ACL_AT(fsp->conn,
+				fsp->conn->cwd_fsp,
+				parent_dir,
+				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
+				frame,
+				&parent_desc);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
