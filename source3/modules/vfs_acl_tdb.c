@@ -455,23 +455,6 @@ static NTSTATUS acl_tdb_fget_nt_acl(vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS acl_tdb_get_nt_acl(vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname,
-				   uint32_t security_info,
-				   TALLOC_CTX *mem_ctx,
-				   struct security_descriptor **ppdesc)
-{
-	NTSTATUS status;
-	status = get_nt_acl_common_at(get_acl_blob_at,
-				handle,
-				handle->conn->cwd_fsp,
-				smb_fname,
-				security_info,
-				mem_ctx,
-				ppdesc);
-	return status;
-}
-
 static NTSTATUS acl_tdb_get_nt_acl_at(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -510,7 +493,6 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
 	.fget_nt_acl_fn = acl_tdb_fget_nt_acl,
-	.get_nt_acl_fn = acl_tdb_get_nt_acl,
 	.get_nt_acl_at_fn = acl_tdb_get_nt_acl_at,
 	.fset_nt_acl_fn = acl_tdb_fset_nt_acl,
 	.sys_acl_set_file_fn = sys_acl_set_file_tdb,
