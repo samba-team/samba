@@ -2155,50 +2155,6 @@ done:
 	return ret;
 }
 
-static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
-					struct files_struct *fsp,
-					uint32_t security_info,
-					 TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	NTSTATUS status;
-	char *conv;
-	struct smb_filename *smb_fname = NULL;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 fsp->fsp_name->base_name,
-					 &timestamp, &stripped)) {
-		return map_nt_error_from_unix(errno);
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
-						mem_ctx,
-						ppdesc);
-	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return map_nt_error_from_unix(errno);
-	}
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					fsp->fsp_name->flags);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
-					 mem_ctx, ppdesc);
-	TALLOC_FREE(conv);
-	TALLOC_FREE(smb_fname);
-	return status;
-}
-
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					uint32_t security_info,
@@ -3204,7 +3160,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.mknodat_fn = shadow_copy2_mknodat,
 	.realpath_fn = shadow_copy2_realpath,
 	.get_nt_acl_fn = shadow_copy2_get_nt_acl,
-	.fget_nt_acl_fn = shadow_copy2_fget_nt_acl,
 	.get_shadow_copy_data_fn = shadow_copy2_get_shadow_copy_data,
 	.mkdirat_fn = shadow_copy2_mkdirat,
 	.getxattr_fn = shadow_copy2_getxattr,
