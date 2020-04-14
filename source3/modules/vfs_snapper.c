@@ -2398,50 +2398,6 @@ done:
 	return result_fname;
 }
 
-static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
-					struct files_struct *fsp,
-					uint32_t security_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc)
-{
-	time_t timestamp;
-	char *stripped;
-	NTSTATUS status;
-	char *conv;
-	struct smb_filename *smb_fname = NULL;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-					fsp->fsp_name->base_name,
-					&timestamp, &stripped)) {
-		return map_nt_error_from_unix(errno);
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
-						mem_ctx,
-						ppdesc);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					fsp->fsp_name->flags);
-	TALLOC_FREE(conv);
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
-					 mem_ctx, ppdesc);
-	TALLOC_FREE(smb_fname);
-	return status;
-}
-
 static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 				       const struct smb_filename *fname,
 				       uint32_t security_info,
@@ -2850,7 +2806,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.mknodat_fn = snapper_gmt_mknodat,
 	.realpath_fn = snapper_gmt_realpath,
 	.get_nt_acl_fn = snapper_gmt_get_nt_acl,
-	.fget_nt_acl_fn = snapper_gmt_fget_nt_acl,
 	.mkdirat_fn = snapper_gmt_mkdirat,
 	.getxattr_fn = snapper_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
