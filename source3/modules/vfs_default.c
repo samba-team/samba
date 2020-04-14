@@ -3121,24 +3121,6 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname,
-				   uint32_t security_info,
-				   TALLOC_CTX *mem_ctx,
-				   struct security_descriptor **ppdesc)
-{
-	NTSTATUS result;
-
-	START_PROFILE(get_nt_acl);
-	result = posix_get_nt_acl(handle->conn,
-				smb_fname,
-				security_info,
-				mem_ctx,
-				ppdesc);
-	END_PROFILE(get_nt_acl);
-	return result;
-}
-
 static NTSTATUS vfswrap_get_nt_acl_at(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3755,7 +3737,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	/* NT ACL operations. */
 
 	.fget_nt_acl_fn = vfswrap_fget_nt_acl,
-	.get_nt_acl_fn = vfswrap_get_nt_acl,
 	.get_nt_acl_at_fn = vfswrap_get_nt_acl_at,
 	.fset_nt_acl_fn = vfswrap_fset_nt_acl,
 	.audit_file_fn = vfswrap_audit_file,

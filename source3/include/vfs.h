@@ -318,7 +318,7 @@
  *              to be a struct smb_filename
  * Version 43 - convert link_contents arg of SMB_VFS_SYMLINKAT()
  *              to struct smb_filename
- * Version 43 - Add SMB_VFS_GET_NT_ACL_AT().
+ * Version 43 - Move SMB_VFS_GET_NT_ACL() -> SMB_VFS_GET_NT_ACL_AT().
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -1004,11 +1004,6 @@ struct vfs_fn_pointers {
 				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
-	NTSTATUS (*get_nt_acl_fn)(struct vfs_handle_struct *handle,
-				  const struct smb_filename *smb_fname,
-				  uint32_t security_info,
-				   TALLOC_CTX *mem_ctx,
-				  struct security_descriptor **ppdesc);
 	NTSTATUS (*get_nt_acl_at_fn)(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1535,11 +1530,6 @@ NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
-NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
-				 const struct smb_filename *smb_fname,
-				 uint32_t security_info,
-				 TALLOC_CTX *mem_ctx,
-				 struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_get_nt_acl_at(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1968,11 +1958,6 @@ NTSTATUS vfs_not_implemented_fget_nt_acl(vfs_handle_struct *handle, files_struct
 					 uint32_t security_info,
 					 TALLOC_CTX *mem_ctx,
 					 struct security_descriptor **ppdesc);
-NTSTATUS vfs_not_implemented_get_nt_acl(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					uint32_t security_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc);
 NTSTATUS vfs_not_implemented_get_nt_acl_at(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,

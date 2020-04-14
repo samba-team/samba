@@ -2533,20 +2533,6 @@ NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 					   mem_ctx, ppdesc);
 }
 
-NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
-				 const struct smb_filename *smb_fname,
-				 uint32_t security_info,
-				 TALLOC_CTX *mem_ctx,
-				 struct security_descriptor **ppdesc)
-{
-	VFS_FIND(get_nt_acl);
-	return handle->fns->get_nt_acl_fn(handle,
-				smb_fname,
-				security_info,
-				mem_ctx,
-				ppdesc);
-}
-
 NTSTATUS smb_vfs_call_get_nt_acl_at(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
