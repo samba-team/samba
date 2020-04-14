@@ -1488,52 +1488,6 @@ err:
  * anything.
  */
 
-static NTSTATUS um_get_nt_acl(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      uint32_t security_info,
-			      TALLOC_CTX *mem_ctx,
-			      struct security_descriptor **ppdesc)
-{
-	NTSTATUS status;
-	char *client_path = NULL;
-	struct smb_filename *client_smb_fname = NULL;
-	int ret;
-
-	DEBUG(10, ("Entering um_get_nt_acl\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname,
-					       security_info,
-					       mem_ctx, ppdesc);
-	}
-
-	ret = alloc_get_client_path(handle, talloc_tos(),
-				    smb_fname->base_name, &client_path);
-	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
-		goto err;
-	}
-
-	client_smb_fname = synthetic_smb_fname(talloc_tos(),
-					client_path,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (client_smb_fname == NULL) {
-		TALLOC_FREE(client_path);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, client_smb_fname,
-					 security_info,
-					 mem_ctx, ppdesc);
-err:
-	TALLOC_FREE(client_smb_fname);
-	TALLOC_FREE(client_path);
-	return status;
-}
-
 static NTSTATUS um_get_nt_acl_at(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1905,7 +1859,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	/* NT ACL operations. */
 
-	.get_nt_acl_fn = um_get_nt_acl,
 	.get_nt_acl_at_fn = um_get_nt_acl_at,
 
 	/* POSIX ACL operations. */
