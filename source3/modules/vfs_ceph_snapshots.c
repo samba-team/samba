@@ -1520,7 +1520,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
-	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
 	.mkdirat_fn = ceph_snap_gmt_mkdirat,
 	.getxattr_fn = ceph_snap_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
