@@ -117,6 +117,12 @@ krb5_asn1.APOptions.namedValues =\
     krb5_asn1.APOptionsValues.namedValues
 krb5_asn1.APOptions.prettyPrint =\
     BitString_NamedValues_prettyPrint
+krb5_asn1.PACOptionFlags.prettyPrintNamedValues =\
+    krb5_asn1.PACOptionFlagsValues.namedValues
+krb5_asn1.PACOptionFlags.namedValues =\
+    krb5_asn1.PACOptionFlagsValues.namedValues
+krb5_asn1.PACOptionFlags.prettyPrint =\
+    BitString_NamedValues_prettyPrint
 
 
 def Integer_NamedValues_prettyPrint(self, scope=0):
@@ -148,6 +154,10 @@ krb5_asn1.EncryptionType.prettyPrint =\
 krb5_asn1.ChecksumType.prettyPrintNamedValues =\
     krb5_asn1.ChecksumTypeValues.namedValues
 krb5_asn1.ChecksumType.prettyPrint =\
+    Integer_NamedValues_prettyPrint
+krb5_asn1.KerbErrorDataType.prettyPrintNamedValues =\
+    krb5_asn1.KerbErrorDataTypeValues.namedValues
+krb5_asn1.KerbErrorDataType.prettyPrint =\
     Integer_NamedValues_prettyPrint
 
 
