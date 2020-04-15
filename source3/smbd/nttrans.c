@@ -1996,6 +1996,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool need_to_read_sd = false;
 
 	/*
 	 * Get the permissions to return.
@@ -2027,17 +2028,26 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 		/* Don't return SECINFO_LABEL if anything else was
 		   requested. See bug #8458. */
 		security_info_wanted &= ~SECINFO_LABEL;
+
+		/*
+		 * Only query the file system SD if the caller asks
+		 * for any bits. This allows a caller to open without
+		 * READ_CONTROL but still issue a query sd. See
+		 * smb2.sdread test.
+		 */
+		need_to_read_sd = true;
 	}
 
-	if (!lp_nt_acl_support(SNUM(conn))) {
-		status = get_null_nt_acl(frame, &psd);
-	} else if (security_info_wanted & SECINFO_LABEL) {
-		/* Like W2K3 return a null object. */
-		status = get_null_nt_acl(frame, &psd);
-	} else {
+	if (lp_nt_acl_support(SNUM(conn)) &&
+	    ((security_info_wanted & SECINFO_LABEL) == 0) &&
+	    need_to_read_sd)
+	{
 		status = SMB_VFS_FGET_NT_ACL(
 			fsp, security_info_wanted, frame, &psd);
+	} else {
+		status = get_null_nt_acl(frame, &psd);
 	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
