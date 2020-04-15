@@ -494,3 +494,152 @@ error_exit:
 
 	return ret;
 }
+
+bool torture_smb2_sdreadtest(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	const char *fname = "sdread.file";
+	bool ret = true;
+	union smb_fileinfo query;
+	NTSTATUS status;
+	struct security_descriptor *sd = NULL;
+	struct smb2_create create_io = {0};
+	uint32_t sd_bits[] = { SECINFO_OWNER,
+				SECINFO_GROUP,
+				SECINFO_DACL };
+	size_t i;
+
+	ZERO_STRUCT(query);
+
+	smb2_util_unlink(tree, fname);
+
+	/* Create then close a file*/
+	create_io.in.create_flags = 0;
+	create_io.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA;
+	create_io.in.file_attributes = 0;
+	create_io.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	create_io.in.create_disposition = FILE_SUPERSEDE;
+	create_io.in.create_options = 0;
+	create_io.in.security_flags = 0;
+	create_io.in.fname = fname;
+	status = smb2_create(tree, tctx, &create_io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, error_exit,
+		talloc_asprintf(tctx, "open(1) of %s failed (%s)\n",
+		fname, nt_errstr(status)));
+	status = smb2_util_close(tree, create_io.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, error_exit,
+		       talloc_asprintf(tctx, "close(1) of %s failed (%s)\n",
+				       fname, nt_errstr(status)));
+
+	/*
+	 * Open the file with READ_ATTRIBUTES *only*,
+	 * no READ_CONTROL.
+	 *
+	 * This should deny access for any attempt to
+	 * get a security descriptor if we ask for
+	 * any of OWNER|GROUP|DACL, but if
+	 * we ask for *NO* info but still ask for
+	 * the security descriptor, then Windows
+	 * returns an ACL but with zero entries
+	 * for OWNER|GROUP|DACL.
+	 */
+
+	create_io = (struct smb2_create){0};
+	create_io.in.create_flags = 0;
+	create_io.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create_io.in.file_attributes = 0;
+	create_io.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	create_io.in.create_disposition = FILE_OPEN;
+	create_io.in.create_options = 0;
+	create_io.in.security_flags = 0;
+	create_io.in.fname = fname;
+	status = smb2_create(tree, tctx, &create_io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret,
+			error_exit,
+			talloc_asprintf(tctx, "open(2) of %s failed (%s)\n",
+			fname, nt_errstr(status)));
+
+	/* Check asking for SD fails ACCESS_DENIED with actual bits set. */
+	for (i = 0; i < ARRAY_SIZE(sd_bits); i++) {
+		query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+		query.query_secdesc.in.file.handle = create_io.out.file.handle;
+		query.query_secdesc.in.secinfo_flags = sd_bits[i];
+
+		status = smb2_getinfo_file(tree, tctx, &query);
+
+		/* Must return ACESS_DENIED. */
+		if(!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)){
+			NTSTATUS s = smb2_util_close(tree,
+					create_io.out.file.handle);
+			torture_assert_ntstatus_ok_goto(tctx, s, ret,
+				error_exit,
+				talloc_asprintf(tctx,
+					"close(2) of %s failed (%s)\n",
+					fname, nt_errstr(s)));
+			ret = false;
+			torture_fail_goto(tctx, error_exit,
+				talloc_asprintf(tctx,
+				"smb2_getinfo_file(2) of %s failed (%s)\n",
+				fname, nt_errstr(status)));
+		}
+	}
+
+	/*
+	 * Get security descriptor whilst asking for *NO* bits.
+	 * This succeeds even though we don't have READ_CONTROL
+	 * access but returns an SD with zero data.
+	 */
+	query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	query.query_secdesc.in.file.handle = create_io.out.file.handle;
+	query.query_secdesc.in.secinfo_flags = 0;
+
+	status = smb2_getinfo_file(tree, tctx, &query);
+	if(!NT_STATUS_IS_OK(status)){
+		NTSTATUS s = smb2_util_close(tree, create_io.out.file.handle);
+		torture_assert_ntstatus_ok_goto(tctx, s, ret, error_exit,
+				talloc_asprintf(tctx,
+					"close(3) of %s failed (%s)\n",
+					fname, nt_errstr(s)));
+		ret = false;
+		torture_fail_goto(tctx, error_exit, talloc_asprintf(tctx,
+			"smb2_getinfo_file(3) of %s failed (%s)\n",
+			fname, nt_errstr(status)));
+	}
+
+	sd = query.query_secdesc.out.sd;
+
+	/* Check it's empty. */
+	torture_assert_goto(tctx,
+			(sd->owner_sid == NULL),
+			ret,
+			error_exit,
+			"sd->owner_sid != NULL\n");
+
+	torture_assert_goto(tctx,
+			(sd->group_sid == NULL),
+			ret,
+			error_exit,
+			"sd->group_sid != NULL\n");
+
+	torture_assert_goto(tctx,
+			(sd->dacl == NULL),
+			ret,
+			error_exit,
+			"sd->dacl != NULL\n");
+
+	status = smb2_util_close(tree, create_io.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			error_exit,
+			talloc_asprintf(tctx, "close(4) of %s failed (%s)\n",
+				fname,
+			nt_errstr(status)));
+
+error_exit:
+
+	smb2_setatr(tree, fname, FILE_ATTRIBUTE_NORMAL);
+	smb2_util_unlink(tree, fname);
+
+	return ret;
+}
