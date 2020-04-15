@@ -111,6 +111,12 @@ krb5_asn1.KDCOptions.namedValues =\
     krb5_asn1.KDCOptionsValues.namedValues
 krb5_asn1.KDCOptions.prettyPrint =\
     BitString_NamedValues_prettyPrint
+krb5_asn1.APOptions.prettyPrintNamedValues =\
+    krb5_asn1.APOptionsValues.namedValues
+krb5_asn1.APOptions.namedValues =\
+    krb5_asn1.APOptionsValues.namedValues
+krb5_asn1.APOptions.prettyPrint =\
+    BitString_NamedValues_prettyPrint
 
 
 def Integer_NamedValues_prettyPrint(self, scope=0):
