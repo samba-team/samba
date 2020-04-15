@@ -255,7 +255,8 @@ bool torture_smb2_winattrtest(struct torture_context *tctx,
 
 	/* Open a file*/
 	create_io.in.create_flags = 0;
-	create_io.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA;
+	create_io.in.desired_access = SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA |
+				SEC_STD_READ_CONTROL;
 	create_io.in.file_attributes = 0;
 	create_io.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 	create_io.in.create_disposition = FILE_SUPERSEDE;
@@ -270,7 +271,10 @@ bool torture_smb2_winattrtest(struct torture_context *tctx,
 	/* Get security descriptor and store it*/
 	query_org.generic.level = RAW_FILEINFO_SEC_DESC;
 	query_org.generic.in.file.handle = create_io.out.file.handle;
-	status = smb2_getinfo_file(tree, NULL, &query_org);
+	query_org.query_secdesc.in.secinfo_flags = SECINFO_OWNER|
+						SECINFO_GROUP|
+						SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tctx, &query_org);
 	if(!NT_STATUS_IS_OK(status)){
 		NTSTATUS s = smb2_util_close(tree, create_io.out.file.handle);
 		torture_assert_ntstatus_ok_goto(tctx, s, ret, error_exit,
@@ -313,7 +317,8 @@ bool torture_smb2_winattrtest(struct torture_context *tctx,
 
 		create_io = (struct smb2_create){0};
 		create_io.in.create_flags = 0;
-		create_io.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+		create_io.in.desired_access = SEC_FILE_READ_ATTRIBUTE|
+						SEC_STD_READ_CONTROL;
 		create_io.in.file_attributes = 0;
 		create_io.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 		create_io.in.create_disposition = FILE_OPEN_IF;
@@ -328,6 +333,9 @@ bool torture_smb2_winattrtest(struct torture_context *tctx,
 		/*Get security descriptor */
 		query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 		query.query_secdesc.in.file.handle = create_io.out.file.handle;
+		query.query_secdesc.in.secinfo_flags = SECINFO_OWNER|
+						SECINFO_GROUP|
+						SECINFO_DACL;
 		status = smb2_getinfo_file(tree, tctx, &query);
 		if(!NT_STATUS_IS_OK(status)){
 			NTSTATUS s = smb2_util_close(tree, create_io.out.file.handle);
