@@ -1187,7 +1187,7 @@
 		<term>utimes &lt;filename&gt; &lt;create time&gt; &lt;access time&gt; &lt;write time&gt; &lt;
 		change time&gt;</term>
 		<listitem><para>Changes the timestamps on a file by name.
-		Times should be specified in the format YY:MM:DD-HH:MM:SS or -1 for no change.
+		Times should be specified in the format [YY]YY:MM:DD-HH:MM:SS or -1 for no change.
 		</para></listitem>
 		</varlistentry>
 
