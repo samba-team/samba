@@ -605,6 +605,36 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertIsNotNone(value)
         return
 
+    def getElementValue(self, obj, elem):
+        v = None
+        try:
+            v = obj[elem]
+        except KeyError:
+            pass
+        return v
+
+    def assertElementMissing(self, obj, elem):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNone(v)
+        return
+
+    def assertElementPresent(self, obj, elem):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNotNone(v)
+        return
+
+    def assertElementEqual(self, obj, elem, value):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNotNone(v)
+        self.assertEqual(v, value)
+        return
+
+    def assertElementEqualUTF8(self, obj, elem, value):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNotNone(v)
+        self.assertEqual(v, bytes(value, 'utf8'))
+        return
+
     def assertPrincipalEqual(self, princ1, princ2):
         self.assertEqual(princ1['name-type'], princ2['name-type'])
         self.assertEqual(
@@ -616,6 +646,30 @@ class RawKerberosTest(TestCaseInTempDir):
                 princ1['name-string'][idx],
                 princ2['name-string'][idx],
                 msg="princ1=%s != princ2=%s" % (princ1, princ2))
+        return
+
+    def assertElementEqualPrincipal(self, obj, elem, value):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNotNone(v)
+        v = pyasn1_native_decode(v, asn1Spec=krb5_asn1.PrincipalName())
+        self.assertPrincipalEqual(v, value)
+        return
+
+    def assertElementKVNO(self, obj, elem, value):
+        v = self.getElementValue(obj, elem)
+        if value == "autodetect":
+            value = v
+        if value is not None:
+            self.assertIsNotNone(v)
+            # The value on the wire should never be 0
+            self.assertNotEqual(v, 0)
+            # value == 0 means we don't know the kvno
+            # but enforce at any value != 0 is present
+            value = int(value)
+            if value != 0:
+                self.assertEqual(v, value)
+        else:
+            self.assertIsNone(v)
         return
 
     def get_KerberosTimeWithUsec(self, epoch=None, offset=None):
