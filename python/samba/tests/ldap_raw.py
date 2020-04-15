@@ -19,6 +19,7 @@
 #
 
 import socket
+import sys
 
 import samba.tests
 from samba.tests import TestCase
@@ -162,6 +163,13 @@ class RawLdapTest(TestCase):
         '''
         Check that an LDAP search request equal to the maximum size is accepted
         '''
+        #
+        # Test is not compatable with python 2 so skip it for the
+        # backports.
+        #
+        if sys.version_info < (3, 0):
+            self.skipTest("Test is not python2 compatable")
+            return
 
         # Lets build an ldap search packet to query the RootDSE
         header = encode_string(None)        # Base DN, ""
@@ -200,6 +208,13 @@ class RawLdapTest(TestCase):
         Test that a search query longer than the maximum permitted
         size is rejected.
         '''
+        #
+        # Test is not compatable with python 2 so skip it for the
+        # backports.
+        #
+        if sys.version_info < (3, 0):
+            self.skipTest("Test is not python2 compatable")
+            return
 
         # Lets build an ldap search packet to query the RootDSE
         header = encode_string(None)        # Base DN, ""
