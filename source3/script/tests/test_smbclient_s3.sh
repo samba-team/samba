@@ -1469,7 +1469,7 @@ test_utimes()
 del utimes_test
 put ${SMBCLIENT} utimes_test
 allinfo utimes_test
-utimes utimes_test -1 17:01:01-05:10:20 -1 -1
+utimes utimes_test 2016:02:04-06:19:20 17:01:01-05:10:20 -1 -1
 allinfo utimes_test
 del utimes_test
 quit
@@ -1497,15 +1497,16 @@ EOF
 	return
     fi
 
-    # Now, we should have 2 identical create_time, write_time, change_time
-    # values, but one access_time of Jan  1 05:10:20 AM.
+    # Now, we should have 2 identical write_time and change_time
+    # values, but one access_time of Jan  1 05:10:20 AM,
+    # and one create_time of Feb 04 06:19:20 AM 2016
     out_sorted=`echo "$out" | sort | uniq`
     num_create=`echo "$out_sorted" | grep -c 'create_time:'`
     num_access=`echo "$out_sorted" | grep -c 'access_time:'`
     num_write=`echo "$out_sorted" | grep -c 'write_time:'`
     num_change=`echo "$out_sorted" | grep -c 'change_time:'`
-    if [ "$num_create" != "1" ]; then
-        echo "failed - should only get one create_time $out"
+    if [ "$num_create" != "2" ]; then
+        echo "failed - should get two create_time $out"
         false
         return
     fi
@@ -1533,6 +1534,18 @@ EOF
        echo "$out"
        echo
        echo "failed - should get access_time:    Sun Jan  1 05:10:20 [AM] 2017"
+       false
+       return
+    fi
+
+    # This could be: Thu Feb  4 06:19:20 AM 2016
+    # or           : Thu Feb  4 06:19:20 2016 CET
+    echo "$out" | grep 'create_time:.*Thu Feb.*4 06:19:20 .*2016.*'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo
+       echo "failed - should get access_time:    Thu Feb  4 06:19:20 [AM] 2016"
        false
        return
     fi
