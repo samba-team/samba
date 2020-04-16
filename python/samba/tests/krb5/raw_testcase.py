@@ -784,6 +784,35 @@ class RawKerberosTest(TestCaseInTempDir):
         return self.PasswordKey_create(
             etype=e, pwd=password, salt=salt, kvno=kvno)
 
+    def TicketDecryptionKey_from_creds(self, creds, etype=None):
+
+        if etype is None:
+            etypes = creds.get_tgs_krb5_etypes()
+            etype = etypes[0]
+
+        forced_key = creds.get_forced_key(etype)
+        if forced_key is not None:
+            return forced_key
+
+        kvno = creds.get_kvno()
+
+        fail_msg = ("%s has no fixed key for etype[%s] kvno[%s] "
+                    "nor a password specified, " % (
+                        creds.get_username(), etype, kvno))
+
+        if etype == kcrypto.Enctype.RC4:
+            nthash = creds.get_nt_hash()
+            self.assertIsNotNone(nthash, msg=fail_msg)
+            return self.SessionKey_create(etype=etype, contents=nthash, kvno=kvno)
+
+        password = creds.get_password()
+        self.assertIsNotNone(password, msg=fail_msg)
+        salt = creds.get_forced_salt()
+        if salt is None:
+            salt = bytes("%s%s" % (creds.get_realm(), creds.get_username()),
+                    encoding='utf-8')
+        return self.PasswordKey_create(etype=etype, pwd=password, salt=salt, kvno=kvno)
+
     def RandomKey(self, etype):
         e = kcrypto._get_enctype_profile(etype)
         contents = samba.generate_random_bytes(e.keysize)
