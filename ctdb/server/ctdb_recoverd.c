@@ -2078,6 +2078,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 	/* Return early if disabled... */
 	if (ctdb_config.failover_disabled ||
 	    ctdb_op_is_disabled(rec->takeover_run)) {
+		talloc_free(mem_ctx);
 		return  0;
 	}
 
