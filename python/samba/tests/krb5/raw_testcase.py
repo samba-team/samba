@@ -799,6 +799,21 @@ class RawKerberosTest(TestCaseInTempDir):
         }
         return PA_ENC_TS_ENC_obj
 
+    def KERB_PA_PAC_REQUEST_create(self, include_pac, pa_data_create=True):
+        #KERB-PA-PAC-REQUEST ::= SEQUENCE {
+        #        include-pac[0] BOOLEAN --If TRUE, and no pac present, include PAC.
+        #                               --If FALSE, and PAC present, remove PAC
+        #}
+        KERB_PA_PAC_REQUEST_obj = {
+            'include-pac': include_pac,
+        }
+        if not pa_data_create:
+            return KERB_PA_PAC_REQUEST_obj
+        pa_pac = self.der_encode(KERB_PA_PAC_REQUEST_obj,
+                                 asn1Spec=krb5_asn1.KERB_PA_PAC_REQUEST())
+        pa_data = self.PA_DATA_create(128, pa_pac) # PA-PAC-REQUEST
+        return pa_data
+
     def KDC_REQ_BODY_create(self,
                             kdc_options,
                             cname,
