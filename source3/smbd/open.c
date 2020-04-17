@@ -1157,6 +1157,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		FILE_EXECUTE |
 		WRITE_DAC_ACCESS |
 		WRITE_OWNER_ACCESS |
+		SEC_FLAG_SYSTEM_SECURITY |
 		READ_CONTROL_ACCESS;
 	bool creating = !file_existed && (flags & O_CREAT);
 	bool truncating = (flags & O_TRUNC);
