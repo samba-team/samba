@@ -7053,6 +7053,100 @@ static bool run_owner_rights(int dummy)
 	return false;
 }
 
+/*
+ * Test SMB1-specific open with SEC_FLAG_SYSTEM_SECURITY.
+ * Note this test only works with a user with SeSecurityPrivilege set.
+ *
+ * NB. This is also tested in samba3.base.createx_access
+ * but this makes it very explicit what we're looking for.
+ */
+static bool run_smb1_system_security(int dummy)
+{
+	static struct cli_state *cli = NULL;
+	const char *fname = "system_security.txt";
+	uint16_t fnum = (uint16_t)-1;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+	printf("starting smb1 system security test\n");
+
+	/* SMB1 connection - torture_open_connection() forces this. */
+	if (!torture_open_connection(&cli, 0)) {
+		goto fail;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	/* Start with a clean slate. */
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the test file. */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli, fnum);
+
+	/* Open with SEC_FLAG_SYSTEM_SECURITY only. */
+	/*
+	 * On SMB1 this succeeds - SMB2 it fails,
+	 * see the SMB2-SACL test.
+	 */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				SEC_FLAG_SYSTEM_SECURITY,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli, fnum);
+
+	cli_unlink(cli, fname,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	torture_close_connection(cli);
+	TALLOC_FREE(frame);
+	return true;
+
+  fail:
+
+	if (cli) {
+		if (fnum != (uint16_t)-1) {
+			cli_close(cli, fnum);
+		}
+		cli_unlink(cli, fname,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		torture_close_connection(cli);
+	}
+
+	TALLOC_FREE(frame);
+	return false;
+}
+
 static bool run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
@@ -14634,6 +14728,10 @@ static struct {
 	{
 		.name  = "SMB2-PATH-SLASH",
 		.fn    = run_smb2_path_slash,
+	},
+	{
+		.name  = "SMB1-SYSTEM-SECURITY",
+		.fn    = run_smb1_system_security,
 	},
 	{
 		.name  = "CLEANUP1",
