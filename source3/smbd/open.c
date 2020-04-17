@@ -5432,6 +5432,21 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			status = NT_STATUS_PRIVILEGE_NOT_HELD;
 			goto fail;
 		}
+
+		if (conn->sconn->using_smb2 &&
+		    (access_mask == SEC_FLAG_SYSTEM_SECURITY))
+		{
+			/*
+			 * No other bits set. Windows SMB2 refuses this.
+			 * See smbtorture3 SMB2-SACL test.
+			 *
+			 * Note this is an SMB2-only behavior,
+			 * smbtorture3 SMB1-SYSTEM-SECURITY already tests
+			 * that SMB1 allows this.
+			 */
+			status = NT_STATUS_ACCESS_DENIED;
+			goto fail;
+		}
 	}
 
 	/*
