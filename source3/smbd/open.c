@@ -5420,14 +5420,18 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
-			!security_token_has_privilege(get_current_nttok(conn),
-					SEC_PRIV_SECURITY)) {
-		DEBUG(10, ("create_file_unixpath: open on %s "
-			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",
-			smb_fname_str_dbg(smb_fname)));
-		status = NT_STATUS_PRIVILEGE_NOT_HELD;
-		goto fail;
+	if (access_mask & SEC_FLAG_SYSTEM_SECURITY) {
+		bool ok;
+
+		ok = security_token_has_privilege(get_current_nttok(conn),
+						  SEC_PRIV_SECURITY);
+		if (!ok) {
+			DBG_DEBUG("open on %s failed - "
+				"SEC_FLAG_SYSTEM_SECURITY denied.\n",
+				smb_fname_str_dbg(smb_fname));
+			status = NT_STATUS_PRIVILEGE_NOT_HELD;
+			goto fail;
+		}
 	}
 
 	/*
