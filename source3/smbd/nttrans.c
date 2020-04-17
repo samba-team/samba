@@ -950,6 +950,13 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		if (!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+		/*
+		 * Setting a SACL also requires WRITE_DAC.
+		 * See the smbtorture3 SMB2-SACL test.
+		 */
+		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		/* Convert all the generic bits. */
 		if (psd->sacl) {
 			security_acl_map_generic(psd->sacl, &file_generic_mapping);
