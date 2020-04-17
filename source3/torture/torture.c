@@ -14734,6 +14734,10 @@ static struct {
 		.fn    = run_smb1_system_security,
 	},
 	{
+		.name  = "SMB2-SACL",
+		.fn    = run_smb2_sacl,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},
