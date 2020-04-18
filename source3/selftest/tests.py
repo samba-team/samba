@@ -415,6 +415,9 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.smb1_system_security", env + "_smb1_done",
                   [os.path.join(samba3srcdir, "script/tests/test_smb1_system_security.sh"),
                    '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbtorture3, net, 'tmp'])
+    plantestsuite("samba3.blackbox.sacl_get_set", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_sacl_set_get.sh"),
+                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbtorture3, net, 'tmp'])
 
     #
     # tar command tests
