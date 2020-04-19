@@ -3092,40 +3092,6 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 		dos_deny = 0xFF;
 	}
 
-#if 0
-	/* Hmmm. This is what I think the above code
-	   should look like if it's using the constants
-	   we #define. JRA. */
-
-	if (flags & O_CREAT) {
-		openfn |= OPENX_FILE_CREATE_IF_NOT_EXIST;
-	}
-	if (!(flags & O_EXCL)) {
-		if (flags & O_TRUNC)
-			openfn |= OPENX_FILE_EXISTS_TRUNCATE;
-		else
-			openfn |= OPENX_FILE_EXISTS_OPEN;
-	}
-
-	dos_deny = SET_DENY_MODE(share_mode_in);
-
-	if ((flags & O_ACCMODE) == O_RDWR) {
-		dos_deny |= DOS_OPEN_RDWR;
-	} else if ((flags & O_ACCMODE) == O_WRONLY) {
-		dos_deny |= DOS_OPEN_WRONLY;
-	}
-
-#if defined(O_SYNC)
-	if ((flags & O_SYNC) == O_SYNC) {
-		dos_deny |= FILE_SYNC_OPENMODE;
-	}
-#endif /* O_SYNC */
-
-	if (share_mode_in == DENY_FCB) {
-		dos_deny = 0xFF;
-	}
-#endif
-
 	if (!map_open_params_to_ntcreate(fname, dos_deny,
 					openfn, &access_mask,
 					&share_mode, &create_disposition,
