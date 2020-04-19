@@ -3,7 +3,6 @@
 stages:
   - images
   - build
-  - analysis
   - report
 
 variables:
@@ -261,7 +260,7 @@ pages:
 
 # Coverity Scan
 coverity:
-  stage: analysis
+  stage: build
   image: $SAMBA_CI_CONTAINER_IMAGE_fedora32
   tags:
     - docker
