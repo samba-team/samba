@@ -23,6 +23,7 @@ import time
 import datetime
 import random
 import binascii
+import itertools
 
 import samba.tests
 from samba.credentials import Credentials
@@ -273,6 +274,63 @@ class KerberosCredentials(Credentials):
 
 class RawKerberosTest(TestCaseInTempDir):
     """A raw Kerberos Test case."""
+
+    etypes_to_test = (
+        { "value": -1111, "name": "dummy", },
+        { "value": kcrypto.Enctype.AES256, "name": "aes128", },
+        { "value": kcrypto.Enctype.AES128, "name": "aes256", },
+        { "value": kcrypto.Enctype.RC4, "name": "rc4", },
+    )
+
+    setup_etype_test_permutations_done = False
+
+    @classmethod
+    def setup_etype_test_permutations(cls):
+        if cls.setup_etype_test_permutations_done:
+            return
+
+        res = []
+
+        num_idxs = len(cls.etypes_to_test)
+        permutations = []
+        for num in range(1, num_idxs+1):
+            chunk = list(itertools.permutations(range(num_idxs), num))
+            for e in chunk:
+                el = list(e)
+                permutations.append(el)
+
+        for p in permutations:
+            name = None
+            etypes = ()
+            for idx in p:
+                n = cls.etypes_to_test[idx]["name"]
+                if name is None:
+                    name = n
+                else:
+                    name += "_%s" % n
+                etypes += (cls.etypes_to_test[idx]["value"],)
+
+            r = { "name": name, "etypes": etypes, }
+            res.append(r)
+
+        cls.etype_test_permutations = res
+        cls.setup_etype_test_permutations_done = True
+        return
+
+    @classmethod
+    def etype_test_permutation_name_idx(cls):
+        cls.setup_etype_test_permutations()
+        res = []
+        idx = 0
+        for e in cls.etype_test_permutations:
+            r = (e['name'], idx)
+            idx += 1
+            res.append(r)
+        return res
+
+    def etype_test_permutation_by_idx(self, idx):
+        e = self.etype_test_permutations[idx]
+        return (e['name'], e['etypes'])
 
     def setUp(self):
         super().setUp()
