@@ -1005,7 +1005,7 @@ def secretsdb_self_join(secretsdb, domain,
         secretsdb.add(msg)
 
 
-def setup_secretsdb(paths, session_info, backend_credentials, lp):
+def setup_secretsdb(paths, session_info, lp):
     """Setup the secrets database.
 
     :note: This function does not handle exceptions and transaction on purpose,
@@ -1041,22 +1041,6 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
     secrets_ldb.transaction_start()
     try:
         secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
-
-        if (backend_credentials is not None and
-            backend_credentials.authentication_requested()):
-            if backend_credentials.get_bind_dn() is not None:
-                setup_add_ldif(secrets_ldb,
-                               setup_path("secrets_simple_ldap.ldif"), {
-                                   "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
-                                   "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                               })
-            else:
-                setup_add_ldif(secrets_ldb,
-                               setup_path("secrets_sasl_ldap.ldif"), {
-                                   "LDAPADMINUSER": backend_credentials.get_username(),
-                                   "LDAPADMINREALM": backend_credentials.get_realm(),
-                                   "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password()).decode('utf8')
-                               })
     except:
         secrets_ldb.transaction_cancel()
         raise
@@ -1332,7 +1316,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # Load the database, but don's load the global schema and don't connect
     # quite yet
     samdb = SamDB(session_info=session_info, url=None, auto_connect=False,
-                  credentials=provision_backend.credentials, lp=lp,
+                  lp=lp,
                   global_schema=False, am_rodc=am_rodc, options=options)
 
     logger.info("Pre-loading the Samba 4 and AD schema")
@@ -2304,8 +2288,7 @@ def provision(logger, session_info, smbconf=None,
 
     logger.info("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths,
-                                  session_info=session_info,
-                                  backend_credentials=provision_backend.credentials, lp=lp)
+                                  session_info=session_info, lp=lp)
 
     try:
         logger.info("Setting up the registry")

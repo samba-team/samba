@@ -43,7 +43,6 @@ class ProvisionBackend(object):
         """Provision a backend for samba4"""
         self.paths = paths
         self.lp = lp
-        self.credentials = None
         self.names = names
         self.logger = logger
 
@@ -72,7 +71,6 @@ class ProvisionBackend(object):
 class LDBBackend(ProvisionBackend):
 
     def init(self):
-        self.credentials = None
 
         # Wipe the old sam.ldb databases away
         shutil.rmtree(self.paths.samdb + ".d", True)

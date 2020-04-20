@@ -46,7 +46,7 @@ def create_dummy_secretsdb(path, lp=None):
     paths.binddns_dir = os.path.dirname(path)
     paths.keytab = "no.keytab"
     paths.dns_keytab = "no.dns.keytab"
-    secrets_ldb = setup_secretsdb(paths, None, None, lp=lp)
+    secrets_ldb = setup_secretsdb(paths, None, lp=lp)
     secrets_ldb.transaction_commit()
     return secrets_ldb
 
@@ -64,7 +64,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         paths.binddns_dir = os.path.dirname(path)
         paths.keytab = "no.keytab"
         paths.dns_keytab = "no.dns.keytab"
-        ldb = setup_secretsdb(paths, None, None, lp=env_loadparm())
+        ldb = setup_secretsdb(paths, None, lp=env_loadparm())
         try:
             self.assertEqual("LSA Secrets",
                               ldb.searchone(basedn="CN=LSA Secrets", attribute="CN").decode('utf8'))

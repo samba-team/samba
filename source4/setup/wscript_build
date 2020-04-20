@@ -11,7 +11,7 @@ bld.INSTALL_WILDCARD('${SETUPDIR}', 'adprep/WindowsServerDocs/*.diff')
 bld.INSTALL_FILES('${SETUPDIR}', 'dns_update_list')
 bld.INSTALL_FILES('${SETUPDIR}', 'spn_update_list')
 
-for p in '''schema-map-* DB_CONFIG *.inf *.ldif *.reg *.zone *.conf *.php *.txt
+for p in '''*.inf *.ldif *.reg *.zone *.conf *.php *.txt
             named.conf.update named.conf.dlz'''.split():
     bld.INSTALL_WILDCARD('${SETUPDIR}', p)
 
