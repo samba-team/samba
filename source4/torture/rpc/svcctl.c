@@ -271,6 +271,45 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	return true;
 }
 
+static bool test_QueryServiceConfigEx(struct torture_context *tctx, struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceConfigEx r;
+	struct policy_handle h, s;
+	NTSTATUS status;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct SC_RPC_CONFIG_INFOW info;
+	int i;
+
+	if (!test_OpenSCManager(b, tctx, &h))
+		return false;
+
+	if (!test_OpenService(b, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
+		return false;
+
+	for (i=0; i < 16; i++) {
+
+		r.in.hService = s;
+		r.in.dwInfoLevel = i;
+		r.out.pInfo = &info;
+
+		status = dcerpc_svcctl_QueryServiceConfigEx_r(b, tctx, &r);
+		if (i == 8) {
+			torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigEx failed!");
+			torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfigEx failed!");
+		} else {
+			torture_assert_ntstatus_equal(tctx, status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE, "QueryServiceConfigEx failed!");
+		}
+	}
+
+	if (!test_CloseServiceHandle(b, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(b, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 					    struct dcerpc_pipe *p)
 {
@@ -721,6 +760,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_QueryServiceConfigW);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceConfig2W",
 				   test_QueryServiceConfig2W);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceConfigEx",
+				   test_QueryServiceConfigEx);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceObjectSecurity",
 				   test_QueryServiceObjectSecurity);
 	torture_rpc_tcase_add_test(tcase, "SetServiceObjectSecurity",
