@@ -505,6 +505,55 @@ static bool test_ControlService(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ControlServiceExW(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct svcctl_ControlServiceExW r;
+	struct policy_handle h, s;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	union SC_RPC_SERVICE_CONTROL_IN_PARAMSW ControlInParams;
+	union SC_RPC_SERVICE_CONTROL_OUT_PARAMSW ControlOutParams;
+	struct SERVICE_CONTROL_STATUS_REASON_OUT_PARAMS psrOutParams;
+	struct SERVICE_CONTROL_STATUS_REASON_IN_PARAMSW psrInParams;
+
+	if (!test_OpenSCManager(b, tctx, &h))
+		return false;
+
+	if (!test_OpenService(b, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
+		return false;
+
+	ZERO_STRUCT(psrInParams);
+	ZERO_STRUCT(psrOutParams);
+
+	psrInParams.dwReason =	SERVICE_STOP_CUSTOM |
+				SERVICE_STOP_REASON_MAJOR_APPLICATION |
+				SERVICE_STOP_REASON_MINOR_ENVIRONMENT;
+	psrInParams.pszComment = "wurst";
+
+	ControlInParams.psrInParams = &psrInParams;
+	ControlOutParams.psrOutParams = &psrOutParams;
+
+	r.in.hService = s;
+	r.in.dwControl = SVCCTL_CONTROL_STOP;
+	r.in.dwInfoLevel = 1;
+	r.in.pControlInParams = &ControlInParams;
+	r.out.pControlOutParams = &ControlOutParams;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_ControlServiceExW_r(b, tctx, &r),
+		"ControlServiceExW failed!");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"ControlServiceExW failed!");
+
+	if (!test_CloseServiceHandle(b, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(b, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_EnumServicesStatusW r;
@@ -770,6 +819,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_StartServiceW);
 	torture_rpc_tcase_add_test(tcase, "ControlService",
 				   test_ControlService);
+	torture_rpc_tcase_add_test(tcase, "ControlServiceExW",
+				   test_ControlServiceExW);
 	torture_rpc_tcase_add_test(tcase, "ChangeServiceConfigW",
 				   test_ChangeServiceConfigW);
 
