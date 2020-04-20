@@ -467,7 +467,6 @@ SMBCFILE *
 SMBC_opendir_ctx(SMBCCTX *context,
                  const char *fname)
 {
-        int saved_errno;
 	char *server = NULL;
         char *share = NULL;
         char *user = NULL;
@@ -961,6 +960,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					  FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  dir_list_fn, (void *)dir);
 			if (!NT_STATUS_IS_OK(status)) {
+				int saved_errno;
 				if (dir) {
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
