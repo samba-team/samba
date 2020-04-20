@@ -827,7 +827,7 @@ import "misc.idl", "security.idl";
 
 	WERROR svcctl_ControlServiceExA (
 		[in] SC_RPC_HANDLE hService,
-		[in] uint32 dwControl,
+		[in] SERVICE_CONTROL dwControl,
 		[in] uint32 dwInfoLevel,
 		[in, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_IN_PARAMSA *pControlInParams,
 		[out, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_OUT_PARAMSA *pControlOutParams
@@ -851,7 +851,7 @@ import "misc.idl", "security.idl";
 
 	WERROR svcctl_ControlServiceExW (
 		[in] SC_RPC_HANDLE hService,
-		[in] uint32 dwControl,
+		[in] SERVICE_CONTROL dwControl,
 		[in] uint32 dwInfoLevel,
 		[in, ref, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_IN_PARAMSW *pControlInParams,
 		[out,ref, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_OUT_PARAMSW *pControlOutParams
