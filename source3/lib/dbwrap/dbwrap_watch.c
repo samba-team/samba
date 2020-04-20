@@ -333,6 +333,7 @@ static void dbwrap_watched_do_locked_fn(
 	struct db_record rec = {
 		.db = state->db,
 		.key = dbwrap_record_get_key(subrec),
+		.value_valid = true,
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
 		.private_data = state
