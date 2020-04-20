@@ -360,7 +360,7 @@ net_share_enum_rpc(struct cli_state *cli,
                               void *state),
                    void *state)
 {
-        int i;
+        uint32_t i;
 	WERROR result;
 	uint32_t preferred_len = 0xffffffff;
         uint32_t type;
