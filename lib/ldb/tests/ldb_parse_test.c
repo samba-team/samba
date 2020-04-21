@@ -81,10 +81,91 @@ static void test_parse_filtertype(void **state)
 	test_roundtrip(ctx, " ", "(|(objectClass=*)(distinguishedName=*))");
 }
 
+/*
+ * Test that a nested query with 128 levels of nesting is accepted
+ */
+static void test_nested_filter_eq_limit(void **state)
+{
+	struct test_ctx *ctx =
+		talloc_get_type_abort(*state, struct test_ctx);
+
+	/*
+	 * 128 nested clauses
+	 */
+	const char *nested_query = ""
+		"(|(!(|(&(|(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(&(|(|(|(|(|(|(!(|(!(|(|(|"
+		"(|(!(|(&(|(|(&(|(|(|(|(|(!(!(!(|"
+		"(|(!(|(&(|(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(&(|(|(|(!(|(|(&(|(|(|(|(|"
+		"(|(!(|(&(|(|(&(|(|(|(|(|(&(&(|(|"
+		"(|(!(|(&(|(|(|(|(|(|(!(|(|(|(|(|"
+		"(|(!(|(&(|(|(!(|(|(|(|(|(|(|(|(|"
+		"(a=b)"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))";
+
+	struct ldb_parse_tree *tree = ldb_parse_tree(ctx, nested_query);
+
+	assert_non_null(tree);
+	/*
+	 * Check that we get the same query back
+	 */
+	test_roundtrip(ctx, nested_query, nested_query);
+}
+
+/*
+ * Test that a nested query with 129 levels of nesting is rejected.
+ */
+static void test_nested_filter_gt_limit(void **state)
+{
+	struct test_ctx *ctx =
+		talloc_get_type_abort(*state, struct test_ctx);
+
+	/*
+	 * 129 nested clauses
+	 */
+	const char *nested_query = ""
+		"(|(!(|(|(&(|(|(|(|(&(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(!(|(|(|(|(!(|(|(|"
+		"(|(!(|(|(&(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(|(!(&(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(|(|(|(|(|(|(|(|(|"
+		"(|(!(|(|(&(|(|(|(|(|(|(|(|(&(|(|"
+		"(|"
+		"(a=b)"
+		")"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))"
+		"))))))))))))))))";
+
+	struct ldb_parse_tree *tree = ldb_parse_tree(ctx, nested_query);
+
+	assert_null(tree);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(test_parse_filtertype, setup, teardown),
+		cmocka_unit_test_setup_teardown(
+			test_parse_filtertype, setup, teardown),
+		cmocka_unit_test_setup_teardown(
+			test_nested_filter_eq_limit, setup, teardown),
+		cmocka_unit_test_setup_teardown(
+			test_nested_filter_gt_limit, setup, teardown),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
