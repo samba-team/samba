@@ -87,9 +87,9 @@ static int enum_file_fn(struct file_id id,
 {
 	struct file_enum_count *fenum =
 		(struct file_enum_count *)private_data;
-
+	struct srvsvc_NetFileCtr3 *ctr3 = fenum->ctr3;
 	struct srvsvc_NetFileInfo3 *f;
-	int i = fenum->ctr3->count;
+	int i = ctr3->count;
 	files_struct fsp;
 	struct byte_range_lock *brl;
 	int num_locks = 0;
@@ -110,13 +110,16 @@ static int enum_file_fn(struct file_id id,
 		return 0;
 	}
 
-	f = talloc_realloc(fenum->ctx, fenum->ctr3->array,
-				 struct srvsvc_NetFileInfo3, i+1);
+	f = talloc_realloc(
+		fenum->ctx,
+		ctr3->array,
+		struct srvsvc_NetFileInfo3,
+		i+1);
 	if ( !f ) {
 		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
 		return 0;
 	}
-	fenum->ctr3->array = f;
+	ctr3->array = f;
 
 	/* need to count the number of locks on a file */
 
@@ -151,14 +154,14 @@ static int enum_file_fn(struct file_id id,
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
 
-	fenum->ctr3->array[i].fid		=
+	ctr3->array[i].fid		=
 		(((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
-	fenum->ctr3->array[i].permissions	= permissions;
-	fenum->ctr3->array[i].num_locks		= num_locks;
-	fenum->ctr3->array[i].path		= fullpath;
-	fenum->ctr3->array[i].user		= username;
+	ctr3->array[i].permissions	= permissions;
+	ctr3->array[i].num_locks		= num_locks;
+	ctr3->array[i].path		= fullpath;
+	ctr3->array[i].user		= username;
 
-	fenum->ctr3->count++;
+	ctr3->count++;
 
 	return 0;
 }
