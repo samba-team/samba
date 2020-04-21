@@ -176,11 +176,9 @@ static WERROR net_enum_files(TALLOC_CTX *ctx,
 			     struct srvsvc_NetFileCtr3 **ctr3,
 			     uint32_t resume)
 {
-	struct file_enum_count f_enum_cnt;
-
-	f_enum_cnt.ctx = ctx;
-	f_enum_cnt.username = username;
-	f_enum_cnt.ctr3 = *ctr3;
+	struct file_enum_count f_enum_cnt = {
+		.ctx = ctx, .username = username, .ctr3 = *ctr3,
+	};
 
 	share_entry_forall(enum_file_fn, (void *)&f_enum_cnt );
 
