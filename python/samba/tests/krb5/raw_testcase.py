@@ -872,19 +872,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def KDC_REQ_create(self,
                        msg_type,
                        padata,
-                       kdc_options,
-                       cname,
-                       realm,
-                       sname,
-                       from_time,
-                       till_time,
-                       renew_time,
-                       nonce,
-                       etypes,
-                       addresses,
-                       EncAuthorizationData,
-                       EncAuthorizationData_key,
-                       additional_tickets,
+                       req_body,
                        asn1Spec=None,
                        asn1_print=None,
                        hexdump=None):
@@ -897,25 +885,10 @@ class RawKerberosTest(TestCaseInTempDir):
         #        req-body        [4] KDC-REQ-BODY
         # }
         #
-        KDC_REQ_BODY_obj = self.KDC_REQ_BODY_create(kdc_options,
-                                                    cname,
-                                                    realm,
-                                                    sname,
-                                                    from_time,
-                                                    till_time,
-                                                    renew_time,
-                                                    nonce,
-                                                    etypes,
-                                                    addresses,
-                                                    EncAuthorizationData,
-                                                    EncAuthorizationData_key,
-                                                    additional_tickets,
-                                                    asn1_print=asn1_print,
-                                                    hexdump=hexdump)
         KDC_REQ_obj = {
             'pvno': 5,
             'msg-type': msg_type,
-            'req-body': KDC_REQ_BODY_obj,
+            'req-body': req_body,
         }
         if padata is not None:
             KDC_REQ_obj['padata'] = padata
@@ -974,22 +947,26 @@ class RawKerberosTest(TestCaseInTempDir):
         #        additional-tickets      [11] SEQUENCE OF Ticket OPTIONAL
         #                                        -- NOTE: not empty
         # }
+        KDC_REQ_BODY_obj = self.KDC_REQ_BODY_create(
+            kdc_options,
+            cname,
+            realm,
+            sname,
+            from_time,
+            till_time,
+            renew_time,
+            nonce,
+            etypes,
+            addresses,
+            EncAuthorizationData,
+            EncAuthorizationData_key,
+            additional_tickets,
+            asn1_print=asn1_print,
+            hexdump=hexdump)
         obj, decoded = self.KDC_REQ_create(
             msg_type=10,
             padata=padata,
-            kdc_options=kdc_options,
-            cname=cname,
-            realm=realm,
-            sname=sname,
-            from_time=from_time,
-            till_time=till_time,
-            renew_time=renew_time,
-            nonce=nonce,
-            etypes=etypes,
-            addresses=addresses,
-            EncAuthorizationData=EncAuthorizationData,
-            EncAuthorizationData_key=EncAuthorizationData_key,
-            additional_tickets=additional_tickets,
+            req_body=KDC_REQ_BODY_obj,
             asn1Spec=krb5_asn1.AS_REQ(),
             asn1_print=asn1_print,
             hexdump=hexdump)
@@ -1115,11 +1092,11 @@ class RawKerberosTest(TestCaseInTempDir):
             EncAuthorizationData=EncAuthorizationData,
             EncAuthorizationData_key=EncAuthorizationData_key,
             additional_tickets=additional_tickets)
-        req_body = self.der_encode(req_body, asn1Spec=krb5_asn1.KDC_REQ_BODY(),
-                                   asn1_print=asn1_print, hexdump=hexdump)
+        req_body_blob = self.der_encode(req_body, asn1Spec=krb5_asn1.KDC_REQ_BODY(),
+                                        asn1_print=asn1_print, hexdump=hexdump)
 
         req_body_checksum = self.Checksum_create(
-            ticket_session_key, 6, req_body, ctype=body_checksum_type)
+            ticket_session_key, 6, req_body_blob, ctype=body_checksum_type)
 
         subkey_obj = None
         if authenticator_subkey is not None:
@@ -1158,19 +1135,7 @@ class RawKerberosTest(TestCaseInTempDir):
         obj, decoded = self.KDC_REQ_create(
             msg_type=12,
             padata=padata,
-            kdc_options=kdc_options,
-            cname=None,
-            realm=realm,
-            sname=sname,
-            from_time=from_time,
-            till_time=till_time,
-            renew_time=renew_time,
-            nonce=nonce,
-            etypes=etypes,
-            addresses=addresses,
-            EncAuthorizationData=EncAuthorizationData,
-            EncAuthorizationData_key=EncAuthorizationData_key,
-            additional_tickets=additional_tickets,
+            req_body=req_body,
             asn1Spec=krb5_asn1.TGS_REQ(),
             asn1_print=asn1_print,
             hexdump=hexdump)
