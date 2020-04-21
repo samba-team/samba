@@ -130,7 +130,13 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 				s++;
 			}
 			if ((d > destname + 1) && (*s != '\0')) {
-				*d++ = '/';
+				if (!start_of_name_component) {
+					/*
+					 * Only write a / if we
+					 * haven't just written one.
+					 */
+					*d++ = '/';
+				}
 			}
 			start_of_name_component = true;
 			continue;
@@ -177,6 +183,12 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 					*d++ = '/'; /* Can't delete root */
 					continue;
 				}
+
+				/*
+				 * Step forward one to leave the
+				 * last written '/' alone.
+				 */
+				d++;
 
 				/*
 				 * We're still at the start of a name
