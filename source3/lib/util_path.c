@@ -107,6 +107,7 @@ char *cache_path(TALLOC_CTX *mem_ctx, const char *name)
  * @retval Pointer to a talloc'ed string containing the absolute full path.
  **/
 
+#if 0
 char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 {
 	char *destname;
@@ -250,4 +251,116 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 	}
 
 	return destname;
+}
+#endif
+
+/*
+ * Canonicalizes an absolute path, removing '.' and ".." components
+ * and consolitating multiple '/' characters. As this can only be
+ * called once widelinks_chdir with an absolute path has been called,
+ * we can assert that the start of path must be '/'.
+ */
+
+char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *pathname_in)
+{
+	/*
+	 * Note we use +2 here so if pathname_in=="" then we
+	 * have space to return "/".
+	 */
+	char *pathname = talloc_array(ctx, char, strlen(pathname_in)+2);
+	const char *s = pathname_in;
+	char *p = pathname;
+	bool wrote_slash = false;
+
+	if (pathname == NULL) {
+		return NULL;
+	}
+
+	/* Always start with a '/'. */
+	*p++ = '/';
+	wrote_slash = true;
+
+	while (*s) {
+		/* Deal with '/' or multiples of '/'. */
+		if (s[0] == '/') {
+			while (s[0] == '/') {
+				/* Eat trailing '/' */
+				s++;
+			}
+			/* Update target with one '/' */
+			if (!wrote_slash) {
+				*p++ = '/';
+				wrote_slash = true;
+			}
+			continue;
+		}
+		if (wrote_slash) {
+			/* Deal with "./" or ".\0" */
+			if (s[0] == '.' &&
+					(s[1] == '/' || s[1] == '\0')) {
+				/* Eat the dot. */
+				s++;
+				while (s[0] == '/') {
+					/* Eat any trailing '/' */
+					s++;
+				}
+				/* Don't write anything to target. */
+				/* wrote_slash is still true. */
+				continue;
+			}
+			/* Deal with "../" or "..\0" */
+			if (s[0] == '.' && s[1] == '.' &&
+					(s[2] == '/' || s[2] == '\0')) {
+				/* Eat the dot dot. */
+				s += 2;
+				while (s[0] == '/') {
+					/* Eat any trailing '/' */
+					s++;
+				}
+				/*
+				 * As wrote_slash is true, we go back
+				 * one character to point p at the slash
+				 * we just saw.
+				 */
+				if (p > pathname) {
+					p--;
+				}
+				/*
+				 * Now go back to the slash
+				 * before the one that p currently points to.
+				 */
+				while (p > pathname) {
+					p--;
+					if (p[0] == '/') {
+						break;
+					}
+				}
+				/*
+				 * Step forward one to leave the
+				 * last written '/' alone.
+				 */
+				p++;
+
+				/* Don't write anything to target. */
+				/* wrote_slash is still true. */
+				continue;
+			}
+		}
+		/* Non-separator character, just copy. */
+		*p++ = *s++;
+		wrote_slash = false;
+	}
+	if (wrote_slash) {
+		/*
+		 * We finished on a '/'.
+		 * Remove the trailing '/', but not if it's
+		 * the sole character in the path.
+		 */
+		if (p > pathname + 1) {
+			p--;
+		}
+	}
+	/* Terminate and we're done ! */
+	*p++ = '\0';
+	return pathname;
 }
