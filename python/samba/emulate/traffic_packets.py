@@ -336,7 +336,7 @@ def packet_ldap_3(packet, conversation, context):
 
     # try to guess the search expression (don't bother for base searches, as
     # they're only looking up a single object)
-    if (filter is None or filter is '') and scope != SCOPE_BASE:
+    if (filter is None or filter == '') and scope != SCOPE_BASE:
         filter = context.guess_search_filter(attrs, dn_sig, dn)
 
     samdb.search(dn,
