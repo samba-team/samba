@@ -90,7 +90,6 @@ static int enum_file_fn(struct file_id id,
 		(struct file_enum_count *)private_data;
 	struct srvsvc_NetFileCtr3 *ctr3 = fenum->ctr3;
 	struct srvsvc_NetFileInfo3 *f;
-	int i = ctr3->count;
 	files_struct fsp;
 	struct byte_range_lock *brl;
 	int num_locks = 0;
@@ -115,9 +114,9 @@ static int enum_file_fn(struct file_id id,
 		fenum->ctx,
 		ctr3->array,
 		struct srvsvc_NetFileInfo3,
-		i+1);
+		ctr3->count+1);
 	if ( !f ) {
-		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
+		DBG_ERR("realloc failed for %"PRIu32" items\n", ctr3->count+1);
 		return 0;
 	}
 	ctr3->array = f;
@@ -155,7 +154,7 @@ static int enum_file_fn(struct file_id id,
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
 
-	ctr3->array[i] = (struct srvsvc_NetFileInfo3) {
+	ctr3->array[ctr3->count] = (struct srvsvc_NetFileInfo3) {
 		.fid	 	= (((uint32_t)(procid_to_pid(&e->pid))<<16) |
 				   e->share_file_id),
 		.permissions 	= permissions,
