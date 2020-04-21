@@ -53,6 +53,7 @@ struct file_enum_count {
 	TALLOC_CTX *ctx;
 	const char *username;
 	struct srvsvc_NetFileCtr3 *ctr3;
+	struct file_id *fids;
 };
 
 struct sess_file_info {
@@ -89,6 +90,7 @@ static int enum_file_fn(struct file_id id,
 		(struct file_enum_count *)private_data;
 	struct srvsvc_NetFileCtr3 *ctr3 = fenum->ctr3;
 	struct srvsvc_NetFileInfo3 *f;
+	struct file_id *fids = NULL;
 	files_struct fsp;
 	struct byte_range_lock *brl;
 	int num_locks = 0;
@@ -120,10 +122,18 @@ static int enum_file_fn(struct file_id id,
 	}
 	ctr3->array = f;
 
+	fids = talloc_realloc(
+		fenum->ctx, fenum->fids, struct file_id, ctr3->count+1);
+	if (fids == NULL) {
+		DBG_ERR("realloc failed for %"PRIu32" items\n", ctr3->count+1);
+		return 0;
+	}
+	fids[ctr3->count] = id;
+	fenum->fids = fids;
+
 	/* need to count the number of locks on a file */
 
-	ZERO_STRUCT( fsp );
-	fsp.file_id = id;
+	fsp = (struct files_struct) { .file_id = id, };
 
 	if ( (brl = brl_get_locks(talloc_tos(), &fsp)) != NULL ) {
 		num_locks = brl_num_locks(brl);
