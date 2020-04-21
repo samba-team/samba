@@ -1549,11 +1549,10 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 	/* SMB2 is pickier about pathnames. Ensure it doesn't
 	   end in a '\' */
 	if (namelen > 0 && name[namelen-1] == '\\') {
-		char *modname = talloc_strdup(talloc_tos(), name);
+		char *modname = talloc_strndup(talloc_tos(), name, namelen-1);
 		if (modname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		modname[namelen-1] = '\0';
 		name = modname;
 	}
 
