@@ -102,116 +102,12 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "lib/util_path.h"
 
 struct widelinks_config {
 	bool active;
 	char *cwd;
 };
-
-/*
- * Canonicalizes an absolute path, removing '.' and ".." components
- * and consolitating multiple '/' characters. As this can only be
- * called once widelinks_chdir with an absolute path has been called,
- * we can assert that the start of path must be '/'.
- */
-
-static char *resolve_realpath_name(TALLOC_CTX *ctx, const char *pathname_in)
-{
-	const char *s = pathname_in;
-	char *pathname = talloc_array(ctx, char, strlen(pathname_in)+1);
-	char *p = pathname;
-	bool wrote_slash = false;
-
-	if (pathname == NULL) {
-		return NULL;
-	}
-
-	SMB_ASSERT(pathname_in[0] == '/');
-
-	while (*s) {
-		/* Deal with '/' or multiples of '/'. */
-		if (s[0] == '/') {
-			while (s[0] == '/') {
-				/* Eat trailing '/' */
-				s++;
-			}
-			/* Update target with one '/' */
-			if (!wrote_slash) {
-				*p++ = '/';
-				wrote_slash = true;
-			}
-			continue;
-		}
-		if (wrote_slash) {
-			/* Deal with "./" or ".\0" */
-			if (s[0] == '.' &&
-					(s[1] == '/' || s[1] == '\0')) {
-				/* Eat the dot. */
-				s++;
-				while (s[0] == '/') {
-					/* Eat any trailing '/' */
-					s++;
-				}
-				/* Don't write anything to target. */
-				/* wrote_slash is still true. */
-				continue;
-			}
-			/* Deal with "../" or "..\0" */
-			if (s[0] == '.' && s[1] == '.' &&
-					(s[2] == '/' || s[2] == '\0')) {
-				/* Eat the dot dot. */
-				s += 2;
-				while (s[0] == '/') {
-					/* Eat any trailing '/' */
-					s++;
-				}
-				/*
-				 * As wrote_slash is true, we go back
-				 * one character to point p at the slash
-				 * we just saw.
-				 */
-				if (p > pathname) {
-					p--;
-				}
-				/*
-				 * Now go back to the slash
-				 * before the one that p currently points to.
-				 */
-				while (p > pathname) {
-					p--;
-					if (p[0] == '/') {
-						break;
-					}
-				}
-				/*
-				 * Step forward one to leave the
-				 * last written '/' alone.
-				 */
-				p++;
-
-				/* Don't write anything to target. */
-				/* wrote_slash is still true. */
-				continue;
-			}
-		}
-		/* Non-separator character, just copy. */
-		*p++ = *s++;
-		wrote_slash = false;
-	}
-	if (wrote_slash) {
-		/*
-		 * We finished on a '/'.
-		 * Remove the trailing '/', but not if it's
-		 * the sole character in the path.
-		 */
-		if (p > pathname + 1) {
-			p--;
-		}
-	}
-	/* Terminate and we're done ! */
-	*p++ = '\0';
-	return pathname;
-}
 
 static int widelinks_connect(struct vfs_handle_struct *handle,
 			const char *service,
@@ -384,7 +280,10 @@ static struct smb_filename *widelinks_realpath(vfs_handle_struct *handle,
 				config->cwd,
 				smb_fname_in->base_name);
 	}
-	resolved_pathname = resolve_realpath_name(config, pathname);
+
+	SMB_ASSERT(pathname[0] == '/');
+
+	resolved_pathname = canonicalize_absolute_path(config, pathname);
 	if (resolved_pathname == NULL) {
 		TALLOC_FREE(pathname);
 		return NULL;
