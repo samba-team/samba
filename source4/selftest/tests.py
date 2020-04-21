@@ -1376,6 +1376,16 @@ plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '
                                            '--option=torture:krb5-hostname=testupnspn.$DNSNAME',
                                            '--option=torture:krb5-service=http'],
                          "samba4.krb5.kdc with account having identical UPN and SPN")
+for env in ["fl2008r2dc", "fl2003dc"]:
+    planoldpythontestsuite(env, "samba.tests.krb5.as_req_tests",
+                           environ={
+                               'CLIENT_USERNAME': '$USERNAME',
+                               'CLIENT_PASSWORD': '$PASSWORD',
+                               'CLIENT_AS_SUPPORTED_ENCTYPES': '$SUPPORTED_ENCTYPE_BITS',
+                               'SERVER_USERNAME': '$SERVER',
+                               'SERVER_PASSWORD': 'machine$PASSWORD',
+                               'STRICT_CHECKING': '0',
+                           })
 
 
 for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
