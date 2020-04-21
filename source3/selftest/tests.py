@@ -508,10 +508,6 @@ plantestsuite("samba3.test_nfs4_acl", "none",
               [os.path.join(bindir(), "test_nfs4_acls"),
                "$SMB_CONF_PATH"])
 
-plantestsuite("samba3.test_vfs_widelinks", "none",
-              [os.path.join(bindir(), "test_vfs_widelinks"),
-               "$SMB_CONF_PATH"])
-
 plantestsuite("samba3.test_vfs_full_audit", "none",
               [os.path.join(bindir(), "test_vfs_full_audit"),
                "$SMB_CONF_PATH"])
