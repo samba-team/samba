@@ -333,6 +333,18 @@ test_shadow_copy_everywhere()
         test_fetch_snap_file $share "bar/baz" 6 || \
         failed=`expr $failed + 1`
 
+    testit "fetch a previous version of a regular file via non-canonical parent path" \
+        test_fetch_snap_file $share "BAR/baz" 6 || \
+        failed=`expr $failed + 1`
+
+    testit "fetch a previous version of a regular file via non-canonical basepath" \
+        test_fetch_snap_file $share "bar/BAZ" 6 || \
+        failed=`expr $failed + 1`
+
+    testit "fetch a previous version of a regular file via non-canonical path" \
+        test_fetch_snap_file $share "BAR/BAZ" 6 || \
+        failed=`expr $failed + 1`
+
     testit_expect_failure "fetch a (non-existent) previous version of a symlink" \
         test_fetch_snap_file $share "bar/lfoo" 6 || \
         failed=`expr $failed + 1`
