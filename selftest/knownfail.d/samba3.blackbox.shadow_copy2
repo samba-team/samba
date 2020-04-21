@@ -1,0 +1,4 @@
+^samba3.blackbox.shadow_copy2.NT1.fetch a previous version of a regular file via non-canonical parent path\(fileserver_smb1_done\)$
+^samba3.blackbox.shadow_copy2.SMB3.fetch a previous version of a regular file via non-canonical parent path\(fileserver\)$
+^samba3.blackbox.shadow_copy2.NT1.fetch a previous version of a regular file via non-canonical path\(fileserver_smb1_done\)$
+^samba3.blackbox.shadow_copy2.SMB3.fetch a previous version of a regular file via non-canonical path\(fileserver\)$
