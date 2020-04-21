@@ -28,16 +28,27 @@ ARCFOUR_HMAC_MD5 = int(
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
 KRB_AS_REP = int(krb5_asn1.MessageTypeValues('krb-as-rep'))
+KRB_AS_REQ = int(krb5_asn1.MessageTypeValues('krb-as-req'))
 KRB_TGS_REP = int(krb5_asn1.MessageTypeValues('krb-tgs-rep'))
+KRB_TGS_REQ = int(krb5_asn1.MessageTypeValues('krb-tgs-req'))
 
 # PAData types
 PADATA_ENC_TIMESTAMP = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-ENC-TIMESTAMP'))
+PADATA_ETYPE_INFO = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-ETYPE-INFO'))
 PADATA_ETYPE_INFO2 = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-ETYPE-INFO2'))
+PADATA_KDC_REQ = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-KDC-REQ'))
+PADATA_PK_AS_REQ = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REQ'))
+PADATA_PK_AS_REP_19 = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REP-19'))
 
 # Error codes
 KDC_ERR_C_PRINCIPAL_UNKNOWN = 6
+KDC_ERR_ETYPE_NOSUPP = 14
 KDC_ERR_PREAUTH_FAILED = 24
 KDC_ERR_PREAUTH_REQUIRED = 25
 KDC_ERR_BADMATCH = 36
