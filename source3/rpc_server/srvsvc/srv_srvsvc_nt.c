@@ -155,12 +155,14 @@ static int enum_file_fn(struct file_id id,
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
 
-	ctr3->array[i].fid		=
-		(((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
-	ctr3->array[i].permissions	= permissions;
-	ctr3->array[i].num_locks		= num_locks;
-	ctr3->array[i].path		= fullpath;
-	ctr3->array[i].user		= username;
+	ctr3->array[i] = (struct srvsvc_NetFileInfo3) {
+		.fid	 	= (((uint32_t)(procid_to_pid(&e->pid))<<16) |
+				   e->share_file_id),
+		.permissions 	= permissions,
+		.num_locks	= num_locks,
+		.path		= fullpath,
+		.user		= username,
+	};
 
 	ctr3->count++;
 
