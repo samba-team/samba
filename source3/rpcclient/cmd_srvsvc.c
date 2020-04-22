@@ -643,9 +643,13 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
-	uint32_t info_level = 3;
-	struct srvsvc_NetFileInfoCtr info_ctr;
-	struct srvsvc_NetFileCtr3 ctr3;
+	struct srvsvc_NetFileCtr3 ctr3 = { 0 };
+	struct srvsvc_NetFileInfoCtr info_ctr = {
+		.level = 3,
+		.ctr = {
+			.ctr3 = &ctr3,
+		},
+	};
 	WERROR result;
 	NTSTATUS status;
 	uint32_t preferred_len = 0xffff;
@@ -658,14 +662,9 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 		return WERR_OK;
 	}
 
-	if (argc == 2)
-		info_level = atoi(argv[1]);
-
-	ZERO_STRUCT(info_ctr);
-	ZERO_STRUCT(ctr3);
-
-	info_ctr.level = info_level;
-	info_ctr.ctr.ctr3 = &ctr3;
+	if (argc == 2) {
+		info_ctr.level = atoi(argv[1]);
+	}
 
 	status = dcerpc_srvsvc_NetFileEnum(b, mem_ctx,
 					   cli->desthost,
