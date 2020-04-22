@@ -72,8 +72,8 @@ static int check_ps_continuation(struct ps_context *ac, struct ldb_request *req,
 	}
 
 	req_control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
-	if (req_control == NULL) {
-		ldb_set_errstring(ldb, "paged_searches: control is missing");
+	if (req_control == NULL || req_control->data == NULL) {
+		ldb_set_errstring(ldb, "paged_searches: control is missing or malformed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
