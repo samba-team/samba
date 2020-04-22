@@ -358,13 +358,19 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 	int ret = 0;
 
 	if (reply == NULL || request == NULL) return -1;
-	
+
 	for (i = 0; reply[i]; i++) {
 		if (strcmp(LDB_CONTROL_VLV_RESP_OID, reply[i]->oid) == 0) {
 			struct ldb_vlv_resp_control *rep_control;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_vlv_resp_control);
-			
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning VLV reply OID received "
+					"with no VLV data\n");
+				continue;
+			}
+
 			/* check we have a matching control in the request */
 			for (j = 0; request[j]; j++) {
 				if (strcmp(LDB_CONTROL_VLV_REQ_OID, request[j]->oid) == 0)
@@ -389,6 +395,12 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			struct ldb_asq_control *rep_control;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_asq_control);
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning ASQ reply OID received "
+					"with no ASQ data\n");
+				continue;
+			}
 
 			/* check the result */
 			if (rep_control->result != 0) {
@@ -402,8 +414,16 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			struct ldb_paged_control *rep_control, *req_control;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_paged_control);
-			if (rep_control->cookie_len == 0) /* we are done */
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning PAGED_RESULTS reply OID "
+					"received with no data\n");
+				continue;
+			}
+
+			if (rep_control->cookie_len == 0) { /* we are done */
 				break;
+			}
 
 			/* more processing required */
 			/* let's fill in the request control with the new cookie */
@@ -434,6 +454,12 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			struct ldb_sort_resp_control *rep_control;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_sort_resp_control);
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning SORT reply OID "
+					"received with no data\n");
+				continue;
+			}
 
 			/* check we have a matching control in the request */
 			for (j = 0; request[j]; j++) {
@@ -458,6 +484,12 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			char *cookie;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_dirsync_control);
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning DIRSYNC reply OID "
+					"received with no data\n");
+				continue;
+			}
 			if (rep_control->cookie_len == 0) /* we are done */
 				break;
 
@@ -491,6 +523,12 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			char *cookie;
 
 			rep_control = talloc_get_type(reply[i]->data, struct ldb_dirsync_control);
+			if (rep_control == NULL) {
+				fprintf(stderr,
+					"Warning DIRSYNC_EX reply OID "
+					"received with no data\n");
+				continue;
+			}
 			if (rep_control->cookie_len == 0) /* we are done */
 				break;
 
@@ -526,4 +564,3 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 
 	return ret;
 }
-
