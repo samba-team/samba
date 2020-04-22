@@ -1132,8 +1132,14 @@ bool reopen_logs_internal(void)
 		dbgc_config[DBGC_ALL].fd = 2;
 		return true;
 
-	case DEBUG_FILE:
+	case DEBUG_FILE: {
+		struct debug_backend *b = debug_find_backend("file");
+
+		if (b != NULL) {
+			b->log_level = dbgc_config[DBGC_ALL].loglevel;
+		}
 		break;
+	}
 	}
 
 	oldumask = umask( 022 );
