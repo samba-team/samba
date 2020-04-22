@@ -737,7 +737,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 
 		ctrl->oid = LDB_CONTROL_EXTENDED_DN_OID;
 		ctrl->critical = crit;
-		ctrl->data = talloc_steal(ctrl, control);
+		ctrl->data = control;
 
 		return ctrl;
 	}
