@@ -269,6 +269,9 @@ for env in ["nt4_dc", "nt4_member", "ad_member", "ad_dc", "ad_dc_ntvfs", "s4memb
     plantestsuite("samba3.blackbox.smbclient_ntlm.plain NT1", smb1_env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_ntlm.sh"), '$SERVER', '$DC_USERNAME', '$DC_PASSWORD', "never", smbclient3, "NT1", configuration])
     plantestsuite("samba3.blackbox.smbclient_ntlm.plain SMB3", env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_ntlm.sh"), '$SERVER', '$DC_USERNAME', '$DC_PASSWORD', "never", smbclient3, "SMB3", configuration])
 
+
+plantestsuite("samba3.blackbox.smbclient_log_basename", "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbclient_log_basename.sh"), '$SERVER', smbclient3, '$PREFIX', configuration])
+
 for options in ["--option=clientntlmv2auth=no", "--option=clientusespnego=no --option=clientntlmv2auth=no", "--option=clientusespnego=no --option=clientntlmv2auth=no -mNT1", ""]:
     # don't attempt to run SMB1 tests in nt4_member or ad_member
     # as these test envs don't support SMB1, use nt4_dc instead
