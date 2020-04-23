@@ -371,8 +371,12 @@ static int virusfilter_vfs_connect(
 		config->socket_path = NULL;
         }
 	if (config->socket_path != NULL) {
-		canonicalize_absolute_path(handle,
-					   config->socket_path);
+		config->socket_path = canonicalize_absolute_path(
+			handle, config->socket_path);
+		if (config->socket_path == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
 	}
 
 	connect_timeout = lp_parm_int(snum, "virusfilter",
