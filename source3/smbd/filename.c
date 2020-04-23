@@ -478,7 +478,6 @@ struct uc_state {
 
 static NTSTATUS unix_convert_step(struct uc_state *state)
 {
-	NTSTATUS status;
 	int ret;
 
 	/*
@@ -499,13 +498,11 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	if (ISDOT(state->name)) {
 		if (!state->end)  {
 			/* Error code at the end of a pathname. */
-			status = NT_STATUS_OBJECT_NAME_INVALID;
-		} else {
-			status = determine_path_error(state->end+1,
-						      state->allow_wcard_last_component,
-						      state->posix_pathnames);
+			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
-		goto fail;
+		return determine_path_error(state->end+1,
+					    state->allow_wcard_last_component,
+					    state->posix_pathnames);
 	}
 
 	/* The name cannot have a wildcard if it's not
@@ -517,14 +514,14 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 
 	/* Wildcards never valid within a pathname. */
 	if (state->name_has_wildcard && state->end) {
-		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto fail;
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	/* Skip the stat call if it's a wildcard end. */
 	if (state->name_has_wildcard) {
 		DBG_DEBUG("Wildcard [%s]\n", state->name);
-		goto done;
+		state->done = true;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -557,8 +554,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			 * applications depend on the difference between
 			 * these two errors.
 			 */
-			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			goto fail;
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 
 	} else {
@@ -592,22 +588,22 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 				 */
 				morepath = strchr(state->end + 1, '/');
 				if (morepath != NULL) {
-					status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					goto fail;
+					return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 				}
 			}
 			if (errno == ENOENT) {
 				/* New file or directory. */
-				goto done;
+				state->done = true;
+				return NT_STATUS_OK;
 			}
 			if ((errno == EACCES) &&
 			    (state->ucf_flags & UCF_PREP_CREATEFILE)) {
 				/* POSIX Dropbox case. */
 				errno = 0;
-				goto done;
+				state->done = true;
+				return NT_STATUS_OK;
 			}
-			status = map_nt_error_from_unix(errno);
-			goto fail;
+			return map_nt_error_from_unix(errno);
 		}
 
 		/*
@@ -653,15 +649,11 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 
 				if (errno == ENOENT ||
 				    errno == ENOTDIR ||
-				    errno == ELOOP) {
-					status =
-						NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				    errno == ELOOP)
+				{
+					return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 				}
-				else {
-					status =
-						map_nt_error_from_unix(errno);
-				}
-				goto fail;
+				return map_nt_error_from_unix(errno);
 			}
 
 			/*
@@ -671,8 +663,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 
 			if (errno == EACCES) {
 				if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
-					status = NT_STATUS_ACCESS_DENIED;
-					goto fail;
+					return NT_STATUS_ACCESS_DENIED;
 				} else {
 					/*
 					 * This is the dropbox
@@ -695,15 +686,10 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 				 * NT_STATUS_OBJECT_PATH_NOT_FOUND
 				 * in the filename walk.
 				 */
-				if (errno == ENOTDIR ||
-				    errno == ELOOP) {
-					status =
-						NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				} else {
-					status =
-						map_nt_error_from_unix(errno);
+				if (errno == ENOTDIR || errno == ELOOP) {
+					return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 				}
-				goto fail;
+				return map_nt_error_from_unix(errno);
 			}
 
 			/*
@@ -721,8 +707,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 					     lp_default_case(SNUM(state->conn)))) {
 					DBG_DEBUG("strnorm %s failed\n",
 						  state->name);
-					status = NT_STATUS_INVALID_PARAMETER;
-					goto fail;
+					return NT_STATUS_INVALID_PARAMETER;
 				}
 			}
 
@@ -751,8 +736,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 				}
 				if (tmp == NULL) {
 					DBG_ERR("talloc failed\n");
-					status = NT_STATUS_NO_MEMORY;
-					goto err;
+					return NT_STATUS_NO_MEMORY;
 				}
 				TALLOC_FREE(state->smb_fname->base_name);
 				state->smb_fname->base_name = tmp;
@@ -762,7 +746,8 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			}
 
 			DBG_DEBUG("New file [%s]\n", state->name);
-			goto done;
+			state->done = true;
+			return NT_STATUS_OK;
 		}
 
 
@@ -787,8 +772,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			}
 			if (tmp == NULL) {
 				DBG_ERR("talloc_asprintf failed\n");
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
+				return NT_STATUS_NO_MEMORY;
 			}
 			TALLOC_FREE(state->smb_fname->base_name);
 			state->smb_fname->base_name = tmp;
@@ -810,8 +794,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 			}
 			if (tmp == NULL) {
 				DBG_ERR("talloc failed\n");
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
+				return NT_STATUS_NO_MEMORY;
 			}
 			TALLOC_FREE(state->smb_fname->base_name);
 			state->smb_fname->base_name = tmp;
@@ -846,8 +829,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 					    "%s/%s", state->dirpath, state->name);
 		if (!tmp) {
 			DBG_ERR("talloc_asprintf failed\n");
-			status = NT_STATUS_NO_MEMORY;
-			goto err;
+			return NT_STATUS_NO_MEMORY;
 		}
 		TALLOC_FREE(state->dirpath);
 		state->dirpath = tmp;
@@ -856,8 +838,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 		TALLOC_FREE(state->dirpath);
 		if (!(state->dirpath = talloc_strdup(state->mem_ctx,state->name))) {
 			DBG_ERR("talloc_strdup failed\n");
-			status = NT_STATUS_NO_MEMORY;
-			goto err;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -878,12 +859,6 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	}
 
 	return NT_STATUS_OK;
-done:
-	state->done = true;
-	return NT_STATUS_OK;
-err:
-fail:
-	return status;
 }
 
 NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
