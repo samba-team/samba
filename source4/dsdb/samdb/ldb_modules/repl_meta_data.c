@@ -1486,7 +1486,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	/* mark the control done */
+	/* mark the relax control done */
 	if (control) {
 		control->critical = 0;
 	}
