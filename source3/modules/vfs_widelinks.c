@@ -34,7 +34,7 @@
  1). When the upper layer code does a chdir() call to a pathname,
  this module stores the requested pathname inside config->cwd.
 
- When the upper layer code does a getwd() or reapath(), we return
+ When the upper layer code does a getwd() or realpath(), we return
  the absolute path of the value stored in config->cwd, *not* the
  position on the underlying filesystem.
 
@@ -161,7 +161,7 @@ static int widelinks_chdir(struct vfs_handle_struct *handle,
 	}
 
 	/*
-	 * We know we never get a path continaing
+	 * We know we never get a path containing
 	 * DOT or DOTDOT.
 	 */
 
