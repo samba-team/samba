@@ -700,17 +700,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		/* Stat failed - ensure we don't use it. */
 		SET_STAT_INVALID(smb_fname->st);
 
-		if (errno == EACCES) {
-			/*
-			 * Early exit on access denied. Walking
-			 * the path won't fix that.
-			 */
-			DBG_DEBUG("stat [%s]: %s\n",
-				  smb_fname_str_dbg(smb_fname),
-				  strerror(errno));
-			status = NT_STATUS_ACCESS_DENIED;
-			goto fail;
-		}
+		/*
+		 * Note: we must continue processing a path if we get EACCES
+		 * from stat. With NFS4 permissions the file might be lacking
+		 * READ_ATTR, but if the parent has LIST permissions we can
+		 * resolve the path in the path traversal loop down below.
+		 */
 
 		if (errno == ENOENT) {
 			/* Optimization when creating a new file - only
