@@ -476,6 +476,416 @@ struct uc_state {
 	bool done;
 };
 
+static NTSTATUS unix_convert_step(struct uc_state *state)
+{
+	NTSTATUS status;
+	int ret;
+
+	/*
+	 * Pinpoint the end of this section of the filename.
+	 */
+	/* mb safe. '/' can't be in any encoded char. */
+	state->end = strchr(state->name, '/');
+
+	/*
+	 * Chop the name at this point.
+	 */
+	if (state->end) {
+		*state->end = 0;
+	}
+
+	/* The name cannot have a component of "." */
+
+	if (ISDOT(state->name)) {
+		if (!state->end)  {
+			/* Error code at the end of a pathname. */
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+		} else {
+			status = determine_path_error(state->end+1,
+						      state->allow_wcard_last_component,
+						      state->posix_pathnames);
+		}
+		goto fail;
+	}
+
+	/* The name cannot have a wildcard if it's not
+	   the last component. */
+
+	if (!state->posix_pathnames) {
+		state->name_has_wildcard = ms_has_wild(state->name);
+	}
+
+	/* Wildcards never valid within a pathname. */
+	if (state->name_has_wildcard && state->end) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto fail;
+	}
+
+	/* Skip the stat call if it's a wildcard end. */
+	if (state->name_has_wildcard) {
+		DBG_DEBUG("Wildcard [%s]\n", state->name);
+		goto done;
+	}
+
+	/*
+	 * Check if the name exists up to this point.
+	 */
+
+	if (state->posix_pathnames) {
+		ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(state->conn, state->smb_fname);
+	}
+
+	if (ret == 0) {
+		/*
+		 * It exists. it must either be a directory or this must
+		 * be the last part of the path for it to be OK.
+		 */
+		if (state->end && !S_ISDIR(state->smb_fname->st.st_ex_mode)) {
+			/*
+			 * An intermediate part of the name isn't
+			 * a directory.
+			 */
+			DBG_DEBUG("Not a dir [%s]\n", state->name);
+			*state->end = '/';
+			/*
+			 * We need to return the fact that the
+			 * intermediate name resolution failed. This
+			 * is used to return an error of ERRbadpath
+			 * rather than ERRbadfile. Some Windows
+			 * applications depend on the difference between
+			 * these two errors.
+			 */
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			goto fail;
+		}
+
+	} else {
+		char *found_name = NULL;
+
+		/* Stat failed - ensure we don't use it. */
+		SET_STAT_INVALID(state->smb_fname->st);
+
+		if (state->posix_pathnames) {
+			/*
+			 * For posix_pathnames, we're done.
+			 * Don't blunder into the name_has_wildcard OR
+			 * get_real_filename() codepaths as they may
+			 * be doing case insensitive lookups. So when
+			 * creating a new POSIX directory Foo they might
+			 * match on name foo.
+			 *
+			 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13803
+			 */
+			if (state->end != NULL) {
+				const char *morepath = NULL;
+				/*
+				 * If this is intermediate we must
+				 * restore the full path.
+				 */
+				*state->end = '/';
+				/*
+				 * If there are any more components
+				 * after the failed LSTAT we cannot
+				 * continue.
+				 */
+				morepath = strchr(state->end + 1, '/');
+				if (morepath != NULL) {
+					status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+					goto fail;
+				}
+			}
+			if (errno == ENOENT) {
+				/* New file or directory. */
+				goto done;
+			}
+			if ((errno == EACCES) &&
+			    (state->ucf_flags & UCF_PREP_CREATEFILE)) {
+				/* POSIX Dropbox case. */
+				errno = 0;
+				goto done;
+			}
+			status = map_nt_error_from_unix(errno);
+			goto fail;
+		}
+
+		/*
+		 * Reset errno so we can detect
+		 * directory open errors.
+		 */
+		errno = 0;
+
+		/*
+		 * Try to find this part of the path in the directory.
+		 */
+
+		if (state->name_has_wildcard ||
+		    (get_real_filename(state->conn, state->dirpath, state->name,
+				       talloc_tos(),
+				       &found_name) == -1)) {
+			char *unmangled;
+
+			if (state->end) {
+				/*
+				 * An intermediate part of the name
+				 * can't be found.
+				 */
+				DBG_DEBUG("Intermediate [%s] missing\n",
+					  state->name);
+				*state->end = '/';
+
+				/*
+				 * We need to return the fact that the
+				 * intermediate name resolution failed.
+				 * This is used to return an error of
+				 * ERRbadpath rather than ERRbadfile.
+				 * Some Windows applications depend on
+				 * the difference between these two
+				 * errors.
+				 */
+
+				/*
+				 * ENOENT, ENOTDIR and ELOOP all map
+				 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
+				 * in the filename walk.
+				 */
+
+				if (errno == ENOENT ||
+				    errno == ENOTDIR ||
+				    errno == ELOOP) {
+					status =
+						NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				}
+				else {
+					status =
+						map_nt_error_from_unix(errno);
+				}
+				goto fail;
+			}
+
+			/*
+			 * ENOENT/EACCESS are the only valid errors
+			 * here.
+			 */
+
+			if (errno == EACCES) {
+				if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
+					status = NT_STATUS_ACCESS_DENIED;
+					goto fail;
+				} else {
+					/*
+					 * This is the dropbox
+					 * behaviour. A dropbox is a
+					 * directory with only -wx
+					 * permissions, so
+					 * get_real_filename fails
+					 * with EACCESS, it needs to
+					 * list the directory. We
+					 * nevertheless want to allow
+					 * users creating a file.
+					 */
+					errno = 0;
+				}
+			}
+
+			if ((errno != 0) && (errno != ENOENT)) {
+				/*
+				 * ENOTDIR and ELOOP both map to
+				 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+				 * in the filename walk.
+				 */
+				if (errno == ENOTDIR ||
+				    errno == ELOOP) {
+					status =
+						NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				} else {
+					status =
+						map_nt_error_from_unix(errno);
+				}
+				goto fail;
+			}
+
+			/*
+			 * Just the last part of the name doesn't exist.
+			 * We need to strupper() or strlower() it as
+			 * this conversion may be used for file creation
+			 * purposes. Fix inspired by
+			 * Thomas Neumann <t.neumann@iku-ag.de>.
+			 */
+			if (!state->conn->case_preserve ||
+			    (mangle_is_8_3(state->name, false,
+					   state->conn->params) &&
+			     !state->conn->short_case_preserve)) {
+				if (!strnorm(state->name,
+					     lp_default_case(SNUM(state->conn)))) {
+					DBG_DEBUG("strnorm %s failed\n",
+						  state->name);
+					status = NT_STATUS_INVALID_PARAMETER;
+					goto fail;
+				}
+			}
+
+			/*
+			 * check on the mangled stack to see if we can
+			 * recover the base of the filename.
+			 */
+
+			if (mangle_is_mangled(state->name, state->conn->params)
+			    && mangle_lookup_name_from_8_3(state->mem_ctx,
+							   state->name,
+							   &unmangled,
+							   state->conn->params)) {
+				char *tmp;
+				size_t name_ofs =
+					state->name - state->smb_fname->base_name;
+
+				if (!ISDOT(state->dirpath)) {
+					tmp = talloc_asprintf(
+						state->smb_fname, "%s/%s",
+						state->dirpath, unmangled);
+					TALLOC_FREE(unmangled);
+				}
+				else {
+					tmp = unmangled;
+				}
+				if (tmp == NULL) {
+					DBG_ERR("talloc failed\n");
+					status = NT_STATUS_NO_MEMORY;
+					goto err;
+				}
+				TALLOC_FREE(state->smb_fname->base_name);
+				state->smb_fname->base_name = tmp;
+				state->name =
+					state->smb_fname->base_name + name_ofs;
+				state->end = state->name + strlen(state->name);
+			}
+
+			DBG_DEBUG("New file [%s]\n", state->name);
+			goto done;
+		}
+
+
+		/*
+		 * Restore the rest of the string. If the string was
+		 * mangled the size may have changed.
+		 */
+		if (state->end) {
+			char *tmp;
+			size_t name_ofs =
+				state->name - state->smb_fname->base_name;
+
+			if (!ISDOT(state->dirpath)) {
+				tmp = talloc_asprintf(state->smb_fname,
+						      "%s/%s/%s", state->dirpath,
+						      found_name, state->end+1);
+			}
+			else {
+				tmp = talloc_asprintf(state->smb_fname,
+						      "%s/%s", found_name,
+						      state->end+1);
+			}
+			if (tmp == NULL) {
+				DBG_ERR("talloc_asprintf failed\n");
+				status = NT_STATUS_NO_MEMORY;
+				goto err;
+			}
+			TALLOC_FREE(state->smb_fname->base_name);
+			state->smb_fname->base_name = tmp;
+			state->name = state->smb_fname->base_name + name_ofs;
+			state->end = state->name + strlen(found_name);
+			*state->end = '\0';
+		} else {
+			char *tmp;
+			size_t name_ofs =
+				state->name - state->smb_fname->base_name;
+
+			if (!ISDOT(state->dirpath)) {
+				tmp = talloc_asprintf(state->smb_fname,
+						      "%s/%s", state->dirpath,
+						      found_name);
+			} else {
+				tmp = talloc_strdup(state->smb_fname,
+						    found_name);
+			}
+			if (tmp == NULL) {
+				DBG_ERR("talloc failed\n");
+				status = NT_STATUS_NO_MEMORY;
+				goto err;
+			}
+			TALLOC_FREE(state->smb_fname->base_name);
+			state->smb_fname->base_name = tmp;
+			state->name = state->smb_fname->base_name + name_ofs;
+
+			/*
+			 * We just scanned for, and found the end of
+			 * the path. We must return a valid stat struct
+			 * if it exists. JRA.
+			 */
+
+			if (state->posix_pathnames) {
+				ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
+			} else {
+				ret = SMB_VFS_STAT(state->conn, state->smb_fname);
+			}
+
+			if (ret != 0) {
+				SET_STAT_INVALID(state->smb_fname->st);
+			}
+		}
+
+		TALLOC_FREE(found_name);
+	} /* end else */
+
+	/*
+	 * Add to the dirpath that we have resolved so far.
+	 */
+
+	if (!ISDOT(state->dirpath)) {
+		char *tmp = talloc_asprintf(state->mem_ctx,
+					    "%s/%s", state->dirpath, state->name);
+		if (!tmp) {
+			DBG_ERR("talloc_asprintf failed\n");
+			status = NT_STATUS_NO_MEMORY;
+			goto err;
+		}
+		TALLOC_FREE(state->dirpath);
+		state->dirpath = tmp;
+	}
+	else {
+		TALLOC_FREE(state->dirpath);
+		if (!(state->dirpath = talloc_strdup(state->mem_ctx,state->name))) {
+			DBG_ERR("talloc_strdup failed\n");
+			status = NT_STATUS_NO_MEMORY;
+			goto err;
+		}
+	}
+
+	/*
+	 * Cache the dirpath thus far. Don't cache a name with mangled
+	 * or wildcard components as this can change the size.
+	 */
+	if(!state->component_was_mangled && !state->name_has_wildcard) {
+		stat_cache_add(state->orig_path, state->dirpath,
+			       state->conn->case_sensitive);
+	}
+
+	/*
+	 * Restore the / that we wiped out earlier.
+	 */
+	if (state->end) {
+		*state->end = '/';
+	}
+
+	return NT_STATUS_OK;
+done:
+	state->done = true;
+	return NT_STATUS_OK;
+err:
+fail:
+	return status;
+}
+
 NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
@@ -846,400 +1256,15 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 */
 
 	for (; state->name ; state->name = (state->end ? state->end + 1:(char *)NULL)) {
-		/*
-		 * Pinpoint the end of this section of the filename.
-		 */
-		/* mb safe. '/' can't be in any encoded char. */
-		state->end = strchr(state->name, '/');
-
-		/*
-		 * Chop the name at this point.
-		 */
-		if (state->end) {
-			*state->end = 0;
-		}
-
-		/* The name cannot have a component of "." */
-
-		if (ISDOT(state->name)) {
-			if (!state->end)  {
-				/* Error code at the end of a pathname. */
-				status = NT_STATUS_OBJECT_NAME_INVALID;
-			} else {
-				status = determine_path_error(state->end+1,
-						state->allow_wcard_last_component,
-						state->posix_pathnames);
+		status = unix_convert_step(state);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+				goto err;
 			}
 			goto fail;
 		}
-
-		/* The name cannot have a wildcard if it's not
-		   the last component. */
-
-		if (!state->posix_pathnames) {
-			state->name_has_wildcard = ms_has_wild(state->name);
-		}
-
-		/* Wildcards never valid within a pathname. */
-		if (state->name_has_wildcard && state->end) {
-			status = NT_STATUS_OBJECT_NAME_INVALID;
-			goto fail;
-		}
-
-		/* Skip the stat call if it's a wildcard end. */
-		if (state->name_has_wildcard) {
-			DBG_DEBUG("Wildcard [%s]\n", state->name);
+		if (state->done) {
 			goto done;
-		}
-
-		/*
-		 * Check if the name exists up to this point.
-		 */
-
-		if (state->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
-		} else {
-			ret = SMB_VFS_STAT(state->conn, state->smb_fname);
-		}
-
-		if (ret == 0) {
-			/*
-			 * It exists. it must either be a directory or this must
-			 * be the last part of the path for it to be OK.
-			 */
-			if (state->end && !S_ISDIR(state->smb_fname->st.st_ex_mode)) {
-				/*
-				 * An intermediate part of the name isn't
-				 * a directory.
-				 */
-				DBG_DEBUG("Not a dir [%s]\n", state->name);
-				*state->end = '/';
-				/*
-				 * We need to return the fact that the
-				 * intermediate name resolution failed. This
-				 * is used to return an error of ERRbadpath
-				 * rather than ERRbadfile. Some Windows
-				 * applications depend on the difference between
-				 * these two errors.
-				 */
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				goto fail;
-			}
-
-		} else {
-			char *found_name = NULL;
-
-			/* Stat failed - ensure we don't use it. */
-			SET_STAT_INVALID(state->smb_fname->st);
-
-			if (state->posix_pathnames) {
-				/*
-				 * For posix_pathnames, we're done.
-				 * Don't blunder into the name_has_wildcard OR
-				 * get_real_filename() codepaths as they may
-				 * be doing case insensitive lookups. So when
-				 * creating a new POSIX directory Foo they might
-				 * match on name foo.
-				 *
-				 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13803
-				 */
-				if (state->end != NULL) {
-					const char *morepath = NULL;
-					/*
-					 * If this is intermediate we must
-					 * restore the full path.
-					 */
-					*state->end = '/';
-					/*
-					 * If there are any more components
-					 * after the failed LSTAT we cannot
-					 * continue.
-					 */
-					morepath = strchr(state->end + 1, '/');
-					if (morepath != NULL) {
-						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-						goto fail;
-					}
-				}
-				if (errno == ENOENT) {
-					/* New file or directory. */
-					goto done;
-				}
-				if ((errno == EACCES) &&
-				    (state->ucf_flags & UCF_PREP_CREATEFILE)) {
-					/* POSIX Dropbox case. */
-					errno = 0;
-					goto done;
-				}
-				status = map_nt_error_from_unix(errno);
-				goto fail;
-			}
-
-			/*
-			 * Reset errno so we can detect
-			 * directory open errors.
-			 */
-			errno = 0;
-
-			/*
-			 * Try to find this part of the path in the directory.
-			 */
-
-			if (state->name_has_wildcard ||
-			    (get_real_filename(state->conn, state->dirpath, state->name,
-					       talloc_tos(),
-					       &found_name) == -1)) {
-				char *unmangled;
-
-				if (state->end) {
-					/*
-					 * An intermediate part of the name
-					 * can't be found.
-					 */
-					DBG_DEBUG("Intermediate [%s] missing\n",
-						  state->name);
-					*state->end = '/';
-
-					/*
-					 * We need to return the fact that the
-					 * intermediate name resolution failed.
-					 * This is used to return an error of
-					 * ERRbadpath rather than ERRbadfile.
-					 * Some Windows applications depend on
-					 * the difference between these two
-					 * errors.
-					 */
-
-					/*
-					 * ENOENT, ENOTDIR and ELOOP all map
-					 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
-					 * in the filename walk.
-					 */
-
-					if (errno == ENOENT ||
-							errno == ENOTDIR ||
-							errno == ELOOP) {
-						status =
-						NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					}
-					else {
-						status =
-						map_nt_error_from_unix(errno);
-					}
-					goto fail;
-				}
-
-				/*
-				 * ENOENT/EACCESS are the only valid errors
-				 * here.
-				 */
-
-				if (errno == EACCES) {
-					if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
-						status = NT_STATUS_ACCESS_DENIED;
-						goto fail;
-					} else {
-						/*
-						 * This is the dropbox
-						 * behaviour. A dropbox is a
-						 * directory with only -wx
-						 * permissions, so
-						 * get_real_filename fails
-						 * with EACCESS, it needs to
-						 * list the directory. We
-						 * nevertheless want to allow
-						 * users creating a file.
-						 */
-						errno = 0;
-					}
-				}
-
-				if ((errno != 0) && (errno != ENOENT)) {
-					/*
-					 * ENOTDIR and ELOOP both map to
-					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
-					 * in the filename walk.
-					 */
-					if (errno == ENOTDIR ||
-							errno == ELOOP) {
-						status =
-						NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					} else {
-						status =
-						map_nt_error_from_unix(errno);
-					}
-					goto fail;
-				}
-
-				/*
-				 * Just the last part of the name doesn't exist.
-				 * We need to strupper() or strlower() it as
-				 * this conversion may be used for file creation
-				 * purposes. Fix inspired by
-				 * Thomas Neumann <t.neumann@iku-ag.de>.
-				 */
-				if (!state->conn->case_preserve ||
-				    (mangle_is_8_3(state->name, false,
-						   state->conn->params) &&
-						 !state->conn->short_case_preserve)) {
-					if (!strnorm(state->name,
-							lp_default_case(SNUM(state->conn)))) {
-						DBG_DEBUG("strnorm %s failed\n",
-							  state->name);
-						status = NT_STATUS_INVALID_PARAMETER;
-						goto fail;
-					}
-				}
-
-				/*
-				 * check on the mangled stack to see if we can
-				 * recover the base of the filename.
-				 */
-
-				if (mangle_is_mangled(state->name, state->conn->params)
-				    && mangle_lookup_name_from_8_3(state->mem_ctx,
-							state->name,
-							&unmangled,
-							state->conn->params)) {
-					char *tmp;
-					size_t name_ofs =
-					    state->name - state->smb_fname->base_name;
-
-					if (!ISDOT(state->dirpath)) {
-						tmp = talloc_asprintf(
-							state->smb_fname, "%s/%s",
-							state->dirpath, unmangled);
-						TALLOC_FREE(unmangled);
-					}
-					else {
-						tmp = unmangled;
-					}
-					if (tmp == NULL) {
-						DBG_ERR("talloc failed\n");
-						status = NT_STATUS_NO_MEMORY;
-						goto err;
-					}
-					TALLOC_FREE(state->smb_fname->base_name);
-					state->smb_fname->base_name = tmp;
-					state->name =
-					    state->smb_fname->base_name + name_ofs;
-					state->end = state->name + strlen(state->name);
-				}
-
-				DBG_DEBUG("New file [%s]\n", state->name);
-				goto done;
-			}
-
-
-			/*
-			 * Restore the rest of the string. If the string was
-			 * mangled the size may have changed.
-			 */
-			if (state->end) {
-				char *tmp;
-				size_t name_ofs =
-				    state->name - state->smb_fname->base_name;
-
-				if (!ISDOT(state->dirpath)) {
-					tmp = talloc_asprintf(state->smb_fname,
-						"%s/%s/%s", state->dirpath,
-						found_name, state->end+1);
-				}
-				else {
-					tmp = talloc_asprintf(state->smb_fname,
-						"%s/%s", found_name,
-						state->end+1);
-				}
-				if (tmp == NULL) {
-					DBG_ERR("talloc_asprintf failed\n");
-					status = NT_STATUS_NO_MEMORY;
-					goto err;
-				}
-				TALLOC_FREE(state->smb_fname->base_name);
-				state->smb_fname->base_name = tmp;
-				state->name = state->smb_fname->base_name + name_ofs;
-				state->end = state->name + strlen(found_name);
-				*state->end = '\0';
-			} else {
-				char *tmp;
-				size_t name_ofs =
-				    state->name - state->smb_fname->base_name;
-
-				if (!ISDOT(state->dirpath)) {
-					tmp = talloc_asprintf(state->smb_fname,
-						"%s/%s", state->dirpath,
-						found_name);
-				} else {
-					tmp = talloc_strdup(state->smb_fname,
-						found_name);
-				}
-				if (tmp == NULL) {
-					DBG_ERR("talloc failed\n");
-					status = NT_STATUS_NO_MEMORY;
-					goto err;
-				}
-				TALLOC_FREE(state->smb_fname->base_name);
-				state->smb_fname->base_name = tmp;
-				state->name = state->smb_fname->base_name + name_ofs;
-
-				/*
-				 * We just scanned for, and found the end of
-				 * the path. We must return a valid stat struct
-				 * if it exists. JRA.
-				 */
-
-				if (state->posix_pathnames) {
-					ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
-				} else {
-					ret = SMB_VFS_STAT(state->conn, state->smb_fname);
-				}
-
-				if (ret != 0) {
-					SET_STAT_INVALID(state->smb_fname->st);
-				}
-			}
-
-			TALLOC_FREE(found_name);
-		} /* end else */
-
-		/*
-		 * Add to the dirpath that we have resolved so far.
-		 */
-
-		if (!ISDOT(state->dirpath)) {
-			char *tmp = talloc_asprintf(state->mem_ctx,
-					"%s/%s", state->dirpath, state->name);
-			if (!tmp) {
-				DBG_ERR("talloc_asprintf failed\n");
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
-			}
-			TALLOC_FREE(state->dirpath);
-			state->dirpath = tmp;
-		}
-		else {
-			TALLOC_FREE(state->dirpath);
-			if (!(state->dirpath = talloc_strdup(state->mem_ctx,state->name))) {
-				DBG_ERR("talloc_strdup failed\n");
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
-			}
-		}
-
-		/*
-		 * Cache the dirpath thus far. Don't cache a name with mangled
-		 * or wildcard components as this can change the size.
-		 */
-		if(!state->component_was_mangled && !state->name_has_wildcard) {
-			stat_cache_add(state->orig_path, state->dirpath,
-					state->conn->case_sensitive);
-		}
-
-		/*
-		 * Restore the / that we wiped out earlier.
-		 */
-		if (state->end) {
-			*state->end = '/';
 		}
 	}
 
