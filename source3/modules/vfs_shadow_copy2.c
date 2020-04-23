@@ -852,6 +852,11 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 
 	config = priv->config;
 
+	/*
+	 * Note that stripped may be an empty string "" if the outer level VFS
+	 * function got passed a single @GMT-only token path.
+	 */
+
 	DEBUG(10, ("converting '%s'\n", name));
 
 	if (!config->snapdirseverywhere) {
@@ -2707,14 +2712,34 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
 					  char **found_name)
 {
+	struct shadow_copy2_private *priv = NULL;
+	struct shadow_copy2_config *config = NULL;
+	bool name_is_gmt_token = is_gmt_token(name);
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno = 0;
 	char *conv;
 
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return -1);
+	config = priv->config;
+
 	DEBUG(10, ("shadow_copy2_get_real_filename called for path=[%s], "
 		   "name=[%s]\n", path, name));
+
+	if (ISDOT(path) && name_is_gmt_token) {
+		/*
+		 * This happens in the first round of looping over the path in
+		 * unix_convert(). Eg for a snapshot path "@GMT-.../foo/bar" we
+		 * would be called with path="." and name="@GMT-...".
+		 */
+		*found_name = talloc_strdup(mem_ctx, name);
+		if (*found_name == NULL) {
+			return -1;
+		}
+		return 0;
+	}
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, path,
 					 &timestamp, &stripped)) {
@@ -2726,25 +2751,75 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
 						      mem_ctx, found_name);
 	}
+
+	/*
+	 * Note that stripped may be an empty string "" if path was a single
+	 * @GMT-only token. As shadow_copy2_convert() combines "" with the
+	 * shadow-copy tree connect root fullpath and
+	 * get_real_filename_full_scan() has an explicit check for "" this
+	 * works.
+	 */
+	DBG_DEBUG("stripped [%s]\n", stripped);
+
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
 	if (conv == NULL) {
-		DEBUG(10, ("shadow_copy2_convert failed\n"));
-		return -1;
+		if (!config->snapdirseverywhere) {
+			DBG_DEBUG("shadow_copy2_convert [%s] failed\n", stripped);
+			return -1;
+		}
+
+		/*
+		 * We're called in the path traversal loop in unix_convert()
+		 * walking down the directory hierarchy. shadow_copy2_convert()
+		 * will fail if the snapshot directory is futher down in the
+		 * hierachy. Set conv to the original stripped path and try to
+		 * look it up in the filesystem with
+		 * SMB_VFS_NEXT_GET_REAL_FILENAME() or
+		 * get_real_filename_full_scan().
+		 */
+		DBG_DEBUG("Use stripped [%s] as conv\n", stripped);
+		conv = talloc_strdup(talloc_tos(), stripped);
+		if (conv == NULL) {
+			TALLOC_FREE(stripped);
+			return -1;
+		}
 	}
+	TALLOC_FREE(stripped);
+
 	DEBUG(10, ("Calling NEXT_GET_REAL_FILE_NAME for conv=[%s], "
 		   "name=[%s]\n", conv, name));
+
 	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, conv, name,
 					     mem_ctx, found_name);
 	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %d\n", (int)ret));
-	if (ret == -1) {
+	if (ret == 0) {
+		return 0;
+	}
+	if (errno != EOPNOTSUPP) {
+		TALLOC_FREE(conv);
+		errno = EOPNOTSUPP;
+		return -1;
+	}
+
+	ret = get_real_filename_full_scan(handle->conn,
+					  conv,
+					  name,
+					  false,
+					  mem_ctx,
+					  found_name);
+	if (ret != 0) {
 		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
+		DBG_DEBUG("Scan [%s] for [%s] failed\n",
+			  conv, name);
 		errno = saved_errno;
+		return -1;
 	}
-	return ret;
+
+	DBG_DEBUG("Scan [%s] for [%s] returned [%s]\n",
+		  conv, name, *found_name);
+
+	TALLOC_FREE(conv);
+	return 0;
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
