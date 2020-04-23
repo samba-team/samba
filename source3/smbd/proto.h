@@ -375,6 +375,12 @@ int get_real_filename(connection_struct *conn,
 		      const char *name,
 		      TALLOC_CTX *mem_ctx,
 		      char **found_name);
+int get_real_filename_full_scan(connection_struct *conn,
+				const char *path,
+				const char *name,
+				bool mangled,
+				TALLOC_CTX *mem_ctx,
+				char **found_name);
 char *get_original_lcomp(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *filename_in,

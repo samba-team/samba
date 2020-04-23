@@ -1555,10 +1555,12 @@ static bool sname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static int get_real_filename_full_scan(connection_struct *conn,
-				       const char *path, const char *name,
-				       bool mangled,
-				       TALLOC_CTX *mem_ctx, char **found_name)
+int get_real_filename_full_scan(connection_struct *conn,
+				const char *path,
+				const char *name,
+				bool mangled,
+				TALLOC_CTX *mem_ctx,
+				char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname = NULL;
