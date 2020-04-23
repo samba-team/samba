@@ -824,7 +824,7 @@ static void
 ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 			     unsigned int count)
 {
-	int i, id;
+	unsigned int i, id;
 	char *keystr;
 
 	/* smallest value is always at index 0 */

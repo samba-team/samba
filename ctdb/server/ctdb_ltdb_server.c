@@ -1597,7 +1597,7 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 
 void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; i<MAX_HOT_KEYS; i++) {
 		if (ctdb_db->hot_keys[i].key.dsize > 0) {
@@ -1616,8 +1616,8 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_db_statistics_old *stats;
-	int i;
-	int len;
+	unsigned int i;
+	size_t len;
 	char *ptr;
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
