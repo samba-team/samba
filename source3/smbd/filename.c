@@ -476,6 +476,138 @@ struct uc_state {
 	bool done;
 };
 
+static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
+{
+	char *unmangled;
+
+	if (state->end) {
+		/*
+		 * An intermediate part of the name
+		 * can't be found.
+		 */
+		DBG_DEBUG("Intermediate [%s] missing\n",
+			  state->name);
+		*state->end = '/';
+
+		/*
+		 * We need to return the fact that the
+		 * intermediate name resolution failed.
+		 * This is used to return an error of
+		 * ERRbadpath rather than ERRbadfile.
+		 * Some Windows applications depend on
+		 * the difference between these two
+		 * errors.
+		 */
+
+		/*
+		 * ENOENT, ENOTDIR and ELOOP all map
+		 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
+		 * in the filename walk.
+		 */
+
+		if (errno == ENOENT ||
+		    errno == ENOTDIR ||
+		    errno == ELOOP)
+		{
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	/*
+	 * ENOENT/EACCESS are the only valid errors
+	 * here.
+	 */
+
+	if (errno == EACCES) {
+		if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
+			return NT_STATUS_ACCESS_DENIED;
+		} else {
+			/*
+			 * This is the dropbox
+			 * behaviour. A dropbox is a
+			 * directory with only -wx
+			 * permissions, so
+			 * get_real_filename fails
+			 * with EACCESS, it needs to
+			 * list the directory. We
+			 * nevertheless want to allow
+			 * users creating a file.
+			 */
+			errno = 0;
+		}
+	}
+
+	if ((errno != 0) && (errno != ENOENT)) {
+		/*
+		 * ENOTDIR and ELOOP both map to
+		 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+		 * in the filename walk.
+		 */
+		if (errno == ENOTDIR || errno == ELOOP) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	/*
+	 * Just the last part of the name doesn't exist.
+	 * We need to strupper() or strlower() it as
+	 * this conversion may be used for file creation
+	 * purposes. Fix inspired by
+	 * Thomas Neumann <t.neumann@iku-ag.de>.
+	 */
+	if (!state->conn->case_preserve ||
+	    (mangle_is_8_3(state->name, false,
+			   state->conn->params) &&
+	     !state->conn->short_case_preserve)) {
+		if (!strnorm(state->name,
+			     lp_default_case(SNUM(state->conn)))) {
+			DBG_DEBUG("strnorm %s failed\n",
+				  state->name);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	/*
+	 * check on the mangled stack to see if we can
+	 * recover the base of the filename.
+	 */
+
+	if (mangle_is_mangled(state->name, state->conn->params)
+	    && mangle_lookup_name_from_8_3(state->mem_ctx,
+					   state->name,
+					   &unmangled,
+					   state->conn->params)) {
+		char *tmp;
+		size_t name_ofs =
+			state->name - state->smb_fname->base_name;
+
+		if (!ISDOT(state->dirpath)) {
+			tmp = talloc_asprintf(
+				state->smb_fname, "%s/%s",
+				state->dirpath, unmangled);
+			TALLOC_FREE(unmangled);
+		}
+		else {
+			tmp = unmangled;
+		}
+		if (tmp == NULL) {
+			DBG_ERR("talloc failed\n");
+			return NT_STATUS_NO_MEMORY;
+		}
+		TALLOC_FREE(state->smb_fname->base_name);
+		state->smb_fname->base_name = tmp;
+		state->name =
+			state->smb_fname->base_name + name_ofs;
+		state->end = state->name + strlen(state->name);
+	}
+
+	DBG_DEBUG("New file [%s]\n", state->name);
+	state->done = true;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 {
 	char *found_name = NULL;
@@ -571,140 +703,17 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	 * Try to find this part of the path in the directory.
 	 */
 
-	if (state->name_has_wildcard ||
-	    (get_real_filename(state->conn, state->dirpath, state->name,
-			       talloc_tos(),
-			       &found_name) == -1)) {
-		char *unmangled;
-
-		if (state->end) {
-			/*
-			 * An intermediate part of the name
-			 * can't be found.
-			 */
-			DBG_DEBUG("Intermediate [%s] missing\n",
-				  state->name);
-			*state->end = '/';
-
-			/*
-			 * We need to return the fact that the
-			 * intermediate name resolution failed.
-			 * This is used to return an error of
-			 * ERRbadpath rather than ERRbadfile.
-			 * Some Windows applications depend on
-			 * the difference between these two
-			 * errors.
-			 */
-
-			/*
-			 * ENOENT, ENOTDIR and ELOOP all map
-			 * to NT_STATUS_OBJECT_PATH_NOT_FOUND
-			 * in the filename walk.
-			 */
-
-			if (errno == ENOENT ||
-			    errno == ENOTDIR ||
-			    errno == ELOOP)
-			{
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-			return map_nt_error_from_unix(errno);
-		}
-
-		/*
-		 * ENOENT/EACCESS are the only valid errors
-		 * here.
-		 */
-
-		if (errno == EACCES) {
-			if ((state->ucf_flags & UCF_PREP_CREATEFILE) == 0) {
-				return NT_STATUS_ACCESS_DENIED;
-			} else {
-				/*
-				 * This is the dropbox
-				 * behaviour. A dropbox is a
-				 * directory with only -wx
-				 * permissions, so
-				 * get_real_filename fails
-				 * with EACCESS, it needs to
-				 * list the directory. We
-				 * nevertheless want to allow
-				 * users creating a file.
-				 */
-				errno = 0;
-			}
-		}
-
-		if ((errno != 0) && (errno != ENOENT)) {
-			/*
-			 * ENOTDIR and ELOOP both map to
-			 * NT_STATUS_OBJECT_PATH_NOT_FOUND
-			 * in the filename walk.
-			 */
-			if (errno == ENOTDIR || errno == ELOOP) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-			return map_nt_error_from_unix(errno);
-		}
-
-		/*
-		 * Just the last part of the name doesn't exist.
-		 * We need to strupper() or strlower() it as
-		 * this conversion may be used for file creation
-		 * purposes. Fix inspired by
-		 * Thomas Neumann <t.neumann@iku-ag.de>.
-		 */
-		if (!state->conn->case_preserve ||
-		    (mangle_is_8_3(state->name, false,
-				   state->conn->params) &&
-		     !state->conn->short_case_preserve)) {
-			if (!strnorm(state->name,
-				     lp_default_case(SNUM(state->conn)))) {
-				DBG_DEBUG("strnorm %s failed\n",
-					  state->name);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-		}
-
-		/*
-		 * check on the mangled stack to see if we can
-		 * recover the base of the filename.
-		 */
-
-		if (mangle_is_mangled(state->name, state->conn->params)
-		    && mangle_lookup_name_from_8_3(state->mem_ctx,
-						   state->name,
-						   &unmangled,
-						   state->conn->params)) {
-			char *tmp;
-			size_t name_ofs =
-				state->name - state->smb_fname->base_name;
-
-			if (!ISDOT(state->dirpath)) {
-				tmp = talloc_asprintf(
-					state->smb_fname, "%s/%s",
-					state->dirpath, unmangled);
-				TALLOC_FREE(unmangled);
-			}
-			else {
-				tmp = unmangled;
-			}
-			if (tmp == NULL) {
-				DBG_ERR("talloc failed\n");
-				return NT_STATUS_NO_MEMORY;
-			}
-			TALLOC_FREE(state->smb_fname->base_name);
-			state->smb_fname->base_name = tmp;
-			state->name =
-				state->smb_fname->base_name + name_ofs;
-			state->end = state->name + strlen(state->name);
-		}
-
-		DBG_DEBUG("New file [%s]\n", state->name);
-		state->done = true;
-		return NT_STATUS_OK;
+	if (state->name_has_wildcard) {
+		return unix_convert_step_search_fail(state);
 	}
-
+	ret = get_real_filename(state->conn,
+				state->dirpath,
+				state->name,
+				talloc_tos(),
+				&found_name);
+	if (ret != 0) {
+		return unix_convert_step_search_fail(state);
+	}
 
 	/*
 	 * Restore the rest of the string. If the string was
