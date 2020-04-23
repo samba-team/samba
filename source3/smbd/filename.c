@@ -476,53 +476,9 @@ struct uc_state {
 	bool done;
 };
 
-static NTSTATUS unix_convert_step(struct uc_state *state)
+static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 {
 	int ret;
-
-	/*
-	 * Pinpoint the end of this section of the filename.
-	 */
-	/* mb safe. '/' can't be in any encoded char. */
-	state->end = strchr(state->name, '/');
-
-	/*
-	 * Chop the name at this point.
-	 */
-	if (state->end) {
-		*state->end = 0;
-	}
-
-	/* The name cannot have a component of "." */
-
-	if (ISDOT(state->name)) {
-		if (!state->end)  {
-			/* Error code at the end of a pathname. */
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
-		return determine_path_error(state->end+1,
-					    state->allow_wcard_last_component,
-					    state->posix_pathnames);
-	}
-
-	/* The name cannot have a wildcard if it's not
-	   the last component. */
-
-	if (!state->posix_pathnames) {
-		state->name_has_wildcard = ms_has_wild(state->name);
-	}
-
-	/* Wildcards never valid within a pathname. */
-	if (state->name_has_wildcard && state->end) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
-	/* Skip the stat call if it's a wildcard end. */
-	if (state->name_has_wildcard) {
-		DBG_DEBUG("Wildcard [%s]\n", state->name);
-		state->done = true;
-		return NT_STATUS_OK;
-	}
 
 	/*
 	 * Check if the name exists up to this point.
@@ -533,7 +489,6 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	} else {
 		ret = SMB_VFS_STAT(state->conn, state->smb_fname);
 	}
-
 	if (ret == 0) {
 		/*
 		 * It exists. it must either be a directory or this must
@@ -819,6 +774,62 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 
 		TALLOC_FREE(found_name);
 	} /* end else */
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS unix_convert_step(struct uc_state *state)
+{
+	NTSTATUS status;
+
+	/*
+	 * Pinpoint the end of this section of the filename.
+	 */
+	/* mb safe. '/' can't be in any encoded char. */
+	state->end = strchr(state->name, '/');
+
+	/*
+	 * Chop the name at this point.
+	 */
+	if (state->end) {
+		*state->end = 0;
+	}
+
+	/* The name cannot have a component of "." */
+
+	if (ISDOT(state->name)) {
+		if (!state->end)  {
+			/* Error code at the end of a pathname. */
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		return determine_path_error(state->end+1,
+					    state->allow_wcard_last_component,
+					    state->posix_pathnames);
+	}
+
+	/* The name cannot have a wildcard if it's not
+	   the last component. */
+
+	if (!state->posix_pathnames) {
+		state->name_has_wildcard = ms_has_wild(state->name);
+	}
+
+	/* Wildcards never valid within a pathname. */
+	if (state->name_has_wildcard && state->end) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	/* Skip the stat call if it's a wildcard end. */
+	if (state->name_has_wildcard) {
+		DBG_DEBUG("Wildcard [%s]\n", state->name);
+		state->done = true;
+		return NT_STATUS_OK;
+	}
+
+	status = unix_convert_step_stat(state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/*
 	 * Add to the dirpath that we have resolved so far.
