@@ -617,6 +617,8 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	 * Check if the name exists up to this point.
 	 */
 
+	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(state->smb_fname));
+
 	if (state->posix_pathnames) {
 		ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
 	} else {
@@ -801,6 +803,8 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	if (state->end) {
 		*state->end = 0;
 	}
+
+	DBG_DEBUG("dirpath [%s] name [%s]\n", state->dirpath, state->name);
 
 	/* The name cannot have a component of "." */
 
