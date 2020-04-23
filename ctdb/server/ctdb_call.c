@@ -820,6 +820,21 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 	return 0;
 }
 
+static int hot_key_cmp(const void *a, const void *b)
+{
+	const struct ctdb_db_hot_key *ka = (const struct ctdb_db_hot_key *)a;
+	const struct ctdb_db_hot_key *kb = (const struct ctdb_db_hot_key *)b;
+
+	if (ka->count < kb->count) {
+		return -1;
+	}
+	if (ka->count > kb->count) {
+		return 1;
+	}
+
+	return 0;
+}
+
 static void
 ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 			     unsigned int count)
@@ -890,20 +905,10 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	ctdb_db->hot_keys[id].last_logged_count = count;
 
 sort_keys:
-	for (i = 1; i < MAX_HOT_KEYS; i++) {
-		if (ctdb_db->hot_keys[i].count == 0) {
-			continue;
-		}
-		if (ctdb_db->hot_keys[i].count < ctdb_db->hot_keys[0].count) {
-			count = ctdb_db->hot_keys[i].count;
-			ctdb_db->hot_keys[i].count = ctdb_db->hot_keys[0].count;
-			ctdb_db->hot_keys[0].count = count;
-
-			key = ctdb_db->hot_keys[i].key;
-			ctdb_db->hot_keys[i].key = ctdb_db->hot_keys[0].key;
-			ctdb_db->hot_keys[0].key = key;
-		}
-	}
+	qsort(&ctdb_db->hot_keys[0],
+	      ctdb_db->statistics.num_hot_keys,
+	      sizeof(struct ctdb_db_hot_key),
+	      hot_key_cmp);
 }
 
 /*
