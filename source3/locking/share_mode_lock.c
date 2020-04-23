@@ -1438,9 +1438,13 @@ static bool share_mode_entry_put(
 }
 
 static bool share_mode_entry_get(
-	DATA_BLOB blob, struct share_mode_entry *e)
+	const uint8_t ptr[SHARE_MODE_ENTRY_SIZE], struct share_mode_entry *e)
 {
 	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
+	DATA_BLOB blob = {
+		.data = discard_const_p(uint8_t, ptr),
+		.length = SHARE_MODE_ENTRY_SIZE,
+	};
 
 	ndr_err = ndr_pull_struct_blob_all_noalloc(
 		&blob, e, (ndr_pull_flags_fn_t)ndr_pull_share_mode_entry);
@@ -1470,27 +1474,20 @@ static size_t share_mode_entry_find(
 	right = (num_share_modes-1);
 
 	while (left <= right) {
-		DATA_BLOB blob;
+		const uint8_t *middle_ptr = NULL;
 		int cmp;
 		bool ok;
 
 		middle = left + ((right - left) / 2);
+		middle_ptr = data + middle * SHARE_MODE_ENTRY_SIZE;
 
-		DBG_DEBUG("left=%zu, right=%zu, middle=%zu\n",
+		DBG_DEBUG("left=%zu, right=%zu, middle=%zu, middle_ptr=%p\n",
 			  left,
 			  right,
-			  middle);
+			  middle,
+			  middle_ptr);
 
-		blob = (DATA_BLOB) {
-			.data = data + middle * SHARE_MODE_ENTRY_SIZE,
-			.length = SHARE_MODE_ENTRY_SIZE,
-		};
-
-		DBG_DEBUG("blob.data=%p, blob.length=%zu\n",
-			  blob.data,
-			  blob.length);
-
-		ok = share_mode_entry_get(blob, e);
+		ok = share_mode_entry_get(middle_ptr, e);
 		if (!ok) {
 			DBG_DEBUG("share_mode_entry_get failed\n");
 			return false;
