@@ -458,7 +458,7 @@ zeros (and this can be detected by checking for nlinks = 0, which can never be
 true for any file).
 ****************************************************************************/
 
-NTSTATUS unix_convert(TALLOC_CTX *ctx,
+NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
 		      struct smb_filename **smb_fname_out,
@@ -480,7 +480,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	*smb_fname_out = NULL;
 
-	smb_fname = talloc_zero(ctx, struct smb_filename);
+	smb_fname = talloc_zero(mem_ctx, struct smb_filename);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -609,7 +609,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					goto err;
 				}
 				/* dirpath must exist. */
-				dirpath = talloc_strdup(ctx,".");
+				dirpath = talloc_strdup(mem_ctx,".");
 				if (dirpath == NULL) {
 					status = NT_STATUS_NO_MEMORY;
 					goto err;
@@ -646,7 +646,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * building the directories with talloc_asprintf and free it.
 	 */
 
-	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,".")))) {
+	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(mem_ctx,".")))) {
 		DBG_ERR("talloc_strdup failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
@@ -713,7 +713,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			   NOTE : check_parent_exists() doesn't preserve errno.
 			*/
 			int saved_errno = errno;
-			status = check_parent_exists(ctx,
+			status = check_parent_exists(mem_ctx,
 						conn,
 						posix_pathnames,
 						smb_fname,
@@ -757,7 +757,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				const char *last_component = NULL;
 
 				ZERO_STRUCT(parent_fname);
-				if (!parent_dirname(ctx, smb_fname->base_name,
+				if (!parent_dirname(mem_ctx, smb_fname->base_name,
 							&parent_fname.base_name,
 							&last_component)) {
 					status = NT_STATUS_NO_MEMORY;
@@ -795,7 +795,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 * NOTE : check_parent_exists() doesn't preserve errno.
 		 */
 		int saved_errno = errno;
-		status = check_parent_exists(ctx,
+		status = check_parent_exists(mem_ctx,
 					conn,
 					posix_pathnames,
 					smb_fname,
@@ -1078,7 +1078,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 */
 
 				if (mangle_is_mangled(name, conn->params)
-				    && mangle_lookup_name_from_8_3(ctx,
+				    && mangle_lookup_name_from_8_3(mem_ctx,
 							name,
 							&unmangled,
 							conn->params)) {
@@ -1188,7 +1188,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 */
 
 		if (!ISDOT(dirpath)) {
-			char *tmp = talloc_asprintf(ctx,
+			char *tmp = talloc_asprintf(mem_ctx,
 					"%s/%s", dirpath, name);
 			if (!tmp) {
 				DBG_ERR("talloc_asprintf failed\n");
@@ -1200,7 +1200,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 		else {
 			TALLOC_FREE(dirpath);
-			if (!(dirpath = talloc_strdup(ctx,name))) {
+			if (!(dirpath = talloc_strdup(mem_ctx,name))) {
 				DBG_ERR("talloc_strdup failed\n");
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
@@ -1247,7 +1247,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		smb_fname->stream_name = stream;
 
 		/* Check path now that the base_name has been converted. */
-		status = build_stream_path(ctx, conn, smb_fname);
+		status = build_stream_path(mem_ctx, conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
