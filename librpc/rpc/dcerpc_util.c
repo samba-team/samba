@@ -357,20 +357,41 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	}
 
 	if (data_and_pad < auth->auth_pad_length) {
-		DEBUG(1, (__location__ ": ERROR: pad length mismatch. "
-			  "Calculated %u  got %u\n",
-			  (unsigned)data_and_pad,
-			  (unsigned)auth->auth_pad_length));
+		DBG_WARNING(__location__ ": ERROR: pad length too long. "
+			    "Calculated %u (pkt_trailer->length=%u - auth_length=%u) "
+			    "was less than auth_pad_length=%u\n",
+			    (unsigned)data_and_pad,
+			    (unsigned)pkt_trailer->length,
+			    (unsigned)auth_length,
+			    (unsigned)auth->auth_pad_length);
+		talloc_free(ndr);
+		ZERO_STRUCTP(auth);
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (auth_data_only && data_and_pad > auth->auth_pad_length) {
+		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
+			    "Client sent a longer BIND packet than expected by %u bytes "
+			    "(pkt_trailer->length=%u - auth_length=%u) "
+			    "= %u auth_pad_length=%u\n",
+			    (unsigned)data_and_pad - (unsigned)auth->auth_pad_length,
+			    (unsigned)pkt_trailer->length,
+			    (unsigned)auth_length,
+			    (unsigned)data_and_pad,
+			    (unsigned)auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
 	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
-		DEBUG(1, (__location__ ": ERROR: pad length mismatch. "
-			  "Calculated %u  got %u\n",
-			  (unsigned)data_and_pad,
-			  (unsigned)auth->auth_pad_length));
+		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
+			    "Calculated %u (pkt_trailer->length=%u - auth_length=%u) "
+			    "but auth_pad_length=%u\n",
+			    (unsigned)data_and_pad,
+			    (unsigned)pkt_trailer->length,
+			    (unsigned)auth_length,
+			    (unsigned)auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
