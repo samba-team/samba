@@ -858,14 +858,18 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		search_control = ldb_request_get_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID);
 
 		search_options = NULL;
-		if (search_control) {
+		if (search_control != NULL && search_control->data != NULL) {
 			search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
 			search_options->search_options |= LDB_SEARCH_OPTION_PHANTOM_ROOT;
 		} else {
 			search_options = talloc(lreq, struct ldb_search_options_control);
 			NT_STATUS_HAVE_NO_MEMORY(search_options);
 			search_options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-			ldb_request_add_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
+			ldb_request_replace_control(
+				lreq,
+				LDB_CONTROL_SEARCH_OPTIONS_OID,
+				false,
+				search_options);
 		}
 	} else {
 		ldb_request_add_control(lreq, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
