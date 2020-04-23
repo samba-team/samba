@@ -1087,7 +1087,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 						DBG_DEBUG("strnorm %s failed\n",
 							  state->name);
 						status = NT_STATUS_INVALID_PARAMETER;
-						goto err;
+						goto fail;
 					}
 				}
 
