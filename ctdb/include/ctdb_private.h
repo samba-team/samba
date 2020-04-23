@@ -342,6 +342,11 @@ struct ctdb_context {
 	struct lock_context *lock_pending;
 };
 
+struct ctdb_db_hot_key {
+	uint32_t count;
+	TDB_DATA key;
+};
+
 struct ctdb_db_context {
 	struct ctdb_db_context *next, *prev;
 	struct ctdb_context *ctdb;
@@ -375,6 +380,7 @@ struct ctdb_db_context {
 	struct trbt_tree *defer_dmaster;
 
 	struct ctdb_db_statistics_old statistics;
+	struct ctdb_db_hot_key hot_keys[MAX_HOT_KEYS];
 
 	struct lock_context *lock_current;
 	struct lock_context *lock_pending;

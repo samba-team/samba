@@ -1597,13 +1597,14 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 
 void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
 {
-	struct ctdb_db_statistics_old *s = &ctdb_db->statistics;
 	int i;
 
 	for (i=0; i<MAX_HOT_KEYS; i++) {
-		if (s->hot_keys[i].key.dsize > 0) {
-			talloc_free(s->hot_keys[i].key.dptr);
+		if (ctdb_db->hot_keys[i].key.dsize > 0) {
+			TALLOC_FREE(ctdb_db->hot_keys[i].key.dptr);
+			ctdb_db->hot_keys[i].key.dsize = 0;
 		}
+		ctdb_db->hot_keys[i].count = 0;
 	}
 
 	ZERO_STRUCT(ctdb_db->statistics);
@@ -1627,7 +1628,13 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 
 	len = offsetof(struct ctdb_db_statistics_old, hot_keys_wire);
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
-		len += ctdb_db->statistics.hot_keys[i].key.dsize;
+		struct ctdb_db_statistics_old *s = &ctdb_db->statistics;
+
+		s->hot_keys[i].key.dsize = ctdb_db->hot_keys[i].key.dsize;
+		s->hot_keys[i].key.dptr = ctdb_db->hot_keys[i].key.dptr;
+		s->hot_keys[i].count = ctdb_db->hot_keys[i].count;
+
+		len += s->hot_keys[i].key.dsize;
 	}
 
 	stats = talloc_size(outdata, len);

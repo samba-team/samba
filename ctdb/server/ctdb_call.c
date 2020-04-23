@@ -828,23 +828,23 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	char *keystr;
 
 	/* smallest value is always at index 0 */
-	if (count <= ctdb_db->statistics.hot_keys[0].count) {
+	if (count <= ctdb_db->hot_keys[0].count) {
 		return;
 	}
 
 	/* see if we already know this key */
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
-		if (key.dsize != ctdb_db->statistics.hot_keys[i].key.dsize) {
+		if (key.dsize != ctdb_db->hot_keys[i].key.dsize) {
 			continue;
 		}
-		if (memcmp(key.dptr, ctdb_db->statistics.hot_keys[i].key.dptr, key.dsize)) {
+		if (memcmp(key.dptr, ctdb_db->hot_keys[i].key.dptr, key.dsize)) {
 			continue;
 		}
 		/* found an entry for this key */
-		if (count <= ctdb_db->statistics.hot_keys[i].count) {
+		if (count <= ctdb_db->hot_keys[i].count) {
 			return;
 		}
-		ctdb_db->statistics.hot_keys[i].count = count;
+		ctdb_db->hot_keys[i].count = count;
 		goto sort_keys;
 	}
 
@@ -855,12 +855,14 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		id = 0;
 	}
 
-	if (ctdb_db->statistics.hot_keys[id].key.dptr != NULL) {
-		talloc_free(ctdb_db->statistics.hot_keys[id].key.dptr);
+	if (ctdb_db->hot_keys[id].key.dptr != NULL) {
+		talloc_free(ctdb_db->hot_keys[id].key.dptr);
 	}
-	ctdb_db->statistics.hot_keys[id].key.dsize = key.dsize;
-	ctdb_db->statistics.hot_keys[id].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
-	ctdb_db->statistics.hot_keys[id].count = count;
+	ctdb_db->hot_keys[id].key.dsize = key.dsize;
+	ctdb_db->hot_keys[id].key.dptr = talloc_memdup(ctdb_db,
+						       key.dptr,
+						       key.dsize);
+	ctdb_db->hot_keys[id].count = count;
 
 	keystr = hex_encode_talloc(ctdb_db,
 				   (unsigned char *)key.dptr, key.dsize);
@@ -871,17 +873,17 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 sort_keys:
 	for (i = 1; i < MAX_HOT_KEYS; i++) {
-		if (ctdb_db->statistics.hot_keys[i].count == 0) {
+		if (ctdb_db->hot_keys[i].count == 0) {
 			continue;
 		}
-		if (ctdb_db->statistics.hot_keys[i].count < ctdb_db->statistics.hot_keys[0].count) {
-			count = ctdb_db->statistics.hot_keys[i].count;
-			ctdb_db->statistics.hot_keys[i].count = ctdb_db->statistics.hot_keys[0].count;
-			ctdb_db->statistics.hot_keys[0].count = count;
+		if (ctdb_db->hot_keys[i].count < ctdb_db->hot_keys[0].count) {
+			count = ctdb_db->hot_keys[i].count;
+			ctdb_db->hot_keys[i].count = ctdb_db->hot_keys[0].count;
+			ctdb_db->hot_keys[0].count = count;
 
-			key = ctdb_db->statistics.hot_keys[i].key;
-			ctdb_db->statistics.hot_keys[i].key = ctdb_db->statistics.hot_keys[0].key;
-			ctdb_db->statistics.hot_keys[0].key = key;
+			key = ctdb_db->hot_keys[i].key;
+			ctdb_db->hot_keys[i].key = ctdb_db->hot_keys[0].key;
+			ctdb_db->hot_keys[0].key = key;
 		}
 	}
 }
