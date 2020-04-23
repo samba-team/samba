@@ -357,6 +357,12 @@ NTSTATUS check_name(connection_struct *conn,
 int get_real_filename(connection_struct *conn, const char *path,
 		      const char *name, TALLOC_CTX *mem_ctx,
 		      char **found_name);
+int get_real_filename_full_scan(connection_struct *conn,
+				const char *path,
+				const char *name,
+				bool mangled,
+				TALLOC_CTX *mem_ctx,
+				char **found_name);
 NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			const char *name_in,
