@@ -631,17 +631,17 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 							      pkb4->keys[i].value->data,
 							      pkb4->keys[i].value->length,
 							      &key.key);
-			if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-				DEBUG(2,("Unsupported keytype ignored - type %u\n",
-					 pkb4->keys[i].keytype));
-				ret = 0;
-				continue;
-			}
 			if (ret) {
 				if (key.salt) {
 					smb_krb5_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
+				}
+				if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+					DEBUG(2,("Unsupported keytype ignored - type %u\n",
+						 pkb4->keys[i].keytype));
+					ret = 0;
+					continue;
 				}
 				goto out;
 			}
@@ -692,6 +692,12 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					smb_krb5_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
+				}
+				if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+					DEBUG(2,("Unsupported keytype ignored - type %u\n",
+						 pkb3->keys[i].keytype));
+					ret = 0;
+					continue;
 				}
 				goto out;
 			}
