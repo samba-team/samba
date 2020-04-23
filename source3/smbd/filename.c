@@ -465,7 +465,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      uint32_t ucf_flags)
 {
 	struct smb_filename *smb_fname = NULL;
-	char *start = NULL;
+	char *name = NULL;
 	char *end = NULL;
 	char *dirpath = NULL;
 	char *stream = NULL;
@@ -622,7 +622,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 	}
 
-	start = smb_fname->base_name;
+	name = smb_fname->base_name;
 
 	/*
 	 * If we're providing case insensitive semantics or
@@ -636,7 +636,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	if((!conn->case_sensitive || !(conn->fs_capabilities &
 				       FILE_CASE_SENSITIVE_SEARCH)) &&
-	    stat_cache_lookup(conn, posix_pathnames, &smb_fname->base_name, &dirpath, &start,
+	    stat_cache_lookup(conn, posix_pathnames, &smb_fname->base_name, &dirpath, &name,
 			      &smb_fname->st)) {
 		goto done;
 	}
@@ -668,8 +668,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 	}
 
-	DBG_DEBUG("Begin: name [%s] dirpath [%s] start [%s]\n",
-		  smb_fname->base_name, dirpath, start);
+	DBG_DEBUG("Begin: name [%s] dirpath [%s] name [%s]\n",
+		  smb_fname->base_name, dirpath, name);
 
 	if (!name_has_wildcard) {
 		/*
@@ -718,7 +718,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						posix_pathnames,
 						smb_fname,
 						&dirpath,
-						&start);
+						&name);
 			errno = saved_errno;
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
@@ -800,7 +800,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					posix_pathnames,
 					smb_fname,
 					&dirpath,
-					&start);
+					&name);
 		errno = saved_errno;
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
@@ -812,7 +812,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * just a component. JRA.
 	 */
 
-	if (mangle_is_mangled(start, conn->params)) {
+	if (mangle_is_mangled(name, conn->params)) {
 		component_was_mangled = true;
 	}
 
@@ -826,12 +826,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * as is first, then trying to scan the directory for matching names.
 	 */
 
-	for (; start ; start = (end?end+1:(char *)NULL)) {
+	for (; name ; name = (end?end+1:(char *)NULL)) {
 		/*
 		 * Pinpoint the end of this section of the filename.
 		 */
 		/* mb safe. '/' can't be in any encoded char. */
-		end = strchr(start, '/');
+		end = strchr(name, '/');
 
 		/*
 		 * Chop the name at this point.
@@ -842,7 +842,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		/* The name cannot have a component of "." */
 
-		if (ISDOT(start)) {
+		if (ISDOT(name)) {
 			if (!end)  {
 				/* Error code at the end of a pathname. */
 				status = NT_STATUS_OBJECT_NAME_INVALID;
@@ -858,7 +858,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		   the last component. */
 
 		if (!posix_pathnames) {
-			name_has_wildcard = ms_has_wild(start);
+			name_has_wildcard = ms_has_wild(name);
 		}
 
 		/* Wildcards never valid within a pathname. */
@@ -869,7 +869,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		/* Skip the stat call if it's a wildcard end. */
 		if (name_has_wildcard) {
-			DBG_DEBUG("Wildcard [%s]\n", start);
+			DBG_DEBUG("Wildcard [%s]\n", name);
 			goto done;
 		}
 
@@ -893,7 +893,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * An intermediate part of the name isn't
 				 * a directory.
 				 */
-				DBG_DEBUG("Not a dir [%s]\n", start);
+				DBG_DEBUG("Not a dir [%s]\n", name);
 				*end = '/';
 				/*
 				 * We need to return the fact that the
@@ -967,7 +967,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    (get_real_filename(conn, dirpath, start,
+			    (get_real_filename(conn, dirpath, name,
 					       talloc_tos(),
 					       &found_name) == -1)) {
 				char *unmangled;
@@ -978,7 +978,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					 * can't be found.
 					 */
 					DBG_DEBUG("Intermediate [%s] missing\n",
-						  start);
+						  name);
 					*end = '/';
 
 					/*
@@ -1060,13 +1060,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * Thomas Neumann <t.neumann@iku-ag.de>.
 				 */
 				if (!conn->case_preserve ||
-				    (mangle_is_8_3(start, false,
+				    (mangle_is_8_3(name, false,
 						   conn->params) &&
 						 !conn->short_case_preserve)) {
-					if (!strnorm(start,
+					if (!strnorm(name,
 							lp_default_case(SNUM(conn)))) {
 						DBG_DEBUG("strnorm %s failed\n",
-							  start);
+							  name);
 						status = NT_STATUS_INVALID_PARAMETER;
 						goto err;
 					}
@@ -1077,14 +1077,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * recover the base of the filename.
 				 */
 
-				if (mangle_is_mangled(start, conn->params)
+				if (mangle_is_mangled(name, conn->params)
 				    && mangle_lookup_name_from_8_3(ctx,
-					    		start,
+							name,
 							&unmangled,
 							conn->params)) {
 					char *tmp;
-					size_t start_ofs =
-					    start - smb_fname->base_name;
+					size_t name_ofs =
+					    name - smb_fname->base_name;
 
 					if (!ISDOT(dirpath)) {
 						tmp = talloc_asprintf(
@@ -1102,12 +1102,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					}
 					TALLOC_FREE(smb_fname->base_name);
 					smb_fname->base_name = tmp;
-					start =
-					    smb_fname->base_name + start_ofs;
-					end = start + strlen(start);
+					name =
+					    smb_fname->base_name + name_ofs;
+					end = name + strlen(name);
 				}
 
-				DBG_DEBUG("New file [%s]\n", start);
+				DBG_DEBUG("New file [%s]\n", name);
 				goto done;
 			}
 
@@ -1118,8 +1118,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 			if (end) {
 				char *tmp;
-				size_t start_ofs =
-				    start - smb_fname->base_name;
+				size_t name_ofs =
+				    name - smb_fname->base_name;
 
 				if (!ISDOT(dirpath)) {
 					tmp = talloc_asprintf(smb_fname,
@@ -1138,13 +1138,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				}
 				TALLOC_FREE(smb_fname->base_name);
 				smb_fname->base_name = tmp;
-				start = smb_fname->base_name + start_ofs;
-				end = start + strlen(found_name);
+				name = smb_fname->base_name + name_ofs;
+				end = name + strlen(found_name);
 				*end = '\0';
 			} else {
 				char *tmp;
-				size_t start_ofs =
-				    start - smb_fname->base_name;
+				size_t name_ofs =
+				    name - smb_fname->base_name;
 
 				if (!ISDOT(dirpath)) {
 					tmp = talloc_asprintf(smb_fname,
@@ -1161,7 +1161,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				}
 				TALLOC_FREE(smb_fname->base_name);
 				smb_fname->base_name = tmp;
-				start = smb_fname->base_name + start_ofs;
+				name = smb_fname->base_name + name_ofs;
 
 				/*
 				 * We just scanned for, and found the end of
@@ -1189,7 +1189,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		if (!ISDOT(dirpath)) {
 			char *tmp = talloc_asprintf(ctx,
-					"%s/%s", dirpath, start);
+					"%s/%s", dirpath, name);
 			if (!tmp) {
 				DBG_ERR("talloc_asprintf failed\n");
 				status = NT_STATUS_NO_MEMORY;
@@ -1200,7 +1200,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 		else {
 			TALLOC_FREE(dirpath);
-			if (!(dirpath = talloc_strdup(ctx,start))) {
+			if (!(dirpath = talloc_strdup(ctx,name))) {
 				DBG_ERR("talloc_strdup failed\n");
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
@@ -1256,13 +1256,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	*smb_fname_out = smb_fname;
 	return NT_STATUS_OK;
  fail:
-	DBG_DEBUG("Conversion failed: dirpath [%s] start [%s]\n",
-		  dirpath, start);
+	DBG_DEBUG("Conversion failed: dirpath [%s] name [%s]\n",
+		  dirpath, name);
 	if (dirpath && !ISDOT(dirpath)) {
 		smb_fname->base_name = talloc_asprintf(smb_fname, "%s/%s",
-						       dirpath, start);
+						       dirpath, name);
 	} else {
-		smb_fname->base_name = talloc_strdup(smb_fname, start);
+		smb_fname->base_name = talloc_strdup(smb_fname, name);
 	}
 	if (!smb_fname->base_name) {
 		DBG_ERR("talloc_asprintf failed\n");
