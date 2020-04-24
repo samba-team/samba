@@ -49,7 +49,7 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 
 		complen = strcspn(s, ".");
 
-		/* we need to make sure the length fits into 6 bytes */
+		/* the length must fit into 6 bits (i.e. <= 63) */
 		if (complen > 0x3F) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
 					      "component length %u[%08X] > " \
