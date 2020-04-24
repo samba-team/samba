@@ -800,7 +800,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	/*
 	 * Chop the name at this point.
 	 */
-	if (state->end) {
+	if (state->end != NULL) {
 		*state->end = 0;
 	}
 
@@ -809,7 +809,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	/* The name cannot have a component of "." */
 
 	if (ISDOT(state->name)) {
-		if (!state->end)  {
+		if (state->end == NULL)  {
 			/* Error code at the end of a pathname. */
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
@@ -826,7 +826,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	}
 
 	/* Wildcards never valid within a pathname. */
-	if (state->name_has_wildcard && state->end) {
+	if (state->name_has_wildcard && state->end != NULL) {
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
@@ -876,7 +876,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	/*
 	 * Restore the / that we wiped out earlier.
 	 */
-	if (state->end) {
+	if (state->end != NULL) {
 		*state->end = '/';
 	}
 
