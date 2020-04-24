@@ -128,7 +128,6 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 			"ReadEventLog failed");
 
 	while (1) {
-		DATA_BLOB blob;
 		struct EVENTLOGRECORD rec;
 		enum ndr_err_code ndr_err;
 		uint32_t size = 0;
@@ -167,8 +166,8 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		size = IVAL(r.out.data, pos);
 
 		while (size > 0) {
-
-			blob = data_blob_const(r.out.data + pos, size);
+			DATA_BLOB blob = data_blob_const(
+				r.out.data + pos, size);
 			dump_data(0, blob.data, blob.length);
 
 			ndr_err = ndr_pull_struct_blob_all(&blob, tctx, &rec,
