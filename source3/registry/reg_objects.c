@@ -397,7 +397,7 @@ struct regval_blob *regval_ctr_specific_value(struct regval_ctr *ctr,
 
 bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value)
 {
-	int 	i;
+	uint32_t i;
 
 	for ( i=0; i<ctr->num_values; i++ ) {
 		if ( strequal( ctr->values[i]->valuename, value) )
@@ -413,7 +413,7 @@ bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value)
 struct regval_blob *regval_ctr_value_byname(struct regval_ctr *ctr,
 					    const char *value)
 {
-	int i;
+	uint32_t i;
 
 	for (i = 0; i < ctr->num_values; i++) {
 		if (strequal(ctr->values[i]->valuename, value)) {
@@ -552,7 +552,7 @@ int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val)
 
 int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name)
 {
-	int 	i;
+	uint32_t i;
 
 	for ( i=0; i<ctr->num_values; i++ ) {
 		if ( strequal( ctr->values[i]->valuename, name ) )
@@ -581,7 +581,7 @@ int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name)
 struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
 					const char *name)
 {
-	int 	i;
+	uint32_t i;
 
 	/* search for the value */
 
