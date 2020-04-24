@@ -373,19 +373,18 @@ static struct share_mode_data *share_mode_memcache_fetch(
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
-						const TDB_DATA key,
-						const TDB_DATA dbuf)
+static struct share_mode_data *parse_share_modes(
+	TALLOC_CTX *mem_ctx,
+	const TDB_DATA key,
+	const uint8_t *buf,
+	size_t buflen)
 {
 	struct share_mode_data *d;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
-	blob.data = dbuf.dptr;
-	blob.length = dbuf.dsize;
-
 	/* See if we already have a cached copy of this key. */
-	d = share_mode_memcache_fetch(mem_ctx, key, dbuf.dptr, dbuf.dsize);
+	d = share_mode_memcache_fetch(mem_ctx, key, buf, buflen);
 	if (d != NULL) {
 		return d;
 	}
@@ -396,6 +395,10 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	blob = (DATA_BLOB) {
+		.data = discard_const_p(uint8_t, buf),
+		.length = buflen,
+	};
 	ndr_err = ndr_pull_struct_blob_all(
 		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -578,7 +581,7 @@ static NTSTATUS get_static_share_mode_data(
 		}
 	} else {
 		TDB_DATA key = locking_key(&id);
-		d = parse_share_modes(lock_db, key, value);
+		d = parse_share_modes(lock_db, key, value.dptr, value.dsize);
 		if (d == NULL) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -927,7 +930,8 @@ static void fetch_share_mode_unlocked_parser(
 		return;
 	}
 
-	state->lck->data = parse_share_modes(state->lck, key, data);
+	state->lck->data = parse_share_modes(
+		state->lck, key, data.dptr, data.dsize);
 }
 
 /*******************************************************************
