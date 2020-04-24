@@ -1,2 +1,1 @@
-samba.tests.dns_packet.samba.tests.dns_packet.TestDnsPackets.test_127_very_dotty_components
 samba.tests.dns_packet.samba.tests.dns_packet.TestNbtPackets.test_127_very_dotty_components
