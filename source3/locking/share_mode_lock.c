@@ -285,9 +285,11 @@ static int share_mode_data_nofree_destructor(struct share_mode_data *d)
 	return -1;
 }
 
-static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
-					const TDB_DATA id_key,
-					DATA_BLOB *blob)
+static struct share_mode_data *share_mode_memcache_fetch(
+	TALLOC_CTX *mem_ctx,
+	const TDB_DATA id_key,
+	const uint8_t *buf,
+	size_t buflen)
 {
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
@@ -316,7 +318,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	}
 	/* sequence number key is at start of blob. */
 	ndr_err = get_share_mode_blob_header(
-		blob->data, blob->length, &sequence_number, &flags);
+		buf, buflen, &sequence_number, &flags);
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		/* Bad blob. Remove entry. */
 		DBG_DEBUG("bad blob %u key %s\n",
@@ -383,7 +385,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	blob.length = dbuf.dsize;
 
 	/* See if we already have a cached copy of this key. */
-	d = share_mode_memcache_fetch(mem_ctx, key, &blob);
+	d = share_mode_memcache_fetch(mem_ctx, key, dbuf.dptr, dbuf.dsize);
 	if (d != NULL) {
 		return d;
 	}
