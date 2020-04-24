@@ -1456,7 +1456,7 @@ static bool share_mode_entry_get(
 }
 
 static size_t share_mode_entry_find(
-	uint8_t *data,
+	const uint8_t *data,
 	size_t num_share_modes,
 	struct server_id pid,
 	uint64_t share_file_id,
