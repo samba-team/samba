@@ -250,7 +250,8 @@ struct do_lock_state {
 };
 
 static void do_lock_fn(
-	TDB_DATA value,
+	const uint8_t *buf,
+	size_t buflen,
 	bool *modified_dependent,
 	void *private_data)
 {

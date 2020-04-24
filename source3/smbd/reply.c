@@ -9069,7 +9069,10 @@ struct smbd_do_unlocking_state {
 };
 
 static void smbd_do_unlocking_fn(
-	TDB_DATA value, bool *pmodified_dependent, void *private_data)
+	const uint8_t *buf,
+	size_t buflen,
+	bool *pmodified_dependent,
+	void *private_data)
 {
 	struct smbd_do_unlocking_state *state = private_data;
 	struct files_struct *fsp = state->fsp;

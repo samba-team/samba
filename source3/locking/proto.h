@@ -144,7 +144,8 @@ bool file_has_read_lease(struct files_struct *fsp);
 struct db_record;
 NTSTATUS share_mode_do_locked(
 	struct file_id id,
-	void (*fn)(TDB_DATA value,
+	void (*fn)(const uint8_t *buf,
+		   size_t buflen,
 		   bool *modified_dependent,
 		   void *private_data),
 	void *private_data);

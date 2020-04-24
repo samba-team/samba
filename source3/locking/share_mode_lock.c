@@ -228,13 +228,16 @@ struct fsp_update_share_mode_flags_state {
 };
 
 static void fsp_update_share_mode_flags_fn(
-	TDB_DATA value, bool *modified_dependent, void *private_data)
+	const uint8_t *buf,
+	size_t buflen,
+	bool *modified_dependent,
+	void *private_data)
 {
 	struct fsp_update_share_mode_flags_state *state = private_data;
 	uint64_t seq;
 
 	state->ndr_err = get_share_mode_blob_header(
-		value.dptr, value.dsize, &seq, &state->share_mode_flags);
+		buf, buflen, &seq, &state->share_mode_flags);
 }
 
 static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
@@ -723,7 +726,8 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 }
 
 struct share_mode_do_locked_state {
-	void (*fn)(TDB_DATA value,
+	void (*fn)(const uint8_t *buf,
+		   size_t buflen,
 		   bool *modified_dependent,
 		   void *private_data);
 	void *private_data;
@@ -747,7 +751,10 @@ static void share_mode_do_locked_fn(
 		SMB_ASSERT(static_share_mode_record == rec);
 	}
 
-	state->fn(value, &modified_dependent, state->private_data);
+	state->fn(value.dptr,
+		  value.dsize,
+		  &modified_dependent,
+		  state->private_data);
 
 	if (modified_dependent) {
 		dbwrap_watched_wakeup(rec);
@@ -760,7 +767,8 @@ static void share_mode_do_locked_fn(
 
 NTSTATUS share_mode_do_locked(
 	struct file_id id,
-	void (*fn)(TDB_DATA value,
+	void (*fn)(const uint8_t *buf,
+		   size_t buflen,
 		   bool *modified_dependent,
 		   void *private_data),
 	void *private_data)
@@ -782,7 +790,8 @@ NTSTATUS share_mode_do_locked(
 			return NT_STATUS_INVALID_LOCK_SEQUENCE;
 		}
 
-		fn(static_share_mode_record_value,
+		fn(static_share_mode_record_value.dptr,
+		   static_share_mode_record_value.dsize,
 		   &modified_dependent,
 		   private_data);
 
@@ -809,9 +818,11 @@ NTSTATUS share_mode_do_locked(
 	return NT_STATUS_OK;
 }
 
-static void share_mode_wakeup_waiters_fn(TDB_DATA value,
-					 bool *modified_dependent,
-					 void *private_data)
+static void share_mode_wakeup_waiters_fn(
+	const uint8_t *buf,
+	size_t buflen,
+	bool *modified_dependent,
+	void *private_data)
 {
 	*modified_dependent = true;
 }
@@ -834,7 +845,10 @@ struct share_mode_watch_state {
 };
 
 static void share_mode_watch_fn(
-	TDB_DATA value, bool *modified_dependent, void *private_data)
+	const uint8_t *buf,
+	size_t buflen,
+	bool *modified_dependent,
+	void *private_data)
 {
 	struct share_mode_watch_state *state = talloc_get_type_abort(
 		private_data, struct share_mode_watch_state);
