@@ -58,6 +58,12 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 					      (unsigned)complen);
 		}
 
+		if (complen == 0 && s[complen] == '.') {
+			return ndr_push_error(ndr, NDR_ERR_STRING,
+					      "component length is 0 "
+					      "(consecutive dots)");
+		}
+
 		compname = talloc_asprintf(ndr, "%c%*.*s",
 						(unsigned char)complen,
 						(unsigned char)complen,
