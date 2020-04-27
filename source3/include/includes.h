@@ -179,8 +179,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 /* this should really be a 64 bit type if possible */
 typedef uint64_t br_off;
 
-#define SMB_OFF_T_BITS (sizeof(off_t)*8)
-
 /*
  * Set the define that tells us if we can do 64 bit
  * NT SMB calls.

@@ -84,6 +84,8 @@ static const char *posix_lock_type_name(int lock_type)
  False if not.
 ****************************************************************************/
 
+#define SMB_OFF_T_BITS (sizeof(off_t)*8)
+
 static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 				uint64_t u_offset, uint64_t u_count)
 {
