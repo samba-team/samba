@@ -1689,12 +1689,12 @@ struct share_mode_forall_entries_state {
 static bool share_mode_for_one_entry(
 	struct share_mode_forall_entries_state *state,
 	size_t *i,
+	uint8_t *data,
 	size_t *num_share_modes,
-	TDB_DATA data,
 	bool *writeback)
 {
 	DATA_BLOB blob = {
-		.data = data.dptr + (*i) * SHARE_MODE_ENTRY_SIZE,
+		.data = data + (*i) * SHARE_MODE_ENTRY_SIZE,
 		.length = SHARE_MODE_ENTRY_SIZE,
 	};
 	struct share_mode_entry e = {.pid.pid=0};
@@ -1802,7 +1802,7 @@ static void share_mode_forall_entries_fn(
 	i = 0;
 	while (i<num_share_modes) {
 		stop = share_mode_for_one_entry(
-			state, &i, &num_share_modes, data, &writeback);
+			state, &i, data.dptr, &num_share_modes, &writeback);
 		if (stop) {
 			break;
 		}
