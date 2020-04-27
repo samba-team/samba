@@ -1962,7 +1962,17 @@ static void share_mode_entry_do_fn(
 	}
 
 	if (!e.stale) {
-		bool ok = share_mode_entry_put(&e, &buf);
+		bool ok;
+
+		if (state->num_share_modes != 1) {
+			/*
+			 * Make sure the sorting order stays intact
+			 */
+			SMB_ASSERT(server_id_equal(&e.pid, &state->pid));
+			SMB_ASSERT(e.share_file_id == state->share_file_id);
+		}
+
+		ok = share_mode_entry_put(&e, &buf);
 		if (!ok) {
 			DBG_DEBUG("share_mode_entry_put failed\n");
 			state->status = NT_STATUS_INTERNAL_ERROR;
