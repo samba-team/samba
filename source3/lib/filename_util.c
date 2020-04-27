@@ -378,3 +378,22 @@ bool split_stream_filename(TALLOC_CTX *ctx,
 	}
 	return true;
 }
+
+/**
+ * Checks whether the first part of path is a valid GMT token
+ */
+bool is_gmt_token(const char *path)
+{
+	struct tm tm;
+	char *p = NULL;
+
+	p = strptime(path, GMT_FORMAT, &tm);
+	if (p == NULL) {
+		/* Not a valid timestring. */
+		return false;
+	}
+	if (p[0] != '\0' && p[0] != '/') {
+		return false;
+	}
+	return true;
+}

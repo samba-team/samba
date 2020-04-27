@@ -997,6 +997,7 @@ bool split_stream_filename(TALLOC_CTX *ctx,
 			const char *filename_in,
 			char **filename_out,
 			char **streamname_out);
+bool is_gmt_token(const char *path);
 
 /* The following definitions come from lib/dummyroot.c */
 
