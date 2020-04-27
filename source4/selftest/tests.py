@@ -494,6 +494,8 @@ plantestsuite("samba4.blackbox.net_rpc_user(ad_dc)", "ad_dc", [os.path.join(bbdi
 
 plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join(bbdir, "test_primary_group.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX_ABS'])
 
+plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
+
 if have_heimdal_support:
     for env in ["ad_dc_ntvfs", "ad_dc"]:
         plantestsuite("samba4.blackbox.pkinit", "%s:local" % env, [os.path.join(bbdir, "test_pkinit_heimdal.sh"), '$SERVER', 'pkinit', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX/%s' % env, "aes256-cts-hmac-sha1-96", smbclient3, configuration])
