@@ -176,9 +176,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #define BIG_UINT(p, ofs) BVAL(p, ofs)
 #define IVAL2_TO_SMB_BIG_UINT(p, ofs) BVAL(p, ofs)
 
-/* this should really be a 64 bit type if possible */
-typedef uint64_t br_off;
-
 /*
  * Set the define that tells us if we can do 64 bit
  * NT SMB calls.

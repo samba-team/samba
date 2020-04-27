@@ -47,6 +47,7 @@ struct files_struct;
 #include "lib/file_id.h"
 
 struct byte_range_lock;
+typedef uint64_t br_off;
 
 /* Internal structure in brlock.tdb.
    The data in brlock records is an unsorted linear array of these
