@@ -1,0 +1,23 @@
+<policyDefinitions revision="1.0" schemaVersion="1.0">
+  <policyNamespaces>
+    <target prefix="fullarmor" namespace="FullArmor.Policies.98BB16AF_01EE_4D17_870D_A3311A44D6C2" />
+    <using prefix="windows" namespace="Microsoft.Policies.Windows" />
+  </policyNamespaces>
+  <supersededAdm fileName="" />
+  <resources minRequiredRevision="1.0" />
+  <categories>
+    <category name="CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9" displayName="$(string.CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9)" />
+    <category name="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" displayName="$(string.CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6)">
+      <parentCategory ref="CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9" />
+    </category>
+  </categories>
+  <policies>
+    <policy name="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061" class="Machine" displayName="$(string.POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061)" explainText="$(string.POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061_Help)" presentation="$(presentation.POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061)" key="Software\Policies\Samba\Unix Settings">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <list id="LST_2E9A4684_3C0E_415B_8FD6_D4AF68BC8AC6" key="Software\Policies\Samba\Unix Settings\Daily Scripts" valueName="Daily Scripts" />
+      </elements>
+    </policy>
+  </policies>
+</policyDefinitions>

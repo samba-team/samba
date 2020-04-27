@@ -1,0 +1,19 @@
+<policyDefinitionResources revision="1.0" schemaVersion="1.0">
+  <displayName>
+  </displayName>
+  <description>
+  </description>
+  <resources>
+    <stringTable>
+      <string id="CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9">Samba</string>
+      <string id="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6">Unix Settings</string>
+      <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">Daily Scripts</string>
+      <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061_Help">This policy setting allows you to execute commands, either local or on remote storage, daily.</string>
+    </stringTable>
+    <presentationTable>
+      <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
+        <listBox refId="LST_2E9A4684_3C0E_415B_8FD6_D4AF68BC8AC6">Script and arguments</listBox>
+      </presentation>
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

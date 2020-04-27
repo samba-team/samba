@@ -1,0 +1,3 @@
+#!/usr/bin/env python
+
+bld.INSTALL_FILES('${DATADIR}/samba/admx', ['samba.admx', 'en-US/samba.adml'])
