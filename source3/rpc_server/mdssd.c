@@ -501,7 +501,7 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	int fd = -1;
 	int rc;
-	uint32_t i;
+	int i;
 	struct dcesrv_endpoint *e = NULL;
 
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
