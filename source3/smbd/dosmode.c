@@ -950,8 +950,11 @@ NTSTATUS dos_mode_at_recv(struct tevent_req *req, uint32_t *dosmode)
  attribute also.
 ********************************************************************/
 
-int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
-		     uint32_t dosmode, const char *parent_dir, bool newfile)
+int file_set_dosmode(connection_struct *conn,
+		     struct smb_filename *smb_fname,
+		     uint32_t dosmode,
+		     const char *parent_dir,
+		     bool newfile)
 {
 	int mask=0;
 	mode_t tmp;

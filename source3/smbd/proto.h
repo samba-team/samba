@@ -268,8 +268,11 @@ struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 				    files_struct *dir_fsp,
 				    struct smb_filename *smb_fname);
 NTSTATUS dos_mode_at_recv(struct tevent_req *req, uint32_t *dosmode);
-int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
-		     uint32_t dosmode, const char *parent_dir, bool newfile);
+int file_set_dosmode(connection_struct *conn,
+		     struct smb_filename *smb_fname,
+		     uint32_t dosmode,
+		     const char *parent_dir,
+		     bool newfile);
 NTSTATUS file_set_sparse(connection_struct *conn,
 			 struct files_struct *fsp,
 			 bool sparse);
