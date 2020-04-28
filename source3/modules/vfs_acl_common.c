@@ -1092,12 +1092,11 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	struct file_id id;
 	files_struct *fsp = NULL;
 	int ret = 0;
-	char *parent_dir = NULL;
-	const char *final_component = NULL;
-	struct smb_filename local_fname = {0};
-	struct smb_filename parent_dir_fname = {0};
+	struct smb_filename *local_fname = NULL;
+	struct smb_filename *parent_dir_fname = NULL;
 	int saved_errno = 0;
 	struct smb_filename *saved_dir_fname = NULL;
+	bool ok;
 
 	saved_dir_fname = vfs_GetWd(talloc_tos(),conn);
 	if (saved_dir_fname == NULL) {
@@ -1105,35 +1104,35 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	if (!parent_dirname(talloc_tos(), smb_fname->base_name,
-			&parent_dir, &final_component)) {
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname,
+			      &parent_dir_fname,
+			      &local_fname);
+	if (!ok) {
 		saved_errno = ENOMEM;
 		goto out;
 	}
 
 	DBG_DEBUG("removing %s %s/%s\n", is_directory ? "directory" : "file",
-		  parent_dir, final_component);
-
-	parent_dir_fname = (struct smb_filename) { .base_name = parent_dir };
+		  smb_fname_str_dbg(parent_dir_fname),
+		  smb_fname_str_dbg(local_fname));
 
  	/* cd into the parent dir to pin it. */
-	ret = vfs_ChDir(conn, &parent_dir_fname);
+	ret = vfs_ChDir(conn, parent_dir_fname);
 	if (ret == -1) {
 		saved_errno = errno;
 		goto out;
 	}
 
-	local_fname.base_name = discard_const_p(char, final_component);
-
 	/* Must use lstat here. */
-	ret = SMB_VFS_LSTAT(conn, &local_fname);
+	ret = SMB_VFS_LSTAT(conn, local_fname);
 	if (ret == -1) {
 		saved_errno = errno;
 		goto out;
 	}
 
 	/* Ensure we have this file open with DELETE access. */
-	id = vfs_file_id_from_sbuf(conn, &local_fname.st);
+	id = vfs_file_id_from_sbuf(conn, &local_fname->st);
 	for (fsp = file_find_di_first(conn->sconn, id); fsp;
 		     fsp = file_find_di_next(fsp)) {
 		if (fsp->access_mask & DELETE_ACCESS &&
@@ -1149,7 +1148,8 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	if (!fsp) {
 		DBG_DEBUG("%s %s/%s not an open file\n",
 			  is_directory ? "directory" : "file",
-			  parent_dir, final_component);
+			  smb_fname_str_dbg(parent_dir_fname),
+			  smb_fname_str_dbg(local_fname));
 		saved_errno = EACCES;
 		goto out;
 	}
@@ -1158,12 +1158,12 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	if (is_directory) {
 		ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				conn->cwd_fsp,
-				&local_fname,
+				local_fname,
 				AT_REMOVEDIR);
 	} else {
 		ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				conn->cwd_fsp,
-				&local_fname,
+				local_fname,
 				0);
 	}
 	unbecome_root();
@@ -1174,7 +1174,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
   out:
 
-	TALLOC_FREE(parent_dir);
+	TALLOC_FREE(parent_dir_fname);
 
 	if (saved_dir_fname) {
 		vfs_ChDir(conn, saved_dir_fname);
