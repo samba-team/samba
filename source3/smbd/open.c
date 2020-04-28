@@ -3615,7 +3615,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
         if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-	    (def_acl = directory_has_default_acl(conn, parent_dir))) {
+	    (def_acl = directory_has_default_acl(conn, parent_dir_fname))) {
 		unx_mode = (0777 & lp_create_mask(SNUM(conn)));
 	}
 

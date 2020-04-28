@@ -140,20 +140,12 @@ bool can_write_to_file(connection_struct *conn,
  Check for an existing default Windows ACL on a directory.
 ****************************************************************************/
 
-bool directory_has_default_acl(connection_struct *conn, const char *fname)
+bool directory_has_default_acl(connection_struct *conn,
+			       struct smb_filename *smb_fname)
 {
 	struct security_descriptor *secdesc = NULL;
 	unsigned int i;
 	NTSTATUS status;
-	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
-						fname,
-						NULL,
-						NULL,
-						0);
-
-	if (smb_fname == NULL) {
-		return false;
-	}
 
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
 					     SECINFO_DACL, talloc_tos(),
