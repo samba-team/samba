@@ -655,6 +655,7 @@ struct smb_filename {
 	char *stream_name;
 	uint32_t flags;
 	SMB_STRUCT_STAT st;
+	NTTIME twrp;
 };
 
 /*
