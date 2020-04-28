@@ -1214,6 +1214,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	bool allow_symlinks = true;
 	const char *conn_rootdir;
 	size_t rootdir_len;
+	bool ok;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
@@ -1228,24 +1229,24 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			case ENOENT:
 			{
-				char *dir_name = NULL;
-				struct smb_filename dir_fname = {0};
-				const char *last_component = NULL;
+				struct smb_filename *dir_fname = NULL;
+				struct smb_filename *last_component = NULL;
 
 				/* Last component didn't exist.
 				   Remove it and try and canonicalise
 				   the directory name. */
-				if (!parent_dirname(ctx, fname,
-						&dir_name,
-						&last_component)) {
+
+				ok = parent_smb_fname(ctx,
+						      smb_fname,
+						      &dir_fname,
+						      &last_component);
+				if (!ok) {
 					return NT_STATUS_NO_MEMORY;
 				}
 
-				dir_fname = (struct smb_filename)
-					{ .base_name = dir_name };
 				resolved_fname = SMB_VFS_REALPATH(conn,
 							ctx,
-							&dir_fname);
+							dir_fname);
 				if (resolved_fname == NULL) {
 					NTSTATUS status = map_nt_error_from_unix(errno);
 
@@ -1256,14 +1257,14 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 					DEBUG(3,("check_reduce_name: "
 						 "couldn't get realpath for "
 						 "%s (%s)\n",
-						fname,
+						smb_fname_str_dbg(dir_fname),
 						nt_errstr(status)));
 					return status;
 				}
 				resolved_name = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_fname->base_name,
-						last_component);
+						last_component->base_name);
 				if (resolved_name == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
