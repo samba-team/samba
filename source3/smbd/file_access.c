@@ -36,8 +36,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 				  const struct smb_filename *smb_fname)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	char *dname = NULL;
-	struct smb_filename *smb_fname_parent;
+	struct smb_filename *smb_fname_parent = NULL;
 	bool ret;
 
 	if (!CAN_WRITE(conn)) {
@@ -50,18 +49,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	}
 
 	/* Get the parent directory permission mask and owners. */
-	if (!parent_dirname(ctx, smb_fname->base_name, &dname, NULL)) {
-		return False;
-	}
-
-	smb_fname_parent = synthetic_smb_fname(ctx,
-				dname,
-				NULL,
-				NULL,
-				smb_fname->flags);
-	if (smb_fname_parent == NULL) {
-		ret = false;
-		goto out;
+	ret = parent_smb_fname(ctx, smb_fname, &smb_fname_parent, NULL);
+	if (ret != true) {
+		return false;
 	}
 
 	if(SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
@@ -129,7 +119,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 				false,
 				FILE_DELETE_CHILD));
  out:
-	TALLOC_FREE(dname);
 	TALLOC_FREE(smb_fname_parent);
 	return ret;
 }
