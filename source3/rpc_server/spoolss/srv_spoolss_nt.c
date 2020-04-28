@@ -715,7 +715,7 @@ static WERROR open_printer_hnd(struct pipes_struct *p,
 	talloc_set_destructor(new_printer, printer_entry_destructor);
 
 	/* This also steals the printer_handle on the policy_handle */
-	if (!create_policy_hnd(p, hnd, new_printer)) {
+	if (!create_policy_hnd(p, hnd, 0, new_printer)) {
 		TALLOC_FREE(new_printer);
 		return WERR_INVALID_HANDLE;
 	}

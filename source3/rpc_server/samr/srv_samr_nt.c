@@ -65,6 +65,14 @@
 #define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
 #define MAX_SAM_ENTRIES_W95 50
 
+enum samr_handle {
+	SAMR_HANDLE_CONNECT,
+	SAMR_HANDLE_DOMAIN,
+	SAMR_HANDLE_USER,
+	SAMR_HANDLE_GROUP,
+	SAMR_HANDLE_ALIAS
+};
+
 struct samr_connect_info {
 	uint8_t dummy;
 };
@@ -498,8 +506,12 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	dinfo = policy_handle_create(p, r->out.domain_handle, acc_granted,
-				     struct samr_domain_info, &status);
+	dinfo = policy_handle_create(p,
+				r->out.domain_handle,
+				SAMR_HANDLE_DOMAIN,
+				acc_granted,
+				struct samr_domain_info,
+				&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2221,8 +2233,12 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	/* If we did the rid admins hack above, allow access. */
 	acc_granted |= extra_access;
 
-	uinfo = policy_handle_create(p, r->out.user_handle, acc_granted,
-				     struct samr_user_info, &nt_status);
+	uinfo = policy_handle_create(p,
+				r->out.user_handle,
+				SAMR_HANDLE_USER,
+				acc_granted,
+				struct samr_user_info,
+				&nt_status);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -3790,8 +3806,12 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 		return nt_status;
 	}
 
-	uinfo = policy_handle_create(p, r->out.user_handle, acc_granted,
-				     struct samr_user_info, &nt_status);
+	uinfo = policy_handle_create(p,
+				r->out.user_handle,
+				SAMR_HANDLE_USER,
+				acc_granted,
+				struct samr_user_info,
+				&nt_status);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -3859,9 +3879,12 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 
 	/* set up the SAMR connect_anon response */
 
-	(void)policy_handle_create(p, &hnd, acc_granted,
-				    struct samr_connect_info,
-				    &status);
+	(void)policy_handle_create(p,
+				&hnd,
+				SAMR_HANDLE_CONNECT,
+				acc_granted,
+				struct samr_connect_info,
+				&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3923,8 +3946,12 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
 
-	(void)policy_handle_create(p, &hnd, acc_granted,
-				    struct samr_connect_info, &nt_status);
+	(void)policy_handle_create(p,
+				&hnd,
+				SAMR_HANDLE_CONNECT,
+				acc_granted,
+				struct samr_connect_info,
+				&nt_status);
         if (!NT_STATUS_IS_OK(nt_status)) {
                 return nt_status;
         }
@@ -4160,8 +4187,12 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 
 	}
 
-	ainfo = policy_handle_create(p, r->out.alias_handle, acc_granted,
-				     struct samr_alias_info, &status);
+	ainfo = policy_handle_create(p,
+				r->out.alias_handle,
+				SAMR_HANDLE_ALIAS,
+				acc_granted,
+				struct samr_alias_info,
+				&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5906,9 +5937,12 @@ NTSTATUS _samr_CreateDomainGroup(struct pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	ginfo = policy_handle_create(p, r->out.group_handle,
-				     GENERIC_RIGHTS_GROUP_ALL_ACCESS,
-				     struct samr_group_info, &status);
+	ginfo = policy_handle_create(p,
+				r->out.group_handle,
+				SAMR_HANDLE_GROUP,
+				GENERIC_RIGHTS_GROUP_ALL_ACCESS,
+				struct samr_group_info,
+				&status);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
@@ -5980,9 +6014,12 @@ NTSTATUS _samr_CreateDomAlias(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ainfo = policy_handle_create(p, r->out.alias_handle,
-				     GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
-				     struct samr_alias_info, &result);
+	ainfo = policy_handle_create(p,
+				r->out.alias_handle,
+				SAMR_HANDLE_ALIAS,
+				GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
+				struct samr_alias_info,
+				&result);
         if (!NT_STATUS_IS_OK(result)) {
                 return result;
         }
@@ -6386,9 +6423,12 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 
 	TALLOC_FREE(map);
 
-	ginfo = policy_handle_create(p, r->out.group_handle,
-				     acc_granted,
-				     struct samr_group_info, &status);
+	ginfo = policy_handle_create(p,
+				r->out.group_handle,
+				SAMR_HANDLE_GROUP,
+				acc_granted,
+				struct samr_group_info,
+				&status);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }

@@ -140,7 +140,7 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!create_policy_hnd(p, handle, mds_ctx)) {
+	if (!create_policy_hnd(p, handle, 0, mds_ctx)) {
 		talloc_free(mds_ctx);
 		ZERO_STRUCTP(handle);
 		return NT_STATUS_NO_MEMORY;

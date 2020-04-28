@@ -250,8 +250,11 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-static struct dcesrv_handle_old *create_rpc_handle_internal(struct pipes_struct *p,
-				struct policy_handle *hnd, void *data_ptr)
+static struct dcesrv_handle_old *create_rpc_handle_internal(
+				struct pipes_struct *p,
+				struct policy_handle *hnd,
+				uint8_t handle_type,
+				void *data_ptr)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 	static uint32_t pol_hnd_low  = 0;
@@ -279,8 +282,7 @@ static struct dcesrv_handle_old *create_rpc_handle_internal(struct pipes_struct 
 		pol_hnd_high++;
 	}
 
-	/* first bit must be null */
-	SIVAL(&rpc_hnd->wire_handle.handle_type, 0 , 0);
+	rpc_hnd->wire_handle.handle_type = handle_type;
 
 	/* second bit is incrementing */
 	SIVAL(&rpc_hnd->wire_handle.uuid.time_low, 0 , pol_hnd_low);
@@ -307,12 +309,14 @@ static struct dcesrv_handle_old *create_rpc_handle_internal(struct pipes_struct 
 	return rpc_hnd;
 }
 
-bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd,
-		       void *data_ptr)
+bool create_policy_hnd(struct pipes_struct *p,
+			struct policy_handle *hnd,
+			uint8_t handle_type,
+			void *data_ptr)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 
-	rpc_hnd = create_rpc_handle_internal(p, hnd, data_ptr);
+	rpc_hnd = create_rpc_handle_internal(p, hnd, handle_type, data_ptr);
 	if (rpc_hnd == NULL) {
 		return false;
 	}
@@ -450,9 +454,13 @@ bool pipe_access_check(struct pipes_struct *p)
 	return True;
 }
 
-void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
-			    uint32_t access_granted, size_t data_size,
-			    const char *type, NTSTATUS *pstatus)
+void *_policy_handle_create(struct pipes_struct *p,
+			struct policy_handle *hnd,
+			uint8_t handle_type,
+			uint32_t access_granted,
+			size_t data_size,
+			const char *type,
+			NTSTATUS *pstatus)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 	void *data;
@@ -474,7 +482,7 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	}
 	talloc_set_name_const(data, type);
 
-	rpc_hnd = create_rpc_handle_internal(p, hnd, data);
+	rpc_hnd = create_rpc_handle_internal(p, hnd, handle_type, data);
 	if (rpc_hnd == NULL) {
 		TALLOC_FREE(data);
 		*pstatus = NT_STATUS_NO_MEMORY;

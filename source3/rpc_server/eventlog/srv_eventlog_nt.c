@@ -270,7 +270,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 
 	/* create the policy handle */
 
-	if ( !create_policy_hnd( p, hnd, elog ) ) {
+	if ( !create_policy_hnd( p, hnd, 0, elog ) ) {
 		TALLOC_FREE(elog);
 		return NT_STATUS_NO_MEMORY;
 	}
