@@ -27,9 +27,11 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname,
 		mode_t mode)
 {
-	struct smb_filename fname = { 0, };
+	struct smb_filename *dname = NULL;
+	struct smb_filename *fname = NULL;
 	int mkdir_res;
 	int res;
+	bool ok;
 
 	DEBUG(10, ("Calling linux_xfs_sgid_mkdirat(%s)\n",
 		smb_fname->base_name));
@@ -44,41 +46,47 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 		return mkdir_res;
 	}
 
-	if (!parent_dirname(talloc_tos(),
-			smb_fname->base_name,
-			&fname.base_name,
-			NULL)) {
-		DEBUG(1, ("parent_dirname failed\n"));
+	ok = parent_smb_fname(talloc_tos(), smb_fname, &dname, NULL);
+	if (!ok) {
+		DBG_WARNING("parent_smb_fname() failed\n");
 		/* return success, we did the mkdir */
 		return mkdir_res;
 	}
 
-	res = SMB_VFS_NEXT_STAT(handle, &fname);
+	res = SMB_VFS_NEXT_STAT(handle, dname);
 	if (res == -1) {
-		DEBUG(10, ("NEXT_STAT(%s) failed: %s\n", fname.base_name,
-			   strerror(errno)));
+		DBG_DEBUG("NEXT_STAT(%s) failed: %s\n",
+			  smb_fname_str_dbg(dname),
+			  strerror(errno));
 		/* return success, we did the mkdir */
 		return mkdir_res;
 	}
-	TALLOC_FREE(fname.base_name);
-	if ((fname.st.st_ex_mode & S_ISGID) == 0) {
+	if ((dname->st.st_ex_mode & S_ISGID) == 0) {
 		/* No SGID to inherit */
 		DEBUG(10, ("No SGID to inherit\n"));
+		TALLOC_FREE(dname);
 		return mkdir_res;
 	}
+	TALLOC_FREE(dname);
 
-	fname.base_name = discard_const_p(char, smb_fname->base_name);
-
-	res = SMB_VFS_NEXT_STAT(handle, &fname);
-	if (res == -1) {
-		DEBUG(2, ("Could not stat just created dir %s: %s\n",
-			smb_fname->base_name,
-			strerror(errno)));
+	fname = cp_smb_filename(talloc_tos(), smb_fname);
+	if (fname == NULL) {
+		DBG_WARNING("cp_smb_filename() failed\n");
 		/* return success, we did the mkdir */
 		return mkdir_res;
 	}
-	fname.st.st_ex_mode |= S_ISGID;
-	fname.st.st_ex_mode &= ~S_IFDIR;
+
+	res = SMB_VFS_NEXT_STAT(handle, fname);
+	if (res == -1) {
+		DBG_NOTICE("Could not stat just created dir %s: %s\n",
+			   smb_fname_str_dbg(fname),
+			   strerror(errno));
+		/* return success, we did the mkdir */
+		TALLOC_FREE(fname);
+		return mkdir_res;
+	}
+	fname->st.st_ex_mode |= S_ISGID;
+	fname->st.st_ex_mode &= ~S_IFDIR;
 
 	/*
 	 * Yes, we have to do this as root. If you do it as
@@ -86,17 +94,20 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 	 * return success. What can you do...
 	 */
 	become_root();
-	res = SMB_VFS_NEXT_CHMOD(handle,
-			smb_fname,
-			fname.st.st_ex_mode);
+	res = SMB_VFS_NEXT_CHMOD(handle, fname, fname->st.st_ex_mode);
 	unbecome_root();
 
 	if (res == -1) {
-		DEBUG(2, ("CHMOD(%s, %o) failed: %s\n", smb_fname->base_name,
-			  (int)fname.st.st_ex_mode, strerror(errno)));
+		DBG_NOTICE("CHMOD(%s, %o) failed: %s\n",
+			   smb_fname_str_dbg(fname),
+			   (int)fname->st.st_ex_mode,
+			   strerror(errno));
 		/* return success, we did the mkdir */
+		TALLOC_FREE(fname);
 		return mkdir_res;
 	}
+
+	TALLOC_FREE(fname);
 	return mkdir_res;
 }
 
