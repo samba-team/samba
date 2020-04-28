@@ -234,6 +234,9 @@ class SuperCommand(Command):
         if subcommand in self.subcommands:
             return self.subcommands[subcommand]._run(
                 "%s %s" % (myname, subcommand), *args)
+        elif subcommand not in [ '--help', 'help', None ]:
+            print("%s: no such subcommand: %s\n" % (myname, subcommand))
+            args = []
 
         if subcommand == 'help':
             # pass the request down
