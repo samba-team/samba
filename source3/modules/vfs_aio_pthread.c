@@ -48,8 +48,8 @@ struct aio_open_private_data {
 	mode_t mode;
 	uint64_t mid;
 	bool in_progress;
-	const char *fname;
-	char *dname;
+	struct smb_filename *dname;
+	struct smb_filename *fname;
 	connection_struct *conn;
 	struct smbXsrv_connection *xconn;
 	const struct security_unix_token *ux_tok;
@@ -111,8 +111,8 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 		 * don't leak memory.
 		 */
 		DBG_NOTICE("aio open request for %s/%s abandoned in flight\n",
-			opd->dname,
-			opd->fname);
+			opd->dname->base_name,
+			opd->fname->base_name);
 		if (opd->ret_fd != -1) {
 			close(opd->ret_fd);
 			opd->ret_fd = -1;
@@ -154,8 +154,8 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 	DEBUG(10,("aio_open_handle_completion: mid %llu "
 		"for file %s/%s completed\n",
 		(unsigned long long)opd->mid,
-		opd->dname,
-		opd->fname));
+		opd->dname->base_name,
+		opd->fname->base_name));
 
 	opd->in_progress = false;
 
@@ -202,7 +202,7 @@ static void aio_open_worker(void *private_data)
 static void aio_open_do(struct aio_open_private_data *opd)
 {
 	opd->ret_fd = openat(opd->dir_fd,
-			opd->fname,
+			opd->fname->base_name,
 			opd->flags,
 			opd->mode);
 
@@ -255,7 +255,7 @@ static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
 {
 	struct aio_open_private_data *opd = talloc_zero(ctx,
 					struct aio_open_private_data);
-	const char *fname = NULL;
+	bool ok;
 
 	if (!opd) {
 		return NULL;
@@ -290,23 +290,19 @@ static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
 	 * Copy the parent directory name and the
 	 * relative path within it.
 	 */
-	if (parent_dirname(opd,
-			fsp->fsp_name->base_name,
-			&opd->dname,
-			&fname) == false) {
-		opd_free(opd);
-		return NULL;
-	}
-	opd->fname = talloc_strdup(opd, fname);
-	if (opd->fname == NULL) {
+	ok = parent_smb_fname(opd,
+			      fsp->fsp_name,
+			      &opd->dname,
+			      &opd->fname);
+	if (!ok) {
 		opd_free(opd);
 		return NULL;
 	}
 
 #if defined(O_DIRECTORY)
-	opd->dir_fd = open(opd->dname, O_RDONLY|O_DIRECTORY);
+	opd->dir_fd = open(opd->dname->base_name, O_RDONLY|O_DIRECTORY);
 #else
-	opd->dir_fd = open(opd->dname, O_RDONLY);
+	opd->dir_fd = open(opd->dname->base_name, O_RDONLY);
 #endif
 	if (opd->dir_fd == -1) {
 		opd_free(opd);
@@ -326,8 +322,8 @@ static int opd_inflight_destructor(struct aio_open_private_data *opd)
 	 * opd.
 	 */
 	DBG_NOTICE("aio open request for %s/%s cancelled\n",
-		opd->dname,
-		opd->fname);
+		opd->dname->base_name,
+		opd->fname->base_name);
 	opd->conn = NULL;
 	/* Don't let opd go away. */
 	return -1;
@@ -373,8 +369,8 @@ static int open_async(const files_struct *fsp,
 
 	DEBUG(5,("open_async: mid %llu created for file %s/%s\n",
 		(unsigned long long)opd->mid,
-		opd->dname,
-		opd->fname));
+		opd->dname->base_name,
+		opd->fname->base_name));
 
 	/*
 	 * Add a destructor to protect us from connection
@@ -408,8 +404,8 @@ static bool find_completed_open(files_struct *fsp,
 			"still in progress for "
 			"file %s/%s. PANIC !\n",
 			(unsigned long long)opd->mid,
-			opd->dname,
-			opd->fname));
+			opd->dname->base_name,
+			opd->fname->base_name));
 		/* Disaster ! This is an open timeout. Just panic. */
 		smb_panic("find_completed_open - in_progress\n");
 		/* notreached. */
