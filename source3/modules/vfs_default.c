@@ -628,22 +628,25 @@ static int vfswrap_mkdirat(vfs_handle_struct *handle,
 			mode_t mode)
 {
 	int result;
-	const char *path = smb_fname->base_name;
-	char *parent = NULL;
+	struct smb_filename *parent = NULL;
+	bool ok;
 
 	START_PROFILE(syscall_mkdirat);
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
-	if (lp_inherit_acls(SNUM(handle->conn))
-	    && parent_dirname(talloc_tos(), path, &parent, NULL)
-	    && directory_has_default_acl(handle->conn, parent)) {
-		mode = (0777 & lp_directory_mask(SNUM(handle->conn)));
+	if (lp_inherit_acls(SNUM(handle->conn))) {
+		ok = parent_smb_fname(talloc_tos(), smb_fname, &parent, NULL);
+		if (ok && directory_has_default_acl(handle->conn,
+						    parent->base_name))
+		{
+			mode = (0777 & lp_directory_mask(SNUM(handle->conn)));
+		}
 	}
 
 	TALLOC_FREE(parent);
 
-	result = mkdirat(dirfsp->fh->fd, path, mode);
+	result = mkdirat(dirfsp->fh->fd, smb_fname->base_name, mode);
 
 	END_PROFILE(syscall_mkdirat);
 	return result;
