@@ -1193,21 +1193,26 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 				 * Was it a missing last component ?
 				 * or a missing intermediate component ?
 				 */
-				struct smb_filename parent_fname;
-				const char *last_component = NULL;
+				struct smb_filename *parent_fname = NULL;
+				struct smb_filename *base_fname = NULL;
+				bool ok;
 
-				ZERO_STRUCT(parent_fname);
-				if (!parent_dirname(state->mem_ctx, state->smb_fname->base_name,
-							&parent_fname.base_name,
-							&last_component)) {
+				ok = parent_smb_fname(state->mem_ctx,
+						      state->smb_fname,
+						      &parent_fname,
+						      &base_fname);
+				if (!ok) {
 					status = NT_STATUS_NO_MEMORY;
 					goto fail;
 				}
 				if (state->posix_pathnames) {
-					ret = SMB_VFS_LSTAT(state->conn, &parent_fname);
+					ret = SMB_VFS_LSTAT(state->conn,
+							    parent_fname);
 				} else {
-					ret = SMB_VFS_STAT(state->conn, &parent_fname);
+					ret = SMB_VFS_STAT(state->conn,
+							   parent_fname);
 				}
+				TALLOC_FREE(parent_fname);
 				if (ret == -1) {
 					if (errno == ENOTDIR ||
 							errno == ENOENT ||
