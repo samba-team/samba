@@ -955,6 +955,10 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.prefork_backoff_increment = 10;
 	Globals.prefork_maximum_backoff = 120;
 
+	Globals.ldap_max_anonymous_request_size = 256000;
+	Globals.ldap_max_authenticated_request_size = 16777216;
+	Globals.ldap_max_search_request_size = 256000;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }

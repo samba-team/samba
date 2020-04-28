@@ -32,7 +32,7 @@ static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB attr;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_sort_resp_control *lsrc;
 
 	if (!data) return false;
@@ -79,7 +79,7 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void *_out)
 	void **out = (void **)_out;
 	DATA_BLOB attr;
 	DATA_BLOB rule;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_server_sort_control **lssc;
 	int num;
 
@@ -166,7 +166,7 @@ static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void *_out)
 		return true;
 	}
 
-	data = asn1_init(mem_ctx);
+	data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	if (!data) return false;
 
 	if (!asn1_load(data, in)) {
@@ -198,7 +198,7 @@ static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void *_out)
 static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_sd_flags_control *lsdfc;
 
 	if (!data) return false;
@@ -232,7 +232,7 @@ static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void *_out)
 static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_search_options_control *lsoc;
 
 	if (!data) return false;
@@ -267,7 +267,7 @@ static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void *_out
 {
 	void **out = (void **)_out;
 	DATA_BLOB cookie;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_paged_control *lprc;
 
 	if (!data) return false;
@@ -316,7 +316,7 @@ static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB cookie;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_dirsync_control *ldc;
 
 	if (!data) return false;
@@ -372,7 +372,7 @@ static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB source_attribute;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_asq_control *lac;
 
 	if (!data) return false;
@@ -433,7 +433,7 @@ static bool decode_verify_name_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB name;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_verify_name_control *lvnc;
 	int len;
 
@@ -485,7 +485,7 @@ static bool decode_verify_name_request(void *mem_ctx, DATA_BLOB in, void *_out)
 static bool encode_verify_name_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_verify_name_control *lvnc = talloc_get_type(in, struct ldb_verify_name_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	DATA_BLOB gc_utf16;
 
 	if (!data) return false;
@@ -528,7 +528,7 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB assertion_value, context_id;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_vlv_req_control *lvrc;
 
 	if (!data) return false;
@@ -626,7 +626,7 @@ static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
 	DATA_BLOB context_id;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct ldb_vlv_resp_control *lvrc;
 
 	if (!data) return false;
@@ -682,7 +682,7 @@ static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 static bool encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sort_resp_control *lsrc = talloc_get_type(in, struct ldb_sort_resp_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -716,7 +716,7 @@ static bool encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_server_sort_control **lssc = talloc_get_type(in, struct ldb_server_sort_control *);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	int num;
 
 	if (!data) return false;
@@ -782,7 +782,7 @@ static bool encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return true;
 	}
 
-	data = asn1_init(mem_ctx);
+	data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -810,7 +810,7 @@ static bool encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sd_flags_control *lsdfc = talloc_get_type(in, struct ldb_sd_flags_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -838,7 +838,7 @@ static bool encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_search_options_control *lsoc = talloc_get_type(in, struct ldb_search_options_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -866,7 +866,7 @@ static bool encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *ou
 static bool encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_paged_control *lprc = talloc_get_type(in, struct ldb_paged_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -901,7 +901,7 @@ static bool encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 static bool encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_asq_control *lac = talloc_get_type(in, struct ldb_asq_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -936,7 +936,7 @@ static bool encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_dirsync_control *ldc = talloc_get_type(in, struct ldb_dirsync_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -972,7 +972,7 @@ static bool encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_req_control *lvrc = talloc_get_type(in, struct ldb_vlv_req_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -1040,7 +1040,7 @@ static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_resp_control *lvrc = talloc_get_type(in, struct ldb_vlv_resp_control);
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 
@@ -1083,7 +1083,7 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct dsdb_openldap_dereference_control *control = talloc_get_type(in, struct dsdb_openldap_dereference_control);
 	int i,j;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 
 	if (!data) return false;
 	
@@ -1132,7 +1132,7 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	struct dsdb_openldap_dereference_result_control *control;
 	struct dsdb_openldap_dereference_result **r = NULL;
 	int i = 0;

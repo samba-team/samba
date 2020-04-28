@@ -32,9 +32,19 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	TALLOC_CTX *mem_ctx = talloc_init(__FUNCTION__);
 	struct asn1_data *asn1;
 	struct ldap_message *ldap_msg;
+	struct ldap_request_limits limits = {
+		/*
+		 * The default size is currently 256000 bytes
+		 */
+		.max_search_size = 256000
+	};
 	NTSTATUS status;
 
-	asn1 = asn1_init(mem_ctx);
+	/*
+	 * Need to limit the max parse tree depth to 250 to prevent
+	 * ASAN detecting stack overflows.
+	 */
+	asn1 = asn1_init(mem_ctx, 250);
 	if (!asn1) {
 		goto out;
 	}
@@ -46,7 +56,8 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 		goto out;
 	}
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
+	status = ldap_decode(
+		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 
 out:
 	talloc_free(mem_ctx);
