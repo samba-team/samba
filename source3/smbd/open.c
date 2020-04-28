@@ -262,31 +262,19 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 				uint32_t access_mask)
 {
 	NTSTATUS status;
-	char *parent_dir = NULL;
 	struct security_descriptor *parent_sd = NULL;
 	uint32_t access_granted = 0;
-	struct smb_filename *parent_smb_fname = NULL;
+	struct smb_filename *parent_dir = NULL;
 	struct share_mode_lock *lck = NULL;
 	struct file_id id = {0};
 	uint32_t name_hash;
 	bool delete_on_close_set;
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
-	if (!parent_dirname(frame,
-				smb_fname->base_name,
-				&parent_dir,
-				NULL)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	parent_smb_fname = synthetic_smb_fname(frame,
-				parent_dir,
-				NULL,
-				NULL,
-				smb_fname->flags);
-	if (parent_smb_fname == NULL) {
+	ok = parent_smb_fname(frame, smb_fname, &parent_dir, NULL);
+	if (!ok) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
@@ -302,7 +290,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	}
 
 	status = SMB_VFS_GET_NT_ACL(conn,
-				parent_smb_fname,
+				parent_dir,
 				SECINFO_DACL,
 				frame,
 				&parent_sd);
@@ -310,7 +298,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("check_parent_access: SMB_VFS_GET_NT_ACL failed for "
 			"%s with error %s\n",
-			parent_dir,
+			smb_fname_str_dbg(parent_dir),
 			nt_errstr(status)));
 		goto out;
 	}
@@ -334,7 +322,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 		DEBUG(5,("check_parent_access: access check "
 			"on directory %s for "
 			"path %s for mask 0x%x returned (0x%x) %s\n",
-			parent_dir,
+			smb_fname_str_dbg(parent_dir),
 			smb_fname->base_name,
 			access_mask,
 			access_granted,
@@ -352,15 +340,15 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	}
 
 	/* Check if the directory has delete-on-close set */
-	ret = SMB_VFS_STAT(conn, parent_smb_fname);
+	ret = SMB_VFS_STAT(conn, parent_dir);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(conn, &parent_smb_fname->st);
+	id = SMB_VFS_FILE_ID_CREATE(conn, &parent_dir->st);
 
-	status = file_name_hash(conn, parent_smb_fname->base_name, &name_hash);
+	status = file_name_hash(conn, parent_dir->base_name, &name_hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
