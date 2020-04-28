@@ -713,9 +713,10 @@ bool asn1_end_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 
-	if (data->depth > 0) {
-		data->depth--;
+	if (data->depth == 0) {
+		smb_panic("Unbalanced ASN.1 Tag nesting");
 	}
+	data->depth--;
 	/* make sure we read it all */
 	if (asn1_tag_remaining(data) != 0) {
 		data->has_error = true;
