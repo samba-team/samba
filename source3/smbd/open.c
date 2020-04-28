@@ -4065,12 +4065,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	mode_t mode;
+	struct smb_filename *parent_dir_fname = NULL;
 	char *parent_dir = NULL;
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
 	int ret;
+	bool ok;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
@@ -4078,10 +4080,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!parent_dirname(talloc_tos(), smb_dname->base_name, &parent_dir,
-			    NULL)) {
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_dname,
+			      &parent_dir_fname,
+			      NULL);
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	parent_dir = parent_dir_fname->base_name;
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		posix_open = true;
