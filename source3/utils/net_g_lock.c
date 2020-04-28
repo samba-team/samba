@@ -162,11 +162,7 @@ done:
 
 static int net_g_lock_locks_fn(TDB_DATA key, void *private_data)
 {
-	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != 0)) {
-		DEBUG(1, ("invalid key in g_lock.tdb, ignoring\n"));
-		return 0;
-	}
-	d_printf("%s\n", (const char *)key.dptr);
+	dump_data_file(key.dptr, key.dsize, true, stdout);
 	return 0;
 }
 
