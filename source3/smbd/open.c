@@ -3276,6 +3276,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
+	struct smb_filename *parent_dir_fname = NULL;
 	char *parent_dir;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
@@ -3306,10 +3307,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					req->vuid);
 	}
 
-	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,
-			    NULL)) {
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname,
+			      &parent_dir_fname,
+			      NULL);
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	parent_dir = parent_dir_fname->base_name;
 
 	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		posix_open = True;
