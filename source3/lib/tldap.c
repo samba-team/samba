@@ -632,7 +632,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	data = asn1_init(talloc_tos());
+	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 	if (data == NULL) {
 		status = TLDAP_NO_MEMORY;
 		goto fail;
@@ -763,7 +763,7 @@ static struct tevent_req *tldap_req_create(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->out = asn1_init(state);
+	state->out = asn1_init(state, ASN1_MAX_TREE_DEPTH);
 	if (state->out == NULL) {
 		goto err;
 	}

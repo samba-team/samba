@@ -441,6 +441,10 @@ static void ldapsrv_accept_tls_done(struct tevent_req *subreq)
 }
 
 static void ldapsrv_call_read_done(struct tevent_req *subreq);
+static NTSTATUS ldapsrv_packet_check(
+	void *private_data,
+	DATA_BLOB blob,
+	size_t *packet_size);
 
 static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 {
@@ -494,7 +498,7 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 					    conn->connection->event.ctx,
 					    conn->sockets.active,
 					    7, /* initial_read_size */
-					    ldap_full_packet,
+					    ldapsrv_packet_check,
 					    conn);
 	if (subreq == NULL) {
 		ldapsrv_terminate_connection(conn, "ldapsrv_call_read_next: "
@@ -520,6 +524,9 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 }
 
 static void ldapsrv_call_process_done(struct tevent_req *subreq);
+static int ldapsrv_check_packet_size(
+	struct ldapsrv_connection *conn,
+	size_t size);
 
 static void ldapsrv_call_read_done(struct tevent_req *subreq)
 {
@@ -530,6 +537,8 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 	struct ldapsrv_call *call;
 	struct asn1_data *asn1;
 	DATA_BLOB blob;
+	int ret = LDAP_SUCCESS;
+	struct ldap_request_limits limits = {0};
 
 	conn->sockets.read_req = NULL;
 
@@ -560,7 +569,15 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	asn1 = asn1_init(call);
+	ret = ldapsrv_check_packet_size(conn, blob.length);
+	if (ret != LDAP_SUCCESS) {
+		ldapsrv_terminate_connection(
+			conn,
+			"Request packet too large");
+		return;
+	}
+
+	asn1 = asn1_init(call, ASN1_MAX_TREE_DEPTH);
 	if (asn1 == NULL) {
 		ldapsrv_terminate_connection(conn, "no memory");
 		return;
@@ -577,8 +594,13 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = ldap_decode(asn1, samba_ldap_control_handlers(),
-			     call->request);
+	limits.max_search_size =
+		lpcfg_ldap_max_search_request_size(conn->lp_ctx);
+	status = ldap_decode(
+		asn1,
+		&limits,
+		samba_ldap_control_handlers(),
+		call->request);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldapsrv_terminate_connection(conn, nt_errstr(status));
 		return;
@@ -1360,6 +1382,84 @@ static void ldapsrv_post_fork(struct task_server *task, struct process_details *
 				      true);
 		return;
 	}
+}
+
+/*
+ * Check the size of an ldap request packet.
+ *
+ * For authenticated connections the maximum packet size is controlled by
+ * the smb.conf parameter "ldap max authenticated request size"
+ *
+ * For anonymous connections the maximum packet size is controlled by
+ * the smb.conf parameter "ldap max anonymous request size"
+ */
+static int ldapsrv_check_packet_size(
+	struct ldapsrv_connection *conn,
+	size_t size)
+{
+	bool is_anonymous = false;
+	size_t max_size = 0;
+
+	max_size = lpcfg_ldap_max_anonymous_request_size(conn->lp_ctx);
+	if (size <= max_size) {
+		return LDAP_SUCCESS;
+	}
+
+	/*
+	 * Request is larger than the maximum unauthenticated request size.
+	 * As this code is called frequently we avoid calling
+	 * security_token_is_anonymous if possible
+	 */
+	if (conn->session_info != NULL &&
+		conn->session_info->security_token != NULL) {
+		is_anonymous = security_token_is_anonymous(
+			conn->session_info->security_token);
+	}
+
+	if (is_anonymous) {
+		DBG_WARNING(
+			"LDAP request size (%zu) exceeds (%zu)\n",
+			size,
+			max_size);
+		return LDAP_UNWILLING_TO_PERFORM;
+	}
+
+	max_size = lpcfg_ldap_max_authenticated_request_size(conn->lp_ctx);
+	if (size > max_size) {
+		DBG_WARNING(
+			"LDAP request size (%zu) exceeds (%zu)\n",
+			size,
+			max_size);
+		return LDAP_UNWILLING_TO_PERFORM;
+	}
+	return LDAP_SUCCESS;
+
+}
+
+/*
+ * Check that the blob contains enough data to be a valid packet
+ * If there is a packet header check the size to ensure that it does not
+ * exceed the maximum sizes.
+ *
+ */
+static NTSTATUS ldapsrv_packet_check(
+	void *private_data,
+	DATA_BLOB blob,
+	size_t *packet_size)
+{
+	NTSTATUS ret;
+	struct ldapsrv_connection *conn = private_data;
+	int result = LDB_SUCCESS;
+
+	ret = ldap_full_packet(private_data, blob, packet_size);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
+	result = ldapsrv_check_packet_size(conn, *packet_size);
+	if (result != LDAP_SUCCESS) {
+		return NT_STATUS_LDAP(result);
+	}
+	return NT_STATUS_OK;
 }
 
 NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
