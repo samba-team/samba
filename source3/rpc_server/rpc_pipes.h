@@ -199,18 +199,25 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
 
 size_t num_pipe_handles(struct pipes_struct *p);
 bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax);
-bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
+bool create_policy_hnd(struct pipes_struct *p,
+			struct policy_handle *hnd,
+			uint8_t handle_type,
+			void *data_ptr);
 bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
 			void **data_p);
 bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(struct pipes_struct *p);
 bool pipe_access_check(struct pipes_struct *p);
 
-void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
-			    uint32_t access_granted, size_t data_size,
-			    const char *type, NTSTATUS *pstatus);
-#define policy_handle_create(_p, _hnd, _access, _type, _pstatus) \
-	(_type *)_policy_handle_create((_p), (_hnd), (_access), sizeof(_type), #_type, \
+void *_policy_handle_create(struct pipes_struct *p,
+			struct policy_handle *hnd,
+			uint8_t handle_type,
+			uint32_t access_granted,
+			size_t data_size,
+			const char *type,
+			NTSTATUS *pstatus);
+#define policy_handle_create(_p, _hnd, _hnd_type, _access, _type, _pstatus) \
+	(_type *)_policy_handle_create((_p), (_hnd), (_hnd_type), (_access), sizeof(_type), #_type, \
 				       (_pstatus))
 
 void *_policy_handle_find(struct pipes_struct *p,

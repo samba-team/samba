@@ -371,7 +371,7 @@ static NTSTATUS create_lsa_policy_handle(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!create_policy_hnd(p, handle, info)) {
+	if (!create_policy_hnd(p, handle, type, info)) {
 		talloc_free(info);
 		ZERO_STRUCTP(handle);
 		return NT_STATUS_NO_MEMORY;

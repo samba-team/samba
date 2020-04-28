@@ -34,6 +34,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
+
 /******************************************************************
  Find a registry key handle and return a struct registry_key *
  *****************************************************************/
@@ -81,7 +83,7 @@ static WERROR open_registry_key(struct pipes_struct *p,
 		return result;
 	}
 
-	if ( !create_policy_hnd( p, hnd, key ) ) {
+	if ( !create_policy_hnd( p, hnd, HTYPE_REGKEY, key ) ) {
 		return WERR_FILE_NOT_FOUND;
 	}
 
@@ -705,7 +707,7 @@ WERROR _winreg_CreateKey(struct pipes_struct *p,
 		return result;
 	}
 
-	if (!create_policy_hnd(p, r->out.new_handle, new_key)) {
+	if (!create_policy_hnd(p, r->out.new_handle, HTYPE_REGKEY, new_key)) {
 		TALLOC_FREE(new_key);
 		return WERR_FILE_NOT_FOUND;
 	}

@@ -27,6 +27,9 @@
 #include "srv_epmapper.h"
 #include "auth.h"
 
+/* handle types for this module */
+enum handle_types {HTYPE_LOOKUP};
+
 typedef uint32_t error_status_t;
 
 /* An endpoint combined with an interface description */
@@ -681,7 +684,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			goto done;
 		}
 
-		ok = create_policy_hnd(p, r->out.entry_handle, eps);
+		ok = create_policy_hnd(p, r->out.entry_handle, HTYPE_LOOKUP, eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
@@ -1073,7 +1076,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 		}
 		/* end of "some algorithm" */
 
-		ok = create_policy_hnd(p, r->out.entry_handle, eps);
+		ok = create_policy_hnd(p, r->out.entry_handle, HTYPE_LOOKUP, eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;

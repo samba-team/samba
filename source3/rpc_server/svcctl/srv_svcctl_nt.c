@@ -257,7 +257,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 
 	/* store the SERVICE_INFO and create an open handle */
 
-	if ( !create_policy_hnd( p, handle, info ) ) {
+	if ( !create_policy_hnd( p, handle, 0, info ) ) {
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
