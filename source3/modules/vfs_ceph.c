@@ -355,22 +355,26 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 			mode_t mode)
 {
 	int result;
-	char *parent = NULL;
-	const char *path = smb_fname->base_name;
+	struct smb_filename *parent = NULL;
+	bool ok;
 
-	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n", handle, path);
+	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n",
+		  handle, smb_fname_str_dbg(smb_fname));
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
-	if (lp_inherit_acls(SNUM(handle->conn))
-	    && parent_dirname(talloc_tos(), path, &parent, NULL)
-	    && directory_has_default_acl(handle->conn, parent)) {
-		mode = 0777;
+	if (lp_inherit_acls(SNUM(handle->conn))) {
+		ok = parent_smb_fname(talloc_tos(), smb_fname, &parent, NULL);
+		if (ok && directory_has_default_acl(handle->conn,
+						    parent->base_name))
+		{
+			mode = 0777;
+		}
 	}
 
 	TALLOC_FREE(parent);
 
-	result = ceph_mkdir(handle->data, path, mode);
+	result = ceph_mkdir(handle->data, smb_fname->base_name, mode);
 	return WRAP_RETURN(result);
 }
 
