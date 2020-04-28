@@ -841,6 +841,9 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	if (state->done) {
+		return NT_STATUS_OK;
+	}
 
 	/*
 	 * Add to the dirpath that we have resolved so far.
