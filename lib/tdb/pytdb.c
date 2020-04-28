@@ -381,6 +381,53 @@ static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_storev(PyTdbObject *self, PyObject *args)
+{
+	TDB_DATA key, *values, value;
+	int ret;
+	int flag = TDB_REPLACE;
+	Py_ssize_t num_values, i;
+	PyObject *py_key, *py_values, *py_value;
+
+	PyErr_TDB_RAISE_IF_CLOSED(self);
+
+	if (!PyArg_ParseTuple(
+		    args, "OO!|i", &py_key, &PyList_Type, &py_values, &flag)) {
+		return NULL;
+	}
+
+	num_values = PyList_Size(py_values);
+
+	key = PyBytes_AsTDB_DATA(py_key);
+	if (key.dptr == NULL) {
+		return NULL;
+	}
+
+	if (SSIZE_MAX/sizeof(TDB_DATA) < num_values) {
+		PyErr_SetFromErrno(PyExc_OverflowError);
+		return NULL;
+	}
+	values = malloc(sizeof(TDB_DATA) * num_values);
+	if (values == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	for (i=0; i<num_values; i++) {
+		py_value = PyList_GetItem(py_values, i);
+		value = PyBytes_AsTDB_DATA(py_value);
+		if (!value.dptr) {
+			free(values);
+			return NULL;
+		}
+		values[i] = value;
+	}
+
+	ret = tdb_storev(self->ctx, key, values, num_values, flag);
+	free(values);
+	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *obj_add_flags(PyTdbObject *self, PyObject *args)
 {
 	unsigned flags;
@@ -525,6 +572,8 @@ static PyMethodDef tdb_object_methods[] = {
 #endif
 	{ "store", (PyCFunction)obj_store, METH_VARARGS, "S.store(key, data, flag=REPLACE) -> None"
 		"Store data." },
+	{ "storev", (PyCFunction)obj_storev, METH_VARARGS, "S.storev(key, data, flag=REPLACE) -> None"
+		"Store several data." },
 	{ "add_flags", (PyCFunction)obj_add_flags, METH_VARARGS, "S.add_flags(flags) -> None" },
 	{ "remove_flags", (PyCFunction)obj_remove_flags, METH_VARARGS, "S.remove_flags(flags) -> None" },
 #if PY_MAJOR_VERSION >= 3
