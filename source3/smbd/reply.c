@@ -7540,20 +7540,21 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 					const struct smb_filename *smb_fname_dst_in)
 {
-	char *parent_dir = NULL;
-	struct smb_filename smb_fname_parent;
+	struct smb_filename *smb_fname_parent = NULL;
 	struct file_id id;
 	files_struct *fsp = NULL;
 	int ret;
+	bool ok;
 
-	if (!parent_dirname(talloc_tos(), smb_fname_dst_in->base_name,
-			&parent_dir, NULL)) {
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname_dst_in,
+			      &smb_fname_parent,
+			      NULL);
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCT(smb_fname_parent);
-	smb_fname_parent.base_name = parent_dir;
 
-	ret = SMB_VFS_LSTAT(conn, &smb_fname_parent);
+	ret = SMB_VFS_LSTAT(conn, smb_fname_parent);
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -7563,7 +7564,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 	 * enough.. and will pass tests.
 	 */
 
-	id = vfs_file_id_from_sbuf(conn, &smb_fname_parent.st);
+	id = vfs_file_id_from_sbuf(conn, &smb_fname_parent->st);
 	for (fsp = file_find_di_first(conn->sconn, id); fsp;
 			fsp = file_find_di_next(fsp)) {
 		if (fsp->access_mask & DELETE_ACCESS) {
