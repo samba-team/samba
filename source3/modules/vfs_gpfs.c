@@ -1895,29 +1895,32 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 {
 #if defined(HAVE_FSTATAT)
 	int fd = -1;
-	bool b;
-	char *dir_name;
-	const char *rel_name = NULL;
+	bool ok;
+	struct smb_filename *dir_name = NULL;
+	struct smb_filename *rel_name = NULL;
 	struct stat st;
 	int ret = -1;
 
-	b = parent_dirname(talloc_tos(), smb_fname->base_name,
-			   &dir_name, &rel_name);
-	if (!b) {
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname,
+			      &dir_name,
+			      &rel_name);
+	if (!ok) {
 		errno = ENOMEM;
 		return -1;
 	}
 
-	fd = open(dir_name, O_RDONLY, 0);
-	TALLOC_FREE(dir_name);
+	fd = open(dir_name->base_name, O_RDONLY, 0);
 	if (fd == -1) {
+		TALLOC_FREE(dir_name);
 		return -1;
 	}
 
 	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
-	ret = fstatat(fd, rel_name, &st, flag);
+	ret = fstatat(fd, rel_name->base_name, &st, flag);
 	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
+	TALLOC_FREE(dir_name);
 	close(fd);
 
 	if (ret == 0) {
