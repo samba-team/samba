@@ -160,6 +160,43 @@ done:
 	return ret;
 }
 
+static int net_g_lock_dumpall_fn(TDB_DATA key, void *private_data)
+{
+	struct g_lock_ctx *g_ctx = talloc_get_type_abort(
+		private_data, struct g_lock_ctx);
+
+	dump_data_file(key.dptr, key.dsize, true, stdout);
+	g_lock_dump(g_ctx, key, net_g_lock_dump_fn, NULL);
+	printf("\n");
+
+	return 0;
+}
+
+static int net_g_lock_dumpall(
+	struct net_context *c, int argc, const char **argv)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *g_ctx = NULL;
+	int ret = -1;
+
+	if (argc != 0) {
+		d_printf("Usage: net g_lock locks\n");
+		return -1;
+	}
+
+	if (!net_g_lock_init(talloc_tos(), &ev, &msg, &g_ctx)) {
+		goto done;
+	}
+
+	ret = g_lock_locks(g_ctx, net_g_lock_dumpall_fn, g_ctx);
+done:
+	TALLOC_FREE(g_ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret < 0 ? -1 : ret;
+}
+
 static int net_g_lock_locks_fn(TDB_DATA key, void *private_data)
 {
 	dump_data_file(key.dptr, key.dsize, true, stdout);
@@ -213,6 +250,13 @@ int net_g_lock(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_LOCAL,
 			N_("Dump a g_lock locking table"),
 			N_("net g_lock dump <lock name>\n")
+		},
+		{
+			"dumpall",
+			net_g_lock_dumpall,
+			NET_TRANSPORT_LOCAL,
+			N_("Dump all g_lock locking tables"),
+			N_("net g_lock dumpall\n")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
