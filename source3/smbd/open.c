@@ -3330,7 +3330,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* We add FILE_ATTRIBUTE_ARCHIVE to this as this mode is only used if the file is
 		 * created new. */
 		unx_mode = unix_mode(conn, new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
-				     smb_fname, parent_dir);
+				     smb_fname, parent_dir_fname);
 	}
 
 	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
@@ -4093,7 +4093,10 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		posix_open = true;
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 	} else {
-		mode = unix_mode(conn, FILE_ATTRIBUTE_DIRECTORY, smb_dname, parent_dir);
+		mode = unix_mode(conn,
+				 FILE_ATTRIBUTE_DIRECTORY,
+				 smb_dname,
+				 parent_dir_fname);
 	}
 
 	status = check_parent_access(conn,

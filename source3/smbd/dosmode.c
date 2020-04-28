@@ -120,7 +120,7 @@ static int set_link_read_only_flag(const SMB_STRUCT_STAT *const sbuf)
 
 mode_t unix_mode(connection_struct *conn, int dosmode,
 		 const struct smb_filename *smb_fname,
-		 const char *inherit_from_dir)
+		 struct smb_filename *smb_fname_parent)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 	mode_t dir_mode = 0; /* Mode of the inherit_from directory if
@@ -130,29 +130,15 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if ((inherit_from_dir != NULL) && lp_inherit_permissions(SNUM(conn))) {
-		struct smb_filename *smb_fname_parent;
-
-		DEBUG(2, ("unix_mode(%s) inheriting from %s\n",
+	if ((smb_fname_parent != NULL) && lp_inherit_permissions(SNUM(conn))) {
+		DBG_DEBUG("[%s] inheriting from [%s]\n",
 			  smb_fname_str_dbg(smb_fname),
-			  inherit_from_dir));
-
-		smb_fname_parent = synthetic_smb_fname(talloc_tos(),
-					inherit_from_dir,
-					NULL,
-					NULL,
-					smb_fname->flags);
-		if (smb_fname_parent == NULL) {
-			DEBUG(1,("unix_mode(%s) failed, [dir %s]: No memory\n",
-				 smb_fname_str_dbg(smb_fname),
-				 inherit_from_dir));
-			return(0);
-		}
+			  smb_fname_str_dbg(smb_fname_parent));
 
 		if (SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
-			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",
-				 smb_fname_str_dbg(smb_fname),
-				 inherit_from_dir, strerror(errno)));
+			DBG_ERR("stat failed [%s]: %s\n",
+				smb_fname_str_dbg(smb_fname_parent),
+				strerror(errno));
 			TALLOC_FREE(smb_fname_parent);
 			return(0);      /* *** shouldn't happen! *** */
 		}
@@ -1006,7 +992,7 @@ int file_set_dosmode(connection_struct *conn,
 	}
 
 	/* Fall back to UNIX modes. */
-	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir->base_name);
+	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir);
 
 	/* preserve the file type bits */
 	mask |= S_IFMT;
