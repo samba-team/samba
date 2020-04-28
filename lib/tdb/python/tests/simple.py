@@ -113,6 +113,10 @@ class SimpleTdbTests(TestCase):
         self.tdb.store(b"bar", b"bla")
         self.assertEqual(b"bla", self.tdb.get(b"bar"))
 
+    def test_storev(self):
+        self.tdb.storev(b"bar", [b"first", b"second", b"third"])
+        self.assertEqual(b"firstsecondthird", self.tdb.get(b"bar"))
+
     def test_getitem(self):
         self.tdb[b"bar"] = b"foo"
         self.tdb.reopen()
