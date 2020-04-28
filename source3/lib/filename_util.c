@@ -225,6 +225,7 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 	}
 	out->flags = in->flags;
 	out->st = in->st;
+	out->twrp = in->twrp;
 	return out;
 }
 
