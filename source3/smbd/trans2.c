@@ -8143,14 +8143,21 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
  	 */
 
 	if (lp_inherit_permissions(SNUM(conn))) {
-		char *parent;
-		if (!parent_dirname(talloc_tos(), smb_fname->base_name,
-				    &parent, NULL)) {
+		struct smb_filename *parent_fname = NULL;
+		bool ok;
+
+		ok = parent_smb_fname(talloc_tos(),
+				      smb_fname,
+				      &parent_fname,
+				      NULL);
+		if (!ok) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		inherit_access_posix_acl(conn, parent, smb_fname,
+		inherit_access_posix_acl(conn,
+					 parent_fname->base_name,
+					 smb_fname,
 					 unixmode);
-		TALLOC_FREE(parent);
+		TALLOC_FREE(parent_fname);
 	}
 
 	return NT_STATUS_OK;
