@@ -597,31 +597,35 @@ static int non_widelink_open(struct connection_struct *conn,
 	struct smb_filename *smb_fname_rel = NULL;
 	int saved_errno = 0;
 	struct smb_filename *oldwd_fname = NULL;
-	char *parent_dir = NULL;
-	struct smb_filename parent_dir_fname = {0};
-	const char *final_component = NULL;
+	struct smb_filename *parent_dir_fname = NULL;
 	bool ok;
 
 	if (fsp->fsp_flags.is_directory) {
-		parent_dir = talloc_strdup(talloc_tos(), smb_fname->base_name);
-		if (parent_dir == NULL) {
+		parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
+		if (parent_dir_fname == NULL) {
 			saved_errno = errno;
 			goto out;
 		}
 
-		final_component = ".";
+		smb_fname_rel = synthetic_smb_fname(parent_dir_fname,
+						    ".",
+						    smb_fname->stream_name,
+						    &smb_fname->st,
+						    smb_fname->flags);
+		if (smb_fname_rel == NULL) {
+			saved_errno = errno;
+			goto out;
+		}
 	} else {
-		ok = parent_dirname(talloc_tos(),
-				    smb_fname->base_name,
-				    &parent_dir,
-				    &final_component);
+		ok = parent_smb_fname(talloc_tos(),
+				      smb_fname,
+				      &parent_dir_fname,
+				      &smb_fname_rel);
 		if (!ok) {
 			saved_errno = errno;
 			goto out;
 		}
 	}
-
-	parent_dir_fname = (struct smb_filename) { .base_name = parent_dir };
 
 	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
 	if (oldwd_fname == NULL) {
@@ -629,22 +633,12 @@ static int non_widelink_open(struct connection_struct *conn,
 	}
 
 	/* Pin parent directory in place. */
-	if (vfs_ChDir(conn, &parent_dir_fname) == -1) {
-		goto out;
-	}
-
-	smb_fname_rel = synthetic_smb_fname(talloc_tos(),
-				final_component,
-				smb_fname->stream_name,
-				&smb_fname->st,
-				smb_fname->flags);
-	if (smb_fname_rel == NULL) {
-		saved_errno = ENOMEM;
+	if (vfs_ChDir(conn, parent_dir_fname) == -1) {
 		goto out;
 	}
 
 	/* Ensure the relative path is below the share. */
-	status = check_reduced_name(conn, &parent_dir_fname, smb_fname_rel);
+	status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		saved_errno = map_errno_from_nt_status(status);
 		goto out;
@@ -710,8 +704,7 @@ static int non_widelink_open(struct connection_struct *conn,
 
   out:
 
-	TALLOC_FREE(parent_dir);
-	TALLOC_FREE(smb_fname_rel);
+	TALLOC_FREE(parent_dir_fname);
 
 	if (oldwd_fname != NULL) {
 		int ret = vfs_ChDir(conn, oldwd_fname);
