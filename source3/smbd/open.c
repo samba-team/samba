@@ -4813,7 +4813,6 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 static NTSTATUS inherit_new_acl(files_struct *fsp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	char *parent_name = NULL;
 	struct security_descriptor *parent_desc = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct security_descriptor *psd = NULL;
@@ -4831,25 +4830,20 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	const struct dom_sid *SY_U_sid = NULL;
 	const struct dom_sid *SY_G_sid = NULL;
 	size_t size = 0;
-	struct smb_filename *parent_smb_fname = NULL;
+	struct smb_filename *parent_dir = NULL;
+	bool ok;
 
-	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
-						parent_name,
-						NULL,
-						NULL,
-						fsp->fsp_name->flags);
-
-	if (parent_smb_fname == NULL) {
+	ok = parent_smb_fname(frame,
+			      fsp->fsp_name,
+			      &parent_dir,
+			      NULL);
+	if (!ok) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = SMB_VFS_GET_NT_ACL(fsp->conn,
-				    parent_smb_fname,
+				    parent_dir,
 				    (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
 				    frame,
 				    &parent_desc);
@@ -4901,7 +4895,6 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 
 	if (try_builtin_administrators) {
 		struct unixid ids;
-		bool ok;
 
 		ZERO_STRUCT(ids);
 		ok = sids_to_unixids(&global_sid_Builtin_Administrators, 1, &ids);
@@ -4925,7 +4918,6 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 
 	if (try_system) {
 		struct unixid ids;
-		bool ok;
 
 		ZERO_STRUCT(ids);
 		ok = sids_to_unixids(&global_sid_System, 1, &ids);
