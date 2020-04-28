@@ -1450,7 +1450,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	int info;
 	off_t ret=-1;
 	NTSTATUS status = NT_STATUS_OK;
-	char *parent;
+	struct smb_filename *parent = NULL;
+	bool ok;
 
 	if (!CAN_WRITE(conn)) {
 		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -1559,12 +1560,16 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	/* Grrr. We have to do this as open_file_ntcreate adds FILE_ATTRIBUTE_ARCHIVE when it
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
-	if (!parent_dirname(talloc_tos(), smb_fname_dst->base_name, &parent,
-			    NULL)) {
+
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname_dst,
+			      &parent,
+			      NULL);
+	if (!ok) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
+	file_set_dosmode(conn, smb_fname_dst, fattr, parent->base_name, false);
 	TALLOC_FREE(parent);
 
 	if (ret < (off_t)smb_fname_src->st.st_ex_size) {
