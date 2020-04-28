@@ -1569,7 +1569,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	file_set_dosmode(conn, smb_fname_dst, fattr, parent->base_name, false);
+	file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
 	TALLOC_FREE(parent);
 
 	if (ret < (off_t)smb_fname_src->st.st_ex_size) {

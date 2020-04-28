@@ -3978,7 +3978,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (!posix_open) {
 				if (file_set_dosmode(conn, smb_fname,
 					    new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
-					    parent_dir, true) == 0) {
+					    parent_dir_fname, true) == 0) {
 					unx_mode = smb_fname->st.st_ex_mode;
 				}
 			}
@@ -4145,7 +4145,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		if (!posix_open) {
 			file_set_dosmode(conn, smb_dname,
 					 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
-					 parent_dir, true);
+					 parent_dir_fname, true);
 		}
 	}
 
