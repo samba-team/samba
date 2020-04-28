@@ -45,7 +45,7 @@ struct dbwrap_watcher {
 /*
  * Watched records contain a header of:
  *
- * [uint32] num_records | deleted bit
+ * [uint32] num_records
  * 0 [DBWRAP_WATCHER_BUF_LENGTH]              \
  * 1 [DBWRAP_WATCHER_BUF_LENGTH]              |
  * ..                                         |- Array of watchers
