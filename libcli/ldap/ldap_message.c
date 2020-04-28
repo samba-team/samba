@@ -390,7 +390,7 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 			  const struct ldap_control_handler *control_handlers,
 			  DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
-	struct asn1_data *data = asn1_init(mem_ctx);
+	struct asn1_data *data = asn1_init(mem_ctx, ASN1_MAX_TREE_DEPTH);
 	int i, j;
 
 	if (!data) return false;
@@ -1162,6 +1162,7 @@ static bool ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 /* This routine returns LDAP status codes */
 
 _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
+			      const struct ldap_request_limits *limits,
 			      const struct ldap_control_handler *control_handlers,
 			      struct ldap_message *msg)
 {
@@ -1258,7 +1259,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
 		int sizelimit, timelimit;
 		const char **attrs = NULL;
+		size_t request_size = asn1_get_length(data);
 		msg->type = LDAP_TAG_SearchRequest;
+		if (request_size > limits->max_search_size) {
+			goto prot_err;
+		}
 		if (!asn1_start_tag(data, tag)) goto prot_err;
 		if (!asn1_read_OctetString_talloc(msg, data, &r->basedn)) goto prot_err;
 		if (!asn1_read_enumerated(data, (int *)(void *)&(r->scope))) goto prot_err;
