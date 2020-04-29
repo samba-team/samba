@@ -832,7 +832,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (!is_visible_file(conn, smb_dname->base_name, dname, &st,
+		if (!is_visible_file(conn, smb_dname, dname, &st,
 				     false)) {
 			TALLOC_FREE(talloced);
 			continue;
@@ -969,7 +969,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				TALLOC_FREE(talloced);
 				continue;
 			}
-			if (!is_visible_file(conn, smb_dname->base_name, dname,
+			if (!is_visible_file(conn, smb_dname, dname,
 					     &st, false)) {
 				TALLOC_FREE(talloced);
 				continue;
@@ -1004,7 +1004,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				TALLOC_FREE(talloced);
 				continue;
 			}
-			if (!is_visible_file(conn, smb_dname->base_name, dname,
+			if (!is_visible_file(conn, smb_dname, dname,
 					     &st, false)) {
 				TALLOC_FREE(talloced);
 				continue;
