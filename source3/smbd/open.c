@@ -882,25 +882,15 @@ void change_file_owner_to_parent(connection_struct *conn,
 }
 
 static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
-					const char *inherit_from_dir,
+					struct smb_filename *smb_fname_parent,
 					struct smb_filename *smb_dname,
 					SMB_STRUCT_STAT *psbuf)
 {
-	struct smb_filename *smb_fname_parent;
 	struct smb_filename *smb_fname_cwd = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
-
-	smb_fname_parent = synthetic_smb_fname(ctx,
-					inherit_from_dir,
-					NULL,
-					NULL,
-					0);
-	if (smb_fname_parent == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	ret = SMB_VFS_STAT(conn, smb_fname_parent);
 	if (ret == -1) {
@@ -1000,7 +990,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	vfs_ChDir(conn, saved_dir_fname);
  out:
 	TALLOC_FREE(saved_dir_fname);
-	TALLOC_FREE(smb_fname_parent);
 	TALLOC_FREE(smb_fname_cwd);
 	return status;
 }
@@ -4164,7 +4153,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
-		change_dir_owner_to_parent(conn, parent_dir,
+		change_dir_owner_to_parent(conn, parent_dir_fname,
 					   smb_dname,
 					   &smb_dname->st);
 		need_re_stat = true;
