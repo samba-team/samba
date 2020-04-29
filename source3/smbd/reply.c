@@ -3470,7 +3470,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			TALLOC_CTX *frame = talloc_stackframe();
 
 			if (!is_visible_file(conn,
-					smb_fname_dir,
+					dir_hnd,
 					dname,
 					&smb_fname->st,
 					true)) {
@@ -8147,7 +8147,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		if (!is_visible_file(conn,
-				smb_fname_src_dir,
+				dir_hnd,
 				dname,
 				&smb_fname_src->st,
 				false)) {
@@ -8892,7 +8892,7 @@ void reply_copy(struct smb_request *req)
 			}
 
 			if (!is_visible_file(conn,
-					smb_fname_src_dir,
+					dir_hnd,
 					dname,
 					&smb_fname_src->st,
 					false)) {

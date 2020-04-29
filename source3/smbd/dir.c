@@ -408,7 +408,7 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
 	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst, &talloced))
 	       != NULL) {
 		if (is_visible_file(dptr->conn,
-				dptr->smb_dname,
+				dptr->dir_hnd,
 				name,
 				pst,
 				true)) {
@@ -466,7 +466,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	/* First check if it should be visible. */
 	if (!is_visible_file(dptr->conn,
-			dptr->smb_dname,
+			dptr->dir_hnd,
 			dptr->wcard,
 			pst,
 			true)) {
@@ -1209,7 +1209,7 @@ static bool file_is_special(connection_struct *conn,
 ********************************************************************/
 
 bool is_visible_file(connection_struct *conn,
-		struct smb_filename *dir_path,
+		struct smb_Dir *dir_hnd,
 		const char *name,
 		SMB_STRUCT_STAT *pst,
 		bool use_veto)
@@ -1219,6 +1219,7 @@ bool is_visible_file(connection_struct *conn,
 	bool hide_special = lp_hide_special_files(SNUM(conn));
 	int hide_new_files_timeout = lp_hide_new_files_timeout(SNUM(conn));
 	char *entry = NULL;
+	struct smb_filename *dir_path = dir_hnd->fsp->fsp_name;
 	struct smb_filename *smb_fname_base = NULL;
 	bool ret = false;
 
@@ -1761,7 +1762,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		}
 
 		if (!is_visible_file(conn,
-				fsp->fsp_name,
+				dir_hnd,
 				dname,
 				&st,
 				True)) {

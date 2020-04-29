@@ -224,8 +224,9 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		struct timespec *date,
 		bool check_descend,
 		bool ask_sharemode);
+struct smb_Dir;
 bool is_visible_file(connection_struct *conn,
-		struct smb_filename *dir_path,
+		struct smb_Dir *dir_hnd,
 		const char *name,
 		SMB_STRUCT_STAT *pst,
 		bool use_veto);
