@@ -123,22 +123,40 @@ static void g_lock_del_shared(struct g_lock *lck, size_t i)
 static NTSTATUS g_lock_store(
 	struct db_record *rec,
 	struct g_lock *lck,
-	struct server_id *new_shared)
+	struct server_id *new_shared,
+	const TDB_DATA *new_dbufs,
+	size_t num_new_dbufs)
 {
 	uint8_t exclusive[SERVER_ID_BUF_LENGTH];
 	uint8_t seqnum_buf[sizeof(uint64_t)];
 	uint8_t sizebuf[sizeof(uint32_t)];
 	uint8_t new_shared_buf[SERVER_ID_BUF_LENGTH];
 
-	struct TDB_DATA dbufs[] = {
-		{ .dptr = exclusive, .dsize = sizeof(exclusive) },
-		{ .dptr = seqnum_buf, .dsize = sizeof(seqnum_buf) },
-		{ .dptr = sizebuf, .dsize = sizeof(sizebuf) },
-		{ .dptr = lck->shared,
-		  .dsize = lck->num_shared * SERVER_ID_BUF_LENGTH },
-		{ 0 },
-		{ .dptr = lck->data, .dsize = lck->datalen }
+	struct TDB_DATA dbufs[6 + num_new_dbufs];
+
+	dbufs[0] = (TDB_DATA) {
+		.dptr = exclusive, .dsize = sizeof(exclusive),
 	};
+	dbufs[1] = (TDB_DATA) {
+		.dptr = seqnum_buf, .dsize = sizeof(seqnum_buf),
+	};
+	dbufs[2] = (TDB_DATA) {
+		.dptr = sizebuf, .dsize = sizeof(sizebuf),
+	};
+	dbufs[3] = (TDB_DATA) {
+		.dptr = lck->shared,
+		.dsize = lck->num_shared * SERVER_ID_BUF_LENGTH,
+	};
+	dbufs[4] = (TDB_DATA) { 0 };
+	dbufs[5] = (TDB_DATA) {
+		.dptr = lck->data, .dsize = lck->datalen,
+	};
+
+	if (num_new_dbufs != 0) {
+		memcpy(&dbufs[6],
+		       new_dbufs,
+		       num_new_dbufs * sizeof(TDB_DATA));
+	}
 
 	server_id_put(exclusive, lck->exclusive);
 	SBVAL(seqnum_buf, 0, lck->data_seqnum);
@@ -255,7 +273,7 @@ static NTSTATUS g_lock_cleanup_dead(
 	}
 
 	if (modified) {
-		status = g_lock_store(rec, lck, NULL);
+		status = g_lock_store(rec, lck, NULL, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_store() failed: %s\n",
 				  nt_errstr(status));
@@ -474,7 +492,7 @@ noexclusive:
 
 		lck.exclusive = self;
 
-		status = g_lock_store(rec, &lck, NULL);
+		status = g_lock_store(rec, &lck, NULL, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_store() failed: %s\n",
 				  nt_errstr(status));
@@ -503,7 +521,7 @@ noexclusive:
 do_shared:
 
 	if (lck.num_shared == 0) {
-		status = g_lock_store(rec, &lck, &self);
+		status = g_lock_store(rec, &lck, &self, NULL, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_store() failed: %s\n",
 				  nt_errstr(status));
@@ -514,7 +532,7 @@ do_shared:
 
 	g_lock_cleanup_shared(&lck);
 
-	status = g_lock_store(rec, &lck, &self);
+	status = g_lock_store(rec, &lck, &self, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("g_lock_store() failed: %s\n",
 			  nt_errstr(status));
@@ -706,13 +724,13 @@ static void g_lock_lock_simple_fn(
 			goto not_granted;
 		}
 		lck.exclusive = state->me;
-		state->status = g_lock_store(rec, &lck, NULL);
+		state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
 		return;
 	}
 
 	if (state->type == G_LOCK_READ) {
 		g_lock_cleanup_shared(&lck);
-		state->status = g_lock_store(rec, &lck, &state->me);
+		state->status = g_lock_store(rec, &lck, &state->me, NULL, 0);
 		return;
 	}
 
@@ -849,7 +867,7 @@ static void g_lock_unlock_fn(
 		return;
 	}
 
-	state->status = g_lock_store(rec, &lck, NULL);
+	state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
 }
 
 NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
@@ -919,7 +937,7 @@ static void g_lock_write_data_fn(
 	lck.data_seqnum += 1;
 	lck.data = discard_const_p(uint8_t, state->data);
 	lck.datalen = state->datalen;
-	state->status = g_lock_store(rec, &lck, NULL);
+	state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
 }
 
 NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
@@ -1264,7 +1282,7 @@ static void g_lock_wake_watchers_fn(
 
 	lck.data_seqnum += 1;
 
-	status = g_lock_store(rec, &lck, NULL);
+	status = g_lock_store(rec, &lck, NULL, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_store failed: %s\n", nt_errstr(status));
 		return;
