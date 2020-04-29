@@ -196,9 +196,9 @@ done:
 ********************************************************************/
 
 static NTSTATUS check_access(connection_struct *conn,
-			     files_struct *fsp,
-			     const struct smb_filename *smb_fname,
-			     uint32_t access_mask)
+			files_struct *fsp,
+			const struct smb_filename *smb_fname,
+			uint32_t access_mask)
 {
 	NTSTATUS status;
 
