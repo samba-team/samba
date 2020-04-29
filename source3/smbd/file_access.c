@@ -141,7 +141,7 @@ bool can_write_to_file(connection_struct *conn,
 ****************************************************************************/
 
 bool directory_has_default_acl(connection_struct *conn,
-			       struct smb_filename *smb_fname)
+		struct smb_filename *smb_fname)
 {
 	struct security_descriptor *secdesc = NULL;
 	unsigned int i;
