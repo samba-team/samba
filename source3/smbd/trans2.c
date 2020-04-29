@@ -196,9 +196,11 @@ done:
 ********************************************************************/
 
 static NTSTATUS check_access(connection_struct *conn,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			uint32_t access_mask)
 {
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	return smbd_check_access_rights(conn,
 			smb_fname,
 			false,
@@ -817,6 +819,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		status = check_access_fsp(fsp, FILE_WRITE_EA);
 	} else {
 		status = check_access(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				FILE_WRITE_EA);
 	}
@@ -7836,6 +7839,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	} else {
 		status = check_access(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				FILE_WRITE_ATTRIBUTES);
 	}
@@ -7909,6 +7913,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	} else {
 		status = check_access(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				FILE_WRITE_ATTRIBUTES);
 	}
