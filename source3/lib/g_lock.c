@@ -892,20 +892,20 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
 	return NT_STATUS_OK;
 }
 
-struct g_lock_write_data_state {
+struct g_lock_writev_data_state {
 	TDB_DATA key;
 	struct server_id self;
-	const uint8_t *data;
-	size_t datalen;
+	const TDB_DATA *dbufs;
+	size_t num_dbufs;
 	NTSTATUS status;
 };
 
-static void g_lock_write_data_fn(
+static void g_lock_writev_data_fn(
 	struct db_record *rec,
 	TDB_DATA value,
 	void *private_data)
 {
-	struct g_lock_write_data_state *state = private_data;
+	struct g_lock_writev_data_state *state = private_data;
 	struct g_lock lck;
 	bool exclusive;
 	bool ok;
@@ -935,34 +935,50 @@ static void g_lock_write_data_fn(
 	}
 
 	lck.data_seqnum += 1;
-	lck.data = discard_const_p(uint8_t, state->data);
-	lck.datalen = state->datalen;
-	state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
+	lck.data = NULL;
+	lck.datalen = 0;
+	state->status = g_lock_store(
+		rec, &lck, NULL, state->dbufs, state->num_dbufs);
 }
 
-NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
-			   const uint8_t *buf, size_t buflen)
+NTSTATUS g_lock_writev_data(
+	struct g_lock_ctx *ctx,
+	TDB_DATA key,
+	const TDB_DATA *dbufs,
+	size_t num_dbufs)
 {
-	struct g_lock_write_data_state state = {
-		.key = key, .self = messaging_server_id(ctx->msg),
-		.data = buf, .datalen = buflen
+	struct g_lock_writev_data_state state = {
+		.key = key,
+		.self = messaging_server_id(ctx->msg),
+		.dbufs = dbufs,
+		.num_dbufs = num_dbufs,
 	};
 	NTSTATUS status;
 
-	status = dbwrap_do_locked(ctx->db, key,
-				  g_lock_write_data_fn, &state);
+	status = dbwrap_do_locked(
+		ctx->db, key, g_lock_writev_data_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
 			    nt_errstr(status));
 		return status;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_WARNING("g_lock_write_data_fn failed: %s\n",
+		DBG_WARNING("g_lock_writev_data_fn failed: %s\n",
 			    nt_errstr(state.status));
 		return state.status;
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
+			   const uint8_t *buf, size_t buflen)
+{
+	TDB_DATA dbuf = {
+		.dptr = discard_const_p(uint8_t, buf),
+		.dsize = buflen,
+	};
+	return g_lock_writev_data(ctx, key, &dbuf, 1);
 }
 
 struct g_lock_locks_state {

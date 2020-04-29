@@ -49,6 +49,11 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		     enum g_lock_type lock_type, struct timeval timeout);
 NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key);
 
+NTSTATUS g_lock_writev_data(
+	struct g_lock_ctx *ctx,
+	TDB_DATA key,
+	const TDB_DATA *dbufs,
+	size_t num_dbufs);
 NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 			   const uint8_t *buf, size_t buflen);
 
