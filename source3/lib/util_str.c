@@ -64,16 +64,6 @@ bool strnorm(char *s, int case_default)
 }
 
 /**
- *  Skip past some strings in a buffer - old version - no checks.
- *  **/
-
-char *push_skip_string(char *buf)
-{
-	buf += strlen(buf) + 1;
-	return(buf);
-}
-
-/**
  Skip past a string in a buffer. Buffer may not be
  null terminated. end_ptr points to the first byte after
  then end of the buffer.

@@ -117,6 +117,16 @@
 
 #define GETRES(p,endp) ((p && p+2 < endp) ? SVAL(p,0) : -1)
 
+/**
+ *  Skip past some strings in a buffer - old version - no checks.
+ *  **/
+
+static char *push_skip_string(char *buf)
+{
+	buf += strlen(buf) + 1;
+	return(buf);
+}
+
 /* put string s at p with max len n and increment p past string */
 #define PUTSTRING(p,s,n) \
 	do {\
