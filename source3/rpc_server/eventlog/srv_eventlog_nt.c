@@ -81,6 +81,67 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( struct pipes_struct * p,
 }
 
 /********************************************************************
+ Pull the NT ACL from a file on disk or the OpenEventlog() access
+ check.  Caller is responsible for freeing the returned security
+ descriptor via TALLOC_FREE().  This is designed for dealing with
+ user space access checks in smbd outside of the VFS.  For example,
+ checking access rights in OpenEventlog() or from python.
+
+********************************************************************/
+
+static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
+			    struct auth_session_info *session_info,
+			    const char *fname,
+				uint32_t security_info_wanted,
+				struct security_descriptor **sd)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct conn_struct_tos *c = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
+						fname,
+						NULL,
+						NULL,
+						0);
+
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!posix_locking_init(false)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = create_conn_struct_tos(global_messaging_context(),
+					-1,
+					"/",
+					session_info,
+					&c);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("create_conn_struct returned %s.\n",
+			nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(c->conn,
+				smb_fname,
+				security_info_wanted,
+				ctx,
+				sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL returned %s.\n",
+			  nt_errstr(status)));
+	}
+
+	TALLOC_FREE(frame);
+
+	return status;
+}
+
+/********************************************************************
 ********************************************************************/
 
 static bool elog_check_access(EVENTLOG_INFO *info,
