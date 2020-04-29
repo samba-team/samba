@@ -8154,7 +8154,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 		inherit_access_posix_acl(conn,
-					 parent_fname->base_name,
+					 parent_fname,
 					 smb_fname,
 					 unixmode);
 		TALLOC_FREE(parent_fname);

@@ -4189,24 +4189,14 @@ static bool directory_has_default_posix_acl(connection_struct *conn,
 ****************************************************************************/
 
 int inherit_access_posix_acl(connection_struct *conn,
-			const char *inherit_from_dir,
+			struct smb_filename *inherit_from_dir,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
-	struct smb_filename *inherit_from_fname =
-			synthetic_smb_fname(talloc_tos(),
-				smb_fname->base_name,
-				NULL,
-				NULL,
-				smb_fname->flags);
-	if (inherit_from_fname == NULL) {
-		return-1;
-	}
-
-	if (directory_has_default_posix_acl(conn, inherit_from_fname))
+	if (directory_has_default_posix_acl(conn, inherit_from_dir))
 		return 0;
 
-	return copy_access_posix_acl(conn, inherit_from_fname, smb_fname, mode);
+	return copy_access_posix_acl(conn, inherit_from_dir, smb_fname, mode);
 }
 
 /****************************************************************************

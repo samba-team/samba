@@ -826,7 +826,7 @@ int get_acl_group_bits( connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			mode_t *mode);
 int inherit_access_posix_acl(connection_struct *conn,
-			const char *inherit_from_dir,
+			struct smb_filename *inherit_from_dir,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
 NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
