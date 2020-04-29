@@ -709,7 +709,7 @@ NTSTATUS fd_open(struct connection_struct *conn, files_struct *fsp,
 		 int flags, mode_t mode);
 NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,
-				 const char *inherit_from_dir,
+				 struct smb_filename *inherit_from_dir,
 				 files_struct *fsp);
 bool is_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,

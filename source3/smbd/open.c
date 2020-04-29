@@ -838,20 +838,10 @@ NTSTATUS fd_close(files_struct *fsp)
 ****************************************************************************/
 
 void change_file_owner_to_parent(connection_struct *conn,
-					const char *inherit_from_dir,
-					files_struct *fsp)
+				 struct smb_filename *smb_fname_parent,
+				 files_struct *fsp)
 {
-	struct smb_filename *smb_fname_parent;
 	int ret;
-
-	smb_fname_parent = synthetic_smb_fname(talloc_tos(),
-					inherit_from_dir,
-					NULL,
-					NULL,
-					0);
-	if (smb_fname_parent == NULL) {
-		return;
-	}
 
 	ret = SMB_VFS_STAT(conn, smb_fname_parent);
 	if (ret == -1) {
@@ -889,8 +879,6 @@ void change_file_owner_to_parent(connection_struct *conn,
 		/* Ensure the uid entry is updated. */
 		fsp->fsp_name->st.st_ex_uid = smb_fname_parent->st.st_ex_uid;
 	}
-
-	TALLOC_FREE(smb_fname_parent);
 }
 
 static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
@@ -1347,7 +1335,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			/* Change the owner if required. */
 			if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
 				change_file_owner_to_parent(conn,
-							    parent_dir->base_name,
+							    parent_dir,
 							    fsp);
 				need_re_stat = true;
 			}
