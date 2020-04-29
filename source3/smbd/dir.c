@@ -1208,8 +1208,11 @@ static bool file_is_special(connection_struct *conn,
  NOTE: A successful return is no guarantee of the file's existence.
 ********************************************************************/
 
-bool is_visible_file(connection_struct *conn, const char *dir_path,
-		     const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
+bool is_visible_file(connection_struct *conn,
+		     const char *dir_path,
+		     const char *name,
+		     SMB_STRUCT_STAT *pst,
+		     bool use_veto)
 {
 	bool hide_unreadable = lp_hide_unreadable(SNUM(conn));
 	bool hide_unwriteable = lp_hide_unwriteable_files(SNUM(conn));
