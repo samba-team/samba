@@ -4043,7 +4043,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		loadparm_s3_global_substitution();
 	mode_t mode;
 	struct smb_filename *parent_dir_fname = NULL;
-	char *parent_dir = NULL;
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
@@ -4064,7 +4063,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	parent_dir = parent_dir_fname->base_name;
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		posix_open = true;
@@ -4082,7 +4080,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("mkdir_internal: check_parent_access "
 			"on directory %s for path %s returned %s\n",
-			parent_dir,
+			smb_fname_str_dbg(parent_dir_fname),
 			smb_dname->base_name,
 			nt_errstr(status) ));
 		return status;
