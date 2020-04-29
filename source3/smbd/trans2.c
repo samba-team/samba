@@ -192,24 +192,17 @@ done:
 #endif
 
 /********************************************************************
- The canonical "check access" based on object handle or path function.
+ The canonical "check access" based on path.
 ********************************************************************/
 
 static NTSTATUS check_access(connection_struct *conn,
-			files_struct *fsp,
 			const struct smb_filename *smb_fname,
 			uint32_t access_mask)
 {
-	NTSTATUS status;
-
-	if (fsp) {
-		status = check_access_fsp(fsp, access_mask);
-	} else {
-		status = smbd_check_access_rights(conn, smb_fname,
-						  false, access_mask);
-	}
-
-	return status;
+	return smbd_check_access_rights(conn,
+			smb_fname,
+			false,
+			access_mask);
 }
 
 /********************************************************************
@@ -823,7 +816,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 	if (fsp != NULL) {
 		status = check_access_fsp(fsp, FILE_WRITE_EA);
 	} else {
-		status = check_access(conn, fsp, smb_fname, FILE_WRITE_EA);
+		status = check_access(conn, smb_fname, FILE_WRITE_EA);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -7840,7 +7833,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	if (fsp != NULL) {
 		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	} else {
-		status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+		status = check_access(conn, smb_fname, FILE_WRITE_ATTRIBUTES);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -7911,7 +7904,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	if (fsp != NULL) {
 		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	} else {
-		status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+		status = check_access(conn, smb_fname, FILE_WRITE_ATTRIBUTES);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
