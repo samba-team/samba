@@ -366,6 +366,7 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 	if (lp_inherit_acls(SNUM(handle->conn))) {
 		ok = parent_smb_fname(talloc_tos(), smb_fname, &parent, NULL);
 		if (ok && directory_has_default_acl(handle->conn,
+				dirfsp,
 				parent))
 		{
 			mode = 0777;
