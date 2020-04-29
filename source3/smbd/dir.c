@@ -1209,10 +1209,10 @@ static bool file_is_special(connection_struct *conn,
 ********************************************************************/
 
 bool is_visible_file(connection_struct *conn,
-		     struct smb_filename *dir_path,
-		     const char *name,
-		     SMB_STRUCT_STAT *pst,
-		     bool use_veto)
+		struct smb_filename *dir_path,
+		const char *name,
+		SMB_STRUCT_STAT *pst,
+		bool use_veto)
 {
 	bool hide_unreadable = lp_hide_unreadable(SNUM(conn));
 	bool hide_unwriteable = lp_hide_unwriteable_files(SNUM(conn));
@@ -1760,7 +1760,11 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			}
 		}
 
-		if (!is_visible_file(conn, fsp->fsp_name, dname, &st, True)) {
+		if (!is_visible_file(conn,
+				fsp->fsp_name,
+				dname,
+				&st,
+				True)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
