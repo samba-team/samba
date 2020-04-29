@@ -820,7 +820,11 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return status;
 	}
 
-	status = check_access(conn, fsp, smb_fname, FILE_WRITE_EA);
+	if (fsp != NULL) {
+		status = check_access_fsp(fsp, FILE_WRITE_EA);
+	} else {
+		status = check_access(conn, fsp, smb_fname, FILE_WRITE_EA);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -7833,7 +7837,11 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	if (fsp != NULL) {
+		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
+	} else {
+		status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -7900,7 +7908,11 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
-	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	if (fsp != NULL) {
+		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
+	} else {
+		status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
