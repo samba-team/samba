@@ -1119,7 +1119,7 @@ static NTSTATUS fd_open_atomic(struct connection_struct *conn,
 static NTSTATUS open_file(files_struct *fsp,
 			  connection_struct *conn,
 			  struct smb_request *req,
-			  const char *parent_dir,
+			  struct smb_filename *parent_dir,
 			  int flags,
 			  mode_t unx_mode,
 			  uint32_t access_mask, /* client requested access mask. */
@@ -1337,7 +1337,8 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Inherit the ACL if required */
 			if (lp_inherit_permissions(SNUM(conn))) {
-				inherit_access_posix_acl(conn, parent_dir,
+				inherit_access_posix_acl(conn,
+							 parent_dir->base_name,
 							 smb_fname,
 							 unx_mode);
 				need_re_stat = true;
@@ -1345,7 +1346,8 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Change the owner if required. */
 			if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
-				change_file_owner_to_parent(conn, parent_dir,
+				change_file_owner_to_parent(conn,
+							    parent_dir->base_name,
 							    fsp);
 				need_re_stat = true;
 			}
@@ -3277,7 +3279,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
 	struct smb_filename *parent_dir_fname = NULL;
-	char *parent_dir;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	struct file_id id;
@@ -3314,7 +3315,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	parent_dir = parent_dir_fname->base_name;
 
 	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		posix_open = True;
@@ -3625,7 +3625,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	fsp_open = open_file(fsp, conn, req, parent_dir,
+	fsp_open = open_file(fsp, conn, req, parent_dir_fname,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask, &new_file_created);
 
