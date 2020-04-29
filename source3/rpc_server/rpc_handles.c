@@ -281,7 +281,7 @@ static struct dcesrv_handle_old *create_rpc_handle_internal(
 		pol_hnd_high++;
 	}
 
-	SIVAL(&rpc_hnd->wire_handle.handle_type, 0 , handle_type);
+	rpc_hnd->wire_handle.handle_type = handle_type;
 
 	/* second bit is incrementing */
 	SIVAL(&rpc_hnd->wire_handle.uuid.time_low, 0 , pol_hnd_low);
