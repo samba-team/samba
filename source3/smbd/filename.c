@@ -164,19 +164,20 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 				char **pp_dirpath,
 				char **pp_start)
 {
-	struct smb_filename parent_fname = {0};
+	char *parent_name = NULL;
+	struct smb_filename *parent_fname = NULL;
 	const char *last_component = NULL;
 	NTSTATUS status;
 	int ret;
 
 	if (!parent_dirname(ctx, smb_fname->base_name,
-				&parent_fname.base_name,
+				&parent_name,
 				&last_component)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!posix_pathnames) {
-		if (ms_has_wild(parent_fname.base_name)) {
+		if (ms_has_wild(parent_name)) {
 			goto no_optimization_out;
 		}
 	}
@@ -190,10 +191,19 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 		goto no_optimization_out;
 	}
 
+	parent_fname = synthetic_smb_fname(ctx,
+					   parent_name,
+					   NULL,
+					   NULL,
+					   smb_fname->flags);
+	if (parent_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (posix_pathnames) {
-		ret = SMB_VFS_LSTAT(conn, &parent_fname);
+		ret = SMB_VFS_LSTAT(conn, parent_fname);
 	} else {
-		ret = SMB_VFS_STAT(conn, &parent_fname);
+		ret = SMB_VFS_STAT(conn, parent_fname);
 	}
 
 	/* If the parent stat failed, just continue
@@ -203,7 +213,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 		goto no_optimization_out;
 	}
 
-	status = check_for_dot_component(&parent_fname);
+	status = check_for_dot_component(parent_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -220,7 +230,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 
 	/* Update dirpath. */
 	TALLOC_FREE(*pp_dirpath);
-	*pp_dirpath = talloc_strdup(ctx, parent_fname.base_name);
+	*pp_dirpath = talloc_strdup(ctx, parent_fname->base_name);
 	if (!*pp_dirpath) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -242,7 +252,8 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	 * pointing at smb_fname->base_name.
 	 */
 
-	TALLOC_FREE(parent_fname.base_name);
+	TALLOC_FREE(parent_name);
+	TALLOC_FREE(parent_fname);
 
 	*pp_dirpath = talloc_strdup(ctx, ".");
 	if (*pp_dirpath == NULL) {
