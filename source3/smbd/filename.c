@@ -369,6 +369,7 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname)
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
 	struct tm tm;
+	NTSTATUS status;
 
 	if (startp == NULL) {
 		/* No @ */
@@ -392,13 +393,7 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname)
 		return NT_STATUS_OK;
 	}
 
-	if ( endp[0] == '\0') {
-		return rearrange_snapshot_path(smb_fname,
-					startp,
-					endp);
-	}
-
-	if (endp[0] != '/') {
+	if (endp[0] != '\0' && endp[0] != '/') {
 		/*
 		 * It is not a complete path component, i.e. the path
 		 * component continues after the gmt-token.
@@ -406,9 +401,12 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname)
 		return NT_STATUS_OK;
 	}
 
-	return rearrange_snapshot_path(smb_fname,
-				startp,
-				endp);
+	status = rearrange_snapshot_path(smb_fname, startp, endp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
