@@ -369,36 +369,14 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 {
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
+	char *tmp = NULL;
 	struct tm tm;
 	time_t t;
+	NTTIME nt;
 	NTSTATUS status;
 
 	if (twrp != 0) {
-		struct tm *ptm = NULL;
-		char *twrp_name = NULL;
-
-		t = nt_time_to_unix(twrp);
-		ptm = gmtime_r(&t, &tm);
-
-		twrp_name = talloc_asprintf(
-			smb_fname,
-			"@GMT-%04u.%02u.%02u-%02u.%02u.%02u/%s",
-			ptm->tm_year + 1900,
-			ptm->tm_mon + 1,
-			ptm->tm_mday,
-			ptm->tm_hour,
-			ptm->tm_min,
-			ptm->tm_sec,
-			smb_fname->base_name);
-		if (twrp_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		TALLOC_FREE(smb_fname->base_name);
-		smb_fname->base_name = twrp_name;
-
 		smb_fname->twrp = twrp;
-		return NT_STATUS_OK;
 	}
 
 	if (startp == NULL) {
@@ -436,9 +414,25 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		return status;
 	}
 
-	tm.tm_isdst = -1;
-	t = timegm(&tm);
-	unix_to_nt_time(&smb_fname->twrp, t);
+	startp = smb_fname->base_name + GMT_NAME_LEN;
+	if (startp[0] == '/') {
+		startp++;
+	}
+
+	tmp = talloc_strdup(smb_fname, startp);
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	TALLOC_FREE(smb_fname->base_name);
+	smb_fname->base_name = tmp;
+
+	if (smb_fname->twrp == 0) {
+		tm.tm_isdst = -1;
+		t = timegm(&tm);
+		unix_to_nt_time(&nt, t);
+		smb_fname->twrp = nt;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -931,6 +925,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	if(!state->component_was_mangled && !state->name_has_wildcard) {
 		stat_cache_add(state->orig_path,
 			       state->dirpath,
+			       state->smb_fname->twrp,
 			       state->conn->case_sensitive);
 	}
 
@@ -1132,6 +1127,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 					  &state->smb_fname->base_name,
 					  &state->dirpath,
 					  &state->name,
+					  state->smb_fname->twrp,
 					  &state->smb_fname->st);
 		if (found) {
 			goto done;
@@ -1188,6 +1184,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 			/* Add the path (not including the stream) to the cache. */
 			stat_cache_add(state->orig_path,
 				       state->smb_fname->base_name,
+				       state->smb_fname->twrp,
 				       state->conn->case_sensitive);
 			DBG_DEBUG("Conversion of base_name finished "
 				  "[%s] -> [%s]\n",
@@ -1350,6 +1347,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	if(!state->component_was_mangled && !state->name_has_wildcard) {
 		stat_cache_add(state->orig_path,
 			       state->smb_fname->base_name,
+			       state->smb_fname->twrp,
 			       state->conn->case_sensitive);
 	}
 

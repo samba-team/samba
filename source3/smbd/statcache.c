@@ -28,6 +28,9 @@
 #include "smbprofile.h"
 #include <tdb.h>
 
+#define STAT_CACHE_TWRP_TOKEN "%016" PRIx64 "@%s"
+#define STAT_CACHE_TWRP_TOKEN_LEN 17
+
 /****************************************************************************
  Stat cache code used in unix_convert.
 *****************************************************************************/
@@ -46,6 +49,7 @@
 
 void stat_cache_add( const char *full_orig_name,
 		const char *translated_path_in,
+		NTTIME twrp,
 		bool case_sensitive)
 {
 	size_t translated_path_length;
@@ -67,7 +71,10 @@ void stat_cache_add( const char *full_orig_name,
 		return;
 	}
 
-	translated_path = talloc_strdup(ctx, translated_path_in);
+	translated_path = talloc_asprintf(ctx,
+					  STAT_CACHE_TWRP_TOKEN,
+					  twrp,
+					  translated_path_in);
 	if (translated_path == NULL) {
 		return;
 	}
@@ -95,9 +102,23 @@ void stat_cache_add( const char *full_orig_name,
 	}
 
 	if(case_sensitive) {
-		original_path = talloc_strdup(ctx,full_orig_name);
+		original_path = talloc_asprintf(ctx,
+						STAT_CACHE_TWRP_TOKEN,
+						twrp,
+						full_orig_name);
 	} else {
-		original_path = talloc_strdup_upper(ctx,full_orig_name);
+		char *upper = NULL;
+
+		upper = talloc_strdup_upper(ctx, full_orig_name);
+		if (upper == NULL) {
+			TALLOC_FREE(translated_path);
+			return;
+		}
+		original_path = talloc_asprintf(ctx,
+						STAT_CACHE_TWRP_TOKEN,
+						twrp,
+						upper);
+		TALLOC_FREE(upper);
 	}
 
 	if (!original_path) {
@@ -179,6 +200,7 @@ bool stat_cache_lookup(connection_struct *conn,
 			char **pp_name,
 			char **pp_dirpath,
 			char **pp_start,
+			NTTIME twrp,
 			SMB_STRUCT_STAT *pst)
 {
 	char *chk_name;
@@ -213,14 +235,27 @@ bool stat_cache_lookup(connection_struct *conn,
 	}
 
 	if (conn->case_sensitive) {
-		chk_name = talloc_strdup(ctx,name);
+		chk_name = talloc_asprintf(ctx,
+					   STAT_CACHE_TWRP_TOKEN,
+					   twrp,
+					   name);
 		if (!chk_name) {
 			DEBUG(0, ("stat_cache_lookup: strdup failed!\n"));
 			return False;
 		}
 
 	} else {
-		chk_name = talloc_strdup_upper(ctx,name);
+		char *upper = NULL;
+
+		upper = talloc_strdup_upper(ctx,name);
+		if (upper == NULL) {
+			DBG_ERR("talloc_strdup_upper failed!\n");
+			return False;
+		}
+		chk_name = talloc_asprintf(ctx,
+					   STAT_CACHE_TWRP_TOKEN,
+					   twrp,
+					   upper);
 		if (!chk_name) {
 			DEBUG(0, ("stat_cache_lookup: talloc_strdup_upper failed!\n"));
 			return False;
@@ -278,18 +313,23 @@ bool stat_cache_lookup(connection_struct *conn,
 		}
 	}
 
-	translated_path = talloc_strdup(ctx,(char *)data_val.data);
+	SMB_ASSERT(data_val.length >= STAT_CACHE_TWRP_TOKEN_LEN);
+
+	translated_path = talloc_strdup(
+		ctx,(char *)data_val.data + STAT_CACHE_TWRP_TOKEN_LEN);
 	if (!translated_path) {
 		smb_panic("talloc failed");
 	}
-	translated_path_length = data_val.length - 1;
+	translated_path_length = data_val.length - 1 - STAT_CACHE_TWRP_TOKEN_LEN;
 
 	DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] "
 		  "-> [%s]\n", chk_name, translated_path ));
 	DO_PROFILE_INC(statcache_hits);
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = translated_path;
+	smb_fname = (struct smb_filename) {
+		.base_name = translated_path,
+		.twrp = twrp,
+	};
 
 	if (posix_paths) {
 		ret = SMB_VFS_LSTAT(conn, &smb_fname);
@@ -376,9 +416,19 @@ void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 
 void stat_cache_delete(const char *name)
 {
-	char *lname = talloc_strdup_upper(talloc_tos(), name);
+	char *upper = talloc_strdup_upper(talloc_tos(), name);
+	char *lname = NULL;
 
-	if (!lname) {
+	if (upper == NULL) {
+		return;
+	}
+
+	lname = talloc_asprintf(talloc_tos(),
+				STAT_CACHE_TWRP_TOKEN,
+				(uintmax_t)0,
+				upper);
+	TALLOC_FREE(upper);
+	if (lname == NULL) {
 		return;
 	}
 	DEBUG(10,("stat_cache_delete: deleting name [%s] -> %s\n",

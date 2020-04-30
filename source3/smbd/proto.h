@@ -1169,12 +1169,14 @@ ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags);
 
 void stat_cache_add( const char *full_orig_name,
 		const char *translated_path,
+		NTTIME twrp,
 		bool case_sensitive);
 bool stat_cache_lookup(connection_struct *conn,
 			bool posix_paths,
 			char **pp_name,
 			char **pp_dirpath,
 			char **pp_start,
+			NTTIME twrp,
 			SMB_STRUCT_STAT *pst);
 void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);

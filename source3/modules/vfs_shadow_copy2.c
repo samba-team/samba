@@ -592,16 +592,8 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					char **psnappath,
 					bool *_already_converted)
 {
-	const char *orig_name = smb_fname->base_name;
-	struct tm tm;
-	time_t timestamp = 0;
-	const char *p;
-	char *q;
 	char *stripped = NULL;
-	size_t rest_len, dst_len;
 	struct shadow_copy2_private *priv;
-	ptrdiff_t len_before_gmt;
-	const char *name = orig_name;
 	char *abs_path = NULL;
 	bool ret = true;
 	bool already_converted = false;
@@ -610,20 +602,19 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return false);
 
-	DEBUG(10, (__location__ ": enter path '%s'\n", name));
+	DBG_DEBUG("Enter path '%s'\n", smb_fname_str_dbg(smb_fname));
 
 	if (_already_converted != NULL) {
 		*_already_converted = false;
 	}
 
-	abs_path = make_path_absolute(mem_ctx, priv, name);
+	abs_path = make_path_absolute(mem_ctx, priv, smb_fname->base_name);
 	if (abs_path == NULL) {
 		ret = false;
 		goto out;
 	}
-	name = abs_path;
 
-	DEBUG(10, (__location__ ": abs path '%s'\n", name));
+	DBG_DEBUG("abs path '%s'\n", abs_path);
 
 	err = check_for_converted_path(mem_ctx,
 					handle,
@@ -652,106 +643,19 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 		*ptimestamp = nt_time_to_unix(smb_fname->twrp);
 	}
 
-	/*
-	 * From here we're only looking to strip an
-	 * SMB-layer @GMT- token.
-	 */
-
-	p = strstr_m(name, "@GMT-");
-	if (p == NULL) {
-		DEBUG(11, ("@GMT not found\n"));
-		goto out;
-	}
-	if ((p > name) && (p[-1] != '/')) {
-		/* the GMT-token does not start a path-component */
-		DEBUG(10, ("not at start, p=%p, name=%p, p[-1]=%d\n",
-			   p, name, (int)p[-1]));
-		goto out;
-	}
-
-	len_before_gmt = p - name;
-
-	q = strptime(p, GMT_FORMAT, &tm);
-	if (q == NULL) {
-		DEBUG(10, ("strptime failed\n"));
-		goto out;
-	}
-	tm.tm_isdst = -1;
-	timestamp = timegm(&tm);
-	if (timestamp == (time_t)-1) {
-		DEBUG(10, ("timestamp==-1\n"));
-		goto out;
-	}
-	if (q[0] == '\0') {
-		/*
-		 * The name consists of only the GMT token or the GMT
-		 * token is at the end of the path. XP seems to send
-		 * @GMT- at the end under certain circumstances even
-		 * with a path prefix.
-		 */
-		if (pstripped != NULL) {
-			if (len_before_gmt > 1) {
-				/*
-				 * There is a path (and not only a slash)
-				 * before the @GMT-. Remove the trailing
-				 * slash character.
-				 */
-				len_before_gmt -= 1;
-			}
-			stripped = talloc_strndup(mem_ctx, name,
-					len_before_gmt);
-			if (stripped == NULL) {
-				ret = false;
-				goto out;
-			}
-			if (orig_name[0] != '/') {
-				if (make_relative_path(priv->shadow_cwd,
-						stripped) == false) {
-					DEBUG(10, (__location__ ": path '%s' "
-						"doesn't start with cwd '%s'\n",
-						stripped, priv->shadow_cwd));
-						ret = false;
-					errno = ENOENT;
-					goto out;
-				}
-			}
-			*pstripped = stripped;
-		}
-		*ptimestamp = timestamp;
-		goto out;
-	}
-	if (q[0] != '/') {
-		/*
-		 * It is not a complete path component, i.e. the path
-		 * component continues after the gmt-token.
-		 */
-		DEBUG(10, ("q[0] = %d\n", (int)q[0]));
-		goto out;
-	}
-	q += 1;
-
-	rest_len = strlen(q);
-	dst_len = len_before_gmt + rest_len;
-
 	if (pstripped != NULL) {
-		stripped = talloc_array(mem_ctx, char, dst_len+1);
+		stripped = talloc_strdup(mem_ctx, abs_path);
 		if (stripped == NULL) {
 			ret = false;
 			goto out;
 		}
-		if (p > name) {
-			memcpy(stripped, name, len_before_gmt);
-		}
-		if (rest_len > 0) {
-			memcpy(stripped + len_before_gmt, q, rest_len);
-		}
-		stripped[dst_len] = '\0';
-		if (orig_name[0] != '/') {
-			if (make_relative_path(priv->shadow_cwd,
-					stripped) == false) {
-				DEBUG(10, (__location__ ": path '%s' "
+
+		if (smb_fname->base_name[0] != '/') {
+			ret = make_relative_path(priv->shadow_cwd, stripped);
+			if (!ret) {
+				DBG_DEBUG("Path '%s' "
 					"doesn't start with cwd '%s'\n",
-					stripped, priv->shadow_cwd));
+					stripped, priv->shadow_cwd);
 				ret = false;
 				errno = ENOENT;
 				goto out;
