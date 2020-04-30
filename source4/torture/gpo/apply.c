@@ -61,7 +61,7 @@ static int exec_wait(struct torture_context *tctx, const char **gpo_update_cmd)
 	if (!tevent_req_poll_ntstatus(req, tctx->ev, &status)) {
 		return -1;
 	}
-	if (!samba_runcmd_recv(req, &ret) == 0) {
+	if (samba_runcmd_recv(req, &ret) != 0) {
 		return -1;
 	}
 	return ret;
