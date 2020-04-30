@@ -1069,6 +1069,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 ********************************************************************/
 
 static bool user_can_read_file(connection_struct *conn,
+				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
@@ -1079,6 +1080,8 @@ static bool user_can_read_file(connection_struct *conn,
 				FILE_READ_EA|
 				FILE_READ_ATTRIBUTES|
 				SEC_STD_READ_CONTROL;
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	/*
 	 * Never hide files from the root user.
@@ -1276,6 +1279,7 @@ bool is_visible_file(connection_struct *conn,
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable &&
 		    !user_can_read_file(conn,
+				conn->cwd_fsp,
 				smb_fname_base))
 		{
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n",
