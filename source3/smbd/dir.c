@@ -1153,8 +1153,11 @@ static bool user_can_read_file(connection_struct *conn,
 ********************************************************************/
 
 static bool user_can_write_file(connection_struct *conn,
+				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname)
 {
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
+
 	/*
 	 * Never hide files from the root user.
 	 * We use (uid_t)0 here not sec_initial_uid()
@@ -1281,6 +1284,7 @@ bool is_visible_file(connection_struct *conn,
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable &&
 		    !user_can_write_file(conn,
+				conn->cwd_fsp,
 				smb_fname_base))
 		{
 			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
