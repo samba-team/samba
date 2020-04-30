@@ -117,7 +117,12 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	 * check the file DELETE permission separately.
 	 */
 
+	/*
+	 * NB. When dirfsp != conn->cwd_fsp, we must
+	 * change smb_fname_parent to be "." for the name here.
+	 */
 	ret = NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				dirfsp,
 				smb_fname_parent,
 				false,
 				FILE_DELETE_CHILD));
@@ -136,6 +141,7 @@ bool can_write_to_file(connection_struct *conn,
 {
 	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				dirfsp,
 				smb_fname,
 				false,
 				FILE_WRITE_DATA));

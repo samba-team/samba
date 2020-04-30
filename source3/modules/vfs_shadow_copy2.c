@@ -1778,6 +1778,7 @@ static bool check_access_snapdir(struct vfs_handle_struct *handle,
 	}
 
 	status = smbd_check_access_rights(handle->conn,
+					handle->conn->cwd_fsp,
 					&smb_fname,
 					false,
 					SEC_DIR_LIST);

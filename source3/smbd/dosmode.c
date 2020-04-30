@@ -536,6 +536,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		}
 
 		status = smbd_check_access_rights(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					FILE_WRITE_ATTRIBUTES);

@@ -95,6 +95,7 @@ static bool parent_override_delete(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
+				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				bool use_privs,
 				uint32_t access_mask)
@@ -105,6 +106,8 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	uint32_t rejected_share_access;
 	uint32_t rejected_mask = access_mask;
 	uint32_t do_not_check_mask = 0;
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
@@ -410,6 +413,7 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 	}
 
 	return smbd_check_access_rights(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					access_mask);
@@ -1212,6 +1216,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
 				status = smbd_check_access_rights(conn,
+						conn->cwd_fsp,
 						smb_fname,
 						false,
 						access_mask);
@@ -1355,6 +1360,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		status = smbd_check_access_rights(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				false,
 				access_mask);
@@ -4373,6 +4379,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		status = smbd_check_access_rights(conn,
+						conn->cwd_fsp,
 						smb_dname,
 						false,
 						access_mask);

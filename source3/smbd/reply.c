@@ -1554,6 +1554,7 @@ void reply_setatr(struct smb_request *req)
 			mode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
 		status = smbd_check_access_rights(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					FILE_WRITE_ATTRIBUTES);

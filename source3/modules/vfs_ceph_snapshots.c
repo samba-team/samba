@@ -186,6 +186,7 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	uint32_t slots;
 
 	status = smbd_check_access_rights(handle->conn,
+					handle->conn->cwd_fsp,
 					snaps_dname,
 					false,
 					SEC_DIR_LIST);
@@ -572,6 +573,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	}
 
 	status = smbd_check_access_rights(handle->conn,
+					handle->conn->cwd_fsp,
 					snaps_dname,
 					false,
 					SEC_DIR_LIST);

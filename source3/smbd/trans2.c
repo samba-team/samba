@@ -202,6 +202,7 @@ static NTSTATUS check_access(connection_struct *conn,
 {
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	return smbd_check_access_rights(conn,
+			dirfsp,
 			smb_fname,
 			false,
 			access_mask);
