@@ -1403,7 +1403,7 @@ static bool smb_time_audit_getlock(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_symlinkat(vfs_handle_struct *handle,
-				const char *link_contents,
+				const struct smb_filename *link_contents,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname)
 {

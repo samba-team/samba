@@ -461,7 +461,7 @@ bool vfs_not_implemented_getlock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int vfs_not_implemented_symlinkat(vfs_handle_struct *handle,
-				const char *link_contents,
+				const struct smb_filename *link_contents,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname)
 {

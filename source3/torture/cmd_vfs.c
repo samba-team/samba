@@ -1178,7 +1178,7 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	}
 
 	ret = SMB_VFS_SYMLINKAT(vfs->conn,
-			target_fname.base_name,
+			&target_fname,
 			vfs->conn->cwd_fsp,
 			new_smb_fname);
 	if (ret == -1) {

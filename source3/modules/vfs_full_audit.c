@@ -1787,7 +1787,7 @@ static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
-			const char *link_contents,
+			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
@@ -1802,7 +1802,7 @@ static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
 	       (result >= 0),
 	       handle,
 	       "%s|%s",
-	       link_contents,
+	       link_contents->base_name,
 	       smb_fname_str_do_log(handle->conn, new_smb_fname));
 
 	return result;

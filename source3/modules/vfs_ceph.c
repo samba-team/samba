@@ -1014,19 +1014,19 @@ static int cephwrap_linux_setlease(struct vfs_handle_struct *handle, files_struc
 }
 
 static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
-		const char *link_target,
+		const struct smb_filename *link_target,
 		struct files_struct *dirfsp,
 		const struct smb_filename *new_smb_fname)
 {
 	int result = -1;
 	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle,
-			link_target,
+			link_target->base_name,
 			new_smb_fname->base_name);
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	result = ceph_symlink(handle->data,
-			link_target,
+			link_target->base_name,
 			new_smb_fname->base_name);
 	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
 	WRAP_RETURN(result);

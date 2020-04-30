@@ -1672,7 +1672,7 @@ static bool vfs_gluster_getlock(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
-				const char *link_target,
+				const struct smb_filename *link_target,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname)
 {
@@ -1681,7 +1681,7 @@ static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
 	START_PROFILE(syscall_symlinkat);
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	ret = glfs_symlink(handle->data,
-			link_target,
+			link_target->base_name,
 			new_smb_fname->base_name);
 	END_PROFILE(syscall_symlinkat);
 

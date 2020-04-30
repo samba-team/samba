@@ -7019,7 +7019,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 			new_smb_fname->base_name, link_target ));
 
 	ret = SMB_VFS_SYMLINKAT(conn,
-			target_fname.base_name,
+			&target_fname,
 			conn->cwd_fsp,
 			new_smb_fname);
 	if (ret != 0) {

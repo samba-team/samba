@@ -462,7 +462,7 @@ static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int skel_symlinkat(vfs_handle_struct *handle,
-			const char *link_contents,
+			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {

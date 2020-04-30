@@ -167,7 +167,7 @@ static int syncops_renameat(vfs_handle_struct *handle,
 } while (0)
 
 static int syncops_symlinkat(vfs_handle_struct *handle,
-			const char *link_contents,
+			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
@@ -184,7 +184,7 @@ static int syncops_symlinkat(vfs_handle_struct *handle,
 				new_smb_fname);
 
 	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(link_contents,
+		syncops_two_names(link_contents->base_name,
 				  new_smb_fname->base_name);
 	}
 	return ret;

@@ -2135,7 +2135,7 @@ int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_symlinkat(struct vfs_handle_struct *handle,
-			const char *link_target,
+			const struct smb_filename *link_target,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {

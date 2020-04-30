@@ -1234,17 +1234,17 @@ err:
 }
 
 static int um_symlinkat(vfs_handle_struct *handle,
-			const char *link_contents,
+			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
 	int status;
-	char *client_link_contents = NULL;
+	struct smb_filename *new_link_target = NULL;
 	struct smb_filename *new_client_fname = NULL;
 
 	DEBUG(10, ("Entering um_symlinkat\n"));
 
-	if (!is_in_media_files(link_contents) &&
+	if (!is_in_media_files(link_contents->base_name) &&
 			!is_in_media_files(new_smb_fname->base_name)) {
 		return SMB_VFS_NEXT_SYMLINKAT(handle,
 				link_contents,
@@ -1252,8 +1252,8 @@ static int um_symlinkat(vfs_handle_struct *handle,
 				new_smb_fname);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				link_contents, &client_link_contents);
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+				link_contents, &new_link_target);
 	if (status != 0) {
 		goto err;
 	}
@@ -1264,12 +1264,12 @@ static int um_symlinkat(vfs_handle_struct *handle,
 	}
 
 	status = SMB_VFS_NEXT_SYMLINKAT(handle,
-					client_link_contents,
+					new_link_target,
 					dirfsp,
 					new_client_fname);
 
 err:
-	TALLOC_FREE(client_link_contents);
+	TALLOC_FREE(new_link_target);
 	TALLOC_FREE(new_client_fname);
 	return status;
 }

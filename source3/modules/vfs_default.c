@@ -2835,7 +2835,7 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int vfswrap_symlinkat(vfs_handle_struct *handle,
-			const char *link_target,
+			const struct smb_filename *link_target,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
@@ -2845,7 +2845,7 @@ static int vfswrap_symlinkat(vfs_handle_struct *handle,
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
-	result = symlinkat(link_target,
+	result = symlinkat(link_target->base_name,
 			dirfsp->fh->fd,
 			new_smb_fname->base_name);
 	END_PROFILE(syscall_symlinkat);

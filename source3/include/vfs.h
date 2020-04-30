@@ -316,6 +316,8 @@
  *              changed to bitfields.
  * Version 43 - convert SMB_VFS_GET_REAL_FILENAME() arg path
  *              to be a struct smb_filename
+ * Version 43 - convert link_contents arg of SMB_VFS_SYMLINKAT()
+ *              to struct smb_filename
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -843,7 +845,7 @@ struct vfs_fn_pointers {
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlinkat_fn)(struct vfs_handle_struct *handle,
-				const char *link_contents,
+				const struct smb_filename *link_contents,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname);
 	int (*readlinkat_fn)(struct vfs_handle_struct *handle,
@@ -1384,7 +1386,7 @@ bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp, off_t *poffset,
 			  off_t *pcount, int *ptype, pid_t *ppid);
 int smb_vfs_call_symlinkat(struct vfs_handle_struct *handle,
-			const char *link_contents,
+			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname);
 int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
@@ -1824,7 +1826,7 @@ bool vfs_not_implemented_getlock(vfs_handle_struct *handle, files_struct *fsp,
 				 off_t *poffset, off_t *pcount, int *ptype,
 				 pid_t *ppid);
 int vfs_not_implemented_symlinkat(vfs_handle_struct *handle,
-				const char *link_contents,
+				const struct smb_filename *link_contents,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname);
 int vfs_not_implemented_vfs_readlinkat(vfs_handle_struct *handle,
