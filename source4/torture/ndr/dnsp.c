@@ -332,7 +332,7 @@ static bool dnsp_dnsProperty_deleted_by_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->version, 1, "version");
 	torture_assert_int_equal(tctx, r->id, DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME, "id");
 	torture_assert_str_equal(tctx, r->data.deleted_by_hostname, "w2k3-191.w2k3.base", "hostname");
-	torture_assert_int_equal(tctx, r->name, 4092359108, "name (random)");
+	torture_assert_int_equal(tctx, r->name, 0xf3ec71c4, "name (random)");
 
 	return true;
 }
