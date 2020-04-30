@@ -131,8 +131,10 @@ bool can_delete_file_in_directory(connection_struct *conn,
 ****************************************************************************/
 
 bool can_write_to_file(connection_struct *conn,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
 {
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
 				smb_fname,
 				false,

@@ -220,6 +220,7 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
 		/* Check actual permissions for read-only. */
 		if (!can_write_to_file(conn,
+				conn->cwd_fsp,
 				smb_fname))
 		{
 			result |= FILE_ATTRIBUTE_READONLY;
@@ -542,6 +543,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 
 		if (!set_dosmode_ok && lp_dos_filemode(SNUM(conn))) {
 			set_dosmode_ok = can_write_to_file(conn,
+						conn->cwd_fsp,
 						smb_fname);
 		}
 
@@ -1073,6 +1075,7 @@ int file_set_dosmode(connection_struct *conn,
 	*/
 
 	if (!can_write_to_file(conn,
+			conn->cwd_fsp,
 			smb_fname))
 	{
 		errno = EACCES;
@@ -1248,6 +1251,7 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 
 	/* Check if we have write access. */
 	if (can_write_to_file(conn,
+			conn->cwd_fsp,
 			smb_fname))
 	{
 		/* We are allowed to become root and change the filetime. */

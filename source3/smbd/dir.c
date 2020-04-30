@@ -1176,7 +1176,7 @@ static bool user_can_write_file(connection_struct *conn,
 		return True;
 	}
 
-	return can_write_to_file(conn, smb_fname);
+	return can_write_to_file(conn, dirfsp, smb_fname);
 }
 
 /*******************************************************************

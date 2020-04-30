@@ -727,6 +727,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
 		    can_write_to_file(conn,
+				conn->cwd_fsp,
 				smb_fname))
 		{
 			perms = FILE_GENERIC_ALL;
@@ -1391,6 +1392,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
 		    can_write_to_file(conn,
+				conn->cwd_fsp,
 				smb_fname))
 		{
 			perms = FILE_GENERIC_ALL;
