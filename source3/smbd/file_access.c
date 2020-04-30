@@ -131,7 +131,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 ****************************************************************************/
 
 bool can_write_to_file(connection_struct *conn,
-		       const struct smb_filename *smb_fname)
+			const struct smb_filename *smb_fname)
 {
 	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
 				smb_fname,

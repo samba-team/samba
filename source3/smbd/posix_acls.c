@@ -2846,7 +2846,9 @@ static bool acl_group_override(connection_struct *conn,
 
 	/* user has writeable permission */
 	if (lp_dos_filemode(SNUM(conn)) &&
-	    can_write_to_file(conn, smb_fname)) {
+	    can_write_to_file(conn,
+				smb_fname))
+	{
 		return true;
 	}
 

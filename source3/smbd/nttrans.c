@@ -726,7 +726,9 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		p += 25;
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
-		    can_write_to_file(conn, smb_fname)) {
+		    can_write_to_file(conn,
+				smb_fname))
+		{
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
@@ -1388,7 +1390,9 @@ static void call_nt_transact_create(connection_struct *conn,
 		p += 25;
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
-		    can_write_to_file(conn, smb_fname)) {
+		    can_write_to_file(conn,
+				smb_fname))
+		{
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
