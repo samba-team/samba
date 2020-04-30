@@ -144,6 +144,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 					    "",
 					    NULL,
 					    NULL,
+					    0,
 					    0);
 	if (fsp->fsp_name == NULL) {
 		file_free(NULL, fsp);

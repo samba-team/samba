@@ -191,6 +191,7 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 					smb_fname->base_name,
 					stream_info[i].name,
 					NULL,
+					smb_fname->twrp,
 					(smb_fname->flags &
 						~SMB_FILENAME_POSIX_PATH));
 
@@ -855,6 +856,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 						fullname,
 						NULL,
 						NULL,
+						smb_dname->twrp,
 						smb_dname->flags);
 		if (smb_dname_full == NULL) {
 			errno = ENOMEM;
@@ -1033,6 +1035,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 							fullname,
 							NULL,
 							NULL,
+							smb_dname->twrp,
 							smb_dname->flags);
 			if (smb_dname_full == NULL) {
 				errno = ENOMEM;

@@ -155,6 +155,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 					rootdir,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (rootdir_fname == NULL) {
 		errno = ENOMEM;
@@ -170,6 +171,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 					smb_fname->base_name,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 		if (smb_fname_base == NULL) {
 			errno = ENOMEM;
@@ -215,6 +217,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 					result,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_hash == NULL) {
 		errno = ENOMEM;
@@ -273,6 +276,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 						newname,
 						NULL,
 						NULL,
+						smb_fname->twrp,
 						smb_fname->flags);
 			TALLOC_FREE(newname);
 			if (smb_fname_new == NULL) {
@@ -319,6 +323,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 					tmp,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (tmp_fname == NULL) {
 		errno = ENOMEM;
@@ -347,6 +352,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 					tmp,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (tmp_fname == NULL) {
 		errno = ENOMEM;
@@ -452,6 +458,7 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 					stream_fname,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (*smb_fname_out == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -499,6 +506,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 					dirname,
 					NULL,
 					NULL,
+					smb_fname_base->twrp,
 					smb_fname_base->flags);
 	if (dir_smb_fname == NULL) {
 		TALLOC_FREE(dirname);
@@ -624,6 +632,7 @@ static int streams_depot_open(vfs_handle_struct *handle,
 					smb_fname->base_name,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		ret = -1;
@@ -692,6 +701,7 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 					smb_fname->base_name,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -724,6 +734,7 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 						dirname,
 						NULL,
 						NULL,
+						smb_fname->twrp,
 						smb_fname->flags);
 			if (smb_fname_dir == NULL) {
 				TALLOC_FREE(smb_fname_base);
@@ -765,6 +776,7 @@ static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 				smb_fname->base_name,
 				NULL,
 				NULL,
+				smb_fname->twrp,
 				smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -797,6 +809,7 @@ static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 						dirname,
 						NULL,
 						NULL,
+						smb_fname->twrp,
 						smb_fname->flags);
 			if (smb_fname_dir == NULL) {
 				TALLOC_FREE(smb_fname_base);
@@ -957,6 +970,7 @@ static bool collect_one_stream(const struct smb_filename *dirfname,
 					sname,
 					NULL,
 					NULL,
+					dirfname->twrp,
 					0);
 	if (smb_fname == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
@@ -1004,6 +1018,7 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 					smb_fname->base_name,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;

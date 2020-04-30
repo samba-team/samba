@@ -55,6 +55,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 					name,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		file_free(smb_req, fsp);

@@ -1553,6 +1553,7 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	} else {
 		conv_smb_fname = cp_smb_filename(talloc_tos(), smb_fname);
@@ -2013,6 +2014,7 @@ static int shadow_copy2_get_shadow_copy_data(
 					snapdir,
 					NULL,
 					NULL,
+					0,
 					fsp->fsp_name->flags);
 	if (snapdir_smb_fname == NULL) {
 		errno = ENOMEM;
@@ -2188,6 +2190,7 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2278,6 +2281,7 @@ static ssize_t shadow_copy2_getxattr(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2326,6 +2330,7 @@ static ssize_t shadow_copy2_listxattr(struct vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2644,6 +2649,7 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2695,6 +2701,7 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);

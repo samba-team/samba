@@ -2636,6 +2636,7 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 					   fname,
 					   NULL,
 					   &smb_fname->st,
+					   smb_fname->twrp,
 					   0);
 		if (name == NULL) {
 			TALLOC_FREE(smb_fname);
@@ -6208,6 +6209,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 						smb_fname->base_name,
 						NULL,
 						NULL,
+						smb_fname->twrp,
 						smb_fname->flags);
 			if (smb_fname_base == NULL) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -6639,6 +6641,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 					smb_fname->base_name,
 					NULL,
 					&smb_fname->st,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -7158,6 +7161,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					fsp->base_fsp->fsp_name->base_name,
 					newname,
 					NULL,
+					fsp->base_fsp->fsp_name->twrp,
 					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
 			status = NT_STATUS_NO_MEMORY;
@@ -7360,6 +7364,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					fsp->base_fsp->fsp_name->base_name,
 					newname,
 					NULL,
+					fsp->base_fsp->fsp_name->twrp,
 					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
 			status = NT_STATUS_NO_MEMORY;
@@ -7443,6 +7448,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 						base_name,
 						NULL,
 						NULL,
+						smb_fname_src->twrp,
 						smb_fname_src->flags);
 			if (smb_fname_dst == NULL) {
 				status = NT_STATUS_NO_MEMORY;

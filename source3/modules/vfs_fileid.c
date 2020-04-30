@@ -304,6 +304,7 @@ static int get_connectpath_ino(struct vfs_handle_struct *handle,
 				    handle->conn->connectpath,
 				    NULL,
 				    NULL,
+				    0,
 				    0);
 	if (fname == NULL) {
 		DBG_ERR("synthetic_smb_fname failed\n");

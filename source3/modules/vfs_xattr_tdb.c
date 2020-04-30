@@ -42,6 +42,7 @@ static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
 					path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);

@@ -195,6 +195,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 					   parent_name,
 					   NULL,
 					   NULL,
+					   smb_fname->twrp,
 					   smb_fname->flags);
 	if (parent_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1552,6 +1553,7 @@ static int get_real_filename_full_scan(connection_struct *conn,
 					path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(unmangled_name);
@@ -1776,6 +1778,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 					filename_in,
 					NULL,
 					NULL,
+					0,
 					0);
 		if (smb_fname == NULL) {
 			TALLOC_FREE(fname);

@@ -877,6 +877,7 @@ static struct smb_filename *cephwrap_getwd(struct vfs_handle_struct *handle,
 				cwd,
 				NULL,
 				NULL,
+				0,
 				0);
 }
 
@@ -1122,6 +1123,7 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 				result,
 				NULL,
 				NULL,
+				0,
 				0);
 	SAFE_FREE(result);
 	return result_fname;

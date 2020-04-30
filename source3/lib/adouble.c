@@ -1095,6 +1095,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 						  smb_fname->base_name,
 						  mapped_name,
 						  NULL,
+						  smb_fname->twrp,
 						  smb_fname->flags);
 		TALLOC_FREE(mapped_name);
 		if (stream_name == NULL) {
@@ -1225,6 +1226,7 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 					  smb_fname->base_name,
 					  AFPINFO_STREAM,
 					  NULL,
+					  smb_fname->twrp,
 					  smb_fname->flags);
 	if (stream_name == NULL) {
 		data_blob_free(&aiblob);
@@ -1597,6 +1599,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 				    smb_fname->base_name,
 				    stream->name,
 				    NULL,
+				    smb_fname->twrp,
 				    0);
 	if (sname == NULL) {
 		return false;

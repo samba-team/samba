@@ -238,6 +238,7 @@ static struct smb_filename *widelinks_getwd(vfs_handle_struct *handle,
 				config->cwd,
 				NULL,
 				NULL,
+				0,
 				0);
 }
 
@@ -298,6 +299,7 @@ static struct smb_filename *widelinks_realpath(vfs_handle_struct *handle,
 				resolved_pathname,
 				NULL,
 				NULL,
+				0,
 				0);
 	TALLOC_FREE(pathname);
 	TALLOC_FREE(resolved_pathname);

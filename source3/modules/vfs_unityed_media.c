@@ -1518,6 +1518,7 @@ static NTSTATUS um_get_nt_acl(vfs_handle_struct *handle,
 					client_path,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (client_smb_fname == NULL) {
 		TALLOC_FREE(client_path);

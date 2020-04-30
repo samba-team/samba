@@ -219,6 +219,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 					io->base,
 					NULL,
 					NULL,
+					fsp->fsp_name->twrp,
 					fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -939,6 +940,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 					sio->base,
 					NULL,
 					NULL,
+					fsp->fsp_name->twrp,
 					fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -1009,6 +1011,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 					sio->base,
 					NULL,
 					NULL,
+					fsp->fsp_name->twrp,
 					fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -1226,6 +1229,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					sio->base,
 					NULL,
 					NULL,
+					fsp->fsp_name->twrp,
 					fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;

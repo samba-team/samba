@@ -2244,6 +2244,7 @@ static int snapper_gmt_chdir(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2427,6 +2428,7 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					fname->flags);
 	TALLOC_FREE(conv);
 	if (smb_fname == NULL) {
@@ -2510,6 +2512,7 @@ static ssize_t snapper_gmt_getxattr(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	TALLOC_FREE(conv);
 	if (conv_smb_fname == NULL) {
@@ -2558,6 +2561,7 @@ static ssize_t snapper_gmt_listxattr(struct vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	TALLOC_FREE(conv);
 	if (conv_smb_fname == NULL) {
@@ -2690,6 +2694,7 @@ static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
@@ -2740,6 +2745,7 @@ static int snapper_gmt_get_quota(vfs_handle_struct *handle,
 					conv,
 					NULL,
 					NULL,
+					0,
 					smb_fname->flags);
 	TALLOC_FREE(conv);
 	if (conv_smb_fname == NULL) {

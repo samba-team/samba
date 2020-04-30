@@ -130,6 +130,7 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -158,6 +159,7 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -250,6 +252,7 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 
 	if (smb_fname == NULL) {
@@ -450,6 +453,7 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 
 	if (smb_fname == NULL) {
@@ -905,6 +909,7 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1456,6 +1461,7 @@ static NTSTATUS cmd_removexattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 
 	if (smb_fname == NULL) {
@@ -1521,6 +1527,7 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 
 	if (smb_fname == NULL) {
@@ -1846,6 +1853,7 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 					argv[1],
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 
 	if (smb_fname == NULL) {
@@ -1886,6 +1894,7 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					".",
 					NULL,
 					NULL,
+					0,
 					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;

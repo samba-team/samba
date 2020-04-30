@@ -135,6 +135,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 					      conn->connectpath,
 					      NULL,
 					      NULL,
+					      0,
 					      0);
 	if (smb_fname_cpath == NULL) {
 		return caps;
@@ -2465,6 +2466,7 @@ static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
 				result,
 				NULL,
 				NULL,
+				0,
 				0);
 	/*
 	 * sys_getwd() *always* returns malloced memory.
@@ -2931,6 +2933,7 @@ static struct smb_filename *vfswrap_realpath(vfs_handle_struct *handle,
 						   result,
 						   NULL,
 						   NULL,
+						   0,
 						   0);
 		SAFE_FREE(result);
 	}

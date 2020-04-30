@@ -262,6 +262,7 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 					fname,
 					NULL,
 					NULL,
+					0,
 					lp_posix_pathnames() ?
 						SMB_FILENAME_POSIX_PATH : 0);
 
@@ -1022,6 +1023,7 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 					fname,
 					NULL,
 					NULL,
+					0,
 					lp_posix_pathnames() ?
 					SMB_FILENAME_POSIX_PATH : 0);
 

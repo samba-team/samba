@@ -217,6 +217,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 					    pf->filename,
 					    NULL,
 					    NULL,
+					    0,
 					    0);
 	if (fsp->fsp_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;

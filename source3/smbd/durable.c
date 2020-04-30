@@ -587,6 +587,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 					cookie.base_name,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;

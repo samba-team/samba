@@ -628,6 +628,7 @@ static int non_widelink_open(struct connection_struct *conn,
 						    ".",
 						    smb_fname->stream_name,
 						    &smb_fname->st,
+						    smb_fname->twrp,
 						    smb_fname->flags);
 		if (smb_fname_rel == NULL) {
 			saved_errno = errno;
@@ -771,6 +772,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 					conn_rootdir,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (conn_rootdir_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -948,6 +950,7 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 					    ".",
 					    NULL,
 					    NULL,
+					    smb_dname->twrp,
 					    0);
 	if (smb_fname_cwd == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -4689,6 +4692,7 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 					msg->base_name,
 					msg->stream_name,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		DBG_DEBUG("synthetic_smb_fname failed\n");
@@ -4790,6 +4794,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 					smb_fname->base_name,
 					stream_info[i].name,
 					NULL,
+					smb_fname->twrp,
 					(smb_fname->flags &
 						~SMB_FILENAME_POSIX_PATH));
 		if (smb_fname_cp == NULL) {
@@ -5521,6 +5526,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 						smb_fname->base_name,
 						NULL,
 						NULL,
+						smb_fname->twrp,
 						smb_fname->flags);
 		if (smb_fname_base == NULL) {
 			status = NT_STATUS_NO_MEMORY;

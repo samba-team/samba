@@ -80,6 +80,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 				conn->connectpath,
 				NULL,
 				NULL,
+				0,
 				0);
 	if (conn->cwd_fsp->fsp_name == NULL) {
 		return false;
@@ -828,6 +829,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->connectpath,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname_cpath == NULL) {
 		status = NT_STATUS_NO_MEMORY;

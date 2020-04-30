@@ -54,6 +54,7 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
 					 const SMB_STRUCT_STAT *psbuf,
+					 NTTIME twrp,
 					 uint32_t flags)
 {
 	struct smb_filename smb_fname_loc = { 0, };
@@ -62,6 +63,7 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 	smb_fname_loc.base_name = discard_const_p(char, base_name);
 	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
 	smb_fname_loc.flags = flags;
+	smb_fname_loc.twrp = twrp;
 
 	/* Copy the psbuf if one was given. */
 	if (psbuf)
@@ -105,6 +107,7 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 				fname,
 				NULL,
 				NULL,
+				0,
 				SMB_FILENAME_POSIX_PATH);
 	}
 
@@ -120,6 +123,7 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 				  base_name,
 				  stream_name,
 				  NULL,
+				  0,
 				  0);
 	TALLOC_FREE(base_name);
 	TALLOC_FREE(stream_name);

@@ -300,6 +300,7 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 						new_dir,
 						NULL,
 						NULL,
+						0,
 						0);
 			if (smb_fname == NULL) {
 				goto done;
@@ -630,6 +631,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 					final_name,
 					smb_fname->stream_name,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (smb_fname_final == NULL) {
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,

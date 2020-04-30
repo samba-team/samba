@@ -1387,6 +1387,7 @@ static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 					ret,
 					NULL,
 					NULL,
+					0,
 					0);
 	SAFE_FREE(cwd);
 	return smb_fname;
@@ -1527,6 +1528,7 @@ static struct smb_filename *vfs_gluster_realpath(struct vfs_handle_struct *handl
 						   result,
 						   NULL,
 						   NULL,
+						   0,
 						   0);
 	}
 

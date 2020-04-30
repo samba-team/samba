@@ -182,6 +182,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 						fsp->conn->connectpath,
 						NULL,
 						NULL,
+						0,
 						0);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;

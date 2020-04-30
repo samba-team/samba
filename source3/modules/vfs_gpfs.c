@@ -1493,6 +1493,7 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 						path,
 						NULL,
 						NULL,
+						fname->twrp,
 						0);
 	if (fake_fsp.fsp_name == NULL) {
 		errno = ENOMEM;

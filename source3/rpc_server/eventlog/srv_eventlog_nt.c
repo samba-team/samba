@@ -102,6 +102,7 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 						fname,
 						NULL,
 						NULL,
+						0,
 						0);
 
 	if (smb_fname == NULL) {

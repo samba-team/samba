@@ -910,6 +910,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 				       path,
 				       NULL,
 				       &state->smb_fname->st,
+				       state->smb_fname->twrp,
 				       0);
 	if (tevent_req_nomem(smb_path, req)) {
 		return;
@@ -1321,6 +1322,7 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 					psmb_fname->base_name,
 					NULL,
 					&psmb_fname->st,
+					psmb_fname->twrp,
 					psmb_fname->flags);
 
 	if (smb_fname == NULL) {

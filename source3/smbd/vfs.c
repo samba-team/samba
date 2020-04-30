@@ -927,6 +927,7 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 					    ".",
 					    NULL,
 					    NULL,
+					    0,
 					    0);
 	if (smb_fname_dot == NULL) {
 		errno = ENOMEM;
@@ -1082,6 +1083,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 					    ".",
 					    NULL,
 					    NULL,
+					    parent_name->twrp,
 					    0);
 	if (smb_fname_cwd == NULL) {
 		status = NT_STATUS_NO_MEMORY;

@@ -980,6 +980,7 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
 					 const SMB_STRUCT_STAT *psbuf,
+					 NTTIME twrp,
 					 uint32_t flags);
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 						const char *fname,

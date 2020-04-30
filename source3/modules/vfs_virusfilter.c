@@ -157,6 +157,7 @@ static bool quarantine_create_dir(
 							new_dir,
 							NULL,
 							NULL,
+							0,
 							0);
 			if (smb_fname == NULL) {
 				goto done;
@@ -670,6 +671,7 @@ static virusfilter_action infected_file_action_quarantine(
 					  q_filepath,
 					  smb_fname->stream_name,
 					  NULL,
+					  0,
 					  smb_fname->flags);
 	if (q_smb_fname == NULL) {
 		action = VIRUSFILTER_ACTION_DO_NOTHING;
@@ -751,6 +753,7 @@ static virusfilter_action infected_file_action_rename(
 
 	q_smb_fname = synthetic_smb_fname(frame, q_filepath,
 					  smb_fname->stream_name, NULL,
+					  0,
 					  smb_fname->flags);
 	if (q_smb_fname == NULL) {
 		action = VIRUSFILTER_ACTION_DO_NOTHING;

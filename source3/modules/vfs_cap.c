@@ -46,6 +46,7 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle,
 					capname,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(capname);
@@ -73,6 +74,7 @@ static int cap_get_quota(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -131,6 +133,7 @@ static int cap_mkdirat(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -318,6 +321,7 @@ static int cap_chmod(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -352,6 +356,7 @@ static int cap_lchown(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -385,6 +390,7 @@ static int cap_chdir(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -452,6 +458,7 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 					capnew,
 					NULL,
 					NULL,
+					new_smb_fname->twrp,
 					new_smb_fname->flags);
 	if (new_cap_smb_fname == NULL) {
 		TALLOC_FREE(capold);
@@ -494,6 +501,7 @@ static int cap_readlinkat(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -538,6 +546,7 @@ static int cap_linkat(vfs_handle_struct *handle,
 					capold,
 					NULL,
 					NULL,
+					old_smb_fname->twrp,
 					old_smb_fname->flags);
 	if (old_cap_smb_fname == NULL) {
 		TALLOC_FREE(capold);
@@ -549,6 +558,7 @@ static int cap_linkat(vfs_handle_struct *handle,
 					capnew,
 					NULL,
 					NULL,
+					new_smb_fname->twrp,
 					new_smb_fname->flags);
 	if (new_cap_smb_fname == NULL) {
 		TALLOC_FREE(capold);
@@ -595,6 +605,7 @@ static int cap_mknodat(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -635,6 +646,7 @@ static struct smb_filename *cap_realpath(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -671,6 +683,7 @@ static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -708,6 +721,7 @@ static int cap_sys_acl_set_file(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -743,6 +757,7 @@ static int cap_sys_acl_delete_def_file(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -781,6 +796,7 @@ static ssize_t cap_getxattr(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -831,6 +847,7 @@ static ssize_t cap_listxattr(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -867,6 +884,7 @@ static int cap_removexattr(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -919,6 +937,7 @@ static int cap_setxattr(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -968,6 +987,7 @@ static NTSTATUS cap_create_dfs_pathat(vfs_handle_struct *handle,
 					cappath,
 					NULL,
 					NULL,
+					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
@@ -1001,6 +1021,7 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 				cappath,
 				NULL,
 				NULL,
+				smb_fname->twrp,
 				smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);

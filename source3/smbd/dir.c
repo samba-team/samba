@@ -1258,6 +1258,7 @@ bool is_visible_file(connection_struct *conn,
 						entry,
 						NULL,
 						pst,
+						dir_path->twrp,
 						0);
 		if (smb_fname_base == NULL) {
 			ret = false;

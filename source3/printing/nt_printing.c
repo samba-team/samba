@@ -2033,6 +2033,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 					print_dlr_path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		goto err_out;

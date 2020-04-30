@@ -228,6 +228,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 					path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		goto done;
@@ -319,6 +320,7 @@ static bool do_unfruit(const char *path)
 					path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		return false;

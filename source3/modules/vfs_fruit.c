@@ -884,6 +884,7 @@ static bool readdir_attr_meta_finderi_stream(
 					  smb_fname->base_name,
 					  AFPINFO_STREAM_NAME,
 					  NULL,
+					  smb_fname->twrp,
 					  smb_fname->flags);
 	if (stream_name == NULL) {
 		return false;
@@ -1059,6 +1060,7 @@ static uint64_t readdir_attr_rfork_size_stream(
 					  smb_fname->base_name,
 					  AFPRESOURCE_STREAM_NAME,
 					  NULL,
+					  smb_fname->twrp,
 					  0);
 	if (stream_name == NULL) {
 		return 0;
@@ -2065,6 +2067,7 @@ static int fruit_unlinkat(vfs_handle_struct *handle,
 					     smb_fname->base_name,
 					     AFPRESOURCE_STREAM_NAME,
 					     NULL,
+					     smb_fname->twrp,
 					     smb_fname->flags);
 	if (rsrc_smb_fname == NULL) {
 		return -1;
@@ -3335,6 +3338,7 @@ static NTSTATUS delete_invalid_meta_stream(
 				    smb_fname->base_name,
 				    AFPINFO_STREAM_NAME,
 				    NULL,
+				    smb_fname->twrp,
 				    0);
 	if (sname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -4494,6 +4498,7 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 			state->src_fsp->fsp_name->base_name,
 			streams[i].name,
 			NULL,
+			state->src_fsp->fsp_name->twrp,
 			state->src_fsp->fsp_name->flags);
 		if (tevent_req_nomem(src_fname_tmp, req)) {
 			return;
@@ -4509,6 +4514,7 @@ static void fruit_offload_write_done(struct tevent_req *subreq)
 			state->dst_fsp->fsp_name->base_name,
 			streams[i].name,
 			NULL,
+			state->dst_fsp->fsp_name->twrp,
 			state->dst_fsp->fsp_name->flags);
 		if (tevent_req_nomem(dst_fname_tmp, req)) {
 			TALLOC_FREE(src_fname_tmp);
@@ -4672,6 +4678,7 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 					plist,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		ok = false;
@@ -4810,6 +4817,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 					path,
 					NULL,
 					NULL,
+					0,
 					0);
 	TALLOC_FREE(path);
 	if (bands_dir == NULL) {

@@ -147,6 +147,7 @@ static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 					snap_path,
 					NULL,
 					NULL,
+					0,
 					0);
 	if (smb_fname == NULL) {
 		return -ENOMEM;
@@ -413,6 +414,7 @@ static int ceph_snap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				snaps_path,
 				NULL,
 				NULL,
+				0,
 				fsp->fsp_name->flags);
 	if (snaps_dname == NULL) {
 		ret = -ENOMEM;
@@ -562,6 +564,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 				_converted_buf,
 				NULL,
 				NULL,
+				0,
 				0);	/* XXX check? */
 	if (snaps_dname == NULL) {
 		ret = -ENOMEM;
@@ -619,6 +622,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 						_converted_buf,
 						NULL,
 						NULL,
+						0,
 						0);
 		if (smb_fname == NULL) {
 			ret = -ENOMEM;
