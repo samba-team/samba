@@ -25,6 +25,10 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/locale.h"
 
+struct sddl_transition_state {
+	const struct dom_sid *domain_sid;
+};
+
 struct flag_map {
 	const char *name;
 	uint32_t flag;
@@ -176,7 +180,7 @@ static const struct {
   It can either be a special 2 letter code, or in S-* format
 */
 static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
-				       const struct dom_sid *domain_sid)
+				       struct sddl_transition_state *state)
 {
 	const char *sddl = (*sddlp);
 	size_t i;
@@ -208,7 +212,7 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 	(*sddlp) += 2;
 
 	if (sid_codes[i].sid == NULL) {
-		return dom_sid_add_rid(mem_ctx, domain_sid, sid_codes[i].rid);
+		return dom_sid_add_rid(mem_ctx, state->domain_sid, sid_codes[i].rid);
 	}
 
 	return dom_sid_parse_talloc(mem_ctx, sid_codes[i].sid);
@@ -305,7 +309,7 @@ static bool sddl_decode_access(const char *str, uint32_t *pmask)
   note that this routine modifies the string
 */
 static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
-			    const struct dom_sid *domain_sid)
+			    struct sddl_transition_state *state)
 {
 	const char *tok[6];
 	const char *s;
@@ -366,7 +370,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* trustee */
 	s = tok[5];
-	sid = sddl_decode_sid(mem_ctx, &s, domain_sid);
+	sid = sddl_decode_sid(mem_ctx, &s, state);
 	if (sid == NULL) {
 		return false;
 	}
@@ -388,7 +392,7 @@ static const struct flag_map acl_flags[] = {
 */
 static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 					    const char **sddlp, uint32_t *flags,
-					    const struct dom_sid *domain_sid)
+					    struct sddl_transition_state *state)
 {
 	const char *sddl = *sddlp;
 	struct security_acl *acl;
@@ -428,7 +432,7 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 			return NULL;
 		}
 		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces],
-				     astr, domain_sid)) {
+				     astr, state)) {
 			talloc_free(acl);
 			return NULL;
 		}
@@ -457,6 +461,9 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 					const struct dom_sid *domain_sid)
 {
+	struct sddl_transition_state state = {
+		.domain_sid = domain_sid,
+	};
 	struct security_descriptor *sd;
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
 
@@ -472,13 +479,13 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 		switch (c) {
 		case 'D':
 			if (sd->dacl != NULL) goto failed;
-			sd->dacl = sddl_decode_acl(sd, &sddl, &flags, domain_sid);
+			sd->dacl = sddl_decode_acl(sd, &sddl, &flags, &state);
 			if (sd->dacl == NULL) goto failed;
 			sd->type |= flags | SEC_DESC_DACL_PRESENT;
 			break;
 		case 'S':
 			if (sd->sacl != NULL) goto failed;
-			sd->sacl = sddl_decode_acl(sd, &sddl, &flags, domain_sid);
+			sd->sacl = sddl_decode_acl(sd, &sddl, &flags, &state);
 			if (sd->sacl == NULL) goto failed;
 			/* this relies on the SEC_DESC_SACL_* flags being
 			   1 bit shifted from the SEC_DESC_DACL_* flags */
@@ -486,12 +493,12 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 			break;
 		case 'O':
 			if (sd->owner_sid != NULL) goto failed;
-			sd->owner_sid = sddl_decode_sid(sd, &sddl, domain_sid);
+			sd->owner_sid = sddl_decode_sid(sd, &sddl, &state);
 			if (sd->owner_sid == NULL) goto failed;
 			break;
 		case 'G':
 			if (sd->group_sid != NULL) goto failed;
-			sd->group_sid = sddl_decode_sid(sd, &sddl, domain_sid);
+			sd->group_sid = sddl_decode_sid(sd, &sddl, &state);
 			if (sd->group_sid == NULL) goto failed;
 			break;
 		}
@@ -547,7 +554,7 @@ failed:
   encode a sid in SDDL format
 */
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			     const struct dom_sid *domain_sid)
+			     struct sddl_transition_state *state)
 {
 	size_t i;
 	char *sidstr;
@@ -564,7 +571,7 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	}
 
 	/* or a well known rid in our domain */
-	if (dom_sid_in_domain(domain_sid, sid)) {
+	if (dom_sid_in_domain(state->domain_sid, sid)) {
 		uint32_t rid = sid->sub_auths[sid->num_auths-1];
 		for (;i<ARRAY_SIZE(sid_codes);i++) {
 			if (rid == sid_codes[i].rid) {
@@ -584,8 +591,8 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 /*
   encode an ACE in SDDL format
 */
-char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
-		      const struct dom_sid *domain_sid)
+static char *sddl_transition_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
+					struct sddl_transition_state *state)
 {
 	char *sddl = NULL;
 	TALLOC_CTX *tmp_ctx;
@@ -639,7 +646,7 @@ char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
 		}
 	}
 
-	sddl_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, domain_sid);
+	sddl_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, state);
 	if (sddl_trustee == NULL) {
 		goto failed;
 	}
@@ -653,11 +660,20 @@ failed:
 	return sddl;
 }
 
+char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
+		      const struct dom_sid *domain_sid)
+{
+	struct sddl_transition_state state = {
+		.domain_sid = domain_sid,
+	};
+	return sddl_transition_encode_ace(mem_ctx, ace, &state);
+}
+
 /*
   encode an ACL in SDDL format
 */
 static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl,
-			     uint32_t flags, const struct dom_sid *domain_sid)
+			     uint32_t flags, struct sddl_transition_state *state)
 {
 	char *sddl;
 	uint32_t i;
@@ -668,7 +684,7 @@ static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl
 
 	/* now the ACEs, encoded in braces */
 	for (i=0;i<acl->num_aces;i++) {
-		char *ace = sddl_encode_ace(sddl, &acl->aces[i], domain_sid);
+		char *ace = sddl_transition_encode_ace(sddl, &acl->aces[i], state);
 		if (ace == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "(%s)", ace);
 		if (sddl == NULL) goto failed;
@@ -689,6 +705,9 @@ failed:
 char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 		  const struct dom_sid *domain_sid)
 {
+	struct sddl_transition_state state = {
+		.domain_sid = domain_sid,
+	};
 	char *sddl;
 	TALLOC_CTX *tmp_ctx;
 
@@ -699,28 +718,28 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 	tmp_ctx = talloc_new(mem_ctx);
 
 	if (sd->owner_sid != NULL) {
-		char *sid = sddl_encode_sid(tmp_ctx, sd->owner_sid, domain_sid);
+		char *sid = sddl_encode_sid(tmp_ctx, sd->owner_sid, &state);
 		if (sid == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "O:%s", sid);
 		if (sddl == NULL) goto failed;
 	}
 
 	if (sd->group_sid != NULL) {
-		char *sid = sddl_encode_sid(tmp_ctx, sd->group_sid, domain_sid);
+		char *sid = sddl_encode_sid(tmp_ctx, sd->group_sid, &state);
 		if (sid == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "G:%s", sid);
 		if (sddl == NULL) goto failed;
 	}
 
 	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl != NULL) {
-		char *acl = sddl_encode_acl(tmp_ctx, sd->dacl, sd->type, domain_sid);
+		char *acl = sddl_encode_acl(tmp_ctx, sd->dacl, sd->type, &state);
 		if (acl == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "D:%s", acl);
 		if (sddl == NULL) goto failed;
 	}
 
 	if ((sd->type & SEC_DESC_SACL_PRESENT) && sd->sacl != NULL) {
-		char *acl = sddl_encode_acl(tmp_ctx, sd->sacl, sd->type>>1, domain_sid);
+		char *acl = sddl_encode_acl(tmp_ctx, sd->sacl, sd->type>>1, &state);
 		if (acl == NULL) goto failed;
 		sddl = talloc_asprintf_append_buffer(sddl, "S:%s", acl);
 		if (sddl == NULL) goto failed;
