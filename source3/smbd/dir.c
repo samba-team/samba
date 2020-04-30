@@ -1279,8 +1279,10 @@ bool is_visible_file(connection_struct *conn,
 			goto out;
 		}
 		/* Honour _hide unwriteable_ option */
-		if (hide_unwriteable && !user_can_write_file(conn,
-							     smb_fname_base)) {
+		if (hide_unwriteable &&
+		    !user_can_write_file(conn,
+				smb_fname_base))
+		{
 			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
 				 entry ));
 			ret = false;
