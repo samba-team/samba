@@ -21,7 +21,8 @@ shellcheck_test \
 # Includes
 shellcheck_test -s sh \
 	"${TEST_SCRIPTS_DIR}/common.sh" \
-	"${TEST_SCRIPTS_DIR}/script_install_paths.sh"
+	"${TEST_SCRIPTS_DIR}/script_install_paths.sh" \
+	"${TEST_SCRIPTS_DIR}/unit.sh"
 
 shellcheck_test -s bash \
 	"${TEST_SCRIPTS_DIR}/cluster.bash" \
