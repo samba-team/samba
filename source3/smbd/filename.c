@@ -364,12 +364,37 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
  * instead.
  */
 
-static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname)
+static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
+					   time_t *twrp)
 {
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
 	struct tm tm;
 	NTSTATUS status;
+
+	if (twrp != NULL) {
+		struct tm *ptm = gmtime_r(twrp, &tm);
+		char *twrp_name = NULL;
+
+		twrp_name = talloc_asprintf(
+			smb_fname,
+			"@GMT-%04u.%02u.%02u-%02u.%02u.%02u/%s",
+			ptm->tm_year + 1900,
+			ptm->tm_mon + 1,
+			ptm->tm_mday,
+			ptm->tm_hour,
+			ptm->tm_min,
+			ptm->tm_sec,
+			smb_fname->base_name);
+		if (twrp_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = twrp_name;
+
+		return NT_STATUS_OK;
+	}
 
 	if (startp == NULL) {
 		/* No @ */
@@ -899,6 +924,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
+		      time_t *twrp,
 		      struct smb_filename **smb_fname_out,
 		      uint32_t ucf_flags)
 {
@@ -988,7 +1014,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 
 	/* Canonicalize any @GMT- paths. */
 	if (state->snapshot_path) {
-		status = canonicalize_snapshot_path(state->smb_fname);
+		status = canonicalize_snapshot_path(state->smb_fname, twrp);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto err;
 		}
@@ -1782,7 +1808,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			TALLOC_FREE(fname);
 			return NULL;
 		}
-		status = canonicalize_snapshot_path(smb_fname);
+		status = canonicalize_snapshot_path(smb_fname, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
@@ -1840,7 +1866,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_filename **_smb_fname)
 {
 	struct smb_filename *smb_fname = NULL;
-	const char *name = NULL;
 	char *twrp_name = NULL;
 	NTSTATUS status;
 
@@ -1890,28 +1915,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
-	name = name_in;
-	if (twrp != NULL) {
-		struct tm *tm = NULL;
-
-		tm = gmtime(twrp);
-		twrp_name = talloc_asprintf(
-			ctx,
-			"@GMT-%04u.%02u.%02u-%02u.%02u.%02u/%s",
-			tm->tm_year + 1900,
-			tm->tm_mon + 1,
-			tm->tm_mday,
-			tm->tm_hour,
-			tm->tm_min,
-			tm->tm_sec,
-			name);
-		if (twrp_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		name = twrp_name;
-	}
-
-	status = unix_convert(ctx, conn, name, &smb_fname, ucf_flags);
+	status = unix_convert(ctx, conn, name_in, twrp, &smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert_internal: unix_convert failed "
 			"for name %s with %s\n",
