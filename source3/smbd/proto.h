@@ -362,7 +362,7 @@ uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disp
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
-		      time_t *twrp,
+		      NTTIME twrp,
 		      struct smb_filename **smb_fname,
 		      uint32_t ucf_flags);
 NTSTATUS check_name(connection_struct *conn,
@@ -378,7 +378,7 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			const char *name_in,
 			uint32_t ucf_flags,
-			time_t *twrp,
+			NTTIME twrp,
 			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
 NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,

@@ -277,7 +277,7 @@ static NTSTATUS driver_unix_convert(connection_struct *conn,
 	}
 	trim_string(name,"/","/");
 
-	status = unix_convert(ctx, conn, name, NULL, smb_fname, 0);
+	status = unix_convert(ctx, conn, name, 0, smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}

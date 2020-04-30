@@ -5922,7 +5922,7 @@ static NTSTATUS get_relative_fid_filename(
 				conn,
 				new_base_name,
 				ucf_flags,
-				NULL,
+				0,
 				NULL,
 				smb_fname_out);
 	if (!NT_STATUS_IS_OK(status)) {

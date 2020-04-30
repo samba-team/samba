@@ -365,7 +365,7 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
  */
 
 static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
-					   time_t *twrp)
+					   NTTIME twrp)
 {
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
@@ -373,9 +373,12 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 	time_t t;
 	NTSTATUS status;
 
-	if (twrp != NULL) {
-		struct tm *ptm = gmtime_r(twrp, &tm);
+	if (twrp != 0) {
+		struct tm *ptm = NULL;
 		char *twrp_name = NULL;
+
+		t = nt_time_to_unix(twrp);
+		ptm = gmtime_r(&t, &tm);
 
 		twrp_name = talloc_asprintf(
 			smb_fname,
@@ -394,7 +397,7 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		TALLOC_FREE(smb_fname->base_name);
 		smb_fname->base_name = twrp_name;
 
-		unix_to_nt_time(&smb_fname->twrp, *twrp);
+		smb_fname->twrp = twrp;
 		return NT_STATUS_OK;
 	}
 
@@ -930,7 +933,7 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
-		      time_t *twrp,
+		      NTTIME twrp,
 		      struct smb_filename **smb_fname_out,
 		      uint32_t ucf_flags)
 {
@@ -1814,7 +1817,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			TALLOC_FREE(fname);
 			return NULL;
 		}
-		status = canonicalize_snapshot_path(smb_fname, NULL);
+		status = canonicalize_snapshot_path(smb_fname, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
@@ -1867,7 +1870,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_request *smbreq,
 				const char *name_in,
 				uint32_t ucf_flags,
-				time_t *twrp,
+				NTTIME twrp,
 				bool *ppath_contains_wcard,
 				struct smb_filename **_smb_fname)
 {
@@ -1972,7 +1975,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				const char *name_in,
 				uint32_t ucf_flags,
-				time_t *twrp,
+				NTTIME twrp,
 				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
@@ -2004,7 +2007,7 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
 					smbreq,
 					name_in,
 					ucf_flags,
-					NULL,
+					0,
 					ppath_contains_wcard,
 					pp_smb_fname);
 }

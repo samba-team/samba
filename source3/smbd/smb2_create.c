@@ -461,7 +461,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
 	status = filename_convert(talloc_tos(), fsp->conn,
 				  filename, ucf_flags,
-				  NULL, NULL, &smb_fname);
+				  0, NULL, &smb_fname);
 	TALLOC_FREE(filename);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("filename_convert returned %s\n",
@@ -514,8 +514,7 @@ struct smbd_smb2_create_state {
 	ssize_t lease_len;
 	bool need_replay_cache;
 	struct smbXsrv_open *op;
-	time_t twrp_time;
-	time_t *twrp_timep;
+	NTTIME twrp_time;
 
 	struct smb2_create_blob *dhnc;
 	struct smb2_create_blob *dh2c;
@@ -946,7 +945,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				  smb1req->conn,
 				  state->fname,
 				  ucf_flags,
-				  state->twrp_timep,
+				  state->twrp_time,
 				  NULL, /* ppath_contains_wcards */
 				  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1233,16 +1232,12 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 	}
 
 	if (state->twrp != NULL) {
-		NTTIME nttime;
-
 		if (state->twrp->data.length != 8) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
-		nttime = BVAL(state->twrp->data.data, 0);
-		state->twrp_time = nt_time_to_unix(nttime);
-		state->twrp_timep = &state->twrp_time;
+		state->twrp_time = BVAL(state->twrp->data.data, 0);
 
 		smb1req->flags2 |= FLAGS2_REPARSE_PATH;
 	}

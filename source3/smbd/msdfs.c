@@ -686,7 +686,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * unix_convert later in the codepath.
 	 */
 
-	status = unix_convert(ctx, conn, pdp->reqpath, NULL, &smb_fname,
+	status = unix_convert(ctx, conn, pdp->reqpath, 0, &smb_fname,
 			      ucf_flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
