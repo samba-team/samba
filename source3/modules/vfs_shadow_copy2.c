@@ -586,12 +586,13 @@ static int check_for_converted_path(TALLOC_CTX *mem_ctx,
 
 static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
-					const char *orig_name,
+					const struct smb_filename *smb_fname,
 					time_t *ptimestamp,
 					char **pstripped,
 					char **psnappath,
 					bool *_already_converted)
 {
+	const char *orig_name = smb_fname->base_name;
 	struct tm tm;
 	time_t timestamp = 0;
 	const char *p;
@@ -760,7 +761,7 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 
 static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
-					const char *orig_name,
+					const struct smb_filename *orig_name,
 					time_t *ptimestamp,
 					char **pstripped)
 {
@@ -775,7 +776,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 
 static bool shadow_copy2_strip_snapshot_converted(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
-					const char *orig_name,
+					const struct smb_filename *orig_name,
 					time_t *ptimestamp,
 					char **pstripped,
 					bool *is_converted)
@@ -1099,13 +1100,13 @@ static int shadow_copy2_renameat(vfs_handle_struct *handle,
 	char *snappath_dst = NULL;
 
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
-					 smb_fname_src->base_name,
+					 smb_fname_src,
 					 &timestamp_src, NULL, &snappath_src,
 					 NULL)) {
 		return -1;
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
-					 smb_fname_dst->base_name,
+					 smb_fname_dst,
 					 &timestamp_dst, NULL, &snappath_dst,
 					 NULL)) {
 		return -1;
@@ -1148,7 +1149,7 @@ static int shadow_copy2_symlinkat(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 				handle,
-				link_contents->base_name,
+				link_contents,
 				&timestamp_old,
 				NULL,
 				&snappath_old,
@@ -1157,7 +1158,7 @@ static int shadow_copy2_symlinkat(vfs_handle_struct *handle,
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 				handle,
-				new_smb_fname->base_name,
+				new_smb_fname,
 				&timestamp_new,
 				NULL,
 				&snappath_new,
@@ -1195,7 +1196,7 @@ static int shadow_copy2_linkat(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 				handle,
-				old_smb_fname->base_name,
+				old_smb_fname,
 				&timestamp_old,
 				NULL,
 				&snappath_old,
@@ -1204,7 +1205,7 @@ static int shadow_copy2_linkat(vfs_handle_struct *handle,
 	}
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 				handle,
-				new_smb_fname->base_name,
+				new_smb_fname,
 				&timestamp_new,
 				NULL,
 				&snappath_new,
@@ -1240,7 +1241,7 @@ static int shadow_copy2_stat(vfs_handle_struct *handle,
 	int ret;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, &stripped)) {
 		return -1;
 	}
@@ -1285,7 +1286,7 @@ static int shadow_copy2_lstat(vfs_handle_struct *handle,
 	int ret;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, &stripped)) {
 		return -1;
 	}
@@ -1334,7 +1335,7 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	int ret;
 
 	ok = shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 fsp->fsp_name->base_name,
+					 fsp->fsp_name,
 					 &timestamp, &stripped);
 	if (!ok) {
 		return -1;
@@ -1395,7 +1396,7 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 	int ret;
 
 	if (!shadow_copy2_strip_snapshot_converted(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, &stripped,
 					 &is_converted)) {
 		return -1;
@@ -1454,7 +1455,7 @@ static int shadow_copy2_unlinkat(vfs_handle_struct *handle,
 	time_t timestamp = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, NULL)) {
 		return -1;
 	}
@@ -1476,7 +1477,7 @@ static int shadow_copy2_chmod(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				NULL)) {
 		return -1;
@@ -1532,7 +1533,7 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					&stripped,
 					&snappath,
@@ -1597,7 +1598,7 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 	time_t timestamp = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, NULL)) {
 		return -1;
 	}
@@ -1621,7 +1622,7 @@ static int shadow_copy2_readlinkat(vfs_handle_struct *handle,
 	struct smb_filename *conv = NULL;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, &stripped)) {
 		return -1;
 	}
@@ -1668,7 +1669,7 @@ static int shadow_copy2_mknodat(vfs_handle_struct *handle,
 	time_t timestamp = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
+					 smb_fname,
 					 &timestamp, NULL)) {
 		return -1;
 	}
@@ -1694,7 +1695,7 @@ static struct smb_filename *shadow_copy2_realpath(vfs_handle_struct *handle,
 	int saved_errno = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp, &stripped)) {
 		goto done;
 	}
@@ -2172,7 +2173,7 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					&stripped)) {
 		return map_nt_error_from_unix(errno);
@@ -2212,7 +2213,7 @@ static int shadow_copy2_mkdirat(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					NULL)) {
 		return -1;
@@ -2235,7 +2236,7 @@ static int shadow_copy2_chflags(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					NULL)) {
 		return -1;
@@ -2262,7 +2263,7 @@ static ssize_t shadow_copy2_getxattr(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				&stripped)) {
 		return -1;
@@ -2313,7 +2314,7 @@ static ssize_t shadow_copy2_listxattr(struct vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				&stripped)) {
 		return -1;
@@ -2356,7 +2357,7 @@ static int shadow_copy2_removexattr(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				NULL)) {
 		return -1;
@@ -2377,7 +2378,7 @@ static int shadow_copy2_setxattr(struct vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				NULL)) {
 		return -1;
@@ -2400,7 +2401,7 @@ static NTSTATUS shadow_copy2_create_dfs_pathat(struct vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					NULL)) {
 		return NT_STATUS_NO_MEMORY;
@@ -2429,7 +2430,7 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(mem_ctx,
 					handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp,
 					&stripped)) {
 		return NT_STATUS_NO_MEMORY;
@@ -2486,7 +2487,7 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 	DEBUG(10, ("shadow_copy2_get_real_filename called for path=[%s], "
 		   "name=[%s]\n", path, name));
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, path,
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
 					 &timestamp, &stripped)) {
 		DEBUG(10, ("shadow_copy2_strip_snapshot failed\n"));
 		return -1;
@@ -2548,7 +2549,7 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 		return priv->shadow_connectpath;
 	}
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, smb_fname_in,
 					 &timestamp, &stripped)) {
 		goto done;
 	}
@@ -2638,7 +2639,7 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				&stripped)) {
 		return (uint64_t)-1;
@@ -2690,7 +2691,7 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle,
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 				handle,
-				smb_fname->base_name,
+				smb_fname,
 				&timestamp,
 				&stripped)) {
 		return -1;
