@@ -397,10 +397,11 @@ static bool vxfs_compare_acls(char *e_buf, char *n_buf, int n_count,
  */
 
 static bool vxfs_compare(connection_struct *conn,
-			 char *name,
+			 const struct smb_filename *smb_fname,
 			 SMB_ACL_T the_acl,
 			 SMB_ACL_TYPE_T the_acl_type)
 {
+	char *name = smb_fname->base_name;
 	SMB_ACL_T existing_acl = NULL;
 	bool ret = false;
 	int i, count = 0;
@@ -410,12 +411,6 @@ static bool vxfs_compare(connection_struct *conn,
 	int status;
 
 	DEBUG(10, ("vfs_vxfs: Getting existing ACL for %s\n", name));
-
-	smb_fname = synthetic_smb_fname(mem_ctx, name, NULL, NULL, 0);
-	if (smb_fname == NULL) {
-		DEBUG(10, ("vfs_vxfs: Failed to create smb_fname\n"));
-		goto out;
-	}
 
 	existing_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname, the_acl_type,
 						mem_ctx);
@@ -481,7 +476,6 @@ static bool vxfs_compare(connection_struct *conn,
 out:
 
 	TALLOC_FREE(existing_acl);
-	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(existing_buf);
 	TALLOC_FREE(compact_buf);
 	TALLOC_FREE(new_buf);
@@ -493,7 +487,7 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_ACL_T theacl)
 {
 
-	if (vxfs_compare(fsp->conn, fsp->fsp_name->base_name, theacl,
+	if (vxfs_compare(fsp->conn, fsp->fsp_name, theacl,
 			 SMB_ACL_TYPE_ACCESS)) {
 		return 0;
 	}
@@ -506,7 +500,7 @@ static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,
 				SMB_ACL_TYPE_T acltype,
 				SMB_ACL_T theacl)
 {
-	if (vxfs_compare(handle->conn, (char *)smb_fname->base_name,
+	if (vxfs_compare(handle->conn, smb_fname,
 			theacl, acltype)) {
 		return 0;
 	}
