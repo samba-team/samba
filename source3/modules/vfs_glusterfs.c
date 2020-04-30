@@ -1751,8 +1751,10 @@ static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
-					 const char *path, const char *name,
-					 TALLOC_CTX *mem_ctx, char **found_name)
+					 const char *path,
+					 const char *name,
+					 TALLOC_CTX *mem_ctx,
+					 char **found_name)
 {
 	int ret;
 	char key_buf[GLUSTER_NAME_MAX + 64];
