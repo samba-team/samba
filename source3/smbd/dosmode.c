@@ -535,8 +535,10 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		status = smbd_check_access_rights(conn, smb_fname, false,
-						  FILE_WRITE_ATTRIBUTES);
+		status = smbd_check_access_rights(conn,
+					smb_fname,
+					false,
+					FILE_WRITE_ATTRIBUTES);
 		if (NT_STATUS_IS_OK(status)) {
 			set_dosmode_ok = true;
 		}
