@@ -396,7 +396,9 @@ static bool vxfs_compare_acls(char *e_buf, char *n_buf, int n_count,
  * 6. Else need to set New ACL
  */
 
-static bool vxfs_compare(connection_struct *conn, char *name, SMB_ACL_T the_acl,
+static bool vxfs_compare(connection_struct *conn,
+			 char *name,
+			 SMB_ACL_T the_acl,
 			 SMB_ACL_TYPE_T the_acl_type)
 {
 	SMB_ACL_T existing_acl = NULL;
