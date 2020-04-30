@@ -183,7 +183,7 @@ static int lmdb_store(struct ldb_kv_private *ldb_kv,
 
 	if (flags == TDB_INSERT) {
 		mdb_flags = MDB_NOOVERWRITE;
-	} else if ((flags == TDB_MODIFY)) {
+	} else if (flags == TDB_MODIFY) {
 		/*
 		 * Modifying a record, ensure that it exists.
 		 * This mimics the TDB semantics
