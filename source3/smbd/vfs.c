@@ -1074,7 +1074,11 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL, 0);
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
+					    ".",
+					    NULL,
+					    NULL,
+					    0);
 	if (smb_fname_cwd == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
