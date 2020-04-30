@@ -33,7 +33,7 @@
 ****************************************************************************/
 
 bool can_delete_file_in_directory(connection_struct *conn,
-				  const struct smb_filename *smb_fname)
+			const struct smb_filename *smb_fname)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_parent = NULL;
