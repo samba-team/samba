@@ -370,6 +370,7 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
 	struct tm tm;
+	time_t t;
 	NTSTATUS status;
 
 	if (twrp != NULL) {
@@ -393,6 +394,7 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		TALLOC_FREE(smb_fname->base_name);
 		smb_fname->base_name = twrp_name;
 
+		unix_to_nt_time(&smb_fname->twrp, *twrp);
 		return NT_STATUS_OK;
 	}
 
@@ -430,6 +432,10 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	tm.tm_isdst = -1;
+	t = timegm(&tm);
+	unix_to_nt_time(&smb_fname->twrp, t);
 
 	return NT_STATUS_OK;
 }
