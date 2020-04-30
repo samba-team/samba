@@ -1395,7 +1395,7 @@ static int ceph_snap_gmt_setxattr(struct vfs_handle_struct *handle,
 }
 
 static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
-					 const char *path,
+					 const struct smb_filename *path,
 					 const char *name,
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name)
@@ -1403,9 +1403,10 @@ static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
 	time_t timestamp = 0;
 	char stripped[PATH_MAX + 1];
 	char conv[PATH_MAX + 1];
+	struct smb_filename conv_fname;
 	int ret;
 
-	ret = ceph_snap_gmt_strip_snapshot(handle, path,
+	ret = ceph_snap_gmt_strip_snapshot(handle, path->base_name,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1421,7 +1422,12 @@ static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
 		errno = -ret;
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, conv, name,
+
+	conv_fname = (struct smb_filename) {
+		.base_name = conv,
+	};
+
+	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, &conv_fname, name,
 					     mem_ctx, found_name);
 	return ret;
 }

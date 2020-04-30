@@ -1616,7 +1616,7 @@ static NTSTATUS smb_time_audit_streaminfo(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_get_real_filename(struct vfs_handle_struct *handle,
-					    const char *path,
+					    const struct smb_filename *path,
 					    const char *name,
 					    TALLOC_CTX *mem_ctx,
 					    char **found_name)
@@ -1632,7 +1632,8 @@ static int smb_time_audit_get_real_filename(struct vfs_handle_struct *handle,
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("get_real_filename", timediff, path);
+		smb_time_audit_log_fname("get_real_filename",
+					 timediff, path->base_name);
 	}
 
 	return result;

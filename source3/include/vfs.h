@@ -314,6 +314,8 @@
  *              bool closing
  *              bool lock_failure_seen
  *              changed to bitfields.
+ * Version 43 - convert SMB_VFS_GET_REAL_FILENAME() arg path
+ *              to be a struct smb_filename
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -927,7 +929,7 @@ struct vfs_fn_pointers {
 				  struct stream_struct **streams);
 
 	int (*get_real_filename_fn)(struct vfs_handle_struct *handle,
-				    const char *path,
+				    const struct smb_filename *path,
 				    const char *name,
 				    TALLOC_CTX *mem_ctx,
 				    char **found_name);
@@ -1418,7 +1420,7 @@ NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 unsigned int *num_streams,
 				 struct stream_struct **streams);
 int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
-				   const char *path,
+				   const struct smb_filename *path,
 				   const char *name,
 				   TALLOC_CTX *mem_ctx,
 				   char **found_name);
@@ -1893,7 +1895,7 @@ NTSTATUS vfs_not_implemented_streaminfo(struct vfs_handle_struct *handle,
 					unsigned int *num_streams,
 					struct stream_struct **streams);
 int vfs_not_implemented_get_real_filename(struct vfs_handle_struct *handle,
-					  const char *path,
+					  const struct smb_filename *path,
 					  const char *name,
 					  TALLOC_CTX *mem_ctx,
 					  char **found_name);

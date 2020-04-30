@@ -520,7 +520,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	 * scanning the whole directory.
 	 */
 	ret = SMB_VFS_GET_REAL_FILENAME(dptr->conn,
-					dptr->smb_dname->base_name,
+					dptr->smb_dname,
 					dptr->wcard,
 					ctx,
 					&found_name);

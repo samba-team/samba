@@ -1751,7 +1751,7 @@ static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
-					 const char *path,
+					 const struct smb_filename *path,
 					 const char *name,
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name)
@@ -1768,7 +1768,7 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
 		 "glusterfs.get_real_filename:%s", name);
 
-	ret = glfs_getxattr(handle->data, path, key_buf, val_buf,
+	ret = glfs_getxattr(handle->data, path->base_name, key_buf, val_buf,
 			    GLUSTER_NAME_MAX + 1);
 	if (ret == -1) {
 		if (errno == ENOATTR) {

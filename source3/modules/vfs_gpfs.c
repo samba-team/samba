@@ -279,7 +279,7 @@ failure:
 }
 
 static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
-				      const char *path,
+				      const struct smb_filename *path,
 				      const char *name,
 				      TALLOC_CTX *mem_ctx,
 				      char **found_name)
@@ -308,7 +308,8 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 						      mem_ctx, found_name);
 	}
 
-	full_path_len = full_path_tos(path, name, tmpbuf, sizeof(tmpbuf),
+	full_path_len = full_path_tos(path->base_name, name,
+				      tmpbuf, sizeof(tmpbuf),
 				      &full_path, &to_free);
 	if (full_path_len == -1) {
 		errno = ENOMEM;
@@ -345,7 +346,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	}
 
 	DEBUG(10, ("smbd_gpfs_get_realfilename_path: %s/%s -> %s\n",
-		   path, name, real_pathname));
+		   path->base_name, name, real_pathname));
 
 	name = strrchr_m(real_pathname, '/');
 	if (name == NULL) {

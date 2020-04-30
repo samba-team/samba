@@ -1968,7 +1968,7 @@ static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
-					    const char *path,
+					    const struct smb_filename *path,
 					    const char *name,
 					    TALLOC_CTX *mem_ctx,
 					    char **found_name)
@@ -1979,7 +1979,8 @@ static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
 						found_name);
 
 	do_log(SMB_VFS_OP_GET_REAL_FILENAME, (result == 0), handle,
-	       "%s/%s->%s", path, name, (result == 0) ? *found_name : "");
+	       "%s/%s->%s",
+	       path->base_name, name, (result == 0) ? *found_name : "");
 
 	return result;
 }

@@ -2623,23 +2623,25 @@ static int snapper_gmt_setxattr(struct vfs_handle_struct *handle,
 }
 
 static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
-					 const char *path,
+					 const struct smb_filename *fpath,
 					 const char *name,
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name)
 {
+	char *path = fpath->base_name;
 	time_t timestamp;
 	char *stripped;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
+	struct smb_filename conv_fname;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, path,
 					&timestamp, &stripped)) {
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
+		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, fpath, name,
 						      mem_ctx, found_name);
 	}
 	if (stripped[0] == '\0') {
@@ -2655,7 +2657,12 @@ static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, conv, name,
+
+	conv_fname = (struct smb_filename) {
+		.base_name = conv,
+	};
+
+	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, &conv_fname, name,
 					     mem_ctx, found_name);
 	saved_errno = errno;
 	TALLOC_FREE(conv);

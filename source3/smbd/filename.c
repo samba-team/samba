@@ -1687,7 +1687,7 @@ int get_real_filename(connection_struct *conn,
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
 	ret = SMB_VFS_GET_REAL_FILENAME(conn,
-					path->base_name,
+					path,
 					name,
 					mem_ctx,
 					found_name);

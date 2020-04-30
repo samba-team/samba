@@ -643,7 +643,7 @@ static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 }
 
 static int skel_get_real_filename(struct vfs_handle_struct *handle,
-				  const char *path,
+				  const struct smb_filename *path,
 				  const char *name,
 				  TALLOC_CTX *mem_ctx, char **found_name)
 {
