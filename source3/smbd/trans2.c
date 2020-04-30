@@ -6982,7 +6982,9 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				       const struct smb_filename *new_smb_fname)
 {
 	char *link_target = NULL;
+	struct smb_filename target_fname;
 	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status;
 	int ret;
 
 	/* Set a symbolic link. */
@@ -7003,11 +7005,21 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	target_fname = (struct smb_filename) {
+		.base_name = link_target,
+	};
+
+	/* Removes @GMT tokens if any */
+	status = canonicalize_snapshot_path(&target_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 			new_smb_fname->base_name, link_target ));
 
 	ret = SMB_VFS_SYMLINKAT(conn,
-			link_target,
+			target_fname.base_name,
 			conn->cwd_fsp,
 			new_smb_fname);
 	if (ret != 0) {

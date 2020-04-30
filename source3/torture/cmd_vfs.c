@@ -1145,7 +1145,10 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
+	char *target = NULL;
+	struct smb_filename target_fname;
 	struct smb_filename *new_smb_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 3) {
 		printf("Usage: symlink <path> <link>\n");
@@ -1158,8 +1161,24 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	if (new_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	target = talloc_strdup(mem_ctx, argv[1]);
+	if (target == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	target_fname = (struct smb_filename) {
+		.base_name = target,
+	};
+
+	/* Removes @GMT tokens if any */
+	status = canonicalize_snapshot_path(&target_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	ret = SMB_VFS_SYMLINKAT(vfs->conn,
-			argv[1],
+			target_fname.base_name,
 			vfs->conn->cwd_fsp,
 			new_smb_fname);
 	if (ret == -1) {
