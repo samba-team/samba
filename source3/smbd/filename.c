@@ -1652,8 +1652,10 @@ static int get_real_filename_full_scan(connection_struct *conn,
  fallback.
 ****************************************************************************/
 
-int get_real_filename(connection_struct *conn, const char *path,
-		      const char *name, TALLOC_CTX *mem_ctx,
+int get_real_filename(connection_struct *conn,
+		      const char *path,
+		      const char *name,
+		      TALLOC_CTX *mem_ctx,
 		      char **found_name)
 {
 	int ret;
@@ -1667,12 +1669,20 @@ int get_real_filename(connection_struct *conn, const char *path,
 	mangled = mangle_is_mangled(name, conn->params);
 
 	if (mangled) {
-		return get_real_filename_full_scan(conn, path, name, mangled,
-						   mem_ctx, found_name);
+		return get_real_filename_full_scan(conn,
+						   path,
+						   name,
+						   mangled,
+						   mem_ctx,
+						   found_name);
 	}
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
-	ret = SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name);
+	ret = SMB_VFS_GET_REAL_FILENAME(conn,
+					path,
+					name,
+					mem_ctx,
+					found_name);
 
 	/*
 	 * If the case-insensitive stat was successful, or returned an error
@@ -1683,7 +1693,11 @@ int get_real_filename(connection_struct *conn, const char *path,
 		return ret;
 	}
 
-	return get_real_filename_full_scan(conn, path, name, mangled, mem_ctx,
+	return get_real_filename_full_scan(conn,
+					   path,
+					   name,
+					   mangled,
+					   mem_ctx,
 					   found_name);
 }
 
