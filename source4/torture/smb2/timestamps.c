@@ -390,7 +390,7 @@ static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 	torture_comment(tctx, "Set write time on file-handle 2\n");
 
 	setinfo = (union smb_setfileinfo) {
-		.generic.level = RAW_FILEINFO_BASIC_INFORMATION,
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
 	};
 	setinfo.generic.in.file.handle = h2;
 	unix_to_nt_time(&set_time, time(NULL) + 86400);
