@@ -790,6 +790,15 @@ int main(void) {
         if not Options.options.disable_warnings_as_errors:
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Werror -Wno-error=deprecated-declarations', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=tautological-compare', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=cast-align', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=format-nonliteral', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=for-loop-analysis', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=missing-field-initializers', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=parentheses-equality', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=unused-function', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=enum-conversion', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=logical-not-parentheses', testflags=True)
+            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=constant-conversion', testflags=True)
 
     if Options.options.fatal_errors:
         conf.ADD_CFLAGS('-Wfatal-errors', testflags=True)
