@@ -1069,7 +1069,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 ********************************************************************/
 
 static bool user_can_read_file(connection_struct *conn,
-			       struct smb_filename *smb_fname)
+				struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
 	uint32_t rejected_share_access = 0;
@@ -1275,7 +1275,9 @@ bool is_visible_file(connection_struct *conn,
 
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable &&
-		    !user_can_read_file(conn, smb_fname_base)) {
+		    !user_can_read_file(conn,
+				smb_fname_base))
+		{
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n",
 				 entry ));
 			ret = false;
