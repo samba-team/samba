@@ -468,7 +468,7 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 static NTSTATUS walk_streams(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname_base,
 			     char **pdirname,
-			     bool (*fn)(const char *dirname,
+			     bool (*fn)(const struct smb_filename *dirname,
 					const char *dirent,
 					void *private_data),
 			     void *private_data)
@@ -506,8 +506,8 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	}
 
 	dir_hnd = OpenDir(talloc_tos(), handle->conn, dir_smb_fname, NULL, 0);
-	TALLOC_FREE(dir_smb_fname);
 	if (dir_hnd == NULL) {
+		TALLOC_FREE(dir_smb_fname);
 		TALLOC_FREE(dirname);
 		return map_nt_error_from_unix(errno);
 	}
@@ -522,13 +522,14 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 
 		DBG_DEBUG("dirent=%s\n", dname);
 
-		if (!fn(dirname, dname, private_data)) {
+		if (!fn(dir_smb_fname, dname, private_data)) {
 			TALLOC_FREE(talloced);
 			break;
 		}
 		TALLOC_FREE(talloced);
 	}
 
+	TALLOC_FREE(dir_smb_fname);
 	TALLOC_FREE(dir_hnd);
 
 	if (pdirname != NULL) {
@@ -934,10 +935,11 @@ struct streaminfo_state {
 	NTSTATUS status;
 };
 
-static bool collect_one_stream(const char *dirname,
+static bool collect_one_stream(const struct smb_filename *dirfname,
 			       const char *dirent,
 			       void *private_data)
 {
+	const char *dirname = dirfname->base_name;
 	struct streaminfo_state *state =
 		(struct streaminfo_state *)private_data;
 	struct smb_filename *smb_fname = NULL;
