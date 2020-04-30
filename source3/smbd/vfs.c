@@ -2233,8 +2233,10 @@ NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
-				   const char *path, const char *name,
-				   TALLOC_CTX *mem_ctx, char **found_name)
+				   const char *path,
+				   const char *name,
+				   TALLOC_CTX *mem_ctx,
+				   char **found_name)
 {
 	VFS_FIND(get_real_filename);
 	return handle->fns->get_real_filename_fn(handle, path, name, mem_ctx,

@@ -1416,8 +1416,10 @@ NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 unsigned int *num_streams,
 				 struct stream_struct **streams);
 int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
-				   const char *path, const char *name,
-				   TALLOC_CTX *mem_ctx, char **found_name);
+				   const char *path,
+				   const char *name,
+				   TALLOC_CTX *mem_ctx,
+				   char **found_name);
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
