@@ -33,11 +33,14 @@
 ****************************************************************************/
 
 bool can_delete_file_in_directory(connection_struct *conn,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_parent = NULL;
 	bool ret;
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	if (!CAN_WRITE(conn)) {
 		return False;

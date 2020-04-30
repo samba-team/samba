@@ -82,6 +82,7 @@ static bool parent_override_delete(connection_struct *conn,
 	if ((access_mask & DELETE_ACCESS) &&
 		    (rejected_mask & DELETE_ACCESS) &&
 		    can_delete_file_in_directory(conn,
+				conn->cwd_fsp,
 				smb_fname))
 	{
 		return true;
@@ -3074,6 +3075,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 
 	if (!(access_granted & DELETE_ACCESS)) {
 		if (can_delete_file_in_directory(conn,
+				conn->cwd_fsp,
 				smb_fname))
 		{
 			*p_access_mask |= DELETE_ACCESS;
