@@ -654,6 +654,8 @@ static NTSTATUS unix_convert_step_search_fail(struct uc_state *state)
 
 static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 {
+	struct smb_filename dname;
+	char dot[2] = ".";
 	char *found_name = NULL;
 	int ret;
 
@@ -752,8 +754,19 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 	if (state->name_has_wildcard) {
 		return unix_convert_step_search_fail(state);
 	}
+
+	dname = (struct smb_filename) {
+		.base_name = state->dirpath,
+		.twrp = state->smb_fname->twrp,
+	};
+
+	/* handle null paths */
+	if ((dname.base_name == NULL) || (dname.base_name[0] == '\0')) {
+		dname.base_name = dot;
+	}
+
 	ret = get_real_filename(state->conn,
-				state->dirpath,
+				&dname,
 				state->name,
 				talloc_tos(),
 				&found_name);
@@ -1653,7 +1666,7 @@ static int get_real_filename_full_scan(connection_struct *conn,
 ****************************************************************************/
 
 int get_real_filename(connection_struct *conn,
-		      const char *path,
+		      struct smb_filename *path,
 		      const char *name,
 		      TALLOC_CTX *mem_ctx,
 		      char **found_name)
@@ -1661,16 +1674,11 @@ int get_real_filename(connection_struct *conn,
 	int ret;
 	bool mangled;
 
-	/* handle null paths */
-	if ((path == NULL) || (*path == 0)) {
-		path = ".";
-	}
-
 	mangled = mangle_is_mangled(name, conn->params);
 
 	if (mangled) {
 		return get_real_filename_full_scan(conn,
-						   path,
+						   path->base_name,
 						   name,
 						   mangled,
 						   mem_ctx,
@@ -1679,7 +1687,7 @@ int get_real_filename(connection_struct *conn,
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
 	ret = SMB_VFS_GET_REAL_FILENAME(conn,
-					path,
+					path->base_name,
 					name,
 					mem_ctx,
 					found_name);
@@ -1694,7 +1702,7 @@ int get_real_filename(connection_struct *conn,
 	}
 
 	return get_real_filename_full_scan(conn,
-					   path,
+					   path->base_name,
 					   name,
 					   mangled,
 					   mem_ctx,
