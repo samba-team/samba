@@ -953,7 +953,11 @@ static bool collect_one_stream(const struct smb_filename *dirfname,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), sname, NULL, NULL, 0);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					sname,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
 		ret = false;
