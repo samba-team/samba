@@ -1255,8 +1255,8 @@ static NTSTATUS open_file(files_struct *fsp,
 				}
 
 				status = check_parent_access(conn,
-							     smb_fname,
-							     SEC_DIR_ADD_FILE);
+							smb_fname,
+							SEC_DIR_ADD_FILE);
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(10, ("open_file: "
 						   "check_parent_access on "
