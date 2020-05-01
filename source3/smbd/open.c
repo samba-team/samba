@@ -397,7 +397,8 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 {
 	NTSTATUS status;
 
-	status = smbd_calculate_access_mask(conn, smb_fname,
+	status = smbd_calculate_access_mask(conn,
+					smb_fname,
 					false,
 					access_mask,
 					&access_mask);
@@ -3101,10 +3102,10 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 }
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
-				    const struct smb_filename *smb_fname,
-				    bool use_privs,
-				    uint32_t access_mask,
-				    uint32_t *access_mask_out)
+			const struct smb_filename *smb_fname,
+			bool use_privs,
+			uint32_t access_mask,
+			uint32_t *access_mask_out)
 {
 	NTSTATUS status;
 	uint32_t orig_access_mask = access_mask;
@@ -3505,10 +3506,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask(conn, smb_fname,
+	status = smbd_calculate_access_mask(conn,
+					smb_fname,
 					false,
 					access_mask,
-					&access_mask); 
+					&access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_file_ntcreate: smbd_calculate_access_mask "
 			"on file %s returned %s\n",
@@ -4263,8 +4265,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 create_disposition,
 		 file_attributes);
 
-	status = smbd_calculate_access_mask(conn, smb_dname, false,
-					    access_mask, &access_mask);
+	status = smbd_calculate_access_mask(conn,
+					smb_dname,
+					false,
+					access_mask,
+					&access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_directory: smbd_calculate_access_mask "
 			"on file %s returned %s\n",

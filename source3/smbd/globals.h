@@ -212,10 +212,10 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       struct file_id *file_id);
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
-				    const struct smb_filename *smb_fname,
-				    bool use_privs,
-				    uint32_t access_mask,
-				    uint32_t *access_mask_out);
+			const struct smb_filename *smb_fname,
+			bool use_privs,
+			uint32_t access_mask,
+			uint32_t *access_mask_out);
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 

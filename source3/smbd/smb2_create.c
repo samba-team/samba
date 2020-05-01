@@ -1341,10 +1341,10 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 			status = smbd_calculate_access_mask(smb1req->conn,
-							    state->result->fsp_name,
-							    false,
-							    SEC_FLAG_MAXIMUM_ALLOWED,
-							    &max_access_granted);
+					state->result->fsp_name,
+					false,
+					SEC_FLAG_MAXIMUM_ALLOWED,
+					&max_access_granted);
 
 			SIVAL(p, 0, NT_STATUS_V(status));
 			SIVAL(p, 4, max_access_granted);
