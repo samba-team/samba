@@ -871,9 +871,10 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 
 	keystr = hex_encode_talloc(ctdb_db,
 				   (unsigned char *)key.dptr, key.dsize);
-	DEBUG(DEBUG_NOTICE,("Updated hot key database=%s key=%s id=%d "
-			    "count=%d\n", ctdb_db->db_name,
-			    keystr ? keystr : "" , id, count));
+	D_NOTICE("Added hot key database=%s key=%s count=%d\n",
+		 ctdb_db->db_name,
+		 keystr ? keystr : "" ,
+		 count);
 	talloc_free(keystr);
 
 sort_keys:
