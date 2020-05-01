@@ -751,6 +751,13 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 		}
 		*pstripped = stripped;
 	}
+	if (timestamp != 0) {
+		time_t smb_fname_timestamp;
+
+		SMB_ASSERT(smb_fname->twrp != 0);
+		smb_fname_timestamp = nt_time_to_unix(smb_fname->twrp);
+		SMB_ASSERT(smb_fname_timestamp == timestamp);
+	}
 	*ptimestamp = timestamp;
 	ret = true;
 
