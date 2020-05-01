@@ -3031,6 +3031,7 @@ static void schedule_async_open(struct smb_request *req)
 
 static NTSTATUS smbd_calculate_maximum_allowed_access(
 	connection_struct *conn,
+	struct files_struct *dirfsp,
 	const struct smb_filename *smb_fname,
 	bool use_privs,
 	uint32_t *p_access_mask)
@@ -3038,6 +3039,8 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	struct security_descriptor *sd;
 	uint32_t access_granted;
 	NTSTATUS status;
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	if (!use_privs && (get_current_uid(conn) == (uid_t)0)) {
 		*p_access_mask |= FILE_GENERIC_ALL;
@@ -3131,6 +3134,7 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 
 		status = smbd_calculate_maximum_allowed_access(conn,
+					dirfsp,
 					smb_fname,
 					use_privs,
 					&access_mask);
