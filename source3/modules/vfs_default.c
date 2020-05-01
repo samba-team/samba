@@ -3012,19 +3012,20 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		struct smb_filename smb_fname_cp;
+		struct smb_filename *smb_fname_cp = NULL;
 
-		ZERO_STRUCT(smb_fname_cp);
-		smb_fname_cp.base_name = discard_const_p(char,
-					smb_fname->base_name);
-		smb_fname_cp.flags = smb_fname->flags;
-
-		if (smb_fname_cp.flags & SMB_FILENAME_POSIX_PATH) {
-			ret = SMB_VFS_LSTAT(handle->conn, &smb_fname_cp);
-		} else {
-			ret = SMB_VFS_STAT(handle->conn, &smb_fname_cp);
+		smb_fname_cp = cp_smb_filename_nostream(talloc_tos(), smb_fname);
+		if (smb_fname_cp == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
-		sbuf = smb_fname_cp.st;
+
+		if (smb_fname_cp->flags & SMB_FILENAME_POSIX_PATH) {
+			ret = SMB_VFS_LSTAT(handle->conn, smb_fname_cp);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, smb_fname_cp);
+		}
+		sbuf = smb_fname_cp->st;
+		TALLOC_FREE(smb_fname_cp);
 	}
 
 	if (ret == -1) {
