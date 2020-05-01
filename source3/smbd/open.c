@@ -264,6 +264,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 }
 
 NTSTATUS check_parent_access(struct connection_struct *conn,
+				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
@@ -278,6 +279,13 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ok;
+
+	/*
+	 * NB. When dirfsp != conn->cwd_fsp, we must
+	 * change parent_dir to be "." for the name here.
+	 */
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	ok = parent_smb_fname(frame, smb_fname, &parent_dir, NULL);
 	if (!ok) {
@@ -1255,6 +1263,7 @@ static NTSTATUS open_file(files_struct *fsp,
 				}
 
 				status = check_parent_access(conn,
+							conn->cwd_fsp,
 							smb_fname,
 							SEC_DIR_ADD_FILE);
 				if (!NT_STATUS_IS_OK(status)) {
@@ -4112,6 +4121,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	status = check_parent_access(conn,
+					conn->cwd_fsp,
 					smb_dname,
 					access_mask);
 	if(!NT_STATUS_IS_OK(status)) {

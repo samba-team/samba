@@ -7807,6 +7807,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		access_mask = SEC_DIR_ADD_SUBDIR;
 	}
 	status = check_parent_access(conn,
+				conn->cwd_fsp,
 				smb_fname_dst,
 				access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
