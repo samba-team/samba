@@ -492,6 +492,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = (struct smb_filename) {
 		.base_name = pathreal,
+		.twrp = dptr->smb_dname->twrp,
 	};
 
 	if (SMB_VFS_STAT(dptr->conn, &smb_fname_base) == 0) {
