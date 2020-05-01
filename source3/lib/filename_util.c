@@ -136,6 +136,11 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 {
 	char *fname = NULL;
+	time_t t;
+	struct tm tm;
+	struct tm *ptm = NULL;
+	fstring tstr;
+	ssize_t slen;
 	NTSTATUS status;
 
 	if (smb_fname == NULL) {
@@ -143,6 +148,28 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 	}
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		return "";
+	}
+	if (smb_fname->twrp == 0) {
+		return fname;
+	}
+
+	t = nt_time_to_unix(smb_fname->twrp);
+	ptm = gmtime_r(&t, &tm);
+	if (ptm == NULL) {
+		return "";
+	}
+
+	slen = strftime(tstr, sizeof(tstr), GMT_FORMAT, &tm);
+	if (slen == 0) {
+		return "";
+	}
+
+	fname = talloc_asprintf(talloc_tos(),
+				"%s {%s}",
+				fname,
+				tstr);
+	if (fname == NULL) {
 		return "";
 	}
 	return fname;
