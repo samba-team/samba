@@ -869,7 +869,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		/* Create smb_fname with NULL stream_name. */
 		smb_fname = (struct smb_filename) {
-			.base_name = pathreal, .st = sbuf
+			.base_name = pathreal,
+			.st = sbuf,
 		};
 
 		ok = mode_fn(ctx, private_data, &smb_fname, get_dosmode, &mode);
