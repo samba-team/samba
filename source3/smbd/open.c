@@ -3130,8 +3130,10 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 
-		status = smbd_calculate_maximum_allowed_access(
-			conn, smb_fname, use_privs, &access_mask);
+		status = smbd_calculate_maximum_allowed_access(conn,
+					smb_fname,
+					use_privs,
+					&access_mask);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
