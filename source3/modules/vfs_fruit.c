@@ -4081,6 +4081,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 	} else {
 		status = smbd_calculate_access_mask(
 			handle->conn,
+			handle->conn->cwd_fsp,
 			fname,
 			false,
 			SEC_FLAG_MAXIMUM_ALLOWED,

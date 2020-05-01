@@ -1341,6 +1341,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 			status = smbd_calculate_access_mask(smb1req->conn,
+					smb1req->conn->cwd_fsp,
 					state->result->fsp_name,
 					false,
 					SEC_FLAG_MAXIMUM_ALLOWED,

@@ -398,6 +398,7 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 	NTSTATUS status;
 
 	status = smbd_calculate_access_mask(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					access_mask,
@@ -3102,6 +3103,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 }
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			bool use_privs,
 			uint32_t access_mask,
@@ -3110,6 +3112,8 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 	NTSTATUS status;
 	uint32_t orig_access_mask = access_mask;
 	uint32_t rejected_share_access;
+
+	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
 	if (access_mask & SEC_MASK_INVALID) {
 		DBG_DEBUG("access_mask [%8x] contains invalid bits\n",
@@ -3507,6 +3511,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	status = smbd_calculate_access_mask(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					access_mask,
@@ -4266,6 +4271,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 file_attributes);
 
 	status = smbd_calculate_access_mask(conn,
+					conn->cwd_fsp,
 					smb_dname,
 					false,
 					access_mask,

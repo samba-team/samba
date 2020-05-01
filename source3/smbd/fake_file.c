@@ -132,6 +132,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	NTSTATUS status;
 
 	status = smbd_calculate_access_mask(conn,
+					conn->cwd_fsp,
 					smb_fname,
 					false,
 					access_mask,
