@@ -996,7 +996,7 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const char *p = NULL;
 	const char *endpoint = NULL;
-	int i;
+	uint32_t i;
 	struct dcerpc_binding *default_binding = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
