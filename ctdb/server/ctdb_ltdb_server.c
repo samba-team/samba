@@ -1605,6 +1605,7 @@ void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
 			ctdb_db->hot_keys[i].key.dsize = 0;
 		}
 		ctdb_db->hot_keys[i].count = 0;
+		ctdb_db->hot_keys[i].last_logged_count = 0;
 	}
 
 	ZERO_STRUCT(ctdb_db->statistics);

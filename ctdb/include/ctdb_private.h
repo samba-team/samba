@@ -345,6 +345,7 @@ struct ctdb_context {
 struct ctdb_db_hot_key {
 	uint32_t count;
 	TDB_DATA key;
+	uint32_t last_logged_count;
 };
 
 struct ctdb_db_context {

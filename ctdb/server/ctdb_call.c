@@ -849,6 +849,17 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		if (count <= ctdb_db->hot_keys[i].count) {
 			return;
 		}
+		if (count >= (2 * ctdb_db->hot_keys[i].last_logged_count)) {
+			keystr = hex_encode_talloc(ctdb_db,
+						   (unsigned char *)key.dptr,
+						   key.dsize);
+			D_NOTICE("Updated hot key database=%s key=%s count=%d\n",
+				 ctdb_db->db_name,
+				 keystr ? keystr : "" ,
+				 count);
+			TALLOC_FREE(keystr);
+			ctdb_db->hot_keys[i].last_logged_count = count;
+		}
 		ctdb_db->hot_keys[i].count = count;
 		goto sort_keys;
 	}
@@ -876,6 +887,7 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		 keystr ? keystr : "" ,
 		 count);
 	talloc_free(keystr);
+	ctdb_db->hot_keys[id].last_logged_count = count;
 
 sort_keys:
 	for (i = 1; i < MAX_HOT_KEYS; i++) {
