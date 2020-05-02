@@ -535,10 +535,16 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 		return False;
 	}
 
+	if (rdrcnt < 2) {
+		cli->rap_error = ERRbadformat;
+		goto done;
+	}
+
 	if (rparam) {
 		cli->rap_error = SVAL(rparam,0);
 	}
 
+done:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
