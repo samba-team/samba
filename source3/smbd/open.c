@@ -513,7 +513,9 @@ static int process_symlink_open(struct connection_struct *conn,
 
 	/* Ensure it's at least null terminated. */
 	link_target[link_len] = '\0';
-	target_fname = (struct smb_filename){ .base_name = link_target };
+	target_fname = (struct smb_filename) {
+		.base_name = link_target,
+	};
 
 	/* Convert to an absolute path. */
 	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), &target_fname);
