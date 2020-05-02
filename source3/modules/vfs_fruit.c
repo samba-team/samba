@@ -3150,6 +3150,7 @@ static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
 
 	smb_fname = (struct smb_filename) {
 		.base_name = fsp->fsp_name->base_name,
+		.twrp = fsp->fsp_name->twrp,
 	};
 
 	ret = fruit_stat_base(handle, &smb_fname, false);
