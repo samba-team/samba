@@ -515,6 +515,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	link_target[link_len] = '\0';
 	target_fname = (struct smb_filename) {
 		.base_name = link_target,
+		.twrp = smb_fname->twrp,
 	};
 
 	/* Convert to an absolute path. */
