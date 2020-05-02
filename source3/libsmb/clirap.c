@@ -174,6 +174,8 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 	unsigned int rdrcnt,rprcnt;
 	char param[1024];
 	int count = -1;
+	bool ok;
+	int res;
 
 	/* now send a SMBtrans command with api RNetShareEnum */
 	p = param;
@@ -191,74 +193,77 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 	SSVAL(p,2,0xFFE0);
 	p += 4;
 
-	if (cli_api(cli,
-		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-		    NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
-		    &rparam, &rprcnt,                /* return params, length */
-		    &rdata, &rdrcnt))                /* return data, length */
-		{
-			int res = rparam? SVAL(rparam,0) : -1;
+	ok = cli_api(
+		cli,
+		param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+		NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
+		&rparam, &rprcnt,                /* return params, length */
+		&rdata, &rdrcnt);                /* return data, length */
+	if (!ok) {
+		DEBUG(4,("NetShareEnum failed\n"));
+		goto done;
+	}
 
-			if (res == 0 || res == ERRmoredata) {
-				int converter=SVAL(rparam,2);
-				int i;
-				char *rdata_end = rdata + rdrcnt;
+	res = rparam? SVAL(rparam,0) : -1;
 
-				count=SVAL(rparam,4);
-				p = rdata;
+	if (res == 0 || res == ERRmoredata) {
+		int converter=SVAL(rparam,2);
+		int i;
+		char *rdata_end = rdata + rdrcnt;
 
-				for (i=0;i<count;i++,p+=20) {
-					char *sname;
-					int type;
-					int comment_offset;
-					const char *cmnt;
-					const char *p1;
-					char *s1, *s2;
-					size_t len;
-					TALLOC_CTX *frame = talloc_stackframe();
+		count=SVAL(rparam,4);
+		p = rdata;
 
-					if (p + 20 > rdata_end) {
-						TALLOC_FREE(frame);
-						break;
-					}
+		for (i=0;i<count;i++,p+=20) {
+			char *sname;
+			int type;
+			int comment_offset;
+			const char *cmnt;
+			const char *p1;
+			char *s1, *s2;
+			size_t len;
+			TALLOC_CTX *frame = talloc_stackframe();
 
-					sname = p;
-					type = SVAL(p,14);
-					comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
-					if (comment_offset < 0 ||
-							comment_offset > (int)rdrcnt) {
-						TALLOC_FREE(frame);
-						break;
-					}
-					cmnt = comment_offset?(rdata+comment_offset):"";
-
-					/* Work out the comment length. */
-					for (p1 = cmnt, len = 0; *p1 &&
-							p1 < rdata_end; len++)
-						p1++;
-					if (!*p1) {
-						len++;
-					}
-					pull_string_talloc(frame,rdata,0,
-						&s1,sname,14,STR_ASCII);
-					pull_string_talloc(frame,rdata,0,
-						&s2,cmnt,len,STR_ASCII);
-					if (!s1 || !s2) {
-						TALLOC_FREE(frame);
-						continue;
-					}
-
-					fn(s1, type, s2, state);
-
-					TALLOC_FREE(frame);
-				}
-			} else {
-				DEBUG(4,("NetShareEnum res=%d\n", res));
+			if (p + 20 > rdata_end) {
+				TALLOC_FREE(frame);
+				break;
 			}
-		} else {
-			DEBUG(4,("NetShareEnum failed\n"));
-		}
 
+			sname = p;
+			type = SVAL(p,14);
+			comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
+			if (comment_offset < 0 ||
+			    comment_offset > (int)rdrcnt) {
+				TALLOC_FREE(frame);
+				break;
+			}
+			cmnt = comment_offset?(rdata+comment_offset):"";
+
+			/* Work out the comment length. */
+			for (p1 = cmnt, len = 0; *p1 &&
+				     p1 < rdata_end; len++)
+				p1++;
+			if (!*p1) {
+				len++;
+			}
+			pull_string_talloc(frame,rdata,0,
+					   &s1,sname,14,STR_ASCII);
+			pull_string_talloc(frame,rdata,0,
+					   &s2,cmnt,len,STR_ASCII);
+			if (!s1 || !s2) {
+				TALLOC_FREE(frame);
+				continue;
+			}
+
+			fn(s1, type, s2, state);
+
+			TALLOC_FREE(frame);
+		}
+	} else {
+			DEBUG(4,("NetShareEnum res=%d\n", res));
+	}
+
+done:
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
