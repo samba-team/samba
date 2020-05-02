@@ -205,6 +205,11 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 		goto done;
 	}
 
+	if (rprcnt < 6) {
+		DBG_ERR("Got invalid result: rprcnt=%u\n", rprcnt);
+		goto done;
+	}
+
 	res = rparam? SVAL(rparam,0) : -1;
 
 	if (res == 0 || res == ERRmoredata) {
