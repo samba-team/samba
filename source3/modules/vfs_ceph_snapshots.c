@@ -449,6 +449,10 @@ static bool ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
 	size_t rest_len, dst_len;
 	ptrdiff_t len_before_gmt;
 
+	if (smb_fname->twrp == 0) {
+		goto no_snapshot;
+	}
+
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
 		goto no_snapshot;
@@ -518,7 +522,7 @@ static bool ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
 		DBG_DEBUG("GMT token in %s stripped to %s\n",
 			  name, _stripped_buf);
 	}
-	*_timestamp = timestamp;
+	*_timestamp = nt_time_to_unix(smb_fname->twrp);
 	return 0;
 no_snapshot:
 	*_timestamp = 0;
