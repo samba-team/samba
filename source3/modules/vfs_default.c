@@ -1783,6 +1783,7 @@ static void vfswrap_get_dos_attributes_getxattr_done(struct tevent_req *subreq)
 		.base_name = path,
 		.st = state->smb_fname->st,
 		.flags = state->smb_fname->flags,
+		.twrp = state->smb_fname->twrp,
 	};
 
 	offline = vfswrap_is_offline(state->conn, &smb_fname);
