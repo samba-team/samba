@@ -436,11 +436,12 @@ err_out:
 }
 
 static bool ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
-					 const char *name,
+					 const struct smb_filename *smb_fname,
 					 time_t *_timestamp,
 					 char *_stripped_buf,
 					 size_t buflen)
 {
+	char *name = smb_fname->base_name;
 	struct tm tm;
 	time_t timestamp;
 	const char *p;
@@ -742,14 +743,14 @@ static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
 	time_t timestamp_src, timestamp_dst;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname_src->base_name,
+					smb_fname_src,
 					&timestamp_src, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
 		return -1;
 	}
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname_dst->base_name,
+					smb_fname_dst,
 					&timestamp_dst, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -781,7 +782,7 @@ static int ceph_snap_gmt_symlinkat(vfs_handle_struct *handle,
 	time_t timestamp_new = 0;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-				link_contents->base_name,
+				link_contents,
 				&timestamp_old,
 				NULL, 0);
 	if (ret < 0) {
@@ -789,7 +790,7 @@ static int ceph_snap_gmt_symlinkat(vfs_handle_struct *handle,
 		return -1;
 	}
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-				new_smb_fname->base_name,
+				new_smb_fname,
 				&timestamp_new,
 				NULL, 0);
 	if (ret < 0) {
@@ -818,7 +819,7 @@ static int ceph_snap_gmt_linkat(vfs_handle_struct *handle,
 	time_t timestamp_new = 0;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-				old_smb_fname->base_name,
+				old_smb_fname,
 				&timestamp_old,
 				NULL, 0);
 	if (ret < 0) {
@@ -826,7 +827,7 @@ static int ceph_snap_gmt_linkat(vfs_handle_struct *handle,
 		return -1;
 	}
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-				new_smb_fname->base_name,
+				new_smb_fname,
 				&timestamp_new,
 				NULL, 0);
 	if (ret < 0) {
@@ -855,7 +856,7 @@ static int ceph_snap_gmt_stat(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -889,7 +890,7 @@ static int ceph_snap_gmt_lstat(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -924,7 +925,7 @@ static int ceph_snap_gmt_open(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname->base_name,
+					smb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -957,7 +958,7 @@ static int ceph_snap_gmt_unlinkat(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -981,7 +982,7 @@ static int ceph_snap_gmt_chmod(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1005,7 +1006,7 @@ static int ceph_snap_gmt_chdir(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1043,7 +1044,7 @@ static int ceph_snap_gmt_ntimes(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1070,7 +1071,7 @@ static int ceph_snap_gmt_readlinkat(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1117,7 +1118,7 @@ static int ceph_snap_gmt_mknodat(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1147,7 +1148,7 @@ static struct smb_filename *ceph_snap_gmt_realpath(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1191,7 +1192,7 @@ static NTSTATUS ceph_snap_gmt_get_nt_acl(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		return map_nt_error_from_unix(-ret);
@@ -1228,7 +1229,7 @@ static int ceph_snap_gmt_mkdirat(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1252,7 +1253,7 @@ static int ceph_snap_gmt_chflags(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1279,7 +1280,7 @@ static ssize_t ceph_snap_gmt_getxattr(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1321,7 +1322,7 @@ static ssize_t ceph_snap_gmt_listxattr(struct vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1358,7 +1359,7 @@ static int ceph_snap_gmt_removexattr(vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1380,7 +1381,7 @@ static int ceph_snap_gmt_setxattr(struct vfs_handle_struct *handle,
 	int ret;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
@@ -1406,7 +1407,7 @@ static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
 	struct smb_filename conv_fname;
 	int ret;
 
-	ret = ceph_snap_gmt_strip_snapshot(handle, path->base_name,
+	ret = ceph_snap_gmt_strip_snapshot(handle, path,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1446,7 +1447,7 @@ static uint64_t ceph_snap_gmt_disk_free(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
@@ -1491,7 +1492,7 @@ static int ceph_snap_gmt_get_quota(vfs_handle_struct *handle,
 	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
+					csmb_fname,
 					&timestamp, stripped, sizeof(stripped));
 	if (ret < 0) {
 		errno = -ret;
