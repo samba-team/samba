@@ -1413,7 +1413,8 @@ int vfs_stat_smb_basename(struct connection_struct *conn,
 {
 	struct smb_filename smb_fname = {
 		.base_name = discard_const_p(char, smb_fname_in->base_name),
-		.flags = smb_fname_in->flags
+		.flags = smb_fname_in->flags,
+		.twrp = smb_fname_in->twrp,
 	};
 	int ret;
 
