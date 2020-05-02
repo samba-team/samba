@@ -1732,6 +1732,10 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 	size_t rest_len, dst_len;
 	ptrdiff_t len_before_gmt;
 
+	if (smb_fname->twrp == 0) {
+		goto no_snapshot;
+	}
+
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
 		goto no_snapshot;
@@ -1801,7 +1805,7 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 		stripped[dst_len] = '\0';
 		*pstripped = stripped;
 	}
-	*ptimestamp = timestamp;
+	*ptimestamp = nt_time_to_unix(smb_fname->twrp);
 	return true;
 no_snapshot:
 	*ptimestamp = 0;
