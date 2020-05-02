@@ -364,8 +364,8 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
  * instead.
  */
 
-static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
-					   NTTIME twrp)
+NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
+				    NTTIME twrp)
 {
 	char *startp = strchr_m(smb_fname->base_name, '@');
 	char *endp = NULL;
