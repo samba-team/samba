@@ -305,6 +305,13 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		}
 
 		rdata_end = rdata + rdrcnt;
+
+		if (rprcnt < 6) {
+			DBG_ERR("Got invalid result: rprcnt=%u\n", rprcnt);
+			res = -1;
+			break;
+		}
+
 		res = rparam ? SVAL(rparam,0) : -1;
 
 		if (res == 0 || res == ERRmoredata ||
