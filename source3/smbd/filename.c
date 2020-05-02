@@ -1345,9 +1345,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * The name has been resolved.
 	 */
 
-	DBG_DEBUG("Conversion finished [%s] -> [%s]\n",
-		   state->orig_path, state->smb_fname->base_name);
-
  done:
 	/* Add back the stream if one was stripped off originally. */
 	if (state->stream != NULL) {
@@ -1359,6 +1356,10 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 	}
+
+	DBG_DEBUG("Conversion finished [%s] -> [%s]\n",
+		   state->orig_path, smb_fname_str_dbg(state->smb_fname));
+
 	TALLOC_FREE(state->dirpath);
 	*smb_fname_out = state->smb_fname;
 	return NT_STATUS_OK;
