@@ -923,7 +923,11 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	smb_fname_dot = synthetic_smb_fname(ctx, ".", NULL, NULL, 0);
+	smb_fname_dot = synthetic_smb_fname(ctx,
+					    ".",
+					    NULL,
+					    NULL,
+					    0);
 	if (smb_fname_dot == NULL) {
 		errno = ENOMEM;
 		goto out;
