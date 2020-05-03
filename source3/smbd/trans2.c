@@ -2632,7 +2632,11 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	if (_smb_fname != NULL) {
 		struct smb_filename *name = NULL;
 
-		name = synthetic_smb_fname(ctx, fname, NULL, &smb_fname->st, 0);
+		name = synthetic_smb_fname(ctx,
+					   fname,
+					   NULL,
+					   &smb_fname->st,
+					   0);
 		if (name == NULL) {
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(fname);
