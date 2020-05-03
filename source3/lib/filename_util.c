@@ -116,7 +116,11 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	ret = synthetic_smb_fname(ctx, base_name, stream_name, NULL, 0);
+	ret = synthetic_smb_fname(ctx,
+				  base_name,
+				  stream_name,
+				  NULL,
+				  0);
 	TALLOC_FREE(base_name);
 	TALLOC_FREE(stream_name);
 	return ret;
