@@ -3334,7 +3334,8 @@ static NTSTATUS delete_invalid_meta_stream(
 	sname = synthetic_smb_fname(talloc_tos(),
 				    smb_fname->base_name,
 				    AFPINFO_STREAM_NAME,
-				    NULL, 0);
+				    NULL,
+				    0);
 	if (sname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
