@@ -224,7 +224,11 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	}
 
 	path = argv[1];
-	smb_fname = synthetic_smb_fname(state.mem_ctx, path, NULL, NULL, 0);
+	smb_fname = synthetic_smb_fname(state.mem_ctx,
+					path,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		goto done;
 	}
