@@ -1058,7 +1058,8 @@ static uint64_t readdir_attr_rfork_size_stream(
 	stream_name = synthetic_smb_fname(talloc_tos(),
 					  smb_fname->base_name,
 					  AFPRESOURCE_STREAM_NAME,
-					  NULL, 0);
+					  NULL,
+					  0);
 	if (stream_name == NULL) {
 		return 0;
 	}
