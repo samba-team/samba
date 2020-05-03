@@ -131,8 +131,11 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	struct vfs_statvfs_struct statbuf;
 	int ret;
 
-	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), conn->connectpath,
-					      NULL, NULL, 0);
+	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
+					      conn->connectpath,
+					      NULL,
+					      NULL,
+					      0);
 	if (smb_fname_cpath == NULL) {
 		return caps;
 	}
