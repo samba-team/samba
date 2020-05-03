@@ -883,7 +883,8 @@ static bool readdir_attr_meta_finderi_stream(
 	stream_name = synthetic_smb_fname(talloc_tos(),
 					  smb_fname->base_name,
 					  AFPINFO_STREAM_NAME,
-					  NULL, smb_fname->flags);
+					  NULL,
+					  smb_fname->flags);
 	if (stream_name == NULL) {
 		return false;
 	}
