@@ -140,7 +140,11 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	 * few NULL checks, so make sure it's initialized with something. to
 	 * be safe until an audit can be done.
 	 */
-	fsp->fsp_name = synthetic_smb_fname(fsp, "", NULL, NULL, 0);
+	fsp->fsp_name = synthetic_smb_fname(fsp,
+					    "",
+					    NULL,
+					    NULL,
+					    0);
 	if (fsp->fsp_name == NULL) {
 		file_free(NULL, fsp);
 		return NT_STATUS_NO_MEMORY;
