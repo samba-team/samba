@@ -2927,7 +2927,11 @@ static struct smb_filename *vfswrap_realpath(vfs_handle_struct *handle,
 	result = sys_realpath(smb_fname->base_name);
 	END_PROFILE(syscall_realpath);
 	if (result) {
-		result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0);
+		result_fname = synthetic_smb_fname(ctx,
+						   result,
+						   NULL,
+						   NULL,
+						   0);
 		SAFE_FREE(result);
 	}
 	return result_fname;
