@@ -143,8 +143,11 @@ static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 		return -EINVAL;
 	}
 
-	smb_fname = synthetic_smb_fname(tmp_ctx, snap_path,
-					NULL, NULL, 0);
+	smb_fname = synthetic_smb_fname(tmp_ctx,
+					snap_path,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		return -ENOMEM;
 	}
