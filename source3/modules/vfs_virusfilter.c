@@ -153,8 +153,11 @@ static bool quarantine_create_dir(
 
 			DBG_INFO("quarantine: creating new dir %s\n", new_dir);
 
-			smb_fname = synthetic_smb_fname(talloc_tos(), new_dir,
-							NULL, NULL, 0);
+			smb_fname = synthetic_smb_fname(talloc_tos(),
+							new_dir,
+							NULL,
+							NULL,
+							0);
 			if (smb_fname == NULL) {
 				goto done;
 			}
