@@ -615,8 +615,11 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 			goto err_out;
 		}
 
-		smb_fname = synthetic_smb_fname(tmp_ctx, _converted_buf,
-						NULL, NULL, 0);
+		smb_fname = synthetic_smb_fname(tmp_ctx,
+						_converted_buf,
+						NULL,
+						NULL,
+						0);
 		if (smb_fname == NULL) {
 			ret = -ENOMEM;
 			goto err_out;
