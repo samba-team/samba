@@ -4668,7 +4668,11 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), plist, NULL, NULL, 0);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					plist,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		ok = false;
 		goto out;
