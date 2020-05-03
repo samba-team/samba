@@ -4685,8 +4685,11 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 		msg->stream_name = NULL;
 	}
 
-	smb_fname = synthetic_smb_fname(
-		msg, msg->base_name, msg->stream_name, NULL, 0);
+	smb_fname = synthetic_smb_fname(msg,
+					msg->base_name,
+					msg->stream_name,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		DBG_DEBUG("synthetic_smb_fname failed\n");
 		goto out;
