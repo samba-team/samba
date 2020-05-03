@@ -666,9 +666,11 @@ static virusfilter_action infected_file_action_quarantine(
 		goto out;
 	}
 
-	q_smb_fname = synthetic_smb_fname(frame, q_filepath,
+	q_smb_fname = synthetic_smb_fname(frame,
+					  q_filepath,
 					  smb_fname->stream_name,
-					  NULL, smb_fname->flags);
+					  NULL,
+					  smb_fname->flags);
 	if (q_smb_fname == NULL) {
 		action = VIRUSFILTER_ACTION_DO_NOTHING;
 		goto out;
