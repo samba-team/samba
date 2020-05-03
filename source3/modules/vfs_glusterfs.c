@@ -1523,7 +1523,11 @@ static struct smb_filename *vfs_gluster_realpath(struct vfs_handle_struct *handl
 			smb_fname->base_name,
 			resolved_path);
 	if (result != NULL) {
-		result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0);
+		result_fname = synthetic_smb_fname(ctx,
+						   result,
+						   NULL,
+						   NULL,
+						   0);
 	}
 
 	SAFE_FREE(resolved_path);
