@@ -1030,7 +1030,6 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
-	struct smb_request *smb1req = state->smb1req;
 	struct smbd_smb2_request *smb2req = state->smb2req;
 	NTSTATUS status;
 
@@ -1238,8 +1237,6 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 		}
 
 		state->twrp_time = BVAL(state->twrp->data.data, 0);
-
-		smb1req->flags2 |= FLAGS2_REPARSE_PATH;
 	}
 
 	if (state->qfid != NULL) {
