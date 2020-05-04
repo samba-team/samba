@@ -349,19 +349,17 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
 }
 
 /*
- * Canonicalize any incoming pathname potentially containining
- * a @GMT-token into a path that looks like:
+ * Strip a valid @GMT-token from any incoming filename path,
+ * adding any NTTIME encoded in the pathname into the
+ * twrp field of the passed in smb_fname.
  *
- * @GMT-YYYY-MM-DD-HH-MM-SS/path/name/components/last_component
+ * Valid @GMT-tokens look like @GMT-YYYY-MM-DD-HH-MM-SS
+ * at the *start* of a pathname component.
  *
- * Leaves single path @GMT-token -component alone:
+ * If twrp is passed in then smb_fname->twrp is set to that
+ * value, and the @GMT-token part of the filename is removed
+ * and does not change the stored smb_fname->twrp.
  *
- * @GMT-YYYY-MM-DD-HH-MM-SS -> @GMT-YYYY-MM-DD-HH-MM-SS
- *
- * Eventually when struct smb_filename is updated and the VFS
- * ABI is changed this will remove the @GMT-YYYY-MM-DD-HH-MM-SS
- * and store in the struct smb_filename as a struct timeval field
- * instead.
  */
 
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
