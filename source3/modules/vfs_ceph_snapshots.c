@@ -441,87 +441,19 @@ static int ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
 					 char *_stripped_buf,
 					 size_t buflen)
 {
-	char *name = smb_fname->base_name;
-	struct tm tm;
-	time_t timestamp;
-	const char *p;
-	char *q;
-	size_t rest_len, dst_len;
-	ptrdiff_t len_before_gmt;
+	size_t len;
 
 	if (smb_fname->twrp == 0) {
 		goto no_snapshot;
 	}
 
-	p = strstr_m(name, "@GMT-");
-	if (p == NULL) {
-		goto no_snapshot;
-	}
-	if ((p > name) && (p[-1] != '/')) {
-		goto no_snapshot;
-	}
-	len_before_gmt = p - name;
-	q = strptime(p, GMT_FORMAT, &tm);
-	if (q == NULL) {
-		goto no_snapshot;
-	}
-	tm.tm_isdst = -1;
-	timestamp = timegm(&tm);
-	if (timestamp == (time_t)-1) {
-		goto no_snapshot;
-	}
-	if (q[0] == '\0') {
-		/*
-		 * The name consists of only the GMT token or the GMT
-		 * token is at the end of the path.
-		 */
-		if (_stripped_buf != NULL) {
-			if (len_before_gmt >= buflen) {
-				return -EINVAL;
-			}
-			if (len_before_gmt > 0) {
-				/*
-				 * There is a slash before the @GMT-. Remove it
-				 * and copy the result.
-				 */
-				len_before_gmt -= 1;
-				strlcpy(_stripped_buf, name, len_before_gmt);
-			} else {
-				_stripped_buf[0] = '\0';	/* token only */
-			}
-			DBG_DEBUG("GMT token in %s stripped to %s\n",
-				  name, _stripped_buf);
-		}
-		*_timestamp = timestamp;
-		return 0;
-	}
-	if (q[0] != '/') {
-		/*
-		 * It is not a complete path component, i.e. the path
-		 * component continues after the gmt-token.
-		 */
-		goto no_snapshot;
-	}
-	q += 1;
-
-	rest_len = strlen(q);
-	dst_len = len_before_gmt + rest_len;
-	SMB_ASSERT(dst_len >= rest_len);
-
 	if (_stripped_buf != NULL) {
-		if (dst_len >= buflen) {
-			return -EINVAL;
+		len = strlcpy(_stripped_buf, smb_fname->base_name, buflen);
+		if (len >= buflen) {
+			return -ENAMETOOLONG;
 		}
-		if (p > name) {
-			memcpy(_stripped_buf, name, len_before_gmt);
-		}
-		if (rest_len > 0) {
-			memcpy(_stripped_buf + len_before_gmt, q, rest_len);
-		}
-		_stripped_buf[dst_len] = '\0';
-		DBG_DEBUG("GMT token in %s stripped to %s\n",
-			  name, _stripped_buf);
 	}
+
 	*_timestamp = nt_time_to_unix(smb_fname->twrp);
 	return 0;
 no_snapshot:
