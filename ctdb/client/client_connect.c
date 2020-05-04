@@ -336,8 +336,10 @@ static void ctdb_client_wait_timeout_handler(struct tevent_context *ev,
 	*timed_out = true;
 }
 
-int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
-			     struct timeval timeout)
+int ctdb_client_wait_func_timeout(struct tevent_context *ev,
+				  bool (*done_func)(void *private_data),
+				  void *private_data,
+				  struct timeval timeout)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_timer *timer;
@@ -356,7 +358,7 @@ int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
 		return ENOMEM;
 	}
 
-	while (! (*done) && ! timed_out) {
+	while (! (done_func(private_data)) && ! timed_out) {
 		tevent_loop_once(ev);
 	}
 
@@ -367,6 +369,28 @@ int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
 	}
 
 	return 0;
+}
+
+static bool client_wait_done(void *private_data)
+{
+	bool *done = (bool *)private_data;
+
+	return *done;
+}
+
+int ctdb_client_wait_timeout(struct tevent_context *ev,
+			     bool *done,
+			     struct timeval timeout)
+
+{
+	int ret;
+
+	ret = ctdb_client_wait_func_timeout(ev,
+					    client_wait_done,
+					    done,
+					    timeout);
+
+	return ret;
 }
 
 struct ctdb_recovery_wait_state {

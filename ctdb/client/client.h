@@ -171,6 +171,28 @@ uint32_t ctdb_client_pnn(struct ctdb_client_context *client);
 void ctdb_client_wait(struct tevent_context *ev, bool *done);
 
 /**
+ * @brief Client event loop waiting for function to return true with timeout
+ *
+ * This can be used to wait for asynchronous computations to complete.
+ * When this function is called, it will run tevent event loop and wait
+ * till the done function returns true or if the timeout occurs.
+ *
+ * This function will return when either
+ *  - done function returns true, or
+ *  - timeout has occurred.
+ *
+ * @param[in] ev Tevent context
+ * @param[in] done_func Function flag to indicate when to stop waiting
+ * @param[in] private_data Passed to done function
+ * @param[in] timeout How long to wait
+ * @return 0 on success, ETIMEDOUT on timeout, and errno on failure
+ */
+int ctdb_client_wait_func_timeout(struct tevent_context *ev,
+				  bool (*done_func)(void *private_data),
+				  void *private_data,
+				  struct timeval timeout);
+
+/**
  * @brief Client event loop waiting for a flag with timeout
  *
  * This can be used to wait for asynchronous computations to complete.
