@@ -867,3 +867,26 @@ class RawKerberosTest(TestCase):
         if native_decoded_only:
             return decoded
         return decoded, obj
+
+    def PA_S4U2Self_create(self, name, realm, tgt_session_key, ctype=None):
+        # PA-S4U2Self     ::= SEQUENCE {
+        #        name            [0] PrincipalName,
+        #        realm           [1] Realm,
+        #        cksum           [2] Checksum,
+        #        auth            [3] GeneralString
+        # }
+        cksum_data = name['name-type'].to_bytes(4, byteorder='little')
+        for n in name['name-string']:
+            cksum_data += n.encode()
+        cksum_data += realm.encode()
+        cksum_data += "Kerberos".encode()
+        cksum = self.Checksum_create(tgt_session_key, 17, cksum_data, ctype)
+
+        PA_S4U2Self_obj = {
+            'name': name,
+            'realm': realm,
+            'cksum': cksum,
+            'auth': "Kerberos",
+        }
+        pa_s4u2self = self.der_encode(PA_S4U2Self_obj, asn1Spec=krb5_asn1.PA_S4U2Self())
+        return self.PA_DATA_create(129, pa_s4u2self)

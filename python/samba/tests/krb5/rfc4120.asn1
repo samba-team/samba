@@ -415,6 +415,14 @@ AD-AND-OR               ::= SEQUENCE {
 
 AD-MANDATORY-FOR-KDC    ::= AuthorizationData
 
+-- S4U
+
+PA-S4U2Self ::= SEQUENCE {
+        name            [0] PrincipalName,
+        realm           [1] Realm,
+        cksum           [2] Checksum,
+        auth            [3] KerberosString
+}
 
 
 

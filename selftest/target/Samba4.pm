@@ -934,6 +934,29 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
+	my $srv_account = "srv_account";
+	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+	    . " user create --configfile=$ctx->{smb_conf} $srv_account $ctx->{password}";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add $srv_account user: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+	    . " spn add HOST/$srv_account --configfile=$ctx->{smb_conf} $srv_account";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add spn for $srv_account: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
 	my $ldbmodify = "";
 	$ldbmodify .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";

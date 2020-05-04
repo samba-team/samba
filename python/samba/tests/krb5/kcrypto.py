@@ -51,6 +51,7 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 from math import gcd
 from functools import reduce
 from struct import pack, unpack
+from binascii import crc32
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import hmac
 from cryptography.hazmat.primitives.ciphers import algorithms as ciphers
@@ -533,6 +534,21 @@ class _MD5(_ChecksumProfile):
         return SIMPLE_HASH(text, hashes.MD5)
 
 
+class _SHA1(_ChecksumProfile):
+    @classmethod
+    def checksum(cls, key, keyusage, text):
+        # This is unkeyed!
+        return SIMPLE_HASH(text, hashes.SHA1)
+
+
+class _CRC32(_ChecksumProfile):
+    @classmethod
+    def checksum(cls, key, keyusage, text):
+        # This is unkeyed!
+        cksum = (~crc32(text, 0xffffffff)) & 0xffffffff
+        return pack('<I', cksum)
+
+
 _enctype_table = {
     Enctype.DES3: _DES3CBC,
     Enctype.AES128: _AES128CTS,
@@ -547,6 +563,8 @@ _checksum_table = {
     Cksumtype.SHA1_AES256: _SHA1AES256,
     Cksumtype.HMAC_MD5: _HMACMD5,
     Cksumtype.MD5: _MD5,
+    Cksumtype.SHA1: _SHA1,
+    Cksumtype.CRC32: _CRC32,
 }
 
 
@@ -834,6 +852,73 @@ class KcrytoTest(TestCase):
 
     def test_md5_unkeyed_checksum_aes256_usage_50(self):
         return self._test_md5_unkeyed_checksum(Enctype.AES256, 50)
+
+    def _test_sha1_unkeyed_checksum(self, etype, usage):
+        # SHA1 unkeyed checksum
+        pw = b'password'
+        salt = b'salt'
+        key = string_to_key(etype, pw, salt)
+        plain = b'twenty nineteen eighteen seventeen'
+        cksum = h('381c870d8875d1913555de19af5c885fd27b7da9')
+        verify_checksum(Cksumtype.SHA1, key, usage, plain, cksum)
+
+    def test_sha1_unkeyed_checksum_des3_usage_40(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.DES3, 40)
+
+    def test_sha1_unkeyed_checksum_des3_usage_50(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.DES3, 50)
+
+    def test_sha1_unkeyed_checksum_rc4_usage_40(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.RC4, 40)
+
+    def test_sha1_unkeyed_checksum_rc4_usage_50(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.RC4, 50)
+
+    def test_sha1_unkeyed_checksum_aes128_usage_40(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.AES128, 40)
+
+    def test_sha1_unkeyed_checksum_aes128_usage_50(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.AES128, 50)
+
+    def test_sha1_unkeyed_checksum_aes256_usage_40(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.AES256, 40)
+
+    def test_sha1_unkeyed_checksum_aes256_usage_50(self):
+        return self._test_sha1_unkeyed_checksum(Enctype.AES256, 50)
+
+    def _test_crc32_unkeyed_checksum(self, etype, usage):
+        # CRC32 unkeyed checksum
+        pw = b'password'
+        salt = b'salt'
+        key = string_to_key(etype, pw, salt)
+        plain = b'africa america asia australia europe'
+        cksum = h('ce595a53')
+        verify_checksum(Cksumtype.CRC32, key, usage, plain, cksum)
+
+    def test_crc32_unkeyed_checksum_des3_usage_40(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.DES3, 40)
+
+    def test_crc32_unkeyed_checksum_des3_usage_50(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.DES3, 50)
+
+    def test_crc32_unkeyed_checksum_rc4_usage_40(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.RC4, 40)
+
+    def test_crc32_unkeyed_checksum_rc4_usage_50(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.RC4, 50)
+
+    def test_crc32_unkeyed_checksum_aes128_usage_40(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.AES128, 40)
+
+    def test_crc32_unkeyed_checksum_aes128_usage_50(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.AES128, 50)
+
+    def test_crc32_unkeyed_checksum_aes256_usage_40(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.AES256, 40)
+
+    def test_crc32_unkeyed_checksum_aes256_usage_50(self):
+        return self._test_crc32_unkeyed_checksum(Enctype.AES256, 50)
+
 
 if __name__ == "__main__":
     import unittest
