@@ -1172,7 +1172,7 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	};
 
 	/* Removes @GMT tokens if any */
-	status = canonicalize_snapshot_path(&target_fname, 0);
+	status = canonicalize_snapshot_path(&target_fname, UCF_GMT_PATHNAME, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

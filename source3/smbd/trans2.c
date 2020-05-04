@@ -7010,7 +7010,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	};
 
 	/* Removes @GMT tokens if any */
-	status = canonicalize_snapshot_path(&target_fname, 0);
+	status = canonicalize_snapshot_path(&target_fname, UCF_GMT_PATHNAME, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

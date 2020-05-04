@@ -365,9 +365,10 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
  */
 
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
+				    uint32_t ucf_flags,
 				    NTTIME twrp)
 {
-	char *startp = strchr_m(smb_fname->base_name, '@');
+	char *startp = NULL;
 	char *endp = NULL;
 	char *tmp = NULL;
 	struct tm tm;
@@ -379,6 +380,11 @@ NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 		smb_fname->twrp = twrp;
 	}
 
+	if (!(ucf_flags & UCF_GMT_PATHNAME)) {
+		return NT_STATUS_OK;
+	}
+
+	startp = strchr_m(smb_fname->base_name, '@');
 	if (startp == NULL) {
 		/* No @ */
 		return NT_STATUS_OK;
@@ -510,7 +516,6 @@ struct uc_state {
 	bool name_has_wildcard;
 	bool posix_pathnames;
 	bool allow_wcard_last_component;
-	bool snapshot_path;
 	bool done;
 };
 
@@ -958,7 +963,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		.ucf_flags = ucf_flags,
 		.posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES),
 		.allow_wcard_last_component = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP),
-		.snapshot_path = (ucf_flags & UCF_GMT_PATHNAME),
 	};
 
 	*smb_fname_out = NULL;
@@ -1031,11 +1035,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Canonicalize any @GMT- paths. */
-	if (state->snapshot_path) {
-		status = canonicalize_snapshot_path(state->smb_fname, twrp);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto err;
-		}
+	status = canonicalize_snapshot_path(state->smb_fname, ucf_flags, twrp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err;
 	}
 
 	/*
@@ -1850,7 +1852,9 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 			TALLOC_FREE(fname);
 			return NULL;
 		}
-		status = canonicalize_snapshot_path(smb_fname, 0);
+		status = canonicalize_snapshot_path(smb_fname,
+						    ucf_flags,
+						    0);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fname);
 			TALLOC_FREE(smb_fname);
