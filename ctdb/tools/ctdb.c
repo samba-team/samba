@@ -40,6 +40,7 @@
 #include "common/logging.h"
 #include "common/path.h"
 #include "protocol/protocol.h"
+#include "protocol/protocol_basic.h"
 #include "protocol/protocol_api.h"
 #include "protocol/protocol_util.h"
 #include "common/system_socket.h"
@@ -73,7 +74,7 @@ struct ctdb_context {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
 	struct ctdb_node_map *nodemap;
-	uint32_t pnn, cmd_pnn;
+	uint32_t pnn, cmd_pnn, leader_pnn;
 	uint64_t srvid;
 };
 
@@ -722,6 +723,25 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 	}
 
 	return 0;
+}
+
+static void leader_handler(uint64_t srvid,
+			   TDB_DATA data,
+			   void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type_abort(
+		private_data, struct ctdb_context);
+	uint32_t leader_pnn;
+	size_t np;
+	int ret;
+
+	ret = ctdb_uint32_pull(data.dptr, data.dsize, &leader_pnn, &np);
+	if (ret != 0) {
+		/* Ignore packet */
+		return;
+	}
+
+	ctdb->leader_pnn = leader_pnn;
 }
 
 /*
@@ -6213,6 +6233,17 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 	if (! cmd->remote && ctdb->pnn != ctdb->cmd_pnn) {
 		fprintf(stderr, "Node cannot be specified for command %s\n",
 			cmd->name);
+		goto fail;
+	}
+
+	ctdb->leader_pnn = CTDB_UNKNOWN_PNN;
+	ret = ctdb_client_set_message_handler(ctdb->ev,
+					      ctdb->client,
+					      CTDB_SRVID_LEADER,
+					      leader_handler,
+					      ctdb);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to setup leader handler\n");
 		goto fail;
 	}
 
