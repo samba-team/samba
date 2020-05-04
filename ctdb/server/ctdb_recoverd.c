@@ -1286,25 +1286,18 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
-	if (cluster_lock_enabled(rec)) {
-		bool ok;
-
-		ok = cluster_lock_take(rec);
-		if (!ok) {
-			D_ERR("Unable to take recovery lock\n");
-
-			if (!this_node_is_leader(rec)) {
-				D_NOTICE("Leader changed to %u,"
-					 " aborting recovery\n",
-					 rec->leader);
-				rec->need_recovery = false;
-				goto fail;
-			}
-
-			D_ERR("Abort recovery, ban this node\n");
-			ctdb_ban_node(rec, rec->pnn);
+	if (cluster_lock_enabled(rec) && !cluster_lock_held(rec)) {
+		/* Leader can change in ban_misbehaving_nodes() */
+		if (!this_node_is_leader(rec)) {
+			D_NOTICE("Leader changed to %u, aborting recovery\n",
+				 rec->leader);
+			rec->need_recovery = false;
 			goto fail;
 		}
+
+		D_ERR("Cluster lock not held - abort recovery, ban node\n");
+		ctdb_ban_node(rec, rec->pnn);
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", rec->last_culprit_node));
