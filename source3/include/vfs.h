@@ -46,273 +46,275 @@
  * VL.
  */
 
-/* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */
-/* Changed to version 3 for POSIX acl extensions. JRA. */
-/* Changed to version 4 for cascaded VFS interface. Alexander Bokovoy. */
-/* Changed to version 5 for sendfile addition. JRA. */
-/* Changed to version 6 for the new module system, fixed cascading and quota functions. --metze */
-/* Changed to version 7 to include the get_nt_acl info parameter. JRA. */
-/* Changed to version 8 includes EA calls. JRA. */
-/* Changed to version 9 to include the get_shadow_data call. --metze */
-/* Changed to version 10 to include pread/pwrite calls. */
-/* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
-/* Changed to version 12 to add mask and attributes to opendir(). JRA 
-   Also include aio calls. JRA. */
-/* Changed to version 13 as the internal structure of files_struct has changed. JRA */
-/* Changed to version 14 as we had to change DIR to SMB_STRUCT_DIR. JRA */
-/* Changed to version 15 as we added the statvfs call. JRA */
-/* Changed to version 16 as we added the getlock call. JRA */
-/* Changed to version 17 as we removed redundant connection_struct parameters. --jpeach */
-/* Changed to version 18 to add fsp parameter to the open call -- jpeach 
-   Also include kernel_flock call - jmcd */
-/* Changed to version 19, kernel change notify has been merged 
-   Also included linux setlease call - jmcd */
-/* Changed to version 20, use ntimes call instead of utime (greater
- * timestamp resolition. JRA. */
-/* Changed to version21 to add chflags operation -- jpeach */
-/* Changed to version22 to add lchown operation -- jra */
-/* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
-/* Leave at 22 - not yet released. Add file_id_create operation. --metze */
-/* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
-/* Leave at 22 - not yet released. Added recvfile. */
-/* Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl */
-/* Leave at 22 - not yet released. Change get_nt_acl to *not* take a
- * files_struct. - obnox.*/
-/* Leave at 22 - not yet released. Remove parameter fd from fget_nt_acl. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from gset_nt_acl. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from pread. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from pwrite. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from lseek. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fsync. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fstat. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fchmod. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fchown. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from ftruncate. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from lock. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from kernel_flock. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from linux_setlease. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from aio_cancel. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from read. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
-/* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
-/* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
-/* Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl */
-/* Leave at 22 - not yet released. Remove parameter fd from close_fn. - obnox */
-/* Changed to version 23 - remove set_nt_acl call. This can only be done via an
-   open handle. JRA. */
-/* Changed to version 24 - make security descriptor const in fset_nt_acl. JRA. */
-/* Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t. */
-/* Leave at 25 - not yet released. Add create_file call. -- tprouty. */
-/* Leave at 25 - not yet released. Add create time to ntimes. -- tstecher. */
-/* Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty. */
-/* Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann */
-/* Leave at 25 - not yet released. Add init_search_op call. - sdann */
-/* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
-/* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
-/* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
-			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT,
-			   SMB_VFS_RENAME, SMB_VFS_UNLINK, SMB_VFS_NTIMES.  */
-/* Changed to version 27 - not yet released. Added enum timestamp_set_resolution
- * 			   return to fs_capabilities call. JRA. */
-/* Leave at 27 - not yet released. Add translate_name VFS call to convert
-		 UNIX names to Windows supported names -- asrinivasan. */
-/* Changed to version 28 - Add private_flags uint32_t to CREATE call. */
-/* Leave at 28 - not yet released. Change realpath to assume NULL and return a
-		 malloc'ed path. JRA. */
-/* Leave at 28 - not yet released. Move posix_fallocate into the VFS
-		where it belongs. JRA. */
-/* Leave at 28 - not yet released. Rename posix_fallocate to fallocate
-		to split out the two possible uses. JRA. */
-/* Leave at 28 - not yet released. Add fdopendir. JRA. */
-/* Leave at 28 - not yet released. Rename open function to open_fn. - gd */
-/* Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA. */
-/* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
-/* Leave at 29 - not yet releases. Add fsctl. Richard Sharpe */
-/* Leave at 29 - not yet released. add SMB_VFS_GET_DFS_REFERRAL() - metze */
-/* Leave at 29 - not yet released. Remove l{list,get,set,remove}xattr - abartlet */
-/* Leave at 29 - not yet released. move to plain off_t - abartlet */
-/* Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet */
-/* Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA */
-/* Leave at 29 - not yet released. Add durable handle functions - metze/obnox */
-/* Leave at 29 - not yet released. Added sys_acl_blob_get_file and sys_acl_blob_get_fd */
-/* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
-/* Leave at 30 - not yet released. Added conn->cwd to save vfs_GetWd() calls. */
-/* Leave at 30 - not yet released. Changed sys_acl_blob_get_file interface to remove type */
-/* Bump to version 31 - Samba 4.1.0 will ship with interface version 31 */
-/* Leave at 31 - not yet released. Make struct vuid_cache_entry in
-		connection_struct a pointer. */
-/* Leave at 31 - not yet released. Add share_access to vuid_cache_entry. */
-/* Leave at 31 - not yet released. add SMB_VFS_COPY_CHUNK() */
-/* Leave at 31 - not yet released. Remove the unused
-		fsp->pending_break_messages array */
-/* Leave at 31 - not yet released. add SMB_VFS_[GET/SET]_COMPRESSION() */
-
-/* Bump to version 32 - Samba 4.2 will ship with that. */
-/* Version 32 - Add "lease" to CREATE_FILE operation */
-/* Version 32 - Add "lease" to struct files_struct */
-/* Version 32 - Add SMB_VFS_READDIR_ATTR() */
-/* Version 32 - Add in and out create context blobs to create_file */
-/* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
-/* Bump to version 33 - Samba 4.3 will ship with that. */
-/* Version 33 - change fallocate mode flags param from enum->uint32_t */
-/* Version 33 - Add snapshot create/delete calls */
-/* Version 33 - Add OS X SMB2 AAPL copyfile extension flag to fsp */
-/* Version 33 - Remove notify_watch_fn */
-/* Bump to version 34 - Samba 4.4 will ship with that */
-/* Version 34 - Remove bool posix_open, add uint64_t posix_flags */
-/* Version 34 - Added bool posix_pathnames to struct smb_request */
-/* Bump to version 35 - Samba 4.5 will ship with that */
-/* Version 35 - Change get_nt_acl_fn from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change mkdir from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change rmdir from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change opendir from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Wrap aio async funtions args in a struct vfs_aio_state */
-/* Version 35 - Change chmod from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change chmod_acl from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change chown from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change lchown from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Change streaminfo from const char *, to
-		const struct smb_filename * */
-/* Version 35 - Add uint32_t flags to struct smb_filename */
-/* Version 35 - Add get/set/fget/fset dos attribute functions. */
-/* Version 35 - Add bool use_ofd_locks to struct files_struct */
-/* Bump to version 36 - Samba 4.6 will ship with that */
-/* Version 36 - Remove is_offline and set_offline */
-/* Version 37 - Module init functions now take a TALLOC_CTX * parameter. */
-/* Version 37 - Add vfs_copy_chunk_flags for DUP_EXTENTS_TO_FILE */
-/* Version 37 - Change sys_acl_delete_def_file from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change sys_acl_get_file from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change sys_acl_blob_get_file from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change sys_acl_set_file from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change listxattr from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change removexattr from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change setxattr from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change getxattr from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change mknod from const char * to const struct smb_filename * */
-/* Version 37 - Change chflags from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change disk_free from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change get_quota from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change link from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change statvfs from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change readlink from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change symlink from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change chdir from const char *
-		to const struct smb_filename * */
-/* Version 37 - Change getwd from char *
-		to const struct smb_filename * */
-/* Version 37 - Change conn->cwd from char *
-		to struct smb_filename * */
-/* Version 37 - Change realpath from char *
-		to struct smb_filename * */
-/* Version 37 - Change connectpath from char *
-		to struct smb_filename * */
-/* Version 37 - Add SMB_VFS_OFFLOAD_READ_SEND/RECV */
-/* Version 37 - Rename SMB_VFS_COPY_CHUNK_SEND/RECV to
-                SMB_VFS_OFFLOAD_READ_SEND/RECV */
-/* Version 37 - Remove SMB_VFS_STRICT_UNLOCK */
-/* Version 37 - Rename SMB_VFS_STRICT_LOCK to
-                SMB_VFS_STRICT_LOCK_CHECK */
-/* Version 38 - Remove SMB_VFS_INIT_SEARCH_OP */
-/* Bump to version 39, Samba 4.9 will ship with that */
-/* Version 39 - Remove SMB_VFS_FSYNC
-		Only implement async versions. */
-/* Version 39 - Remove SMB_VFS_READ
-		All users are now pread or async versions. */
-/* Version 39 - Remove SMB_VFS_WRITE
-		All users are now pwrite or async versions. */
-/* Version 39 - Remove SMB_VFS_CHMOD_ACL - no longer used. */
-/* Version 39 - Remove SMB_VFS_FCHMOD_ACL - no longer used. */
-/* Version 39 - Remove struct dfree_cached_info pointer from
-		connection struct */
-/* Bump to version 40, Samba 4.10 will ship with that */
-/* Version 40 - Add SMB_VFS_GETXATTRAT_SEND/RECV */
-/* Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND/RECV */
-/* Bump to version 41, Samba 4.11 will ship with that */
-/* Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS */
-/* Version 41 - Remove unused st_ex_mask from struct stat_ex */
-/* Version 41 - convert struct stat_ex.st_ex_calculated_birthtime to flags */
-/* Version 41 - add st_ex_itime to struct stat_ex */
-/* Version 41 - add st_ex_file_id to struct stat_ex */
-/* Version 41 - add SMB_VFS_FS_FILE_ID */
-/* Version 41 - Remove "blocking_lock" parameter from
-                SMB_VFS_BRL_LOCK_WINDOWS */
-/* Version 41 - Remove "msg_ctx" parameter from SMB_VFS_BRL_UNLOCK_WINDOWS */
-/* Bump to version 42, Samba 4.12 will ship with that */
-/* Version 42 - Remove share_access member from struct files_struct */
-/* Version 42 - Make "lease" a const* in create_file_fn */
-/* Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT */
-/* Version 42 - Move SMB_VFS_LINK -> SMB_VFS_LINKAT. */
-/* Version 42 - Move SMB_VFS_MKNOD -> SMB_VFS_MKDNODAT. */
-/* Version 42 - Move SMB_VFS_READLINK -> SMB_VFS_READLINKAT. */
-/* Version 42 - Move SMB_VFS_SYMLINK -> SMB_VFS_SYMLINKAT. */
-/* Version 42 - Move SMB_VFS_MKDIR -> SMB_VFS_MKDIRAT. */
-/* Version 42 - Move change_to_user() -> change_to_user_and_service() */
-/* Version 42 - Move change_to_user_by_fsp() -> change_to_user_and_service_by_fsp() */
-/* Version 42 - Move [un]become_user*() -> [un]become_user_without_service*() */
-/* Version 42 - Move SMB_VFS_UNLINK -> SMB_VFS_UNLINKAT. */
-/* Version 42 - Add SMB_VFS_FCNTL */
-/* Version 42 - Remove SMB_VFS_RMDIR.
-		Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead. */
-/* Version 42 - Remove SMB_VFS_CHOWN */
-/* Version 42 - Remove struct write_cache *wcp from files_struct */
-/* Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT */
-/* Version 42 - Add SMB_VFS_CREATE_DFS_PATHAT() */
-/* Version 42 - Add SMB_VFS_READ_DFS_PATHAT() */
-/* Change to Version 43 - will ship with 4.13. */
-/* Version 43 - Remove deferred_close from struct files_struct */
-/* Version 43 - Remove SMB_VFS_OPENDIR() */
-/* Version 43 - Remove original_lcomp from struct smb_filename */
-/* Version 43 - files_struct flags:
-		bool kernel_share_modes_taken
-		bool update_write_time_triggered
-		bool update_write_time_on_close
-		bool write_time_forced
-		bool can_lock
-		bool can_read
-		bool can_write
-		bool modified
-		bool is_directory
-		bool aio_write_behind
-		bool initial_delete_on_close
-		bool delete_on_close
-		bool is_sparse
-		bool backup_intent
-		bool use_ofd_locks
-		bool closing
-		bool lock_failure_seen
-		changed to bitfields. */
+/*
+ * Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA.
+ * Changed to version 3 for POSIX acl extensions. JRA.
+ * Changed to version 4 for cascaded VFS interface. Alexander Bokovoy.
+ * Changed to version 5 for sendfile addition. JRA.
+ * Changed to version 6 for the new module system, fixed cascading and quota functions. --metze
+ * Changed to version 7 to include the get_nt_acl info parameter. JRA.
+ * Changed to version 8 includes EA calls. JRA.
+ * Changed to version 9 to include the get_shadow_data call. --metze
+ * Changed to version 10 to include pread pwrite calls.
+ * Changed to version 11 to include seekdir telldir rewinddir calls. JRA
+ * Changed to version 12 to add mask and attributes to opendir(). JRA
+ * Also include aio calls. JRA.
+ * Changed to version 13 as the internal structure of files_struct has changed. JRA
+ * Changed to version 14 as we had to change DIR to SMB_STRUCT_DIR. JRA
+ * Changed to version 15 as we added the statvfs call. JRA
+ * Changed to version 16 as we added the getlock call. JRA
+ * Changed to version 17 as we removed redundant connection_struct parameters. --jpeach
+ * Changed to version 18 to add fsp parameter to the open call -- jpeach
+ * Also include kernel_flock call - jmcd
+ * Changed to version 19, kernel change notify has been merged
+ * Also included linux setlease call - jmcd
+ * Changed to version 20, use ntimes call instead of utime (greater
+ * timestamp resolition. JRA.
+ * Changed to version21 to add chflags operation -- jpeach
+ * Changed to version22 to add lchown operation -- jra
+ * Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra.
+ * Leave at 22 - not yet released. Add file_id_create operation. --metze
+ * Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra.
+ * Leave at 22 - not yet released. Added recvfile.
+ * Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl
+ * Leave at 22 - not yet released. Change get_nt_acl to *not* take a
+ * files_struct. - obnox.
+ * Leave at 22 - not yet released. Remove parameter fd from fget_nt_acl. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from gset_nt_acl. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from pread. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from pwrite. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from lseek. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fsync. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fstat. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fchmod. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fchown. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from ftruncate. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from lock. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from kernel_flock. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from linux_setlease. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from aio_cancel. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from read. - obnox
+ * Leave at 22 - not yet released. Remove parameter fd from write. - obnox
+ * Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox
+ * Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox
+ * Leave at 22 - not yet released. Additional change: add operations for offline files -- ab
+ * Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl
+ * Leave at 22 - not yet released. Remove parameter fd from close_fn. - obnox
+ * Changed to version 23 - remove set_nt_acl call. This can only be done via an
+ *                         open handle. JRA.
+ * Changed to version 24 - make security descriptor const in fset_nt_acl. JRA.
+ * Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t.
+ * Leave at 25 - not yet released. Add create_file call. -- tprouty.
+ * Leave at 25 - not yet released. Add create time to ntimes. -- tstecher.
+ * Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty.
+ * Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann
+ * Leave at 25 - not yet released. Add init_search_op call. - sdann
+ * Leave at 25 - not yet released. Add locking calls. -- zkirsch.
+ * Leave at 25 - not yet released. Add strict locking calls. -- drichards.
+ * Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
+ *                         SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT,
+ *                         SMB_VFS_RENAME, SMB_VFS_UNLINK, SMB_VFS_NTIMES.
+ * Changed to version 27 - not yet released. Added enum timestamp_set_resolution
+ *                         return to fs_capabilities call. JRA.
+ * Leave at 27 - not yet released. Add translate_name VFS call to convert
+ *               UNIX names to Windows supported names -- asrinivasan.
+ * Changed to version 28 - Add private_flags uint32_t to CREATE call.
+ * Leave at 28 - not yet released. Change realpath to assume NULL and return a
+ *               malloc'ed path. JRA.
+ * Leave at 28 - not yet released. Move posix_fallocate into the VFS
+ *              where it belongs. JRA.
+ * Leave at 28 - not yet released. Rename posix_fallocate to fallocate
+ *              to split out the two possible uses. JRA.
+ * Leave at 28 - not yet released. Add fdopendir. JRA.
+ * Leave at 28 - not yet released. Rename open function to open_fn. - gd
+ * Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA.
+ * Bump to version 29 - Samba 3.6.0 will ship with interface version 28.
+ * Leave at 29 - not yet releases. Add fsctl. Richard Sharpe
+ * Leave at 29 - not yet released. add SMB_VFS_GET_DFS_REFERRAL() - metze
+ * Leave at 29 - not yet released. Remove l{list,get,set,remove}xattr - abartlet
+ * Leave at 29 - not yet released. move to plain off_t - abartlet
+ * Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet
+ * Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA
+ * Leave at 29 - not yet released. Add durable handle functions - metze obnox
+ * Leave at 29 - not yet released. Added sys_acl_blob_get_file and sys_acl_blob_get_fd
+ * Bump to version 30 - Samba 4.0.0 will ship with interface version 30
+ * Leave at 30 - not yet released. Added conn->cwd to save vfs_GetWd() calls.
+ * Leave at 30 - not yet released. Changed sys_acl_blob_get_file interface to remove type
+ * Bump to version 31 - Samba 4.1.0 will ship with interface version 31
+ * Leave at 31 - not yet released. Make struct vuid_cache_entry in
+ *               connection_struct a pointer.
+ * Leave at 31 - not yet released. Add share_access to vuid_cache_entry.
+ * Leave at 31 - not yet released. add SMB_VFS_COPY_CHUNK()
+ * Leave at 31 - not yet released. Remove the unused
+ *               fsp->pending_break_messages array
+ * Leave at 31 - not yet released. add SMB_VFS_[GET SET]_COMPRESSION()
+ *
+ * Bump to version 32 - Samba 4.2 will ship with that.
+ * Version 32 - Add "lease" to CREATE_FILE operation
+ * Version 32 - Add "lease" to struct files_struct
+ * Version 32 - Add SMB_VFS_READDIR_ATTR()
+ * Version 32 - Add in and out create context blobs to create_file
+ * Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter
+ * Bump to version 33 - Samba 4.3 will ship with that.
+ * Version 33 - change fallocate mode flags param from enum->uint32_t
+ * Version 33 - Add snapshot create delete calls
+ * Version 33 - Add OS X SMB2 AAPL copyfile extension flag to fsp
+ * Version 33 - Remove notify_watch_fn
+ * Bump to version 34 - Samba 4.4 will ship with that
+ * Version 34 - Remove bool posix_open, add uint64_t posix_flags
+ * Version 34 - Added bool posix_pathnames to struct smb_request
+ * Bump to version 35 - Samba 4.5 will ship with that
+ * Version 35 - Change get_nt_acl_fn from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change mkdir from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change rmdir from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change opendir from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Wrap aio async funtions args in a struct vfs_aio_state
+ * Version 35 - Change chmod from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change chmod_acl from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change chown from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change lchown from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Change streaminfo from const char *, to
+ *              const struct smb_filename *
+ * Version 35 - Add uint32_t flags to struct smb_filename
+ * Version 35 - Add get set fget fset dos attribute functions.
+ * Version 35 - Add bool use_ofd_locks to struct files_struct
+ * Bump to version 36 - Samba 4.6 will ship with that
+ * Version 36 - Remove is_offline and set_offline
+ * Version 37 - Module init functions now take a TALLOC_CTX * parameter.
+ * Version 37 - Add vfs_copy_chunk_flags for DUP_EXTENTS_TO_FILE
+ * Version 37 - Change sys_acl_delete_def_file from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change sys_acl_get_file from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change sys_acl_blob_get_file from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change sys_acl_set_file from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change listxattr from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change removexattr from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change setxattr from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change getxattr from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change mknod from const char * to const struct smb_filename *
+ * Version 37 - Change chflags from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change disk_free from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change get_quota from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change link from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change statvfs from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change readlink from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change symlink from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change chdir from const char *
+ *              to const struct smb_filename *
+ * Version 37 - Change getwd from char *
+ *              to const struct smb_filename *
+ * Version 37 - Change conn->cwd from char *
+ *              to struct smb_filename *
+ * Version 37 - Change realpath from char *
+ *              to struct smb_filename *
+ * Version 37 - Change connectpath from char *
+ *              to struct smb_filename *
+ * Version 37 - Add SMB_VFS_OFFLOAD_READ_SEND RECV
+ * Version 37 - Rename SMB_VFS_COPY_CHUNK_SEND RECV to
+ *              SMB_VFS_OFFLOAD_READ_SEND RECV
+ * Version 37 - Remove SMB_VFS_STRICT_UNLOCK
+ * Version 37 - Rename SMB_VFS_STRICT_LOCK to
+ *              SMB_VFS_STRICT_LOCK_CHECK
+ * Version 38 - Remove SMB_VFS_INIT_SEARCH_OP
+ * Bump to version 39, Samba 4.9 will ship with that
+ * Version 39 - Remove SMB_VFS_FSYNC
+ *              Only implement async versions.
+ * Version 39 - Remove SMB_VFS_READ
+ *              All users are now pread or async versions.
+ * Version 39 - Remove SMB_VFS_WRITE
+ *              All users are now pwrite or async versions.
+ * Version 39 - Remove SMB_VFS_CHMOD_ACL - no longer used.
+ * Version 39 - Remove SMB_VFS_FCHMOD_ACL - no longer used.
+ * Version 39 - Remove struct dfree_cached_info pointer from
+ *              connection struct
+ * Bump to version 40, Samba 4.10 will ship with that
+ * Version 40 - Add SMB_VFS_GETXATTRAT_SEND RECV
+ * Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND RECV
+ * Bump to version 41, Samba 4.11 will ship with that
+ * Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS
+ * Version 41 - Remove unused st_ex_mask from struct stat_ex
+ * Version 41 - convert struct stat_ex.st_ex_calculated_birthtime to flags
+ * Version 41 - add st_ex_itime to struct stat_ex
+ * Version 41 - add st_ex_file_id to struct stat_ex
+ * Version 41 - add SMB_VFS_FS_FILE_ID
+ * Version 41 - Remove "blocking_lock" parameter from
+ *              SMB_VFS_BRL_LOCK_WINDOWS
+ * Version 41 - Remove "msg_ctx" parameter from SMB_VFS_BRL_UNLOCK_WINDOWS
+ * Bump to version 42, Samba 4.12 will ship with that
+ * Version 42 - Remove share_access member from struct files_struct
+ * Version 42 - Make "lease" a const* in create_file_fn
+ * Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT
+ * Version 42 - Move SMB_VFS_LINK -> SMB_VFS_LINKAT.
+ * Version 42 - Move SMB_VFS_MKNOD -> SMB_VFS_MKDNODAT.
+ * Version 42 - Move SMB_VFS_READLINK -> SMB_VFS_READLINKAT.
+ * Version 42 - Move SMB_VFS_SYMLINK -> SMB_VFS_SYMLINKAT.
+ * Version 42 - Move SMB_VFS_MKDIR -> SMB_VFS_MKDIRAT.
+ * Version 42 - Move change_to_user() -> change_to_user_and_service()
+ * Version 42 - Move change_to_user_by_fsp() -> change_to_user_and_service_by_fsp()
+ * Version 42 - Move [un]become_user*() -> [un]become_user_without_service*()
+ * Version 42 - Move SMB_VFS_UNLINK -> SMB_VFS_UNLINKAT.
+ * Version 42 - Add SMB_VFS_FCNTL
+ * Version 42 - Remove SMB_VFS_RMDIR.
+ *              Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead.
+ * Version 42 - Remove SMB_VFS_CHOWN
+ * Version 42 - Remove struct write_cache *wcp from files_struct
+ * Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT
+ * Version 42 - Add SMB_VFS_CREATE_DFS_PATHAT()
+ * Version 42 - Add SMB_VFS_READ_DFS_PATHAT()
+ * Change to Version 43 - will ship with 4.13.
+ * Version 43 - Remove deferred_close from struct files_struct
+ * Version 43 - Remove SMB_VFS_OPENDIR()
+ * Version 43 - Remove original_lcomp from struct smb_filename
+ * Version 43 - files_struct flags:
+ *              bool kernel_share_modes_taken
+ *              bool update_write_time_triggered
+ *              bool update_write_time_on_close
+ *              bool write_time_forced
+ *              bool can_lock
+ *              bool can_read
+ *              bool can_write
+ *              bool modified
+ *              bool is_directory
+ *              bool aio_write_behind
+ *              bool initial_delete_on_close
+ *              bool delete_on_close
+ *              bool is_sparse
+ *              bool backup_intent
+ *              bool use_ofd_locks
+ *              bool closing
+ *              bool lock_failure_seen
+ *              changed to bitfields.
+ */
 
 #define SMB_VFS_INTERFACE_VERSION 43
 
