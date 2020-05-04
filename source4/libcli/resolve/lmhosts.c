@@ -72,7 +72,7 @@ static struct composite_context *resolve_name_lmhosts_send(
 						     state, &resolved_iplist, &resolved_count);
 	if (!composite_is_ok(c)) return c;
 
-	for (i=0; i < resolved_count; i++) {
+	for (i=0; i < resolved_count; i += 2) {
 		state->addrs = talloc_realloc(state, state->addrs, struct socket_address *, i+2);
 		if (composite_nomem(state->addrs, c)) return c;
 
@@ -92,7 +92,6 @@ static struct composite_context *resolve_name_lmhosts_send(
 
 		state->names[i+1] = NULL;
 
-		i++;
 	}
 
 	composite_done(c);
