@@ -1723,88 +1723,20 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 				       time_t *ptimestamp,
 				       char **pstripped)
 {
-	char *name = smb_fname->base_name;
-	struct tm tm;
-	time_t timestamp;
-	const char *p;
-	char *q;
 	char *stripped;
-	size_t rest_len, dst_len;
-	ptrdiff_t len_before_gmt;
 
 	if (smb_fname->twrp == 0) {
 		goto no_snapshot;
 	}
 
-	p = strstr_m(name, "@GMT-");
-	if (p == NULL) {
-		goto no_snapshot;
-	}
-	if ((p > name) && (p[-1] != '/')) {
-		goto no_snapshot;
-	}
-	len_before_gmt = p - name;
-	q = strptime(p, GMT_FORMAT, &tm);
-	if (q == NULL) {
-		goto no_snapshot;
-	}
-	tm.tm_isdst = -1;
-	timestamp = timegm(&tm);
-	if (timestamp == (time_t)-1) {
-		goto no_snapshot;
-	}
-	if (q[0] == '\0') {
-		/*
-		 * The name consists of only the GMT token or the GMT
-		 * token is at the end of the path. XP seems to send
-		 * @GMT- at the end under certain circumstances even
-		 * with a path prefix.
-		 */
-		if (pstripped != NULL) {
-			if (len_before_gmt > 0) {
-				/*
-				 * There is a slash before
-				 * the @GMT-. Remove it.
-				 */
-				len_before_gmt -= 1;
-			}
-			stripped = talloc_strndup(mem_ctx, name,
-					len_before_gmt);
-			if (stripped == NULL) {
-				return false;
-			}
-			*pstripped = stripped;
-		}
-		*ptimestamp = timestamp;
-		return true;
-	}
-	if (q[0] != '/') {
-		/*
-		 * It is not a complete path component, i.e. the path
-		 * component continues after the gmt-token.
-		 */
-		goto no_snapshot;
-	}
-	q += 1;
-
-	rest_len = strlen(q);
-	dst_len = len_before_gmt + rest_len;
-
 	if (pstripped != NULL) {
-		stripped = talloc_array(mem_ctx, char, dst_len+1);
+		stripped = talloc_strdup(mem_ctx, smb_fname->base_name);
 		if (stripped == NULL) {
-			errno = ENOMEM;
 			return false;
 		}
-		if (p > name) {
-			memcpy(stripped, name, len_before_gmt);
-		}
-		if (rest_len > 0) {
-			memcpy(stripped + len_before_gmt, q, rest_len);
-		}
-		stripped[dst_len] = '\0';
 		*pstripped = stripped;
 	}
+
 	*ptimestamp = nt_time_to_unix(smb_fname->twrp);
 	return true;
 no_snapshot:
