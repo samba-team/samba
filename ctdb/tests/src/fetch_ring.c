@@ -28,9 +28,6 @@
 #include "tests/src/test_options.h"
 #include "tests/src/cluster_wait.h"
 
-#define TESTDB	"fetch_ring.tdb"
-#define TESTKEY	"testkey"
-
 #define MSG_ID_FETCH	0
 
 static uint32_t next_node(struct ctdb_client_context *client, uint32_t num_nodes)
@@ -63,7 +60,9 @@ static struct tevent_req *fetch_ring_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct ctdb_client_context *client,
 					  struct ctdb_db_context *ctdb_db,
-					  uint32_t num_nodes, int timelimit,
+					  const char *keystr,
+					  uint32_t num_nodes,
+					  int timelimit,
 					  int interactive)
 {
 	struct tevent_req *req, *subreq;
@@ -80,8 +79,8 @@ static struct tevent_req *fetch_ring_send(TALLOC_CTX *mem_ctx,
 	state->num_nodes = num_nodes;
 	state->timelimit = timelimit;
 	state->interactive = interactive;
-	state->key.dptr = discard_const(TESTKEY);
-	state->key.dsize = strlen(TESTKEY);
+	state->key.dptr = discard_const(keystr);
+	state->key.dsize = strlen(keystr);
 
 	subreq = ctdb_client_set_message_handler_send(
 					state, ev, client, MSG_ID_FETCH,
@@ -334,7 +333,7 @@ int main(int argc, const char *argv[])
 
 	setup_logging("fetch_ring", DEBUG_STDERR);
 
-	status = process_options_basic(argc, argv, &opts);
+	status = process_options_database(argc, argv, &opts);
 	if (! status) {
 		exit(1);
 	}
@@ -362,15 +361,24 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = ctdb_attach(ev, client, tevent_timeval_zero(), TESTDB, 0,
+	ret = ctdb_attach(ev,
+			  client,
+			  tevent_timeval_zero(),
+			  opts->dbname,
+			  0,
 			  &ctdb_db);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to attach to DB %s\n", TESTDB);
+		fprintf(stderr, "Failed to attach to DB %s\n", opts->dbname);
 		exit(1);
 	}
 
-	req = fetch_ring_send(mem_ctx, ev, client, ctdb_db,
-			      opts->num_nodes, opts->timelimit,
+	req = fetch_ring_send(mem_ctx,
+			      ev,
+			      client,
+			      ctdb_db,
+			      opts->keystr,
+			      opts->num_nodes,
+			      opts->timelimit,
 			      opts->interactive);
 	if (req == NULL) {
 		fprintf(stderr, "Memory allocation error\n");

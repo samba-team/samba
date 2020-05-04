@@ -23,7 +23,8 @@ try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
 
 echo "Running fetch_ring on all $num_nodes nodes."
-try_command_on_node -v -p all $CTDB_TEST_WRAPPER $VALGRIND fetch_ring -n $num_nodes
+testprog_onnode -v -p all \
+		fetch_ring -n "$num_nodes" -D "fetch_ring.tdb" -k "testkey"
 
 pat='^(Waiting for cluster|Fetch\[[[:digit:]]+\]: [[:digit:]]+(\.[[:digit:]]+)? msgs/sec)$'
 sanity_check_output 1 "$pat"
