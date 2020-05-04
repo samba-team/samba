@@ -435,7 +435,7 @@ err_out:
 	return -1;
 }
 
-static bool ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
+static int ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
 					 const struct smb_filename *smb_fname,
 					 time_t *_timestamp,
 					 char *_stripped_buf,
