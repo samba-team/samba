@@ -1,4 +1,90 @@
                    ==============================
+                   Release Notes for Samba 4.11.9
+                            May 05, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.8
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14242: nmblib: Avoid undefined behaviour in handle_name_ptrs().
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 14296: 'samba-tool group' commands do not handle group names with
+     special chars correctly.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14237: smbd: avoid calling vfs_file_id_from_sbuf() if statinfo is not
+     valid.
+   * BUG 14293: Missing check for DMAPI offline status in async DOS attributes.
+   * BUG 14307: smbd: Ignore set NTACL requests which contain S-1-5-88 NFS ACEs.
+   * BUG 14316: vfs_recycle: Prevent flooding the log if we're called on
+     non-existant paths.
+   * BUG 14320: smbd mistakenly updates a file's write-time on close.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14359: RPC handles cannot be differentiated in source3 RPC server.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14313: librpc: Fix IDL for svcctl_ChangeServiceConfigW.
+   * BUG 14327: nsswitch: Fix use-after-free causing segfault in
+     _pam_delete_cred.
+
+o  Art M. Gallagher <repos@artmg.net>
+   * BUG 13622: Fix fruit:time machine max size on arm.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14294: CTDB recovery corner cases can cause record resurrection and
+     node banning.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14348: ctdb: Fix a memleak.
+   * libsmb: Don't try to find posix stat info in SMBC_getatr().
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 14295: ctdb-tcp: Move free of inbound queue to TCP restart.
+   * BUG 14344: s3/librpc/crypto: Fix double free with unresolved credential
+     cache.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14336: s3:libads: Fix ads_get_upn().
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14294: CTDB recovery corner cases can cause record resurrection and
+     node banning.
+   * BUG 14295: Starting ctdb node that was powered off hard before results in
+     recovery loop.
+   * BUG 14324: ctdb-recoverd: Avoid dereferencing NULL rec->nodemap.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.8
                            April 28, 2020
 		   ==============================
@@ -56,8 +142,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.7
