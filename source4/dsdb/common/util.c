@@ -5870,7 +5870,7 @@ static int dsdb_count_domain_callback(
  *
  * @return LDB_STATUS code.
  */
-int dsdb_domain_count(
+int PRINTF_ATTRIBUTE(6, 7) dsdb_domain_count(
 	struct ldb_context *ldb,
 	size_t *count,
 	struct ldb_dn *base,

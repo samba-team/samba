@@ -3745,8 +3745,10 @@ static void test_ldb_add_to_index_unique_values_required(void **state)
 	talloc_free(tmp_ctx);
 }
 
-static void ldb_debug_string(void *context, enum ldb_debug_level level,
-			     const char *fmt, va_list ap)
+static void PRINTF_ATTRIBUTE(3, 0) ldb_debug_string(
+	void *context,
+	enum ldb_debug_level level,
+	const char *fmt, va_list ap)
 {
 	struct ldbtest_ctx *test_ctx =
 		talloc_get_type_abort(context, struct ldbtest_ctx);

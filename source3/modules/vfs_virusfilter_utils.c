@@ -397,7 +397,7 @@ bool virusfilter_io_writel(
 	return virusfilter_io_write(io_h, io_h->w_eol, io_h->w_eol_size);
 }
 
-bool virusfilter_io_writefl(
+bool PRINTF_ATTRIBUTE(2, 3) virusfilter_io_writefl(
 	struct virusfilter_io_handle *io_h,
 	const char *data_fmt, ...)
 {
@@ -420,7 +420,7 @@ bool virusfilter_io_writefl(
 	return virusfilter_io_write(io_h, data, data_size);
 }
 
-bool virusfilter_io_vwritefl(
+bool PRINTF_ATTRIBUTE(2, 0) virusfilter_io_vwritefl(
 	struct virusfilter_io_handle *io_h,
 	const char *data_fmt, va_list ap)
 {
@@ -670,7 +670,7 @@ bool virusfilter_io_readl(TALLOC_CTX *ctx,
 	return ok;
 }
 
-bool virusfilter_io_writefl_readl(
+bool PRINTF_ATTRIBUTE(3, 4) virusfilter_io_writefl_readl(
 	struct virusfilter_io_handle *io_h,
 	char **read_line,
 	const char *fmt, ...)
