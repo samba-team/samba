@@ -2411,6 +2411,8 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 					  char **found_name)
 {
 	char *path = fname->base_name;
+	struct shadow_copy2_private *priv = NULL;
+	struct shadow_copy2_config *config = NULL;
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	ssize_t ret;
@@ -2418,8 +2420,11 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 	char *conv;
 	struct smb_filename conv_fname;
 
-	DEBUG(10, ("shadow_copy2_get_real_filename called for path=[%s], "
-		   "name=[%s]\n", path, name));
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return -1);
+	config = priv->config;
+
+	DBG_DEBUG("Path=[%s] name=[%s]\n", smb_fname_str_dbg(fname), name);
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
 					 &timestamp, &stripped)) {
@@ -2431,11 +2436,37 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, fname, name,
 						      mem_ctx, found_name);
 	}
+
+	/*
+	 * Note that stripped may be an empty string "" if path was ".". As
+	 * shadow_copy2_convert() combines "" with the shadow-copy tree connect
+	 * root fullpath and get_real_filename_full_scan() has an explicit check
+	 * for "" this works.
+	 */
+	DBG_DEBUG("stripped [%s]\n", stripped);
+
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
 	if (conv == NULL) {
-		DEBUG(10, ("shadow_copy2_convert failed\n"));
-		return -1;
+		if (!config->snapdirseverywhere) {
+			DBG_DEBUG("shadow_copy2_convert [%s] failed\n", stripped);
+			return -1;
+		}
+
+		/*
+		 * We're called in the path traversal loop in unix_convert()
+		 * walking down the directory hierarchy. shadow_copy2_convert()
+		 * will fail if the snapshot directory is futher down in the
+		 * hierachy. Set conv to the original stripped path and try to
+		 * look it up in the filesystem with
+		 * SMB_VFS_NEXT_GET_REAL_FILENAME() or
+		 * get_real_filename_full_scan().
+		 */
+		DBG_DEBUG("Use stripped [%s] as conv\n", stripped);
+		conv = talloc_strdup(talloc_tos(), stripped);
+		if (conv == NULL) {
+			TALLOC_FREE(stripped);
+			return -1;
+		}
 	}
 
 	conv_fname = (struct smb_filename) {
@@ -2447,14 +2478,34 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 	ret = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, &conv_fname, name,
 					     mem_ctx, found_name);
 	DEBUG(10, ("NEXT_REAL_FILE_NAME returned %d\n", (int)ret));
-	if (ret == -1) {
+	if (ret == 0) {
+		return 0;
+	}
+	if (errno != EOPNOTSUPP) {
+		TALLOC_FREE(conv);
+		errno = EOPNOTSUPP;
+		return -1;
+	}
+
+	ret = get_real_filename_full_scan(handle->conn,
+					  conv,
+					  name,
+					  false,
+					  mem_ctx,
+					  found_name);
+	if (ret != 0) {
 		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
+		DBG_DEBUG("Scan [%s] for [%s] failed\n",
+			  conv, name);
 		errno = saved_errno;
+		return -1;
 	}
-	return ret;
+
+	DBG_DEBUG("Scan [%s] for [%s] returned [%s]\n",
+		  conv, name, *found_name);
+
+	TALLOC_FREE(conv);
+	return 0;
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
