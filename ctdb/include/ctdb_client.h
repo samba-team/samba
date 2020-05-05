@@ -143,28 +143,6 @@ int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout,
 			 uint32_t destnode, uint32_t recmode);
 
-/*
-  get the recovery master of a remote node
- */
-struct ctdb_client_control_state *ctdb_ctrl_getrecmaster_send(
-					struct ctdb_context *ctdb,
-					TALLOC_CTX *mem_ctx,
-					struct timeval timeout,
-					uint32_t destnode);
-int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb,
-				TALLOC_CTX *mem_ctx,
-				struct ctdb_client_control_state *state,
-				uint32_t *recmaster);
-int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-			   struct timeval timeout, uint32_t destnode,
-			   uint32_t *recmaster);
-
-/*
-  set the recovery master of a remote node
- */
-int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout,
-			   uint32_t destnode, uint32_t recmaster);
-
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, struct timeval timeout,
 			 uint32_t destnode, TALLOC_CTX *mem_ctx,
 			 struct ctdb_node_map_old **nodemap);
