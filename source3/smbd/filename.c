@@ -990,6 +990,19 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
+	/* Start with the full orig_path as given by the caller. */
+	if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname, state->orig_path))) {
+		DBG_ERR("talloc_strdup failed\n");
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
+	}
+
+	/* Canonicalize any @GMT- paths. */
+	status = canonicalize_snapshot_path(state->smb_fname, ucf_flags, twrp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err;
+	}
+
 	/*
 	 * If we trimmed down to a single '\0' character
 	 * then we should use the "." directory to avoid
@@ -998,7 +1011,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * As we know this is valid we can return true here.
 	 */
 
-	if (!*state->orig_path) {
+	if (state->smb_fname->base_name[0] == '\0') {
 		if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname, "."))) {
 			status = NT_STATUS_NO_MEMORY;
 			goto err;
@@ -1022,19 +1035,6 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 			    state->allow_wcard_last_component,
 			    state->posix_pathnames);
 		}
-		goto err;
-	}
-
-	/* Start with the full orig_path as given by the caller. */
-	if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname, state->orig_path))) {
-		DBG_ERR("talloc_strdup failed\n");
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	/* Canonicalize any @GMT- paths. */
-	status = canonicalize_snapshot_path(state->smb_fname, ucf_flags, twrp);
-	if (!NT_STATUS_IS_OK(status)) {
 		goto err;
 	}
 
