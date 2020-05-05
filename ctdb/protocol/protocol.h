@@ -257,8 +257,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    /* #28 removed */
 		    CTDB_CONTROL_DUMP_MEMORY             = 29,
 		    CTDB_CONTROL_GET_PID                 = 30,
-		    CTDB_CONTROL_GET_RECMASTER           = 31,
-		    CTDB_CONTROL_SET_RECMASTER           = 32,
+		    CTDB_CONTROL_GET_RECMASTER           = 31, /* obsolete */
+		    CTDB_CONTROL_SET_RECMASTER           = 32, /* obsolete */
 		    CTDB_CONTROL_FREEZE                  = 33,
 		    CTDB_CONTROL_THAW                    = 34, /* obsolete */
 		    CTDB_CONTROL_GET_PNN                 = 35,
