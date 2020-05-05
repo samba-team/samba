@@ -584,13 +584,14 @@ static int check_for_converted_path(TALLOC_CTX *mem_ctx,
  *     (making it cwd-relative).
  */
 
-static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
+static bool _shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					time_t *ptimestamp,
 					char **pstripped,
 					char **psnappath,
-					bool *_already_converted)
+					bool *_already_converted,
+					const char *function)
 {
 	char *stripped = NULL;
 	struct shadow_copy2_private *priv;
@@ -602,7 +603,8 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return false);
 
-	DBG_DEBUG("Enter path '%s'\n", smb_fname_str_dbg(smb_fname));
+	DBG_DEBUG("[from %s()] Path '%s'\n",
+		  function, smb_fname_str_dbg(smb_fname));
 
 	if (_already_converted != NULL) {
 		*_already_converted = false;
@@ -671,36 +673,56 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
-					struct vfs_handle_struct *handle,
-					const struct smb_filename *orig_name,
-					time_t *ptimestamp,
-					char **pstripped)
+#define shadow_copy2_strip_snapshot_internal(mem_ctx, handle, orig_name, \
+		ptimestamp, pstripped, psnappath, _already_converted) \
+	_shadow_copy2_strip_snapshot_internal((mem_ctx), (handle), (orig_name), \
+		(ptimestamp), (pstripped), (psnappath), (_already_converted), \
+					      __FUNCTION__)
+
+static bool _shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
+					 struct vfs_handle_struct *handle,
+					 const struct smb_filename *orig_name,
+					 time_t *ptimestamp,
+					 char **pstripped,
+					 const char *function)
 {
-	return shadow_copy2_strip_snapshot_internal(mem_ctx,
+	return _shadow_copy2_strip_snapshot_internal(mem_ctx,
 					handle,
 					orig_name,
 					ptimestamp,
 					pstripped,
 					NULL,
-					NULL);
+					NULL,
+					function);
 }
 
-static bool shadow_copy2_strip_snapshot_converted(TALLOC_CTX *mem_ctx,
+#define shadow_copy2_strip_snapshot(mem_ctx, handle, orig_name, \
+		ptimestamp, pstripped) \
+	_shadow_copy2_strip_snapshot((mem_ctx), (handle), (orig_name), \
+		(ptimestamp), (pstripped), __FUNCTION__)
+
+static bool _shadow_copy2_strip_snapshot_converted(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					const struct smb_filename *orig_name,
 					time_t *ptimestamp,
 					char **pstripped,
-					bool *is_converted)
+					bool *is_converted,
+					const char *function)
 {
-	return shadow_copy2_strip_snapshot_internal(mem_ctx,
+	return _shadow_copy2_strip_snapshot_internal(mem_ctx,
 					handle,
 					orig_name,
 					ptimestamp,
 					pstripped,
 					NULL,
-					is_converted);
+					is_converted,
+					function);
 }
+
+#define shadow_copy2_strip_snapshot_converted(mem_ctx, handle, orig_name, \
+		ptimestamp, pstripped, is_converted) \
+	_shadow_copy2_strip_snapshot_converted((mem_ctx), (handle), (orig_name), \
+		(ptimestamp), (pstripped), (is_converted), __FUNCTION__)
 
 static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
 					   vfs_handle_struct *handle)
