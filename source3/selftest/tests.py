@@ -418,6 +418,9 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.sacl_get_set", env,
                   [os.path.join(samba3srcdir, "script/tests/test_sacl_set_get.sh"),
                    '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbtorture3, net, 'tmp'])
+    plantestsuite("samba3.blackbox.NT1.shadow_copy_torture", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_smb1_shadow_copy_torture.sh"),
+                   '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/shadow', smbtorture4])
 
     #
     # tar command tests
