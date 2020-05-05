@@ -1121,11 +1121,20 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * added and verified in build_stream_path().
 	 */
 
-	if((!state->conn->case_sensitive || !(state->conn->fs_capabilities &
-				       FILE_CASE_SENSITIVE_SEARCH)) &&
-	    stat_cache_lookup(state->conn, state->posix_pathnames, &state->smb_fname->base_name, &state->dirpath, &state->name,
-			      &state->smb_fname->st)) {
-		goto done;
+	if (!state->conn->case_sensitive ||
+	    !(state->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
+	{
+		bool found;
+
+		found = stat_cache_lookup(state->conn,
+					  state->posix_pathnames,
+					  &state->smb_fname->base_name,
+					  &state->dirpath,
+					  &state->name,
+					  &state->smb_fname->st);
+		if (found) {
+			goto done;
+		}
 	}
 
 	/*
