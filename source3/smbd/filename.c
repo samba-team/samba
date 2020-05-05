@@ -929,7 +929,8 @@ static NTSTATUS unix_convert_step(struct uc_state *state)
 	 * or wildcard components as this can change the size.
 	 */
 	if(!state->component_was_mangled && !state->name_has_wildcard) {
-		stat_cache_add(state->orig_path, state->dirpath,
+		stat_cache_add(state->orig_path,
+			       state->dirpath,
 			       state->conn->case_sensitive);
 	}
 
@@ -1185,7 +1186,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 				goto fail;
 			}
 			/* Add the path (not including the stream) to the cache. */
-			stat_cache_add(state->orig_path, state->smb_fname->base_name,
+			stat_cache_add(state->orig_path,
+				       state->smb_fname->base_name,
 				       state->conn->case_sensitive);
 			DBG_DEBUG("Conversion of base_name finished "
 				  "[%s] -> [%s]\n",
@@ -1346,7 +1348,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 */
 
 	if(!state->component_was_mangled && !state->name_has_wildcard) {
-		stat_cache_add(state->orig_path, state->smb_fname->base_name,
+		stat_cache_add(state->orig_path,
+			       state->smb_fname->base_name,
 			       state->conn->case_sensitive);
 	}
 
