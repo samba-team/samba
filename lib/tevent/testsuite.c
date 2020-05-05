@@ -423,7 +423,7 @@ static bool test_event_fd1(struct torture_context *tctx,
 	torture_assert(tctx, ret == 0, "socketpair() failed");
 
 	state.te = tevent_add_timer(state.ev, state.ev,
-				    timeval_current_ofs(0,1000),
+				    timeval_current_ofs(0,10000),
 				    test_event_fd1_finished, &state);
 	state.fde0 = tevent_add_fd(state.ev, state.ev,
 				   state.sock[0], TEVENT_FD_WRITE,
