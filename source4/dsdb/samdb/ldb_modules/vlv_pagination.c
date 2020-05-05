@@ -682,8 +682,8 @@ vlv_copy_down_controls(TALLOC_CTX *mem_ctx, struct ldb_control **controls)
 		if (control->oid == NULL) {
 			break;
 		}
-		if (strncmp(control->oid, LDB_CONTROL_VLV_REQ_OID, sizeof(LDB_CONTROL_VLV_REQ_OID)) == 0 ||
-		    strncmp(control->oid, LDB_CONTROL_SERVER_SORT_OID, sizeof(LDB_CONTROL_SERVER_SORT_OID)) == 0) {
+		if (strcmp(control->oid, LDB_CONTROL_VLV_REQ_OID) == 0 ||
+		    strcmp(control->oid, LDB_CONTROL_SERVER_SORT_OID) == 0) {
 			continue;
 		}
 		new_controls[j] = talloc_steal(new_controls, control);
