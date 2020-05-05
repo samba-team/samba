@@ -195,11 +195,6 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 TALLOC_CTX *mem_ctx,
 			 struct ctdb_iface_list_old **ifaces);
 
-int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
-		       struct timeval timeout,
-		       uint32_t destnode,
-		       uint32_t set, uint32_t clear);
-
 int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       struct timeval timeout, uint32_t destnode,
 			       struct ctdb_tunable_list *tunables);
