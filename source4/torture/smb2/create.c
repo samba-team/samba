@@ -1913,6 +1913,58 @@ done:
 	return ret;
 }
 
+static bool test_twrp_openroot(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	bool ret = true;
+	char *p = NULL;
+	struct tm tm;
+	time_t t;
+	uint64_t nttime;
+	const char *snapshot = NULL;
+
+	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
+	if (snapshot == NULL) {
+		torture_skip(tctx, "missing 'twrp_snapshot' option\n");
+	}
+
+	torture_comment(tctx, "Testing open of root of "
+		"share with timewarp (%s)\n",
+		snapshot);
+
+	setenv("TZ", "GMT", 1);
+
+	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
+	 * effect if it is greather than 1. */
+	ZERO_STRUCT(tm);
+
+	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
+	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
+	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
+
+	t = mktime(&tm);
+	unix_to_nt_time(&nttime, t);
+
+	io = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname = "",
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.timewarp = nttime,
+	};
+
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create\n");
+	smb2_util_close(tree, io.out.file.handle);
+
+done:
+	return ret;
+}
+
 static bool test_fileid(struct torture_context *tctx,
 			struct smb2_tree *tree)
 {
@@ -2687,6 +2739,7 @@ struct torture_suite *torture_smb2_twrp_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "write", test_twrp_write);
 	torture_suite_add_1smb2_test(suite, "stream", test_twrp_stream);
+	torture_suite_add_1smb2_test(suite, "openroot", test_twrp_openroot);
 
 	suite->description = talloc_strdup(suite, "SMB2-TWRP tests");
 
