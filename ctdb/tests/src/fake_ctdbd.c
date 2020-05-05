@@ -2173,23 +2173,6 @@ static void control_get_pid(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
-static void control_get_recmaster(TALLOC_CTX *mem_ctx,
-				  struct tevent_req *req,
-				  struct ctdb_req_header *header,
-				  struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = ctdb->node_map->recmaster;
-	reply.errmsg = NULL;
-
-	client_send_control(req, header, &reply);
-}
-
 static void control_get_pnn(TALLOC_CTX *mem_ctx,
 			    struct tevent_req *req,
 			    struct ctdb_req_header *header,
@@ -4175,10 +4158,6 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_PID:
 		control_get_pid(mem_ctx, req, &header, &request);
-		break;
-
-	case CTDB_CONTROL_GET_RECMASTER:
-		control_get_recmaster(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_PNN:

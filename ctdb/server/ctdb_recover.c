@@ -1179,31 +1179,6 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 	return 0;
 }
 
-
-
-int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata)
-{
-	uint32_t new_recmaster;
-
-	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-	new_recmaster = ((uint32_t *)(&indata.dptr[0]))[0];
-
-	if (ctdb->pnn != new_recmaster && ctdb->recovery_master == ctdb->pnn) {
-		DEBUG(DEBUG_ERR,
-		      ("Remote node (%u) is now the recovery master\n",
-		       new_recmaster));
-	}
-
-	if (ctdb->pnn == new_recmaster && ctdb->recovery_master != new_recmaster) {
-		DEBUG(DEBUG_ERR,
-		      ("This node (%u) is now the recovery master\n",
-		       ctdb->pnn));
-	}
-
-	ctdb->recovery_master = new_recmaster;
-	return 0;
-}
-
 void ctdb_node_become_inactive(struct ctdb_context *ctdb)
 {
 	struct ctdb_db_context *ctdb_db;

@@ -121,7 +121,6 @@ static struct ctdb_context *ctdb_init(struct tevent_context *ev)
 	gettimeofday(&ctdb->last_recovery_finished, NULL);
 
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
-	ctdb->recovery_master  = (uint32_t)-1;
 
 	ctdb->upcalls = &ctdb_upcalls;
 

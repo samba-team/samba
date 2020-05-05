@@ -332,12 +332,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb->recovery_mode;
 	}
 
-	case CTDB_CONTROL_SET_RECMASTER: {
-		return ctdb_control_set_recmaster(ctdb, opcode, indata);
-	}
+	case CTDB_CONTROL_SET_RECMASTER:
+		return control_not_implemented("SET_RECMASTER", NULL);
 
 	case CTDB_CONTROL_GET_RECMASTER:
-		return ctdb->recovery_master;
+		return control_not_implemented("GET_RECMASTER", NULL);
 
 	case CTDB_CONTROL_GET_PID:
 		return getpid();
