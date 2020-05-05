@@ -6898,7 +6898,7 @@ static bool test_empty_stream(struct torture_context *tctx,
 		tcase_afpresource_rw,
 		tcase_foo_ro,
 		tcase_foo_rw,
-		{NULL}
+		{0}
 	};
 
 	ret = torture_smb2_connection(tctx, &tree2);

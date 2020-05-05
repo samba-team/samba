@@ -456,5 +456,5 @@ struct cmd_set spotlight_commands[] = {
 		.description = "Fetch attributes for a CNID",
 		.usage = "",
 	},
-	{ NULL }
+	{0}
 };

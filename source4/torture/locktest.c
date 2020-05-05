@@ -578,7 +578,7 @@ int main(int argc, const char *argv[])
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{ NULL }
+		{0}
 	};
 	TALLOC_CTX *mem_ctx = NULL;
 	int ret = -1;

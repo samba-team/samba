@@ -49,7 +49,7 @@ static struct poptOption popt_options[] = {
 	{ "output", 'O', POPT_ARG_STRING, &options.output, 0,
 	  "outputfile otherwise STDOUT", "outputfile"},
 	POPT_COMMON_VERSION
-	{ NULL }
+	{0}
 };
 
 

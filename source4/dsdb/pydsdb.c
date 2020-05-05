@@ -1479,7 +1479,7 @@ static PyMethodDef py_dsdb_methods[] = {
 		"_dsdb_allocate_rid(samdb)"
 		" -> RID" },
 	{ "_dsdb_load_udv_v2", (PyCFunction)py_dsdb_load_udv_v2, METH_VARARGS, NULL },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

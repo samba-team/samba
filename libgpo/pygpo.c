@@ -67,7 +67,7 @@ static PyGetSetDef GPO_setters[] = {
 		NULL, NULL, NULL},
 	{discard_const_p(char, "machine_extensions"),
 		(getter)GPO_get_machine_extensions, NULL, NULL, NULL},
-	{NULL}
+	{0}
 };
 
 static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
@@ -120,7 +120,7 @@ static PyMethodDef GPO_methods[] = {
 					      py_gpo_get_unix_path),
 		METH_VARARGS | METH_KEYWORDS,
 		NULL },
-	{NULL}
+	{0}
 };
 
 static PyTypeObject GPOType = {
@@ -493,7 +493,7 @@ static PyMethodDef ADS_methods[] = {
 		METH_VARARGS | METH_KEYWORDS,
 		NULL },
 #endif
-	{ NULL }
+	{0}
 };
 
 static PyTypeObject ads_ADSType = {
@@ -510,7 +510,7 @@ static PyMethodDef py_gpo_methods[] = {
 	{"gpo_get_sysvol_gpt_version",
 		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
-	{NULL}
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

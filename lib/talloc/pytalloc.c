@@ -70,7 +70,7 @@ static PyMethodDef talloc_methods[] = {
 		"enable tracking of the NULL object"},
 	{ "total_blocks", (PyCFunction)pytalloc_total_blocks, METH_VARARGS,
 		"return talloc block count"},
-	{ NULL }
+	{0}
 };
 
 /**

@@ -1164,7 +1164,7 @@ static PyMethodDef py_smbd_methods[] = {
 		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_create_file),
 		METH_VARARGS|METH_KEYWORDS,
 		NULL },
-	{ NULL }
+	{0}
 };
 
 void initsmbd(void);

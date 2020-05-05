@@ -120,7 +120,7 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{ NULL }
+		{0}
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, long_options,0);

@@ -269,7 +269,7 @@ static PyMethodDef py_tevent_queue_methods[] = {
 		"S.start()" },
 	{ "add", (PyCFunction)py_tevent_queue_add, METH_VARARGS,
 		"S.add(ctx, req, trigger, baton)" },
-	{ NULL },
+	{0},
 };
 
 static PyObject *py_tevent_context_wakeup_send(PyObject *self, PyObject *args)
@@ -394,7 +394,7 @@ struct PyGetSetDef py_tevent_timer_getset[] = {
 		.get = (getter)py_tevent_timer_get_active,
 		.doc = discard_const_p(char, "true if the timer is scheduled to run"),
 	},
-	{NULL},
+	{0},
 };
 
 static PyTypeObject TeventTimer_Type = {
@@ -576,7 +576,7 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_VARARGS, "S.add_timer(offset_seconds, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
-	{ NULL },
+	{0},
 };
 
 static PyObject *py_tevent_req_wakeup_recv(PyObject *self,
@@ -620,7 +620,7 @@ static PyGetSetDef py_tevent_req_getsetters[] = {
 		.get = (getter)py_tevent_req_is_in_progress,
 		.doc = discard_const_p(char, "Whether the request is in progress"),
 	},
-	{ NULL }
+	{0}
 };
 
 static PyObject *py_tevent_req_post(PyObject *self, PyObject *args)
@@ -688,7 +688,7 @@ static PyMethodDef py_tevent_req_methods[] = {
 		METH_VARARGS, "set_endtime(ctx, endtime)" },
 	{ "cancel", (PyCFunction)py_tevent_req_cancel,
 		METH_NOARGS, "cancel()" },
-	{ NULL }
+	{0}
 };
 
 static void py_tevent_req_dealloc(TeventReq_Object *self)
@@ -718,7 +718,7 @@ static PyGetSetDef py_tevent_queue_getsetters[] = {
 		.get = (getter)py_tevent_queue_get_length,
 		.doc = discard_const_p(char, "The number of elements in the queue."),
 	},
-	{ NULL },
+	{0},
 };
 
 static void py_tevent_queue_dealloc(TeventQueue_Object *self)
@@ -750,7 +750,7 @@ static PyGetSetDef py_tevent_context_getsetters[] = {
 					   py_tevent_context_signal_support),
 		.doc = discard_const_p(char, "if this platform and tevent context support signal handling"),
 	},
-	{ NULL }
+	{0}
 };
 
 static void py_tevent_context_dealloc(TeventContext_Object *self)
@@ -861,7 +861,7 @@ static PyMethodDef tevent_methods[] = {
 		METH_VARARGS, "set_default_backend(backend)" },
 	{ "backend_list", (PyCFunction)py_backend_list, 
 		METH_NOARGS, "backend_list() -> list" },
-	{ NULL },
+	{0},
 };
 
 #define MODULE_DOC PyDoc_STR("Python wrapping of talloc-maintained objects.")

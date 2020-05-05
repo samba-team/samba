@@ -266,7 +266,7 @@ static PyMethodDef py_samba_ldb_methods[] = {
 	{ "samba_schema_attribute_add",
 		(PyCFunction)py_ldb_samba_schema_attribute_add,
 		METH_VARARGS, NULL },
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

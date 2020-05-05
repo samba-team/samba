@@ -544,7 +544,7 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 	struct poptOption long_options[] = {
 		{ "url", 'H', POPT_ARG_STRING, &options->url, 0, "database URL", "URL" },
 		{ "debug", 'd', POPT_ARG_STRING, &options->debug, 0, "debug level", "DEBUG" },
-		{ NULL }
+		{0}
 	};
 
 	pc = poptGetContext("dlz_bind9", argc, argv, long_options,

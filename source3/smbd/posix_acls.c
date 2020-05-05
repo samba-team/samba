@@ -4640,7 +4640,7 @@ int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	TALLOC_CTX *frame = talloc_stackframe();
 	/* Initialise this to zero, in a portable way */
 	struct smb_acl_wrapper acl_wrapper = {
-		NULL
+		0
 	};
 	struct smb_filename *smb_fname = cp_smb_filename_nostream(frame,
 						smb_fname_in);

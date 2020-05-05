@@ -59,7 +59,7 @@ static struct poptOption builtin_popt_options[] = {
 	{ "relax", 0, POPT_ARG_NONE, NULL, CMDLINE_RELAX, "pass relax control", NULL },
 	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
 	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
-	{ NULL }
+	{0}
 };
 
 void ldb_cmdline_help(struct ldb_context *ldb, const char *cmdname, FILE *f)

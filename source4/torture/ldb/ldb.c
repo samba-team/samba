@@ -1331,9 +1331,6 @@ static bool torture_ldb_unpack_data_corrupt(struct torture_context *torture)
 
 	int i, j, current, expect_rcode, ret;
 	const char *comment;
-	const char *comment_fmt = "Expected unpack rcode for index %d "
-				  "(corrupt bytes index %d) "
-				  "to be %d but got %d";
 
 	/*
 	 * List of corruptible byte ranges. First 12 bytes are corruptible,
@@ -1358,9 +1355,15 @@ static bool torture_ldb_unpack_data_corrupt(struct torture_context *torture)
 
 			ret = ldb_unpack_data(ldb, &bin_copy, msg);
 
-			comment = talloc_asprintf(bin_copy.data, comment_fmt,
-						  current, i,
-						  expect_rcode, ret);
+			comment = talloc_asprintf(
+				bin_copy.data,
+				"Expected unpack rcode for index %d "
+				"(corrupt bytes index %d) "
+				"to be %d but got %d",
+				current,
+				i,
+				expect_rcode,
+				ret);
 			torture_assert_int_equal(torture, ret, expect_rcode,
 						 comment);
 

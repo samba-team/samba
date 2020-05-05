@@ -41,7 +41,7 @@ int main(int argc, const char **argv)
 		{"file", 'F', POPT_ARG_STRING, &file, 0, "file path", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
-		{ NULL }
+		{0}
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, long_options,0);

@@ -143,7 +143,7 @@ static PyMethodDef py_policy_methods[] = {
 		"get_gplink_options(options) -> list" },
 	{ "ads_to_dir_access_mask", (PyCFunction)py_ads_to_dir_access_mask, METH_VARARGS,
 		"ads_to_dir_access_mask(access_mask) -> dir_mask" },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

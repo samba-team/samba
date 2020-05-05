@@ -434,7 +434,7 @@ static PyMethodDef py_auth_methods[] = {
 	  PY_DISCARD_FUNC_SIG(PyCFunction,py_copy_session_info),
 	  METH_VARARGS|METH_KEYWORDS,
 	  NULL },
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

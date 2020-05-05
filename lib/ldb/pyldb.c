@@ -730,7 +730,7 @@ static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
 {
 	unsigned int num = 0;
 	char *name = NULL, *value = NULL;
-	struct ldb_val val = { NULL, };
+	struct ldb_val val = { 0 };
 	int err;
 	Py_ssize_t size = 0;
 
@@ -847,7 +847,7 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "get_rdn_value", (PyCFunction)py_ldb_dn_get_rdn_value, METH_NOARGS,
 		"S.get_rdn_value() -> string\n"
 		"get the RDN attribute value as a binary string" },
-	{ NULL }
+	{0}
 };
 
 static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
@@ -2398,7 +2398,7 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "_register_test_extensions", (PyCFunction)py_ldb_register_test_extensions, METH_NOARGS,
 		"S._register_test_extensions() -> None\n"
 		"Register internal extensions used in testing" },
-	{ NULL },
+	{0},
 };
 
 static PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
@@ -2725,7 +2725,7 @@ static PyMethodDef py_ldb_search_iterator_methods[] = {
 		"S.result() -> ldb.Result (without msgs and referrals)\n" },
 	{ "abandon", (PyCFunction)py_ldb_search_iterator_abandon, METH_NOARGS,
 		"S.abandon()\n" },
-	{ NULL }
+	{0}
 };
 
 static PyObject *py_ldb_search_iterator_repr(PyLdbSearchIteratorObject *self)
@@ -2920,7 +2920,7 @@ static PyMethodDef py_ldb_module_methods[] = {
 	{ "start_transaction", (PyCFunction)py_ldb_module_start_transaction, METH_NOARGS, NULL },
 	{ "end_transaction", (PyCFunction)py_ldb_module_end_transaction, METH_NOARGS, NULL },
 	{ "del_transaction", (PyCFunction)py_ldb_module_del_transaction, METH_NOARGS, NULL },
-	{ NULL },
+	{0},
 };
 
 static void py_ldb_module_dealloc(PyLdbModuleObject *self)
@@ -3098,7 +3098,7 @@ static PyMethodDef py_ldb_msg_element_methods[] = {
 	{ "get", (PyCFunction)py_ldb_msg_element_get, METH_VARARGS, NULL },
 	{ "set_flags", (PyCFunction)py_ldb_msg_element_set_flags, METH_VARARGS, NULL },
 	{ "flags", (PyCFunction)py_ldb_msg_element_flags, METH_NOARGS, NULL },
-	{ NULL },
+	{0},
 };
 
 static Py_ssize_t py_ldb_msg_element_len(PyLdbMessageElementObject *self)
@@ -3603,7 +3603,7 @@ static PyMethodDef py_ldb_msg_methods[] = {
 	{ "add", (PyCFunction)py_ldb_msg_add, METH_VARARGS,
 		"S.add(element)\n\n"
 		"Add an element to this message." },
-	{ NULL },
+	{0},
 };
 
 static PyObject *py_ldb_msg_iter(PyLdbMessageObject *self)
@@ -4280,7 +4280,7 @@ static PyMethodDef py_ldb_global_methods[] = {
 	{ "binary_decode", py_binary_decode, METH_VARARGS,
 		"S.binary_decode(string) -> string\n\n"
 		"Perform a RFC2254 binary decode on a string" },
-	{ NULL }
+	{0}
 };
 
 #define MODULE_DOC "An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server."

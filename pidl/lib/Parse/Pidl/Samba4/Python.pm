@@ -1419,7 +1419,7 @@ sub Interface($$$)
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
 			$self->pidl("{ \"$prettyname\", $docstring, (py_dcerpc_call_fn)$callfn, (py_data_pack_fn)$infn, (py_data_unpack_fn)$outfn, $opnum, &ndr_table_$interface->{NAME} },");
 		}
-		$self->pidl("{ NULL }");
+		$self->pidl("{0}");
 		$self->deindent;
 		$self->pidl("};");
 		$self->pidl("");

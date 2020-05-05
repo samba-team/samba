@@ -73,7 +73,7 @@ static PyMethodDef py_security_methods[] = {
 					      py_se_access_check),
 	METH_VARARGS|METH_KEYWORDS,
 	"access_check(security_descriptor, token, access_desired) -> access_granted.  Raises NT_STATUS on error, including on access check failure, returns access granted bitmask"},
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

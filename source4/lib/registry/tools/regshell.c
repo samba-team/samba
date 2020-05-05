@@ -380,7 +380,7 @@ static struct {
 	{"help", "?", "Help", cmd_help },
 	{"exit", "quit", "Exit", cmd_exit },
 	{"predef", "predefined", "Go to predefined key", cmd_predef },
-	{NULL }
+	{0}
 };
 
 static WERROR cmd_help(struct regshell_context *ctx,
@@ -570,7 +570,7 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{ NULL }
+		{0}
 	};
 
 	pc = poptGetContext(argv[0], argc, argv, long_options,0);

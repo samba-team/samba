@@ -41,7 +41,7 @@
 static unsigned calculate_popt_array_length(struct poptOption *opts)
 {
 	unsigned i;
-	struct poptOption zero_opt = { NULL };
+	struct poptOption zero_opt = { 0 };
 	for (i=0; memcmp(&zero_opt, &opts[i], sizeof(zero_opt)) != 0; i++) ;
 	return i;
 }
@@ -51,7 +51,7 @@ static struct poptOption cmdline_extensions[] = {
 	POPT_COMMON_CREDENTIALS
 	POPT_COMMON_CONNECTION
 	POPT_COMMON_VERSION
-	{ NULL }
+	{0}
 };
 
 /*

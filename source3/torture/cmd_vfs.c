@@ -2058,5 +2058,5 @@ struct cmd_set vfs_commands[] = {
 	{ "test_chain", cmd_test_chain, "test chain code",
 	  "test_chain" },
 	{ "translate_name", cmd_translate_name, "VFS translate_name()", "translate_name unix_filename" },
-	{ NULL }
+	{0}
 };

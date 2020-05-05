@@ -1252,7 +1252,7 @@ static PyObject *py_ccache_name(PyObject *self, PyObject *unused)
 static PyMethodDef py_ccache_container_methods[] = {
 	{ "get_name", py_ccache_name, METH_NOARGS,
 	  "S.get_name() -> name\nObtain KRB5 credentials cache name." },
-	{ NULL }
+	{0}
 };
 
 PyTypeObject PyCredentialCacheContainer = {

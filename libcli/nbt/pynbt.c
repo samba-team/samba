@@ -409,7 +409,7 @@ static PyMethodDef py_nbt_methods[] = {
 		"S.name_status(name, dest, timeout=0, retries=0) -> (reply_from, name, status)\n"
 		"Find the status of a name" },
 
-	{ NULL }
+	{0}
 };
 
 PyTypeObject nbt_node_Type = {

@@ -693,7 +693,7 @@ static PyMethodDef py_gensec_security_methods[] = {
 		"S.sign_packet(data, whole_pdu) -> sig\nSign a DCERPC packet." },
 	{ "check_packet",  (PyCFunction)py_gensec_check_packet, METH_VARARGS,
 		"S.check_packet(data, whole_pdu, sig)\nCheck a DCERPC packet." },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

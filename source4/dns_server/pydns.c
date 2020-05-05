@@ -336,7 +336,7 @@ static PyMethodDef py_dsdb_dns_methods[] = {
 		METH_VARARGS, "Replace the DNS database entries for a LDB DN"},
 	{ "extract", (PyCFunction)py_dsdb_dns_extract,
 		METH_VARARGS, "Return the DNS database entry as a python structure from an Ldb.MessageElement of type dnsRecord"},
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

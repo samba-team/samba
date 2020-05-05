@@ -1689,7 +1689,7 @@ struct poptOption help_options[] = {
 	  NULL, NULL },
 	{ "help", '?', 0, NULL, '?', "Show this help message", NULL },
 	{ "usage", '\0', 0, NULL, 'u', "Display brief usage message", NULL },
-	{ NULL }
+	{0}
 } ;
 
 /* Main program */

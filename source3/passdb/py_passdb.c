@@ -3753,7 +3753,7 @@ static PyMethodDef py_pdb_methods[] = {
 	{ "delete_secret", py_pdb_delete_secret, METH_VARARGS,
 		"delete_secret(secret_name) -> None\n\n \
 		Delete secret information for secret_name." },
-	{ NULL },
+	{0},
 };
 
 
@@ -3969,7 +3969,7 @@ static PyMethodDef py_passdb_methods[] = {
 	{ "reload_static_pdb", py_reload_static_pdb, METH_NOARGS,
 		"reload_static_pdb() -> None\n\n \
 		Re-initialise the static pdb used internally.  Needed if 'passdb backend' is changed." },
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

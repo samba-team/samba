@@ -389,7 +389,7 @@ static PyMethodDef py_misc_methods[] = {
 		METH_VARARGS,
 		"generate_random_bytes(len) -> bytes\n"
 		"Generate random bytes with specified length." },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

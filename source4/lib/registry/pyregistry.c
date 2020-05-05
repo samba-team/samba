@@ -153,7 +153,7 @@ static PyMethodDef registry_methods[] = {
         	"Apply the diff from the specified file" },
 	{ "mount_hive", py_mount_hive, METH_VARARGS, "S.mount_hive(key, key_id, elements=None) -> None\n"
 		"Mount the specified key at the specified path." },
-	{ NULL }
+	{0}
 };
 
 PyTypeObject PyRegistry = {
@@ -240,7 +240,7 @@ static PyMethodDef hive_key_methods[] = {
                  "Delete a value" },
 	{ "set_value", py_hive_key_set_value, METH_VARARGS, "S.set_value(name, type, data) -> None\n"
                  "Set a value" },
-	{ NULL }
+	{0}
 };
 
 static PyObject *hive_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
@@ -443,7 +443,7 @@ static PyMethodDef py_registry_methods[] = {
 		METH_VARARGS|METH_KEYWORDS, "open_hive(location, session_info=None, credentials=None, loadparm_context=None) -> key" },
 	{ "str_regtype", py_str_regtype, METH_VARARGS, "str_regtype(int) -> str" },
 	{ "get_predef_name", py_get_predef_name, METH_VARARGS, "get_predef_name(hkey) -> str" },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

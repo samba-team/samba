@@ -91,7 +91,7 @@ static const char py_crypto_arcfour_crypt_blob_doc[] = "arcfour_crypt_blob(data,
 
 static PyMethodDef py_crypto_methods[] = {
 	{ "arcfour_crypt_blob", (PyCFunction)py_crypto_arcfour_crypt_blob, METH_VARARGS, py_crypto_arcfour_crypt_blob_doc },
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

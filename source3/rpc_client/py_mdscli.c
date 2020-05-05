@@ -243,7 +243,7 @@ static PyMethodDef search_methods[] = {
 		.ml_flags = METH_VARARGS|METH_KEYWORDS,
 		.ml_doc   = "",
 	},
-	{ NULL },
+	{0},
 };
 
 static PyObject *search_new(PyTypeObject *type,
@@ -448,7 +448,7 @@ static PyMethodDef conn_methods[] = {
 		.ml_flags = METH_VARARGS|METH_KEYWORDS,
 		.ml_doc   = "mdscli.conn.disconnect(...) -> disconnect",
 	},
-	{ NULL },
+	{0},
 };
 
 static PyObject *conn_new(PyTypeObject *type,
@@ -521,7 +521,7 @@ static PyTypeObject conn_type = {
 };
 
 static PyMethodDef mdscli_methods[] = {
-	{ NULL },
+	{0},
 };
 
 static struct PyModuleDef moduledef = {

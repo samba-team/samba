@@ -82,7 +82,7 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{ NULL }
+		{0}
 	};
 	TALLOC_CTX *ctx;
 	void *callback_data;

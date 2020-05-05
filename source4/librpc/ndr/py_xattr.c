@@ -87,7 +87,7 @@ static PyObject *py_ntacl_print(PyObject *self, PyObject *args)
 static PyMethodDef py_ntacl_extra_methods[] = {
 	{ "dump", (PyCFunction)py_ntacl_print, METH_NOARGS,
 		NULL },
-	{ NULL }
+	{0}
 };
 
 static void py_xattr_NTACL_patch(PyTypeObject *type)

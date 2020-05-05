@@ -65,9 +65,7 @@ int main(int argc, const char *argv[])
                 "contextauth", 'C', POPT_ARG_NONE, &context_auth,
                 0, "Use new authentication function with context", "integer"
             },
-            {
-                NULL
-            }
+            {0}
         };
     
     setbuf(stdout, NULL);

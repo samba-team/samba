@@ -95,7 +95,7 @@ static PyMethodDef test_talloc_methods[] = {
 		"call pytalloc_reference_ex"},
 	{ "base_reference", (PyCFunction)testpytalloc_base_reference, METH_VARARGS,
 		"call pytalloc_reference_ex"},
-	{ NULL }
+	{0}
 };
 
 static PyTypeObject DObject_Type;

@@ -150,7 +150,7 @@ static int increment_req_vs_found(struct tdb_context *tdb,
 		.dptr = (unsigned char *)k,
 		.dsize = sizeof(k)
 	};
-	TDB_DATA data = {NULL};
+	TDB_DATA data = {0};
 	ssize_t n_req = ac->n_attrs;
 	if (ac->is_null) {
 		n_req = NULL_REQ_PSEUDO_N;

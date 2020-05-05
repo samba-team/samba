@@ -446,7 +446,7 @@ static PyMethodDef py_lp_ctx_methods[] = {
 	{ "state_path", py_state_path, METH_VARARGS,
 		"S.state_path(name) -> string\n"
 		"Returns a path in the Samba state directory." },
-	{ NULL }
+	{0}
 };
 
 static PyObject *py_lp_ctx_default_service(PyObject *self, void *closure)
@@ -605,7 +605,7 @@ static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
 static PyMethodDef py_lp_service_methods[] = {
 	{ "dump", (PyCFunction)py_lp_service_dump, METH_VARARGS, 
 		"S.dump(default_service, show_defaults=False, file_name='', mode='w')" },
-	{ NULL }
+	{0}
 };
 
 PyTypeObject PyLoadparmService = {
@@ -650,7 +650,7 @@ static PyMethodDef pyparam_methods[] = {
 		"Returns the compiled in BINDIR." },
 	{ "sbin_dir", (PyCFunction)py_sbin_dir, METH_NOARGS,
 		"Returns the compiled in SBINDIR." },
-	{ NULL }
+	{0}
 };
 
 static struct PyModuleDef moduledef = {

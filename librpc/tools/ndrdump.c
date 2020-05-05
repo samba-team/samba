@@ -316,7 +316,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		 "Try to print structures that fail to parse (used to develop parsers, segfaults are likely).", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
-		{ NULL }
+		{0}
 	};
 	uint32_t highest_ofs;
 	struct dcerpc_sec_verification_trailer *sec_vt = NULL;

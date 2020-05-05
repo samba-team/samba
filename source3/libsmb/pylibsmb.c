@@ -1654,7 +1654,7 @@ static PyTypeObject py_cli_state_type = {
 };
 
 static PyMethodDef py_libsmb_methods[] = {
-	{ NULL },
+	{0},
 };
 
 void initlibsmb_samba_internal(void);

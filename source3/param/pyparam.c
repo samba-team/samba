@@ -64,7 +64,7 @@ static PyObject *py_get_context(PyObject *self, PyObject *Py_UNUSED(ignored))
 static PyMethodDef pyparam_methods[] = {
     { "get_context", (PyCFunction)py_get_context, METH_NOARGS,
         "Returns LoadParm context." },
-    { NULL }
+    {0}
 };
 
 static struct PyModuleDef moduledef = {

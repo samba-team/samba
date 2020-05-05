@@ -589,7 +589,7 @@ static PyMethodDef tdb_object_methods[] = {
 		"S.enable_seqnum() -> None" },
 	{ "increment_seqnum_nonblock", (PyCFunction)obj_increment_seqnum_nonblock, METH_NOARGS,
 		"S.increment_seqnum_nonblock() -> None" },
-	{ NULL }
+	{0}
 };
 
 static PyObject *obj_get_hash_size(PyTdbObject *self, void *closure)
