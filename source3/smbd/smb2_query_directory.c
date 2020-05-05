@@ -421,11 +421,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 			}
 			fullpath = tmp;
 		}
-
-		if (fsp->fsp_name->twrp != 0) {
-			ucf_flags |= UCF_GMT_PATHNAME;
-		}
-
 		status = filename_convert(state,
 				conn,
 				fullpath,
