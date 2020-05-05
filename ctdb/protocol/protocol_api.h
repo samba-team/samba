@@ -270,14 +270,6 @@ void ctdb_req_control_get_pid(struct ctdb_req_control *request);
 int ctdb_reply_control_get_pid(struct ctdb_reply_control *reply,
 			       pid_t *pid);
 
-void ctdb_req_control_get_recmaster(struct ctdb_req_control *request);
-int ctdb_reply_control_get_recmaster(struct ctdb_reply_control *reply,
-				     uint32_t *recmaster);
-
-void ctdb_req_control_set_recmaster(struct ctdb_req_control *request,
-				    int recmaster);
-int ctdb_reply_control_set_recmaster(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_freeze(struct ctdb_req_control *request,
 			     uint32_t priority);
 int ctdb_reply_control_freeze(struct ctdb_reply_control *reply);
