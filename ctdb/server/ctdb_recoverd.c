@@ -1474,7 +1474,6 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
  */
 static int send_election_request(struct ctdb_recoverd *rec)
 {
-	int ret;
 	TDB_DATA election_data;
 	struct election_message emsg;
 	uint64_t srvid;
@@ -1488,17 +1487,7 @@ static int send_election_request(struct ctdb_recoverd *rec)
 	election_data.dptr  = (unsigned char *)&emsg;
 
 
-	/* first we assume we will win the election and set 
-	   recoverymaster to be ourself on the current node
-	 */
-	ret = ctdb_ctrl_setrecmaster(ctdb,
-				     CONTROL_TIMEOUT(),
-				     CTDB_CURRENT_NODE,
-				     rec->pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster\n"));
-		return -1;
-	}
+	/* Assume this node will win the election, set leader accordingly */
 	rec->leader = rec->pnn;
 
 	/* send an election message to all active nodes */
@@ -1797,7 +1786,6 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	struct ctdb_recoverd *rec = talloc_get_type(
 		private_data, struct ctdb_recoverd);
 	struct ctdb_context *ctdb = rec->ctdb;
-	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
 
 	/* Ignore election packets from ourself */
@@ -1838,17 +1826,10 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	}
 
 	/* Set leader to the winner of this round */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(),
-				     CTDB_CURRENT_NODE, em->pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster"));
-		return;
-	}
 	rec->leader = em->pnn;
 
 	return;
 }
-
 
 /*
   force the start of the election process
@@ -2009,7 +1990,6 @@ static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
 		private_data, struct ctdb_recoverd);
-	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t pnn;
 	size_t npull;
 	int ret;
@@ -2037,16 +2017,6 @@ static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	}
 
 	D_NOTICE("Received leader broadcast, leader=%"PRIu32"\n", pnn);
-
-	ret = ctdb_ctrl_setrecmaster(ctdb,
-				     CONTROL_TIMEOUT(),
-				     CTDB_CURRENT_NODE,
-				     pnn);
-	if (ret != 0) {
-		DBG_WARNING("Failed to set leader\n");
-		goto done;
-	}
-
 	rec->leader = pnn;
 
 done:
