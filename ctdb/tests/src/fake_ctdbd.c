@@ -4362,9 +4362,14 @@ static int client_recv(struct tevent_req *req, int *perr)
 struct server_state {
 	struct tevent_context *ev;
 	struct ctdbd_context *ctdb;
+	struct tevent_timer *leader_broadcast_te;
 	int fd;
 };
 
+static void server_leader_broadcast(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval current_time,
+				    void *private_data);
 static void server_new_client(struct tevent_req *subreq);
 static void server_client_done(struct tevent_req *subreq);
 
@@ -4385,6 +4390,15 @@ static struct tevent_req *server_send(TALLOC_CTX *mem_ctx,
 	state->ctdb = ctdb;
 	state->fd = fd;
 
+	state->leader_broadcast_te = tevent_add_timer(state->ev,
+						      state,
+						      timeval_current_ofs(0, 0),
+						      server_leader_broadcast,
+						      state);
+	if (state->leader_broadcast_te == NULL) {
+		DBG_WARNING("Failed to set up leader broadcast\n");
+	}
+
 	subreq = accept_send(state, ev, fd);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -4392,6 +4406,41 @@ static struct tevent_req *server_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, server_new_client, req);
 
 	return req;
+}
+
+static void server_leader_broadcast(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval current_time,
+				    void *private_data)
+{
+	struct server_state *state = talloc_get_type_abort(
+		private_data, struct server_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	uint32_t leader = ctdb->node_map->recmaster;
+	TDB_DATA data;
+	int ret;
+
+	if (leader == CTDB_UNKNOWN_PNN) {
+		goto done;
+	}
+
+	data.dptr = (uint8_t *)&leader;
+	data.dsize = sizeof(leader);
+
+	ret = srvid_dispatch(ctdb->srv, CTDB_SRVID_LEADER, 0, data);
+	if (ret != 0) {
+		DBG_WARNING("Failed to send leader broadcast, ret=%d\n", ret);
+	}
+
+done:
+	state->leader_broadcast_te = tevent_add_timer(state->ev,
+						      state,
+						      timeval_current_ofs(1, 0),
+						      server_leader_broadcast,
+						      state);
+	if (state->leader_broadcast_te == NULL) {
+		DBG_WARNING("Failed to set up leader broadcast\n");
+	}
 }
 
 static void server_new_client(struct tevent_req *subreq)
