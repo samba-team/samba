@@ -1998,9 +1998,75 @@ done:
 	client_send_control(req, header, &reply);
 }
 
+static void srvid_handler_done(struct tevent_req *subreq);
+
 static void srvid_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	printf("Received a message for SRVID 0x%"PRIx64"\n", srvid);
+	struct client_state *state = talloc_get_type_abort(
+		private_data, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct tevent_req *subreq;
+	struct ctdb_req_header request_header;
+	struct ctdb_req_message_data message;
+	uint8_t *buf;
+	size_t datalen, buflen;
+	int ret;
+
+	request_header = (struct ctdb_req_header) {
+		.ctdb_magic = CTDB_MAGIC,
+		.ctdb_version = CTDB_PROTOCOL,
+		.generation = ctdb->vnn_map->generation,
+		.operation = CTDB_REQ_MESSAGE,
+		.destnode = state->pnn,
+		.srcnode = ctdb->node_map->recmaster,
+		.reqid = 0,
+	};
+
+	message = (struct ctdb_req_message_data) {
+		.srvid = srvid,
+		.data = data,
+	};
+
+	datalen = ctdb_req_message_data_len(&request_header, &message);
+	ret = ctdb_allocate_pkt(state, datalen, &buf, &buflen);
+	if (ret != 0) {
+		return;
+	}
+
+	ret = ctdb_req_message_data_push(&request_header,
+					 &message,
+					 buf,
+					 &buflen);
+	if (ret != 0) {
+		talloc_free(buf);
+		return;
+	}
+
+	subreq = comm_write_send(state, state->ev, state->comm, buf, buflen);
+	if (subreq == NULL) {
+		talloc_free(buf);
+		return;
+	}
+	tevent_req_set_callback(subreq, srvid_handler_done, state);
+
+	talloc_steal(subreq, buf);
+}
+
+static void srvid_handler_done(struct tevent_req *subreq)
+{
+	struct client_state *state = tevent_req_callback_data(
+		subreq, struct client_state);
+	int ret;
+	bool ok;
+
+	ok = comm_write_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to dispatch message to client pid=%u, ret=%d\n",
+		       state->pid,
+		       ret));
+	}
 }
 
 static void control_register_srvid(TALLOC_CTX *mem_ctx,
