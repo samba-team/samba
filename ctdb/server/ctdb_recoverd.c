@@ -2142,103 +2142,6 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 }
 
 
-struct verify_recmaster_data {
-	struct ctdb_recoverd *rec;
-	uint32_t count;
-	uint32_t pnn;
-	enum monitor_result status;
-};
-
-static void verify_recmaster_callback(struct ctdb_client_control_state *state)
-{
-	struct verify_recmaster_data *rmdata = talloc_get_type(state->async.private_data, struct verify_recmaster_data);
-
-
-	/* one more node has responded with recmaster data*/
-	rmdata->count--;
-
-	/* if we failed to get the recmaster, then return an error and let
-	   the main loop try again.
-	*/
-	if (state->state != CTDB_CONTROL_DONE) {
-		if (rmdata->status == MONITOR_OK) {
-			rmdata->status = MONITOR_FAILED;
-		}
-		return;
-	}
-
-	/* if we got a response, then the recmaster will be stored in the
-	   status field
-	*/
-	if ((uint32_t)state->status != rmdata->pnn) {
-		DEBUG(DEBUG_ERR,("Node %d thinks node %d is recmaster. Need a new recmaster election\n", state->c->hdr.destnode, state->status));
-		ctdb_set_culprit(rmdata->rec, state->c->hdr.destnode);
-		rmdata->status = MONITOR_ELECTION_NEEDED;
-	}
-
-	return;
-}
-
-
-/* verify that all nodes agree that we are the recmaster */
-static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap, uint32_t pnn)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-	struct verify_recmaster_data *rmdata;
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
-	struct ctdb_client_control_state *state;
-	enum monitor_result status;
-	unsigned int j;
-
-	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
-	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
-	rmdata->rec    = rec;
-	rmdata->count  = 0;
-	rmdata->pnn    = pnn;
-	rmdata->status = MONITOR_OK;
-
-	/* loop over all active nodes and send an async getrecmaster call to
-	   them*/
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn == rec->leader) {
-			continue;
-		}
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		state = ctdb_ctrl_getrecmaster_send(ctdb, mem_ctx, 
-					CONTROL_TIMEOUT(),
-					nodemap->nodes[j].pnn);
-		if (state == NULL) {
-			/* we failed to send the control, treat this as 
-			   an error and try again next iteration
-			*/			
-			DEBUG(DEBUG_ERR,("Failed to call ctdb_ctrl_getrecmaster_send during monitoring\n"));
-			talloc_free(mem_ctx);
-			return MONITOR_FAILED;
-		}
-
-		/* set up the callback functions */
-		state->async.fn = verify_recmaster_callback;
-		state->async.private_data = rmdata;
-
-		/* one more control to wait for to complete */
-		rmdata->count++;
-	}
-
-
-	/* now wait for up to the maximum number of seconds allowed
-	   or until all nodes we expect a response from has replied
-	*/
-	while (rmdata->count > 0) {
-		tevent_loop_once(ctdb->ev);
-	}
-
-	status = rmdata->status;
-	talloc_free(mem_ctx);
-	return status;
-}
-
 static bool interfaces_have_changed(struct ctdb_context *ctdb,
 				    struct ctdb_recoverd *rec)
 {
@@ -2704,21 +2607,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		ctdb_load_nodes_file(ctdb);
 		return;
 	}
-
-	/* verify that all active nodes agree that we are the recmaster */
-	switch (verify_recmaster(rec, nodemap, rec->pnn)) {
-	case MONITOR_RECOVERY_NEEDED:
-		/* can not happen */
-		return;
-	case MONITOR_ELECTION_NEEDED:
-		force_election(rec);
-		return;
-	case MONITOR_OK:
-		break;
-	case MONITOR_FAILED:
-		return;
-	}
-
 
 	/* get the vnnmap */
 	ret = ctdb_ctrl_getvnnmap(ctdb,
