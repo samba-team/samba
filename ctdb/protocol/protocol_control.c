@@ -118,13 +118,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_GET_PID:
 		break;
 
-	case CTDB_CONTROL_GET_RECMASTER:
-		break;
-
-	case CTDB_CONTROL_SET_RECMASTER:
-		len = ctdb_uint32_len(&cd->data.recmaster);
-		break;
-
 	case CTDB_CONTROL_FREEZE:
 		break;
 
@@ -477,10 +470,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
-	case CTDB_CONTROL_SET_RECMASTER:
-		ctdb_uint32_push(&cd->data.recmaster, buf, &np);
-		break;
-
 	case CTDB_CONTROL_TCP_CLIENT:
 		ctdb_connection_push(cd->data.conn, buf, &np);
 		break;
@@ -765,10 +754,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
 		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
-		break;
-
-	case CTDB_CONTROL_SET_RECMASTER:
-		ret = ctdb_uint32_pull(buf, buflen, &cd->data.recmaster, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_CLIENT:
@@ -1127,12 +1112,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 	case CTDB_CONTROL_GET_PID:
 		break;
 
-	case CTDB_CONTROL_GET_RECMASTER:
-		break;
-
-	case CTDB_CONTROL_SET_RECMASTER:
-		break;
-
 	case CTDB_CONTROL_FREEZE:
 		break;
 
@@ -1443,9 +1422,6 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 	case CTDB_CONTROL_GET_PID:
 		break;
 
-	case CTDB_CONTROL_GET_RECMASTER:
-		break;
-
 	case CTDB_CONTROL_GET_TUNABLE:
 		ctdb_uint32_push(&cd->data.tun_value, buf, &np);
 		break;
@@ -1609,9 +1585,6 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_PID:
-		break;
-
-	case CTDB_CONTROL_GET_RECMASTER:
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
