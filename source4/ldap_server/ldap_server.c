@@ -256,7 +256,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	return 0;
 
 failed:
-	DEBUG(0, ("Failed to load ldap server query policies\n"));
+	DBG_ERR("Failed to load ldap server query policies\n");
 	talloc_free(tmp_ctx);
 	return -1;
 }
@@ -1116,8 +1116,8 @@ static NTSTATUS add_socket(struct task_server *task,
 				     lpcfg_socket_options(lp_ctx),
 				     ldap_service, task->process_context);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
-			 address, port, nt_errstr(status)));
+		DBG_ERR("ldapsrv failed to bind to %s:%u - %s\n",
+			address, port, nt_errstr(status));
 		return status;
 	}
 
@@ -1132,8 +1132,8 @@ static NTSTATUS add_socket(struct task_server *task,
 					     ldap_service,
 					     task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
-				 address, port, nt_errstr(status)));
+			DBG_ERR("ldapsrv failed to bind to %s:%u - %s\n",
+				address, port, nt_errstr(status));
 			return status;
 		}
 	}
@@ -1159,8 +1159,8 @@ static NTSTATUS add_socket(struct task_server *task,
 					     ldap_service,
 					     task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
-				 address, port, nt_errstr(status)));
+			DBG_ERR("ldapsrv failed to bind to %s:%u - %s\n",
+				address, port, nt_errstr(status));
 			return status;
 		}
 		if (tstream_tls_params_enabled(ldap_service->tls_params)) {
@@ -1174,8 +1174,8 @@ static NTSTATUS add_socket(struct task_server *task,
 						     ldap_service,
 						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
-					 address, port, nt_errstr(status)));
+				DBG_ERR("ldapsrv failed to bind to %s:%u - %s\n",
+					address, port, nt_errstr(status));
 				return status;
 			}
 		}
@@ -1244,8 +1244,8 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 					   lpcfg_tls_priority(task->lp_ctx),
 					   &ldap_service->tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("ldapsrv failed tstream_tls_params_server - %s\n",
-			 nt_errstr(status)));
+		DBG_ERR("ldapsrv failed tstream_tls_params_server - %s\n",
+			nt_errstr(status));
 		goto failed;
 	}
 
@@ -1279,7 +1279,7 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 		size_t num_binds = 0;
 		wcard = iface_list_wildcard(task);
 		if (wcard == NULL) {
-			DEBUG(0,("No wildcard addresses available\n"));
+			DBG_ERR("No wildcard addresses available\n");
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto failed;
 		}
@@ -1310,8 +1310,8 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 				     ldap_service, task->process_context);
 	talloc_free(ldapi_path);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",
-			 ldapi_path, nt_errstr(status)));
+		DBG_ERR("ldapsrv failed to bind to %s - %s\n",
+			ldapi_path, nt_errstr(status));
 	}
 
 #ifdef WITH_LDAPI_PRIV_SOCKET
@@ -1344,8 +1344,8 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 				     task->process_context);
 	talloc_free(ldapi_path);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",
-			 ldapi_path, nt_errstr(status)));
+		DBG_ERR("ldapsrv failed to bind to %s - %s\n",
+			ldapi_path, nt_errstr(status));
 	}
 
 #endif
