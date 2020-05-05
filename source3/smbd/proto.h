@@ -1168,7 +1168,7 @@ ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags);
 /* The following definitions come from smbd/statcache.c  */
 
 void stat_cache_add( const char *full_orig_name,
-		char *translated_path,
+		const char *translated_path,
 		bool case_sensitive);
 bool stat_cache_lookup(connection_struct *conn,
 			bool posix_paths,

@@ -45,13 +45,13 @@
  */
 
 void stat_cache_add( const char *full_orig_name,
-		char *translated_path,
+		const char *translated_path_in,
 		bool case_sensitive)
 {
 	size_t translated_path_length;
+	char *translated_path = NULL;
 	char *original_path;
 	size_t original_path_length;
-	char saved_char;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!lp_stat_cache()) {
@@ -67,6 +67,11 @@ void stat_cache_add( const char *full_orig_name,
 		return;
 	}
 
+	translated_path = talloc_strdup(ctx, translated_path_in);
+	if (translated_path == NULL) {
+		return;
+	}
+
 	/*
 	 * If we are in case insentive mode, we don't need to
 	 * store names that need no translation - else, it
@@ -74,6 +79,7 @@ void stat_cache_add( const char *full_orig_name,
 	 */
 
 	if (!case_sensitive && (strcmp(full_orig_name, translated_path) == 0)) {
+		TALLOC_FREE(translated_path);
 		return;
 	}
 
@@ -95,6 +101,7 @@ void stat_cache_add( const char *full_orig_name,
 	}
 
 	if (!original_path) {
+		TALLOC_FREE(translated_path);
 		return;
 	}
 
@@ -114,6 +121,7 @@ void stat_cache_add( const char *full_orig_name,
 				  translated_path,
 				  (unsigned long)translated_path_length));
 			TALLOC_FREE(original_path);
+			TALLOC_FREE(translated_path);
 			return;
 		}
 
@@ -125,7 +133,6 @@ void stat_cache_add( const char *full_orig_name,
 	}
 
 	/* Ensure we're null terminated. */
-	saved_char = translated_path[translated_path_length];
 	translated_path[translated_path_length] = '\0';
 
 	/*
@@ -143,8 +150,8 @@ void stat_cache_add( const char *full_orig_name,
 		 original_path,
 		 translated_path));
 
-	translated_path[translated_path_length] = saved_char;
 	TALLOC_FREE(original_path);
+	TALLOC_FREE(translated_path);
 }
 
 /**
