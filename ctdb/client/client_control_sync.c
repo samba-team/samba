@@ -615,64 +615,6 @@ int ctdb_ctrl_get_pid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_get_recmaster(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout,
-			    uint32_t *recmaster)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_get_recmaster(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_RECMASTER failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_get_recmaster(reply, recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_RECMASTER failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_set_recmaster(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout,
-			    uint32_t recmaster)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_set_recmaster(&request, recmaster);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_RECMASTER failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_set_recmaster(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_RECMASTER failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_freeze(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     struct ctdb_client_context *client,
 		     int destnode, struct timeval timeout,

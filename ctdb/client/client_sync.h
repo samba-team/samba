@@ -124,16 +124,6 @@ int ctdb_ctrl_get_pid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      int destnode, struct timeval timeout,
 		      pid_t *pid);
 
-int ctdb_ctrl_get_recmaster(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout,
-			    uint32_t *recmaster);
-
-int ctdb_ctrl_set_recmaster(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout,
-			    uint32_t recmaster);
-
 int ctdb_ctrl_freeze(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     struct ctdb_client_context *client,
 		     int destnode, struct timeval timeout,
