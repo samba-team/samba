@@ -1934,6 +1934,50 @@ static bool run_birthtimetest(struct torture_context *tctx,
 	return correct;
 }
 
+/**
+  SMB1 TWRP open on root of share.
+ */
+static bool torture_smb1_twrp_openroot(struct torture_context *tctx,
+			struct smbcli_state *cli)
+{
+	const char *snapshot = NULL;
+	const char *p = NULL;
+	NTSTATUS status;
+	struct tm tm;
+	bool ret = true;
+
+	snapshot = torture_setting_string(tctx, "twrp_snapshot", NULL);
+	if (snapshot == NULL) {
+		torture_skip(tctx, "missing 'twrp_snapshot' option\n");
+	}
+
+	torture_comment(tctx, "Testing open of root of "
+		"share with timewarp (%s)\n",
+		snapshot);
+
+	setenv("TZ", "GMT", 1);
+
+	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
+	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
+	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
+
+	cli->session->flags2 |= FLAGS2_REPARSE_PATH;
+	status = smbcli_chkpath(cli->tree, snapshot);
+	cli->session->flags2 &= ~FLAGS2_REPARSE_PATH;
+
+	if (NT_STATUS_IS_ERR(status)) {
+		torture_result(tctx,
+			TORTURE_FAIL,
+			"smbcli_chkpath on %s : %s\n",
+			snapshot,
+			smbcli_errstr(cli->tree));
+		return false;
+	}
+
+  done:
+
+	return ret;
+}
 
 NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 {
@@ -1992,6 +2036,9 @@ NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb_test(suite, "scan-pipe_number", run_pipe_number);
 	torture_suite_add_1smb_test(suite, "scan-ioctl", torture_ioctl_test);
 	torture_suite_add_1smb_test(suite, "scan-maxfid", torture_maxfid_test);
+	torture_suite_add_1smb_test(suite,
+			"smb1-twrp-openroot",
+			torture_smb1_twrp_openroot);
 
 	suite->description = talloc_strdup(suite, 
 					"Basic SMB tests (imported from the original smbtorture)");
