@@ -442,10 +442,21 @@ static int vlv_results(struct vlv_context *ac)
 			ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid,
 						    ac->req->op.search.attrs);
 
-			if (ret == LDAP_NO_SUCH_OBJECT) {
-				/* The thing isn't there, which we quietly
-				   ignore and go on to send an extra one
-				   instead. */
+			if (ret == LDAP_NO_SUCH_OBJECT
+			    || result->count != 1) {
+				/*
+				 * The thing isn't there, which we quietly
+				 * ignore and go on to send an extra one
+				 * instead.
+				 *
+				 * result->count == 0 or > 1 can only
+				 * happen if ASQ (which breaks all the
+				 * rules) is somehow invoked (as this
+				 * is a BASE search).
+				 *
+				 * (We skip the ASQ cookie for the
+				 * GUID searches)
+				 */
 				if (last_i < ac->store->num_entries - 1) {
 					last_i++;
 				}
