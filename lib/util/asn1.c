@@ -45,7 +45,7 @@ struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx, unsigned max_depth)
 {
 	struct asn1_data *ret = talloc_zero(mem_ctx, struct asn1_data);
 	if (ret == NULL) {
-		DEBUG(0,("asn1_init failed! out of memory\n"));
+		DBG_ERR("asn1_init failed! out of memory\n");
 		return ret;
 	}
 	ret->max_depth = max_depth;
