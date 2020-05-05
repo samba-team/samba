@@ -437,27 +437,13 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_node_flag_change c;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	uint32_t recmaster;
 	uint32_t *nodes;
 	int ret;
 
-	/* find the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, timeout, CTDB_CURRENT_NODE, &recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from local node\n"));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
+	nodemap = rec->nodemap;
 
-	/* read the node flags from the recmaster */
-	ret = ctdb_ctrl_getnodemap(ctdb, timeout, recmaster, tmp_ctx, &nodemap);
-	if (ret != 0) {
-		DBG_ERR("Unable to get nodemap from node %u\n", recmaster);
-		talloc_free(tmp_ctx);
-		return -1;
-	}
 	if (pnn >= nodemap->num) {
-		DBG_ERR("Nodemap from recmaster does not contain node %d\n", pnn);
+		DBG_ERR("Nodemap does not contain node %d\n", pnn);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
