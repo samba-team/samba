@@ -427,10 +427,11 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 /*
  * Update flags on all connected nodes
  */
-static int update_flags_on_all_nodes(struct ctdb_context *ctdb,
+static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 				     uint32_t pnn,
 				     uint32_t flags)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 
 	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, flags, ~flags);
@@ -1127,7 +1128,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			continue;
 		}
 
-		ret = update_flags_on_all_nodes(ctdb,
+		ret = update_flags_on_all_nodes(rec,
 						i,
 						nodemap->nodes[i].flags);
 		if (ret != 0) {
@@ -2615,7 +2616,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				if (i == j) {
 					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
 					update_flags_on_all_nodes(
-					    ctdb,
+					    rec,
 					    nodemap->nodes[i].pnn,
 					    remote_nodemaps[j]->nodes[i].flags);
 					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
@@ -2625,7 +2626,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				} else {
 					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
 					update_flags_on_all_nodes(
-						ctdb,
+						rec,
 						nodemap->nodes[i].pnn,
 						nodemap->nodes[i].flags);
 					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
