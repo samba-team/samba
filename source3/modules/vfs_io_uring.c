@@ -172,13 +172,13 @@ static int vfs_io_uring_connect(vfs_handle_struct *handle, const char *service,
 	}
 
 	num_entries = lp_parm_ulong(SNUM(handle->conn),
-				    "vfs_io_uring",
+				    "io_uring",
 				    "num_entries",
 				    128);
 	num_entries = MAX(num_entries, 1);
 
 	sqpoll = lp_parm_bool(SNUM(handle->conn),
-			     "vfs_io_uring",
+			     "io_uring",
 			     "sqpoll",
 			     false);
 	if (sqpoll) {
