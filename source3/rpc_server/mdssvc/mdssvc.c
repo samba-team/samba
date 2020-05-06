@@ -1528,6 +1528,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	struct mds_ctx *mds_ctx;
 	int backend;
 	bool ok;
+	smb_iconv_t iconv_hnd = (smb_iconv_t)-1;
 
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
 	if (mds_ctx == NULL) {
@@ -1566,21 +1567,23 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	mds_ctx->ic_nfc_to_nfd = smb_iconv_open_ex(mds_ctx,
+	iconv_hnd = smb_iconv_open_ex(mds_ctx,
 						   "UTF8-NFD",
 						   "UTF8-NFC",
 						   false);
-	if (mds_ctx->ic_nfc_to_nfd == (smb_iconv_t)-1) {
+	if (iconv_hnd == (smb_iconv_t)-1) {
 		goto error;
 	}
+	mds_ctx->ic_nfc_to_nfd = iconv_hnd;
 
-	mds_ctx->ic_nfd_to_nfc = smb_iconv_open_ex(mds_ctx,
+	iconv_hnd = smb_iconv_open_ex(mds_ctx,
 						   "UTF8-NFC",
 						   "UTF8-NFD",
 						   false);
-	if (mds_ctx->ic_nfd_to_nfc == (smb_iconv_t)-1) {
+	if (iconv_hnd == (smb_iconv_t)-1) {
 		goto error;
 	}
+	mds_ctx->ic_nfd_to_nfc = iconv_hnd;
 
 	mds_ctx->sharename = talloc_strdup(mds_ctx, sharename);
 	if (mds_ctx->sharename == NULL) {
