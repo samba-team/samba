@@ -197,8 +197,13 @@ static SERVICE_INFO *find_service_info_by_hnd(struct pipes_struct *p,
 					      struct policy_handle *hnd)
 {
 	SERVICE_INFO *service_info = NULL;
+	bool ok;
 
-	if( !find_policy_by_hnd( p, hnd, (void **)(void *)&service_info) ) {
+	ok = find_policy_by_hnd(p,
+				hnd,
+				DCESRV_HANDLE_ANY,
+				(void **)(void *)&service_info);
+	if (!ok) {
 		DEBUG(2,("find_service_info_by_hnd: handle not found\n"));
 		return NULL;
 	}

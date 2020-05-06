@@ -28,6 +28,7 @@
 #include "../libcli/security/security.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/ndr/ndr_table.h"
+#include "librpc/rpc/dcesrv_core.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -325,8 +326,11 @@ bool create_policy_hnd(struct pipes_struct *p,
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct dcesrv_handle_old *find_policy_by_hnd_internal(struct pipes_struct *p,
-				const struct policy_handle *hnd, void **data_p)
+static struct dcesrv_handle_old *find_policy_by_hnd_internal(
+					struct pipes_struct *p,
+					const struct policy_handle *hnd,
+					uint8_t handle_type,
+					void **data_p)
 {
 	struct dcesrv_handle_old *h = NULL;
 	unsigned int count;
@@ -340,6 +344,12 @@ static struct dcesrv_handle_old *find_policy_by_hnd_internal(struct pipes_struct
 		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(6,("Found policy hnd[%u] ", count));
 			dump_data(6, (const uint8_t *)hnd, sizeof(*hnd));
+			if (handle_type != DCESRV_HANDLE_ANY &&
+			    h->wire_handle.handle_type != handle_type) {
+				/* Just return NULL, do not set a fault
+				 * state in pipes_struct */
+				return NULL;
+			}
 			if (data_p) {
 				*data_p = h->data;
 			}
@@ -360,12 +370,14 @@ static struct dcesrv_handle_old *find_policy_by_hnd_internal(struct pipes_struct
   find policy by handle
 ****************************************************************************/
 
-bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
+bool find_policy_by_hnd(struct pipes_struct *p,
+			const struct policy_handle *hnd,
+			uint8_t handle_type,
 			void **data_p)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 
-	rpc_hnd = find_policy_by_hnd_internal(p, hnd, data_p);
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, data_p);
 	if (rpc_hnd == NULL) {
 		return false;
 	}
@@ -380,7 +392,7 @@ bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 
-	rpc_hnd = find_policy_by_hnd_internal(p, hnd, NULL);
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, DCESRV_HANDLE_ANY, NULL);
 
 	if (rpc_hnd == NULL) {
 		DEBUG(3, ("Error closing policy (policy not found)\n"));
@@ -491,13 +503,14 @@ void *_policy_handle_create(struct pipes_struct *p,
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
+			  uint8_t handle_type,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus)
 {
 	struct dcesrv_handle_old *rpc_hnd = NULL;
 	void *data;
 
-	rpc_hnd = find_policy_by_hnd_internal(p, hnd, &data);
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, &data);
 	if (rpc_hnd == NULL) {
 		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;

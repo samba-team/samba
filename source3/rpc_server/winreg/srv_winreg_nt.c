@@ -42,11 +42,14 @@ enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
  *****************************************************************/
 
 static struct registry_key *find_regkey_by_hnd(struct pipes_struct *p,
-					       struct policy_handle *hnd)
+					       struct policy_handle *hnd,
+					       enum handle_types type)
 {
 	struct registry_key *regkey = NULL;
+	bool ok;
 
-	if(!find_policy_by_hnd(p,hnd,(void **)(void *)&regkey)) {
+	ok = find_policy_by_hnd(p, hnd, type, (void **)(void *)&regkey);
+	if (!ok) {
 		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: "));
 		return NULL;
 	}
@@ -97,9 +100,10 @@ static WERROR open_registry_key(struct pipes_struct *p,
  *******************************************************************/
 
 static bool close_registry_key(struct pipes_struct *p,
-			       struct policy_handle *hnd)
+			       struct policy_handle *hnd,
+			       enum handle_types type)
 {
-	struct registry_key *regkey = find_regkey_by_hnd(p, hnd);
+	struct registry_key *regkey = find_regkey_by_hnd(p, hnd, type);
 
 	if ( !regkey ) {
 		DEBUG(2,("close_registry_key: Invalid handle (%s:%u:%u)\n",
@@ -119,10 +123,14 @@ static bool close_registry_key(struct pipes_struct *p,
 WERROR _winreg_CloseKey(struct pipes_struct *p,
 			struct winreg_CloseKey *r)
 {
+	bool ok;
+
 	/* close the policy handle */
 
-	if (!close_registry_key(p, r->in.handle))
+	ok = close_registry_key(p, r->in.handle, HTYPE_REGKEY);
+	if (!ok) {
 		return WERR_INVALID_HANDLE;
+	}
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -226,7 +234,9 @@ WERROR _winreg_OpenHKPN(struct pipes_struct *p,
 WERROR _winreg_OpenKey(struct pipes_struct *p,
 		       struct winreg_OpenKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, r->in.parent_handle );
+	struct registry_key *parent = find_regkey_by_hnd(p,
+							 r->in.parent_handle,
+							 HTYPE_REGKEY);
 
 	if ( !parent )
 		return WERR_INVALID_HANDLE;
@@ -242,7 +252,9 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 			  struct winreg_QueryValue *r)
 {
 	WERROR        status = WERR_FILE_NOT_FOUND;
-	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 	prs_struct    prs_hkpd;
 
 	uint8_t *outbuf = NULL;
@@ -359,7 +371,9 @@ WERROR _winreg_QueryInfoKey(struct pipes_struct *p,
 			    struct winreg_QueryInfoKey *r)
 {
 	WERROR 	status = WERR_OK;
-	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 
 	if ( !regkey )
 		return WERR_INVALID_HANDLE;
@@ -395,7 +409,9 @@ WERROR _winreg_QueryInfoKey(struct pipes_struct *p,
 WERROR _winreg_GetVersion(struct pipes_struct *p,
 			  struct winreg_GetVersion *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 
 	if ( !regkey )
 		return WERR_INVALID_HANDLE;
@@ -412,7 +428,9 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 		       struct winreg_EnumKey *r)
 {
 	WERROR err = WERR_OK;
-	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 	char *name;
 
 	if ( !key )
@@ -441,7 +459,9 @@ WERROR _winreg_EnumValue(struct pipes_struct *p,
 			 struct winreg_EnumValue *r)
 {
 	WERROR err = WERR_OK;
-	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 	char *valname = NULL;
 	struct registry_value *val = NULL;
 
@@ -650,7 +670,9 @@ WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 WERROR _winreg_RestoreKey(struct pipes_struct *p,
 			  struct winreg_RestoreKey *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 
 	if ( !regkey ) {
 		return WERR_INVALID_HANDLE;
@@ -665,7 +687,9 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 WERROR _winreg_SaveKey(struct pipes_struct *p,
 		       struct winreg_SaveKey *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 
 	if ( !regkey ) {
 		return WERR_INVALID_HANDLE;
@@ -694,7 +718,9 @@ WERROR _winreg_SaveKeyEx(struct pipes_struct *p,
 WERROR _winreg_CreateKey(struct pipes_struct *p,
 			 struct winreg_CreateKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *parent = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 	struct registry_key *new_key = NULL;
 	WERROR result = WERR_OK;
 
@@ -725,7 +751,9 @@ WERROR _winreg_CreateKey(struct pipes_struct *p,
 WERROR _winreg_SetValue(struct pipes_struct *p,
 			struct winreg_SetValue *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 	struct registry_value *val = NULL;
 
 	if ( !key )
@@ -752,7 +780,9 @@ WERROR _winreg_SetValue(struct pipes_struct *p,
 WERROR _winreg_DeleteKey(struct pipes_struct *p,
 			 struct winreg_DeleteKey *r)
 {
-	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *parent = find_regkey_by_hnd(p,
+							 r->in.handle,
+							 HTYPE_REGKEY);
 
 	if ( !parent )
 		return WERR_INVALID_HANDLE;
@@ -768,7 +798,9 @@ WERROR _winreg_DeleteKey(struct pipes_struct *p,
 WERROR _winreg_DeleteValue(struct pipes_struct *p,
 			   struct winreg_DeleteValue *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 
 	if ( !key )
 		return WERR_INVALID_HANDLE;
@@ -783,7 +815,9 @@ WERROR _winreg_DeleteValue(struct pipes_struct *p,
 WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
 			      struct winreg_GetKeySecurity *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 	WERROR err = WERR_OK;
 	struct security_descriptor *secdesc = NULL;
 	uint8_t *data = NULL;
@@ -827,7 +861,9 @@ WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
 WERROR _winreg_SetKeySecurity(struct pipes_struct *p,
 			      struct winreg_SetKeySecurity *r)
 {
-	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
+	struct registry_key *key = find_regkey_by_hnd(p,
+						      r->in.handle,
+						      HTYPE_REGKEY);
 	struct security_descriptor *secdesc = NULL;
 	WERROR err = WERR_OK;
 
@@ -970,7 +1006,9 @@ static WERROR construct_multiple_entry(TALLOC_CTX *mem_ctx,
 WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 				    struct winreg_QueryMultipleValues2 *r)
 {
-	struct registry_key *regkey = find_regkey_by_hnd(p, r->in.key_handle);
+	struct registry_key *regkey = find_regkey_by_hnd(p,
+							 r->in.key_handle,
+							 HTYPE_REGKEY);
 	struct registry_value *vals = NULL;
 	const char **names = NULL;
 	uint32_t offset = 0, num_vals = 0;

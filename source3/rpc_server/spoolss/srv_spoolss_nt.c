@@ -314,8 +314,13 @@ static struct printer_handle *find_printer_index_by_hnd(struct pipes_struct *p,
 							struct policy_handle *hnd)
 {
 	struct printer_handle *find_printer = NULL;
+	bool ok;
 
-	if(!find_policy_by_hnd(p,hnd,(void **)(void *)&find_printer)) {
+	ok = find_policy_by_hnd(p,
+				hnd,
+				DCESRV_HANDLE_ANY,
+				(void **)(void *)&find_printer);
+	if (!ok) {
 		DEBUG(2,("find_printer_index_by_hnd: Printer handle not found: "));
 		return NULL;
 	}

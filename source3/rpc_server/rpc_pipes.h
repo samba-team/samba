@@ -125,7 +125,9 @@ bool create_policy_hnd(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,
 			void *data_ptr);
-bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
+bool find_policy_by_hnd(struct pipes_struct *p,
+			const struct policy_handle *hnd,
+			uint8_t handle_type,
 			void **data_p);
 bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(struct pipes_struct *p);
@@ -143,10 +145,11 @@ void *_policy_handle_create(struct pipes_struct *p,
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
+			  uint8_t handle_type,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus);
-#define policy_handle_find(_p, _hnd, _type, _pstatus) \
-	(_type *)_policy_handle_find((_p), (_hnd), \
+#define policy_handle_find(_p, _hnd, _hnd_type, _type, _pstatus) \
+	(_type *)_policy_handle_find((_p), (_hnd), (_hnd_type), \
 	#_type, __location__, (_pstatus))
 
 #endif /* _RPC_PIPES_H_ */

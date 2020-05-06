@@ -713,7 +713,10 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			goto done;
 		}
 
-		ok = find_policy_by_hnd(p, r->out.entry_handle, (void **)(void*) &eps);
+		ok = find_policy_by_hnd(p,
+					r->out.entry_handle,
+					HTYPE_LOOKUP,
+					(void **)(void*) &eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
@@ -722,7 +725,10 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 	} else {
 		DEBUG(7, ("_epm_Lookup: Trying to find entry_handle.\n"));
 
-		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
+		ok = find_policy_by_hnd(p,
+					r->in.entry_handle,
+					HTYPE_LOOKUP,
+					(void **)(void*) &eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
@@ -1105,7 +1111,10 @@ error_status_t _epm_Map(struct pipes_struct *p,
 			goto done;
 		}
 
-		ok = find_policy_by_hnd(p, r->out.entry_handle, (void **)(void*) &eps);
+		ok = find_policy_by_hnd(p,
+					r->out.entry_handle,
+					HTYPE_LOOKUP,
+					(void **)(void*) &eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
@@ -1114,7 +1123,10 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	} else {
 		DEBUG(7, ("_epm_Map: Trying to find entry_handle.\n"));
 
-		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
+		ok = find_policy_by_hnd(p,
+					r->in.entry_handle,
+					HTYPE_LOOKUP,
+					(void **)(void*) &eps);
 		if (!ok) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;

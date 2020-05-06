@@ -176,8 +176,13 @@ static bool is_zero_policy_handle(const struct policy_handle *h)
 void _mdssvc_unknown1(struct pipes_struct *p, struct mdssvc_unknown1 *r)
 {
 	struct mds_ctx *mds_ctx;
+	bool ok;
 
-	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&mds_ctx)) {
+	ok = find_policy_by_hnd(p,
+				r->in.handle,
+				DCESRV_HANDLE_ANY,
+				(void **)(void *)&mds_ctx);
+	if (!ok) {
 		if (is_zero_policy_handle(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
@@ -204,7 +209,11 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	char *rbuf;
 	struct mds_ctx *mds_ctx;
 
-	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&mds_ctx)) {
+	ok = find_policy_by_hnd(p,
+				r->in.handle,
+				DCESRV_HANDLE_ANY,
+				(void **)(void *)&mds_ctx);
+	if (!ok) {
 		if (is_zero_policy_handle(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
@@ -279,7 +288,10 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	struct mds_ctx *mds_ctx;
 	bool ok;
 
-	ok = find_policy_by_hnd(p, r->in.in_handle, (void **)(void *)&mds_ctx);
+	ok = find_policy_by_hnd(p,
+				r->in.in_handle,
+				DCESRV_HANDLE_ANY,
+				(void **)(void *)&mds_ctx);
 	if (!ok) {
 		DBG_WARNING("invalid handle\n");
 		if (is_zero_policy_handle(r->in.in_handle)) {
