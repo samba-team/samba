@@ -2410,7 +2410,6 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
 					  char **found_name)
 {
-	char *path = fname->base_name;
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_config *config = NULL;
 	time_t timestamp = 0;
