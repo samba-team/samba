@@ -589,6 +589,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct ldb_control *control;
+	struct ldb_control *vlv_control;
 	struct private_data *private_data;
 	struct ldb_paged_control *paged_ctrl;
 	struct ldb_request *search_req;
@@ -611,6 +612,15 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 	private_data = talloc_get_type(ldb_module_get_private(module),
 					struct private_data);
+
+	vlv_control = ldb_request_get_control(req, LDB_CONTROL_VLV_REQ_OID);
+	if (vlv_control != NULL) {
+		/*
+		 * VLV and paged_results are not allowed at the same
+		 * time
+		 */
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
 
 	ac = talloc_zero(req, struct paged_context);
 	if (ac == NULL) {
