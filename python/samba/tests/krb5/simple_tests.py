@@ -115,7 +115,12 @@ class SimpleKerberosTests(RawKerberosTest):
 
         usage = 3
         enc_part2 = key.decrypt(usage, rep['enc-part']['cipher'])
-        enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
+
+        # MIT KDC encodes both EncASRepPart and EncTGSRepPart with application tag 26
+        try:
+            enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
+        except Exception:
+            enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         # TGS Request
         service_creds = self.get_service_creds(allow_missing_password=True)
