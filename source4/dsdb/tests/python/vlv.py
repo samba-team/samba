@@ -1644,6 +1644,29 @@ class PagedResultsTests(TestsWithUserOU):
                                        page_size=len(self.users))
         self.assertEqual(results, set_2[ps*2:])
 
+    def test_vlv_paged(self):
+        """Testing behaviour with VLV and paged_results set.
+
+        A strange combination, certainly
+
+        Thankfully combining both of these gives
+        unavailable-critical-extension against Windows 1709
+
+        """
+        sort_control = "server_sort:1:0:cn"
+
+        try:
+            msgs = self.ldb.search(base=self.base_dn,
+                                   scope=ldb.SCOPE_SUBTREE,
+                                   attrs=["objectGUID", "cn", "member"],
+                                   controls=["vlv:1:20:20:11:0",
+                                             sort_control,
+                                             "paged_results:1:1024"])
+            self.fail("should have failed with LDAP_UNAVAILABLE_CRITICAL_EXTENSION")
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
+            self.assertEqual(enum, ldb.ERR_UNSUPPORTED_CRITICAL_EXTENSION)
+
 
 if "://" not in host:
     if os.path.isfile(host):
