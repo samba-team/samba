@@ -416,6 +416,10 @@ static int paged_search_callback(struct ldb_request *req,
 
 		guid_blob = ldb_dn_get_extended_component(ares->message->dn,
 							  "GUID");
+		if (guid_blob == NULL) {
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_OPERATIONS_ERROR);
+		}
 		status = GUID_from_ndr_blob(guid_blob, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ldb_module_done(ac->req, NULL, NULL,
