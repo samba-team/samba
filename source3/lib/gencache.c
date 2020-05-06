@@ -29,9 +29,12 @@
 #include "tdb_wrap/tdb_wrap.h"
 #include "zlib.h"
 #include "lib/util/strv.h"
+#include "lib/util/util_paths.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
+
+#define GENCACHE_USER_PATH "~/.cache/samba/gencache.tdb"
 
 static struct tdb_wrap *cache;
 
@@ -68,6 +71,7 @@ static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	int open_flags = O_RDWR|O_CREAT;
+	int tdb_flags = TDB_INCOMPATIBLE_HASH|TDB_NOSYNC|TDB_MUTEX_LOCKING;
 	int hash_size;
 
 	/* skip file open if it's already opened */
@@ -85,10 +89,63 @@ static bool gencache_init(void)
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
 	cache = tdb_wrap_open(NULL, cache_fname, hash_size,
-			      TDB_INCOMPATIBLE_HASH|
-			      TDB_NOSYNC|
-			      TDB_MUTEX_LOCKING,
+			      tdb_flags,
 			      open_flags, 0644);
+	/*
+	 * Allow client tools to create a gencache in the home directory
+	 * as a normal user.
+	 */
+	if (cache == NULL && errno == EACCES && geteuid() != 0) {
+		char *cache_dname = NULL, *tmp = NULL;
+		bool ok;
+
+		TALLOC_FREE(cache_fname);
+
+		cache_fname = path_expand_tilde(talloc_tos(),
+						GENCACHE_USER_PATH);
+		if (cache_fname == NULL) {
+			DBG_ERR("Failed to expand path: %s\n",
+				GENCACHE_USER_PATH);
+			return false;
+		}
+
+		tmp = talloc_strdup(talloc_tos(), cache_fname);
+		if (tmp == NULL) {
+			DBG_ERR("No memory!\n");
+			TALLOC_FREE(cache_fname);
+			return false;
+		}
+
+		cache_dname = dirname(tmp);
+		if (cache_dname == NULL) {
+			DBG_ERR("Invalid path: %s\n", cache_fname);
+			TALLOC_FREE(tmp);
+			TALLOC_FREE(cache_fname);
+			return false;
+		}
+
+		ok = directory_create_or_exist(cache_dname, 0700);
+		if (!ok) {
+			DBG_ERR("Failed to create directory: %s - %s\n",
+				cache_dname, strerror(errno));
+			TALLOC_FREE(tmp);
+			TALLOC_FREE(cache_fname);
+			return false;
+		}
+		TALLOC_FREE(tmp);
+
+		cache = tdb_wrap_open(NULL,
+				      cache_fname,
+				      hash_size,
+				      tdb_flags,
+				      open_flags,
+				      0644);
+		if (cache != NULL) {
+			DBG_INFO("Opening user cache file %s.\n",
+				 cache_fname);
+		}
+	}
+
 	if (cache == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
