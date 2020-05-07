@@ -342,7 +342,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 
 		switch (cmd_struct.cmd) {
 		case READ_CMD:
-			ret_struct.size = sys_pread(
+			ret_struct.size = sys_pread_full(
 				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
 #if 0
