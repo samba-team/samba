@@ -4166,9 +4166,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	ret = SMB_VFS_MKDIRAT(conn,
-			conn->cwd_fsp,
-			smb_dname,
-			mode);
+			      conn->cwd_fsp,
+			      smb_dname,
+			      mode);
 	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
