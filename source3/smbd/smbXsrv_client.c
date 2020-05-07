@@ -294,6 +294,13 @@ NTSTATUS smb2srv_client_lookup_global(struct smbXsrv_client *client,
 		return NT_STATUS_OBJECTID_NOT_FOUND;
 	}
 
+	if (global == NULL) {
+		/*
+		 * most likely ndr_pull_struct_blob() failed
+		 */
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	*_global = global;
 	return NT_STATUS_OK;
 }
@@ -374,6 +381,10 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	 * we would add glue code here, that would be able to
 	 * store the information in the old format.
 	 */
+
+	SMB_ASSERT(global->local_address != NULL);
+	SMB_ASSERT(global->remote_address != NULL);
+	SMB_ASSERT(global->remote_name != NULL);
 
 	if (global->db_rec == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;

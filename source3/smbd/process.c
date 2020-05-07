@@ -4024,6 +4024,24 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server_cleanly("tsocket_strdup() failed");
 	}
 
+	client->global->local_address =
+		tsocket_address_string(sconn->local_address,
+				       client->global);
+	if (client->global->local_address == NULL) {
+		exit_server_cleanly("tsocket_address_string() failed");
+	}
+	client->global->remote_address =
+		tsocket_address_string(sconn->remote_address,
+				       client->global);
+	if (client->global->remote_address == NULL) {
+		exit_server_cleanly("tsocket_address_string() failed");
+	}
+	client->global->remote_name =
+		talloc_strdup(client->global, sconn->remote_hostname);
+	if (client->global->remote_name == NULL) {
+		exit_server_cleanly("tsocket_strdup() failed");
+	}
+
 	if (tsocket_address_is_inet(sconn->local_address, "ip")) {
 		locaddr = tsocket_address_inet_addr_string(
 				sconn->local_address,
