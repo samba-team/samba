@@ -539,7 +539,7 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 		};
 		struct GUID_txt_buf buf;
 
-		DBG_DEBUG("client_guid[%s] stored\n",
+		DBG_DEBUG("client_guid[%s] created\n",
 			  GUID_buf_string(&global->client_guid, &buf));
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
