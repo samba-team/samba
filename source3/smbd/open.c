@@ -5572,15 +5572,24 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		base_privflags = NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN;
 
 		/* Open the base file. */
-		status = create_file_unixpath(conn, NULL, smb_fname_base, 0,
+		status = create_file_unixpath(conn,
+					      NULL,
+					      smb_fname_base,
+					      0,
 					      FILE_SHARE_READ
 					      | FILE_SHARE_WRITE
 					      | FILE_SHARE_DELETE,
 					      base_create_disposition,
-					      0, 0, 0, NULL, 0,
+					      0,
+					      0,
+					      0,
+					      NULL,
+					      0,
 					      base_privflags,
-					      NULL, NULL,
-					      &base_fsp, NULL);
+					      NULL,
+					      NULL,
+					      &base_fsp,
+					      NULL);
 		TALLOC_FREE(smb_fname_base);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5974,13 +5983,22 @@ NTSTATUS create_file_default(connection_struct *conn,
 		file_attributes = (FILE_FLAG_POSIX_SEMANTICS | mode_bits);
 	}
 
-	status = create_file_unixpath(
-		conn, req, smb_fname, access_mask, share_access,
-		create_disposition, create_options, file_attributes,
-		oplock_request, lease, allocation_size, private_flags,
-		sd, ea_list,
-		&fsp, &info);
-
+	status = create_file_unixpath(conn,
+				      req,
+				      smb_fname,
+				      access_mask,
+				      share_access,
+				      create_disposition,
+				      create_options,
+				      file_attributes,
+				      oplock_request,
+				      lease,
+				      allocation_size,
+				      private_flags,
+				      sd,
+				      ea_list,
+				      &fsp,
+				      &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
