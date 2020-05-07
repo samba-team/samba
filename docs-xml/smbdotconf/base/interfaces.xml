@@ -41,12 +41,13 @@
 
 	<para>
 	In order to support SMB3 multi-channel configurations, smbd understands
-	some extra data that can be appended after the actual interface with
-	this extended syntax:
+	some extra parameters which can be appended after the actual interface with
+	this extended syntax (note that the quoting is important in order to handle the ; and ,
+	characters):
 	</para>
 
 	<para>
-	interface[;key1=value1[,key2=value2[...]]]
+	&quot;interface[;key1=value1[,key2=value2[...]]]&quot;
 	</para>
 
 	<para>
@@ -58,18 +59,29 @@
 	development rather than for production use. At least on Linux systems,
 	these values should be auto-detected, but the settings can serve
 	as last a resort when autodetection is not working or is not available.
+	The specified values overwrite the auto-detected values.
 	</para>
 
 	<para>
-	The example below configures three network interfaces corresponding 
+	The first two example below configures three network interfaces corresponding
 	to the eth0 device and IP addresses 192.168.2.10 and 192.168.3.10. 
 	The netmasks of the latter two interfaces would be set to 255.255.255.0.
 	</para>
 
+	<para>
+	The other examples show how per interface extra parameters can be specified.
+	Notice the possible usage of &quot;,&quot; and &quot;;&quot;, which makes
+	the double quoting necessary.
+	</para>
 </description>
 <related>bind interfaces only</related>
 
 <value type="example">eth0 192.168.2.10/24 192.168.3.10/255.255.255.0</value>
+<value type="example">eth0, 192.168.2.10/24; 192.168.3.10/255.255.255.0</value>
+<value type="example">&quot;eth0;if_index=65,speed=1000000000,capability=RSS&quot;</value>
+<value type="example">&quot;lo;speed=1000000000&quot; &quot;eth0;capability=RSS&quot;</value>
+<value type="example">&quot;lo;speed=1000000000&quot; , &quot;eth0;capability=RSS&quot;</value>
+<value type="example">&quot;eth0;capability=RSS&quot; , &quot;rdma1;capability=RDMA&quot; ; &quot;rdma2;capability=RSS,capability=RDMA&quot;</value>
 
 <value type="default"/>
 </samba:parameter>
