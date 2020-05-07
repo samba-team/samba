@@ -173,6 +173,42 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 done:
 	(void)close(fd);
 }
+
+static void query_iface_rx_queues_from_name(const char *name,
+					    uint64_t *rx_queues)
+{
+	int ret = 0;
+	struct ethtool_rxnfc rxcmd;
+	struct ifreq ifr;
+	int fd;
+
+	fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (fd == -1) {
+		DBG_ERR("Failed to open socket.");
+		return;
+	}
+
+	if (strlen(name) >= IF_NAMESIZE) {
+		DBG_ERR("Interface name too long.");
+		goto done;
+	}
+
+	ZERO_STRUCT(ifr);
+	strlcpy(ifr.ifr_name, name, IF_NAMESIZE);
+
+	ifr.ifr_data = (void *)&rxcmd;
+	ZERO_STRUCT(rxcmd);
+	rxcmd.cmd = ETHTOOL_GRXRINGS;
+	ret = ioctl(fd, SIOCETHTOOL, &ifr);
+	if (ret == -1) {
+		goto done;
+	}
+
+	*rx_queues = rxcmd.data;
+
+done:
+	(void)close(fd);
+}
 #endif
 
 /****************************************************************************
@@ -217,6 +253,7 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 	/* Loop through interfaces, looking for given IP address */
 	for (ifptr = iflist; ifptr != NULL; ifptr = ifptr->ifa_next) {
 		uint64_t if_speed = 1000 * 1000 * 1000; /* 1Gbps */
+		uint64_t rx_queues = 1;
 
 		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
 			continue;
@@ -278,9 +315,13 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 
 #ifdef HAVE_ETHTOOL
 		query_iface_speed_from_name(ifptr->ifa_name, &if_speed);
+		query_iface_rx_queues_from_name(ifptr->ifa_name, &rx_queues);
 #endif
 		ifaces[total].linkspeed = if_speed;
 		ifaces[total].capability = FSCTL_NET_IFACE_NONE_CAPABLE;
+		if (rx_queues > 1) {
+			ifaces[total].capability |= FSCTL_NET_IFACE_RSS_CAPABLE;
+		}
 
 		if (strlcpy(ifaces[total].name, ifptr->ifa_name,
 			sizeof(ifaces[total].name)) >=
