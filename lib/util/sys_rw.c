@@ -144,6 +144,54 @@ ssize_t sys_pread(int fd, void *buf, size_t count, off_t off)
 }
 
 /*******************************************************************
+ A pread wrapper that will deal with EINTR and never return a short
+ read unless pread returns zero meaning EOF.
+********************************************************************/
+
+ssize_t sys_pread_full(int fd, void *buf, size_t count, off_t off)
+{
+	ssize_t total_read = 0;
+	uint8_t *curr_buf = (uint8_t *)buf;
+	size_t curr_count = count;
+	off_t curr_off = off;
+	bool ok;
+
+	ok = sys_valid_io_range(off, count);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	while (curr_count != 0) {
+		ssize_t ret = sys_pread(fd,
+					curr_buf,
+					curr_count,
+					curr_off);
+
+		if (ret == -1) {
+			return -1;
+		}
+		if (ret == 0) {
+			/* EOF */
+			break;
+		}
+
+		if (ret > curr_count) {
+			errno = EIO;
+			return -1;
+		}
+
+		curr_buf += ret;
+		curr_count -= ret;
+		curr_off += ret;
+
+		total_read += ret;
+	}
+
+	return total_read;
+}
+
+/*******************************************************************
 A write wrapper that will deal with EINTR
 ********************************************************************/
 
