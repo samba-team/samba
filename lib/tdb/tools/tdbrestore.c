@@ -27,7 +27,8 @@
 
 static int read_linehead(FILE *f)
 {
-	int i, c;
+	size_t i;
+	int c;
 	int num_bytes;
 	char prefix[128];
 
@@ -84,7 +85,7 @@ static int read_hex(void) {
 
 static int read_data(FILE *f, TDB_DATA *d, size_t size) {
 	int c, low, high;
-	int i;
+	size_t i;
 
 	d->dptr = (unsigned char *)malloc(size);
 	if (d->dptr == NULL) {
