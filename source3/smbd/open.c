@@ -3679,10 +3679,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	fsp_open = open_file(fsp, req, parent_dir_fname,
-			     flags|flags2, unx_mode, access_mask,
-			     open_access_mask, &new_file_created);
-
+	fsp_open = open_file(fsp,
+			     req,
+			     parent_dir_fname,
+			     flags|flags2,
+			     unx_mode,
+			     access_mask,
+			     open_access_mask,
+			     &new_file_created);
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
 		if (file_existed && S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
 			DEBUG(10, ("FIFO busy\n"));
