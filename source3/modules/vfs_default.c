@@ -843,10 +843,10 @@ static void vfs_pread_do(void *private_data)
 
 	PROFILE_TIMESTAMP(&start_time);
 
-	do {
-		state->ret = pread(state->fd, state->buf, state->count,
-				   state->offset);
-	} while ((state->ret == -1) && (errno == EINTR));
+	state->ret = sys_pread_full(state->fd,
+				    state->buf,
+				    state->count,
+				    state->offset);
 
 	if (state->ret == -1) {
 		state->vfs_aio_state.error = errno;
