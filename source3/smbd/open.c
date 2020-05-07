@@ -5670,6 +5670,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
+		if (*dirfsp == fsp->conn->cwd_fsp) {
+			fsp->dirfsp = fsp->conn->cwd_fsp;
+		} else {
+			fsp->dirfsp = talloc_move(fsp, dirfsp);
+		}
+
 		if (base_fsp) {
 			/*
 			 * We're opening the stream element of a
