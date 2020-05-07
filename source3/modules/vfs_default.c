@@ -739,7 +739,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 
 #if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
 	START_PROFILE_BYTES(syscall_pread, n);
-	result = sys_pread(fsp->fh->fd, data, n, offset);
+	result = sys_pread_full(fsp->fh->fd, data, n, offset);
 	END_PROFILE_BYTES(syscall_pread);
 
 	if (result == -1 && errno == ESPIPE) {
