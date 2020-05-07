@@ -464,43 +464,6 @@ bool pipe_access_check(struct pipes_struct *p)
 	return True;
 }
 
-void *_policy_handle_create(struct pipes_struct *p,
-			struct policy_handle *hnd,
-			uint8_t handle_type,
-			size_t data_size,
-			const char *type,
-			NTSTATUS *pstatus)
-{
-	struct dcesrv_handle_old *rpc_hnd = NULL;
-	void *data;
-
-	if (p->pipe_handles->count > MAX_OPEN_POLS) {
-		DEBUG(0, ("ERROR: Too many handles (%d) for RPC connection %s\n",
-			  (int) p->pipe_handles->count,
-			  ndr_interface_name(&p->contexts->syntax.uuid,
-					     p->contexts->syntax.if_version)));
-
-		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
-		return NULL;
-	}
-
-	data = talloc_size(talloc_tos(), data_size);
-	if (data == NULL) {
-		*pstatus = NT_STATUS_NO_MEMORY;
-		return NULL;
-	}
-	talloc_set_name_const(data, type);
-
-	rpc_hnd = create_rpc_handle_internal(p, hnd, handle_type, data);
-	if (rpc_hnd == NULL) {
-		TALLOC_FREE(data);
-		*pstatus = NT_STATUS_NO_MEMORY;
-		return NULL;
-	}
-	*pstatus = NT_STATUS_OK;
-	return data;
-}
-
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
 			  uint8_t handle_type,
