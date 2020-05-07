@@ -6,6 +6,7 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) James Peach 2006
+   Copyright (c) 2020      Andreas Schneider <asn@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +25,7 @@
 #include "includes.h"
 #include "dynconfig/dynconfig.h"
 #include "lib/util/util_paths.h"
+#include "system/passwd.h"
 
 /**
  * @brief Returns an absolute path to a file in the Samba modules directory.
@@ -62,3 +64,73 @@ const char *shlib_ext(void)
 	return get_dyn_SHLIBEXT();
 }
 
+static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
+{
+	struct passwd pwd = {0};
+	struct passwd *pwdbuf = NULL;
+	char buf[NSS_BUFLEN_PASSWD] = {0};
+	int rc;
+
+	rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+	if (rc != 0 || pwdbuf == NULL ) {
+		const char *szPath = getenv("HOME");
+		if (szPath == NULL) {
+			return NULL;
+		}
+		snprintf(buf, sizeof(buf), "%s", szPath);
+
+		return talloc_strdup(mem_ctx, buf);
+	}
+
+	return talloc_strdup(mem_ctx, pwd.pw_dir);
+}
+
+char *path_expand_tilde(TALLOC_CTX *mem_ctx, const char *d)
+{
+	char *h = NULL, *r = NULL;
+	const char *p = NULL;
+	struct stat sb = {0};
+	int rc;
+
+	if (d[0] != '~') {
+		return talloc_strdup(mem_ctx, d);
+	}
+	d++;
+
+	/* handle ~user/path */
+	p = strchr(d, '/');
+	if (p != NULL && p > d) {
+		struct passwd *pw;
+		size_t s = p - d;
+		char u[128];
+
+		if (s >= sizeof(u)) {
+			return NULL;
+		}
+		memcpy(u, d, s);
+		u[s] = '\0';
+
+		pw = getpwnam(u);
+		if (pw == NULL) {
+			return NULL;
+		}
+		h = talloc_strdup(mem_ctx, pw->pw_dir);
+	} else {
+		p = d;
+		h = get_user_home_dir(mem_ctx);
+	}
+	if (h == NULL) {
+		return NULL;
+	}
+
+	rc = stat(h, &sb);
+	if (rc != 0) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+
+	r = talloc_asprintf(mem_ctx, "%s%s", h, p);
+	TALLOC_FREE(h);
+
+	return r;
+}
