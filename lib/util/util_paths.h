@@ -51,4 +51,13 @@ char *data_path(TALLOC_CTX *mem_ctx, const char *name);
  **/
 const char *shlib_ext(void);
 
+/**
+ * @brief Expand a directory starting with a tilde '~'
+ *
+ * @param[in]  d        The directory to expand.
+ *
+ * @return              The expanded directory, NULL on error.
+ */
+char *path_expand_tilde(TALLOC_CTX *mem_ctx, const char *d);
+
 #endif
