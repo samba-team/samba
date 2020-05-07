@@ -305,14 +305,26 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_GENERATOR('gen_wsp_props',
+	source='../source4/scripting/bin/gen_wsp_props.py wsp/allprops-from-ms-wsp-spec.csv wsp/extra-props.csv',
+target='wsp/wsp_props_gen.c',
+	group='build_source',
+	rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${SRC[2].abspath(env)}'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_WSP',
-	source='gen_ndr/ndr_wsp.c wsp/wsp_helper.c',
-	public_deps='ndr'
+	source='gen_ndr/ndr_wsp.c wsp/wsp_helper.c wsp/wsp_props_gen.c',
+	public_deps='ndr gen_wsp_props'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_WSP_DATA',
 	source='gen_ndr/ndr_wsp_data.c',
 	public_deps='ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('WSP_UTIL',
+	source='wsp/wsp_util.c wsp/wsp_props_gen.c',
+	public_deps='ndr gen_wsp_props'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_WITNESS',

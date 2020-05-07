@@ -1,0 +1,63 @@
+# Unix SMB/CIFS implementation.
+#
+# WSP property definitions
+#
+# Copyright (C) Noel Power
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+DBPROP_CI_CATALOG_NAME,{a9bd1526-6a80-11d0-8c9d-0020af1d740e},2,FALSE,FALSE,,String,,,
+DBPROP_CI_INCLUDE_SCOPES,{a9bd1526-6a80-11d0-8c9d-0020af1d740e},3,FALSE,FALSE,,String,,TRUE,
+DBPROP_CI_SCOPE_FLAGS,{a9bd1526-6a80-11d0-8c9d-0020af1d740e},4,FALSE,FALSE,,Int32,,TRUE,
+DBPROP_CI_QUERY_TYPE,{a9bd1526-6a80-11d0-8c9d-0020af1d740e},7,FALSE,FALSE,,Int32,,,
+DBPROP_USECONTENTINDEX,{a7ac77ed-f8d7-11ce-a798-0020f8008025},2,FALSE,FALSE,,Boolean,,,
+DBPROP_DEFERNONINDEXEDTRIMMING,{a7ac77ed-f8d7-11ce-a798-0020f8008025},3,FALSE,FALSE,,Boolean,,,
+DBPROP_USEEXTENDEDDBTYPES,{a7ac77ed-f8d7-11ce-a798-0020f8008025},4,FALSE,FALSE,,Boolean,,,
+DBPROP_IGNORENOISEONLYCLAUSES,{a7ac77ed-f8d7-11ce-a798-0020f8008025},5,FALSE,FALSE,,Boolean,,,
+DBPROP_GENERICOPTIONS_STRING,{a7ac77ed-f8d7-11ce-a798-0020f8008025},6,FALSE,FALSE,,BString,,,
+DBPROP_FIRSTROWS,{a7ac77ed-f8d7-11ce-a798-0020f8008025},7,FALSE,FALSE,,Boolean,,,
+DBPROP_DEFERCATALOGVERIFICATION,{a7ac77ed-f8d7-11ce-a798-0020f8008025},8,FALSE,FALSE,,Boolean,,,
+DBPROP_GENERATEPARSETREE,{a7ac77ed-f8d7-11ce-a798-0020f8008025},10,FALSE,FALSE,,Boolean,,,
+DBPROP_FREETEXTANYTERM,{a7ac77ed-f8d7-11ce-a798-0020f8008025},12,FALSE,FALSE,,Boolean,,,
+DBPROP_FREETEXTUSESTEMMING,{a7ac77ed-f8d7-11ce-a798-0020f8008025},13,FALSE,FALSE,,Boolean,,,
+DBPROP_IGNORESBRI,{a7ac77ed-f8d7-11ce-a798-0020f8008025},14,FALSE,FALSE,,Boolean,,,
+DBPROP_ENABLEROWSETEVENTS,{a7ac77ed-f8d7-11ce-a798-0020f8008025},16,FALSE,FALSE,,Boolean,,,
+DBPROP_MACHINE,{afafaca5-b5d1-11d0-8c62-00c04fc2db8d},2,FALSE,FALSE,,BString,,,
+DBPROP_CLIENT_CLSID,{afafaca5-b5d1-11d0-8c62-00c04fc2db8d},3,FALSE,FALSE,,GUID,,,
+MSIDXSPROP_ROWSETQUERYSTATUS,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},2,FALSE,FALSE,,Int32,,,
+MSIDXSPROP_COMMAND_LOCALE_STRING,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},3,FALSE,FALSE,,BString,,,
+MSIDXSPROP_QUERY_RESTRICTION,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},4,FALSE,FALSE,,BString,,,
+MSIDXSPROP_PARSE_TREE,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},5,FALSE,FALSE,,BString,,,
+MSIDXSPROP_MAX_RANK,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},6,FALSE,FALSE,,Int32,,,
+MSIDXSPROP_RESULTS_FOUND,{aa6ee6b0-e828-11d0-b23e-00aa0047fc01},7,FALSE,FALSE,,Int32,,,
+ClassId,{b725f130-47ef-101a-a5f1-02608c9eebac},3,FALSE,FALSE,,GUID,,,
+FileIndex,{b725f130-47ef-101a-a5f1-02608c9eebac},8,FALSE,FALSE,,UInt64,,,
+USN,{b725f130-47ef-101a-a5f1-02608c9eebac},9,FALSE,FALSE,,Int64,,,
+Path,{b725f130-47ef-101a-a5f1-02608c9eebac},11,FALSE,FALSE,,String,,,
+AllocSize,{b725f130-47ef-101a-a5f1-02608c9eebac},18,FALSE,FALSE,,Int64,,,
+ShortFilename,{b725f130-47ef-101a-a5f1-02608c9eebac},20,FALSE,FALSE,,String,,,
+Scope,{b725f130-47ef-101a-a5f1-02608c9eebac},22,FALSE,FALSE,,String,,,
+DocTemplate,{f29f85e0-4ff9-1068-ab91-08002b27b3d9},7,FALSE,FALSE,,String,,,
+#NOTE!! DocThumbnail is reported as VT_CF (we know nothing about this type???)
+# so for the moment just say its a blob (so we at least generate a name for the property)
+DocThumbnail,{f29f85e0-4ff9-1068-ab91-08002b27b3d9},17,FALSE,FALSE,,Buffer,,,
+RankVector,{49691c90-7e17-101a-a91c-08002b2ecda9},2,FALSE,FALSE,,UInt32,,TRUE,
+All,{49691c90-7e17-101a-a91c-08002b2ecda9},6,FALSE,FALSE,,String,,,
+System.Search.RowID,{49691c90-7e17-101a-a91c-08002b2ecda9},15,FALSE,FALSE,,Int32,,,
+#PercivedType, FileCount &  TotalFileSize are defined by gregors wireshark wip
+PercivedType,{28636aa6-953d-11d2-b5d6-00c04fd918d0},9,FALSE,FALSE,,Int32,,,
+FileCount,{28636aa6-953d-11d2-b5d6-00c04fd918d0},12,FALSE,FALSE,,UInt64,,,
+TotalFileSize,{28636aa6-953d-11d2-b5d6-00c04fd918d0},14,FALSE,FALSE,,UInt64,,,
+DocNoteCount,{d5cdd502-2e9c-101b-9397-08002b2cf9ae},8,FALSE,FALSE,,Int32,,,
+DocPartTitles,{d5cdd502-2e9c-101b-9397-08002b2cf9ae},13,FALSE,FALSE,,String,,TRUE,
