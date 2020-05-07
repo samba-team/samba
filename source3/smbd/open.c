@@ -5631,10 +5631,16 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 */
 
 		oplock_request = 0;
-		status = open_directory(
-			conn, req, smb_fname, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			&info, &fsp);
+		status = open_directory(conn,
+					req,
+					smb_fname,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					file_attributes,
+					&info,
+					&fsp);
 	} else {
 
 		/*
@@ -5703,11 +5709,16 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 
 			oplock_request = 0;
-			status = open_directory(
-				conn, req, smb_fname, access_mask,
-				share_access, create_disposition,
-				create_options,	file_attributes,
-				&info, &fsp);
+			status = open_directory(conn,
+						req,
+						smb_fname,
+						access_mask,
+						share_access,
+						create_disposition,
+						create_options,
+						file_attributes,
+						&info,
+						&fsp);
 		}
 	}
 
