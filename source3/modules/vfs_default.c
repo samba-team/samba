@@ -763,7 +763,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
 	START_PROFILE_BYTES(syscall_pwrite, n);
-	result = sys_pwrite(fsp->fh->fd, data, n, offset);
+	result = sys_pwrite_full(fsp->fh->fd, data, n, offset);
 	END_PROFILE_BYTES(syscall_pwrite);
 
 	if (result == -1 && errno == ESPIPE) {
