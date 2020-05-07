@@ -374,7 +374,7 @@ const char *timespec_string_buf(const struct timespec *tp,
 {
 	time_t t;
 	struct tm *tm = NULL;
-	size_t len;
+	int len;
 
 	if (is_omit_timespec(tp)) {
 		strlcpy(buf->buf, "SAMBA_UTIME_OMIT", sizeof(buf->buf));
