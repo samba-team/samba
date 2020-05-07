@@ -149,6 +149,7 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 	strlcpy(ifr.ifr_name, name, IF_NAMESIZE);
 
 	ifr.ifr_data = (void *)&edata;
+	ZERO_STRUCT(edata);
 	edata.cmd = ETHTOOL_GLINK;
 	ret = ioctl(fd, SIOCETHTOOL, &ifr);
 	if (ret == -1) {
@@ -161,6 +162,7 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 	}
 
 	ifr.ifr_data = (void *)&ecmd;
+	ZERO_STRUCT(ecmd);
 	ecmd.cmd = ETHTOOL_GSET;
 	ret = ioctl(fd, SIOCETHTOOL, &ifr);
 	if (ret == -1) {
