@@ -419,7 +419,11 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
  Additional information for an interface can be specified with
  this extended syntax:
 
-    interface[;key1=value1[,key2=value2[...]]]
+    "interface[;key1=value1[,key2=value2[...]]]"
+
+ Note: The double quoting is important for the
+       smb.conf parser! Otherwise the ';' and ',' separates
+       two interfaces.
 
  where
  - keys known: 'speed', 'capability', 'if_index'
@@ -428,6 +432,8 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
  - if_index should be used with care, because
    these indexes should not conicide with indexes
    the kernel sets...
+
+ Note: The specified values overwrite the autodetected values!
 
 ****************************************************************************/
 
