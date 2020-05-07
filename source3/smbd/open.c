@@ -1290,8 +1290,11 @@ static NTSTATUS open_file(files_struct *fsp,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = fd_open_atomic(conn, fsp, local_flags & ~O_TRUNC,
-				unx_mode, p_file_created);
+		status = fd_open_atomic(conn,
+					fsp,
+					local_flags & ~O_TRUNC,
+					unx_mode,
+					p_file_created);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n", smb_fname_str_dbg(smb_fname),
