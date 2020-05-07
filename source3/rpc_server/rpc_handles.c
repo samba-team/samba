@@ -463,29 +463,3 @@ bool pipe_access_check(struct pipes_struct *p)
 
 	return True;
 }
-
-void *_policy_handle_find(struct pipes_struct *p,
-			  const struct policy_handle *hnd,
-			  uint8_t handle_type,
-			  const char *name, const char *location,
-			  NTSTATUS *pstatus)
-{
-	struct dcesrv_handle_old *rpc_hnd = NULL;
-	void *data;
-
-	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, &data);
-	if (rpc_hnd == NULL) {
-		*pstatus = NT_STATUS_INVALID_HANDLE;
-		return NULL;
-	}
-	if (strcmp(name, talloc_get_name(data)) != 0) {
-		DEBUG(10, ("expected %s, got %s\n", name,
-			   talloc_get_name(data)));
-		*pstatus = NT_STATUS_INVALID_HANDLE;
-		return NULL;
-	}
-
-	DEBUG(10, ("found handle of type %s\n", talloc_get_name(data)));
-	*pstatus = NT_STATUS_OK;
-	return data;
-}

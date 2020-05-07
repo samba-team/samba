@@ -198,29 +198,27 @@ static void *samr_policy_handle_find(struct pipes_struct *p,
 {
 	struct samr_info *info = NULL;
 	NTSTATUS status;
+	bool ok;
 
-	info = policy_handle_find(p,
-				  handle,
-				  handle_type,
-				  struct samr_info,
-				  &status);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	ok = find_policy_by_hnd(p,
+				handle,
+				handle_type,
+				(void **)(void *)&info);
+	if (!ok) {
+		*pstatus = NT_STATUS_INVALID_HANDLE;
+		return NULL;
 	}
 
 	status = samr_handle_access_check(info->access_granted,
 					  access_required,
 					  access_granted);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		*pstatus = status;
+		return NULL;
 	}
 
 	*pstatus = NT_STATUS_OK;
 	return info;
-
-fail:
-	*pstatus = status;
-	return NULL;
 }
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor **psd, size_t *sd_size,
