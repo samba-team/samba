@@ -4253,6 +4253,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 static NTSTATUS open_directory(connection_struct *conn,
 			       struct smb_request *req,
+			       struct files_struct **dirfsp,
 			       struct smb_filename *smb_dname,
 			       uint32_t access_mask,
 			       uint32_t share_access,
@@ -4270,6 +4271,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 	int info = 0;
 	int flags;
 	bool ok;
+
+	SMB_ASSERT(*dirfsp == conn->cwd_fsp);
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
@@ -5633,6 +5636,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		oplock_request = 0;
 		status = open_directory(conn,
 					req,
+					dirfsp,
 					smb_fname,
 					access_mask,
 					share_access,
@@ -5711,6 +5715,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			oplock_request = 0;
 			status = open_directory(conn,
 						req,
+						dirfsp,
 						smb_fname,
 						access_mask,
 						share_access,
