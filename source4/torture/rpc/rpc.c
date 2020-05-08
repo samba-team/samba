@@ -615,6 +615,7 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));
+	torture_suite_add_suite(suite, torture_rpc_samr_handletype(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_workstation_auth(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_passwords_pwdlastset(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_passwords_badpwdcount(suite));
