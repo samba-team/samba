@@ -27,6 +27,7 @@
 
 struct iovec;
 
+bool sys_valid_io_range(off_t offset, size_t length);
 ssize_t sys_read(int fd, void *buf, size_t count);
 void sys_read_v(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
