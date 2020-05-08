@@ -1024,10 +1024,10 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS fd_open_atomic(struct connection_struct *conn,
-			files_struct *fsp,
-			int flags,
-			mode_t mode,
-			bool *file_created)
+			       files_struct *fsp,
+			       int flags,
+			       mode_t mode,
+			       bool *file_created)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS retry_status;
