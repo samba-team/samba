@@ -715,6 +715,13 @@ static void vfs_io_uring_fsync_completion(struct vfs_io_uring_request *cur,
 		return;
 	}
 
+	if (cur->cqe.res > 0) {
+		/* This is not expected! */
+		DBG_ERR("got cur->cqe.res=%d\n", (int)cur->cqe.res);
+		tevent_req_error(cur->req, EIO);
+		return;
+	}
+
 	tevent_req_done(cur->req);
 }
 
