@@ -6,7 +6,6 @@ After=network.target network-online.target nmb.service winbind.service
 
 [Service]
 Type=notify
-NotifyAccess=all
 PIDFile=@PIDDIR@/smbd.pid
 LimitNOFILE=16384
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba

@@ -6,7 +6,6 @@ After=network.target network-online.target
 
 [Service]
 Type=notify
-NotifyAccess=all
 PIDFile=@PIDDIR@/nmbd.pid
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
 ExecStart=@SBINDIR@/nmbd --foreground --no-process-group $NMBDOPTIONS

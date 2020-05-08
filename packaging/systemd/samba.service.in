@@ -6,7 +6,6 @@ After=network.target network-online.target
 
 [Service]
 Type=notify
-NotifyAccess=all
 PIDFile=@PIDDIR@/samba.pid
 LimitNOFILE=16384
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
