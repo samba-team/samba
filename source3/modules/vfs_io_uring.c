@@ -42,7 +42,6 @@ struct vfs_io_uring_request {
 	struct vfs_io_uring_request **list_head;
 	struct vfs_io_uring_config *config;
 	struct tevent_req *req;
-	void *state;
 	struct io_uring_sqe sqe;
 	struct io_uring_cqe cqe;
 	struct timespec start_time;
@@ -58,8 +57,9 @@ static void vfs_io_uring_finish_req(struct vfs_io_uring_request *cur,
 	struct tevent_req *req =
 		talloc_get_type_abort(cur->req,
 		struct tevent_req);
+	void *state = _tevent_req_data(req);
 
-	talloc_set_destructor(cur->state, NULL);
+	talloc_set_destructor(state, NULL);
 	if (cur->list_head != NULL) {
 		DLIST_REMOVE((*cur->list_head), cur);
 		cur->list_head = NULL;
@@ -238,6 +238,7 @@ static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
 
 	for (cur = config->queue; cur != NULL; cur = next) {
 		struct io_uring_sqe *sqe = NULL;
+		void *state = _tevent_req_data(cur->req);
 
 		next = cur->next;
 
@@ -246,7 +247,7 @@ static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
 			break;
 		}
 
-		talloc_set_destructor(cur->state,
+		talloc_set_destructor(state,
 			vfs_io_uring_request_state_deny_destructor);
 		DLIST_REMOVE(config->queue, cur);
 		*sqe = cur->sqe;
@@ -318,7 +319,6 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 	}
 	state->ur.config = config;
 	state->ur.req = req;
-	state->ur.state = state;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
 				     state->ur.profile_bytes, n);
@@ -398,7 +398,6 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 	}
 	state->ur.config = config;
 	state->ur.req = req;
-	state->ur.state = state;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite, profile_p,
 				     state->ur.profile_bytes, n);
@@ -475,7 +474,6 @@ static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *hand
 	}
 	state->ur.config = config;
 	state->ur.req = req;
-	state->ur.state = state;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_fsync, profile_p,
 				     state->ur.profile_bytes, 0);
