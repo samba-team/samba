@@ -399,6 +399,7 @@ static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
 struct vfs_io_uring_pwrite_state {
 	struct vfs_io_uring_request ur;
 	struct iovec iov;
+	size_t nwritten;
 };
 
 static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
@@ -455,12 +456,23 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
 					   const char *location)
 {
+	struct vfs_io_uring_pwrite_state *state = tevent_req_data(
+		cur->req, struct vfs_io_uring_pwrite_state);
+
 	/*
 	 * We rely on being inside the _send() function
 	 * or tevent_req_defer_callback() being called
 	 * already.
 	 */
-	_tevent_req_done(cur->req, location);
+
+	if (cur->cqe.res < 0) {
+		int err = -cur->cqe.res;
+		_tevent_req_error(cur->req, err, location);
+		return;
+	}
+
+	state->nwritten = state->ur.cqe.res;
+	tevent_req_done(cur->req);
 }
 
 static ssize_t vfs_io_uring_pwrite_recv(struct tevent_req *req,
@@ -468,23 +480,19 @@ static ssize_t vfs_io_uring_pwrite_recv(struct tevent_req *req,
 {
 	struct vfs_io_uring_pwrite_state *state = tevent_req_data(
 		req, struct vfs_io_uring_pwrite_state);
-	int ret;
+	ssize_t ret;
 
 	SMBPROFILE_BYTES_ASYNC_END(state->ur.profile_bytes);
 	vfs_aio_state->duration = nsec_time_diff(&state->ur.end_time,
 						 &state->ur.start_time);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 
-	if (state->ur.cqe.res < 0) {
-		vfs_aio_state->error = -state->ur.cqe.res;
-		ret = -1;
-	} else {
-		vfs_aio_state->error = 0;
-		ret = state->ur.cqe.res;
-	}
+	vfs_aio_state->error = 0;
+	ret = state->nwritten;
 
 	tevent_req_received(req);
 	return ret;
