@@ -371,6 +371,17 @@ static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
 	config->busy = false;
 }
 
+static void vfs_io_uring_request_submit(struct vfs_io_uring_request *cur)
+{
+	struct vfs_io_uring_config *config = cur->config;
+
+	io_uring_sqe_set_data(&cur->sqe, cur);
+	DLIST_ADD_END(config->queue, cur);
+	cur->list_head = &config->queue;
+
+	vfs_io_uring_queue_run(config);
+}
+
 static void vfs_io_uring_fd_handler(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
@@ -436,11 +447,7 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 			    fsp->fh->fd,
 			    &state->iov, 1,
 			    offset);
-	io_uring_sqe_set_data(&state->ur.sqe, &state->ur);
-	DLIST_ADD_END(config->queue, &state->ur);
-	state->ur.list_head = &config->queue;
-
-	vfs_io_uring_queue_run(config);
+	vfs_io_uring_request_submit(&state->ur);
 
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
@@ -545,11 +552,7 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 			     fsp->fh->fd,
 			     &state->iov, 1,
 			     offset);
-	io_uring_sqe_set_data(&state->ur.sqe, &state->ur);
-	DLIST_ADD_END(config->queue, &state->ur);
-	state->ur.list_head = &config->queue;
-
-	vfs_io_uring_queue_run(config);
+	vfs_io_uring_request_submit(&state->ur);
 
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
@@ -640,11 +643,7 @@ static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *hand
 	io_uring_prep_fsync(&state->ur.sqe,
 			    fsp->fh->fd,
 			    0); /* fsync_flags */
-	io_uring_sqe_set_data(&state->ur.sqe, &state->ur);
-	DLIST_ADD_END(config->queue, &state->ur);
-	state->ur.list_head = &config->queue;
-
-	vfs_io_uring_queue_run(config);
+	vfs_io_uring_request_submit(&state->ur);
 
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
