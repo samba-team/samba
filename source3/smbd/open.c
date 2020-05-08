@@ -459,8 +459,7 @@ static int link_errno_convert(int err)
 	return err;
 }
 
-static int non_widelink_open(struct connection_struct *conn,
-			files_struct *fsp,
+static int non_widelink_open(files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
 			mode_t mode,
@@ -590,8 +589,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	}
 
 	/* And do it all again.. */
-	fd = non_widelink_open(conn,
-				fsp,
+	fd = non_widelink_open(fsp,
 				smb_fname,
 				flags,
 				mode,
@@ -621,13 +619,13 @@ static int process_symlink_open(struct connection_struct *conn,
  Non-widelink open.
 ****************************************************************************/
 
-static int non_widelink_open(struct connection_struct *conn,
-			     files_struct *fsp,
+static int non_widelink_open(files_struct *fsp,
 			     struct smb_filename *smb_fname,
 			     int flags,
 			     mode_t mode,
 			     unsigned int link_depth)
 {
+	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status;
 	int fd = -1;
 	struct smb_filename *smb_fname_rel = NULL;
@@ -781,12 +779,11 @@ NTSTATUS fd_open(files_struct *fsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	fsp->fh->fd = non_widelink_open(conn,
-				fsp,
-				smb_fname,
-				flags,
-				mode,
-				0);
+	fsp->fh->fd = non_widelink_open(fsp,
+					smb_fname,
+					flags,
+					mode,
+					0);
 	if (fsp->fh->fd == -1) {
 		saved_errno = errno;
 	}
