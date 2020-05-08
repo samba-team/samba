@@ -7,7 +7,7 @@ After=network.target nmb.service
 Type=notify
 PIDFile=@PIDDIR@/winbindd.pid
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
-ExecStart=@SBINDIR@/winbindd --foreground --no-process-group "$WINBINDOPTIONS"
+ExecStart=@SBINDIR@/winbindd --foreground --no-process-group $WINBINDOPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 LimitCORE=infinity
 @systemd_winbind_extra@
