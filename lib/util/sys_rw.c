@@ -24,6 +24,30 @@
 #include "system/filesys.h"
 #include "lib/util/sys_rw.h"
 
+bool sys_valid_io_range(off_t offset, size_t length)
+{
+	uint64_t last_byte_ofs;
+
+	if (offset < 0) {
+		return false;
+	}
+
+	if (offset > INT64_MAX) {
+		return false;
+	}
+
+	if (length > UINT32_MAX) {
+		return false;
+	}
+
+	last_byte_ofs = (uint64_t)offset + (uint64_t)length;
+	if (last_byte_ofs > INT64_MAX) {
+		return false;
+	}
+
+	return true;
+}
+
 /*******************************************************************
 A read wrapper that will deal with EINTR/EWOULDBLOCK
 ********************************************************************/
