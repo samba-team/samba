@@ -489,6 +489,14 @@ static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 		return;
 	}
 
+	if (cur->cqe.res == 0) {
+		/*
+		 * We reached EOF, we're done
+		 */
+		tevent_req_done(cur->req);
+		return;
+	}
+
 	ok = iov_advance(&iov, &num_iov, cur->cqe.res);
 	if (!ok) {
 		/* This is not expected! */
@@ -499,8 +507,20 @@ static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 		return;
 	}
 
-	state->nread = state->ur.cqe.res;
-	tevent_req_done(cur->req);
+	/* sys_valid_io_range() already checked the boundaries */
+	state->nread += state->ur.cqe.res;
+	if (num_iov == 0) {
+		/* We're done */
+		tevent_req_done(cur->req);
+		return;
+	}
+
+	/*
+	 * sys_valid_io_range() already checked the boundaries
+	 * now try to get the rest.
+	 */
+	state->offset += state->ur.cqe.res;
+	vfs_io_uring_pread_submit(state);
 }
 
 static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
