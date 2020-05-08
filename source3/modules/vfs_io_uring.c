@@ -297,6 +297,7 @@ static void vfs_io_uring_fd_handler(struct tevent_context *ev,
 struct vfs_io_uring_pread_state {
 	struct vfs_io_uring_request ur;
 	struct iovec iov;
+	size_t nread;
 };
 
 static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
@@ -353,12 +354,23 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 					  const char *location)
 {
+	struct vfs_io_uring_pread_state *state = tevent_req_data(
+		cur->req, struct vfs_io_uring_pread_state);
+
 	/*
 	 * We rely on being inside the _send() function
 	 * or tevent_req_defer_callback() being called
 	 * already.
 	 */
-	_tevent_req_done(cur->req, location);
+
+	if (cur->cqe.res < 0) {
+		int err = -cur->cqe.res;
+		_tevent_req_error(cur->req, err, location);
+		return;
+	}
+
+	state->nread = state->ur.cqe.res;
+	tevent_req_done(cur->req);
 }
 
 static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
@@ -366,23 +378,19 @@ static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
 {
 	struct vfs_io_uring_pread_state *state = tevent_req_data(
 		req, struct vfs_io_uring_pread_state);
-	int ret;
+	ssize_t ret;
 
 	SMBPROFILE_BYTES_ASYNC_END(state->ur.profile_bytes);
 	vfs_aio_state->duration = nsec_time_diff(&state->ur.end_time,
 						 &state->ur.start_time);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 
-	if (state->ur.cqe.res < 0) {
-		vfs_aio_state->error = -state->ur.cqe.res;
-		ret = -1;
-	} else {
-		vfs_aio_state->error = 0;
-		ret = state->ur.cqe.res;
-	}
+	vfs_aio_state->error = 0;
+	ret = state->nread;
 
 	tevent_req_received(req);
 	return ret;
