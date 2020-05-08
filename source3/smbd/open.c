@@ -622,11 +622,11 @@ static int process_symlink_open(struct connection_struct *conn,
 ****************************************************************************/
 
 static int non_widelink_open(struct connection_struct *conn,
-			files_struct *fsp,
-			struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode,
-			unsigned int link_depth)
+			     files_struct *fsp,
+			     struct smb_filename *smb_fname,
+			     int flags,
+			     mode_t mode,
+			     unsigned int link_depth)
 {
 	NTSTATUS status;
 	int fd = -1;
