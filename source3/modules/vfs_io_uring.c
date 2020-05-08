@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/sys_rw.h"
+#include "lib/util/iov_buf.h"
 #include "smbprofile.h"
 #include <liburing.h>
 
@@ -472,6 +473,9 @@ static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 {
 	struct vfs_io_uring_pread_state *state = tevent_req_data(
 		cur->req, struct vfs_io_uring_pread_state);
+	struct iovec *iov = &state->iov;
+	int num_iov = 1;
+	bool ok;
 
 	/*
 	 * We rely on being inside the _send() function
@@ -482,6 +486,16 @@ static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 	if (cur->cqe.res < 0) {
 		int err = -cur->cqe.res;
 		_tevent_req_error(cur->req, err, location);
+		return;
+	}
+
+	ok = iov_advance(&iov, &num_iov, cur->cqe.res);
+	if (!ok) {
+		/* This is not expected! */
+		DBG_ERR("iov_advance() failed cur->cqe.res=%d > iov_len=%d\n",
+			(int)cur->cqe.res,
+			(int)state->iov.iov_len);
+		tevent_req_error(cur->req, EIO);
 		return;
 	}
 
