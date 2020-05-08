@@ -637,6 +637,14 @@ static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
 		return;
 	}
 
+	if (cur->cqe.res == 0) {
+		/*
+		 * Ensure we can never spin.
+		 */
+		tevent_req_error(cur->req, ENOSPC);
+		return;
+	}
+
 	ok = iov_advance(&iov, &num_iov, cur->cqe.res);
 	if (!ok) {
 		/* This is not expected! */
@@ -647,8 +655,20 @@ static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
 		return;
 	}
 
-	state->nwritten = state->ur.cqe.res;
-	tevent_req_done(cur->req);
+	/* sys_valid_io_range() already checked the boundaries */
+	state->nwritten += state->ur.cqe.res;
+	if (num_iov == 0) {
+		/* We're done */
+		tevent_req_done(cur->req);
+		return;
+	}
+
+	/*
+	 * sys_valid_io_range() already checked the boundaries
+	 * now try to write the rest.
+	 */
+	state->offset += state->ur.cqe.res;
+	vfs_io_uring_pwrite_submit(state);
 }
 
 static ssize_t vfs_io_uring_pwrite_recv(struct tevent_req *req,
