@@ -601,6 +601,9 @@ static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
 {
 	struct vfs_io_uring_pwrite_state *state = tevent_req_data(
 		cur->req, struct vfs_io_uring_pwrite_state);
+	struct iovec *iov = &state->iov;
+	int num_iov = 1;
+	bool ok;
 
 	/*
 	 * We rely on being inside the _send() function
@@ -611,6 +614,16 @@ static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
 	if (cur->cqe.res < 0) {
 		int err = -cur->cqe.res;
 		_tevent_req_error(cur->req, err, location);
+		return;
+	}
+
+	ok = iov_advance(&iov, &num_iov, cur->cqe.res);
+	if (!ok) {
+		/* This is not expected! */
+		DBG_ERR("iov_advance() failed cur->cqe.res=%d > iov_len=%d\n",
+			(int)cur->cqe.res,
+			(int)state->iov.iov_len);
+		tevent_req_error(cur->req, EIO);
 		return;
 	}
 
