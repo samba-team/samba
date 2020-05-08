@@ -423,6 +423,7 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 	struct tevent_req *req = NULL;
 	struct vfs_io_uring_pwrite_state *state = NULL;
 	struct vfs_io_uring_config *config = NULL;
+	bool ok;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct vfs_io_uring_config,
@@ -440,6 +441,12 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite, profile_p,
 				     state->ur.profile_bytes, n);
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ur.profile_bytes);
+
+	ok = sys_valid_io_range(offset, n);
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
 
 	state->iov.iov_base = discard_const(data);
 	state->iov.iov_len = n;
