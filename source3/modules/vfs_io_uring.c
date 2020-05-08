@@ -556,7 +556,14 @@ static void vfs_io_uring_fsync_completion(struct vfs_io_uring_request *cur,
 	 * or tevent_req_defer_callback() being called
 	 * already.
 	 */
-	_tevent_req_done(cur->req, location);
+
+	if (cur->cqe.res < 0) {
+		int err = -cur->cqe.res;
+		_tevent_req_error(cur->req, err, location);
+		return;
+	}
+
+	tevent_req_done(cur->req);
 }
 
 static int vfs_io_uring_fsync_recv(struct tevent_req *req,
@@ -564,26 +571,20 @@ static int vfs_io_uring_fsync_recv(struct tevent_req *req,
 {
 	struct vfs_io_uring_fsync_state *state = tevent_req_data(
 		req, struct vfs_io_uring_fsync_state);
-	int ret;
 
 	SMBPROFILE_BYTES_ASYNC_END(state->ur.profile_bytes);
 	vfs_aio_state->duration = nsec_time_diff(&state->ur.end_time,
 						 &state->ur.start_time);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		tevent_req_received(req);
 		return -1;
 	}
 
-	if (state->ur.cqe.res < 0) {
-		vfs_aio_state->error = -state->ur.cqe.res;
-		ret = -1;
-	} else {
-		vfs_aio_state->error = 0;
-		ret = state->ur.cqe.res;
-	}
+	vfs_aio_state->error = 0;
 
 	tevent_req_received(req);
-	return ret;
+	return 0;
 }
 
 static struct vfs_fn_pointers vfs_io_uring_fns = {
