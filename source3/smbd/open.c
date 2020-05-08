@@ -1116,7 +1116,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		status = fd_open(fsp, flags, mode);
+		status = fd_openat(fsp, flags, mode);
 		*file_created = false;
 		return status;
 	}
@@ -1125,7 +1125,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * Fail if already exists, just pass through.
 		 */
-		status = fd_open(fsp, flags, mode);
+		status = fd_openat(fsp, flags, mode);
 
 		/*
 		 * Here we've opened with O_CREAT|O_EXCL. If that went
@@ -1165,7 +1165,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = fd_open(fsp, curr_flags, mode);
+	status = fd_openat(fsp, curr_flags, mode);
 	if (NT_STATUS_IS_OK(status)) {
 		*file_created = !file_existed;
 		return NT_STATUS_OK;
@@ -1184,7 +1184,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 			curr_flags = flags | O_EXCL;
 		}
 
-		status = fd_open(fsp, curr_flags, mode);
+		status = fd_openat(fsp, curr_flags, mode);
 	}
 
 	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
@@ -4584,7 +4584,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	flags |= O_DIRECTORY;
 #endif
 
-	status = fd_open(fsp, flags, 0);
+	status = fd_openat(fsp, flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for "
 			"%s (%s)\n",
