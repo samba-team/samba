@@ -1,0 +1,13 @@
+# This file to have control over where in autobuild the slower "none"
+# tests are running, to avoid really slow tests being run on multiple
+# hosts that host the samba-o3 job.
+^samba.tests.docs
+^ldb.python
+^samba.tests.dsdb_lock
+^samba4.blackbox.upgradeprovision.alpha13
+^samba4.blackbox.upgradeprovision.release-4-0-0
+^samba.tests.domain_backup_offline
+^samba.tests.samba_tool.help
+^samba4.blackbox.schemaupgrade
+^samba4.blackbox.group.py
+^samba4.blackbox.provision.py
