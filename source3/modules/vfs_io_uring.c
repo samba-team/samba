@@ -34,6 +34,10 @@ struct vfs_io_uring_request;
 struct vfs_io_uring_config {
 	struct io_uring uring;
 	struct tevent_fd *fde;
+	/* recursion guard. See comment above vfs_io_uring_queue_run() */
+	bool busy;
+	/* recursion guard. See comment above vfs_io_uring_queue_run() */
+	bool need_retry;
 	struct vfs_io_uring_request *queue;
 	struct vfs_io_uring_request *pending;
 };
@@ -222,7 +226,7 @@ static int vfs_io_uring_connect(vfs_handle_struct *handle, const char *service,
 	return 0;
 }
 
-static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
+static void _vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
 {
 	struct vfs_io_uring_request *cur = NULL, *next = NULL;
 	struct io_uring_cqe *cqe = NULL;
@@ -278,6 +282,93 @@ static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
 	}
 
 	io_uring_cq_advance(&config->uring, nr);
+}
+
+/*
+ * Wrapper function to prevent recursion which could happen
+ * if we called _vfs_io_uring_queue_run() directly without
+ * recursion checks.
+ *
+ * Looking at the pread call, we can have:
+ *
+ * vfs_io_uring_pread_send()
+ *        ->vfs_io_uring_pread_submit()  <-----------------------------------
+ *                ->vfs_io_uring_request_submit()                           |
+ *                        ->vfs_io_uring_queue_run()                        |
+ *                                ->_vfs_io_uring_queue_run()               |
+ *                                                                          |
+ * But inside _vfs_io_uring_queue_run() looks like:                         |
+ *                                                                          |
+ * _vfs_io_uring_queue_run() {                                              |
+ *      if (THIS_IO_COMPLETED) {                                            |
+ *              ->vfs_io_uring_finish_req()                                 |
+ *                      ->cur->completion_fn()                              |
+ *      }                                                                   |
+ * }                                                                        |
+ *                                                                          |
+ * cur->completion_fn() for pread is set to vfs_io_uring_pread_completion() |
+ *                                                                          |
+ * vfs_io_uring_pread_completion() {                                        |
+ *      if (READ_TERMINATED) {                                              |
+ *              -> tevent_req_done() - We're done, go back up the stack.    |
+ *              return;                                                     |
+ *      }                                                                   |
+ *                                                                          |
+ *      We have a short read - adjust the io vectors                        |
+ *                                                                          |
+ *      ->vfs_io_uring_pread_submit() ---------------------------------------
+ * }
+ *
+ * So before calling _vfs_io_uring_queue_run() we backet it with setting
+ * a flag config->busy, and unset it once _vfs_io_uring_queue_run() finally
+ * exits the retry loop.
+ *
+ * If we end up back into vfs_io_uring_queue_run() we notice we've done so
+ * as config->busy is set and don't recurse into _vfs_io_uring_queue_run().
+ *
+ * We set the second flag config->need_retry that tells us to loop in the
+ * vfs_io_uring_queue_run() call above us in the stack and return.
+ *
+ * When the outer call to _vfs_io_uring_queue_run() returns we are in
+ * a loop checking if config->need_retry was set. That happens if
+ * the short read case occurs and _vfs_io_uring_queue_run() ended up
+ * recursing into vfs_io_uring_queue_run().
+ *
+ * Once vfs_io_uring_pread_completion() finishes without a short
+ * read (the READ_TERMINATED case, tevent_req_done() is called)
+ * then config->need_retry is left as false, we exit the loop,
+ * set config->busy to false so the next top level call into
+ * vfs_io_uring_queue_run() won't think it's a recursed call
+ * and return.
+ *
+ */
+
+static void vfs_io_uring_queue_run(struct vfs_io_uring_config *config)
+{
+	if (config->busy) {
+		/*
+		 * We've recursed due to short read/write.
+		 * Set need_retry to ensure we retry the
+		 * io_uring_submit().
+		 */
+		config->need_retry = true;
+		return;
+	}
+
+	/*
+	 * Bracket the loop calling _vfs_io_uring_queue_run()
+	 * with busy = true / busy = false.
+	 * so we can detect recursion above.
+	 */
+
+	config->busy = true;
+
+	do {
+		config->need_retry = false;
+		_vfs_io_uring_queue_run(config);
+	} while (config->need_retry);
+
+	config->busy = false;
 }
 
 static void vfs_io_uring_fd_handler(struct tevent_context *ev,
