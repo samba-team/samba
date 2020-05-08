@@ -44,6 +44,8 @@ struct vfs_io_uring_request {
 	struct tevent_req *req;
 	struct io_uring_sqe sqe;
 	struct io_uring_cqe cqe;
+	void (*completion_fn)(struct vfs_io_uring_request *cur,
+			      const char *location);
 	struct timespec start_time;
 	struct timespec end_time;
 	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
@@ -74,7 +76,7 @@ static void vfs_io_uring_finish_req(struct vfs_io_uring_request *cur,
 	 * or tevent_req_defer_callback() being called
 	 * already.
 	 */
-	_tevent_req_done(req, location);
+	cur->completion_fn(cur, location);
 }
 
 static void vfs_io_uring_config_destroy(struct vfs_io_uring_config *config,
@@ -297,6 +299,9 @@ struct vfs_io_uring_pread_state {
 	struct iovec iov;
 };
 
+static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
+					  const char *location);
+
 static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
@@ -319,6 +324,7 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 	}
 	state->ur.config = config;
 	state->ur.req = req;
+	state->ur.completion_fn = vfs_io_uring_pread_completion;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
 				     state->ur.profile_bytes, n);
@@ -342,6 +348,17 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 
 	tevent_req_defer_callback(req, ev);
 	return req;
+}
+
+static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
+					  const char *location)
+{
+	/*
+	 * We rely on being inside the _send() function
+	 * or tevent_req_defer_callback() being called
+	 * already.
+	 */
+	_tevent_req_done(cur->req, location);
 }
 
 static ssize_t vfs_io_uring_pread_recv(struct tevent_req *req,
@@ -376,6 +393,9 @@ struct vfs_io_uring_pwrite_state {
 	struct iovec iov;
 };
 
+static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
+					   const char *location);
+
 static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *handle,
 					      TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -398,6 +418,7 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 	}
 	state->ur.config = config;
 	state->ur.req = req;
+	state->ur.completion_fn = vfs_io_uring_pwrite_completion;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite, profile_p,
 				     state->ur.profile_bytes, n);
@@ -421,6 +442,17 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 
 	tevent_req_defer_callback(req, ev);
 	return req;
+}
+
+static void vfs_io_uring_pwrite_completion(struct vfs_io_uring_request *cur,
+					   const char *location)
+{
+	/*
+	 * We rely on being inside the _send() function
+	 * or tevent_req_defer_callback() being called
+	 * already.
+	 */
+	_tevent_req_done(cur->req, location);
 }
 
 static ssize_t vfs_io_uring_pwrite_recv(struct tevent_req *req,
@@ -454,6 +486,9 @@ struct vfs_io_uring_fsync_state {
 	struct vfs_io_uring_request ur;
 };
 
+static void vfs_io_uring_fsync_completion(struct vfs_io_uring_request *cur,
+					  const char *location);
+
 static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
@@ -474,6 +509,7 @@ static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *hand
 	}
 	state->ur.config = config;
 	state->ur.req = req;
+	state->ur.completion_fn = vfs_io_uring_fsync_completion;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_fsync, profile_p,
 				     state->ur.profile_bytes, 0);
@@ -494,6 +530,17 @@ static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *hand
 
 	tevent_req_defer_callback(req, ev);
 	return req;
+}
+
+static void vfs_io_uring_fsync_completion(struct vfs_io_uring_request *cur,
+					  const char *location)
+{
+	/*
+	 * We rely on being inside the _send() function
+	 * or tevent_req_defer_callback() being called
+	 * already.
+	 */
+	_tevent_req_done(cur->req, location);
 }
 
 static int vfs_io_uring_fsync_recv(struct tevent_req *req,
