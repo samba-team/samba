@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/sys_rw.h"
 #include "smbprofile.h"
 #include <liburing.h>
 
@@ -313,6 +314,7 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 	struct tevent_req *req = NULL;
 	struct vfs_io_uring_pread_state *state = NULL;
 	struct vfs_io_uring_config *config = NULL;
+	bool ok;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct vfs_io_uring_config,
@@ -330,6 +332,12 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
 				     state->ur.profile_bytes, n);
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ur.profile_bytes);
+
+	ok = sys_valid_io_range(offset, n);
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
 
 	state->iov.iov_base = (void *)data;
 	state->iov.iov_len = n;
