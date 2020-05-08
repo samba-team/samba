@@ -399,10 +399,13 @@ static void vfs_io_uring_fd_handler(struct tevent_context *ev,
 
 struct vfs_io_uring_pread_state {
 	struct vfs_io_uring_request ur;
+	struct files_struct *fsp;
+	off_t offset;
 	struct iovec iov;
 	size_t nread;
 };
 
+static void vfs_io_uring_pread_submit(struct vfs_io_uring_pread_state *state);
 static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
 					  const char *location);
 
@@ -441,13 +444,11 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 		return tevent_req_post(req, ev);
 	}
 
+	state->fsp = fsp;
+	state->offset = offset;
 	state->iov.iov_base = (void *)data;
 	state->iov.iov_len = n;
-	io_uring_prep_readv(&state->ur.sqe,
-			    fsp->fh->fd,
-			    &state->iov, 1,
-			    offset);
-	vfs_io_uring_request_submit(&state->ur);
+	vfs_io_uring_pread_submit(state);
 
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
@@ -455,6 +456,15 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 
 	tevent_req_defer_callback(req, ev);
 	return req;
+}
+
+static void vfs_io_uring_pread_submit(struct vfs_io_uring_pread_state *state)
+{
+	io_uring_prep_readv(&state->ur.sqe,
+			    state->fsp->fh->fd,
+			    &state->iov, 1,
+			    state->offset);
+	vfs_io_uring_request_submit(&state->ur);
 }
 
 static void vfs_io_uring_pread_completion(struct vfs_io_uring_request *cur,
