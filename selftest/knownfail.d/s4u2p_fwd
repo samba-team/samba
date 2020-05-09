@@ -1,0 +1,2 @@
+^samba4.blackbox.krb5.s4u.get a ticket to impersonator for trust user
+^samba4.blackbox.krb5.s4u.test S4U2Proxy evidence ticket obtained by TGS of trust user
