@@ -1755,7 +1755,9 @@ static uint16_t share_mode_flags_restrict(
 		&existing_lease_type);
 
 	existing_access_mask |= access_mask;
-	existing_share_mode &= share_mode;
+	if (access_mask & conflicting_access) {
+		existing_share_mode &= share_mode;
+	}
 	existing_lease_type |= lease_type;
 
 	ret = share_mode_flags_set(
@@ -1794,7 +1796,10 @@ static bool open_mode_check_fn(
 	}
 
 	access_mask = state->access_mask | e->access_mask;
-	share_access = state->share_access & e->share_access;
+	share_access = state->share_access;
+	if (e->access_mask & conflicting_access) {
+		share_access &= e->share_access;
+	}
 	lease_type = state->lease_type | get_lease_type(e, state->fid);
 
 	if ((access_mask == state->access_mask) &&
