@@ -625,6 +625,118 @@ done:
 	return ret;
 }
 
+/*
+ * Test initial stat open with share nothing doesn't trigger SHARING_VIOLTION
+ * errors.
+ */
+static bool test_smb2_bug14375(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	const char *fname = "test_bug14375";
+	struct smb2_create cr1;
+	struct smb2_create cr2;
+	struct smb2_create cr3;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	cr1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_ATTRIBUTE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_NONE,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+	cr2 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+	cr3 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+	status = smb2_util_close(tree, cr1.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CLOSE file failed\n");
+	status = smb2_util_close(tree, cr2.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CLOSE file failed\n");
+	status = smb2_util_close(tree, cr3.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CLOSE file failed\n");
+
+	cr1 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+	cr2 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_ATTRIBUTE,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_NONE,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+	cr3 = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"CREATE file failed\n");
+
+done:
+	smb2_util_close(tree, cr1.out.file.handle);
+	smb2_util_close(tree, cr2.out.file.handle);
+	smb2_util_close(tree, cr3.out.file.handle);
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_sharemode_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "sharemode");
@@ -633,6 +745,8 @@ struct torture_suite *torture_smb2_sharemode_init(TALLOC_CTX *ctx)
 				     test_smb2_sharemode_access);
 	torture_suite_add_2smb2_test(suite, "access-sharemode",
 				     test_smb2_access_sharemode);
+	torture_suite_add_1smb2_test(suite, "bug14375",
+				     test_smb2_bug14375);
 
 	suite->description = talloc_strdup(suite, "SMB2-SHAREMODE tests");
 
