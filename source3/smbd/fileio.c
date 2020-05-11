@@ -32,10 +32,17 @@
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 {
 	ssize_t ret = 0;
+	bool ok;
 
 	/* you can't read from print files */
 	if (fsp->print_file) {
 		errno = EBADF;
+		return -1;
+	}
+
+	ok = vfs_valid_pread_range(pos, n);
+	if (!ok) {
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -69,6 +76,13 @@ static ssize_t real_write_file(struct smb_request *req,
 				size_t n)
 {
 	ssize_t ret;
+	bool ok;
+
+	ok = vfs_valid_pwrite_range(pos, n);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (n == 0) {
 		return 0;
