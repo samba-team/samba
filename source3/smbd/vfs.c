@@ -32,6 +32,7 @@
 #include "ntioctl.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -397,6 +398,37 @@ NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname)
 	}
 
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+bool vfs_valid_pread_range(off_t offset, size_t length)
+{
+	return sys_valid_io_range(offset, length);
+}
+
+bool vfs_valid_pwrite_range(off_t offset, size_t length)
+{
+	/*
+	 * See MAXFILESIZE in [MS-FSA] 2.1.5.3 Server Requests a Write
+	 */
+	static const uint64_t maxfilesize = 0xfffffff0000;
+	uint64_t last_byte_ofs;
+	bool ok;
+
+	ok = sys_valid_io_range(offset, length);
+	if (!ok) {
+		return false;
+	}
+
+	if (length == 0) {
+		return true;
+	}
+
+	last_byte_ofs = offset + length;
+	if (last_byte_ofs > maxfilesize) {
+		return false;
+	}
+
+	return true;
 }
 
 ssize_t vfs_pwrite_data(struct smb_request *req,
