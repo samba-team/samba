@@ -959,6 +959,9 @@ sub setup_fileserver
 	my $usershare_sharedir="$share_dir/usershares";
 	push(@dirs,$usershare_sharedir);
 
+	my $bad_iconv_sharedir="$share_dir/bad_iconv";
+	push(@dirs, $bad_iconv_sharedir);
+
 	my $fileserver_options = "
 	kernel change notify = yes
 	rpc_server:mdssvc = embedded
@@ -1039,6 +1042,12 @@ sub setup_fileserver
 	path = $share_dir
 	comment = force group test
 #	force group = everyone
+
+[bad_iconv]
+	path = $bad_iconv_sharedir
+	comment = smb username is [%U]
+	vfs objects =
+
 [homes]
 	comment = Home directories
 	browseable = No
@@ -1106,6 +1115,17 @@ sub setup_fileserver
         }
         close(VALID_USERS_TARGET);
         chmod 0644, $valid_users_target;
+
+	##
+	## create a valid utf8 filename which is invalid as a CP850 conversion
+	##
+        my $bad_iconv_target = "$bad_iconv_sharedir/\xED\x9F\xBF";
+        unless (open(BAD_ICONV_TARGET, ">$bad_iconv_target")) {
+                warn("Unable to open $bad_iconv_target");
+                return undef;
+        }
+        close(BAD_ICONV_TARGET);
+        chmod 0644, $bad_iconv_target;
 
 	return $vars;
 }
