@@ -1493,17 +1493,18 @@ static bool mask_conflict(
  Returns True if conflict, False if not.
 ****************************************************************************/
 
+static const uint32_t conflicting_access =
+	FILE_WRITE_DATA|
+	FILE_APPEND_DATA|
+	FILE_READ_DATA|
+	FILE_EXECUTE|
+	DELETE_ACCESS;
+
 static bool share_conflict(uint32_t e_access_mask,
 			   uint32_t e_share_access,
 			   uint32_t access_mask,
 			   uint32_t share_access)
 {
-	const uint32_t conflicting_access =
-		FILE_WRITE_DATA|
-		FILE_APPEND_DATA|
-		FILE_READ_DATA|
-		FILE_EXECUTE|
-		DELETE_ACCESS;
 	bool conflict;
 
 	DBG_DEBUG("existing access_mask = 0x%"PRIx32", "
