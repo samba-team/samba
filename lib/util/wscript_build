@@ -288,3 +288,9 @@ else:
                      deps='cmocka replace samba-util',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_util_paths',
+                     source='tests/test_util_paths.c',
+                     deps='cmocka replace talloc samba-util',
+                     local_include=False,
+                     for_selftest=True)
