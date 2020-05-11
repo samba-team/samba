@@ -794,8 +794,9 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 		if (finfo->name == NULL) {
 			DEBUG(1, ("cli_list: Error: unable to parse name from "
 				  "info level %d\n", state->info_level));
-			ff_eos = true;
-			break;
+			tevent_req_nterror(req,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
 		}
 
 		status = is_bad_finfo_name(state->cli, finfo);
