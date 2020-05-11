@@ -552,7 +552,10 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(finfo);
 			return NT_STATUS_NO_MEMORY;
 		}
-
+		if (finfo->name == NULL) {
+			TALLOC_FREE(finfo);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 		status = is_bad_finfo_name(state->cli, finfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			smbXcli_conn_disconnect(state->cli->conn, status);
