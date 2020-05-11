@@ -70,6 +70,10 @@ static ssize_t real_write_file(struct smb_request *req,
 {
 	ssize_t ret;
 
+	if (n == 0) {
+		return 0;
+	}
+
 	fsp->fh->pos = pos;
 	if (pos &&
 	    lp_strict_allocate(SNUM(fsp->conn)) &&
