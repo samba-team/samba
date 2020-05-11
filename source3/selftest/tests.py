@@ -923,6 +923,15 @@ plantestsuite("samba3.blackbox.open-eintr", "simpleserver:local",
                '$SERVER_IP',
                "error_inject"])
 
+plantestsuite("samba3.blackbox.netfileenum", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_netfileenum.sh"),
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "rpcclient"),
+               os.path.join(bindir(), "net"),
+               '$SERVER_IP',
+               'tmp'])
+
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
