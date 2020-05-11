@@ -684,6 +684,14 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	if (info_ctr.level == 3) {
+		struct srvsvc_NetFileCtr3 *ret = info_ctr.ctr.ctr3;
+		uint32_t i;
+
+		for (i=0; i<ret->count; i++) {
+			printf("%s\n", ret->array[i].path);
+		}
+	}
  done:
 	return result;
 }
