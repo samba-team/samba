@@ -439,6 +439,13 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 {
 	size_t total=0;
 	ssize_t ret;
+	bool ok;
+
+	ok = vfs_valid_pwrite_range(offset, N);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (req && req->unread_bytes) {
 		int sockfd = req->xconn->transport.sock;
@@ -515,6 +522,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 	NTSTATUS status;
+	bool ok;
 
 	/*
 	 * Actually try and commit the space on disk....
@@ -523,8 +531,9 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n",
 		  fsp_str_dbg(fsp), (double)len));
 
-	if (((off_t)len) < 0) {
-		DEBUG(0,("vfs_allocate_file_space: %s negative len "
+	ok = vfs_valid_pwrite_range((off_t)len, 0);
+	if (!ok) {
+		DEBUG(0,("vfs_allocate_file_space: %s negative/invalid len "
 			 "requested.\n", fsp_str_dbg(fsp)));
 		errno = EINVAL;
 		return -1;
@@ -609,6 +618,13 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 int vfs_set_filelen(files_struct *fsp, off_t len)
 {
 	int ret;
+	bool ok;
+
+	ok = vfs_valid_pwrite_range(len, 0);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
 
@@ -640,6 +656,13 @@ int vfs_slow_fallocate(files_struct *fsp, off_t offset, off_t len)
 {
 	ssize_t pwrite_ret;
 	size_t total = 0;
+	bool ok;
+
+	ok = vfs_valid_pwrite_range(offset, len);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (!sparse_buf) {
 		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
@@ -680,6 +703,13 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 	NTSTATUS status;
 	off_t offset;
 	size_t num_to_write;
+	bool ok;
+
+	ok = vfs_valid_pwrite_range(len, 0);
+	if (!ok) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {

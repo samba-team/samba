@@ -166,6 +166,12 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	struct tevent_req *req;
+	bool ok;
+
+	ok = vfs_valid_pread_range(startpos, smb_maxcnt);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -330,6 +336,7 @@ static struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct pwrite_fsync_state *state;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state, struct pwrite_fsync_state);
 	if (req == NULL) {
@@ -338,6 +345,12 @@ static struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->fsp = fsp;
 	state->write_through = write_through;
+
+	ok = vfs_valid_pwrite_range(offset, n);
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
 
 	if (n == 0) {
 		tevent_req_done(req);
@@ -665,6 +678,12 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	struct tevent_req *req;
+	bool ok;
+
+	ok = vfs_valid_pread_range(startpos, smb_maxcnt);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
