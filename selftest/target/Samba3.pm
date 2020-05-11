@@ -1287,6 +1287,9 @@ sub setup_fileserver
 	my $dropbox_sharedir="$share_dir/dropbox";
 	push(@dirs,$dropbox_sharedir);
 
+	my $bad_iconv_sharedir="$share_dir/bad_iconv";
+	push(@dirs, $bad_iconv_sharedir);
+
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
@@ -1382,6 +1385,11 @@ sub setup_fileserver
 	writeable = yes
 	vfs objects =
 
+[bad_iconv]
+	path = $bad_iconv_sharedir
+	comment = smb username is [%U]
+	vfs objects =
+
 [homes]
 	comment = Home directories
 	browseable = No
@@ -1453,6 +1461,11 @@ sub setup_fileserver
 	## create a listable file in valid_users_share
 	##
 	create_file_chmod("$valid_users_sharedir/foo", 0644) or return undef;
+
+	##
+	## create a valid utf8 filename which is invalid as a CP850 conversion
+	##
+	create_file_chmod("$bad_iconv_sharedir/\xED\x9F\xBF", 0644) or return undef;
 
 	return $vars;
 }
