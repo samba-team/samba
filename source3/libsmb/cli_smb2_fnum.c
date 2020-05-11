@@ -1269,6 +1269,12 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 		/* Bad conversion. */
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
+
+	if (finfo->name == NULL) {
+		/* Bad conversion. */
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	return NT_STATUS_OK;
 }
 
