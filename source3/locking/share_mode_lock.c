@@ -530,6 +530,9 @@ static struct share_mode_data *fresh_share_mode_lock(
 		goto fail;
 	}
 	d->old_write_time = full_timespec_to_nt_time(old_write_time);
+	d->flags = SHARE_MODE_SHARE_DELETE |
+		SHARE_MODE_SHARE_WRITE |
+		SHARE_MODE_SHARE_READ;
 	d->modified = false;
 	d->fresh = true;
 	return d;
