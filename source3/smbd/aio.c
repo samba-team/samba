@@ -339,6 +339,11 @@ static struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
 	state->fsp = fsp;
 	state->write_through = write_through;
 
+	if (n == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = SMB_VFS_PWRITE_SEND(state, ev, fsp, data, n, offset);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
