@@ -23,7 +23,18 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "torture/smb2/proto.h"
+
+#define CHECK_STATUS(_status, _expected) \
+	torture_assert_ntstatus_equal_goto(torture, _status, _expected, \
+		 ret, done, "Incorrect status")
+
+#define CHECK_VALUE(v, correct) \
+	torture_assert_int_equal_goto(torture, v, correct, \
+		 ret, done, "Incorrect value")
+
+#define FNAME "smb2_writetest.dat"
 
 static bool run_smb2_readwritetest(struct torture_context *tctx,
 				   struct smb2_tree *t1, struct smb2_tree *t2)
@@ -150,12 +161,190 @@ static bool run_smb2_wrap_readwritetest(struct torture_context *tctx,
 	return run_smb2_readwritetest(tctx, tree1, tree1);
 }
 
+static bool test_rw_invalid(struct torture_context *torture, struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_handle h;
+	uint8_t buf[64*1024];
+	struct smb2_read rd;
+	struct smb2_write w = {0};
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	ZERO_STRUCT(buf);
+
+	smb2_util_unlink(tree, FNAME);
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length = 10;
+	rd.in.offset = 0;
+	rd.in.min_count = 1;
+
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.out.data.length, 10);
+
+	rd.in.min_count = 0;
+	rd.in.length = 10;
+	rd.in.offset = sizeof(buf);
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = sizeof(buf);
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.out.data.length, 0);
+
+	rd.in.min_count = 0;
+	rd.in.length = 1;
+	rd.in.offset = INT64_MAX - 1;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = INT64_MAX;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.out.data.length, 0);
+
+	rd.in.min_count = 0;
+	rd.in.length = 1;
+	rd.in.offset = INT64_MAX;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = (uint64_t)INT64_MAX + 1;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = (uint64_t)INT64_MIN;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = (uint64_t)(int64_t)-1;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = (uint64_t)(int64_t)-2;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	rd.in.min_count = 0;
+	rd.in.length = 0;
+	rd.in.offset = (uint64_t)(int64_t)-3;
+	status = smb2_read(tree, tmp_ctx, &rd);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = (int64_t)-1;
+	w.in.data.data = buf;
+	w.in.data.length = ARRAY_SIZE(buf);
+
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = (int64_t)-2;
+	w.in.data.data = buf;
+	w.in.data.length = ARRAY_SIZE(buf);
+
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = INT64_MIN;
+	w.in.data.data = buf;
+	w.in.data.length = 1;
+
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = INT64_MIN;
+	w.in.data.data = buf;
+	w.in.data.length = 0;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = INT64_MAX;
+	w.in.data.data = buf;
+	w.in.data.length = 0;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(w.out.nwritten, 0);
+
+	w.in.file.handle = h;
+	w.in.offset = INT64_MAX;
+	w.in.data.data = buf;
+	w.in.data.length = 1;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = (uint64_t)INT64_MAX + 1;
+	w.in.data.data = buf;
+	w.in.data.length = 0;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = 0xfffffff0000; /* MAXFILESIZE */
+	w.in.data.data = buf;
+	w.in.data.length = 1;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	w.in.file.handle = h;
+	w.in.offset = 0xfffffff0000 - 1; /* MAXFILESIZE - 1 */
+	w.in.data.data = buf;
+	w.in.data.length = 1;
+	status = smb2_write(tree, &w);
+	if (TARGET_IS_SAMBA3(torture) || TARGET_IS_SAMBA4(torture)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_VALUE(w.out.nwritten, 1);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_DISK_FULL);
+	}
+
+	w.in.file.handle = h;
+	w.in.offset = 0xfffffff0000; /* MAXFILESIZE */
+	w.in.data.data = buf;
+	w.in.data.length = 0;
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(w.out.nwritten, 0);
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_readwrite_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "rw");
 
 	torture_suite_add_2smb2_test(suite, "rw1", run_smb2_readwritetest);
 	torture_suite_add_2smb2_test(suite, "rw2", run_smb2_wrap_readwritetest);
+	torture_suite_add_1smb2_test(suite, "invalid", test_rw_invalid);
 
 	suite->description = talloc_strdup(suite, "SMB2 Samba4 Read/Write");
 
