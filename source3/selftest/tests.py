@@ -424,6 +424,15 @@ for env in ["fileserver"]:
     plantestsuite("samba3.blackbox.NT1.shadow_copy_torture", env + "_smb1_done",
                   [os.path.join(samba3srcdir, "script/tests/test_smb1_shadow_copy_torture.sh"),
                    '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$LOCAL_PATH/shadow', smbtorture4])
+    plantestsuite("samba3.blackbox.smbclient_iconv.SMB2", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
+                   '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3])
+    plantestsuite("samba3.blackbox.smbclient_iconv.NT1", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
+                   '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3, '-mNT1'])
+    plantestsuite("samba3.blackbox.smbclient_iconv.CORE", env + "_smb1_done",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
+                   '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3, '-mCORE'])
 
     #
     # tar command tests
