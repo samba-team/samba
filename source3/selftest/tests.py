@@ -354,6 +354,13 @@ for env in ["fileserver"]:
                   [os.path.join(samba3srcdir, "script/tests/test_zero_data.sh"),
                    '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCAL_PATH'])
 
+    plantestsuite("samba3.blackbox.smbclient_iconv.SMB2", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
+                   '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3])
+    plantestsuite("samba3.blackbox.smbclient_iconv.NT1", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_iconv.sh"),
+                   '$SERVER', '$SERVER_IP', 'bad_iconv', '$USERNAME', '$PASSWORD', smbclient3, '-mNT1'])
+
     #
     # tar command tests
     #
