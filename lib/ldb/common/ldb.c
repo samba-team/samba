@@ -1018,6 +1018,13 @@ static int ldb_lock_backend_callback(struct ldb_request *req,
 	struct ldb_db_lock_context *lock_context;
 	int ret;
 
+	if (req->context == NULL) {
+		/*
+		 * The usual way to get here is to ignore the return codes
+		 * and continuing processing after an error.
+		 */
+		abort();
+	}
 	lock_context = talloc_get_type(req->context,
 				       struct ldb_db_lock_context);
 
@@ -1032,7 +1039,7 @@ static int ldb_lock_backend_callback(struct ldb_request *req,
 		 * If this is a LDB_REPLY_DONE or an error, unlock the
 		 * DB by calling the destructor on this context
 		 */
-		talloc_free(lock_context);
+		TALLOC_FREE(req->context);
 		return ret;
 	}
 
