@@ -8,6 +8,7 @@ ConditionFileNotEmpty=/etc/ctdb/nodes
 Type=forking
 LimitCORE=infinity
 LimitNOFILE=1048576
+TasksMax=4096
 PIDFile=/run/ctdb/ctdbd.pid
 ExecStart=/usr/sbin/ctdbd_wrapper start
 ExecStop=/usr/sbin/ctdbd_wrapper stop
