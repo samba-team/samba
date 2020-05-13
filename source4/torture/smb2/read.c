@@ -143,6 +143,8 @@ static bool test_read_position(struct torture_context *torture, struct smb2_tree
 
 	ZERO_STRUCT(buf);
 
+	smb2_util_unlink(tree, FNAME);
+
 	status = torture_smb2_testfile(tree, FNAME, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
