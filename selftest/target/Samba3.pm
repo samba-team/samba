@@ -760,7 +760,7 @@ sub setup_ad_member
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
-	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD} -k";
 
 	if (system($cmd) != 0) {
 	    warn("Join failed\n$cmd");
