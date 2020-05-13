@@ -156,7 +156,24 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 					(ndr_pull_flags_fn_t)
 						ndr_pull_dnsp_DnsProperty);
 				if (!NDR_ERR_CODE_IS_SUCCESS(err)){
-					goto failed;
+					/*
+					 * Per Microsoft we must
+					 * ignore invalid data here
+					 * and continue as a Windows
+					 * server can put in a
+					 * structure with an invalid
+					 * length.
+					 *
+					 * We can safely fill in an
+					 * extra empty property here
+					 * because
+					 * dns_zoneinfo_load_zone_property()
+					 * just ignores
+					 * DSPROPERTY_ZONE_EMPTY
+					 */
+					ZERO_STRUCT(props[j]);
+					props[j].id = DSPROPERTY_ZONE_EMPTY;
+					continue;
 				}
 			}
 			z->tmp_props = props;
@@ -812,12 +829,53 @@ WERROR dnsserver_db_do_reset_dword(struct ldb_context *samdb,
 			prop,
 			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty);
 		if (!NDR_ERR_CODE_IS_SUCCESS(err)){
-			DBG_ERR("dnsserver: couldn't PULL dns property id "
-				"%d in zone %s\n",
-				prop->id,
-				ldb_dn_get_linearized(z->zone_dn));
-			TALLOC_FREE(tmp_ctx);
-			return WERR_INTERNAL_DB_ERROR;
+			/*
+			 * If we can't pull it then try again parsing
+			 * it again.  A Windows server in the domain
+			 * will permit the addition of an invalidly
+			 * formed property with a 0 length and cause a
+			 * failure here
+			 */
+			struct dnsp_DnsProperty_short
+				*short_property
+				= talloc_zero(element,
+					      struct dnsp_DnsProperty_short);
+			if (short_property == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
+			err = ndr_pull_struct_blob_all(
+				&(element->values[i]),
+				tmp_ctx,
+				short_property,
+				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty_short);
+			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+				/*
+				 * Unknown invalid data should be
+				 * ignored and logged to match Windows
+				 * behaviour
+				 */
+				DBG_NOTICE("dnsserver: couldn't PULL "
+					   "dnsProperty value#%d in "
+					   "zone %s while trying to "
+					   "reset id %d\n",
+					   i,
+					   ldb_dn_get_linearized(z->zone_dn),
+					   prop_id);
+				continue;
+			}
+
+			/*
+			 * Initialise the parts of the property not
+			 * overwritten by value() in the IDL for
+			 * re-push
+			 */
+			*prop = (struct dnsp_DnsProperty){
+				.namelength = short_property->namelength,
+				.id = short_property->id,
+				.name = short_property->name
+				/* .data will be filled in below */
+			};
 		}
 
 		if (prop->id == prop_id) {
