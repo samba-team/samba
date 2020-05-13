@@ -1702,6 +1702,57 @@ class TestZones(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 0)
 
+    def set_dnsProperty_zero_length(self, dnsproperty_id):
+        records = self.samdb.search(base=self.zone_dn, scope=ldb.SCOPE_BASE,
+                                    expression="(&(objectClass=dnsZone)" +
+                                    "(name={0}))".format(self.zone),
+                                    attrs=["dNSProperty"])
+        self.assertEqual(len(records), 1)
+        props = [ndr_unpack(dnsp.DnsProperty, r)
+                 for r in records[0].get('dNSProperty')]
+        new_props = [ndr.ndr_pack(p) for p in props if p.id == dnsproperty_id]
+
+        zero_length_p = dnsp.DnsProperty_short()
+        zero_length_p.id = dnsproperty_id
+        zero_length_p.namelength = 1
+        zero_length_p.name = 1
+        new_props += [ndr.ndr_pack(zero_length_p)]
+
+        dn = records[0].dn
+        update_dict = {'dn': dn, 'dnsProperty': new_props}
+        self.samdb.modify(ldb.Message.from_dict(self.samdb,
+                                                update_dict,
+                                                ldb.FLAG_MOD_REPLACE))
+
+    def test_update_while_dnsProperty_zero_length(self):
+        self.create_zone(self.zone)
+        self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE)
+        rec = self.dns_update_record('dnspropertytest', ['test txt'])
+        self.assertNotEqual(rec.dwTimeStamp, 0)
+
+    def test_enum_zones_while_dnsProperty_zero_length(self):
+        self.create_zone(self.zone)
+        self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE)
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        request_filter = dnsserver.DNS_ZONE_REQUEST_PRIMARY
+        tid = dnsserver.DNSSRV_TYPEID_DWORD
+        typeid, res = self.rpc_conn.DnssrvComplexOperation2(client_version,
+                                                            0,
+                                                            self.server_ip,
+                                                            None,
+                                                            'EnumZones',
+                                                            tid,
+                                                            request_filter)
+
+    def test_rpc_zone_update_while_dnsProperty_zero_length(self):
+        self.create_zone(self.zone)
+        self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE)
+        self.set_params(zone=self.zone, AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
+
+    def test_rpc_zone_update_while_other_dnsProperty_zero_length(self):
+        self.create_zone(self.zone)
+        self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_MASTER_SERVERS_DA)
+        self.set_params(zone=self.zone, AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
 
 class TestRPCRoundtrip(DNSTest):
     def setUp(self):
