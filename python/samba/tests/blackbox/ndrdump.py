@@ -437,3 +437,24 @@ dump OK
             self.fail(e)
 
         self.assertEqual(actual, expected)
+
+    def test_ndrdump_short_dnsProperty(self):
+        expected = b'''pull returned Success
+    dnsp_DnsProperty_short: struct dnsp_DnsProperty_short
+        wDataLength              : 0x00000000 (0)
+        namelength               : 0x00000000 (0)
+        flag                     : 0x00000000 (0)
+        version                  : 0x00000001 (1)
+        id                       : DSPROPERTY_ZONE_NS_SERVERS_DA (146)
+        data                     : union dnsPropertyData(case 0)
+        name                     : 0x00000000 (0)
+dump OK
+'''
+        command = (
+            "ndrdump dnsp dnsp_DnsProperty_short struct --base64-input "
+            "--input AAAAAAAAAAAAAAAAAQAAAJIAAAAAAAAA")
+        try:
+            actual = self.check_output(command)
+        except BlackboxProcessError as e:
+            self.fail(e)
+        self.assertEqual(actual, expected)

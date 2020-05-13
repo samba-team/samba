@@ -260,4 +260,20 @@ interface dnsp
 		[switch_is(id)]     dnsPropertyData data;
 		uint32              name;
 	} dnsp_DnsProperty;
+
+	/*
+	 * this is the format for the dnsProperty attribute in the DNS
+	 * partitions in AD when the wDataLength is 0.  This is an
+	 * invalid format seen from some Windows servers in the same
+	 * domain.
+	 */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		[range(0, 0), value(0)] uint32         wDataLength;
+		uint32   		               namelength;
+		[value(0)] uint32                      flag;
+		[value(1)] uint32                      version;
+		dns_property_id                        id;
+		[switch_is(DSPROPERTY_ZONE_EMPTY)]     dnsPropertyData data;
+		uint32                                 name;
+	} dnsp_DnsProperty_short;
 }
