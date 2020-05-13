@@ -643,19 +643,16 @@ sub setup_clusteredmember_smb1
 	return $ret;
 }
 
-sub setup_ad_member
+sub provision_ad_member
 {
-	my ($self, $prefix, $dcvars, $trustvars_f, $trustvars_e) = @_;
+	my ($self,
+	    $prefix,
+	    $dcvars,
+	    $trustvars_f,
+	    $trustvars_e) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
-
-	# If we didn't build with ADS, pretend this env was never available
-	if (not $self->have_ads()) {
-	        return "UNKNOWN";
-	}
-
-	print "PROVISIONING S3 AD MEMBER...";
 
 	mkdir($prefix_abs, 0777);
 
@@ -809,6 +806,24 @@ sub setup_ad_member
 	$ret->{TRUST_E_BOTH_REALM} = $trustvars_e->{REALM};
 
 	return $ret;
+}
+
+sub setup_ad_member
+{
+	my ($self,
+	    $prefix,
+	    $dcvars,
+	    $trustvars_f,
+	    $trustvars_e) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
+
+	print "PROVISIONING AD MEMBER...";
+
+	return $self->provision_ad_member($prefix, $dcvars, $trustvars_f, $trustvars_e);
 }
 
 sub setup_ad_member_rfc2307
