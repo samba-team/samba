@@ -901,7 +901,14 @@ WERROR dns_get_zone_properties(struct ldb_context *samdb,
 		    prop,
 		    (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty);
 		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
-			return DNS_ERR(SERVER_FAILURE);
+			/*
+			 * If we can't pull it, then there is no valid
+			 * data to load into the zone, so ignore this
+			 * as Micosoft does.  Windows can load an
+			 * invalid property with a zero length into
+			 * the dnsProperty attribute.
+			 */
+			continue;
 		}
 
 		valid_property =
