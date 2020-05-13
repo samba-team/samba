@@ -723,12 +723,6 @@ static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 	return ret;
 }
 
-static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
-		      TDB_DATA dbuf, int flag, uint32_t hash)
-{
-	return _tdb_storev(tdb, key, &dbuf, 1, flag, hash);
-}
-
 /* store an element in the database, replacing any existing element
    with the same key
 
@@ -750,7 +744,7 @@ _PUBLIC_ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
 		return -1;
 
-	ret = _tdb_store(tdb, key, dbuf, flag, hash);
+	ret = _tdb_storev(tdb, key, &dbuf, 1, flag, hash);
 	tdb_trace_2rec_flag_ret(tdb, "tdb_store", key, dbuf, flag, ret);
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
