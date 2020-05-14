@@ -249,6 +249,7 @@ static void opd_free(struct aio_open_private_data *opd)
 ***********************************************************************/
 
 static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
+					const struct smb_filename *smb_fname,
 					const files_struct *fsp,
 					int flags,
 					mode_t mode)
@@ -352,7 +353,7 @@ static int open_async(const struct smb_filename *smb_fname,
 	 * opd is always safely freed in all codepath so no
 	 * memory leaks.
 	 */
-	opd = create_private_open_data(fsp->conn, fsp, flags, mode);
+	opd = create_private_open_data(fsp->conn, smb_fname, fsp, flags, mode);
 	if (opd == NULL) {
 		DEBUG(10, ("open_async: Could not create private data.\n"));
 		return -1;
