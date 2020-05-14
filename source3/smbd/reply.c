@@ -1899,7 +1899,6 @@ void reply_search(struct smb_request *req)
 		nt_status = SMB_VFS_CREATE_FILE(
 				conn, /* conn */
 				req, /* req */
-				0, /* root_dir_fid */
 				smb_dname, /* dname */
 				FILE_LIST_DIRECTORY, /* access_mask */
 				FILE_SHARE_READ|
@@ -2285,7 +2284,6 @@ void reply_open(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		0,					/* root_dir_fid */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
@@ -2476,7 +2474,6 @@ void reply_open_and_X(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		0,					/* root_dir_fid */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
@@ -2908,7 +2905,6 @@ void reply_mknew(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		0,					/* root_dir_fid */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
@@ -3045,7 +3041,6 @@ void reply_ctemp(struct smb_request *req)
 		status = SMB_VFS_CREATE_FILE(
 			conn,					/* conn */
 			req,					/* req */
-			0,					/* root_dir_fid */
 			smb_fname,				/* fname */
 			FILE_GENERIC_READ | FILE_GENERIC_WRITE, /* access_mask */
 			FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -3290,7 +3285,6 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE
 		(conn,			/* conn */
 		 req,			/* req */
-		 0,			/* root_dir_fid */
 		 smb_fname,		/* fname */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */
@@ -7214,7 +7208,6 @@ void reply_rmdir(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,                                   /* conn */
 		req,                                    /* req */
-		0,                                      /* root_dir_fid */
 		smb_dname,                              /* fname */
 		DELETE_ACCESS,                          /* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
@@ -8054,7 +8047,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
-			0,				/* root_dir_fid */
 			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
@@ -8221,7 +8213,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
-			0,				/* root_dir_fid */
 			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
@@ -8530,7 +8521,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		0,					/* root_dir_fid */
 		smb_fname_src,	       			/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -8561,7 +8551,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		0,					/* root_dir_fid */
 		smb_fname_dst,				/* fname */
 		FILE_GENERIC_WRITE,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */

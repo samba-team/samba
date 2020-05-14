@@ -607,7 +607,6 @@ static int smb_time_audit_open(vfs_handle_struct *handle,
 
 static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 					   struct smb_request *req,
-					   uint16_t root_dir_fid,
 					   struct smb_filename *fname,
 					   uint32_t access_mask,
 					   uint32_t share_access,
@@ -633,7 +632,6 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_CREATE_FILE(
 		handle,					/* handle */
 		req,					/* req */
-		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */

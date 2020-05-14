@@ -989,7 +989,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	status = SMB_VFS_CREATE_FILE(smb1req->conn,
 				     smb1req,
-				     0, /* root_dir_fid */
 				     smb_fname,
 				     in_desired_access,
 				     in_share_access,

@@ -1105,7 +1105,6 @@ out:
  */
 static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		struct smb_request *req,
-		uint16_t root_dir_fid,
 		struct smb_filename *smb_fname,
 		uint32_t access_mask,
 		uint32_t share_access,
@@ -1135,7 +1134,6 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		status = SMB_VFS_NEXT_CREATE_FILE(
 			handle,
 			req,
-			root_dir_fid,
 			smb_fname,
 			access_mask,
 			share_access,
@@ -1174,7 +1172,6 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle,
 		req,
-		root_dir_fid,
 		clientFname,
 		access_mask,
 		share_access,

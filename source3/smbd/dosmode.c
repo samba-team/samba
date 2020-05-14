@@ -1410,7 +1410,6 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,                                   /* conn */
 		NULL,                                   /* req */
-		0,                                      /* root_dir_fid */
 		smb_fname_cp,				/* fname */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */

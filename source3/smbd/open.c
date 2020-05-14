@@ -4634,7 +4634,6 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		0,					/* root_dir_fid */
 		smb_dname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
@@ -4827,7 +4826,6 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
-			 0,			/* root_dir_fid */
 			 smb_fname_cp,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
@@ -5832,130 +5830,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	return status;
 }
 
-/*
- * Calculate the full path name given a relative fid.
- */
-static NTSTATUS get_relative_fid_filename(
-	connection_struct *conn,
-	struct smb_request *req,
-	uint16_t root_dir_fid,
-	const struct smb_filename *smb_fname,
-	struct smb_filename **smb_fname_out)
-{
-	files_struct *dir_fsp;
-	char *parent_fname = NULL;
-	char *new_base_name = NULL;
-	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-	NTSTATUS status;
-
-	if (root_dir_fid == 0 || !smb_fname) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto out;
-	}
-
-	dir_fsp = file_fsp(req, root_dir_fid);
-
-	if (dir_fsp == NULL) {
-		status = NT_STATUS_INVALID_HANDLE;
-		goto out;
-	}
-
-	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
-		status = NT_STATUS_INVALID_HANDLE;
-		goto out;
-	}
-
-	if (!dir_fsp->fsp_flags.is_directory) {
-
-		/*
-		 * Check to see if this is a mac fork of some kind.
-		 */
-
-		if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
-		    is_ntfs_stream_smb_fname(smb_fname)) {
-			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			goto out;
-		}
-
-		/*
-		  we need to handle the case when we get a
-		  relative open relative to a file and the
-		  pathname is blank - this is a reopen!
-		  (hint from demyn plantenberg)
-		*/
-
-		status = NT_STATUS_INVALID_HANDLE;
-		goto out;
-	}
-
-	if (ISDOT(dir_fsp->fsp_name->base_name)) {
-		/*
-		 * We're at the toplevel dir, the final file name
-		 * must not contain ./, as this is filtered out
-		 * normally by srvstr_get_path and unix_convert
-		 * explicitly rejects paths containing ./.
-		 */
-		parent_fname = talloc_strdup(talloc_tos(), "");
-		if (parent_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-	} else {
-		size_t dir_name_len = strlen(dir_fsp->fsp_name->base_name);
-
-		/*
-		 * Copy in the base directory name.
-		 */
-
-		parent_fname = talloc_array(talloc_tos(), char,
-		    dir_name_len+2);
-		if (parent_fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		memcpy(parent_fname, dir_fsp->fsp_name->base_name,
-		    dir_name_len+1);
-
-		/*
-		 * Ensure it ends in a '/'.
-		 * We used TALLOC_SIZE +2 to add space for the '/'.
-		 */
-
-		if(dir_name_len
-		    && (parent_fname[dir_name_len-1] != '\\')
-		    && (parent_fname[dir_name_len-1] != '/')) {
-			parent_fname[dir_name_len] = '/';
-			parent_fname[dir_name_len+1] = '\0';
-		}
-	}
-
-	new_base_name = talloc_asprintf(talloc_tos(), "%s%s", parent_fname,
-					smb_fname->base_name);
-	if (new_base_name == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	status = filename_convert(req,
-				conn,
-				new_base_name,
-				ucf_flags,
-				0,
-				NULL,
-				smb_fname_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
- out:
-	TALLOC_FREE(parent_fname);
-	TALLOC_FREE(new_base_name);
-	return status;
-}
-
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
-			     uint16_t root_dir_fid,
 			     struct smb_filename *smb_fname,
 			     uint32_t access_mask,
 			     uint32_t share_access,
@@ -5984,7 +5860,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "private_flags = 0x%x "
-		  "root_dir_fid = 0x%x, ea_list = %p, sd = %p, "
+		  "ea_list = %p, sd = %p, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -5993,7 +5869,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)private_flags,
-		  (unsigned int)root_dir_fid,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname));
 
 	if (req != NULL) {
@@ -6003,20 +5878,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 		 * has timed out.
 		 */
 		get_deferred_open_message_state(req, &req->request_time, NULL);
-	}
-
-	/*
-	 * Calculate the filename from the root_dir_if if necessary.
-	 */
-
-	if (root_dir_fid != 0) {
-		struct smb_filename *smb_fname_out = NULL;
-		status = get_relative_fid_filename(conn, req, root_dir_fid,
-						   smb_fname, &smb_fname_out);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-		smb_fname = smb_fname_out;
 	}
 
 	/*
