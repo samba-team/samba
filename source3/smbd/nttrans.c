@@ -431,6 +431,78 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 	return result;
 }
 
+/*
+ * Calculate the full path name given a relative fid.
+ */
+static NTSTATUS get_relative_fid_filename(connection_struct *conn,
+					  struct smb_request *req,
+					  uint16_t root_dir_fid,
+					  char *path,
+					  char **path_out)
+{
+	struct files_struct *dir_fsp = NULL;
+	char *new_path = NULL;
+
+	if (root_dir_fid == 0 || path == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dir_fsp = file_fsp(req, root_dir_fid);
+	if (dir_fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!dir_fsp->fsp_flags.is_directory) {
+		/*
+		 * Check to see if this is a mac fork of some kind.
+		 */
+		if (conn->fs_capabilities & FILE_NAMED_STREAMS) {
+			char *stream = NULL;
+
+			stream = strchr_m(path, ':');
+			if (stream != NULL) {
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		}
+
+		/*
+		 * We need to handle the case when we get a relative open
+		 * relative to a file and the pathname is blank - this is a
+		 * reopen! (hint from demyn plantenberg)
+		 */
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (ISDOT(dir_fsp->fsp_name->base_name)) {
+		/*
+		 * We're at the toplevel dir, the final file name
+		 * must not contain ./, as this is filtered out
+		 * normally by srvstr_get_path and unix_convert
+		 * explicitly rejects paths containing ./.
+		 */
+		new_path = talloc_strdup(talloc_tos(), path);
+	} else {
+		/*
+		 * Copy in the base directory name.
+		 */
+
+		new_path = talloc_asprintf(talloc_tos(),
+					   "%s/%s",
+					   dir_fsp->fsp_name->base_name,
+					   path);
+	}
+	if (new_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*path_out = new_path;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
@@ -537,6 +609,21 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		}
 	}
 
+	if (root_dir_fid != 0) {
+		char *new_fname = NULL;
+
+		status = get_relative_fid_filename(conn,
+						   req,
+						   root_dir_fid,
+						   fname,
+						   &new_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
+		}
+		fname = new_fname;
+	}
+
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
@@ -569,7 +656,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		root_dir_fid,				/* root_dir_fid */
+		0,					/* root_dir_fid */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
@@ -1126,6 +1213,21 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 	}
 
+	if (root_dir_fid != 0) {
+		char *new_fname = NULL;
+
+		status = get_relative_fid_filename(conn,
+						   req,
+						   root_dir_fid,
+						   fname,
+						   &new_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
+		}
+		fname = new_fname;
+	}
+
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
@@ -1237,7 +1339,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		root_dir_fid,				/* root_dir_fid */
+		0,					/* root_dir_fid */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
