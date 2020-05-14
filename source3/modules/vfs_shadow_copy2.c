@@ -1957,7 +1957,6 @@ static int shadow_copy2_get_shadow_copy_data(
 	}
 
 	status = create_internal_dirfsp_at(handle->conn,
-					   handle->conn->cwd_fsp,
 					   snapdir_smb_fname,
 					   &dirfsp);
 	if (!NT_STATUS_IS_OK(status)) {

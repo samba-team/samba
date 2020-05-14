@@ -177,14 +177,11 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
  * opening of the directory. Otherwise use open_internal_dirfsp_at().
  */
 NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
-				   struct files_struct *dirfsp,
 				   const struct smb_filename *smb_dname,
 				   struct files_struct **_fsp)
 {
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	status = file_new(NULL, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -223,7 +220,6 @@ NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
  * Open an internal fsp for an *existing* directory.
  */
 NTSTATUS open_internal_dirfsp_at(connection_struct *conn,
-				 struct files_struct *dirfsp,
 				 const struct smb_filename *smb_dname,
 				 int open_flags,
 				 struct files_struct **_fsp)
@@ -231,9 +227,7 @@ NTSTATUS open_internal_dirfsp_at(connection_struct *conn,
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
-	status = create_internal_dirfsp_at(conn, dirfsp, smb_dname, &fsp);
+	status = create_internal_dirfsp_at(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
