@@ -163,7 +163,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 	return ndr_push_dns_string_list(ndr,
 					&ndr->dns_string_list,
 					ndr_flags,
-					s);
+					s,
+					false);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_dns_txt_record(struct ndr_pull *ndr, int ndr_flags, struct dns_txt_record *r)
