@@ -11,6 +11,8 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 					   int ndr_flags,
 					   const char *s)
 {
+	const char *start = s;
+
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
 	}
@@ -84,7 +86,13 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		talloc_free(compname);
 
 		s += complen;
-		if (*s == '.') s++;
+		if (*s == '.') {
+			s++;
+		}
+		if (s - start > 255) {
+			return ndr_push_error(ndr, NDR_ERR_STRING,
+					      "name > 255 character long");
+		}
 	}
 
 	/* if we reach the end of the string and have pushed the last component
