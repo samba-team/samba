@@ -333,9 +333,10 @@ static int opd_inflight_destructor(struct aio_open_private_data *opd)
  Setup an async open.
 *****************************************************************/
 
-static int open_async(const files_struct *fsp,
-			int flags,
-			mode_t mode)
+static int open_async(const struct smb_filename *smb_fname,
+		      const files_struct *fsp,
+		      int flags,
+		      mode_t mode)
 {
 	struct aio_open_private_data *opd = NULL;
 	struct tevent_req *subreq = NULL;
@@ -479,7 +480,7 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 	}
 
 	/* Ok, it's a create exclusive call - pass it to a thread helper. */
-	return open_async(fsp, flags, mode);
+	return open_async(smb_fname, fsp, flags, mode);
 }
 #endif
 
