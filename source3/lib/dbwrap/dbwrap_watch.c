@@ -287,6 +287,14 @@ static int db_watched_subrec_destructor(struct db_watched_subrec *s)
 	return 0;
 }
 
+struct dbwrap_watched_subrec_wakeup_state {
+	struct messaging_context *msg_ctx;
+};
+static void dbwrap_watched_subrec_wakeup_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data);
+
 struct dbwrap_watched_do_locked_state {
 	struct db_context *db;
 	void (*fn)(struct db_record *rec,
@@ -295,6 +303,20 @@ struct dbwrap_watched_do_locked_state {
 	void *private_data;
 
 	struct db_watched_subrec subrec;
+
+	/*
+	 * This contains the initial value we got
+	 * passed to dbwrap_watched_do_locked_fn()
+	 *
+	 * It's only used in order to pass it
+	 * to dbwrap_watched_subrec_wakeup_fn()
+	 * in dbwrap_watched_do_locked_{storev,delete}()
+	 *
+	 * It gets cleared after the first call to
+	 * dbwrap_watched_subrec_wakeup_fn() as we
+	 * only need to wakeup once per dbwrap_do_locked().
+	 */
+	TDB_DATA wakeup_value;
 
 	NTSTATUS status;
 };
@@ -305,7 +327,19 @@ static NTSTATUS dbwrap_watched_do_locked_storev(
 {
 	struct dbwrap_watched_do_locked_state *state = rec->private_data;
 	struct db_watched_subrec *subrec = &state->subrec;
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		state->db->private_data, struct db_watched_ctx);
+	struct dbwrap_watched_subrec_wakeup_state wakeup_state = {
+		.msg_ctx = ctx->msg,
+	};
 	NTSTATUS status;
+
+	/*
+	 * Wakeup only needs to happen once.
+	 * so we clear state->wakeup_value after the first run
+	 */
+	dbwrap_watched_subrec_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
+	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	status = dbwrap_watched_subrec_storev(rec, subrec, dbufs, num_dbufs,
 					      flags);
@@ -316,7 +350,19 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 {
 	struct dbwrap_watched_do_locked_state *state = rec->private_data;
 	struct db_watched_subrec *subrec = &state->subrec;
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		state->db->private_data, struct db_watched_ctx);
+	struct dbwrap_watched_subrec_wakeup_state wakeup_state = {
+		.msg_ctx = ctx->msg,
+	};
 	NTSTATUS status;
+
+	/*
+	 * Wakeup only needs to happen once.
+	 * so we clear state->wakeup_value after the first run
+	 */
+	dbwrap_watched_subrec_wakeup_fn(rec, state->wakeup_value, &wakeup_state);
+	state->wakeup_value = (TDB_DATA) { .dsize = 0, };
 
 	status = dbwrap_watched_subrec_delete(rec, subrec);
 	return status;
@@ -343,6 +389,7 @@ static void dbwrap_watched_do_locked_fn(
 	state->subrec = (struct db_watched_subrec) {
 		.subrec = subrec
 	};
+	state->wakeup_value = subrec_value;
 
 	ok = dbwrap_watch_rec_parse(subrec_value, NULL, NULL, &value);
 	if (!ok) {
@@ -381,10 +428,6 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 
 	return state.status;
 }
-
-struct dbwrap_watched_subrec_wakeup_state {
-	struct messaging_context *msg_ctx;
-};
 
 static void dbwrap_watched_subrec_wakeup_fn(
 	struct db_record *rec,
@@ -450,6 +493,15 @@ static void dbwrap_watched_subrec_wakeup(
 		.msg_ctx = ctx->msg,
 	};
 	NTSTATUS status;
+
+	if (rec->storev == dbwrap_watched_do_locked_storev) {
+		/*
+		 * This is handled in the caller,
+		 * as we need to avoid recursion
+		 * into dbwrap_do_locked().
+		 */
+		return;
+	}
 
 	status = dbwrap_do_locked(
 		backend,
