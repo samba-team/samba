@@ -301,9 +301,9 @@ static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
 	}
 
 #if defined(O_DIRECTORY)
-	opd->dir_fd = open(opd->dname->base_name, O_RDONLY|O_DIRECTORY);
+	opd->dir_fd = open(".", O_RDONLY|O_DIRECTORY);
 #else
-	opd->dir_fd = open(opd->dname->base_name, O_RDONLY);
+	opd->dir_fd = open(".", O_RDONLY);
 #endif
 	if (opd->dir_fd == -1) {
 		opd_free(opd);
