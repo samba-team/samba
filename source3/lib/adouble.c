@@ -1109,6 +1109,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		status = SMB_VFS_CREATE_FILE(
 			handle->conn,			/* conn */
 			NULL,				/* req */
+			&handle->conn->cwd_fsp,		/* dirfsp */
 			stream_name,			/* fname */
 			FILE_GENERIC_WRITE,		/* access_mask */
 			FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
@@ -1238,6 +1239,7 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,			/* conn */
 		NULL,				/* req */
+		&handle->conn->cwd_fsp,		/* dirfsp */
 		stream_name,			/* fname */
 		FILE_GENERIC_WRITE,		/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
@@ -1468,6 +1470,7 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
+		&handle->conn->cwd_fsp,		/* dirfsp */
 		adpath,
 		FILE_READ_DATA|FILE_WRITE_DATA,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
@@ -1519,6 +1522,7 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,				/* conn */
 		NULL,					/* req */
+		&handle->conn->cwd_fsp,			/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -1618,6 +1622,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
+		&handle->conn->cwd_fsp,		/* dirfsp */
 		sname,
 		FILE_READ_DATA|DELETE_ACCESS,
 		FILE_SHARE_READ,
@@ -2079,6 +2084,7 @@ static int ad_open_rsrc(vfs_handle_struct *handle,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,			/* conn */
 		NULL,				/* req */
+		&handle->conn->cwd_fsp,		/* dirfsp */
 		adp_smb_fname,
 		access_mask,
 		share_access,

@@ -4628,6 +4628,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
+		&conn->cwd_fsp,				/* dirfsp */
 		smb_dname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
@@ -4820,6 +4821,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
+			 &conn->cwd_fsp,	/* dirfsp */
 			 smb_fname_cp,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
@@ -5826,6 +5828,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
+			     struct files_struct **_dirfsp,
 			     struct smb_filename *smb_fname,
 			     uint32_t access_mask,
 			     uint32_t share_access,
@@ -5848,6 +5851,9 @@ NTSTATUS create_file_default(connection_struct *conn,
 	NTSTATUS status;
 	bool stream_name = false;
 	struct smb2_create_blob *posx = NULL;
+	struct files_struct *dirfsp = *_dirfsp;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	DBG_DEBUG("create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -5855,6 +5861,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "oplock_request = 0x%x "
 		  "private_flags = 0x%x "
 		  "ea_list = %p, sd = %p, "
+		  "dirfsp = %s, "
 		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
@@ -5863,7 +5870,10 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)private_flags,
-		  ea_list, sd, smb_fname_str_dbg(smb_fname));
+		  ea_list,
+		  sd,
+		  fsp_str_dbg(dirfsp),
+		  smb_fname_str_dbg(smb_fname));
 
 	if (req != NULL) {
 		/*
