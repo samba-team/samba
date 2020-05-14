@@ -9,9 +9,32 @@
 enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 					   struct ndr_token_list *string_list,
 					   int ndr_flags,
-					   const char *s)
+					   const char *s,
+					   bool is_nbt)
 {
 	const char *start = s;
+	bool use_compression;
+	size_t max_length;
+	if (is_nbt) {
+		use_compression = true;
+		/*
+		 * Max length is longer in NBT/Wins, because Windows counts
+		 * the semi-decompressed size of the netbios name (16 bytes)
+		 * rather than the wire size of 32, which is what you'd expect
+		 * if it followed RFC1002 (it uses the short form in
+		 * [MS-WINSRA]). In other words the maximum size of the
+		 * "scope" is 237, not 221.
+		 *
+		 * We make the size limit slightly larger than 255 + 16,
+		 * because the 237 scope limit is already enforced in the
+		 * winsserver code with a specific return value; bailing out
+		 * here would muck with that.
+		 */
+		max_length = 274;
+	} else {
+		use_compression = !(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION);
+		max_length = 255;
+	}
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
@@ -23,7 +46,7 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		size_t complen;
 		uint32_t offset;
 
-		if (!(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION)) {
+		if (use_compression) {
 			/* see if we have pushed the remaining string already,
 			 * if so we use a label pointer to this string
 			 */
@@ -66,6 +89,14 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 					      "(consecutive dots)");
 		}
 
+		if (is_nbt && s[complen] == '.' && s[complen + 1] == '\0') {
+			/* nbt names are sometimes usernames, and we need to
+			 * keep a trailing dot to ensure it is byte-identical,
+			 * (not just semantically identical given DNS
+			 * semantics). */
+			complen++;
+		}
+
 		compname = talloc_asprintf(ndr, "%c%*.*s",
 						(unsigned char)complen,
 						(unsigned char)complen,
@@ -75,7 +106,7 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		/* remember the current component + the rest of the string
 		 * so it can be reused later
 		 */
-		if (!(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION)) {
+		if (use_compression) {
 			NDR_CHECK(ndr_token_store(ndr, string_list, s,
 						  ndr->offset));
 		}
@@ -89,9 +120,10 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		if (*s == '.') {
 			s++;
 		}
-		if (s - start > 255) {
+		if (s - start > max_length) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
-					      "name > 255 character long");
+					      "name > %zu character long",
+					      max_length);
 		}
 	}
 
