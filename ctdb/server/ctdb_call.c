@@ -827,8 +827,13 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	unsigned int i, id;
 	char *keystr;
 
-	/* smallest value is always at index 0 */
-	if (count <= ctdb_db->hot_keys[0].count) {
+	/*
+	 * If all slots are being used then only need to compare
+	 * against the count in the 0th slot, since it contains the
+	 * smallest count.
+	 */
+	if (ctdb_db->statistics.num_hot_keys == MAX_HOT_KEYS &&
+	    count <= ctdb_db->hot_keys[0].count) {
 		return;
 	}
 
