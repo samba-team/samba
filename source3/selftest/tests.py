@@ -553,7 +553,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.sfileinfo.base", "raw.sfileinfo.bug", "raw.streams", "raw.unlink", "raw.write",
        "raw.samba3hide", "raw.samba3badpath", "raw.sfileinfo.rename", "raw.session",
        "raw.samba3caseinsensitive", "raw.samba3posixtimedlock",
-       "raw.samba3rootdirfid", "raw.sfileinfo.end-of-file",
+       "raw.samba3rootdirfid", "raw.samba3rootdirfid2", "raw.sfileinfo.end-of-file",
        "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
        "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff", "raw.samba3badnameblob"]
 
@@ -832,6 +832,7 @@ for t in tests:
                   "raw.samba3oplocklogoff",
                   "raw.samba3posixtimedlock",
                   "raw.samba3rootdirfid",
+                  "raw.samba3rootdirfid2",
                   "raw.seek",
                   "raw.sfileinfo.bug",
                   "raw.sfileinfo.end-of-file",

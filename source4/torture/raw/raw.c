@@ -67,6 +67,8 @@ NTSTATUS torture_raw_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb_test(suite, "samba3closeerr", torture_samba3_closeerr);
 	torture_suite_add_1smb_test(suite, "samba3rootdirfid",
 				      torture_samba3_rootdirfid);
+	torture_suite_add_1smb_test(suite, "samba3rootdirfid2",
+				      torture_samba3_rootdirfid2);
 	torture_suite_add_1smb_test(suite, "samba3checkfsp", torture_samba3_checkfsp);
 	torture_suite_add_1smb_test(suite, "samba3oplocklogoff", torture_samba3_oplock_logoff);
 	torture_suite_add_1smb_test(suite, "samba3badnameblob", torture_samba3_check_openX_badname);

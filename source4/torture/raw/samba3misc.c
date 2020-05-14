@@ -986,6 +986,80 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 	return ret;
 }
 
+bool torture_samba3_rootdirfid2(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	int fnum;
+	uint16_t dnum;
+	union smb_open io;
+	const char *dirname1 = "dir1";
+	const char *dirname2 = "dir1/dir2";
+	const char *path = "dir1/dir2/testfile";
+	const char *relname = "dir2/testfile";
+	bool ret = false;
+
+	smbcli_deltree(cli->tree, dirname1);
+
+	torture_assert(tctx, torture_setup_dir(cli, dirname1), "creating test directory");
+	torture_assert(tctx, torture_setup_dir(cli, dirname2), "creating test directory");
+
+	fnum = smbcli_open(cli->tree, path, O_RDWR | O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		torture_result(tctx, TORTURE_FAIL,
+			"Could not create file: %s",
+			 smbcli_errstr(cli->tree));
+		goto done;
+	}
+	smbcli_close(cli->tree, fnum);
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.access_mask =
+		SEC_STD_SYNCHRONIZE | SEC_FILE_EXECUTE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ
+		| NTCREATEX_SHARE_ACCESS_READ;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.fname = dirname1;
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
+					   NT_STATUS_OK,
+					   ret, done, "smb_open on the directory failed: %s\n");
+
+	dnum = io.ntcreatex.out.file.fnum;
+
+	io.ntcreatex.in.flags =
+		NTCREATEX_FLAGS_REQUEST_OPLOCK
+		| NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.root_fid.fnum = dnum;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.fname = relname;
+
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
+					   NT_STATUS_OK,
+					   ret, done, "smb_open on the file failed");
+
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	smbcli_close(cli->tree, dnum);
+
+	ret = true;
+done:
+	smbcli_deltree(cli->tree, dirname1);
+	return ret;
+}
+
 bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_open io;
