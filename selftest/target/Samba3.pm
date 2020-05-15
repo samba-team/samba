@@ -649,7 +649,8 @@ sub provision_ad_member
 	    $prefix,
 	    $dcvars,
 	    $trustvars_f,
-	    $trustvars_e) = @_;
+	    $trustvars_e,
+	    $force_fips_mode) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
@@ -744,6 +745,11 @@ sub provision_ad_member
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
+	if (defined($force_fips_mode)) {
+		$ret->{GNUTLS_FORCE_FIPS_MODE} = "1";
+		$ret->{OPENSSL_FORCE_FIPS_MODE} = "1";
+	}
+
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
 	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
@@ -752,6 +758,10 @@ sub provision_ad_member
 		$cmd .= "RESOLV_WRAPPER_CONF=\"$ret->{RESOLV_WRAPPER_CONF}\" ";
 	} else {
 		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	if (defined($force_fips_mode)) {
+		$cmd .= "GNUTLS_FORCE_FIPS_MODE=1 ";
+		$cmd .= "OPENSSL_FORCE_FIPS_MODE=1 ";
 	}
 	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -3019,12 +3029,22 @@ sub wait_for_start($$$$$)
 
 	    my $count = 0;
 	    do {
-		$cmd = Samba::bindir_path($self, "smbclient");
-		$cmd .= " $envvars->{CONFIGURATION}";
-		$cmd .= " -L $envvars->{SERVER}";
-		$cmd .= " -U%";
-		$cmd .= " -I $envvars->{SERVER_IP}";
-		$cmd .= " -p 139";
+		if (defined($envvars->{GNUTLS_FORCE_FIPS_MODE})) {
+			# We don't have NTLM in FIPS mode, so lets use
+			# smbcontrol instead of smbclient.
+			$cmd = Samba::bindir_path($self, "smbcontrol");
+			$cmd .= " $envvars->{CONFIGURATION}";
+			$cmd .= " smbd ping";
+		} else {
+			# This uses NTLM which is not available in FIPS
+			$cmd = Samba::bindir_path($self, "smbclient");
+			$cmd .= " $envvars->{CONFIGURATION}";
+			$cmd .= " -L $envvars->{SERVER}";
+			$cmd .= " -U%";
+			$cmd .= " -I $envvars->{SERVER_IP}";
+			$cmd .= " -p 139";
+		}
+
 		$ret = system($cmd);
 		if ($ret != 0) {
 		    sleep(1);
