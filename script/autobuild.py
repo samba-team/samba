@@ -486,7 +486,7 @@ tasks = {
         ],
 
     "samba-admem-mit": [
-        ("random-sleep", random_sleep(300, 900)),
+        ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
         ("make", "make -j"),
         ("test", make_test(include_envs=[
