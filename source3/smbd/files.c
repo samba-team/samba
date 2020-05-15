@@ -194,21 +194,6 @@ NTSTATUS create_internal_dirfsp(connection_struct *conn,
 		return status;
 	}
 
-	if (!VALID_STAT(fsp->fsp_name->st)) {
-		status = vfs_stat_fsp(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		DBG_ERR("%s is not a directory!\n",
-			smb_fname_str_dbg(smb_dname));
-                file_free(NULL, fsp);
-		return NT_STATUS_NOT_A_DIRECTORY;
-	}
-
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 	fsp->access_mask = FILE_LIST_DIRECTORY;
 	fsp->fsp_flags.is_directory = true;
 
@@ -226,6 +211,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 {
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
+	int ret;
 
 	status = create_internal_dirfsp(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -244,6 +230,19 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 		return status;
 	}
 
+	ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+	if (ret != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		DBG_ERR("%s is not a directory!\n",
+			smb_fname_str_dbg(smb_dname));
+                file_free(NULL, fsp);
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	*_fsp = fsp;
 	return NT_STATUS_OK;
