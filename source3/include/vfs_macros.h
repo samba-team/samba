@@ -147,6 +147,11 @@
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) \
 	smb_vfs_call_open((handle)->next, (fname), (fsp), (flags), (mode))
 
+#define SMB_VFS_OPENAT(conn, dirfsp, smb_fname, fsp, flags, mode) \
+	smb_vfs_call_openat((conn)->vfs_handles, (dirfsp), (smb_fname), (fsp), (flags), (mode))
+#define SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode) \
+	smb_vfs_call_openat((handle)->next, (dirfsp), (smb_fname), (fsp), (flags), (mode))
+
 #define SMB_VFS_CREATE_FILE(conn, req, dirfsp, smb_fname, access_mask, share_access, create_disposition, \
         create_options, file_attributes, oplock_request, lease, allocation_size, private_flags, sd, ea_list, result, pinfo, in_context_blobs, out_context_blobs) \
         smb_vfs_call_create_file((conn)->vfs_handles, (req), (dirfsp), (smb_fname), (access_mask), (share_access), (create_disposition), \

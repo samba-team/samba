@@ -198,6 +198,17 @@ static int skel_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	return -1;
 }
 
+static int skel_openat(struct vfs_handle_struct *handle,
+		       const struct files_struct *dirfsp,
+		       const struct smb_filename *smb_fname,
+		       struct files_struct *fsp,
+		       int flags,
+		       mode_t mode)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
 				 struct smb_request *req,
 				 struct files_struct **dirfsp,
@@ -1063,6 +1074,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	/* File operations */
 
 	.open_fn = skel_open,
+	.openat_fn = skel_openat,
 	.create_file_fn = skel_create_file,
 	.close_fn = skel_close_fn,
 	.pread_fn = skel_pread,

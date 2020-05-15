@@ -322,6 +322,7 @@
  * Version 43 - Remove root_dir_fid from SMB_VFS_CREATE_FILE().
  * Version 43 - Add dirfsp to struct files_struct
  * Version 43 - Add dirfsp args to SMB_VFS_CREATE_FILE()
+ * Version 43 - Add SMB_VFS_OPENAT()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -764,6 +765,12 @@ struct vfs_fn_pointers {
 	int (*open_fn)(struct vfs_handle_struct *handle,
 		       struct smb_filename *smb_fname, files_struct *fsp,
 		       int flags, mode_t mode);
+	int (*openat_fn)(struct vfs_handle_struct *handle,
+			 const struct files_struct *dirfsp,
+			 const struct smb_filename *smb_fname,
+			 struct files_struct *fsp,
+			 int flags,
+			 mode_t mode);
 	NTSTATUS (*create_file_fn)(struct vfs_handle_struct *handle,
 				   struct smb_request *req,
 				   struct files_struct **dirfsp,
@@ -1276,6 +1283,12 @@ int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname, struct files_struct *fsp,
 		      int flags, mode_t mode);
+int smb_vfs_call_openat(struct vfs_handle_struct *handle,
+			const struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			struct files_struct *fsp,
+			int flags,
+			mode_t mode);
 NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct smb_request *req,
 				  struct files_struct **dirfsp,
@@ -1731,6 +1744,12 @@ int vfs_not_implemented_closedir(vfs_handle_struct *handle, DIR *dir);
 int vfs_not_implemented_open(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname,
 			     files_struct *fsp, int flags, mode_t mode);
+int vfs_not_implemented_openat(vfs_handle_struct *handle,
+			       const struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname,
+			       struct files_struct *fsp,
+			       int flags,
+			       mode_t mode);
 NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				struct smb_request *req,
 				struct files_struct **dirfsp,
