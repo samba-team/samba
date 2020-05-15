@@ -202,7 +202,32 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->child = child;
-	state->request = request;
+
+	/*
+	 * We have to make a copy of "request", because our caller
+	 * might drop us via talloc_free().
+	 *
+	 * The talloc_move() magic in wb_child_request_cleanup() keeps
+	 * all the requests, but if we are sitting deep within
+	 * writev_send() down to the client, we have given it the
+	 * pointer to "request". As our caller lost interest, it will
+	 * just free "request", while writev_send still references it.
+	 */
+
+	state->request = talloc_memdup(state, request, sizeof(*request));
+	if (tevent_req_nomem(state->request, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (request->extra_data.data != NULL) {
+		state->request->extra_data.data = talloc_memdup(
+			state->request,
+			request->extra_data.data,
+			request->extra_len);
+		if (tevent_req_nomem(state->request->extra_data.data, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
 
 	subreq = tevent_queue_wait_send(state, ev, child->queue);
 	if (tevent_req_nomem(subreq, req)) {
@@ -330,6 +355,7 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 
 		subreq = talloc_move(state->child->queue, &state->subreq);
 		talloc_move(subreq, &state->queue_subreq);
+		talloc_move(subreq, &state->request);
 		tevent_req_set_callback(subreq,
 					wb_child_request_orphaned,
 					state->child);
