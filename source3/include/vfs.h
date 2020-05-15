@@ -320,6 +320,7 @@
  *              to struct smb_filename
  * Version 43 - Move SMB_VFS_GET_NT_ACL() -> SMB_VFS_GET_NT_ACL_AT().
  * Version 43 - Remove root_dir_fid from SMB_VFS_CREATE_FILE().
+ * Version 43 - Add dirfsp to struct files_struct
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -377,6 +378,7 @@ typedef struct files_struct {
 	struct smbXsrv_open *op;
 	struct connection_struct *conn;
 	struct fd_handle *fh;
+	struct files_struct *dirfsp;
 	unsigned int num_smb_operations;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
