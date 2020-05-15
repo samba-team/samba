@@ -237,6 +237,7 @@ sub check_env($$)
 	ad_member_rfc2307   => ["ad_dc_ntvfs"],
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
+	ad_member_fips      => ["ad_dc_fips"],
 
 	clusteredmember_smb1 => ["nt4_dc"],
 );
@@ -1135,6 +1136,28 @@ sub setup_ad_member_idmap_ad
 	$ret->{TRUST_DOMSID} = $dcvars->{TRUST_DOMSID};
 
 	return $ret;
+}
+
+sub setup_ad_member_fips
+{
+	my ($self,
+	    $prefix,
+	    $dcvars,
+	    $trustvars_f,
+	    $trustvars_e) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
+
+	print "PROVISIONING AD FIPS MEMBER...";
+
+	return $self->provision_ad_member($prefix,
+					  $dcvars,
+					  $trustvars_f,
+					  $trustvars_e,
+					  1);
 }
 
 sub setup_simpleserver
