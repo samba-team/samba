@@ -24,6 +24,8 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 #define CHECK_STATUS(status, correct) do { \
@@ -438,6 +440,176 @@ static bool test_compound_related3(struct torture_context *tctx,
 
 	ret = true;
 done:
+	return ret;
+}
+
+static bool test_compound_related4(struct torture_context *tctx,
+			struct smb2_tree *tree)
+{
+	const char *fname = "compound_related4.dat";
+	struct security_descriptor *sd = NULL;
+	struct smb2_handle hd;
+	struct smb2_create cr;
+	union smb_setfileinfo set;
+	struct smb2_ioctl io;
+	struct smb2_close cl;
+	struct smb2_request *req[4];
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(cr);
+	cr.level = RAW_OPEN_SMB2;
+	cr.in.create_flags = 0;
+	cr.in.desired_access = SEC_STD_READ_CONTROL |
+				SEC_STD_WRITE_DAC |
+				SEC_STD_WRITE_OWNER;
+	cr.in.create_options = 0;
+	cr.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE |
+				NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	cr.in.alloc_size = 0;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	cr.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	cr.in.security_flags = 0;
+	cr.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed\n");
+
+	hd = cr.out.file.handle;
+	torture_comment(tctx, "set a sec desc allowing no write by CREATOR_OWNER\n");
+
+	sd = security_descriptor_dacl_create(tctx,
+			0, NULL, NULL,
+			SID_CREATOR_OWNER,
+			SEC_ACE_TYPE_ACCESS_ALLOWED,
+			SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+			0,
+			NULL);
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+				     "security_descriptor_dacl_create failed\n");
+
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = hd;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &set);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	torture_comment(tctx, "try open for write\n");
+	cr.in.desired_access = SEC_FILE_WRITE_DATA;
+	smb2_transport_compound_start(tree->session->transport, 4);
+
+	req[0] = smb2_create_send(tree, &cr);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_create_send failed\n");
+
+	hd.data[0] = UINT64_MAX;
+	hd.data[1] = UINT64_MAX;
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+	ZERO_STRUCT(io);
+	io.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID;
+	io.in.file.handle = hd;
+	io.in.flags = 1;
+
+	req[1] = smb2_ioctl_send(tree, &io);
+	torture_assert_not_null_goto(tctx, req[1], ret, done,
+				     "smb2_ioctl_send failed\n");
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = hd;
+
+	req[2] = smb2_close_send(tree, &cl);
+	torture_assert_not_null_goto(tctx, req[2], ret, done,
+				     "smb2_create_send failed\n");
+
+	set.set_secdesc.in.file.handle = hd;
+
+	req[3] = smb2_setinfo_file_send(tree, &set);
+	torture_assert_not_null_goto(tctx, req[3], ret, done,
+				     "smb2_create_send failed\n");
+
+	status = smb2_create_recv(req[0], tree, &cr);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "smb2_create_recv failed\n");
+
+	status = smb2_ioctl_recv(req[1], tree, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "smb2_ioctl_recv failed\n");
+
+	status = smb2_close_recv(req[2], &cl);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "smb2_close_recv failed\n");
+
+	status = smb2_setinfo_recv(req[3]);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "smb2_setinfo_recv failed\n");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_tdis(tree);
+	smb2_logoff(tree->session);
+	return ret;
+}
+
+static bool test_compound_related5(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	struct smb2_handle hd;
+	struct smb2_ioctl io;
+	struct smb2_close cl;
+	struct smb2_request *req[2];
+	NTSTATUS status;
+	bool ret = false;
+
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	hd.data[0] = UINT64_MAX;
+	hd.data[1] = UINT64_MAX;
+
+	ZERO_STRUCT(io);
+	io.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID;
+	io.in.file.handle = hd;
+	io.in.flags = 1;
+
+	req[0] = smb2_ioctl_send(tree, &io);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_ioctl_send failed\n");
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = hd;
+
+	req[1] = smb2_close_send(tree, &cl);
+	torture_assert_not_null_goto(tctx, req[1], ret, done,
+				     "smb2_create_send failed\n");
+
+	status = smb2_ioctl_recv(req[0], tree, &io);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_FILE_CLOSED,
+					   ret, done,
+					   "smb2_ioctl_recv failed\n");
+
+	status = smb2_close_recv(req[1], &cl);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_FILE_CLOSED,
+					   ret, done,
+					   "smb2_close_recv failed\n");
+
+	ret = true;
+
+done:
+	smb2_tdis(tree);
+	smb2_logoff(tree->session);
 	return ret;
 }
 
@@ -1436,6 +1608,10 @@ struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "related2", test_compound_related2);
 	torture_suite_add_1smb2_test(suite, "related3",
 				     test_compound_related3);
+	torture_suite_add_1smb2_test(suite, "related4",
+				     test_compound_related4);
+	torture_suite_add_1smb2_test(suite, "related5",
+				     test_compound_related5);
 	torture_suite_add_1smb2_test(suite, "unrelated1", test_compound_unrelated1);
 	torture_suite_add_1smb2_test(suite, "invalid1", test_compound_invalid1);
 	torture_suite_add_1smb2_test(suite, "invalid2", test_compound_invalid2);
