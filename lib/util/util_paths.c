@@ -73,12 +73,16 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 
 	rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
 	if (rc != 0 || pwdbuf == NULL ) {
+		int len_written;
 		const char *szPath = getenv("HOME");
 		if (szPath == NULL) {
 			return NULL;
 		}
-		snprintf(buf, sizeof(buf), "%s", szPath);
-
+		len_written = snprintf(buf, sizeof(buf), "%s", szPath);
+		if (len_written >= sizeof(buf) || len_written < 0) {
+			/* Output was truncated or an error. */
+			return NULL;
+		}
 		return talloc_strdup(mem_ctx, buf);
 	}
 
