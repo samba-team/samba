@@ -219,10 +219,10 @@ NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
 /*
  * Open an internal fsp for an *existing* directory.
  */
-NTSTATUS open_internal_dirfsp_at(connection_struct *conn,
-				 const struct smb_filename *smb_dname,
-				 int open_flags,
-				 struct files_struct **_fsp)
+NTSTATUS open_internal_dirfsp(connection_struct *conn,
+			      const struct smb_filename *smb_dname,
+			      int open_flags,
+			      struct files_struct **_fsp)
 {
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;

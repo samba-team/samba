@@ -1369,10 +1369,10 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 	struct smb_Dir *dir_hnd = NULL;
 	NTSTATUS status;
 
-	status = open_internal_dirfsp_at(conn,
-					 smb_dname,
-					 O_RDONLY,
-					 &fsp);
+	status = open_internal_dirfsp(conn,
+				      smb_dname,
+				      O_RDONLY,
+				      &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
