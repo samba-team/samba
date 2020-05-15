@@ -185,6 +185,10 @@ samba-ad-dc-fips:
   extends: .shared_template
   image: $SAMBA_CI_CONTAINER_IMAGE_fedora31
 
+samba-admem-fips:
+  extends: .shared_template
+  image: $SAMBA_CI_CONTAINER_IMAGE_fedora31
+
 .private_template:
   extends: .shared_template
   tags:
