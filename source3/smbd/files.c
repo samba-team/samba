@@ -176,9 +176,9 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
  * This should only be used by callers in the VFS that need to control the
  * opening of the directory. Otherwise use open_internal_dirfsp_at().
  */
-NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
-				   const struct smb_filename *smb_dname,
-				   struct files_struct **_fsp)
+NTSTATUS create_internal_dirfsp(connection_struct *conn,
+				const struct smb_filename *smb_dname,
+				struct files_struct **_fsp)
 {
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
@@ -227,7 +227,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	status = create_internal_dirfsp_at(conn, smb_dname, &fsp);
+	status = create_internal_dirfsp(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

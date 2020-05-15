@@ -1956,9 +1956,9 @@ static int shadow_copy2_get_shadow_copy_data(
 		goto done;
 	}
 
-	status = create_internal_dirfsp_at(handle->conn,
-					   snapdir_smb_fname,
-					   &dirfsp);
+	status = create_internal_dirfsp(handle->conn,
+					snapdir_smb_fname,
+					&dirfsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("create_internal_dir_fsp() failed for '%s'"
 			    " - %s\n", snapdir, nt_errstr(status));
