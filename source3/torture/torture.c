@@ -1014,21 +1014,6 @@ static bool run_readwritelarge_internal(void)
 		correct = False;
 	}
 
-#if 0
-	/* ToDo - set allocation. JRA */
-	if(!cli_set_allocation_size(cli1, fnum1, 0)) {
-		printf("set allocation size to zero failed (%s)\n", cli_errstr(&cli1));
-		return False;
-	}
-	if (!cli_qfileinfo_basic(cli1, fnum1, NULL, &fsize, NULL, NULL, NULL,
-				 NULL, NULL)) {
-		printf("qfileinfo failed (%s)\n", cli_errstr(cli1));
-		correct = False;
-	}
-	if (fsize != 0)
-		printf("readwritelarge test 3 (truncate test) succeeded (size = %x)\n", fsize);
-#endif
-
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("close failed (%s)\n", nt_errstr(status));
@@ -6341,27 +6326,6 @@ static bool run_rename(int dummy)
 	}
 
 
-#if 0
-  {
-	uint16_t fnum2;
-
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum2, NULL))) {
-		printf("Fourth open failed - %s\n", cli_errstr(cli1));
-		return False;
-	}
-	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum2, true))) {
-		printf("[8] setting delete_on_close on file failed !\n");
-		return False;
-	}
-
-	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum2))) {
-		printf("close - 4 failed (%s)\n", cli_errstr(cli1));
-		return False;
-	}
-  }
-#endif
-
 	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Third rename failed (SHARE_NONE) - this should have succeeded - %s\n", nt_errstr(status));
@@ -6425,21 +6389,6 @@ static bool run_rename(int dummy)
 	} else {
 		printf("Fifth rename succeeded (SHARE_READ | SHARE_WRITE | SHARE_DELETE) (this is correct) - %s\n", nt_errstr(status));
 	}
-
-        /*
-         * Now check if the first name still exists ...
-         */
-
-        /* if (!NT_STATUS_OP(cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-				   FILE_OVERWRITE_IF, 0, 0, &fnum2, NULL))) {
-          printf("Opening original file after rename of open file fails: %s\n",
-              cli_errstr(cli1));
-        }
-        else {
-          printf("Opening original file after rename of open file works ...\n");
-          (void)cli_close(cli1, fnum2);
-          } */
 
         /*--*/
 	status = cli_close(cli1, fnum1);
