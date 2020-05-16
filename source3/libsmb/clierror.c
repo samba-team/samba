@@ -23,41 +23,6 @@
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-/***************************************************************************
- Return an error message - either an NT error, SMB error or a RAP error.
- Note some of the NT errors are actually warnings or "informational" errors
- in which case they can be safely ignored.
-****************************************************************************/
-
-const char *cli_errstr(struct cli_state *cli)
-{   
-	fstring cli_error_message;
-	char *result;
-
-	if (!cli->initialised) {
-		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on uninitialized cli_stat struct!\n");
-		goto done;
-	}
-
-	/* Case #1: RAP error */
-	if (cli->rap_error) {
-		strlcpy(cli_error_message, win_errstr(W_ERROR(cli->rap_error)),
-			sizeof(cli_error_message));
-		goto done;
-	}
-
-	if (!cli_state_is_connected(cli) && NT_STATUS_IS_OK(cli->raw_status)) {
-		return nt_errstr(NT_STATUS_CONNECTION_DISCONNECTED);
-	}
-
-	return nt_errstr(cli->raw_status);
- done:
-	result = talloc_strdup(talloc_tos(), cli_error_message);
-	SMB_ASSERT(result);
-	return result;
-}
-
-
 /****************************************************************************
  Return the 32-bit NT status code from the last packet.
 ****************************************************************************/
