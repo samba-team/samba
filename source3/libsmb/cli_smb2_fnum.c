@@ -1202,7 +1202,7 @@ fail:
  Utility function to parse a SMB2_FIND_ID_BOTH_DIRECTORY_INFO reply.
 ***************************************************************/
 
-static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
+static NTSTATUS parse_finfo_id_both_directory_info(const uint8_t *dir_data,
 				uint32_t dir_data_length,
 				struct file_info *finfo,
 				uint32_t *next_offset)
