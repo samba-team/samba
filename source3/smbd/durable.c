@@ -251,7 +251,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	cookie.allow_reconnect = true;
 	cookie.id = fsp->file_id;
 	cookie.servicepath = conn->connectpath;
-	cookie.base_name = fsp->fsp_name->base_name;
+	cookie.base_name = fsp_str_dbg(fsp);
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fsp->fh->position_information;
 	cookie.update_write_time_triggered =
