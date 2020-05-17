@@ -412,13 +412,13 @@ static NTSTATUS smb_bytes_talloc_string(TALLOC_CTX *mem_ctx,
 					size_t srclen,
 					ssize_t *destlen)
 {
-	*destlen = clistr_pull_talloc(mem_ctx,
-				(const char *)hdr,
-				SVAL(hdr, HDR_FLG2),
-				dest,
-				(char *)src,
-				srclen,
-				STR_TERMINATE);
+	*destlen = pull_string_talloc(mem_ctx,
+				      (const char *)hdr,
+				      SVAL(hdr, HDR_FLG2),
+				      dest,
+				      (char *)src,
+				      srclen,
+				      STR_TERMINATE);
 	if (*destlen == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2164,13 +2164,13 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	inhdr = in + NBT_HDR_SIZE;
 
 	if (num_bytes) {
-		if (clistr_pull_talloc(cli,
-				(const char *)inhdr,
-				SVAL(inhdr, HDR_FLG2),
-				&cli->dev,
-				bytes,
-				num_bytes,
-				STR_TERMINATE|STR_ASCII) == -1) {
+		if (pull_string_talloc(cli,
+				       (const char *)inhdr,
+				       SVAL(inhdr, HDR_FLG2),
+				       &cli->dev,
+				       bytes,
+				       num_bytes,
+				       STR_TERMINATE|STR_ASCII) == -1) {
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}

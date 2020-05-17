@@ -1279,7 +1279,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	clistr_pull_talloc(mem_ctx,
+	pull_string_talloc(mem_ctx,
 			   (const char *)rdata,
 			   recv_flags2,
 			   &name,

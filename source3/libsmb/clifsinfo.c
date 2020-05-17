@@ -414,7 +414,7 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	clistr_pull_talloc(mem_ctx,
+	pull_string_talloc(mem_ctx,
 			   (const char *)rdata,
 			   recv_flags2,
 			   &volume_name,

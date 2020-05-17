@@ -177,13 +177,13 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			   important to cope with the differences
 			   between win2000 and win9x for this call
 			   (tridge) */
-			ret = clistr_pull_talloc(ctx,
-						base_ptr,
-						recv_flags2,
-						&finfo->name,
-						p,
-						len+2,
-						STR_TERMINATE);
+			ret = pull_string_talloc(ctx,
+						 base_ptr,
+						 recv_flags2,
+						 &finfo->name,
+						 p,
+						 len+2,
+						 STR_TERMINATE);
 			if (ret == (size_t)-1) {
 				return pdata_end - base;
 			}
@@ -218,13 +218,13 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			if (p + len + 1 > pdata_end) {
 				return pdata_end - base;
 			}
-			ret = clistr_pull_talloc(ctx,
-						base_ptr,
-						recv_flags2,
-						&finfo->name,
-						p,
-					 	len,
-						STR_NOALIGN);
+			ret = pull_string_talloc(ctx,
+						 base_ptr,
+						 recv_flags2,
+						 &finfo->name,
+						 p,
+						 len,
+						 STR_NOALIGN);
 			if (ret == (size_t)-1) {
 				return pdata_end - base;
 			}
@@ -268,13 +268,13 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			p += 2;
-			ret = clistr_pull_talloc(ctx,
-						base_ptr,
-						recv_flags2,
-						&finfo->short_name,
-						p,
-						slen,
-						STR_UNICODE);
+			ret = pull_string_talloc(ctx,
+						 base_ptr,
+						 recv_flags2,
+						 &finfo->short_name,
+						 p,
+						 slen,
+						 STR_UNICODE);
 			if (ret == (size_t)-1) {
 				return pdata_end - base;
 			}
@@ -282,13 +282,13 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			if (p + namelen < p || p + namelen > pdata_end) {
 				return pdata_end - base;
 			}
-			ret = clistr_pull_talloc(ctx,
-						base_ptr,
-						recv_flags2,
-						&finfo->name,
-						p,
-				    		namelen,
-						0);
+			ret = pull_string_talloc(ctx,
+						 base_ptr,
+						 recv_flags2,
+						 &finfo->name,
+						 p,
+						 namelen,
+						 0);
 			if (ret == (size_t)-1) {
 				return pdata_end - base;
 			}
@@ -335,13 +335,13 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
-	ret = clistr_pull_talloc(ctx,
-			NULL,
-			0,
-			&finfo->name,
-			p+30,
-			12,
-			STR_ASCII);
+	ret = pull_string_talloc(ctx,
+				 NULL,
+				 0,
+				 &finfo->name,
+				 p+30,
+				 12,
+				 STR_ASCII);
 	if (ret == (size_t)-1) {
 		return false;
 	}

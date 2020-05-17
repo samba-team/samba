@@ -965,13 +965,6 @@ NTSTATUS cli_query_mxac(struct cli_state *cli,
 
 /* The following definitions come from libsmb/clistr.c  */
 
-size_t clistr_pull_talloc(TALLOC_CTX *ctx,
-			  const char *base,
-			  uint16_t flags2,
-			  char **pp_dest,
-			  const void *src,
-			  int src_len,
-			  int flags);
 bool clistr_is_previous_version_path(const char *path,
 			const char **startp,
 			const char **endp,

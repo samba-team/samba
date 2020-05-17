@@ -2901,13 +2901,13 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 		goto fail;
 	}
 
-	clistr_pull_talloc(mem_ctx,
-			(const char *)outbuf.data,
-			0,
-			&volume_name,
-			outbuf.data + 18,
-			nlen,
-			STR_UNICODE);
+	pull_string_talloc(mem_ctx,
+			   (const char *)outbuf.data,
+			   0,
+			   &volume_name,
+			   outbuf.data + 18,
+			   nlen,
+			   STR_UNICODE);
 	if (volume_name == NULL) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;

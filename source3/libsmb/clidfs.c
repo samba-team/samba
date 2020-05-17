@@ -801,7 +801,7 @@ NTSTATUS cli_dfs_get_referral_ex(TALLOC_CTX *ctx,
 				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 				goto out;
 			}
-			clistr_pull_talloc(referrals,
+			pull_string_talloc(referrals,
 					   (const char *)rdata,
 					   recv_flags2,
 					   &referrals[i].dfspath,

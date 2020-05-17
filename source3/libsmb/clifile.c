@@ -6180,8 +6180,12 @@ static void cli_notify_done(struct tevent_req *subreq)
 		}
 
 		state->changes[i].action = IVAL(params, ofs+4);
-		ret = clistr_pull_talloc(state->changes, (char *)params, flags2,
-					 &name, params+ofs+12, len,
+		ret = pull_string_talloc(state->changes,
+					 (char *)params,
+					 flags2,
+					 &name,
+					 params+ofs+12,
+					 len,
 					 STR_TERMINATE|STR_UNICODE);
 		if (ret == -1) {
 			TALLOC_FREE(params);
