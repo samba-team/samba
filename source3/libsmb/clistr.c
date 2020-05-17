@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "libsmb/proto.h"
 
 size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 			  const char *base,
