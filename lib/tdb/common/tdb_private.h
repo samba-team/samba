@@ -157,16 +157,39 @@ struct tdb_record {
 	tdb_len_t data_len; /* byte length of data */
 	uint32_t full_hash; /* the full 32 bit hash of the key */
 	uint32_t magic;   /* try to catch errors */
-	/* the following union is implied:
-		union {
-			char record[rec_len];
-			struct {
-				char key[key_len];
-				char data[data_len];
-			}
-			uint32_t totalsize; (tailer)
-		}
-	*/
+	/*
+	 * Note that tdb_len_t and tdb_off_t are aliases of uint32_t
+	 * with a sizeof 4.
+	 *
+	 * The following virtual values are used:
+	 *   header_len = sizeof(struct tdb_record) ( 6 * 4 = 24 )
+	 *   total_size = header_len + rec_len;
+	 *   payload_len = key_len + data_len;
+	 *   padding_len = rec_len - ( payload_len + sizeof(tailer) )
+	 *   tailer = total_size
+	 *
+	 * With these, the following union is implied:
+	 * union {
+	 *     uint8_t record[rec_len];
+	 *     struct {
+	 *         union {
+	 *             uint8_t payload[payload_len];
+	 *             struct {
+	 *                 uint8_t key[key_len];
+	 *                 uint8_t data[data_len];
+	 *             };
+	 *         };
+	 *         uint8_t padding[padding_len];
+	 *         tdb_len_t tailer;
+	 *     };
+	 * };
+	 *
+	 * Note:
+	 * - The 'tailer' value is the total_size on disk for the
+	 *   record!
+	 * - 'rec_len' includes the size for payload, padding and tailer,
+	 *   it's total_size - header_len!
+	 */
 };
 
 
