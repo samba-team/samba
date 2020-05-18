@@ -237,14 +237,16 @@ static int paged_search_by_dn_guid(struct ldb_module *module,
 	return ret;
 }
 
-static int paged_results(struct paged_context *ac)
+static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 {
 	struct ldb_paged_control *paged;
 	unsigned int i, num_ctrls;
 	int ret;
 
 	if (ac->store == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	while (ac->store->last_i < ac->store->num_entries && ac->size > 0) {
@@ -273,12 +275,17 @@ static int paged_results(struct paged_context *ac)
 			   instead. */
 			continue;
 		} else if (ret != LDB_SUCCESS) {
-			return ret;
+			return ldb_module_done(
+				ac->req, ac->controls, ares->response, ret);
 		}
 
 		ret = ldb_module_send_entry(ac->req, result->msgs[0],
 					    NULL);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * ldb_module_send_entry will have called
+			 * ldb_module_done if an error occurred.
+			 */
 			return ret;
 		}
 	}
@@ -289,6 +296,10 @@ static int paged_results(struct paged_context *ac)
 		*/
 		ret = send_referrals(ac->store, ac->req);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * send_referrals will have called ldb_module_done
+			 * if an error occurred.
+			 */
 			return ret;
 		}
 	}
@@ -305,7 +316,9 @@ static int paged_results(struct paged_context *ac)
 
 	ac->controls = talloc_array(ac, struct ldb_control *, num_ctrls +1);
 	if (ac->controls == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 	ac->controls[num_ctrls] = NULL;
 
@@ -316,20 +329,26 @@ static int paged_results(struct paged_context *ac)
 
 	ac->controls[i] = talloc(ac->controls, struct ldb_control);
 	if (ac->controls[i] == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	ac->controls[i]->oid = talloc_strdup(ac->controls[i],
 						LDB_CONTROL_PAGED_RESULTS_OID);
 	if (ac->controls[i]->oid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	ac->controls[i]->critical = 0;
 
 	paged = talloc(ac->controls[i], struct ldb_paged_control);
 	if (paged == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	ac->controls[i]->data = paged;
@@ -456,7 +475,13 @@ static int paged_search_callback(struct ldb_request *req,
 		store->result_array_size = store->num_entries;
 
 		ac->store->controls = talloc_move(ac->store, &ares->controls);
-		ret = paged_results(ac);
+		ret = paged_results(ac, ares);
+		if (ret != LDB_SUCCESS) {
+			/* paged_results will have called ldb_module_done
+			 * if an error occurred
+			 */
+			return ret;
+		}
 		return ldb_module_done(ac->req, ac->controls,
 					ares->response, ret);
 	}
@@ -769,7 +794,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 								LDB_SUCCESS);
 		}
 
-		ret = paged_results(ac);
+		ret = paged_results(ac, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(req, NULL, NULL, ret);
 		}
