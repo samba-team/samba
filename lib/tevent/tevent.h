@@ -669,7 +669,7 @@ void tevent_get_trace_callback(struct tevent_context *ev,
  *
  * @code
  * struct tevent_req *computation_send(TALLOC_CTX *mem_ctx,
- *                                     struct tevent_req *ev,
+ *                                     struct tevent_context *ev,
  *                                     ... further args);
  * int computation_recv(struct tevent_req *req, ... further output args);
  * @endcode
