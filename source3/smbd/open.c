@@ -4474,6 +4474,12 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
+	if (*dirfsp == fsp->conn->cwd_fsp) {
+		fsp->dirfsp = fsp->conn->cwd_fsp;
+	} else {
+		fsp->dirfsp = talloc_move(fsp, dirfsp);
+	}
+
 	/* Don't store old timestamps for directory
 	   handles in the internal database. We don't
 	   update them in there if new objects
