@@ -4297,7 +4297,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 file_attributes);
 
 	status = smbd_calculate_access_mask(conn,
-					conn->cwd_fsp,
+					*dirfsp,
 					smb_dname,
 					false,
 					access_mask,
@@ -4426,7 +4426,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		status = smbd_check_access_rights(conn,
-						conn->cwd_fsp,
+						*dirfsp,
 						smb_dname,
 						false,
 						access_mask);
