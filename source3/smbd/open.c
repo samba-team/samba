@@ -3332,6 +3332,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool setup_poll = false;
 	bool ok;
 
+	SMB_ASSERT(fsp->dirfsp == conn->cwd_fsp);
+
 	if (conn->printer) {
 		/*
 		 * Printers are handled completely differently.
