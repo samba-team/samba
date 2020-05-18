@@ -1255,6 +1255,26 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status;
 	struct files_struct *base_fsp = fsp->base_fsp;
 
+	if (fsp->fsp_flags.is_dirfsp) {
+		/*
+		 * The typical way to get here is via file_close_[conn|user]()
+		 * and this is taken care of below.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (fsp->dirfsp != NULL &&
+	    fsp->dirfsp != fsp->conn->cwd_fsp)
+	{
+		status = fd_close(fsp->dirfsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		file_free(NULL, fsp->dirfsp);
+		fsp->dirfsp = NULL;
+	}
+
 	if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
 	} else if (fsp->fake_file_handle != NULL) {
