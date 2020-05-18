@@ -358,7 +358,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, int locktype,
 			   struct tdb_record *rec);
 tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
-			struct tdb_record *r, tdb_len_t length,
+			struct tdb_record *r, tdb_len_t payload_len,
 			tdb_off_t *p_last_ptr);
 int tdb_trim_dead(struct tdb_context *tdb, uint32_t hash);
 void tdb_io_init(struct tdb_context *tdb);

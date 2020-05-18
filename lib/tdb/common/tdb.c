@@ -552,7 +552,7 @@ _PUBLIC_ int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
  * See if we have a dead record around with enough space
  */
 tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
-			struct tdb_record *r, tdb_len_t length,
+			struct tdb_record *r, tdb_len_t payload_len,
 			tdb_off_t *p_last_ptr)
 {
 	tdb_off_t rec_ptr, last_ptr;
@@ -560,8 +560,9 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	tdb_off_t best_rec_ptr = 0;
 	tdb_off_t best_last_ptr = 0;
 	struct tdb_record best = { .rec_len = UINT32_MAX };
+	tdb_len_t rec_len = payload_len;
 
-	length += sizeof(tdb_off_t); /* tailer */
+	rec_len += sizeof(tdb_off_t); /* tailer */
 
 	last_ptr = TDB_HASH_TOP(hash);
 
@@ -578,7 +579,7 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 		if (tdb_rec_read(tdb, rec_ptr, r) == -1)
 			return 0;
 
-		if (TDB_DEAD(r) && (r->rec_len >= length) &&
+		if (TDB_DEAD(r) && (r->rec_len >= rec_len) &&
 		    (r->rec_len < best.rec_len)) {
 			best_rec_ptr = rec_ptr;
 			best_last_ptr = last_ptr;
