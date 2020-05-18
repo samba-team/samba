@@ -93,10 +93,14 @@ bool create_policy_hnd(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,
 			void *data_ptr);
-bool find_policy_by_hnd(struct pipes_struct *p,
-			const struct policy_handle *hnd,
-			uint8_t handle_type,
-			void **data_p);
+
+void *_find_policy_by_hnd(struct pipes_struct *p,
+			  const struct policy_handle *hnd,
+			  uint8_t handle_type,
+			  NTSTATUS *pstatus);
+#define find_policy_by_hnd(_p, _hnd, _hnd_type, _type, _pstatus) \
+	(_type *)_find_policy_by_hnd((_p), (_hnd), (_hnd_type), (_pstatus));
+
 bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(struct pipes_struct *p);
 bool pipe_access_check(struct pipes_struct *p);

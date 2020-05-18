@@ -198,13 +198,13 @@ static void *samr_policy_handle_find(struct pipes_struct *p,
 {
 	struct samr_info *info = NULL;
 	NTSTATUS status;
-	bool ok;
 
-	ok = find_policy_by_hnd(p,
-				handle,
-				handle_type,
-				(void **)(void *)&info);
-	if (!ok) {
+	info = find_policy_by_hnd(p,
+				  handle,
+				  handle_type,
+				  struct samr_info,
+				  &status);
+	if (!NT_STATUS_IS_OK(status)) {
 		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}

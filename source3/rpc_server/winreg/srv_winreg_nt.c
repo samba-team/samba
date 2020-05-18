@@ -46,10 +46,14 @@ static struct registry_key *find_regkey_by_hnd(struct pipes_struct *p,
 					       enum handle_types type)
 {
 	struct registry_key *regkey = NULL;
-	bool ok;
+	NTSTATUS status;
 
-	ok = find_policy_by_hnd(p, hnd, type, (void **)(void *)&regkey);
-	if (!ok) {
+	regkey = find_policy_by_hnd(p,
+				    hnd,
+				    type,
+				    struct registry_key,
+				    &status);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: "));
 		return NULL;
 	}

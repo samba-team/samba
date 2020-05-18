@@ -175,18 +175,22 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(
   find policy by handle
 ****************************************************************************/
 
-bool find_policy_by_hnd(struct pipes_struct *p,
-			const struct policy_handle *hnd,
-			uint8_t handle_type,
-			void **data_p)
+void *_find_policy_by_hnd(struct pipes_struct *p,
+			  const struct policy_handle *hnd,
+			  uint8_t handle_type,
+			  NTSTATUS *pstatus)
 {
 	struct dcesrv_handle *rpc_hnd = NULL;
+	void *data = NULL;
 
-	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, data_p);
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, &data);
 	if (rpc_hnd == NULL) {
-		return false;
+		*pstatus = NT_STATUS_INVALID_HANDLE;
+		return NULL;
 	}
-	return true;
+
+	*pstatus = NT_STATUS_OK;
+	return data;
 }
 
 /****************************************************************************
