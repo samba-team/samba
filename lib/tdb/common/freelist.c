@@ -570,7 +570,9 @@ static void tdb_purge_dead(struct tdb_context *tdb, uint32_t hash)
  * Chain "hash" is assumed to be locked
  */
 
-tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
+tdb_off_t tdb_allocate(struct tdb_context *tdb,
+		       int hash,
+		       tdb_len_t payload_len,
 		       struct tdb_record *rec)
 {
 	tdb_off_t ret;
@@ -604,7 +606,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
 		if (tdb_lock_nonblock(tdb, list, F_WRLCK) == 0) {
 			bool got_dead;
 
-			got_dead = tdb_alloc_dead(tdb, list, length, &ret, rec);
+			got_dead = tdb_alloc_dead(tdb, list, payload_len, &ret, rec);
 			tdb_unlock(tdb, list, F_WRLCK);
 
 			if (got_dead) {
@@ -619,7 +621,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
 			 */
 			tdb_purge_dead(tdb, hash);
 
-			ret = tdb_allocate_from_freelist(tdb, length, rec);
+			ret = tdb_allocate_from_freelist(tdb, payload_len, rec);
 			tdb_unlock(tdb, -1, F_WRLCK);
 			return ret;
 		}
@@ -636,7 +638,7 @@ blocking_freelist_allocate:
 	 * tdb_delete happens concurrently with a traverse.
 	 */
 	tdb_purge_dead(tdb, hash);
-	ret = tdb_allocate_from_freelist(tdb, length, rec);
+	ret = tdb_allocate_from_freelist(tdb, payload_len, rec);
 	tdb_unlock(tdb, -1, F_WRLCK);
 	return ret;
 }

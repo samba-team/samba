@@ -325,7 +325,9 @@ int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d);
 void *tdb_convert(void *buf, uint32_t size);
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec);
-tdb_off_t tdb_allocate(struct tdb_context *tdb, int hash, tdb_len_t length,
+tdb_off_t tdb_allocate(struct tdb_context *tdb,
+		       int hash,
+		       tdb_len_t payload_len,
 		       struct tdb_record *rec);
 
 int _tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe);
