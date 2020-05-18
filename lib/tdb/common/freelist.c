@@ -542,12 +542,12 @@ static tdb_off_t tdb_allocate_from_freelist(
 }
 
 static bool tdb_alloc_dead(
-	struct tdb_context *tdb, int hash, tdb_len_t length,
+	struct tdb_context *tdb, int hash, tdb_len_t payload_len,
 	tdb_off_t *rec_ptr, struct tdb_record *rec)
 {
 	tdb_off_t last_ptr;
 
-	*rec_ptr = tdb_find_dead(tdb, hash, rec, length, &last_ptr);
+	*rec_ptr = tdb_find_dead(tdb, hash, rec, payload_len, &last_ptr);
 	if (*rec_ptr == 0) {
 		return false;
 	}
