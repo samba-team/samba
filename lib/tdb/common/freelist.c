@@ -329,12 +329,12 @@ done:
    able to free up the record without fragmentation
  */
 static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
-				  tdb_len_t length, tdb_off_t rec_ptr,
+				  tdb_len_t new_rec_len, tdb_off_t rec_ptr,
 				  struct tdb_record *rec, tdb_off_t last_ptr)
 {
 #define MIN_REC_SIZE (sizeof(struct tdb_record) + sizeof(tdb_off_t) + 8)
 
-	if (rec->rec_len < length + MIN_REC_SIZE) {
+	if (rec->rec_len < new_rec_len + MIN_REC_SIZE) {
 		/* we have to grab the whole record */
 
 		/* unlink it from the previous record */
@@ -351,7 +351,7 @@ static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
 	}
 
 	/* we're going to just shorten the existing record */
-	rec->rec_len -= (length + sizeof(*rec));
+	rec->rec_len -= (new_rec_len + sizeof(*rec));
 	if (tdb_rec_write(tdb, rec_ptr, rec) == -1) {
 		return 0;
 	}
@@ -363,7 +363,7 @@ static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
 	rec_ptr += sizeof(*rec) + rec->rec_len;
 
 	memset(rec, '\0', sizeof(*rec));
-	rec->rec_len = length;
+	rec->rec_len = new_rec_len;
 	rec->magic = TDB_MAGIC;
 
 	if (tdb_rec_write(tdb, rec_ptr, rec) == -1) {
