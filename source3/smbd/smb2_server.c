@@ -3488,34 +3488,19 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 struct smbd_smb2_send_break_state {
 	struct smbd_smb2_send_queue queue_entry;
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
-	uint8_t tf[SMB2_TF_HDR_SIZE];
 	uint8_t hdr[SMB2_HDR_BODY];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 	uint8_t body[1];
 };
 
 static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
-				     struct smbXsrv_session *session,
-				     struct smbXsrv_tcon *tcon,
 				     const uint8_t *body,
 				     size_t body_len)
 {
 	struct smbd_smb2_send_break_state *state;
-	bool do_encryption = false;
-	uint64_t session_wire_id = 0;
-	uint64_t nonce_high = 0;
-	uint64_t nonce_low = 0;
 	NTSTATUS status;
 	size_t statelen;
 	bool ok;
-
-	if (session != NULL) {
-		session_wire_id = session->global->session_wire_id;
-		do_encryption = session->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
-		if (tcon->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
-			do_encryption = true;
-		}
-	}
 
 	statelen = offsetof(struct smbd_smb2_send_break_state, body) +
 		body_len;
@@ -3525,20 +3510,6 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_name_const(state, "struct smbd_smb2_send_break_state");
-
-	if (do_encryption) {
-		status = smb2_get_new_nonce(session,
-					    &nonce_high,
-					    &nonce_low);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	SIVAL(state->tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
-	SBVAL(state->tf, SMB2_TF_NONCE+0, nonce_low);
-	SBVAL(state->tf, SMB2_TF_NONCE+8, nonce_high);
-	SBVAL(state->tf, SMB2_TF_SESSION_ID, session_wire_id);
 
 	SIVAL(state->hdr, 0,				SMB2_MAGIC);
 	SSVAL(state->hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -3559,17 +3530,10 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 		.iov_len  = sizeof(state->nbt_hdr)
 	};
 
-	if (do_encryption) {
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS] = (struct iovec) {
-			.iov_base = state->tf,
-			.iov_len  = sizeof(state->tf)
-		};
-	} else {
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS] = (struct iovec) {
-			.iov_base = NULL,
-			.iov_len  = 0
-		};
-	}
+	state->vector[1+SMBD_SMB2_TF_IOV_OFS] = (struct iovec) {
+		.iov_base = NULL,
+		.iov_len  = 0
+	};
 
 	state->vector[1+SMBD_SMB2_HDR_IOV_OFS] = (struct iovec) {
 		.iov_base = state->hdr,
@@ -3591,19 +3555,6 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 				   1 + SMBD_SMB2_NUM_IOV_PER_REQ);
 	if (!ok) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	if (do_encryption) {
-		struct smb2_signing_key *encryption_key =
-			session->global->encryption_key;
-
-		status = smb2_signing_encrypt_pdu(encryption_key,
-					xconn->smb2.server.cipher,
-					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
-					SMBD_SMB2_NUM_IOV_PER_REQ);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 	}
 
 	state->queue_entry.mem_ctx = state;
@@ -3635,7 +3586,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	return smbd_smb2_send_break(xconn, NULL, NULL, body, sizeof(body));
+	return smbd_smb2_send_break(xconn, body, sizeof(body));
 }
 
 NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
@@ -3658,7 +3609,7 @@ NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
 	SIVAL(body, 0x24, 0);		/* AccessMaskHint, MUST be 0 */
 	SIVAL(body, 0x28, 0);		/* ShareMaskHint, MUST be 0 */
 
-	return smbd_smb2_send_break(xconn, NULL, NULL, body, sizeof(body));
+	return smbd_smb2_send_break(xconn, body, sizeof(body));
 }
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
