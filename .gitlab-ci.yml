@@ -181,11 +181,7 @@ samba-admem-mit:
 samba-ad-dc-4-mitkrb5:
   extends: .shared_template
 
-samba-ad-dc-fips:
-  extends: .shared_template
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora31
-
-samba-admem-fips:
+samba-fips:
   extends: .shared_template
   image: $SAMBA_CI_CONTAINER_IMAGE_fedora31
 
@@ -253,7 +249,7 @@ pages:
     - samba-nt4
     - samba-schemaupgrade
     - samba-ad-dc-1-mitkrb5
-    - samba-ad-dc-fips
+    - samba-fips
   script:
     - ./configure.developer
     - make -j

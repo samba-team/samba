@@ -458,11 +458,11 @@ tasks = {
         ],
 
     # Test fips compliance
-    "samba-ad-dc-fips": [
-        ("random-sleep", random_sleep(1, 1)),
+    "samba-fips": [
+        ("random-sleep", random_sleep(100, 500)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
         ("make", "make -j"),
-        ("test", make_test(include_envs=["ad_dc_fips"])),
+        ("test", make_test(include_envs=["ad_dc_fips", "ad_member_fips"])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -494,17 +494,6 @@ tasks = {
             "ad_member_idmap_rid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
-            ])),
-        ("lcov", LCOV_CMD),
-        ("check-clean-tree", "script/clean-source-tree.sh"),
-        ],
-
-    "samba-admem-fips": [
-        ("random-sleep", random_sleep(1, 1)),
-        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
-        ("make", "make -j"),
-        ("test", make_test(include_envs=[
-            "ad_member_fips",
             ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
@@ -838,8 +827,7 @@ defaulttasks.remove("pass")
 defaulttasks.remove("fail")
 defaulttasks.remove("samba-test-only")
 defaulttasks.remove("samba-fuzz")
-defaulttasks.remove("samba-ad-dc-fips")
-defaulttasks.remove("samba-admem-fips")
+defaulttasks.remove("samba-fips")
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
