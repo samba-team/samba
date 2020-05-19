@@ -294,6 +294,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	mode_t mode;
 	const char *flagstr;
 	files_struct *fsp;
+	struct files_struct *fspcwd = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 	int ret;
@@ -393,7 +394,17 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	fsp->fsp_name = smb_fname;
 
-	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
+	status = vfs_at_fspcwd(fsp, vfs->conn, &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
+				     fspcwd,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     mode);
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(fsp);
