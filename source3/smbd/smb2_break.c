@@ -444,9 +444,6 @@ void send_break_message_smb2(files_struct *fsp,
 {
 	NTSTATUS status;
 	struct smbXsrv_connection *xconn = NULL;
-	struct smbXsrv_session *session = NULL;
-	struct timeval tv = timeval_current();
-	NTTIME now = timeval_to_nttime(&tv);
 
 	/*
 	 * TODO: in future we should have a better algorithm
@@ -455,28 +452,21 @@ void send_break_message_smb2(files_struct *fsp,
 	 */
 	xconn = fsp->conn->sconn->client->connections;
 
-	status = smb2srv_session_lookup_conn(xconn,
-					     fsp->vuid,
-					     now,
-					     &session);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED) ||
-	    (session == NULL))
-	{
-
-		DEBUG(10,("send_break_message_smb2: skip oplock break "
-			"for file %s, %s, smb2 level %u session %llu not found\n",
-			fsp_str_dbg(fsp),
-			fsp_fnum_dbg(fsp),
-			(unsigned int)break_to,
-			(unsigned long long)fsp->vuid));
+	if (!NT_STATUS_IS_OK(fsp->op->status)) {
+		DBG_DEBUG("skip oplock break for file %s, %s, "
+			  "smb2 level %u fsp status=%s\n",
+			  fsp_str_dbg(fsp),
+			  fsp_fnum_dbg(fsp),
+			  (unsigned int)break_to,
+			  nt_errstr(fsp->op->status));
 		return;
 	}
 
-	DEBUG(10,("send_break_message_smb2: sending oplock break "
-		"for file %s, %s, smb2 level %u\n",
-		fsp_str_dbg(fsp),
-		fsp_fnum_dbg(fsp),
-		(unsigned int)break_to ));
+	DBG_DEBUG("sending oplock break "
+		  "for file %s, %s, smb2 level %u\n",
+		  fsp_str_dbg(fsp),
+		  fsp_fnum_dbg(fsp),
+		  (unsigned int)break_to);
 
 	if (fsp->oplock_type == LEASE_OPLOCK) {
 		uint32_t break_flags = 0;
@@ -500,8 +490,6 @@ void send_break_message_smb2(files_struct *fsp,
 		smb2_oplock_level = (break_to & SMB2_LEASE_READ) ?
 			SMB2_OPLOCK_LEVEL_II : SMB2_OPLOCK_LEVEL_NONE;
 		status = smbd_smb2_send_oplock_break(xconn,
-						     session,
-						     fsp->conn->tcon,
 						     fsp->op,
 						     smb2_oplock_level);
 	}
