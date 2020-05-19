@@ -632,6 +632,7 @@ static int non_widelink_open(files_struct *fsp,
 	int saved_errno = 0;
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
+	struct files_struct *cwdfsp = NULL;
 	bool ok;
 
 	if (fsp->fsp_flags.is_directory) {
@@ -679,12 +680,28 @@ static int non_widelink_open(files_struct *fsp,
 		goto out;
 	}
 
+	status = vfs_at_fspcwd(talloc_tos(),
+			       conn,
+			       &cwdfsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		saved_errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
 	flags |= O_NOFOLLOW;
 
 	{
 		struct smb_filename *tmp_name = fsp->fsp_name;
+
 		fsp->fsp_name = smb_fname_rel;
-		fd = SMB_VFS_OPEN(conn, smb_fname_rel, fsp, flags, mode);
+
+		fd = SMB_VFS_OPENAT(conn,
+				    cwdfsp,
+				    smb_fname_rel,
+				    fsp,
+				    flags,
+				    mode);
+
 		fsp->fsp_name = tmp_name;
 	}
 
@@ -739,6 +756,7 @@ static int non_widelink_open(files_struct *fsp,
   out:
 
 	TALLOC_FREE(parent_dir_fname);
+	TALLOC_FREE(cwdfsp);
 
 	if (oldwd_fname != NULL) {
 		int ret = vfs_ChDir(conn, oldwd_fname);
