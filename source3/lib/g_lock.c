@@ -43,7 +43,7 @@ struct g_lock {
 	struct server_id exclusive;
 	size_t num_shared;
 	uint8_t *shared;
-	uint64_t data_seqnum;
+	uint64_t unique_data_epoch;
 	size_t datalen;
 	uint8_t *data;
 };
@@ -52,15 +52,15 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 {
 	struct server_id exclusive;
 	size_t num_shared, shared_len;
-	uint64_t data_seqnum;
+	uint64_t unique_data_epoch;
 
 	if (buflen < (SERVER_ID_BUF_LENGTH + /* exclusive */
 		      sizeof(uint64_t) +     /* seqnum */
 		      sizeof(uint32_t))) {   /* num_shared */
-		struct g_lock ret = { .exclusive.pid = 0 };
-		generate_random_buffer(
-			(uint8_t *)&ret.data_seqnum,
-			sizeof(ret.data_seqnum));
+		struct g_lock ret = {
+			.exclusive.pid = 0,
+			.unique_data_epoch = generate_unique_u64(0),
+		};
 		*lck = ret;
 		return true;
 	}
@@ -69,7 +69,7 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 	buf += SERVER_ID_BUF_LENGTH;
 	buflen -= SERVER_ID_BUF_LENGTH;
 
-	data_seqnum = BVAL(buf, 0);
+	unique_data_epoch = BVAL(buf, 0);
 	buf += sizeof(uint64_t);
 	buflen -= sizeof(uint64_t);
 
@@ -90,7 +90,7 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 		.exclusive = exclusive,
 		.num_shared = num_shared,
 		.shared = buf,
-		.data_seqnum = data_seqnum,
+		.unique_data_epoch = unique_data_epoch,
 		.datalen = buflen-shared_len,
 		.data = buf+shared_len,
 	};
@@ -160,7 +160,7 @@ static NTSTATUS g_lock_store(
 	}
 
 	server_id_put(exclusive, lck->exclusive);
-	SBVAL(seqnum_buf, 0, lck->data_seqnum);
+	SBVAL(seqnum_buf, 0, lck->unique_data_epoch);
 
 	if (new_shared != NULL) {
 		if (lck->num_shared >= UINT32_MAX) {
@@ -967,7 +967,7 @@ static void g_lock_writev_data_fn(
 		return;
 	}
 
-	lck.data_seqnum += 1;
+	lck.unique_data_epoch = generate_unique_u64(lck.unique_data_epoch);
 	lck.data = NULL;
 	lck.datalen = 0;
 	state->status = g_lock_store(
@@ -1207,7 +1207,7 @@ struct g_lock_watch_data_state {
 	TDB_DATA key;
 	struct server_id blocker;
 	bool blockerdead;
-	uint64_t data_seqnum;
+	uint64_t unique_data_epoch;
 	NTSTATUS status;
 };
 
@@ -1231,9 +1231,9 @@ static void g_lock_watch_data_send_fn(
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return;
 	}
-	state->data_seqnum = lck.data_seqnum;
+	state->unique_data_epoch = lck.unique_data_epoch;
 
-	DBG_DEBUG("state->data_seqnum=%"PRIu64"\n", state->data_seqnum);
+	DBG_DEBUG("state->unique_data_epoch=%"PRIu64"\n", state->unique_data_epoch);
 
 	subreq = dbwrap_watched_watch_send(
 		state, state->ev, rec, state->blocker);
@@ -1305,11 +1305,11 @@ static void g_lock_watch_data_done_fn(
 		return;
 	}
 
-	if (lck.data_seqnum != state->data_seqnum) {
-		DBG_DEBUG("lck.data_seqnum=%"PRIu64", "
-			  "state->data_seqnum=%"PRIu64"\n",
-			  lck.data_seqnum,
-			  state->data_seqnum);
+	if (lck.unique_data_epoch != state->unique_data_epoch) {
+		DBG_DEBUG("lck.unique_data_epoch=%"PRIu64", "
+			  "state->unique_data_epoch=%"PRIu64"\n",
+			  lck.unique_data_epoch,
+			  state->unique_data_epoch);
 		state->status = NT_STATUS_OK;
 		return;
 	}
@@ -1394,7 +1394,7 @@ static void g_lock_wake_watchers_fn(
 		return;
 	}
 
-	lck.data_seqnum += 1;
+	lck.unique_data_epoch = generate_unique_u64(lck.unique_data_epoch);
 
 	status = g_lock_store(rec, &lck, NULL, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
