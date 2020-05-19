@@ -38,60 +38,97 @@
 	complete set of Samba VFS operations:</para>
 
 	<simplelist>
+        <member>aio_force</member>
+        <member>audit_file</member>
+        <member>brl_lock_windows</member>
+        <member>brl_unlock_windows</member>
         <member>chdir</member>
         <member>chflags</member>
         <member>chmod</member>
-        <member>chown</member>
         <member>close</member>
         <member>closedir</member>
         <member>connect</member>
-	<member>copy_chunk_send</member>
-	<member>copy_chunk_recv</member>
+        <member>connectpath</member>
+        <member>create_dfs_pathat</member>
+        <member>create_file</member>
         <member>disconnect</member>
         <member>disk_free</member>
+        <member>durable_cookie</member>
+        <member>durable_disconnect</member>
+        <member>durable_reconnect</member>
+        <member>fallocate</member>
         <member>fchmod</member>
         <member>fchown</member>
-        <member>fget_nt_acl</member>
+        <member>fdopendir</member>
+        <member>fget_dos_attributes</member>
+        <member>fget_nt_acl_at</member>
         <member>fgetxattr</member>
+        <member>file_id_create</member>
         <member>flistxattr</member>
         <member>fremovexattr</member>
+        <member>fs_capabilities</member>
+        <member>fsctl</member>
+        <member>fset_dos_attributes</member>
         <member>fset_nt_acl</member>
         <member>fsetxattr</member>
+        <member>fs_file_id</member>
         <member>fstat</member>
         <member>fsync</member>
+        <member>fsync_recv</member>
+        <member>fsync_send</member>
         <member>ftruncate</member>
+        <member>get_alloc_size</member>
         <member>get_compression</member>
+        <member>get_dfs_referrals</member>
+        <member>get_dos_attributes</member>
+        <member>get_dos_attributes_recv</member>
+        <member>get_dos_attributes_send</member>
+        <member>getlock</member>
         <member>get_nt_acl</member>
         <member>get_quota</member>
+        <member>get_real_filename</member>
         <member>get_shadow_copy_data</member>
-        <member>getlock</member>
         <member>getwd</member>
         <member>getxattr</member>
+        <member>getxattrat_recv</member>
+        <member>getxattrat_send</member>
+        <member>is_offline</member>
         <member>kernel_flock</member>
-        <member>link</member>
+        <member>lchown</member>
+        <member>linkat</member>
         <member>linux_setlease</member>
         <member>listxattr</member>
         <member>lock</member>
         <member>lseek</member>
         <member>lstat</member>
-        <member>mkdir</member>
-        <member>mknod</member>
+        <member>mkdirat</member>
+        <member>mknodat</member>
+        <member>ntimes</member>
+        <member>offload_read_recv</member>
+        <member>offload_read_send</member>
+        <member>offload_write_recv</member>
+        <member>offload_write_send</member>
         <member>open</member>
-        <member>opendir</member>
         <member>pread</member>
+        <member>pread_recv</member>
+        <member>pread_send</member>
         <member>pwrite</member>
+        <member>pwrite_recv</member>
+        <member>pwrite_send</member>
         <member>read</member>
         <member>readdir</member>
-        <member>readlink</member>
+        <member>readdir_attr</member>
+        <member>readlinkat</member>
         <member>realpath</member>
+        <member>recvfile</member>
         <member>removexattr</member>
-        <member>rename</member>
+        <member>renameat</member>
         <member>rewinddir</member>
-        <member>rmdir</member>
         <member>seekdir</member>
         <member>sendfile</member>
         <member>set_compression</member>
-        <member>set_nt_acl</member>
+        <member>set_dos_attributes</member>
+        <member>set_offline</member>
         <member>set_quota</member>
         <member>setxattr</member>
         <member>snap_check_path</member>
@@ -99,15 +136,19 @@
         <member>snap_delete</member>
         <member>stat</member>
         <member>statvfs</member>
-        <member>symlink</member>
+        <member>streaminfo</member>
+        <member>strict_lock_check</member>
+        <member>symlinkat</member>
+        <member>sys_acl_blob_get_fd</member>
+        <member>sys_acl_blob_get_file</member>
         <member>sys_acl_delete_def_file</member>
         <member>sys_acl_get_fd</member>
         <member>sys_acl_get_file</member>
         <member>sys_acl_set_fd</member>
         <member>sys_acl_set_file</member>
         <member>telldir</member>
-        <member>unlink</member>
-        <member>utime</member>
+        <member>translate_name</member>
+        <member>unlinkat</member>
         <member>write</member>
 	</simplelist>
 
