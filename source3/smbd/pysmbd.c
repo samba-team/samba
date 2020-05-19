@@ -143,6 +143,8 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	int ret;
 	mode_t saved_umask;
 	struct files_struct *fsp;
+	struct files_struct *fspcwd = NULL;
+	NTSTATUS status;
 
 	fsp = talloc_zero(mem_ctx, struct files_struct);
 	if (fsp == NULL) {
@@ -163,13 +165,23 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 
 	fsp->fsp_name = smb_fname;
 
+	status = vfs_at_fspcwd(fsp, conn, &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/*
 	 * we want total control over the permissions on created files,
 	 * so set our umask to 0 (this matters if flags contains O_CREAT)
 	 */
 	saved_umask = umask(0);
 
-	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, 00644);
+	fsp->fh->fd = SMB_VFS_OPENAT(conn,
+				     fspcwd,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     00644);
 
 	umask(saved_umask);
 
