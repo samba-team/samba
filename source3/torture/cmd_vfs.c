@@ -1622,6 +1622,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	int ret;
 	mode_t mode;
 	files_struct *fsp;
+	struct files_struct *fspcwd = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
@@ -1661,9 +1662,24 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	flags = O_RDONLY;
 #endif
 
-	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, O_RDWR, mode);
+	status = vfs_at_fspcwd(fsp, vfs->conn, &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
+				     fspcwd,
+				     smb_fname,
+				     fsp,
+				     O_RDWR,
+				     mode);
 	if (fsp->fh->fd == -1 && errno == EISDIR) {
-		fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
+		fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
+					     fspcwd,
+					     smb_fname,
+					     fsp,
+					     flags,
+					     mode);
 	}
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
