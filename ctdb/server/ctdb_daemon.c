@@ -2179,6 +2179,11 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 {
 	int ret;
 
+	if (ctdb->daemon.sd != -1) {
+		close(ctdb->daemon.sd);
+		ctdb->daemon.sd = -1;
+	}
+
 	/* get a new event context */
 	ctdb->ev = tevent_context_init(ctdb);
 	if (ctdb->ev == NULL) {
