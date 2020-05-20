@@ -2546,6 +2546,53 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gpfs_openat(struct vfs_handle_struct *handle,
+			   const struct files_struct *dirfsp,
+			   const struct smb_filename *smb_fname,
+			   files_struct *fsp,
+			   int flags,
+			   mode_t mode)
+{
+	struct gpfs_config_data *config = NULL;
+	struct gpfs_fsp_extension *ext = NULL;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (config->hsm && !config->recalls &&
+	    vfs_gpfs_fsp_is_offline(handle, fsp))
+	{
+		DBG_DEBUG("Refusing access to offline file %s\n",
+			  fsp_str_dbg(fsp));
+		errno = EACCES;
+		return -1;
+	}
+
+	if (config->syncio) {
+		flags |= O_SYNC;
+	}
+
+	ext = VFS_ADD_FSP_EXTENSION(handle, fsp, struct gpfs_fsp_extension,
+				    NULL);
+	if (ext == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/*
+	 * Assume the file is offline until gpfs tells us it's online.
+	 */
+	*ext = (struct gpfs_fsp_extension) { .offline = true };
+
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+	if (ret == -1) {
+		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+	}
+	return ret;
+}
+
 static ssize_t vfs_gpfs_pread(vfs_handle_struct *handle, files_struct *fsp,
 			      void *data, size_t n, off_t offset)
 {
@@ -2756,6 +2803,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sendfile_fn = vfs_gpfs_sendfile,
 	.fallocate_fn = vfs_gpfs_fallocate,
 	.open_fn = vfs_gpfs_open,
+	.openat_fn = vfs_gpfs_openat,
 	.pread_fn = vfs_gpfs_pread,
 	.pread_send_fn = vfs_gpfs_pread_send,
 	.pread_recv_fn = vfs_gpfs_pread_recv,
