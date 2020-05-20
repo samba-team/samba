@@ -1555,6 +1555,37 @@ struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_S
 	return SMB_VFS_FILE_ID_CREATE(conn, sbuf);
 }
 
+NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
+		       struct connection_struct *conn,
+		       struct files_struct **_fsp)
+{
+	struct files_struct *fsp = NULL;
+
+	fsp = talloc_zero(mem_ctx, struct files_struct);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fsp->fsp_name = synthetic_smb_fname(fsp, ".", NULL, NULL, 0, 0);
+	if (fsp->fsp_name == NULL) {
+		TALLOC_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fsp->fh = talloc_zero(fsp, struct fd_handle);
+	if (fsp->fh == NULL) {
+		TALLOC_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fsp->fh->fd = AT_FDCWD;
+	fsp->fnum = FNUM_FIELD_INVALID;
+	fsp->conn = conn;
+
+	*_fsp = fsp;
+	return NT_STATUS_OK;
+}
+
 int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user)
 {
