@@ -521,6 +521,61 @@ static int catia_open(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int catia_openat(vfs_handle_struct *handle,
+			const struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname_in,
+			files_struct *fsp,
+			int flags,
+			mode_t mode)
+{
+	struct smb_filename *smb_fname = NULL;
+	struct catia_cache *cc = NULL;
+	char *mapped_name = NULL;
+	NTSTATUS status;
+	int ret;
+	int saved_errno = 0;
+
+	status = catia_string_replace_allocate(handle->conn,
+					       smb_fname_in->base_name,
+					       &mapped_name,
+					       vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
+	if (ret != 0) {
+		TALLOC_FREE(mapped_name);
+		return ret;
+	}
+
+	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		errno = ENOMEM;
+		return -1;
+	}
+	smb_fname->base_name = mapped_name;
+
+	ret = SMB_VFS_NEXT_OPENAT(handle,
+				  dirfsp,
+				  smb_fname,
+				  fsp,
+				  flags,
+				  mode);
+
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(mapped_name);
+	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
+}
+
 static int catia_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -2446,6 +2501,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* File operations */
 	.open_fn = catia_open,
+	.openat_fn = catia_openat,
 	.pread_fn = catia_pread,
 	.pread_send_fn = catia_pread_send,
 	.pread_recv_fn = catia_pread_recv,
