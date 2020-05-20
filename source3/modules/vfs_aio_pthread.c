@@ -502,11 +502,70 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 	TALLOC_FREE(fspcwd);
 	return fd;
 }
+
+static int aio_pthread_openat_fn(vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname,
+				 struct files_struct *fsp,
+				 int flags,
+				 mode_t mode)
+{
+	int my_errno = 0;
+	int fd = -1;
+	bool aio_allow_open = lp_parm_bool(
+		SNUM(handle->conn), "aio_pthread", "aio open", false);
+
+	if (smb_fname->stream_name != NULL) {
+		/* Don't handle stream opens. */
+		errno = ENOENT;
+		return -1;
+	}
+
+	if (!aio_allow_open) {
+		/* aio opens turned off. */
+		return openat(dirfsp->fh->fd,
+			      smb_fname->base_name,
+			      flags,
+			      mode);
+	}
+
+	if (!(flags & O_CREAT)) {
+		/* Only creates matter. */
+		return openat(dirfsp->fh->fd,
+			      smb_fname->base_name,
+			      flags,
+			      mode);
+	}
+
+	if (!(flags & O_EXCL)) {
+		/* Only creates with O_EXCL matter. */
+		return openat(dirfsp->fh->fd,
+			      smb_fname->base_name,
+			      flags,
+			      mode);
+	}
+
+	/*
+	 * See if this is a reentrant call - i.e. is this a
+	 * restart of an existing open that just completed.
+	 */
+
+	if (find_completed_open(fsp,
+				&fd,
+				&my_errno)) {
+		errno = my_errno;
+		return fd;
+	}
+
+	/* Ok, it's a create exclusive call - pass it to a thread helper. */
+	return open_async(dirfsp, smb_fname, fsp, flags, mode);
+}
 #endif
 
 static struct vfs_fn_pointers vfs_aio_pthread_fns = {
 #if defined(HAVE_OPENAT) && defined(HAVE_LINUX_THREAD_CREDENTIALS)
 	.open_fn = aio_pthread_open_fn,
+	.openat_fn = aio_pthread_openat_fn,
 #endif
 };
 
