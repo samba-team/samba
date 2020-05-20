@@ -409,6 +409,33 @@ out:
 	WRAP_RETURN(result);
 }
 
+static int cephwrap_openat(struct vfs_handle_struct *handle,
+			   const struct files_struct *dirfsp,
+			   const struct smb_filename *smb_fname,
+			   files_struct *fsp,
+			   int flags,
+			   mode_t mode)
+{
+	int result = -ENOENT;
+
+	/*
+	 * cephfs API doesn't have ceph_openat(), so for now assert this.
+	 */
+	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+
+	DBG_DEBUG("[CEPH] openat(%p, %s, %p, %d, %d)\n", handle,
+		  smb_fname_str_dbg(smb_fname), fsp, flags, mode);
+
+	if (smb_fname->stream_name) {
+		goto out;
+	}
+
+	result = ceph_open(handle->data, smb_fname->base_name, flags, mode);
+out:
+	DBG_DEBUG("[CEPH] open(...) = %d\n", result);
+	WRAP_RETURN(result);
+}
+
 static int cephwrap_close(struct vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
@@ -1444,6 +1471,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.create_dfs_pathat_fn = cephwrap_create_dfs_pathat,
 	.read_dfs_pathat_fn = cephwrap_read_dfs_pathat,
 	.open_fn = cephwrap_open,
+	.openat_fn = cephwrap_openat,
 	.close_fn = cephwrap_close,
 	.pread_fn = cephwrap_pread,
 	.pread_send_fn = cephwrap_pread_send,
