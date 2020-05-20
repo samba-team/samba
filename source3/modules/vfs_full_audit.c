@@ -117,6 +117,7 @@ typedef enum _vfs_op_type {
 	/* File operations */
 
 	SMB_VFS_OP_OPEN,
+	SMB_VFS_OP_OPENAT,
 	SMB_VFS_OP_CREATE_FILE,
 	SMB_VFS_OP_CLOSE,
 	SMB_VFS_OP_READ,
@@ -260,6 +261,7 @@ static struct {
 	{ SMB_VFS_OP_MKDIRAT,	"mkdirat" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
 	{ SMB_VFS_OP_OPEN,	"open" },
+	{ SMB_VFS_OP_OPENAT,	"openat" },
 	{ SMB_VFS_OP_CREATE_FILE, "create_file" },
 	{ SMB_VFS_OP_CLOSE,	"close" },
 	{ SMB_VFS_OP_READ,	"read" },
@@ -1087,6 +1089,24 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
 	       smb_fname_str_do_log(handle->conn, smb_fname));
+
+	return result;
+}
+
+static int smb_full_audit_openat(vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname,
+				 struct files_struct *fsp,
+				 int flags,
+				 mode_t mode)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+
+	do_log(SMB_VFS_OP_OPENAT, (result >= 0), handle, "%s|%s",
+	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
+	       fsp_str_do_log(fsp));
 
 	return result;
 }
@@ -2987,6 +3007,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.mkdirat_fn = smb_full_audit_mkdirat,
 	.closedir_fn = smb_full_audit_closedir,
 	.open_fn = smb_full_audit_open,
+	.openat_fn = smb_full_audit_openat,
 	.create_file_fn = smb_full_audit_create_file,
 	.close_fn = smb_full_audit_close,
 	.pread_fn = smb_full_audit_pread,
