@@ -122,10 +122,26 @@ static int vfs_error_inject_open(
 	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 }
 
+static int vfs_error_inject_openat(struct vfs_handle_struct *handle,
+				   const struct files_struct *dirfsp,
+				   const struct smb_filename *smb_fname,
+				   files_struct *fsp,
+				   int flags,
+				   mode_t mode)
+{
+	int error = inject_unix_error("openat", handle);
+	if (error != 0) {
+		errno = error;
+		return -1;
+	}
+	return SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
+}
+
 static struct vfs_fn_pointers vfs_error_inject_fns = {
 	.chdir_fn = vfs_error_inject_chdir,
 	.pwrite_fn = vfs_error_inject_pwrite,
 	.open_fn = vfs_error_inject_open,
+	.openat_fn = vfs_error_inject_openat,
 };
 
 static_decl_vfs;

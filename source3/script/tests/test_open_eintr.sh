@@ -42,6 +42,7 @@ head -n 1 <&101
 head -n 1 <&102
 
 echo "error_inject:open = EINTR" > ${error_inject_conf}
+echo "error_inject:openat = EINTR" >> ${error_inject_conf}
 ${SMBCONTROL} ${CONF} 0 reload-config
 
 sleep 1
