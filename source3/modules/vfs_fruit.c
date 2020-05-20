@@ -1334,6 +1334,7 @@ static int fruit_fake_fd(void)
 }
 
 static int fruit_open_meta_stream(vfs_handle_struct *handle,
+				  const struct files_struct *dirfsp,
 				  struct smb_filename *smb_fname,
 				  files_struct *fsp,
 				  int flags,
@@ -1377,6 +1378,7 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 }
 
 static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
+				    const struct files_struct *dirfsp,
 				    struct smb_filename *smb_fname,
 				    files_struct *fsp,
 				    int flags,
@@ -1421,6 +1423,7 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 }
 
 static int fruit_open_meta(vfs_handle_struct *handle,
+			   const struct files_struct *dirfsp,
 			   struct smb_filename *smb_fname,
 			   files_struct *fsp, int flags, mode_t mode)
 {
@@ -1434,12 +1437,12 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
-		fd = fruit_open_meta_stream(handle, smb_fname,
+		fd = fruit_open_meta_stream(handle, dirfsp, smb_fname,
 					    fsp, flags, mode);
 		break;
 
 	case FRUIT_META_NETATALK:
-		fd = fruit_open_meta_netatalk(handle, smb_fname,
+		fd = fruit_open_meta_netatalk(handle, dirfsp, smb_fname,
 					      fsp, flags, mode);
 		break;
 
@@ -1454,6 +1457,7 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 }
 
 static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
+				   const struct files_struct *dirfsp,
 				   struct smb_filename *smb_fname,
 				   files_struct *fsp,
 				   int flags,
@@ -1533,6 +1537,7 @@ exit:
 }
 
 static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
 				 struct smb_filename *smb_fname,
 				 files_struct *fsp,
 				 int flags,
@@ -1558,6 +1563,7 @@ static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 }
 
 static int fruit_open_rsrc(vfs_handle_struct *handle,
+			   const struct files_struct *dirfsp,
 			   struct smb_filename *smb_fname,
 			   files_struct *fsp, int flags, mode_t mode)
 {
@@ -1576,12 +1582,12 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_RSRC_ADFILE:
-		fd = fruit_open_rsrc_adouble(handle, smb_fname,
+		fd = fruit_open_rsrc_adouble(handle, dirfsp, smb_fname,
 					     fsp, flags, mode);
 		break;
 
 	case FRUIT_RSRC_XATTR:
-		fd = fruit_open_rsrc_xattr(handle, smb_fname,
+		fd = fruit_open_rsrc_xattr(handle, dirfsp, smb_fname,
 					   fsp, flags, mode);
 		break;
 
@@ -1607,7 +1613,10 @@ static int fruit_open(vfs_handle_struct *handle,
                       struct smb_filename *smb_fname,
                       files_struct *fsp, int flags, mode_t mode)
 {
+	struct files_struct *fspcwd = NULL;
+	int saved_errno = 0;
 	int fd;
+	NTSTATUS status;
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
@@ -1615,16 +1624,41 @@ static int fruit_open(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
+	status = vfs_at_fspcwd(talloc_tos(),
+			       handle->conn,
+			       &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
 	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		fd = fruit_open_meta(handle, smb_fname, fsp, flags, mode);
+		fd = fruit_open_meta(handle,
+				     fspcwd,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     mode);
 	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		fd = fruit_open_rsrc(handle, smb_fname, fsp, flags, mode);
+		fd = fruit_open_rsrc(handle,
+				     fspcwd,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     mode);
 	} else {
 		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
+	if (fd == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(fspcwd);
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
 
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return fd;
 }
 
