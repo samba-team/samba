@@ -1354,7 +1354,12 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 	fio->type = ADOUBLE_META;
 	fio->config = config;
 
-	fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, open_flags, mode);
+	fd = SMB_VFS_NEXT_OPENAT(handle,
+				 dirfsp,
+				 smb_fname,
+				 fsp,
+				 open_flags,
+				 mode);
 	if (fd != -1) {
 		return fd;
 	}
@@ -1489,8 +1494,12 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	flags &= ~(O_RDONLY | O_WRONLY);
 	flags |= O_RDWR;
 
-	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
-				   flags, mode);
+	hostfd = SMB_VFS_NEXT_OPENAT(handle,
+				     dirfsp,
+				     smb_fname_base,
+				     fsp,
+				     flags,
+				     mode);
 	if (hostfd == -1) {
 		rc = -1;
 		goto exit;
@@ -1546,6 +1555,11 @@ static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 #ifdef HAVE_ATTROPEN
 	int fd = -1;
 
+	/*
+	 * As there's no attropenat() this is only going to work with AT_FDCWD.
+	 */
+	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+
 	fd = attropen(smb_fname->base_name,
 		      AFPRESOURCE_EA_NETATALK,
 		      flags,
@@ -1578,7 +1592,12 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 
 	switch (config->rsrc) {
 	case FRUIT_RSRC_STREAM:
-		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+		fd = SMB_VFS_NEXT_OPENAT(handle,
+					 dirfsp,
+					 smb_fname,
+					 fsp,
+					 flags,
+					 mode);
 		break;
 
 	case FRUIT_RSRC_ADFILE:
@@ -2530,11 +2549,12 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		fd = SMB_VFS_NEXT_OPEN(handle,
-				       fsp->fsp_name,
-				       fsp,
-				       fio->flags,
-				       fio->mode);
+		fd = SMB_VFS_NEXT_OPENAT(handle,
+					 fsp->dirfsp,
+					 fsp->fsp_name,
+					 fsp,
+					 fio->flags,
+					 fio->mode);
 		if (fd == -1) {
 			DBG_ERR("On-demand create [%s] in write failed: %s\n",
 				fsp_str_dbg(fsp), strerror(errno));
