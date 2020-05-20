@@ -246,11 +246,12 @@ static void opd_free(struct aio_open_private_data *opd)
  Create and initialize a private data struct for async open.
 ***********************************************************************/
 
-static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
-					const struct smb_filename *smb_fname,
-					const files_struct *fsp,
-					int flags,
-					mode_t mode)
+static struct aio_open_private_data *create_private_open_data(
+	TALLOC_CTX *ctx,
+	const struct smb_filename *smb_fname,
+	const files_struct *fsp,
+	int flags,
+	mode_t mode)
 {
 	struct aio_open_private_data *opd = talloc_zero(ctx,
 					struct aio_open_private_data);
