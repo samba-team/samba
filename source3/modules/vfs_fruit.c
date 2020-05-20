@@ -1662,6 +1662,62 @@ static int fruit_open(vfs_handle_struct *handle,
 	return fd;
 }
 
+static int fruit_openat(vfs_handle_struct *handle,
+			const struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname_in,
+			files_struct *fsp,
+			int flags,
+			mode_t mode)
+{
+	int fd;
+	/* FIXME - leaks on talloc_tos(). Fix when SMB_VFS_OPEN() is gone. */
+	struct smb_filename *smb_fname = cp_smb_filename(talloc_tos(),
+							 smb_fname_in);
+
+	if (smb_fname == NULL) {
+		return -1;
+	}
+	/* END FIXME. */
+
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	if (!is_named_stream(smb_fname)) {
+		return SMB_VFS_NEXT_OPENAT(handle,
+					   dirfsp,
+					   smb_fname,
+					   fsp,
+					   flags,
+					   mode);
+	}
+
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
+		fd = fruit_open_meta(handle,
+				     dirfsp,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     mode);
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
+		fd = fruit_open_rsrc(handle,
+				     dirfsp,
+				     smb_fname,
+				     fsp,
+				     flags,
+				     mode);
+	} else {
+		fd = SMB_VFS_NEXT_OPENAT(handle,
+					 dirfsp,
+					 smb_fname,
+					 fsp,
+					 flags,
+					 mode);
+	}
+
+	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
+
+	return fd;
+}
+
 static int fruit_close_meta(vfs_handle_struct *handle,
 			    files_struct *fsp)
 {
@@ -5055,6 +5111,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
 	.open_fn = fruit_open,
+	.openat_fn = fruit_openat,
 	.close_fn = fruit_close,
 	.pread_fn = fruit_pread,
 	.pwrite_fn = fruit_pwrite,
