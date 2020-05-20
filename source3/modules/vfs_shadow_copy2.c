@@ -2007,6 +2007,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	const char *snapdir;
 	struct smb_filename *snapdir_smb_fname = NULL;
 	struct files_struct *dirfsp = NULL;
+	struct files_struct *fspcwd = NULL;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct shadow_copy2_private *priv = NULL;
@@ -2053,15 +2054,22 @@ static int shadow_copy2_get_shadow_copy_data(
 		goto done;
 	}
 
+	status = vfs_at_fspcwd(talloc_tos(), handle->conn, &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = ENOMEM;
+		goto done;
+	}
+
 #ifdef O_DIRECTORY
 	open_flags |= O_DIRECTORY;
 #endif
 
-	dirfsp->fh->fd = SMB_VFS_NEXT_OPEN(handle,
-					   snapdir_smb_fname,
-					   dirfsp,
-					   open_flags,
-					   0);
+	dirfsp->fh->fd = SMB_VFS_NEXT_OPENAT(handle,
+					     fspcwd,
+					     snapdir_smb_fname,
+					     dirfsp,
+					     open_flags,
+					     0);
 	if (dirfsp->fh->fd == -1) {
 		DBG_WARNING("SMB_VFS_NEXT_OPEN failed for '%s'"
 			    " - %s\n", snapdir, strerror(errno));
@@ -2167,6 +2175,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	ret = 0;
 
 done:
+	TALLOC_FREE(fspcwd );
 	if (p != NULL) {
 		SMB_VFS_NEXT_CLOSEDIR(handle, p);
 		p = NULL;
