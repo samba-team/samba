@@ -1381,6 +1381,93 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int shadow_copy2_openat(vfs_handle_struct *handle,
+			       const struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname_in,
+			       struct files_struct *fsp,
+			       int flags,
+			       mode_t mode)
+{
+	struct smb_filename *smb_fname = NULL;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	bool is_converted = false;
+	int saved_errno = 0;
+	int ret;
+	bool ok;
+
+	ok = shadow_copy2_strip_snapshot_converted(talloc_tos(),
+						   handle,
+						   smb_fname_in,
+						   &timestamp,
+						   &stripped,
+						   &is_converted);
+	if (!ok) {
+		return -1;
+	}
+	if (timestamp == 0) {
+		if (is_converted) {
+			/*
+			 * Just pave over the user requested mode and use
+			 * O_RDONLY. Later attempts by the client to write on
+			 * the handle will fail in the pwrite() syscall with
+			 * EINVAL which we carefully map to EROFS. In sum, this
+			 * matches Windows behaviour.
+			 */
+			flags = O_RDONLY;
+		}
+		return SMB_VFS_NEXT_OPENAT(handle,
+					   dirfsp,
+					   smb_fname_in,
+					   fsp,
+					   flags,
+					   mode);
+	}
+
+	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(stripped);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	smb_fname->base_name = shadow_copy2_convert(smb_fname,
+					       handle,
+					       stripped,
+					       timestamp);
+	TALLOC_FREE(stripped);
+	if (smb_fname->base_name == NULL) {
+		TALLOC_FREE(smb_fname);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/*
+	 * Just pave over the user requested mode and use O_RDONLY. Later
+	 * attempts by the client to write on the handle will fail in the
+	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
+	 * this matches Windows behaviour.
+	 */
+	flags = O_RDONLY;
+
+	ret = SMB_VFS_NEXT_OPENAT(handle,
+				  dirfsp,
+				  smb_fname,
+				  fsp,
+				  flags,
+				  mode);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+
+	TALLOC_FREE(smb_fname);
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
+}
+
 static int shadow_copy2_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3160,6 +3247,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.lstat_fn = shadow_copy2_lstat,
 	.fstat_fn = shadow_copy2_fstat,
 	.open_fn = shadow_copy2_open,
+	.openat_fn = shadow_copy2_openat,
 	.unlinkat_fn = shadow_copy2_unlinkat,
 	.chmod_fn = shadow_copy2_chmod,
 	.chdir_fn = shadow_copy2_chdir,
