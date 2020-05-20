@@ -352,7 +352,11 @@ static int open_async(const struct smb_filename *smb_fname,
 	 * opd is always safely freed in all codepath so no
 	 * memory leaks.
 	 */
-	opd = create_private_open_data(fsp->conn, smb_fname, fsp, flags, mode);
+	opd = create_private_open_data(fsp->conn,
+				       smb_fname,
+				       fsp,
+				       flags,
+				       mode);
 	if (opd == NULL) {
 		DEBUG(10, ("open_async: Could not create private data.\n"));
 		return -1;
