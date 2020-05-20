@@ -1103,6 +1103,63 @@ out:
  * Success: return non-negative file descriptor
  * Failure: set errno, return -1
  */
+static int mh_openat(struct vfs_handle_struct *handle,
+		     const struct files_struct *dirfsp,
+		     const struct smb_filename *smb_fname,
+		     files_struct *fsp,
+		     int flags,
+		     mode_t mode)
+{
+	int ret;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
+			      smb_fname->base_name));
+
+	if (!is_in_media_files(smb_fname->base_name)) {
+		ret = SMB_VFS_NEXT_OPENAT(handle,
+					  dirfsp,
+					  smb_fname,
+					  fsp,
+					  flags,
+					  mode);
+		goto out;
+	}
+
+	clientFname = NULL;
+	ctx = talloc_tos();
+
+	if (alloc_get_client_smb_fname(handle, ctx, smb_fname, &clientFname)) {
+		ret = -1;
+		goto err;
+	}
+
+	/*
+	 * What about fsp->fsp_name? We also have to get correct stat info into
+	 * fsp and smb_fname for DB files, don't we?
+	 */
+
+	DEBUG(MH_INFO_DEBUG, ("Leaving with smb_fname->base_name '%s' "
+			      "smb_fname->st.st_ex_mtime %s"
+			      " fsp->fsp_name->st.st_ex_mtime %s",
+			      smb_fname->base_name,
+			      ctime(&(smb_fname->st.st_ex_mtime.tv_sec)),
+			      ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec))));
+
+	ret = SMB_VFS_NEXT_OPENAT(handle, dirfsp, clientFname, fsp, flags, mode);
+err:
+	TALLOC_FREE(clientFname);
+out:
+	DEBUG(MH_INFO_DEBUG, ("Leaving with smb_fname->base_name '%s'\n",
+				smb_fname->base_name));
+	return ret;
+}
+
+/*
+ * Success: return non-negative file descriptor
+ * Failure: set errno, return -1
+ */
 static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		struct smb_request *req,
 		struct files_struct **dirfsp,
@@ -2216,6 +2273,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	/* File operations */
 
 	.open_fn = mh_open,
+	.openat_fn = mh_openat,
 	.create_file_fn = mh_create_file,
 	.renameat_fn = mh_renameat,
 	.stat_fn = mh_stat,
