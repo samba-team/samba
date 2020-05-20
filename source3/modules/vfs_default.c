@@ -688,6 +688,29 @@ static int vfswrap_open(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_openat(vfs_handle_struct *handle,
+			  const struct files_struct *dirfsp,
+			  const struct smb_filename *smb_fname,
+			  files_struct *fsp,
+			  int flags,
+			  mode_t mode)
+{
+	int result;
+
+	START_PROFILE(syscall_openat);
+
+	if (is_named_stream(smb_fname)) {
+		errno = ENOENT;
+		result = -1;
+		goto out;
+	}
+
+	result = openat(dirfsp->fh->fd, smb_fname->base_name, flags, mode);
+
+out:
+	END_PROFILE(syscall_openat);
+	return result;
+}
 static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				    struct smb_request *req,
 				    struct files_struct **dirfsp,
@@ -3679,6 +3702,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	/* File operations */
 
 	.open_fn = vfswrap_open,
+	.openat_fn = vfswrap_openat,
 	.create_file_fn = vfswrap_create_file,
 	.close_fn = vfswrap_close,
 	.pread_fn = vfswrap_pread,
