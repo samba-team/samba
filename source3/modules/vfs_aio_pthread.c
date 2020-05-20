@@ -44,6 +44,7 @@ struct aio_open_private_data {
 	struct aio_open_private_data *prev, *next;
 	/* Inputs. */
 	int dir_fd;
+	bool opened_dir_fd;
 	int flags;
 	mode_t mode;
 	uint64_t mid;
@@ -235,7 +236,7 @@ static void aio_open_do(struct aio_open_private_data *opd)
 
 static void opd_free(struct aio_open_private_data *opd)
 {
-	if (opd->dir_fd != -1) {
+	if (opd->opened_dir_fd && opd->dir_fd != -1) {
 		close(opd->dir_fd);
 	}
 	DLIST_REMOVE(open_pd_list, opd);
@@ -248,6 +249,7 @@ static void opd_free(struct aio_open_private_data *opd)
 
 static struct aio_open_private_data *create_private_open_data(
 	TALLOC_CTX *ctx,
+	const struct files_struct *dirfsp,
 	const struct smb_filename *smb_fname,
 	const files_struct *fsp,
 	int flags,
@@ -300,11 +302,16 @@ static struct aio_open_private_data *create_private_open_data(
 		return NULL;
 	}
 
+	if (dirfsp->fh->fd != AT_FDCWD) {
+		opd->dir_fd = dirfsp->fh->fd;
+	} else {
 #if defined(O_DIRECTORY)
-	opd->dir_fd = open(".", O_RDONLY|O_DIRECTORY);
+		opd->dir_fd = open(".", O_RDONLY|O_DIRECTORY);
 #else
-	opd->dir_fd = open(".", O_RDONLY);
+		opd->dir_fd = open(".", O_RDONLY);
 #endif
+		opd->opened_dir_fd = true;
+	}
 	if (opd->dir_fd == -1) {
 		opd_free(opd);
 		return NULL;
@@ -333,7 +340,8 @@ static int opd_inflight_destructor(struct aio_open_private_data *opd)
  Setup an async open.
 *****************************************************************/
 
-static int open_async(const struct smb_filename *smb_fname,
+static int open_async(const struct files_struct *dirfsp,
+		      const struct smb_filename *smb_fname,
 		      const files_struct *fsp,
 		      int flags,
 		      mode_t mode)
@@ -353,6 +361,7 @@ static int open_async(const struct smb_filename *smb_fname,
 	 * memory leaks.
 	 */
 	opd = create_private_open_data(fsp->conn,
+				       dirfsp,
 				       smb_fname,
 				       fsp,
 				       flags,
@@ -447,6 +456,8 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 	int fd = -1;
 	bool aio_allow_open = lp_parm_bool(
 		SNUM(handle->conn), "aio_pthread", "aio open", false);
+	struct files_struct *fspcwd = NULL;
+	NTSTATUS status;
 
 	if (smb_fname->stream_name) {
 		/* Don't handle stream opens. */
@@ -481,8 +492,15 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 		return fd;
 	}
 
+	status = vfs_at_fspcwd(talloc_tos(), handle->conn, &fspcwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
 	/* Ok, it's a create exclusive call - pass it to a thread helper. */
-	return open_async(smb_fname, fsp, flags, mode);
+	fd = open_async(fspcwd, smb_fname, fsp, flags, mode);
+	TALLOC_FREE(fspcwd);
+	return fd;
 }
 #endif
 
