@@ -188,14 +188,6 @@ int vfs_not_implemented_closedir(vfs_handle_struct *handle, DIR *dir)
 	return -1;
 }
 
-int vfs_not_implemented_open(vfs_handle_struct *handle,
-			     struct smb_filename *smb_fname,
-			     files_struct *fsp, int flags, mode_t mode)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname,
@@ -1078,7 +1070,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 
 	/* File operations */
 
-	.open_fn = vfs_not_implemented_open,
 	.openat_fn = vfs_not_implemented_openat,
 	.create_file_fn = vfs_not_implemented_create_file,
 	.close_fn = vfs_not_implemented_close_fn,

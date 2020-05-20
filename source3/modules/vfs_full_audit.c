@@ -1078,21 +1078,6 @@ static int smb_full_audit_closedir(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_open(vfs_handle_struct *handle,
-			       struct smb_filename *smb_fname,
-			       files_struct *fsp, int flags, mode_t mode)
-{
-	int result;
-	
-	result = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-
-	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
-	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
-
 static int smb_full_audit_openat(vfs_handle_struct *handle,
 				 const struct files_struct *dirfsp,
 				 const struct smb_filename *smb_fname,
@@ -3006,7 +2991,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.rewind_dir_fn = smb_full_audit_rewinddir,
 	.mkdirat_fn = smb_full_audit_mkdirat,
 	.closedir_fn = smb_full_audit_closedir,
-	.open_fn = smb_full_audit_open,
 	.openat_fn = smb_full_audit_openat,
 	.create_file_fn = smb_full_audit_create_file,
 	.close_fn = smb_full_audit_close,

@@ -850,41 +850,6 @@ static int ceph_snap_gmt_lstat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int ceph_snap_gmt_open(vfs_handle_struct *handle,
-			    struct smb_filename *smb_fname, files_struct *fsp,
-			    int flags, mode_t mode)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
-	char *tmp;
-	int ret;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					smb_fname,
-					&timestamp, stripped, sizeof(stripped));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	tmp = smb_fname->base_name;
-	smb_fname->base_name = conv;
-
-	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	smb_fname->base_name = tmp;
-	return ret;
-}
-
 static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname_in,
@@ -1540,7 +1505,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.symlinkat_fn = ceph_snap_gmt_symlinkat,
 	.stat_fn = ceph_snap_gmt_stat,
 	.lstat_fn = ceph_snap_gmt_lstat,
-	.open_fn = ceph_snap_gmt_open,
 	.openat_fn = ceph_snap_gmt_openat,
 	.unlinkat_fn = ceph_snap_gmt_unlinkat,
 	.chmod_fn = ceph_snap_gmt_chmod,

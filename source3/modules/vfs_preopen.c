@@ -382,76 +382,6 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 	return true;
 }
 
-static int preopen_open(vfs_handle_struct *handle,
-			struct smb_filename *smb_fname, files_struct *fsp,
-			int flags, mode_t mode)
-{
-	struct preopen_state *state;
-	int res;
-	unsigned long num;
-
-	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
-
-	state = preopen_state_get(handle);
-	if (state == NULL) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	res = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	if (res == -1) {
-		return -1;
-	}
-
-	if ((flags & O_ACCMODE) != O_RDONLY) {
-		return res;
-	}
-
-	if (!is_in_path(smb_fname->base_name, state->preopen_names, true)) {
-		DEBUG(10, ("%s does not match the preopen:names list\n",
-			   smb_fname_str_dbg(smb_fname)));
-		return res;
-	}
-
-	TALLOC_FREE(state->template_fname);
-	state->template_fname = talloc_asprintf(
-		state, "%s/%s",
-		fsp->conn->cwd_fsp->fsp_name->base_name, smb_fname->base_name);
-
-	if (state->template_fname == NULL) {
-		return res;
-	}
-
-	if (!preopen_parse_fname(state->template_fname, &num,
-				 &state->number_start, &state->num_digits)) {
-		TALLOC_FREE(state->template_fname);
-		return res;
-	}
-
-	if (num > state->fnum_sent) {
-		/*
-		 * Helpers were too slow, there's no point in reading
-		 * files in helpers that we already read in the
-		 * parent.
-		 */
-		state->fnum_sent = num;
-	}
-
-	if ((state->fnum_queue_end != 0) /* Something was started earlier */
-	    && (num < (state->fnum_queue_end - state->queue_max))) {
-		/*
-		 * "num" is before the queue we announced. This means
-		 * a new run is started.
-		 */
-		state->fnum_sent = num;
-	}
-
-	state->fnum_queue_end = num + state->queue_max;
-
-	preopen_queue_run(state);
-
-	return res;
-}
-
 static int preopen_openat(struct vfs_handle_struct *handle,
 			  const struct files_struct *dirfsp,
 			  const struct smb_filename *smb_fname,
@@ -531,7 +461,6 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_preopen_fns = {
-	.open_fn = preopen_open,
 	.openat_fn = preopen_openat,
 };
 

@@ -614,53 +614,6 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_depot_open(vfs_handle_struct *handle,
-			      struct smb_filename *smb_fname,
-			      files_struct *fsp, int flags, mode_t mode)
-{
-	struct smb_filename *smb_fname_stream = NULL;
-	struct smb_filename *smb_fname_base = NULL;
-	NTSTATUS status;
-	int ret = -1;
-
-	if (!is_named_stream(smb_fname)) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	/* Ensure the base file still exists. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		ret = -1;
-		errno = ENOMEM;
-		goto done;
-	}
-
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
-	if (ret == -1) {
-		goto done;
-	}
-
-	/* Determine the stream name, and then open it. */
-	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream, true);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = -1;
-		errno = map_errno_from_nt_status(status);
-		goto done;
-	}
-
-	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname_stream, fsp, flags, mode);
-
- done:
-	TALLOC_FREE(smb_fname_stream);
-	TALLOC_FREE(smb_fname_base);
-	return ret;
-}
-
 static int streams_depot_openat(struct vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1167,7 +1120,6 @@ static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.fs_capabilities_fn = streams_depot_fs_capabilities,
-	.open_fn = streams_depot_open,
 	.openat_fn = streams_depot_openat,
 	.stat_fn = streams_depot_stat,
 	.lstat_fn = streams_depot_lstat,

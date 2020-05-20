@@ -492,56 +492,6 @@ static bool xattr_tdb_init(int snum, TALLOC_CTX *mem_ctx, struct db_context **p_
 	return true;
 }
 
-static int xattr_tdb_open(vfs_handle_struct *handle,
-			struct smb_filename *smb_fname,
-			files_struct *fsp,
-			int flags,
-			mode_t mode)
-{
-	struct db_context *db = NULL;
-	TALLOC_CTX *frame = NULL;
-	int ret;
-
-	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle,
-				smb_fname, fsp,
-				flags,
-				mode);
-
-	if (fsp->fh->fd < 0) {
-		return fsp->fh->fd;
-	}
-
-	if ((flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
-		return fsp->fh->fd;
-	}
-
-	/*
-	 * We know we used O_CREAT|O_EXCL and it worked.
-	 * We must have created the file.
-	 */
-
-	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-	if (ret == -1) {
-		/* Can't happen... */
-		DBG_WARNING("SMB_VFS_FSTAT failed on file %s (%s)\n",
-			smb_fname_str_dbg(smb_fname),
-			strerror(errno));
-		return -1;
-	}
-	fsp->file_id = SMB_VFS_FILE_ID_CREATE(fsp->conn, &smb_fname->st);
-
-	frame = talloc_stackframe();
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-				if (!xattr_tdb_init(-1, frame, &db))
-				{
-					TALLOC_FREE(frame); return -1;
-				});
-
-	xattr_tdb_remove_all_attrs(db, &fsp->file_id);
-	TALLOC_FREE(frame);
-	return fsp->fh->fd;
-}
-
 static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 			    const struct files_struct *dirfsp,
 			    const struct smb_filename *smb_fname,
@@ -776,7 +726,6 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.flistxattr_fn = xattr_tdb_flistxattr,
 	.removexattr_fn = xattr_tdb_removexattr,
 	.fremovexattr_fn = xattr_tdb_fremovexattr,
-	.open_fn = xattr_tdb_open,
 	.openat_fn = xattr_tdb_openat,
 	.mkdirat_fn = xattr_tdb_mkdirat,
 	.unlinkat_fn = xattr_tdb_unlinkat,

@@ -780,50 +780,6 @@ static int um_closedir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CLOSEDIR(handle, realdirp);
 }
 
-static int um_open(vfs_handle_struct *handle,
-		   struct smb_filename *smb_fname,
-		   files_struct *fsp,
-		   int flags,
-		   mode_t mode)
-{
-	int ret;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering with smb_fname->base_name '%s'\n",
-			      smb_fname->base_name));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	if (alloc_get_client_smb_fname(handle, talloc_tos(),
-				       smb_fname,
-				       &client_fname)) {
-		ret = -1;
-		goto err;
-	}
-
-	/*
-	 * FIXME:
-	 * What about fsp->fsp_name?  We also have to get correct stat
-	 * info into fsp and smb_fname for DB files, don't we?
-	 */
-
-	DEBUG(10, ("Leaving with smb_fname->base_name '%s' "
-		   "smb_fname->st.st_ex_mtime %s"
-		   "fsp->fsp_name->st.st_ex_mtime %s",
-			      smb_fname->base_name,
-			      ctime(&(smb_fname->st.st_ex_mtime.tv_sec)),
-			      ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec))));
-
-	ret = SMB_VFS_NEXT_OPEN(handle, client_fname, fsp, flags, mode);
-err:
-	TALLOC_FREE(client_fname);
-	DEBUG(10, ("Leaving with smb_fname->base_name '%s'\n",
-			      smb_fname->base_name));
-	return ret;
-}
-
 static int um_openat(struct vfs_handle_struct *handle,
 		     const struct files_struct *dirfsp,
 		     const struct smb_filename *smb_fname,
@@ -1893,7 +1849,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	/* File operations */
 
-	.open_fn = um_open,
 	.openat_fn = um_openat,
 	.create_file_fn = um_create_file,
 	.renameat_fn = um_renameat,

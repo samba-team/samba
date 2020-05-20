@@ -338,56 +338,6 @@ static int widelinks_lstat(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_STAT(handle, smb_fname);
 }
 
-static int widelinks_open(vfs_handle_struct *handle,
-			struct smb_filename *smb_fname,
-			files_struct *fsp,
-			int flags,
-			mode_t mode)
-{
-	struct widelinks_config *config = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle,
-				config,
-				struct widelinks_config,
-				return -1);
-
-	if (!config->active) {
-		/* Module not active. */
-		return SMB_VFS_NEXT_OPEN(handle,
-				smb_fname,
-				fsp,
-				flags,
-				mode);
-	}
-
-	if (config->cwd == NULL) {
-		/* open before chdir. See note 1b above. */
-		return SMB_VFS_NEXT_OPEN(handle,
-				smb_fname,
-				fsp,
-				flags,
-				mode);
-	}
-
-	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
-		/* POSIX sees symlinks. */
-		return SMB_VFS_NEXT_OPEN(handle,
-				smb_fname,
-				fsp,
-				flags,
-				mode);
-	}
-
-	/* Remove O_NOFOLLOW. */
-	flags = (flags & ~O_NOFOLLOW);
-
-	return SMB_VFS_NEXT_OPEN(handle,
-			smb_fname,
-			fsp,
-			flags,
-			mode);
-}
-
 static int widelinks_openat(vfs_handle_struct *handle,
 			    const struct files_struct *dirfsp,
 			    const struct smb_filename *smb_fname,
@@ -457,7 +407,6 @@ static struct dirent *widelinks_readdir(vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_widelinks_fns = {
 	.connect_fn = widelinks_connect,
 
-	.open_fn = widelinks_open,
 	.openat_fn = widelinks_openat,
 	.lstat_fn = widelinks_lstat,
 	/*

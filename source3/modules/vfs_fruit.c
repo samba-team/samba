@@ -1628,59 +1628,6 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 	return fd;
 }
 
-static int fruit_open(vfs_handle_struct *handle,
-                      struct smb_filename *smb_fname,
-                      files_struct *fsp, int flags, mode_t mode)
-{
-	struct files_struct *fspcwd = NULL;
-	int saved_errno = 0;
-	int fd;
-	NTSTATUS status;
-
-	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
-
-	if (!is_named_stream(smb_fname)) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	status = vfs_at_fspcwd(talloc_tos(),
-			       handle->conn,
-			       &fspcwd);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		fd = fruit_open_meta(handle,
-				     fspcwd,
-				     smb_fname,
-				     fsp,
-				     flags,
-				     mode);
-	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		fd = fruit_open_rsrc(handle,
-				     fspcwd,
-				     smb_fname,
-				     fsp,
-				     flags,
-				     mode);
-	} else {
-		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-	if (fd == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(fspcwd);
-
-	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
-
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return fd;
-}
-
 static int fruit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -5122,7 +5069,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.chmod_fn = fruit_chmod,
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
-	.open_fn = fruit_open,
 	.openat_fn = fruit_openat,
 	.close_fn = fruit_close,
 	.pread_fn = fruit_pread,

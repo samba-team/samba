@@ -2073,43 +2073,6 @@ static int snapper_gmt_lstat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int snapper_gmt_open(vfs_handle_struct *handle,
-			    struct smb_filename *smb_fname, files_struct *fsp,
-			    int flags, mode_t mode)
-{
-	time_t timestamp;
-	char *stripped, *tmp;
-	int ret, saved_errno;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-					smb_fname,
-					&timestamp, &stripped)) {
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	tmp = smb_fname->base_name;
-	smb_fname->base_name = snapper_gmt_convert(talloc_tos(), handle,
-						   stripped, timestamp);
-	TALLOC_FREE(stripped);
-
-	if (smb_fname->base_name == NULL) {
-		smb_fname->base_name = tmp;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	saved_errno = errno;
-
-	TALLOC_FREE(smb_fname->base_name);
-	smb_fname->base_name = tmp;
-
-	errno = saved_errno;
-	return ret;
-}
-
 static int snapper_gmt_openat(struct vfs_handle_struct *handle,
 			      const struct files_struct *dirfsp,
 			      const struct smb_filename *smb_fname_in,
@@ -2817,7 +2780,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.symlinkat_fn = snapper_gmt_symlinkat,
 	.stat_fn = snapper_gmt_stat,
 	.lstat_fn = snapper_gmt_lstat,
-	.open_fn = snapper_gmt_open,
 	.openat_fn = snapper_gmt_openat,
 	.unlinkat_fn = snapper_gmt_unlinkat,
 	.chmod_fn = snapper_gmt_chmod,

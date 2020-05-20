@@ -669,25 +669,6 @@ static int vfswrap_closedir(vfs_handle_struct *handle, DIR *dirp)
 
 /* File operations */
 
-static int vfswrap_open(vfs_handle_struct *handle,
-			struct smb_filename *smb_fname,
-			files_struct *fsp, int flags, mode_t mode)
-{
-	int result = -1;
-
-	START_PROFILE(syscall_open);
-
-	if (is_named_stream(smb_fname)) {
-		errno = ENOENT;
-		goto out;
-	}
-
-	result = open(smb_fname->base_name, flags, mode);
- out:
-	END_PROFILE(syscall_open);
-	return result;
-}
-
 static int vfswrap_openat(vfs_handle_struct *handle,
 			  const struct files_struct *dirfsp,
 			  const struct smb_filename *smb_fname,
@@ -3701,7 +3682,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	/* File operations */
 
-	.open_fn = vfswrap_open,
 	.openat_fn = vfswrap_openat,
 	.create_file_fn = vfswrap_create_file,
 	.close_fn = vfswrap_close,

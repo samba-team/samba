@@ -485,42 +485,6 @@ static void catia_fetch_fsp_post_next(struct catia_cache **_cc,
 	return;
 }
 
-static int catia_open(vfs_handle_struct *handle,
-		      struct smb_filename *smb_fname,
-		      files_struct *fsp,
-		      int flags,
-		      mode_t mode)
-{
-	struct catia_cache *cc = NULL;
-	char *orig_smb_fname = smb_fname->base_name;
-	char *mapped_smb_fname = NULL;
-	NTSTATUS status;
-	int ret;
-
-	status = catia_string_replace_allocate(handle->conn,
-					       smb_fname->base_name,
-					       &mapped_smb_fname,
-					       vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-
-	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
-	if (ret != 0) {
-		TALLOC_FREE(mapped_smb_fname);
-		return ret;
-	}
-
-	smb_fname->base_name = mapped_smb_fname;
-	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	smb_fname->base_name = orig_smb_fname;
-
-	TALLOC_FREE(mapped_smb_fname);
-	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
-
-	return ret;
-}
-
 static int catia_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname_in,
@@ -2500,7 +2464,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.readdir_attr_fn = catia_readdir_attr,
 
 	/* File operations */
-	.open_fn = catia_open,
 	.openat_fn = catia_openat,
 	.pread_fn = catia_pread,
 	.pread_send_fn = catia_pread_send,

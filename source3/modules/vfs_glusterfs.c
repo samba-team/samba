@@ -604,45 +604,6 @@ static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static int vfs_gluster_open(struct vfs_handle_struct *handle,
-			    struct smb_filename *smb_fname, files_struct *fsp,
-			    int flags, mode_t mode)
-{
-	glfs_fd_t *glfd;
-	glfs_fd_t **p_tmp;
-
-	START_PROFILE(syscall_open);
-
-	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
-	if (p_tmp == NULL) {
-		END_PROFILE(syscall_open);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (flags & O_DIRECTORY) {
-		glfd = glfs_opendir(handle->data, smb_fname->base_name);
-	} else if (flags & O_CREAT) {
-		glfd = glfs_creat(handle->data, smb_fname->base_name, flags,
-				  mode);
-	} else {
-		glfd = glfs_open(handle->data, smb_fname->base_name, flags);
-	}
-
-	if (glfd == NULL) {
-		END_PROFILE(syscall_open);
-		/* no extension destroy_fn, so no need to save errno */
-		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
-		return -1;
-	}
-
-	*p_tmp = glfd;
-
-	END_PROFILE(syscall_open);
-	/* An arbitrary value for error reporting, so you know its us. */
-	return 13371337;
-}
-
 static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 			      const struct files_struct *dirfsp,
 			      const struct smb_filename *smb_fname,
@@ -2091,7 +2052,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	/* File Operations */
 
-	.open_fn = vfs_gluster_open,
 	.openat_fn = vfs_gluster_openat,
 	.create_file_fn = NULL,
 	.close_fn = vfs_gluster_close,

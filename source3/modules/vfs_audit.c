@@ -197,23 +197,6 @@ static int audit_mkdirat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_open(vfs_handle_struct *handle,
-		      struct smb_filename *smb_fname, files_struct *fsp,
-		      int flags, mode_t mode)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-
-	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
-	       smb_fname->base_name, result,
-	       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "", 
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
-
-	return result;
-}
-
 static int audit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -326,7 +309,6 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.connect_fn = audit_connect,
 	.disconnect_fn = audit_disconnect,
 	.mkdirat_fn = audit_mkdirat,
-	.open_fn = audit_open,
 	.openat_fn = audit_openat,
 	.close_fn = audit_close,
 	.renameat_fn = audit_renameat,

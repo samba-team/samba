@@ -1318,69 +1318,6 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	return ret;
 }
 
-static int shadow_copy2_open(vfs_handle_struct *handle,
-			     struct smb_filename *smb_fname, files_struct *fsp,
-			     int flags, mode_t mode)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	char *tmp;
-	bool is_converted = false;
-	int saved_errno = 0;
-	int ret;
-
-	if (!shadow_copy2_strip_snapshot_converted(talloc_tos(), handle,
-					 smb_fname,
-					 &timestamp, &stripped,
-					 &is_converted)) {
-		return -1;
-	}
-	if (timestamp == 0) {
-		if (is_converted) {
-			/*
-			 * Just pave over the user requested mode and use
-			 * O_RDONLY. Later attempts by the client to write on
-			 * the handle will fail in the pwrite() syscall with
-			 * EINVAL which we carefully map to EROFS. In sum, this
-			 * matches Windows behaviour.
-			 */
-			flags = O_RDONLY;
-		}
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	tmp = smb_fname->base_name;
-	smb_fname->base_name = shadow_copy2_convert(
-		talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-
-	if (smb_fname->base_name == NULL) {
-		smb_fname->base_name = tmp;
-		return -1;
-	}
-
-	/*
-	 * Just pave over the user requested mode and use O_RDONLY. Later
-	 * attempts by the client to write on the handle will fail in the
-	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
-	 * this matches Windows behaviour.
-	 */
-	flags = O_RDONLY;
-
-	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-
-	TALLOC_FREE(smb_fname->base_name);
-	smb_fname->base_name = tmp;
-
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int shadow_copy2_openat(vfs_handle_struct *handle,
 			       const struct files_struct *dirfsp,
 			       const struct smb_filename *smb_fname_in,
@@ -3255,7 +3192,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.stat_fn = shadow_copy2_stat,
 	.lstat_fn = shadow_copy2_lstat,
 	.fstat_fn = shadow_copy2_fstat,
-	.open_fn = shadow_copy2_open,
 	.openat_fn = shadow_copy2_openat,
 	.unlinkat_fn = shadow_copy2_unlinkat,
 	.chmod_fn = shadow_copy2_chmod,

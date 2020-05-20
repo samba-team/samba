@@ -323,6 +323,7 @@
  * Version 43 - Add dirfsp to struct files_struct
  * Version 43 - Add dirfsp args to SMB_VFS_CREATE_FILE()
  * Version 43 - Add SMB_VFS_OPENAT()
+ * Version 43 - Remove SMB_VFS_OPEN()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -762,9 +763,6 @@ struct vfs_fn_pointers {
 
 	/* File operations */
 
-	int (*open_fn)(struct vfs_handle_struct *handle,
-		       struct smb_filename *smb_fname, files_struct *fsp,
-		       int flags, mode_t mode);
 	int (*openat_fn)(struct vfs_handle_struct *handle,
 			 const struct files_struct *dirfsp,
 			 const struct smb_filename *smb_fname,
@@ -1280,9 +1278,6 @@ int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
 			mode_t mode);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 			  DIR *dir);
-int smb_vfs_call_open(struct vfs_handle_struct *handle,
-		      struct smb_filename *smb_fname, struct files_struct *fsp,
-		      int flags, mode_t mode);
 int smb_vfs_call_openat(struct vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,

@@ -106,92 +106,6 @@ static int prealloc_connect(
 	return 0;
 }
 
-static int prealloc_open(vfs_handle_struct* handle,
-			struct smb_filename *smb_fname,
-			files_struct *	    fsp,
-			int		    flags,
-			mode_t		    mode)
-{
-	int fd;
-	off_t size = 0;
-
-	const char * dot;
-	char fext[10];
-
-	if (!(flags & (O_CREAT|O_TRUNC))) {
-		/* Caller is not intending to rewrite the file. Let's not mess
-		 * with the allocation in this case.
-		 */
-		goto normal_open;
-	}
-
-	*fext = '\0';
-	dot = strrchr(smb_fname->base_name, '.');
-	if (dot && *++dot) {
-		if (strlen(dot) < sizeof(fext)) {
-			strncpy(fext, dot, sizeof(fext));
-			if (!strnorm(fext, CASE_LOWER)) {
-				goto normal_open;
-			}
-		}
-	}
-
-	if (*fext == '\0') {
-		goto normal_open;
-	}
-
-	/* Syntax for specifying preallocation size is:
-	 *	MODULE: <extension> = <size>
-	 * where
-	 *	<extension> is the file extension in lower case
-	 *	<size> is a size like 10, 10K, 10M
-	 */
-	size = conv_str_size(lp_parm_const_string(SNUM(handle->conn), MODULE,
-						    fext, NULL));
-	if (size <= 0) {
-		/* No need to preallocate this file. */
-		goto normal_open;
-	}
-
-	fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	if (fd < 0) {
-		return fd;
-	}
-
-	/* Prellocate only if the file is being created or replaced. Note that
-	 * Samba won't ever pass down O_TRUNC, which is why we have to handle
-	 * truncate calls specially.
-	 */
-	if ((flags & O_CREAT) || (flags & O_TRUNC)) {
-		off_t * psize;
-
-		psize = VFS_ADD_FSP_EXTENSION(handle, fsp, off_t, NULL);
-		if (psize == NULL || *psize == -1) {
-			return fd;
-		}
-
-		DEBUG(module_debug,
-			("%s: preallocating %s (fd=%d) to %lld bytes\n",
-			    MODULE, smb_fname_str_dbg(smb_fname), fd,
-			    (long long)size));
-
-		*psize = size;
-		if (preallocate_space(fd, *psize) < 0) {
-			VFS_REMOVE_FSP_EXTENSION(handle, fsp);
-		}
-	}
-
-	return fd;
-
-normal_open:
-	/* We are not creating or replacing a file. Skip the
-	 * preallocation.
-	 */
-	DEBUG(module_debug, ("%s: skipping preallocation for %s\n",
-		MODULE, smb_fname_str_dbg(smb_fname)));
-	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-}
-
 static int prealloc_openat(struct vfs_handle_struct* handle,
 			   const struct files_struct *dirfsp,
 			   const struct smb_filename *smb_fname,
@@ -294,7 +208,6 @@ static int prealloc_ftruncate(vfs_handle_struct * handle,
 }
 
 static struct vfs_fn_pointers prealloc_fns = {
-	.open_fn = prealloc_open,
 	.openat_fn = prealloc_openat,
 	.ftruncate_fn = prealloc_ftruncate,
 	.connect_fn = prealloc_connect,

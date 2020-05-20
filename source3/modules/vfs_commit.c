@@ -177,77 +177,6 @@ static int commit_connect(
         return 0;
 }
 
-static int commit_open(
-	vfs_handle_struct * handle,
-	struct smb_filename *smb_fname,
-	files_struct *	    fsp,
-	int		    flags,
-	mode_t		    mode)
-{
-        off_t dthresh;
-	const char *eof_mode;
-        struct commit_info *c = NULL;
-        int fd;
-
-        /* Don't bother with read-only files. */
-        if ((flags & O_ACCMODE) == O_RDONLY) {
-                return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-        }
-
-        /* Read and check module configuration */
-        dthresh = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
-                                        MODULE, "dthresh", NULL));
-
-	eof_mode = lp_parm_const_string(SNUM(handle->conn),
-                                        MODULE, "eof mode", "none");
-
-        if (dthresh > 0 || !strequal(eof_mode, "none")) {
-                c = VFS_ADD_FSP_EXTENSION(
-			handle, fsp, struct commit_info, NULL);
-                /* Process main tunables */
-                if (c) {
-                        c->dthresh = dthresh;
-                        c->dbytes = 0;
-                        c->on_eof = EOF_NONE;
-                        c->eof = 0;
-                }
-        }
-        /* Process eof_mode tunable */
-        if (c) {
-                if (strequal(eof_mode, "hinted")) {
-                        c->on_eof = EOF_HINTED;
-                } else if (strequal(eof_mode, "growth")) {
-                        c->on_eof = EOF_GROWTH;
-                }
-        }
-
-        fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	if (fd == -1) {
-		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
-		return fd;
-	}
-
-        /* EOF commit modes require us to know the initial file size. */
-        if (c && (c->on_eof != EOF_NONE)) {
-                SMB_STRUCT_STAT st;
-		/*
-		 * Setting the fd of the FSP is a hack
-		 * but also practiced elsewhere -
-		 * needed for calling the VFS.
-		 */
-		fsp->fh->fd = fd;
-		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
-			int saved_errno = errno;
-			SMB_VFS_CLOSE(fsp);
-			errno = saved_errno;
-                        return -1;
-                }
-		c->eof = st.st_ex_size;
-        }
-
-        return fd;
-}
-
 static int commit_openat(struct vfs_handle_struct *handle,
 			 const struct files_struct *dirfsp,
 			 const struct smb_filename *smb_fname,
@@ -451,7 +380,6 @@ static int commit_ftruncate(
 }
 
 static struct vfs_fn_pointers vfs_commit_fns = {
-        .open_fn = commit_open,
         .openat_fn = commit_openat,
         .close_fn = commit_close,
         .pwrite_fn = commit_pwrite,
