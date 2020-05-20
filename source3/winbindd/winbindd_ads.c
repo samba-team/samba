@@ -405,6 +405,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	DBG_NOTICE("ads query_user_list gave %d entries\n", count);
 
 done:
+	ads_msgfree(ads, res);
 	return status;
 }
 
