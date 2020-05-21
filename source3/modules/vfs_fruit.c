@@ -1335,7 +1335,7 @@ static int fruit_fake_fd(void)
 
 static int fruit_open_meta_stream(vfs_handle_struct *handle,
 				  const struct files_struct *dirfsp,
-				  struct smb_filename *smb_fname,
+				  const struct smb_filename *smb_fname,
 				  files_struct *fsp,
 				  int flags,
 				  mode_t mode)
@@ -1384,7 +1384,7 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 
 static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 				    const struct files_struct *dirfsp,
-				    struct smb_filename *smb_fname,
+				    const struct smb_filename *smb_fname,
 				    files_struct *fsp,
 				    int flags,
 				    mode_t mode)
@@ -1429,7 +1429,7 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 
 static int fruit_open_meta(vfs_handle_struct *handle,
 			   const struct files_struct *dirfsp,
-			   struct smb_filename *smb_fname,
+			   const struct smb_filename *smb_fname,
 			   files_struct *fsp, int flags, mode_t mode)
 {
 	int fd;
@@ -1463,7 +1463,7 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 
 static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 				   const struct files_struct *dirfsp,
-				   struct smb_filename *smb_fname,
+				   const struct smb_filename *smb_fname,
 				   files_struct *fsp,
 				   int flags,
 				   mode_t mode)
@@ -1547,7 +1547,7 @@ exit:
 
 static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 				 const struct files_struct *dirfsp,
-				 struct smb_filename *smb_fname,
+				 const struct smb_filename *smb_fname,
 				 files_struct *fsp,
 				 int flags,
 				 mode_t mode)
@@ -1578,7 +1578,7 @@ static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 
 static int fruit_open_rsrc(vfs_handle_struct *handle,
 			   const struct files_struct *dirfsp,
-			   struct smb_filename *smb_fname,
+			   const struct smb_filename *smb_fname,
 			   files_struct *fsp, int flags, mode_t mode)
 {
 	int fd;
@@ -1683,20 +1683,12 @@ static int fruit_open(vfs_handle_struct *handle,
 
 static int fruit_openat(vfs_handle_struct *handle,
 			const struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname_in,
+			const struct smb_filename *smb_fname,
 			files_struct *fsp,
 			int flags,
 			mode_t mode)
 {
 	int fd;
-	/* FIXME - leaks on talloc_tos(). Fix when SMB_VFS_OPEN() is gone. */
-	struct smb_filename *smb_fname = cp_smb_filename(talloc_tos(),
-							 smb_fname_in);
-
-	if (smb_fname == NULL) {
-		return -1;
-	}
-	/* END FIXME. */
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
