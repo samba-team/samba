@@ -33,7 +33,7 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/util:lib/util lib/tdb_wrap:lib/tdb_wrap
                         lib/ccan:lib/ccan libcli/util:libcli/util
                         lib/async_req:lib/async_req
-                        lib/pthreadpool:lib/pthreadpoool
+                        lib/pthreadpool:lib/pthreadpool
                         lib/messaging:lib/messaging
                         buildtools:buildtools third_party/waf:third_party/waf''')
 
