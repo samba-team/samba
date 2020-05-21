@@ -438,9 +438,9 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 }
 
 #define CATIA_FETCH_FSP_POST_NEXT(_cc, fsp) do { \
-	int saved_errno = errno; \
+	int catia_saved_errno = errno; \
 	catia_fetch_fsp_post_next((_cc), (fsp), __func__); \
-	errno = saved_errno; \
+	errno = catia_saved_errno; \
 } while(0)
 
 static void catia_fetch_fsp_post_next(struct catia_cache **_cc,
