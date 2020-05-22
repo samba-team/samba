@@ -547,9 +547,18 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		struct ndr_pull *ndr_pull = NULL;
 		DATA_BLOB sid_buf = data_blob_null;
 		TALLOC_CTX *tmp_ctx = talloc_init("geninfo_quota");
+		bool ok;
 
 		if (!tmp_ctx) {
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+
+		ok = check_fsp_ntquota_handle(conn, smbreq, fsp);
+		if (!ok) {
+			DBG_INFO("no valid QUOTA HANDLE\n");
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 			return tevent_req_post(req, ev);
 		}
 
