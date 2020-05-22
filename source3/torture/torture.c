@@ -14721,6 +14721,10 @@ static struct {
 		.fn    = run_smb2_sacl,
 	},
 	{
+		.name  = "SMB2-QUOTA1",
+		.fn    = run_smb2_quota1,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},

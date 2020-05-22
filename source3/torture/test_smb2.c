@@ -2876,3 +2876,70 @@ bool run_smb2_sacl(int dummy)
 	(void)cli_unlink(cli, fname, 0);
 	return false;
 }
+
+bool run_smb2_quota1(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	SMB_NTQUOTA_STRUCT qt = {0};
+
+	printf("Starting SMB2-SACL\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_smb2_create_fnum(
+		cli,
+		"\\",
+		SMB2_OPLOCK_LEVEL_NONE,
+		SMB2_IMPERSONATION_IMPERSONATION,
+		SEC_GENERIC_READ, /* desired access */
+		0, /* file_attributes, */
+		FILE_SHARE_READ|
+		FILE_SHARE_WRITE|
+		FILE_SHARE_DELETE, /* share_access, */
+		FILE_OPEN, /* create_disposition, */
+		FILE_DIRECTORY_FILE, /* create_options, */
+		NULL, /* in_cblobs. */
+		&fnum, /* fnum */
+		NULL, /* smb_create_returns  */
+		NULL, /* mem_ctx */
+		NULL); /* out_cblobs */
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_smb2_create_fnum failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_smb2_get_user_quota(cli, fnum, &qt);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("cli_smb2_get_user_quota returned %s, expected "
+		       "NT_STATUS_INVALID_HANDLE\n",
+		       nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}

@@ -96,6 +96,7 @@ fileserver_tests = [
          "SMB2-SESSION-REAUTH", "SMB2-SESSION-RECONNECT", "SMB2-FTRUNCATE",
          "SMB2-ANONYMOUS", "SMB2-DIR-FSYNC",
 	 "SMB2-PATH-SLASH",
+	 "SMB2-QUOTA1",
          "CLEANUP1",
          "CLEANUP2",
          "CLEANUP4",
