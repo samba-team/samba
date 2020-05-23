@@ -36,6 +36,10 @@
 #include "samba_util.h"
 #include "lib/util/select.h"
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #undef malloc
 #undef strcasecmp
 #undef strncasecmp
@@ -1282,6 +1286,12 @@ void anonymous_shared_free(void *ptr)
 void samba_start_debugger(void)
 {
 	char *cmd = NULL;
+#if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
+	/*
+	 * Make sure all children can attach a debugger.
+	 */
+	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
+#endif
 	if (asprintf(&cmd, "xterm -e \"gdb --pid %u\"&", getpid()) == -1) {
 		return;
 	}
