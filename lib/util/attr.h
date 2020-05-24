@@ -20,14 +20,18 @@
 #ifndef __UTIL_ATTR_H__
 #define __UTIL_ATTR_H__
 
+/* for old gcc releases that don't have the feature test macro __has_attribute */
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 #ifndef _UNUSED_
-#ifdef __GNUC__
+#if __has_attribute(unused) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 /** gcc attribute used on function parameters so that it does not emit
  * warnings about them being unused. **/
 #  define _UNUSED_ __attribute__ ((unused))
 #else
 #  define _UNUSED_
-/** Feel free to add definitions for other compilers here. */
 #endif
 #endif
 #ifndef UNUSED
@@ -35,7 +39,7 @@
 #endif
 
 #ifndef _DEPRECATED_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(deprecated) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
@@ -43,7 +47,7 @@
 #endif
 
 #ifndef _WARN_UNUSED_RESULT_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(warn_unused_result) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define _WARN_UNUSED_RESULT_ __attribute__ ((warn_unused_result))
 #else
 #define _WARN_UNUSED_RESULT_
@@ -51,7 +55,7 @@
 #endif
 
 #ifndef _NORETURN_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(noreturn) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define _NORETURN_ __attribute__ ((noreturn))
 #else
 #define _NORETURN_
@@ -59,7 +63,7 @@
 #endif
 
 #ifndef _PURE_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(pure) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define _PURE_ __attribute__((pure))
 #else
 #define _PURE_
@@ -67,7 +71,7 @@
 #endif
 
 #ifndef NONNULL
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(nonnull) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define NONNULL(param) param __attribute__((nonnull))
 #else
 #define NONNULL(param) param
@@ -75,7 +79,7 @@
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(format) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
@@ -87,7 +91,7 @@
 #endif
 
 #ifndef FORMAT_ATTRIBUTE
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(format) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 /** Use gcc attribute to check printf fns.  a1 is argument to format()
  * in the above macro.  This is needed to support Heimdal's printf
  * decorations. Note that some gcc 2.x versions don't handle this

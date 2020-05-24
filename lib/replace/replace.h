@@ -447,8 +447,13 @@ int rep_dlclose(void *handle);
 /* prototype is in system/network.h */
 #endif
 
+/* for old gcc releases that don't have the feature test macro __has_attribute */
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 #ifndef PRINTF_ATTRIBUTE
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(format) || (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
