@@ -102,7 +102,7 @@ typedef struct TDB_DATA {
 } TDB_DATA;
 
 #ifndef PRINTF_ATTRIBUTE
-#if (__GNUC__ >= 3)
+#if __has_attribute(format) || (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
