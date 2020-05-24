@@ -89,7 +89,7 @@ struct ldb_val {
 #endif
 
 #ifndef _DEPRECATED_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#if __has_attribute(deprecated) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
