@@ -1858,6 +1858,7 @@ NTSTATUS cli_hardlink(
 ****************************************************************************/
 
 static void cli_unlink_done(struct tevent_req *subreq);
+static void cli_unlink_done2(struct tevent_req *subreq);
 
 struct cli_unlink_state {
 	uint16_t vwv[1];
@@ -1878,6 +1879,15 @@ struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct cli_unlink_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_unlink_send(state, ev, cli, fname, NULL);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_unlink_done2, req);
+		return req;
 	}
 
 	SSVAL(state->vwv+0, 0, mayhave_attrs);
@@ -1922,6 +1932,12 @@ static void cli_unlink_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void cli_unlink_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_unlink_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
 NTSTATUS cli_unlink_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
@@ -1933,10 +1949,6 @@ NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_a
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_unlink(cli, fname, NULL);
-	}
 
 	frame = talloc_stackframe();
 
@@ -1965,6 +1977,7 @@ NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_a
 	}
 
 	status = cli_unlink_recv(req);
+	cli->raw_status = status; /* cli_smb2_unlink_recv doesn't set this */
 
  fail:
 	TALLOC_FREE(frame);
