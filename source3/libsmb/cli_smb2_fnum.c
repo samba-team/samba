@@ -840,48 +840,6 @@ NTSTATUS cli_smb2_mkdir_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-/***************************************************************
- Small wrapper that allows SMB2 to create a directory
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dname)
-{
-	NTSTATUS status;
-	uint16_t fnum;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = cli_smb2_create_fnum(cli,
-			dname,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			FILE_READ_ATTRIBUTES,	/* desired_access */
-			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
-			FILE_CREATE,		/* create_disposition */
-			FILE_DIRECTORY_FILE,	/* create_options */
-			NULL,
-			&fnum,
-			NULL,
-			NULL,
-			NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	return cli_smb2_close_fnum(cli, fnum);
-}
-
 struct cli_smb2_rmdir_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;

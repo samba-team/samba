@@ -79,7 +79,6 @@ struct tevent_req *cli_smb2_mkdir_send(
 	struct cli_state *cli,
 	const char *name);
 NTSTATUS cli_smb2_mkdir_recv(struct tevent_req *req);
-NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dirname);
 struct tevent_req *cli_smb2_rmdir_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
