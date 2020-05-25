@@ -70,7 +70,6 @@ if PY3:
         return (x > y) - (x < y)
     # compat functions
     from functools import cmp_to_key as cmp_to_key_fn
-    import socketserver as SocketServer
 
     # compat types
     integer_types = int,
@@ -145,8 +144,6 @@ else:
             return K
     else:
         from functools import cmp_to_key as cmp_to_key_fn
-    # compat functions
-    import SocketServer as SocketServer
 
     # compat types
     integer_types = (int, long)
