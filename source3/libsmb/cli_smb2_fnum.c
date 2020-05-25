@@ -1160,43 +1160,6 @@ NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_smb2_unlink(
-	struct cli_state *cli,
-	const char *fname,
-	const struct smb2_create_blobs *in_cblobs)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	bool ok;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_smb2_unlink_send(frame, ev, cli, fname, in_cblobs);
-	if (req == NULL) {
-		goto fail;
-	}
-	ok = tevent_req_poll_ntstatus(req, ev, &status);
-	if (!ok) {
-		goto fail;
-	}
-	status = cli_smb2_unlink_recv(req);
-fail:
-	cli->raw_status = status;
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /***************************************************************
  Utility function to parse a SMB2_FIND_ID_BOTH_DIRECTORY_INFO reply.
 ***************************************************************/

@@ -92,10 +92,6 @@ struct tevent_req *cli_smb2_unlink_send(
 	const char *fname,
 	const struct smb2_create_blobs *in_cblobs);
 NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req);
-NTSTATUS cli_smb2_unlink(
-	struct cli_state *cli,
-	const char *fname,
-	const struct smb2_create_blobs *in_cblobs);
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
 			uint16_t attribute,
