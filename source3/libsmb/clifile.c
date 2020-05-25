@@ -2097,6 +2097,7 @@ NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
 ****************************************************************************/
 
 static void cli_rmdir_done(struct tevent_req *subreq);
+static void cli_rmdir_done2(struct tevent_req *subreq);
 
 struct cli_rmdir_state {
 	int dummy;
@@ -2116,6 +2117,15 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct cli_rmdir_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_rmdir_send(state, ev, cli, dname, NULL);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_rmdir_done2, req);
+		return req;
 	}
 
 	bytes = talloc_array(state, uint8_t, 1);
@@ -2158,6 +2168,12 @@ static void cli_rmdir_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void cli_rmdir_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_rmdir_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
 NTSTATUS cli_rmdir_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
@@ -2169,10 +2185,6 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_rmdir(cli, dname, NULL);
-	}
 
 	frame = talloc_stackframe();
 
@@ -2201,6 +2213,7 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 	}
 
 	status = cli_rmdir_recv(req);
+	cli->raw_status = status; /* cli_smb2_rmdir_recv doesn't set this */
 
  fail:
 	TALLOC_FREE(frame);
