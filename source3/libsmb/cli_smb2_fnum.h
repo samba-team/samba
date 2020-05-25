@@ -81,10 +81,6 @@ struct tevent_req *cli_smb2_rmdir_send(
 	const char *dname,
 	const struct smb2_create_blobs *in_cblobs);
 NTSTATUS cli_smb2_rmdir_recv(struct tevent_req *req);
-NTSTATUS cli_smb2_rmdir(
-	struct cli_state *cli,
-	const char *dname,
-	const struct smb2_create_blobs *in_cblobs);
 struct tevent_req *cli_smb2_unlink_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
