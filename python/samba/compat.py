@@ -69,9 +69,6 @@ if PY3:
 
         return (x > y) - (x < y)
     # compat functions
-    from urllib.parse import quote as urllib_quote
-    from urllib.parse import urljoin as urllib_join
-    from urllib.request import urlopen as urllib_urlopen
     from functools import cmp_to_key as cmp_to_key_fn
     import socketserver as SocketServer
 
@@ -149,9 +146,6 @@ else:
     else:
         from functools import cmp_to_key as cmp_to_key_fn
     # compat functions
-    from urllib import quote as urllib_quote
-    from urllib import urlopen as urllib_urlopen
-    from urlparse import urljoin as urllib_join
     import SocketServer as SocketServer
 
     # compat types

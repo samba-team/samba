@@ -26,7 +26,7 @@
 
 __docformat__ = "restructuredText"
 
-from samba.compat import urllib_quote
+from urllib.parse import quote as urllib_quote
 from samba.compat import string_types
 from samba.compat import binary_type
 from base64 import b64encode
