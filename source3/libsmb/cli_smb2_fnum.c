@@ -1015,7 +1015,6 @@ fail:
 
 /***************************************************************
  Small wrapper that allows SMB2 to unlink a pathname.
- Synchronous only.
 ***************************************************************/
 
 struct cli_smb2_unlink_state {
