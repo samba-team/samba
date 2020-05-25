@@ -4612,6 +4612,7 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 ****************************************************************************/
 
 static void cli_chkpath_done(struct tevent_req *subreq);
+static void cli_chkpath_done2(struct tevent_req *subreq);
 
 struct cli_chkpath_state {
 	int dummy;
@@ -4631,6 +4632,15 @@ struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct cli_chkpath_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_chkpath_send(state, ev, cli, fname);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_chkpath_done2, req);
+		return req;
 	}
 
 	bytes = talloc_array(state, uint8_t, 1);
@@ -4673,6 +4683,12 @@ static void cli_chkpath_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void cli_chkpath_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_chkpath_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
 NTSTATUS cli_chkpath_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
@@ -4685,10 +4701,6 @@ NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 	struct tevent_req *req = NULL;
 	char *path2 = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_chkpath(cli, path);
-	}
 
 	frame = talloc_stackframe();
 
@@ -4731,6 +4743,7 @@ NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 	}
 
 	status = cli_chkpath_recv(req);
+	cli->raw_status = status; /* cli_smb2_chkpath_recv doesn't set this */
 
  fail:
 	TALLOC_FREE(frame);
