@@ -109,8 +109,6 @@ struct tevent_req *cli_smb2_chkpath_send(
 	struct cli_state *cli,
 	const char *name);
 NTSTATUS cli_smb2_chkpath_recv(struct tevent_req *req);
-NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
-			const char *name);
 struct tevent_req *cli_smb2_query_info_fnum_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
