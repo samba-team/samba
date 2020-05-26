@@ -14,12 +14,17 @@
 ## 1.3.6.1.4.1.7165.2.3.1.x - attributetypes
 ## 1.3.6.1.4.1.7165.2.3.2.x - objectclasses
 ##
-## Samba4
+## Samba4 - see source4/setup/schema_samba4.ldif
 ## 1.3.6.1.4.1.7165.4.1.x - attributetypes
 ## 1.3.6.1.4.1.7165.4.2.x - objectclasses
 ## 1.3.6.1.4.1.7165.4.3.x - LDB/LDAP Controls
 ## 1.3.6.1.4.1.7165.4.4.x - LDB/LDAP Extended Operations
+## 1.3.6.1.4.1.7165.4.5.x - ldap extended matches
+## 1.3.6.1.4.1.7165.4.6.1.x - SELFTEST random attributes
 ## 1.3.6.1.4.1.7165.4.255.x - mapped OIDs due to conflicts between AD and standards-track
+##
+## Out of tree use allocated in the wiki
+## 1.3.6.1.4.1.7165.777.x - https://wiki.samba.org/index.php/Samba_AD_schema_extensions#OID
 ##
 ## External projects
 ## 1.3.6.1.4.1.7165.655.x
