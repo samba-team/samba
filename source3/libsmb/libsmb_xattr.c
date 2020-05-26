@@ -880,7 +880,7 @@ cacl_get(SMBCCTX *context,
 			targetcli,		/* cli */
 			targetpath,		/* fname */
 			0,			/* CreatFlags */
-			CREATE_ACCESS_READ,	/* DesiredAccess */
+			READ_CONTROL_ACCESS,	/* DesiredAccess */
 			0,			/* FileAttributes */
 			FILE_SHARE_READ|
 			FILE_SHARE_WRITE,	/* ShareAccess */
@@ -1555,7 +1555,7 @@ cacl_set(SMBCCTX *context,
 		targetcli,		/* cli */
 		targetpath,		/* fname */
 		0,			/* CreatFlags */
-		CREATE_ACCESS_READ,	/* DesiredAccess */
+		READ_CONTROL_ACCESS,	/* DesiredAccess */
 		0,			/* FileAttributes */
 		FILE_SHARE_READ|
 		FILE_SHARE_WRITE,	/* ShareAccess */

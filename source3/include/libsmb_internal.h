@@ -65,8 +65,6 @@ struct DOS_ATTR_DESC {
 #define SMBC_XATTR_MODE_CHOWN        5
 #define SMBC_XATTR_MODE_CHGRP        6
 
-#define CREATE_ACCESS_READ      READ_CONTROL_ACCESS
-
 /*We should test for this in configure ... */
 #ifndef ENOTSUP
 #define ENOTSUP EOPNOTSUPP
