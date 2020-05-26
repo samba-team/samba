@@ -1354,19 +1354,14 @@ static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 static bool check_dir_path(struct py_cli_state *self, const char *path)
 {
 	NTSTATUS status;
+	struct tevent_req *req = NULL;
 
-	if (self->is_smb1) {
-		struct tevent_req *req = NULL;
-
-		req = cli_chkpath_send(NULL, self->ev, self->cli, path);
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return false;
-		}
-		status = cli_chkpath_recv(req);
-		TALLOC_FREE(req);
-	} else {
-		status = cli_chkpath(self->cli, path);
+	req = cli_chkpath_send(NULL, self->ev, self->cli, path);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return false;
 	}
+	status = cli_chkpath_recv(req);
+	TALLOC_FREE(req);
 
 	return NT_STATUS_IS_OK(status);
 }
