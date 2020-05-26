@@ -860,10 +860,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		if (rpcclient_netlogon_creds == NULL && cmd_entry->use_netlogon_creds) {
 			const char *dc_name = cmd_entry->rpc_pipe->desthost;
 			const char *domain = rpcclient_netlogon_domain;
-			struct cli_credentials *creds = NULL;
+			struct cli_credentials *trust_creds = NULL;
 
 			ntresult = pdb_get_trust_credentials(domain, NULL,
-							     mem_ctx, &creds);
+							     mem_ctx, &trust_creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Failed to fetch trust credentials for "
 					  "%s to connect to %s: %s\n",
@@ -874,7 +874,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_create_netlogon_creds_ctx(creds,
+			ntresult = rpccli_create_netlogon_creds_ctx(trust_creds,
 							dc_name,
 							rpcclient_msg_ctx,
 							rpcclient_msg_ctx,
@@ -892,8 +892,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				NCACN_NP,
 				rpcclient_netlogon_creds,
 				false, /* force_reauth */
-				creds);
-			TALLOC_FREE(creds);
+				trust_creds);
+			TALLOC_FREE(trust_creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
 					  cmd_entry->table->name));
