@@ -66,8 +66,6 @@ static int max_protocol = -1;
 static int process_tok(char *tok);
 static int cmd_help(void);
 
-#define CREATE_ACCESS_READ READ_CONTROL_ACCESS
-
 /* value for unused fid field in trans2 secondary request */
 #define FID_UNUSED (0xFFFF)
 
@@ -610,7 +608,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 			cli_state,	      /* cli */
 			afname,		      /* fname */
 			0,		      /* CreatFlags */
-			CREATE_ACCESS_READ,   /* DesiredAccess */
+			READ_CONTROL_ACCESS,  /* DesiredAccess */
 			0,		      /* FileAttributes */
 			FILE_SHARE_READ|
 			FILE_SHARE_WRITE,     /* ShareAccess */
