@@ -4491,7 +4491,8 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					return;
 				}
 
-				if (lp_server_smb_encrypt(SNUM(conn)) == SMB_SIGNING_OFF) {
+				if (lp_server_smb_encrypt(SNUM(conn)) ==
+				    SMB_ENCRYPTION_OFF) {
 					reply_nterror(
 						req,
 						NT_STATUS_NOT_SUPPORTED);
