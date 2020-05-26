@@ -876,10 +876,19 @@ cacl_get(SMBCCTX *context,
 		}
 
                 /* ... then obtain any NT attributes which were requested */
-		status = cli_ntcreate(targetcli, targetpath, 0,
-				      CREATE_ACCESS_READ, 0,
-				      FILE_SHARE_READ|FILE_SHARE_WRITE,
-				      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
+		status = cli_ntcreate(
+			targetcli,		/* cli */
+			targetpath,		/* fname */
+			0,			/* CreatFlags */
+			CREATE_ACCESS_READ,	/* DesiredAccess */
+			0,			/* FileAttributes */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE,	/* ShareAccess */
+			FILE_OPEN,		/* CreateDisposition */
+			0x0,			/* CreateOptions */
+			0x0,			/* SecurityFlags */
+			&fnum,			/* pfid */
+			NULL);			/* cr */
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get failed to open %s: %s\n",
 				  targetpath, nt_errstr(status)));
@@ -1542,9 +1551,19 @@ cacl_set(SMBCCTX *context,
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	status = cli_ntcreate(targetcli, targetpath, 0, CREATE_ACCESS_READ, 0,
-			      FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
-			      0x0, 0x0, &fnum, NULL);
+	status = cli_ntcreate(
+		targetcli,		/* cli */
+		targetpath,		/* fname */
+		0,			/* CreatFlags */
+		CREATE_ACCESS_READ,	/* DesiredAccess */
+		0,			/* FileAttributes */
+		FILE_SHARE_READ|
+		FILE_SHARE_WRITE,	/* ShareAccess */
+		FILE_OPEN,		/* CreateDisposition */
+		0x0,			/* CreateOptions */
+		0x0,			/* SecurityFlags */
+		&fnum,			/* pfid */
+		NULL);			/* cr */
 	if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(5, ("cacl_set failed to open %s: %s\n",
                           targetpath, nt_errstr(status)));
