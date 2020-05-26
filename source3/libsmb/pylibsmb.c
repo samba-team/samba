@@ -1326,23 +1326,18 @@ static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *dirname = NULL;
+	struct tevent_req *req = NULL;
 
 	if (!PyArg_ParseTuple(args, "s:mkdir", &dirname)) {
 		return NULL;
 	}
 
-	if (self->is_smb1) {
-		struct tevent_req *req = NULL;
-
-		req = cli_mkdir_send(NULL, self->ev, self->cli, dirname);
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return NULL;
-		}
-		status = cli_mkdir_recv(req);
-		TALLOC_FREE(req);
-	} else {
-		status = cli_mkdir(self->cli, dirname);
+	req = cli_mkdir_send(NULL, self->ev, self->cli, dirname);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
 	}
+	status = cli_mkdir_recv(req);
+	TALLOC_FREE(req);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
