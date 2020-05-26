@@ -606,10 +606,19 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
-		status = cli_ntcreate(cli_state, afname, 0,
-				      CREATE_ACCESS_READ, 0,
-				      FILE_SHARE_READ|FILE_SHARE_WRITE,
-				      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
+		status = cli_ntcreate(
+			cli_state,	      /* cli */
+			afname,		      /* fname */
+			0,		      /* CreatFlags */
+			CREATE_ACCESS_READ,   /* DesiredAccess */
+			0,		      /* FileAttributes */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE,     /* ShareAccess */
+			FILE_OPEN,	      /* CreateDisposition */
+			0x0,		      /* CreateOptions */
+			0x0,		      /* SecurityFlags */
+			&fnum,		      /* pfid */
+			NULL);		      /* cr */
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
 				   afname, nt_errstr(status)));
