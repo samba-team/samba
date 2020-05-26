@@ -448,3 +448,23 @@ enum smb_signing_setting smb_signing_setting_translate(const char *str)
 
 	return signing_state;
 }
+
+/**
+ * @brief Translate SMB encryption settings as string to an enum.
+ *
+ * @param[in]  str  The string to translate.
+ *
+ * @return A corresponding enum @smb_encryption_setting tranlated from the
+ *         string.
+ */
+enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
+{
+	enum smb_encryption_setting encryption_state = SMB_ENCRYPTION_REQUIRED;
+	int32_t val = lpcfg_parse_enum_vals("client smb encrypt", str);
+
+	if (val != INT32_MIN) {
+		encryption_state = val;
+	}
+
+	return encryption_state;
+}

@@ -51,5 +51,6 @@ NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
 			    size_t *_consumed);
 
 enum smb_signing_setting smb_signing_setting_translate(const char *str);
+enum smb_encryption_setting smb_encryption_setting_translate(const char *str);
 
 #endif /* _SMB_UTIL_H */

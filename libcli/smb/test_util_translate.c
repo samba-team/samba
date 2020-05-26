@@ -46,11 +46,30 @@ static void test_smb_signing_setting_translate(void **state)
 
 }
 
+static void test_smb_encryption_setting_translate(void **state)
+{
+	enum smb_encryption_setting encryption_state;
+
+	encryption_state = smb_encryption_setting_translate("wurst");
+	assert_int_equal(encryption_state, SMB_ENCRYPTION_REQUIRED);
+
+	encryption_state = smb_encryption_setting_translate("off");
+	assert_int_equal(encryption_state, SMB_ENCRYPTION_OFF);
+
+	encryption_state = smb_encryption_setting_translate("if_required");
+	assert_int_equal(encryption_state, SMB_ENCRYPTION_IF_REQUIRED);
+
+	encryption_state = smb_encryption_setting_translate("mandatory");
+	assert_int_equal(encryption_state, SMB_ENCRYPTION_REQUIRED);
+
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_smb_signing_setting_translate),
+		cmocka_unit_test(test_smb_encryption_setting_translate),
 	};
 
 	if (argc == 2) {
