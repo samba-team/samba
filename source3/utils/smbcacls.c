@@ -34,9 +34,6 @@
 #include "util_sd.h"
 
 static int test_args;
-
-#define CREATE_ACCESS_READ READ_CONTROL_ACCESS
-
 static int sddl;
 static int query_sec_info = -1;
 static int set_sec_info = -1;
@@ -241,7 +238,7 @@ static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 		cli,			/* cli */
 		filename,		/* fname */
 		0,			/* CreatFlags */
-		CREATE_ACCESS_READ,	/* CreatFlags */
+		READ_CONTROL_ACCESS,	/* CreatFlags */
 		0,			/* FileAttributes */
 		FILE_SHARE_READ|
 		FILE_SHARE_WRITE,	/* ShareAccess */
