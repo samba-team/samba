@@ -1258,20 +1258,15 @@ static NTSTATUS unlink_file(struct py_cli_state *self, const char *filename)
 {
 	NTSTATUS status;
 	uint16_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	struct tevent_req *req = NULL;
 
-	if (self->is_smb1) {
-		struct tevent_req *req = NULL;
-
-		req = cli_unlink_send(NULL, self->ev, self->cli, filename,
-				      attrs);
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		status = cli_unlink_recv(req);
-		TALLOC_FREE(req);
-	} else {
-		status = cli_unlink(self->cli, filename, attrs);
+	req = cli_unlink_send(
+		NULL, self->ev, self->cli, filename, attrs);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
+	status = cli_unlink_recv(req);
+	TALLOC_FREE(req);
 
 	return status;
 }
