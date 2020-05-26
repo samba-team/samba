@@ -1292,19 +1292,15 @@ static PyObject *py_smb_unlink(struct py_cli_state *self, PyObject *args)
 static NTSTATUS remove_dir(struct py_cli_state *self, const char *dirname)
 {
 	NTSTATUS status;
+	struct tevent_req *req = NULL;
 
-	if (self->is_smb1) {
-		struct tevent_req *req = NULL;
-
-		req = cli_rmdir_send(NULL, self->ev, self->cli, dirname);
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		status = cli_rmdir_recv(req);
-		TALLOC_FREE(req);
-	} else {
-		status = cli_rmdir(self->cli, dirname);
+	req = cli_rmdir_send(NULL, self->ev, self->cli, dirname);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
+	status = cli_rmdir_recv(req);
+	TALLOC_FREE(req);
+
 	return status;
 }
 
