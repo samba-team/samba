@@ -664,7 +664,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 	if (strcmp(type,"allow")==0) {
 		if ((old->type & SEC_DESC_DACL_PROTECTED) ==
                     SEC_DESC_DACL_PROTECTED) {
-			int i;
+			uint32_t i;
 			char *parentname,*temp;
 			struct security_descriptor *parent;
 			temp = talloc_strdup(talloc_tos(), filename);
@@ -734,7 +734,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 
 			/* convert all inherited ACL's to non inherated ACL's. */
 			if (old->dacl) {
-				int i;
+				uint32_t i;
 				for (i=0;i<old->dacl->num_aces;i++) {
 					struct security_ace *ace=&old->dacl->aces[i];
 					/* Remove INHERITED FLAG from all aces */
