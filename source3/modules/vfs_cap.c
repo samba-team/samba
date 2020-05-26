@@ -159,7 +159,7 @@ static int cap_openat(vfs_handle_struct *handle,
 	int ret;
 	int saved_errno = 0;
 
-	cappath = capencode(talloc_tos(), smb_fname->base_name);
+	cappath = capencode(talloc_tos(), smb_fname_in->base_name);
 	if (cappath == NULL) {
 		errno = ENOMEM;
 		return -1;
