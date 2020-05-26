@@ -24,6 +24,7 @@
 
 #include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/misc.h"
+#include "libcli/smb/smb_constants.h"
 
 struct cli_credentials {
 	enum credentials_obtained workstation_obtained;
@@ -36,6 +37,7 @@ struct cli_credentials {
 	enum credentials_obtained principal_obtained;
 	enum credentials_obtained keytab_obtained;
 	enum credentials_obtained server_gss_creds_obtained;
+	enum credentials_obtained signing_state_obtained;
 
 	/* Threshold values (essentially a MAX() over a number of the
 	 * above) for the ccache and GSS credentials, to ensure we
@@ -117,6 +119,8 @@ struct cli_credentials {
 	char winbind_separator;
 
 	bool password_will_be_nt_hash;
+
+	enum smb_signing_setting signing_state;
 };
 
 #endif /* __CREDENTIALS_INTERNAL_H__ */

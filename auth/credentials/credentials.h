@@ -38,6 +38,7 @@ struct gssapi_creds_container;
 struct smb_krb5_context;
 struct keytab_container;
 struct db_context;
+enum smb_signing_setting;
 
 /* In order of priority */
 enum credentials_obtained { 
@@ -289,6 +290,12 @@ void *_cli_credentials_callback_data(struct cli_credentials *cred);
 	talloc_get_type_abort(_cli_credentials_callback_data(_cred), _type)
 #define cli_credentials_callback_data_void(_cred) \
 	_cli_credentials_callback_data(_cred)
+
+bool cli_credentials_set_smb_signing(struct cli_credentials *cred,
+				     enum smb_signing_setting signing_state,
+				     enum credentials_obtained obtained);
+enum smb_signing_setting
+cli_credentials_get_smb_signing(struct cli_credentials *cred);
 
 /**
  * Return attached NETLOGON credentials 

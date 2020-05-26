@@ -44,6 +44,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->winbind_separator = '\\';
 
+	cred->signing_state = SMB_SIGNING_DEFAULT;
+
 	return cred;
 }
 
@@ -922,6 +924,12 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 	if (sep != NULL && sep[0] != '\0') {
 		cred->winbind_separator = *lpcfg_winbind_separator(lp_ctx);
 	}
+
+	if (cred->signing_state_obtained <= CRED_SMB_CONF) {
+		/* Will be set to default for invalid smb.conf values */
+		cred->signing_state = lpcfg_client_signing(lp_ctx);
+		cred->signing_state_obtained = CRED_SMB_CONF;
+	}
 }
 
 /**
@@ -1304,6 +1312,43 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 	return true;
 }
 
+/**
+ * @brief Set the SMB signing state to request for a SMB connection.
+ *
+ * @param[in]  creds          The credentials structure to update.
+ *
+ * @param[in]  signing_state  The signing state to set.
+ *
+ * @param obtained            This way the described signing state was specified.
+ *
+ * @return true if we could set the signing state, false otherwise.
+ */
+_PUBLIC_ bool cli_credentials_set_smb_signing(struct cli_credentials *creds,
+					      enum smb_signing_setting signing_state,
+					      enum credentials_obtained obtained)
+{
+	if (obtained >= creds->signing_state_obtained) {
+		creds->signing_state_obtained = obtained;
+		creds->signing_state = signing_state;
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Obtain the SMB signing state from a credentials structure.
+ *
+ * @param[in]  creds  The credential structure to obtain the SMB signing state
+ *                    from.
+ *
+ * @return The SMB singing state.
+ */
+_PUBLIC_ enum smb_signing_setting
+cli_credentials_get_smb_signing(struct cli_credentials *creds)
+{
+	return creds->signing_state;
+}
 
 /**
  * Encrypt a data blob using the session key and the negotiated encryption
