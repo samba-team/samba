@@ -732,7 +732,10 @@ static int inherit(struct cli_state *cli, const char *filename,
                     SEC_DESC_DACL_PROTECTED) {
 			old->type=old->type | SEC_DESC_DACL_PROTECTED;
 
-			/* convert all inherited ACL's to non inherated ACL's. */
+			/*
+			 * convert all inherited ACL's to non
+			 * inherited ACL's.
+			 */
 			if (old->dacl) {
 				uint32_t i;
 				for (i=0;i<old->dacl->num_aces;i++) {
