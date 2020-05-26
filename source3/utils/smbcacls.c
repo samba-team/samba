@@ -237,9 +237,19 @@ static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
-			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum, &cr);
+	status = cli_ntcreate(
+		cli,			/* cli */
+		filename,		/* fname */
+		0,			/* CreatFlags */
+		CREATE_ACCESS_READ,	/* CreatFlags */
+		0,			/* FileAttributes */
+		FILE_SHARE_READ|
+		FILE_SHARE_WRITE,	/* ShareAccess */
+		FILE_OPEN,		/* CreateDisposition */
+		0x0,			/* CreateOptions */
+		0x0,			/* SecurityFlags */
+		&fnum,			/* pfid */
+		&cr);			/* cr */
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return 0;
