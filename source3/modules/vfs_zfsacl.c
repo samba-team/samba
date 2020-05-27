@@ -386,12 +386,12 @@ static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 
    But while "traditional" POSIX DRAFT ACLs (using acl(2) with SETACL
    / GETACL / GETACLCNT) fail for ZFS, the Solaris NFS client
-   implemets a compatibility wrapper, which will make calls to
+   implements a compatibility wrapper, which will make calls to
    traditional ACL calls though vfs_solarisacl succeed. As the
    compatibility wrapper's implementation is (by design) incomplete,
    we want to make sure that it is never being called.
 
-   As long as Samba does not support an exiplicit method for a module
+   As long as Samba does not support an explicit method for a module
    to define conflicting vfs methods, we should override all conflicting
    methods here.
 
