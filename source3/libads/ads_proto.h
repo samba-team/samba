@@ -137,6 +137,11 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 					enum ads_extended_dn_flags flags,
 					struct dom_sid *sid);
 char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
+ADS_STATUS ads_get_additional_dns_hostnames(TALLOC_CTX *mem_ctx,
+                                            ADS_STRUCT *ads,
+                                            const char *machine_name,
+                                            char ***hostnames_array,
+                                            size_t *num_hostnames);
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 bool ads_has_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,

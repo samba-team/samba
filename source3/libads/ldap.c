@@ -1377,6 +1377,7 @@ char *ads_parent_dn(const char *dn)
 		"unicodePwd",
 
 		/* Additional attributes Samba checks */
+		"msDS-AdditionalDnsHostName",
 		"msDS-SupportedEncryptionTypes",
 		"nTSecurityDescriptor",
 
@@ -3663,6 +3664,50 @@ out:
 	ads_msgfree(ads, res);
 
 	return name;
+}
+
+/********************************************************************
+********************************************************************/
+
+ADS_STATUS ads_get_additional_dns_hostnames(TALLOC_CTX *mem_ctx,
+					    ADS_STRUCT *ads,
+					    const char *machine_name,
+					    char ***hostnames_array,
+					    size_t *num_hostnames)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	int count;
+
+	status = ads_find_machine_acct(ads,
+				       &res,
+				       machine_name);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("Host Account for %s not found... skipping operation.\n",
+			 machine_name));
+		return status;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count != 1) {
+		status = ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		goto done;
+	}
+
+	*hostnames_array = ads_pull_strings(ads, mem_ctx, res,
+					    "msDS-AdditionalDnsHostName",
+					    num_hostnames);
+	if (*hostnames_array == NULL) {
+		DEBUG(1, ("Host account for %s does not have msDS-AdditionalDnsHostName.\n",
+			  machine_name));
+		status = ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		goto done;
+	}
+
+done:
+	ads_msgfree(ads, res);
+
+	return status;
 }
 
 /********************************************************************
