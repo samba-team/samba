@@ -349,6 +349,8 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 	char *password_s = NULL;
 	char *my_fqdn;
 	TALLOC_CTX *tmpctx = NULL;
+	char **hostnames_array = NULL;
+	size_t num_hostnames = 0;
 
 	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
@@ -423,6 +425,25 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 				  update_ads);
 	if (ret != 0) {
 		goto out;
+	}
+
+	if (ADS_ERR_OK(ads_get_additional_dns_hostnames(tmpctx, ads,
+							lp_netbios_name(),
+							&hostnames_array,
+							&num_hostnames))) {
+		size_t i;
+
+		for (i = 0; i < num_hostnames; i++) {
+
+			ret = add_kt_entry_etypes(context, tmpctx, ads,
+						  salt_princ_s, keytab,
+						  kvno, srvPrinc,
+						  hostnames_array[i],
+						  &password, update_ads);
+			if (ret != 0) {
+				goto out;
+			}
+		}
 	}
 
 out:
