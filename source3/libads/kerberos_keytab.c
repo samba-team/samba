@@ -228,18 +228,16 @@ out:
 	return ok;
 }
 
-/**********************************************************************
- Adds a single service principal, i.e. 'host' to the system keytab
-***********************************************************************/
-
-int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
+static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
+			       ADS_STRUCT *ads, const char *salt_princ_s,
+			       krb5_keytab keytab, krb5_kvno kvno,
+			       const char *srvPrinc, const char *my_fqdn,
+			       krb5_data *password, bool update_ads)
 {
 	krb5_error_code ret = 0;
-	krb5_context context = NULL;
-	krb5_keytab keytab = NULL;
-	krb5_data password;
-	krb5_kvno kvno;
-        krb5_enctype enctypes[6] = {
+	char *princ_s = NULL;
+	char *short_princ_s = NULL;
+	krb5_enctype enctypes[4] = {
 #ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 #endif
@@ -249,65 +247,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 		ENCTYPE_ARCFOUR_HMAC,
 		0
 	};
-	char *princ_s = NULL;
-	char *short_princ_s = NULL;
-	char *salt_princ_s = NULL;
-	char *password_s = NULL;
-	char *my_fqdn;
-	TALLOC_CTX *tmpctx = NULL;
-	int i;
-
-	ret = smb_krb5_init_context_common(&context);
-	if (ret) {
-		DBG_ERR("kerberos init context failed (%s)\n",
-			error_message(ret));
-		return -1;
-	}
-
-	ret = ads_keytab_open(context, &keytab);
-	if (ret != 0) {
-		goto out;
-	}
-
-	/* retrieve the password */
-	if (!secrets_init()) {
-		DEBUG(1, (__location__ ": secrets_init failed\n"));
-		ret = -1;
-		goto out;
-	}
-	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	if (!password_s) {
-		DEBUG(1, (__location__ ": failed to fetch machine password\n"));
-		ret = -1;
-		goto out;
-	}
-	ZERO_STRUCT(password);
-	password.data = password_s;
-	password.length = strlen(password_s);
-
-	/* we need the dNSHostName value here */
-	tmpctx = talloc_init(__location__);
-	if (!tmpctx) {
-		DEBUG(0, (__location__ ": talloc_init() failed!\n"));
-		ret = -1;
-		goto out;
-	}
-
-	my_fqdn = ads_get_dnshostname(ads, tmpctx, lp_netbios_name());
-	if (!my_fqdn) {
-		DEBUG(0, (__location__ ": unable to determine machine "
-			  "account's dns name in AD!\n"));
-		ret = -1;
-		goto out;
-	}
-
-	/* make sure we have a single instance of a the computer account */
-	if (!ads_has_samaccountname(ads, tmpctx, lp_netbios_name())) {
-		DEBUG(0, (__location__ ": unable to determine machine "
-			  "account's short name in AD!\n"));
-		ret = -1;
-		goto out;
-	}
+	size_t i;
 
 	/* Construct our principal */
 	if (strchr_m(srvPrinc, '@')) {
@@ -356,22 +296,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 		}
 	}
 
-	kvno = (krb5_kvno)ads_get_machine_kvno(ads, lp_netbios_name());
-	if (kvno == -1) {
-		/* -1 indicates failure, everything else is OK */
-		DEBUG(1, (__location__ ": ads_get_machine_kvno failed to "
-			 "determine the system's kvno.\n"));
-		ret = -1;
-		goto out;
-	}
-
-	salt_princ_s = kerberos_secrets_fetch_salt_princ();
-	if (salt_princ_s == NULL) {
-		DBG_WARNING("kerberos_secrets_fetch_salt_princ() failed\n");
-		ret = -1;
-		goto out;
-	}
-
 	for (i = 0; enctypes[i]; i++) {
 
 		/* add the fqdn principal to the keytab */
@@ -381,11 +305,11 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 					    princ_s,
 					    salt_princ_s,
 					    enctypes[i],
-					    &password,
+					    password,
 					    false,
 					    false);
 		if (ret) {
-			DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
+			DBG_WARNING("Failed to add entry to keytab\n");
 			goto out;
 		}
 
@@ -397,15 +321,108 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 						    short_princ_s,
 						    salt_princ_s,
 						    enctypes[i],
-						    &password,
+						    password,
 						    false,
 						    false);
 			if (ret) {
-				DEBUG(1, (__location__
-					  ": Failed to add short entry to keytab\n"));
+				DBG_WARNING("Failed to add short entry to keytab\n");
 				goto out;
 			}
 		}
+	}
+out:
+	return ret;
+}
+
+/**********************************************************************
+ Adds a single service principal, i.e. 'host' to the system keytab
+***********************************************************************/
+
+int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
+{
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_data password;
+	krb5_kvno kvno;
+	char *salt_princ_s = NULL;
+	char *password_s = NULL;
+	char *my_fqdn;
+	TALLOC_CTX *tmpctx = NULL;
+
+	ret = smb_krb5_init_context_common(&context);
+	if (ret) {
+		DBG_ERR("kerberos init context failed (%s)\n",
+			error_message(ret));
+		return -1;
+	}
+
+	ret = ads_keytab_open(context, &keytab);
+	if (ret != 0) {
+		goto out;
+	}
+
+	/* retrieve the password */
+	if (!secrets_init()) {
+		DBG_WARNING("secrets_init failed\n");
+		ret = -1;
+		goto out;
+	}
+	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	if (!password_s) {
+		DBG_WARNING("failed to fetch machine password\n");
+		ret = -1;
+		goto out;
+	}
+	ZERO_STRUCT(password);
+	password.data = password_s;
+	password.length = strlen(password_s);
+
+	/* we need the dNSHostName value here */
+	tmpctx = talloc_init(__location__);
+	if (!tmpctx) {
+		DBG_ERR("talloc_init() failed!\n");
+		ret = -1;
+		goto out;
+	}
+
+	my_fqdn = ads_get_dnshostname(ads, tmpctx, lp_netbios_name());
+	if (!my_fqdn) {
+		DBG_ERR("unable to determine machine account's dns name in "
+			"AD!\n");
+		ret = -1;
+		goto out;
+	}
+
+	/* make sure we have a single instance of a the computer account */
+	if (!ads_has_samaccountname(ads, tmpctx, lp_netbios_name())) {
+		DBG_ERR("unable to determine machine account's short name in "
+			"AD!\n");
+		ret = -1;
+		goto out;
+	}
+
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, lp_netbios_name());
+	if (kvno == -1) {
+		/* -1 indicates failure, everything else is OK */
+		DBG_WARNING("ads_get_machine_kvno failed to determine the "
+			    "system's kvno.\n");
+		ret = -1;
+		goto out;
+	}
+
+	salt_princ_s = kerberos_secrets_fetch_salt_princ();
+	if (salt_princ_s == NULL) {
+		DBG_WARNING("kerberos_secrets_fetch_salt_princ() failed\n");
+		ret = -1;
+		goto out;
+	}
+
+	ret = add_kt_entry_etypes(context, tmpctx, ads, salt_princ_s, keytab,
+				  kvno, srvPrinc, my_fqdn, &password,
+				  update_ads);
+	if (ret != 0) {
+		goto out;
 	}
 
 out:
