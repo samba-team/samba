@@ -546,7 +546,12 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	fstr_sprintf(my_fqdn, "%s.%s", r->in.machine_name, lp_dnsdomain());
+	if (r->in.dnshostname != NULL) {
+		fstr_sprintf(my_fqdn, "%s", r->in.dnshostname);
+	} else {
+		fstr_sprintf(my_fqdn, "%s.%s", r->in.machine_name,
+			     lp_dnsdomain());
+	}
 
 	if (!strlower_m(my_fqdn)) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
