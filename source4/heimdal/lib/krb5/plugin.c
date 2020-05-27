@@ -61,6 +61,8 @@ struct plugin {
 
 static HEIMDAL_MUTEX plugin_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static struct plugin *registered = NULL;
+
+#ifdef HAVE_DLOPEN
 static int plugins_needs_scan = 1;
 
 static const char *sysplugin_dirs[] =  {
@@ -70,6 +72,8 @@ static const char *sysplugin_dirs[] =  {
 #endif
     NULL
 };
+
+#endif /* HAVE_DLOPEN */
 
 /*
  *
@@ -179,6 +183,8 @@ krb5_plugin_register(krb5_context context,
     return 0;
 }
 
+#ifdef HAVE_DLOPEN
+
 static int
 is_valid_plugin_filename(const char * n)
 {
@@ -229,8 +235,6 @@ load_plugins(krb5_context context)
     if (!plugins_needs_scan)
 	return 0;
     plugins_needs_scan = 0;
-
-#ifdef HAVE_DLOPEN
 
     dirs = krb5_config_get_strings(context, NULL, "libdefaults",
 				   "plugin_dir", NULL);
@@ -297,9 +301,18 @@ load_plugins(krb5_context context)
     }
     if (dirs != rk_UNCONST(sysplugin_dirs))
 	krb5_config_free_strings(dirs);
-#endif /* HAVE_DLOPEN */
     return 0;
 }
+
+#else /* HAVE_DLOPEN */
+
+static krb5_error_code
+load_plugins(krb5_context context)
+{
+    return 0;
+}
+
+#endif /* HAVE_DLOPEN */
 
 static krb5_error_code
 add_symbol(krb5_context context, struct krb5_plugin **list, void *symbol)
