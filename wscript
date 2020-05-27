@@ -371,6 +371,9 @@ def configure(conf):
                          msg="Checking compiler for full RELRO support"):
             conf.env['ENABLE_RELRO'] = True
 
+    # #line statements in these generated files cause issues for lcov
+    conf.env.FLEXFLAGS += ["--noline"]
+
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def etags(ctx):
