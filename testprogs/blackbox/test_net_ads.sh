@@ -217,6 +217,15 @@ testit_grep "dns alias SPN" $dns_alias2 $VALGRIND $net_tool ads search -P samacc
 testit_grep "dns alias addl" $dns_alias1 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=`expr $failed + 1`
 testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=`expr $failed + 1`
 
+dedicated_keytab_file="$PREFIX_ABS/test_dns_aliases_dedicated_krb5.keytab"
+
+testit "dns alias create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+testit_grep "dns alias1 check keytab" "host/${dns_alias1}@$REALM" $net_tool ads keytab list --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+testit_grep "dns alias2 check keytab" "host/${dns_alias2}@$REALM" $net_tool ads keytab list --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+rm -f $dedicated_keytab_file
+
 ##Goodbye...
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
