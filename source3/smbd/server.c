@@ -101,6 +101,9 @@ struct smbd_child_pid {
  What to do when smb.conf is updated.
  ********************************************************************/
 
+static NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
+					   uint32_t msg_type, DATA_BLOB* data);
+
 static void smbd_parent_conf_updated(struct messaging_context *msg,
 				     void *private_data,
 				     uint32_t msg_type,
@@ -121,6 +124,7 @@ static void smbd_parent_conf_updated(struct messaging_context *msg,
 	if (!ok) {
 		DBG_ERR("Failed to reinit guest info\n");
 	}
+	messaging_send_to_children(msg, MSG_SMB_CONF_UPDATED, NULL);
 }
 
 /*******************************************************************
