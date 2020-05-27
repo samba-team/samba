@@ -40,7 +40,6 @@ struct user_auth_info {
 	struct loadparm_context *lp_ctx;
 	bool got_username;
 	bool got_pass;
-	int signing_state;
 	bool smb_encrypt;
 	bool use_machine_account;
 	bool use_pw_nt_hash;
@@ -70,7 +69,6 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 
 	cli_credentials_set_conf(result->creds, result->lp_ctx);
 
-	result->signing_state = SMB_SIGNING_DEFAULT;
 	return result;
 }
 
@@ -241,15 +239,23 @@ void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 					 const char *arg)
 {
-	auth_info->signing_state = smb_signing_setting_translate(arg);
+	enum smb_signing_setting signing_state =
+		smb_signing_setting_translate(arg);
+	bool ok;
 
-	return true;
+	ok = cli_credentials_set_smb_signing(auth_info->creds,
+					     signing_state,
+					     CRED_SPECIFIED);
+
+	return ok;
 }
 
 void set_cmdline_auth_info_signing_state_raw(struct user_auth_info *auth_info,
 					     int signing_state)
 {
-	auth_info->signing_state = signing_state;
+	cli_credentials_set_smb_signing(auth_info->creds,
+					signing_state,
+					CRED_SPECIFIED);
 }
 
 int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
@@ -257,7 +263,7 @@ int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 	if (auth_info->smb_encrypt) {
 		return SMB_SIGNING_REQUIRED;
 	}
-	return auth_info->signing_state;
+	return cli_credentials_get_smb_signing(auth_info->creds);
 }
 
 void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info, bool b)
