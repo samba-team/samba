@@ -1,0 +1,2 @@
+^samba4.blackbox.net_ads.nb_alias check dNSHostName
+^samba4.blackbox.net_ads.nb_alias check main SPN

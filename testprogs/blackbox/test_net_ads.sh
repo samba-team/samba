@@ -220,6 +220,20 @@ testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samac
 ##Goodbye...
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
+# netbios aliases tests
+testit "join nb_alias" $VALGRIND $net_tool --option=netbiosaliases=nb_alias1,nb_alias2 ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit "testjoin nb_alias" $VALGRIND $net_tool ads testjoin || failed=`expr $failed + 1`
+
+testit_grep "nb_alias check dNSHostName" $fqdn $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ dNSHostName || failed=`expr $failed + 1`
+testit_grep "nb_alias check main SPN" ${uc_netbios}.${lc_realm} $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+
+testit_grep "nb_alias1 SPN" nb_alias1 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+testit_grep "nb_alias2 SPN" nb_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+
+##Goodbye...
+testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
 #
 # Test createcomputer option of 'net ads join'
 #
