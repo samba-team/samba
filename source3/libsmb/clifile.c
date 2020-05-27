@@ -6551,12 +6551,12 @@ NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 	if (rdata != NULL) {
 		*rdata = talloc_move(mem_ctx, &state->rdata);
-	} else {
-		TALLOC_FREE(state->rdata);
 	}
 	if (num_rdata != NULL) {
 		*num_rdata = state->num_rdata;
 	}
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
