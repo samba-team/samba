@@ -37,6 +37,7 @@ interface libnetjoin
 		[in] string os_servicepack,
 		[in] boolean8 create_upn,
 		[in] string upn,
+		[in] string dnshostname,
 		[in] boolean8 modify_config,
 		[in,unique] ads_struct *ads,
 		[in] boolean8 debug,

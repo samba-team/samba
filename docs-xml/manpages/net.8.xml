@@ -481,7 +481,7 @@ The remote server must be specified with the -S option.
 
 <refsect2>
 <title>[RPC|ADS] JOIN [TYPE] [--no-dns-updates] [-U username[%password]]
-[createupn=UPN] [createcomputer=OU] [machinepass=PASS]
+[dnshostname=FQDN] [createupn=UPN] [createcomputer=OU] [machinepass=PASS]
 [osName=string osVer=string] [options]</title>
 
 <para>
@@ -494,6 +494,11 @@ be created.</para>
 <para>
 [TYPE] may be PDC, BDC or MEMBER to specify the type of server
 joining the domain.
+</para>
+
+<para>
+[FQDN] (ADS only) set the dnsHosName attribute during the join.
+The default format is netbiosname.dnsdomain.
 </para>
 
 <para>
