@@ -3361,10 +3361,11 @@ struct tevent_req *cli_full_connection_creds_send(
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
-	int flags, enum smb_signing_setting signing_state)
+	int flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_full_connection_creds_state *state;
+	enum smb_signing_setting signing_state;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_full_connection_creds_state);
@@ -3378,6 +3379,12 @@ struct tevent_req *cli_full_connection_creds_send(
 	state->service_type = service_type;
 	state->creds = creds;
 	state->flags = flags;
+
+	if (flags & CLI_FULL_CONNECTION_IPC) {
+		signing_state = cli_credentials_get_smb_ipc_signing(creds);
+	} else {
+		signing_state = cli_credentials_get_smb_signing(creds);
+	}
 
 	subreq = cli_start_connection_send(
 		state, ev, my_name, dest_host, dest_ss, port,
@@ -3532,7 +3539,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	}
 	req = cli_full_connection_creds_send(
 		ev, ev, my_name, dest_host, dest_ss, port, service,
-		service_type, creds, flags, signing_state);
+		service_type, creds, flags);
 	if (req == NULL) {
 		goto fail;
 	}

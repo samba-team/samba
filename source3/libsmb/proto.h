@@ -100,7 +100,7 @@ struct tevent_req *cli_full_connection_creds_send(
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
-	int flags, enum smb_signing_setting signing_state);
+	int flags);
 NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 					struct cli_state **output_cli);
 NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,

@@ -440,7 +440,6 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyObject *py_lp = Py_None;
 	PyObject *py_multi_threaded = Py_False;
 	bool multi_threaded = false;
-	enum smb_signing_setting signing_state = SMB_SIGNING_DEFAULT;
 	PyObject *py_force_smb1 = Py_False;
 	bool force_smb1 = false;
 	PyObject *py_ipc = Py_False;
@@ -524,15 +523,9 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
-	if (use_ipc) {
-		signing_state = cli_credentials_get_smb_ipc_signing(cli_creds);
-	} else {
-		signing_state = cli_credentials_get_smb_signing(cli_creds);
-	}
-
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
-		cli_creds, flags, signing_state);
+		cli_creds, flags);
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return -1;
 	}
