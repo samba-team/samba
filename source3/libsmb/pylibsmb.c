@@ -445,6 +445,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	int signing_state = SMB_SIGNING_DEFAULT;
 	PyObject *py_force_smb1 = Py_False;
 	bool force_smb1 = false;
+	PyObject *py_ipc = Py_False;
+	bool use_ipc = false;
 	struct tevent_req *req;
 	bool ret;
 	int flags = 0;
@@ -452,6 +454,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	static const char *kwlist[] = {
 		"host", "share", "lp", "creds",
 		"multi_threaded", "sign", "force_smb1",
+		"ipc",
 		NULL
 	};
 
@@ -462,12 +465,13 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	}
 
 	ret = ParseTupleAndKeywords(
-		args, kwds, "ssO|O!OOO", kwlist,
+		args, kwds, "ssO|O!OOOO", kwlist,
 		&host, &share, &py_lp,
 		py_type_Credentials, &creds,
 		&py_multi_threaded,
 		&py_sign,
-		&py_force_smb1);
+		&py_force_smb1,
+		&py_ipc);
 
 	Py_DECREF(py_type_Credentials);
 
@@ -491,6 +495,11 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		 * we have a way to force SMB1.
 		 */
 		flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+	}
+
+	use_ipc = PyObject_IsTrue(py_ipc);
+	if (use_ipc) {
+		flags |= CLI_FULL_CONNECTION_IPC;
 	}
 
 	if (multi_threaded) {
