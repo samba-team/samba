@@ -392,7 +392,7 @@ def smb_connection(dc_hostname, service, lp, creds):
         # the SMB bindings rely on having a s3 loadparm
         s3_lp = s3param.get_context()
         s3_lp.load(lp.configfile)
-        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds, sign=True)
+        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds)
     except Exception:
         raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
     # Reset signing state

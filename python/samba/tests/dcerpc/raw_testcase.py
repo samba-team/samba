@@ -45,7 +45,7 @@ class smb_pipe_socket(object):
         saved_signing_state = creds.get_smb_ipc_signing()
         creds.set_smb_ipc_signing(SMB_SIGNING_REQUIRED)
         self.smbconn = libsmb.Conn(target_hostname, 'IPC$', lp3,
-                                   creds=creds, ipc=True, sign=True)
+                                   creds=creds, ipc=True)
         creds.set_smb_ipc_signing(saved_signing_state)
         self.smbfid = self.smbconn.create(pipename,
                                           DesiredAccess=0x12019f,

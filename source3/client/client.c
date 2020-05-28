@@ -6228,7 +6228,10 @@ static int do_message_op(struct user_auth_info *a_info)
 
 	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
 				port ? port : NBT_SMB_PORT, name_type,
-				lp_netbios_name(), SMB_SIGNING_DEFAULT, 0, &cli);
+				lp_netbios_name(),
+				SMB_SIGNING_OFF,
+				0,
+				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
 		return 1;

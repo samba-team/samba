@@ -120,7 +120,7 @@ def smb_sysvol_conn(server, lp, creds):
     # Force signing for the connection
     saved_signing_state = creds.get_smb_signing()
     creds.set_smb_signing(SMB_SIGNING_REQUIRED)
-    conn = libsmb.Conn(server, "sysvol", lp=s3_lp, creds=creds, sign=True)
+    conn = libsmb.Conn(server, "sysvol", lp=s3_lp, creds=creds)
     # Reset signing state
     creds.set_smb_signing(saved_signing_state)
     return conn
