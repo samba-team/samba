@@ -46,6 +46,12 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->signing_state = SMB_SIGNING_DEFAULT;
 
+	/*
+	 * The default value of lpcfg_client_ipc_signing() is REQUIRED, so use
+	 * the same value here.
+	 */
+	cred->ipc_signing_state = SMB_SIGNING_REQUIRED;
+
 	return cred;
 }
 
@@ -930,6 +936,12 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 		cred->signing_state = lpcfg_client_signing(lp_ctx);
 		cred->signing_state_obtained = CRED_SMB_CONF;
 	}
+
+	if (cred->ipc_signing_state_obtained <= CRED_SMB_CONF) {
+		/* Will be set to required for invalid smb.conf values */
+		cred->ipc_signing_state = lpcfg_client_ipc_signing(lp_ctx);
+		cred->ipc_signing_state_obtained = CRED_SMB_CONF;
+	}
 }
 
 /**
@@ -1348,6 +1360,45 @@ _PUBLIC_ enum smb_signing_setting
 cli_credentials_get_smb_signing(struct cli_credentials *creds)
 {
 	return creds->signing_state;
+}
+
+/**
+ * @brief Set the SMB IPC signing state to request for a SMB connection.
+ *
+ * @param[in]  creds          The credentials structure to update.
+ *
+ * @param[in]  signing_state  The signing state to set.
+ *
+ * @param obtained            This way the described signing state was specified.
+ *
+ * @return true if we could set the signing state, false otherwise.
+ */
+_PUBLIC_ bool
+cli_credentials_set_smb_ipc_signing(struct cli_credentials *creds,
+				    enum smb_signing_setting ipc_signing_state,
+				    enum credentials_obtained obtained)
+{
+	if (obtained >= creds->ipc_signing_state_obtained) {
+		creds->ipc_signing_state_obtained = obtained;
+		creds->ipc_signing_state = ipc_signing_state;
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Obtain the SMB IPC signing state from a credentials structure.
+ *
+ * @param[in]  creds  The credential structure to obtain the SMB IPC signing
+ *                    state from.
+ *
+ * @return The SMB singing state.
+ */
+_PUBLIC_ enum smb_signing_setting
+cli_credentials_get_smb_ipc_signing(struct cli_credentials *creds)
+{
+	return creds->ipc_signing_state;
 }
 
 /**

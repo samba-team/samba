@@ -297,6 +297,12 @@ bool cli_credentials_set_smb_signing(struct cli_credentials *cred,
 enum smb_signing_setting
 cli_credentials_get_smb_signing(struct cli_credentials *cred);
 
+bool cli_credentials_set_smb_ipc_signing(struct cli_credentials *cred,
+					 enum smb_signing_setting ipc_signing_state,
+					 enum credentials_obtained obtained);
+enum smb_signing_setting
+cli_credentials_get_smb_ipc_signing(struct cli_credentials *cred);
+
 /**
  * Return attached NETLOGON credentials 
  */
