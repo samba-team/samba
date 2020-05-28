@@ -3538,7 +3538,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 				"IPC$", "IPC",
 				get_cmdline_auth_info_creds(
 					popt_get_cmdline_auth_info()),
-				0, /* flags */
+				CLI_FULL_CONNECTION_IPC,
 				get_cmdline_auth_info_signing_state(
 					popt_get_cmdline_auth_info()));
 

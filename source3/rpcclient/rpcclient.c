@@ -1019,7 +1019,7 @@ out_free:
 	static int		opt_port = 0;
 	int result = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-	uint32_t flags = 0;
+	uint32_t flags = CLI_FULL_CONNECTION_IPC;
 	struct dcerpc_binding *binding = NULL;
 	enum dcerpc_transport_t transport;
 	uint32_t bflags = 0;

@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	const char *mds_query = NULL;
 	struct cli_state *cli = NULL;
 	char *basepath = NULL;
-	uint32_t flags = 0;
+	uint32_t flags = CLI_FULL_CONNECTION_IPC;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
 	uint64_t *cnids = NULL;
 	size_t ncnids;

@@ -2788,7 +2788,7 @@ static struct tevent_req *cli_start_connection_send(
 	}
 	state->ev = ev;
 
-	if (signing_state == SMB_SIGNING_IPC_DEFAULT) {
+	if (flags & CLI_FULL_CONNECTION_IPC) {
 		state->min_protocol = lp_client_ipc_min_protocol();
 		state->max_protocol = lp_client_ipc_max_protocol();
 	} else {
@@ -3673,6 +3673,7 @@ struct cli_state *get_ipc_connect(char *server,
 	uint32_t flags = CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
 
 	flags |= CLI_FULL_CONNECTION_FORCE_SMB1;
+	flags |= CLI_FULL_CONNECTION_IPC;
 
 	nt_status = cli_full_connection_creds(&cli, NULL, server, server_ss, 0, "IPC$", "IPC",
 					get_cmdline_auth_info_creds(user_info),

@@ -1919,7 +1919,7 @@ int main(int argc, const char *argv[])
 		"IPC$",
 		"?????",
 		options.credentials,
-		0,
+		CLI_FULL_CONNECTION_IPC,
 		0);
 
 	if (!NT_STATUS_IS_OK(status)) {

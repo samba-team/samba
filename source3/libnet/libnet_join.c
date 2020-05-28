@@ -1068,7 +1068,7 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 	bool use_ccache = false;
 	bool pw_nt_hash = false;
 	struct cli_credentials *creds = NULL;
-	int flags = 0;
+	int flags = CLI_FULL_CONNECTION_IPC;
 	NTSTATUS status;
 
 	if (use_kerberos && pass) {
@@ -1684,7 +1684,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	struct netlogon_creds_CredentialState *creds = NULL;
 	uint32_t netlogon_flags = 0;
 	NTSTATUS status;
-	int flags = 0;
+	int flags = CLI_FULL_CONNECTION_IPC;
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1734,7 +1734,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 						   NULL, 0,
 						   "IPC$", "IPC",
 						   anon_creds,
-						   0,
+						   flags,
 						   SMB_SIGNING_OFF);
 	}
 
