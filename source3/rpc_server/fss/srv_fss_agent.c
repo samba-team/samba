@@ -32,7 +32,6 @@
 #include "librpc/gen_ndr/ndr_fsrvp.h"
 #include "rpc_server/rpc_server.h"
 #include "srv_fss_private.h"
-#include "srv_fss_agent.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -388,14 +387,14 @@ static struct fss_sc_smap *sc_smap_lookup(struct fss_sc_smap *smaps_head,
 	return NULL;
 }
 
-void srv_fssa_cleanup(void)
+static void srv_fssa_cleanup(void)
 {
 	talloc_free(fss_global.db_path);
 	talloc_free(fss_global.mem_ctx);
 	ZERO_STRUCT(fss_global);
 }
 
-NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx)
+static NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
 	fss_global.mem_ctx = talloc_named_const(NULL, 0,
@@ -1732,7 +1731,6 @@ static NTSTATUS FileServerVssAgent__op_shutdown_server(
 
 #define DCESRV_INTERFACE_FILESERVERVSSAGENT_SHUTDOWN_SERVER \
 	fileservervssagent_shutdown_server
-
 
 static NTSTATUS fileservervssagent_shutdown_server(
 		struct dcesrv_context *dce_ctx,
