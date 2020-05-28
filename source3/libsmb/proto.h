@@ -86,12 +86,12 @@ NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 NTSTATUS cli_tdis(struct cli_state *cli);
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
-			int signing_state, int flags, struct cli_state **pcli);
+			enum smb_signing_setting signing_state, int flags, struct cli_state **pcli);
 NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *my_name,
 			      const char *dest_host,
 			      const struct sockaddr_storage *dest_ss, int port,
-			      int signing_state, int flags);
+			      enum smb_signing_setting signing_state, int flags);
 NTSTATUS cli_smb1_setup_encryption(struct cli_state *cli,
 				   struct cli_credentials *creds);
 struct tevent_req *cli_full_connection_creds_send(
@@ -100,7 +100,7 @@ struct tevent_req *cli_full_connection_creds_send(
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
-	int flags, int signing_state);
+	int flags, enum smb_signing_setting signing_state);
 NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 					struct cli_state **output_cli);
 NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
@@ -110,7 +110,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 				   const char *service, const char *service_type,
 				   struct cli_credentials *creds,
 				   int flags,
-				   int signing_state);
+				   enum smb_signing_setting signing_state);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16_t *max_xmit, uint16_t *tid);
@@ -177,7 +177,7 @@ extern struct GUID cli_state_client_guid;
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
-				   int signing_state,
+				   enum smb_signing_setting signing_state,
 				   int flags);
 void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);

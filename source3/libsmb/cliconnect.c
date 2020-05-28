@@ -2631,7 +2631,7 @@ static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
 
 struct cli_connect_nb_state {
 	const char *desthost;
-	int signing_state;
+	enum smb_signing_setting signing_state;
 	int flags;
 	struct cli_state *cli;
 };
@@ -2642,7 +2642,7 @@ static struct tevent_req *cli_connect_nb_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *host, const struct sockaddr_storage *dest_ss,
 	uint16_t port, int name_type, const char *myname,
-	int signing_state, int flags)
+	enum smb_signing_setting signing_state, int flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_nb_state *state;
@@ -2727,7 +2727,7 @@ static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
 
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
-			int signing_state, int flags, struct cli_state **pcli)
+			enum smb_signing_setting signing_state, int flags, struct cli_state **pcli)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -2776,7 +2776,7 @@ static struct tevent_req *cli_start_connection_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
 	const struct sockaddr_storage *dest_ss, int port,
-	int signing_state, int flags)
+	enum smb_signing_setting signing_state, int flags)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_start_connection_state *state;
@@ -2881,7 +2881,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *my_name, 
 			      const char *dest_host, 
 			      const struct sockaddr_storage *dest_ss, int port,
-			      int signing_state, int flags)
+			      enum smb_signing_setting signing_state, int flags)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -3361,7 +3361,7 @@ struct tevent_req *cli_full_connection_creds_send(
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
-	int flags, int signing_state)
+	int flags, enum smb_signing_setting signing_state)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_full_connection_creds_state *state;
@@ -3520,7 +3520,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 				   const char *service, const char *service_type,
 				   struct cli_credentials *creds,
 				   int flags,
-				   int signing_state)
+				   enum smb_signing_setting signing_state)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
