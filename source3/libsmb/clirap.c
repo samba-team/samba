@@ -1298,26 +1298,150 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Send a qfileinfo call.
-****************************************************************************/
+struct cli_qfileinfo_basic_state {
+	uint32_t attr;
+	off_t size;
+	struct timespec create_time;
+	struct timespec access_time;
+	struct timespec write_time;
+	struct timespec change_time;
+	SMB_INO_T ino;
+};
 
-NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint32_t *pattr, off_t *size,
-			     struct timespec *create_time,
-			     struct timespec *access_time,
-			     struct timespec *write_time,
-			     struct timespec *change_time,
-			     SMB_INO_T *ino)
+static void cli_qfileinfo_basic_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qfileinfo_basic_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum)
 {
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_qfileinfo_basic_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_qfileinfo_basic_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* if its a win95 server then fail this - win95 totally screws it
+	   up */
+	if (cli->win95) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_qfileinfo_send(
+		state,
+		ev,
+		cli,
+		fnum,
+		SMB_QUERY_FILE_ALL_INFO, /* level */
+		68,			 /* min_rdata */
+		CLI_BUFFER_SIZE);	 /* max_rdata */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_qfileinfo_basic_done, req);
+	return req;
+}
+
+static void cli_qfileinfo_basic_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qfileinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_basic_state);
 	uint8_t *rdata;
 	uint32_t num_rdata;
 	NTSTATUS status;
 
+	status = cli_qfileinfo_recv(
+		subreq, state, NULL, &rdata, &num_rdata);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->create_time = interpret_long_date((char *)rdata+0);
+	state->access_time = interpret_long_date((char *)rdata+8);
+	state->write_time = interpret_long_date((char *)rdata+16);
+	state->change_time = interpret_long_date((char *)rdata+24);
+	state->attr = PULL_LE_U32(rdata, 32);
+	state->size = PULL_LE_U64(rdata,48);
+	state->ino = PULL_LE_U32(rdata, 64);
+	TALLOC_FREE(rdata);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_qfileinfo_basic_recv(
+	struct tevent_req *req,
+	uint32_t *attr,
+	off_t *size,
+	struct timespec *create_time,
+	struct timespec *access_time,
+	struct timespec *write_time,
+	struct timespec *change_time,
+	SMB_INO_T *ino)
+{
+	struct cli_qfileinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_basic_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (create_time != NULL) {
+		*create_time = state->create_time;
+	}
+	if (access_time != NULL) {
+		*access_time = state->access_time;
+	}
+	if (write_time != NULL) {
+		*write_time = state->write_time;
+	}
+	if (change_time != NULL) {
+		*change_time = state->change_time;
+	}
+	if (attr != NULL) {
+		*attr = state->attr;
+	}
+	if (size != NULL) {
+                *size = state->size;
+	}
+	if (ino) {
+		*ino = state->ino;
+	}
+
+	return NT_STATUS_OK;
+}
+/****************************************************************************
+ Send a qfileinfo call.
+****************************************************************************/
+
+NTSTATUS cli_qfileinfo_basic(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t *attr,
+	off_t *size,
+	struct timespec *create_time,
+	struct timespec *access_time,
+	struct timespec *write_time,
+	struct timespec *change_time,
+	SMB_INO_T *ino)
+{
+	TALLOC_CTX *frame = NULL;
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_qfileinfo_basic(cli,
 						fnum,
-						pattr,
+						attr,
 						size,
 						create_time,
 						access_time,
@@ -1326,45 +1450,39 @@ NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 						ino);
 	}
 
-	/* if its a win95 server then fail this - win95 totally screws it
-	   up */
-	if (cli->win95) {
-		return NT_STATUS_NOT_SUPPORTED;
+	frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_qfileinfo_basic_send(frame, ev, cli, fnum);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
 
-	status = cli_qfileinfo(talloc_tos(), cli, fnum,
-			       SMB_QUERY_FILE_ALL_INFO,
-			       68, CLI_BUFFER_SIZE,
-			       NULL,
-			       &rdata, &num_rdata);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (create_time) {
-		*create_time = interpret_long_date((char *)rdata+0);
-	}
-	if (access_time) {
-		*access_time = interpret_long_date((char *)rdata+8);
-	}
-	if (write_time) {
-		*write_time = interpret_long_date((char *)rdata+16);
-	}
-	if (change_time) {
-		*change_time = interpret_long_date((char *)rdata+24);
-	}
-	if (pattr) {
-		*pattr = SVAL(rdata, 32);
-	}
-	if (size) {
-                *size = IVAL2_TO_SMB_BIG_UINT(rdata,48);
-	}
-	if (ino) {
-		*ino = IVAL(rdata, 64);
-	}
-
-	TALLOC_FREE(rdata);
-	return NT_STATUS_OK;
+	status = cli_qfileinfo_basic_recv(
+		req,
+		attr,
+		size,
+		create_time,
+		access_time,
+		write_time,
+		change_time,
+		ino);
+fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************

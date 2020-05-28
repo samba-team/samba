@@ -125,13 +125,30 @@ bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 				struct stream_struct **pstreams);
 NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 		       TALLOC_CTX *mem_ctx, char **name);
-NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint32_t *pattr, off_t *size,
-			     struct timespec *create_time,
-			     struct timespec *access_time,
-			     struct timespec *write_time,
-			     struct timespec *change_time,
-			     SMB_INO_T *ino);
+struct tevent_req *cli_qfileinfo_basic_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum);
+NTSTATUS cli_qfileinfo_basic_recv(
+	struct tevent_req *req,
+	uint32_t *attr,
+	off_t *size,
+	struct timespec *create_time,
+	struct timespec *access_time,
+	struct timespec *write_time,
+	struct timespec *change_time,
+	SMB_INO_T *ino);
+NTSTATUS cli_qfileinfo_basic(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t *attr,
+	off_t *size,
+	struct timespec *create_time,
+	struct timespec *access_time,
+	struct timespec *write_time,
+	struct timespec *change_time,
+	SMB_INO_T *ino);
 struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct cli_state *cli,
