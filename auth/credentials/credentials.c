@@ -51,6 +51,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	 * the same value here.
 	 */
 	cred->ipc_signing_state = SMB_SIGNING_REQUIRED;
+	cred->encryption_state = SMB_ENCRYPTION_DEFAULT;
 
 	return cred;
 }
@@ -942,6 +943,12 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 		cred->ipc_signing_state = lpcfg_client_ipc_signing(lp_ctx);
 		cred->ipc_signing_state_obtained = CRED_SMB_CONF;
 	}
+
+	if (cred->encryption_state_obtained <= CRED_SMB_CONF) {
+		/* Will be set to default for invalid smb.conf values */
+		cred->encryption_state = lpcfg_client_smb_encrypt(lp_ctx);
+		cred->encryption_state_obtained = CRED_SMB_CONF;
+	}
 }
 
 /**
@@ -1399,6 +1406,44 @@ _PUBLIC_ enum smb_signing_setting
 cli_credentials_get_smb_ipc_signing(struct cli_credentials *creds)
 {
 	return creds->ipc_signing_state;
+}
+
+/**
+ * @brief Set the SMB encryption state to request for a SMB connection.
+ *
+ * @param[in]  creds  The credentials structure to update.
+ *
+ * @param[in]  encryption_state  The encryption state to set.
+ *
+ * @param obtained  This way the described encryption state was specified.
+ *
+ * @return true if we could set the encryption state, false otherwise.
+ */
+_PUBLIC_ bool cli_credentials_set_smb_encryption(struct cli_credentials *creds,
+						 enum smb_encryption_setting encryption_state,
+						 enum credentials_obtained obtained)
+{
+	if (obtained >= creds->encryption_state_obtained) {
+		creds->encryption_state_obtained = obtained;
+		creds->encryption_state = encryption_state;
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * @brief Obtain the SMB encryption state from a credentials structure.
+ *
+ * @param[in]  creds  The credential structure to obtain the SMB encryption state
+ *                    from.
+ *
+ * @return The SMB singing state.
+ */
+_PUBLIC_ enum smb_encryption_setting
+cli_credentials_get_smb_encryption(struct cli_credentials *creds)
+{
+	return creds->encryption_state;
 }
 
 /**

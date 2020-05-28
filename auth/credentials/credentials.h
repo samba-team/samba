@@ -39,6 +39,7 @@ struct smb_krb5_context;
 struct keytab_container;
 struct db_context;
 enum smb_signing_setting;
+enum smb_encryption_setting;
 
 /* In order of priority */
 enum credentials_obtained { 
@@ -302,6 +303,12 @@ bool cli_credentials_set_smb_ipc_signing(struct cli_credentials *cred,
 					 enum credentials_obtained obtained);
 enum smb_signing_setting
 cli_credentials_get_smb_ipc_signing(struct cli_credentials *cred);
+
+bool cli_credentials_set_smb_encryption(struct cli_credentials *cred,
+					enum smb_encryption_setting encryption_state,
+					enum credentials_obtained obtained);
+enum smb_encryption_setting
+cli_credentials_get_smb_encryption(struct cli_credentials *cred);
 
 /**
  * Return attached NETLOGON credentials 

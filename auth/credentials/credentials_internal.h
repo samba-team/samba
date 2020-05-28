@@ -39,6 +39,7 @@ struct cli_credentials {
 	enum credentials_obtained server_gss_creds_obtained;
 	enum credentials_obtained signing_state_obtained;
 	enum credentials_obtained ipc_signing_state_obtained;
+	enum credentials_obtained encryption_state_obtained;
 
 	/* Threshold values (essentially a MAX() over a number of the
 	 * above) for the ccache and GSS credentials, to ensure we
@@ -124,6 +125,8 @@ struct cli_credentials {
 	enum smb_signing_setting signing_state;
 
 	enum smb_signing_setting ipc_signing_state;
+
+	enum smb_encryption_setting encryption_state;
 };
 
 #endif /* __CREDENTIALS_INTERNAL_H__ */
