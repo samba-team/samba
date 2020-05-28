@@ -21,6 +21,7 @@
 #include "torture/proto.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/clirap.h"
 
 /*
  * Make sure that GENERIC_WRITE does not trigger append. See
@@ -80,9 +81,10 @@ bool run_posix_append(int dummy)
 		goto fail;
 	}
 
-	status = cli_getattrE(cli, fnum, NULL, &size, NULL, NULL, NULL);
+	status = cli_qfileinfo_basic(
+		cli, fnum, NULL, &size, NULL, NULL, NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_getatrE failed: %s\n", nt_errstr(status));
+		printf("cli_qfileinfo_basic failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
 
