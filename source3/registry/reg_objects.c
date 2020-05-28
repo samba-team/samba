@@ -378,7 +378,7 @@ uint32_t regval_type(struct regval_blob *val)
 }
 
 /***********************************************************************
- Retrieve a pointer to a specific value.  Caller shoud dup the structure
+ Retrieve a pointer to a specific value. Caller should dup the structure
  since this memory will go away when the ctr is free()'d
  **********************************************************************/
 
