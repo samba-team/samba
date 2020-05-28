@@ -106,6 +106,15 @@ enum smb_signing_setting {
 	SMB_SIGNING_REQUIRED = 3,
 };
 
+/* This MUST align with 'enum smb_signing_setting' */
+enum smb_encryption_setting {
+	SMB_ENCRYPTION_DEFAULT = SMB_SIGNING_DEFAULT,
+	SMB_ENCRYPTION_OFF = SMB_SIGNING_OFF,
+	SMB_ENCRYPTION_IF_REQUIRED = SMB_SIGNING_IF_REQUIRED,
+	SMB_ENCRYPTION_DESIRED = SMB_SIGNING_DESIRED,
+	SMB_ENCRYPTION_REQUIRED = SMB_SIGNING_REQUIRED,
+};
+
 /* types of buffers in core SMB protocol */
 #define SMB_DATA_BLOCK 0x1
 #define SMB_ASCII4     0x4

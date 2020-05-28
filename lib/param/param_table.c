@@ -138,6 +138,29 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_smb_encryption_vals[] = {
+	{SMB_ENCRYPTION_DEFAULT, "default"},
+	{SMB_ENCRYPTION_OFF, "No"},
+	{SMB_ENCRYPTION_OFF, "False"},
+	{SMB_ENCRYPTION_OFF, "0"},
+	{SMB_ENCRYPTION_OFF, "Off"},
+	{SMB_ENCRYPTION_OFF, "disabled"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "if_required"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "Yes"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "True"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "1"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "On"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "enabled"},
+	{SMB_ENCRYPTION_IF_REQUIRED, "auto"},
+	{SMB_ENCRYPTION_DESIRED, "desired"},
+	{SMB_ENCRYPTION_REQUIRED, "required"},
+	{SMB_ENCRYPTION_REQUIRED, "mandatory"},
+	{SMB_ENCRYPTION_REQUIRED, "force"},
+	{SMB_ENCRYPTION_REQUIRED, "forced"},
+	{SMB_ENCRYPTION_REQUIRED, "enforced"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_mdns_name_values[] = {
 	{MDNS_NAME_NETBIOS, "netbios"},
 	{MDNS_NAME_MDNS, "mdns"},
