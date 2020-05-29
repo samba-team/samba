@@ -2451,6 +2451,11 @@ static NTSTATUS catia_read_dfs_pathat(struct vfs_handle_struct *handle,
 					mapped_smb_fname,
 					ppreflist,
 					preferral_count);
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return any stat(2) info. */
+		smb_fname->st = mapped_smb_fname->st;
+	}
+
 	TALLOC_FREE(mapped_name);
 	TALLOC_FREE(mapped_smb_fname);
 	return status;
