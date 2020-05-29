@@ -19,27 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-bool torture_list_tcp_transport_name(struct torture_context *tctx,
-				    const char *name,
-				    uint32_t *packets);
-
-bool torture_block_tcp_transport_name(struct torture_context *tctx,
-				      struct smb2_transport *t,
-				      const char *name);
-
-bool torture_unblock_tcp_transport_name(struct torture_context *tctx,
-					struct smb2_transport *t,
-					const char *name);
-
-void torture_unblock_cleanup(struct torture_context *tctx);
-
 uint16_t torture_get_local_port_from_transport(struct smb2_transport *t);
 
-#define torture_block_tcp_transport(_tctx, _t) \
-	torture_block_tcp_transport_name(_tctx, _t, #_t)
+bool torture_block_tcp_output_port(struct torture_context *tctx,
+				   const char *name,
+				   uint16_t port);
+bool torture_unblock_tcp_output_port(struct torture_context *tctx,
+				     const char *name,
+				     uint16_t port);
+bool torture_block_tcp_output_setup(struct torture_context *tctx);
+bool torture_unblock_tcp_output_cleanup(struct torture_context *tctx);
 
-#define torture_unblock_tcp_transport(_tctx, _t) \
-	torture_unblock_tcp_transport_name(_tctx, _t, #_t)
-
-#define torture_list_tcp_transport(_tctx, _t, _packets) \
-	torture_list_tcp_transport_name(_tctx, #_t, _packets)

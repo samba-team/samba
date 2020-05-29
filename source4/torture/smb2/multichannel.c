@@ -399,8 +399,8 @@ static bool test_iptables_block_channel(struct torture_context *tctx,
 	bool ret;
 
 	local_port = torture_get_local_port_from_transport(transport);
-	torture_comment(tctx, "transport uses tcp port: %d\n", local_port);
-	ret = torture_block_tcp_transport_name(tctx, transport, name);
+	torture_comment(tctx, "transport[%s] uses tcp port: %d\n", name, local_port);
+	ret = torture_block_tcp_output_port(tctx, name, local_port);
 	torture_assert(tctx, ret, "we could not block tcp transport");
 
 	return ret;
@@ -414,8 +414,8 @@ static bool test_iptables_unblock_channel(struct torture_context *tctx,
 	bool ret;
 
 	local_port = torture_get_local_port_from_transport(transport);
-	torture_comment(tctx, "transport uses tcp port: %d\n", local_port);
-	ret = torture_unblock_tcp_transport_name(tctx, transport, name);
+	torture_comment(tctx, "transport[%s] uses tcp port: %d\n", name, local_port);
+	ret = torture_unblock_tcp_output_port(tctx, name, local_port);
 	torture_assert(tctx, ret, "we could not block tcp transport");
 
 	return ret;
@@ -451,13 +451,25 @@ static bool _test_unblock_channel(struct torture_context *tctx,
 	}
 }
 
+static bool test_setup_blocked_channels(struct torture_context *tctx)
+{
+	bool use_iptables = torture_setting_bool(tctx,
+					"use_iptables", false);
+
+	if (use_iptables) {
+		return torture_block_tcp_output_setup(tctx);
+	}
+
+	return true;
+}
+
 static void test_cleanup_blocked_channels(struct torture_context *tctx)
 {
 	bool use_iptables = torture_setting_bool(tctx,
 					"use_iptables", false);
 
 	if (use_iptables) {
-		torture_unblock_cleanup(tctx);
+		torture_unblock_tcp_output_cleanup(tctx);
 	}
 }
 
@@ -695,6 +707,7 @@ static bool test_multichannel_oplock_break_test2(struct torture_context *tctx,
 	struct smb2_session *session1 = tree1->session;
 	uint16_t local_port = 0;
 	DATA_BLOB blob;
+	bool block_setup = false;
 	bool block_ok = false;
 	bool unblock_ok = false;
 
@@ -778,6 +791,9 @@ static bool test_multichannel_oplock_break_test2(struct torture_context *tctx,
 	/* We use the transport over which this oplock break was received */
 	transport2 = break_info.received_transport;
 	torture_reset_break_info(tctx, &break_info);
+
+	block_setup = test_setup_blocked_channels(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_channels");
 
 	/* block channel */
 	block_ok = test_block_channel(tctx, transport2);
@@ -1156,6 +1172,7 @@ static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
 	struct smb2_lease ls1;
 	struct smb2_lease ls2;
 	struct smb2_lease ls3;
+	bool block_setup = false;
 	bool block_ok = false;
 	bool unblock_ok = false;
 
@@ -1231,6 +1248,8 @@ static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
 	CHECK_VAL(io2.out.durable_open, false);
 	CHECK_VAL(lease_break_info.count, 0);
 
+	block_setup = test_setup_blocked_channels(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_channels");
 
 	torture_comment(tctx, "Blocking 2A\n");
 	/* Block 2A */
@@ -1384,7 +1403,9 @@ done:
 	if (block_ok && !unblock_ok) {
 		test_unblock_channel(tctx, transport2A);
 	}
-	test_cleanup_blocked_channels(tctx);
+	if (block_setup) {
+		test_cleanup_blocked_channels(tctx);
+	}
 
 	tree1->session = session1;
 
