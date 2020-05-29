@@ -324,6 +324,9 @@
  * Version 43 - Add dirfsp args to SMB_VFS_CREATE_FILE()
  * Version 43 - Add SMB_VFS_OPENAT()
  * Version 43 - Remove SMB_VFS_OPEN()
+ * Version 43 - SMB_VFS_READ_DFS_PATHAT() should take a non-const name.
+		There's no easy way to return stat info for a DFS link
+		otherwise.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 43
@@ -741,7 +744,7 @@ struct vfs_fn_pointers {
 	NTSTATUS (*read_dfs_pathat_fn)(struct vfs_handle_struct *handle,
 				TALLOC_CTX *mem_ctx,
 				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
+				struct smb_filename *smb_fname,
 				struct referral **ppreflist,
 				size_t *preferral_count);
 
@@ -1255,7 +1258,7 @@ NTSTATUS smb_vfs_call_create_dfs_pathat(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_read_dfs_pathat(struct vfs_handle_struct *handle,
 				TALLOC_CTX *mem_ctx,
 				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
+				struct smb_filename *smb_fname,
 				struct referral **ppreflist,
 				size_t *preferral_count);
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
@@ -1705,7 +1708,7 @@ NTSTATUS vfs_not_implemented_create_dfs_pathat(struct vfs_handle_struct *handle,
 NTSTATUS vfs_not_implemented_read_dfs_pathat(struct vfs_handle_struct *handle,
 				TALLOC_CTX *mem_ctx,
 				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
+				struct smb_filename *smb_fname,
 				struct referral **ppreflist,
 				size_t *preferral_count);
 NTSTATUS vfs_not_implemented_snap_check_path(struct vfs_handle_struct *handle,

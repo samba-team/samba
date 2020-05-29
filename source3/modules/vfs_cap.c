@@ -1042,7 +1042,7 @@ static NTSTATUS cap_create_dfs_pathat(vfs_handle_struct *handle,
 static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 			TALLOC_CTX *mem_ctx,
 			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname,
+			struct smb_filename *smb_fname,
 			struct referral **ppreflist,
 			size_t *preferral_count)
 {

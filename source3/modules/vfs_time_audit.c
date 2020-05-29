@@ -352,7 +352,7 @@ static NTSTATUS smb_time_audit_create_dfs_pathat(struct vfs_handle_struct *handl
 static NTSTATUS smb_time_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
 			TALLOC_CTX *mem_ctx,
 			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname,
+			struct smb_filename *smb_fname,
 			struct referral **ppreflist,
 			size_t *preferral_count)
 {
