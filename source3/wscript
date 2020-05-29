@@ -1999,7 +1999,7 @@ main() {
     if conf.CONFIG_SET('DARWINOS'):
         default_static_modules.extend(TO_LIST('charset_macosxfs'))
 
-    if conf.CONFIG_SET('HAVE_GPFS'):
+    if conf.CONFIG_SET('HAVE_GPFS') and conf.CONFIG_SET('HAVE_KERNEL_OPLOCKS_LINUX'):
         default_shared_modules.extend(TO_LIST('vfs_gpfs'))
 
     if (conf.CONFIG_SET('HAVE_LINUX_IOCTL')
