@@ -1070,6 +1070,12 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 			cap_smb_fname,
 			ppreflist,
 			preferral_count);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return any stat(2) info. */
+		smb_fname->st = cap_smb_fname->st;
+	}
+
 	TALLOC_FREE(cappath);
 	TALLOC_FREE(cap_smb_fname);
 	return status;
