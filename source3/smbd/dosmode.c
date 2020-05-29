@@ -128,7 +128,6 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			DBG_ERR("stat failed [%s]: %s\n",
 				smb_fname_str_dbg(smb_fname_parent),
 				strerror(errno));
-			TALLOC_FREE(smb_fname_parent);
 			return(0);      /* *** shouldn't happen! *** */
 		}
 
@@ -138,7 +137,6 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			 smb_fname_str_dbg(smb_fname), (int)dir_mode));
 		/* Clear "result" */
 		result = 0;
-		TALLOC_FREE(smb_fname_parent);
 	} 
 
 	if (IS_DOS_DIR(dosmode)) {
