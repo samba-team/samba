@@ -3238,7 +3238,6 @@ struct vfswrap_getxattrat_state {
 	struct tevent_context *ev;
 	files_struct *dir_fsp;
 	const struct smb_filename *smb_fname;
-	struct tevent_req *req;
 
 	/*
 	 * The following variables are talloced off "state" which is protected
@@ -3291,7 +3290,6 @@ static struct tevent_req *vfswrap_getxattrat_send(
 		.ev = ev,
 		.dir_fsp = dir_fsp,
 		.smb_fname = smb_fname,
-		.req = req,
 	};
 
 	max_threads = pthreadpool_tevent_max_threads(dir_fsp->conn->sconn->pool);
