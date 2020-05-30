@@ -434,8 +434,14 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 #else
 	char link_target_buf[7];
 #endif
+	int ret;
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	if (is_named_stream(smb_fname)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto err;
+	}
 
 	if (ppreflist == NULL && preferral_count == NULL) {
 		/*
@@ -482,6 +488,14 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 
 	if (!strnequal(link_target, "msdfs:", 6)) {
 		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		goto err;
+	}
+
+	ret = sys_lstat(smb_fname->base_name,
+			&smb_fname->st,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
+	if (ret < 0) {
+		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
