@@ -2441,6 +2441,11 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 				ppreflist,
 				preferral_count);
 
+	if (NT_STATUS_IS_OK(status)) {
+		/* Return any stat(2) info. */
+		smb_fname->st = conv->st;
+	}
+
 	TALLOC_FREE(conv);
 	return status;
 }
