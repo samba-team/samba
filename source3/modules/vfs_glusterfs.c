@@ -1955,8 +1955,15 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 #else
 	char link_target_buf[7];
 #endif
+	struct stat st;
+	int ret;
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	if (is_named_stream(smb_fname)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto err;
+	}
 
 	if (ppreflist == NULL && preferral_count == NULL) {
 		/*
@@ -1971,6 +1978,12 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 		if (!link_target) {
 			goto err;
 		}
+	}
+
+	ret = glfs_lstat(handle->data, smb_fname->base_name, &st);
+	if (ret < 0) {
+		status = map_nt_error_from_unix(errno);
+		goto err;
 	}
 
 	referral_len = glfs_readlink(handle->data,
@@ -2003,6 +2016,7 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 
 	if (ppreflist == NULL && preferral_count == NULL) {
 		/* Early return for checking if this is a DFS link. */
+		smb_stat_ex_from_stat(&smb_fname->st, &st);
 		return NT_STATUS_OK;
 	}
 
@@ -2013,6 +2027,7 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 			preferral_count);
 
 	if (ok) {
+		smb_stat_ex_from_stat(&smb_fname->st, &st);
 		status = NT_STATUS_OK;
 	} else {
 		status = NT_STATUS_NO_MEMORY;
