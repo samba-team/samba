@@ -1354,8 +1354,15 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 #else
 	char link_target_buf[7];
 #endif
+	struct ceph_statx stx;
+	int ret;
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	if (is_named_stream(smb_fname)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto err;
+	}
 
 	if (ppreflist == NULL && preferral_count == NULL) {
 		/*
@@ -1370,6 +1377,16 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		if (!link_target) {
 			goto err;
 		}
+	}
+
+	ret = ceph_statx(handle->data,
+			 smb_fname->base_name,
+			 &stx,
+			 SAMBA_STATX_ATTR_MASK,
+			 AT_SYMLINK_NOFOLLOW);
+	if (ret < 0) {
+		status = map_nt_error_from_unix(-ret);
+		goto err;
 	}
 
         referral_len = ceph_readlink(handle->data,
@@ -1404,6 +1421,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 
         if (ppreflist == NULL && preferral_count == NULL) {
                 /* Early return for checking if this is a DFS link. */
+		init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
                 return NT_STATUS_OK;
         }
 
@@ -1414,6 +1432,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
                         preferral_count);
 
         if (ok) {
+		init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
                 status = NT_STATUS_OK;
         } else {
                 status = NT_STATUS_NO_MEMORY;
