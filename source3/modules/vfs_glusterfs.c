@@ -333,6 +333,12 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
+	ret = glfs_set_xlator_option(fs, "*-md-cache", "cache-selinux",
+				     "true");
+	if (ret < 0) {
+		DEBUG(0, ("%s: Failed to set xlator options\n", volume));
+		goto done;
+	}
 
 	ret = glfs_set_xlator_option(fs, "*-snapview-client",
 				     "snapdir-entry-path",
