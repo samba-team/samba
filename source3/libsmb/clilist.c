@@ -211,7 +211,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->mtime_ts = convert_time_t_to_timespec(
 				make_unix_date2(p+12, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->size = IVAL(p,16);
-			finfo->mode = CVAL(p,24);
+			finfo->mode = SVAL(p,24);
 			len = CVAL(p, 30);
 			p += 31;
 			/* check for unisys! */
