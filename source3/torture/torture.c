@@ -11405,6 +11405,81 @@ static bool run_large_readx(int dummy)
 	return correct;
 }
 
+static NTSTATUS msdfs_attribute_list_fn(const char *mnt,
+				  struct file_info *finfo,
+				  const char *mask,
+				  void *private_data)
+{
+	uint16_t *p_mode = (uint16_t *)private_data;
+
+	if (strequal(finfo->name, test_filename)) {
+		*p_mode = finfo->mode;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static bool run_msdfs_attribute(int dummy)
+{
+	static struct cli_state *cli;
+	bool correct = false;
+	uint16_t mode = 0;
+	NTSTATUS status;
+
+	printf("Starting MSDFS-ATTRIBUTE test\n");
+
+	if (test_filename == NULL || test_filename[0] == '\0') {
+		printf("MSDFS-ATTRIBUTE test "
+			"needs -f filename-of-msdfs-link\n");
+		return false;
+	}
+
+	/*
+	 * NB. We use torture_open_connection_flags() not
+	 * torture_open_connection() as the latter forces
+	 * SMB1.
+	 */
+	if (!torture_open_connection_flags(&cli, 0, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = cli_list(cli,
+			"*",
+			FILE_ATTRIBUTE_DIRECTORY,
+			msdfs_attribute_list_fn,
+			&mode);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list failed with %s\n",
+			nt_errstr(status));
+		goto out;
+	}
+	if ((mode & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+		printf("file %s should have "
+			"FILE_ATTRIBUTE_REPARSE_POINT set. attr = 0x%x\n",
+			test_filename,
+			(unsigned int)mode);
+		goto out;
+	}
+
+	if ((mode & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		printf("file %s should have "
+			"FILE_ATTRIBUTE_DIRECTORY set. attr = 0x%x\n",
+			test_filename,
+			(unsigned int)mode);
+		goto out;
+	}
+
+	correct = true;
+
+  out:
+
+	torture_close_connection(cli);
+	return correct;
+}
+
 static bool run_cli_echo(int dummy)
 {
 	struct cli_state *cli;
@@ -14538,6 +14613,10 @@ static struct {
 	{
 		.name  = "LARGE_READX",
 		.fn    = run_large_readx,
+	},
+	{
+		.name  = "MSDFS-ATTRIBUTE",
+		.fn    = run_msdfs_attribute,
 	},
 	{
 		.name  = "NTTRANS-CREATE",
