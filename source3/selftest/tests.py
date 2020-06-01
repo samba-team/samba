@@ -162,6 +162,33 @@ plantestsuite("samba3.smbtorture_s3.hidenewfiles(simpleserver)",
                "",
                "-l $LOCAL_PATH"])
 
+#
+# MSDFS attribute tests.
+#
+plantestsuite("samba3.smbtorture_s3.smb2.MSDFS-ATTRIBUTE",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'MSDFS-ATTRIBUTE',
+                '//$SERVER_IP/msdfs-share',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mSMB2",
+                "-f msdfs-src1"])
+
+plantestsuite("samba3.smbtorture_s3.smb1.MSDFS-ATTRIBUTE",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'MSDFS-ATTRIBUTE',
+                '//$SERVER_IP/msdfs-share',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "-mNT1",
+                "-f msdfs-src1"])
+
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
     "vfs_aio_pthread_async_dosmode_default2",
