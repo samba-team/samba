@@ -633,6 +633,13 @@ bool is_msdfs_link(connection_struct *conn,
 					smb_fname,
 					NULL,
 					NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		int ret;
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+		if (ret < 0) {
+			status = map_nt_error_from_unix(errno);
+		}
+	}
 	return (NT_STATUS_IS_OK(status));
 }
 
