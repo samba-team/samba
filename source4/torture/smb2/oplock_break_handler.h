@@ -25,6 +25,7 @@
 
 struct break_info {
 	struct torture_context *tctx;
+	bool oplock_skip_ack;
 	struct smb2_handle handle;
 	uint8_t level;
 	struct smb2_break br;

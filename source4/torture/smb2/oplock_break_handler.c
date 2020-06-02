@@ -84,6 +84,10 @@ bool torture_oplock_ack_handler(struct smb2_transport *transport,
 	break_info.received_transport = tree->session->transport;
 	SMB_ASSERT(tree->session->transport == transport);
 
+	if (break_info.oplock_skip_ack) {
+		return true;
+	}
+
 	req = smb2_break_send(tree, &break_info.br);
 	req->async.fn = torture_oplock_ack_callback;
 	req->async.private_data = NULL;
