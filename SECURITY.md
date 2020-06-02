@@ -13,3 +13,8 @@ Once reported and if warrented by the specific issue, the Samba Team
 will follow the process outlined in
 https://wiki.samba.org/index.php/Samba_Security_Process to produce a
 security release.
+
+## Security releases
+
+See https://www.samba.org/samba/security/ for a list of security patches,
+advisories and releases.
