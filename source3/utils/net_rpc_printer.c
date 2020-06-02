@@ -1254,13 +1254,12 @@ NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
 	uint32_t i;
 	uint32_t level = 3;
 	union spoolss_DriverInfo *info;
-	int d;
 
 	printf(_("listing printer-drivers\n"));
 
         for (i=0; archi_table[i].long_archi!=NULL; i++) {
 
-		uint32_t num_drivers;
+		uint32_t d, num_drivers;
 
 		/* enum remote drivers */
 		if (!net_spoolss_enumprinterdrivers(pipe_hnd, mem_ctx, level,
