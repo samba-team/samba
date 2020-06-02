@@ -48,6 +48,7 @@
 
 /* The following definitions come from smbd/signing.c  */
 
+struct smbXsrv_client;
 struct smbXsrv_connection;
 struct dcesrv_context;
 
@@ -781,7 +782,7 @@ NTSTATUS set_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 bool fsp_lease_update(struct files_struct *fsp);
-NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
+NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 			uint32_t num_file_ids,
 			const struct file_id *ids,
 			const struct smb2_lease_key *key,

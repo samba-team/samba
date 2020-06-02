@@ -399,7 +399,7 @@ static struct tevent_req *smbd_smb2_lease_break_send(
 		return tevent_req_post(req, ev);
 	}
 
-	status = downgrade_lease(smb2_req->xconn,
+	status = downgrade_lease(smb2_req->xconn->client,
 				lls.num_file_ids,
 				lls.ids,
 				&in_lease_key,

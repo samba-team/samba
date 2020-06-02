@@ -335,7 +335,7 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 
 	DEBUG(1, ("lease break timed out for file %s -- replying anyway\n",
 		  fsp_str_dbg(fsp)));
-	(void)downgrade_lease(lease->sconn->client->connections,
+	(void)downgrade_lease(lease->sconn->client,
 			1,
 			&fsp->file_id,
 			&lease->lease.lease_key,
@@ -409,7 +409,7 @@ bool fsp_lease_update(struct files_struct *fsp)
 
 struct downgrade_lease_additional_state {
 	struct tevent_immediate *im;
-	struct smbXsrv_connection *xconn;
+	struct smbXsrv_client *client;
 	uint32_t break_flags;
 	struct smb2_lease_key lease_key;
 	uint32_t break_from;
@@ -424,7 +424,7 @@ static void downgrade_lease_additional_trigger(struct tevent_context *ev,
 	struct downgrade_lease_additional_state *state =
 		talloc_get_type_abort(private_data,
 		struct downgrade_lease_additional_state);
-	struct smbXsrv_connection *xconn = state->xconn;
+	struct smbXsrv_connection *xconn = state->client->connections;
 	NTSTATUS status;
 
 	status = smbd_smb2_send_lease_break(xconn,
@@ -435,8 +435,8 @@ static void downgrade_lease_additional_trigger(struct tevent_context *ev,
 					    state->break_to);
 	TALLOC_FREE(state);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(xconn,
-						 nt_errstr(status));
+		smbd_server_disconnect_client(state->client,
+					      nt_errstr(status));
 		return;
 	}
 }
@@ -475,12 +475,13 @@ static void fsps_lease_update(struct smbd_server_connection *sconn,
 	files_forall(sconn, fsps_lease_update_fn, &state);
 }
 
-NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
+NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 			 uint32_t num_file_ids,
 			 const struct file_id *ids,
 			 const struct smb2_lease_key *key,
 			 uint32_t lease_state)
 {
+	struct smbXsrv_connection *xconn = client->connections;
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	const struct GUID *client_guid = NULL;
 	struct share_mode_lock *lck;
@@ -565,7 +566,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			breaking_to_requested |= SMB2_LEASE_READ;
 		}
 
-		state = talloc_zero(xconn,
+		state = talloc_zero(client,
 				    struct downgrade_lease_additional_state);
 		if (state == NULL) {
 			TALLOC_FREE(lck);
@@ -579,7 +580,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		state->xconn = xconn;
+		state->client = client;
 		state->lease_key = *key;
 		state->break_from = current_state;
 		state->break_to = breaking_to_requested;
