@@ -424,10 +424,9 @@ static void downgrade_lease_additional_trigger(struct tevent_context *ev,
 	struct downgrade_lease_additional_state *state =
 		talloc_get_type_abort(private_data,
 		struct downgrade_lease_additional_state);
-	struct smbXsrv_connection *xconn = state->client->connections;
 	NTSTATUS status;
 
-	status = smbd_smb2_send_lease_break(xconn,
+	status = smbd_smb2_send_lease_break(state->client,
 					    state->new_epoch,
 					    state->break_flags,
 					    &state->lease_key,

@@ -263,10 +263,10 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 #define smbd_smb2_request_done(req, body, dyn) \
 	smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn, __location__)
 
-NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_client *client,
 				     struct smbXsrv_open *op,
 				     uint8_t oplock_level);
-NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_client *client,
 				    uint16_t new_epoch,
 				    uint32_t lease_flags,
 				    struct smb2_lease_key *lease_key,

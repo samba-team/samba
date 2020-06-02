@@ -3590,10 +3590,11 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_client *client,
 				     struct smbXsrv_open *op,
 				     uint8_t oplock_level)
 {
+	struct smbXsrv_connection *xconn = client->connections;
 	uint8_t body[0x18];
 
 	SSVAL(body, 0x00, sizeof(body));
@@ -3609,13 +3610,14 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 				    sizeof(body));
 }
 
-NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_client *client,
 				    uint16_t new_epoch,
 				    uint32_t lease_flags,
 				    struct smb2_lease_key *lease_key,
 				    uint32_t current_lease_state,
 				    uint32_t new_lease_state)
 {
+	struct smbXsrv_connection *xconn = client->connections;
 	uint8_t body[0x2c];
 
 	SSVAL(body, 0x00, sizeof(body));
