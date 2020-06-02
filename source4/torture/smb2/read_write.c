@@ -169,6 +169,7 @@ static bool test_rw_invalid(struct torture_context *torture, struct smb2_tree *t
 	uint8_t buf[64*1024];
 	struct smb2_read rd;
 	struct smb2_write w = {0};
+	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	ZERO_STRUCT(buf);
@@ -176,6 +177,14 @@ static bool test_rw_invalid(struct torture_context *torture, struct smb2_tree *t
 	smb2_util_unlink(tree, FNAME);
 
 	status = torture_smb2_testfile(tree, FNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* set delete-on-close */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.in.file.handle = h;
+	status = smb2_setinfo_file(tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
