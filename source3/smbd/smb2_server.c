@@ -1299,6 +1299,24 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 	exit_server_cleanly(reason);
 }
 
+void smbd_server_disconnect_client_ex(struct smbXsrv_client *client,
+				      const char *reason,
+				      const char *location)
+{
+	size_t num_ok = 0;
+
+	num_ok = smbXsrv_client_valid_connections(client);
+
+	DBG_WARNING("client[%s] num_ok[%zu] reason[%s] at %s\n",
+		    client->global->remote_address, num_ok,
+		    reason, location);
+
+	/*
+	 * Something bad happened we need to disconnect all connections.
+	 */
+	exit_server_cleanly(reason);
+}
+
 static bool dup_smb2_vec4(TALLOC_CTX *ctx,
 			struct iovec *outvec,
 			const struct iovec *srcvec)

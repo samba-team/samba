@@ -229,6 +229,12 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 #define smbd_server_connection_terminate(xconn, reason) \
 	smbd_server_connection_terminate_ex(xconn, reason, __location__)
 
+void smbd_server_disconnect_client_ex(struct smbXsrv_client *client,
+				      const char *reason,
+				      const char *location);
+#define smbd_server_disconnect_client(__client, __reason) \
+	smbd_server_disconnect_client_ex(__client, __reason, __location__)
+
 const char *smb2_opcode_name(uint16_t opcode);
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 bool smbd_smb2_is_compound(const struct smbd_smb2_request *req);
