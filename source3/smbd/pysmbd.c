@@ -73,6 +73,21 @@ static connection_struct *get_conn_tos(
 		}
 	}
 
+	/*
+	 * Make sure that session unix info is filled,
+	 * which is required by vfs operations.
+	 */
+	if (session_info->unix_info == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Session unix info not initialized");
+		return NULL;
+	}
+	if (session_info->unix_info->unix_name == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Session unix info not available");
+		return NULL;
+	}
+
 	status = create_conn_struct_tos(NULL,
 					snum,
 					"/",
