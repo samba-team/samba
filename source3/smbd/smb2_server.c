@@ -3502,33 +3502,37 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	return smbd_smb2_request_done_ex(req, status, body, info, __location__);
 }
 
-
-struct smbd_smb2_send_break_state {
+struct smbd_smb2_break_state {
+	struct tevent_req *req;
 	struct smbd_smb2_send_queue queue_entry;
 	uint8_t nbt_hdr[NBT_HDR_SIZE];
 	uint8_t hdr[SMB2_HDR_BODY];
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
-	uint8_t body[1];
 };
 
-static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
-				     uint64_t session_id,
-				     const uint8_t *body,
-				     size_t body_len)
+static int smbd_smb2_break_state_destructor(struct smbd_smb2_break_state *state);
+
+static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct smbXsrv_connection *xconn,
+					       uint64_t session_id,
+					       const uint8_t *body,
+					       size_t body_len)
 {
-	struct smbd_smb2_send_break_state *state;
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_break_state *state = NULL;
 	NTSTATUS status;
-	size_t statelen;
 	bool ok;
 
-	statelen = offsetof(struct smbd_smb2_send_break_state, body) +
-		body_len;
-
-	state = talloc_zero_size(xconn, statelen);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_break_state);
+	if (req == NULL) {
+		return NULL;
 	}
-	talloc_set_name_const(state, "struct smbd_smb2_send_break_state");
+
+	state->req = req;
+	tevent_req_defer_callback(req, ev);
+	talloc_set_destructor(state, smbd_smb2_break_state_destructor);
 
 	SIVAL(state->hdr, 0,				SMB2_MAGIC);
 	SSVAL(state->hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -3559,11 +3563,9 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 		.iov_len  = sizeof(state->hdr)
 	};
 
-	memcpy(state->body, body, body_len);
-
 	state->vector[1+SMBD_SMB2_BODY_IOV_OFS] = (struct iovec) {
-		.iov_base = state->body,
-		.iov_len  = body_len /* no sizeof(state->body) .. :-) */
+		.iov_base = discard_const_p(uint8_t, body),
+		.iov_len  = body_len,
 	};
 
 	/*
@@ -3573,7 +3575,8 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	ok = smb2_setup_nbt_length(state->vector,
 				   1 + SMBD_SMB2_NUM_IOV_PER_REQ);
 	if (!ok) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
 	}
 
 	state->queue_entry.mem_ctx = state;
@@ -3583,11 +3586,30 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
-	return NT_STATUS_OK;
+	return req;
+}
+
+static int smbd_smb2_break_state_destructor(struct smbd_smb2_break_state *state)
+{
+	if (state->queue_entry.mem_ctx != NULL) {
+		/*
+		 * We used tevent_req_defer_callback()
+		 */
+		tevent_req_done(state->req);
+		state->queue_entry.mem_ctx = NULL;
+		return -1;
+	}
+
+	return 0;
+}
+
+static NTSTATUS smbd_smb2_break_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 struct smbXsrv_pending_break {
@@ -3601,6 +3623,8 @@ struct smbXsrv_pending_break {
 	} body;
 	size_t body_len;
 };
+
+static void smbXsrv_pending_break_done(struct tevent_req *subreq);
 
 static struct smbXsrv_pending_break *smbXsrv_pending_break_create(
 		struct smbXsrv_client *client,
@@ -3618,19 +3642,58 @@ static struct smbXsrv_pending_break *smbXsrv_pending_break_create(
 	return pb;
 }
 
+static NTSTATUS smbXsrv_pending_break_submit(struct smbXsrv_pending_break *pb);
+
 static NTSTATUS smbXsrv_pending_break_schedule(struct smbXsrv_pending_break *pb)
 {
-	struct smbXsrv_connection *xconn = pb->client->connections;
 	NTSTATUS status;
 
-	status = smbd_smb2_send_break(xconn,
+	status = smbXsrv_pending_break_submit(pb);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbXsrv_pending_break_submit(struct smbXsrv_pending_break *pb)
+{
+	struct smbXsrv_client *client = pb->client;
+	struct smbXsrv_connection *xconn = client->connections;
+	struct tevent_req *subreq = NULL;
+
+	subreq = smbd_smb2_break_send(pb,
+				      client->raw_ev_ctx,
+				      xconn,
 				      pb->session_id,
 				      pb->body.generic,
 				      pb->body_len);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq,
+				smbXsrv_pending_break_done,
+				pb);
+
+	return NT_STATUS_OK;
+}
+
+static void smbXsrv_pending_break_done(struct tevent_req *subreq)
+{
+	struct smbXsrv_pending_break *pb =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_pending_break);
+	struct smbXsrv_client *client = pb->client;
+	NTSTATUS status;
+
+	status = smbd_smb2_break_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_disconnect_client(client, nt_errstr(status));
+		return;
+	}
 
 	TALLOC_FREE(pb);
-
-	return status;
 }
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_client *client,
