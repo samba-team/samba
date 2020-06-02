@@ -3615,7 +3615,9 @@ static NTSTATUS smbd_smb2_break_recv(struct tevent_req *req)
 struct smbXsrv_pending_break {
 	struct smbXsrv_pending_break *prev, *next;
 	struct smbXsrv_client *client;
+	bool disable_oplock_break_retries;
 	uint64_t session_id;
+	uint64_t last_channel_id;
 	union {
 		uint8_t generic[1];
 		uint8_t oplock[0x18];
@@ -3638,6 +3640,7 @@ static struct smbXsrv_pending_break *smbXsrv_pending_break_create(
 	}
 	pb->client = client;
 	pb->session_id = session_id;
+	pb->disable_oplock_break_retries = lp_smb2_disable_oplock_break_retry();
 
 	return pb;
 }
@@ -3659,8 +3662,107 @@ static NTSTATUS smbXsrv_pending_break_schedule(struct smbXsrv_pending_break *pb)
 static NTSTATUS smbXsrv_pending_break_submit(struct smbXsrv_pending_break *pb)
 {
 	struct smbXsrv_client *client = pb->client;
-	struct smbXsrv_connection *xconn = client->connections;
+	struct smbXsrv_session *session = NULL;
+	struct smbXsrv_connection *xconn = NULL;
+	struct smbXsrv_connection *oplock_xconn = NULL;
 	struct tevent_req *subreq = NULL;
+	NTSTATUS status;
+
+	if (pb->session_id != 0) {
+		status = get_valid_smbXsrv_session(client,
+						   pb->session_id,
+						   &session);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+			return NT_STATUS_ABANDONED;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (pb->last_channel_id != 0) {
+			/*
+			 * This is what current Windows servers
+			 * do, they don't retry on all available
+			 * channels. They only use the last channel.
+			 *
+			 * But it doesn't match the specification in
+			 * [MS-SMB2] "3.3.4.6 Object Store Indicates an
+			 * Oplock Break"
+			 *
+			 * Per default disable_oplock_break_retries is false
+			 * and we behave like the specification.
+			 */
+			if (pb->disable_oplock_break_retries) {
+				return NT_STATUS_ABANDONED;
+			}
+		}
+	}
+
+	for (xconn = client->connections; xconn != NULL; xconn = xconn->next) {
+		if (!NT_STATUS_IS_OK(xconn->transport.status)) {
+			continue;
+		}
+
+		if (xconn->channel_id == 0) {
+			/*
+			 * non-multichannel case
+			 */
+			break;
+		}
+
+		if (session != NULL) {
+			struct smbXsrv_channel_global0 *c = NULL;
+
+			/*
+			 * Having a session means we're handling
+			 * an oplock break and we only need to
+			 * use channels available on the
+			 * session.
+			 */
+			status = smbXsrv_session_find_channel(session, xconn, &c);
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
+			}
+
+			/*
+			 * This is what current Windows servers
+			 * do, they don't retry on all available
+			 * channels. They only use the last channel.
+			 *
+			 * But it doesn't match the specification
+			 * in [MS-SMB2] "3.3.4.6 Object Store Indicates an
+			 * Oplock Break"
+			 *
+			 * Per default disable_oplock_break_retries is false
+			 * and we behave like the specification.
+			 */
+			if (pb->disable_oplock_break_retries) {
+				oplock_xconn = xconn;
+				continue;
+			}
+		}
+
+		if (xconn->channel_id > pb->last_channel_id) {
+			/*
+			 * multichannel case
+			 */
+			break;
+		}
+	}
+
+	if (xconn == NULL) {
+		xconn = oplock_xconn;
+	}
+
+	if (xconn == NULL) {
+		/*
+		 * If there's no remaining connection available
+		 * tell the caller to stop...
+		 */
+		return NT_STATUS_ABANDONED;
+	}
+
+	pb->last_channel_id = xconn->channel_id;
 
 	subreq = smbd_smb2_break_send(pb,
 				      client->raw_ev_ctx,
@@ -3689,10 +3791,22 @@ static void smbXsrv_pending_break_done(struct tevent_req *subreq)
 	status = smbd_smb2_break_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_disconnect_client(client, nt_errstr(status));
+		status = smbXsrv_pending_break_submit(pb);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ABANDONED)) {
+			/*
+			 * If there's no remaing connection
+			 * there's no need to send a break again.
+			 */
+			goto remove;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			smbd_server_disconnect_client(client, nt_errstr(status));
+			return;
+		}
 		return;
 	}
 
+remove:
 	TALLOC_FREE(pb);
 }
 
