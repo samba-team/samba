@@ -3590,24 +3590,72 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	return NT_STATUS_OK;
 }
 
+struct smbXsrv_pending_break {
+	struct smbXsrv_pending_break *prev, *next;
+	struct smbXsrv_client *client;
+	uint64_t session_id;
+	union {
+		uint8_t generic[1];
+		uint8_t oplock[0x18];
+		uint8_t lease[0x2c];
+	} body;
+	size_t body_len;
+};
+
+static struct smbXsrv_pending_break *smbXsrv_pending_break_create(
+		struct smbXsrv_client *client,
+		uint64_t session_id)
+{
+	struct smbXsrv_pending_break *pb = NULL;
+
+	pb = talloc_zero(client, struct smbXsrv_pending_break);
+	if (pb == NULL) {
+		return NULL;
+	}
+	pb->client = client;
+	pb->session_id = session_id;
+
+	return pb;
+}
+
+static NTSTATUS smbXsrv_pending_break_schedule(struct smbXsrv_pending_break *pb)
+{
+	struct smbXsrv_connection *xconn = pb->client->connections;
+	NTSTATUS status;
+
+	status = smbd_smb2_send_break(xconn,
+				      pb->session_id,
+				      pb->body.generic,
+				      pb->body_len);
+
+	TALLOC_FREE(pb);
+
+	return status;
+}
+
 NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_client *client,
 				     struct smbXsrv_open *op,
 				     uint8_t oplock_level)
 {
-	struct smbXsrv_connection *xconn = client->connections;
-	uint8_t body[0x18];
+	struct smbXsrv_pending_break *pb = NULL;
+	uint8_t *body = NULL;
 
-	SSVAL(body, 0x00, sizeof(body));
+	pb = smbXsrv_pending_break_create(client,
+					  op->compat->vuid);
+	if (pb == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pb->body_len = sizeof(pb->body.oplock);
+	body = pb->body.oplock;
+
+	SSVAL(body, 0x00, pb->body_len);
 	SCVAL(body, 0x02, oplock_level);
 	SCVAL(body, 0x03, 0);		/* reserved */
 	SIVAL(body, 0x04, 0);		/* reserved */
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	return smbd_smb2_send_break(xconn,
-				    op->compat->vuid,
-				    body,
-				    sizeof(body));
+	return smbXsrv_pending_break_schedule(pb);
 }
 
 NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_client *client,
@@ -3617,10 +3665,18 @@ NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_client *client,
 				    uint32_t current_lease_state,
 				    uint32_t new_lease_state)
 {
-	struct smbXsrv_connection *xconn = client->connections;
-	uint8_t body[0x2c];
+	struct smbXsrv_pending_break *pb = NULL;
+	uint8_t *body = NULL;
 
-	SSVAL(body, 0x00, sizeof(body));
+	pb = smbXsrv_pending_break_create(client,
+					  0); /* no session_id */
+	if (pb == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pb->body_len = sizeof(pb->body.lease);
+	body = pb->body.lease;
+
+	SSVAL(body, 0x00, pb->body_len);
 	SSVAL(body, 0x02, new_epoch);
 	SIVAL(body, 0x04, lease_flags);
 	SBVAL(body, 0x08, lease_key->data[0]);
@@ -3631,10 +3687,7 @@ NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_client *client,
 	SIVAL(body, 0x24, 0);		/* AccessMaskHint, MUST be 0 */
 	SIVAL(body, 0x28, 0);		/* ShareMaskHint, MUST be 0 */
 
-	return smbd_smb2_send_break(xconn,
-				    0, /* no session_id */
-				    body,
-				    sizeof(body));
+	return smbXsrv_pending_break_schedule(pb);
 }
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
