@@ -28,6 +28,7 @@
 #include "../libcli/security/security.h"
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
@@ -165,8 +166,11 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	uint16_t fnum_src = 0;
 	uint16_t fnum_dst = 0;
 	struct security_descriptor *sd = NULL;
-	uint32_t attr;
-	time_t f_atime, f_ctime, f_mtime;
+	uint32_t attr = (uint32_t)-1;
+	struct timespec f_create_time = { .tv_nsec = SAMBA_UTIME_OMIT };
+	struct timespec f_access_time = { .tv_nsec = SAMBA_UTIME_OMIT };
+	struct timespec f_write_time = { .tv_nsec = SAMBA_UTIME_OMIT };
+	struct timespec f_change_time = { .tv_nsec = SAMBA_UTIME_OMIT };
 
 	if (!copy_timestamps && !copy_acls && !copy_attrs)
 		return NT_STATUS_OK;
@@ -203,8 +207,16 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	if (copy_attrs || copy_timestamps) {
 
 		/* get file attributes */
-		nt_status = cli_getattrE(cli_share_src, fnum_src, &attr, NULL,
-		                      &f_ctime, &f_atime, &f_mtime);
+		nt_status = cli_qfileinfo_basic(
+			cli_share_src,
+			fnum_src,
+			copy_attrs ? &attr : NULL,
+			NULL,	/* size */
+			copy_timestamps ? &f_create_time : NULL,
+			copy_timestamps ? &f_access_time : NULL,
+			copy_timestamps ? &f_write_time : NULL,
+			copy_timestamps ? &f_change_time : NULL,
+			NULL);	/* ino */
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("failed to get file-attrs: %s\n",
 				nt_errstr(nt_status)));
@@ -223,16 +235,6 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 		goto out;
 	}
 
-	if (copy_timestamps) {
-		/* set timestamps */
-		nt_status = cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
-				nt_errstr(nt_status)));
-			goto out;
-		}
-	}
-
 	if (copy_acls) {
 		/* set acls */
 		nt_status = cli_set_secdesc(cli_share_dst, fnum_dst, sd);
@@ -243,12 +245,19 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 		}
 	}
 
-	if (copy_attrs) {
-		/* set attrs */
-		nt_status = cli_setatr(cli_share_dst, dst_name, attr, 0);
+	if (copy_timestamps || copy_attrs) {
+
+		nt_status = cli_setfileinfo_ext(
+			cli_share_dst,
+			fnum_dst,
+			f_create_time,
+			f_access_time,
+			f_write_time,
+			f_change_time,
+			attr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0,("failed to set file-attrs: %s\n",
-				nt_errstr(nt_status)));
+			DBG_ERR("failed to set file-attrs: %s\n",
+				nt_errstr(nt_status));
 			goto out;
 		}
 	}
