@@ -126,7 +126,7 @@ bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 		       TALLOC_CTX *mem_ctx, char **name);
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint16_t *pattr, off_t *size,
+			     uint32_t *pattr, off_t *size,
 			     struct timespec *create_time,
 			     struct timespec *access_time,
 			     struct timespec *write_time,

@@ -1121,7 +1121,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	uint16_t fnum;
 	bool newhandle = false;
 	struct timespec tp_start;
-	uint16_t attr;
+	uint32_t attr;
 	off_t size;
 	off_t start = 0;
 	off_t nread = 0;
@@ -1186,7 +1186,8 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	status = cli_qfileinfo_basic(targetcli, fnum, &attr, &size, NULL, NULL,
 				     NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = cli_getattrE(targetcli, fnum, &attr, &size, NULL, NULL,
+		uint16_t sattr = 0;
+		status = cli_getattrE(targetcli, fnum, &sattr, &size, NULL, NULL,
 				      NULL);
 		if(!NT_STATUS_IS_OK(status)) {
 			d_printf("getattrib: %s\n", nt_errstr(status));
@@ -1195,6 +1196,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 			}
 			return 1;
 		}
+		attr = sattr;
 	}
 
 	DEBUG(1,("getting file %s of size %.0f as %s ",
