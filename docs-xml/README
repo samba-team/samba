@@ -71,9 +71,6 @@ For generating PDF (thru FO):
 For generating ASCII:
  * html2text
 
-For generating Palm-viewable docs:
- * plucker-build
-
 For generating texi files:
  * docbook2x-texi
  * makeinfo

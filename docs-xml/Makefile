@@ -13,7 +13,6 @@ MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES = $(sort $(wildcard $(MANPAGEDIR)/*.?.xml))
 
 # Lists of files to process
-MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
 DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
@@ -77,7 +76,6 @@ texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
 pearson:: $(PEARSONDIR)/Samba3-HOWTO.xml
 pearson-verify:: $(PEARSONDIR)/Samba3-HOWTO.report.html
-plucker:: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
 htmlman:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
 html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html:: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
@@ -202,11 +200,6 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp $(XSLTPROC_DEPS)
 				--stringparam manifest.in.base.dir "$@/" \
 				--stringparam base.dir "$@/" \
 	http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
-
-# Plucker docs
-$(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
-	@mkdir -p $(@D)
-	$(PLUCKERBUILD) -v -V 2 --stayonhost --zlib-compression -f $* -p $(PLUCKERDIR) file:$< 
 
 # Texinfo docs
 $(TEXINFODIR)/%.texi: $(DOCBOOKDIR)/%.xml
