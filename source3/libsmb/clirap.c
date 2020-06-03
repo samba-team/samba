@@ -608,7 +608,7 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 			     time_t *access_time,
 			     time_t *write_time,
 			     off_t *size,
-			     uint16_t *pattr)
+			     uint32_t *pattr)
 {
 	struct cli_qpathinfo1_state *state = tevent_req_data(
 		req, struct cli_qpathinfo1_state);
@@ -650,7 +650,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			time_t *access_time,
 			time_t *write_time,
 			off_t *size,
-			uint16_t *pattr)
+			uint32_t *pattr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;

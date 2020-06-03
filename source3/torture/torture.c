@@ -10851,7 +10851,7 @@ static bool run_mangle1(int dummy)
 	NTSTATUS status;
 	time_t change_time, access_time, write_time;
 	off_t size;
-	uint16_t mode;
+	uint32_t attr;
 
 	printf("starting mangle1 test\n");
 	if (!torture_open_connection(&cli, 0)) {
@@ -10886,7 +10886,7 @@ static bool run_mangle1(int dummy)
 	cli_close(cli, fnum);
 
 	status = cli_qpathinfo1(cli, alt_name, &change_time, &access_time,
-				&write_time, &size, &mode);
+				&write_time, &size, &attr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("cli_qpathinfo1(%s) failed: %s\n", alt_name,
 			 nt_errstr(status));
@@ -12330,7 +12330,8 @@ static bool run_streamerror(int dummy)
 	NTSTATUS status;
 	time_t change_time, access_time, write_time;
 	off_t size;
-	uint16_t mode, fnum;
+	uint16_t fnum;
+	uint32_t attr;
 	bool ret = true;
 
 	if (!torture_open_connection(&cli, 0)) {
@@ -12347,7 +12348,7 @@ static bool run_streamerror(int dummy)
 	}
 
 	status = cli_qpathinfo1(cli, streamname, &change_time, &access_time,
-				&write_time, &size, &mode);
+				&write_time, &size, &attr);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		printf("pathinfo returned %s, expected "
 		       "NT_STATUS_OBJECT_NAME_NOT_FOUND\n",
