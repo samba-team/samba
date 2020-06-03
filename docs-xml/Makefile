@@ -51,10 +51,6 @@ clean::
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
 	rm -f *-attributions.xml
-	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.svg,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
-			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
-			$(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
 	rm -f *-attributions.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
 	rm -f *-images-latex-* $(LATEX_FIGURES)
@@ -141,10 +137,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
-	@echo "$*-images-latex-svg = \$$(wildcard \$$(addsuffix .svg, \$$($*-images-latex)))" >> $@
 	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
-	@echo "$*-images-latex-pdf: \$$(patsubst %.svg, %.pdf, \$$($*-images-latex-svg))" >> $@
-	@echo "$*-images-latex-png: \$$(filter-out \$$(patsubst %.svg,%.png,\$$($*-images-latex-svg)), \$$(addsuffix .png, \$$($*-images-latex)))" >> $@
 
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
@@ -177,17 +170,8 @@ $(PDFDIR)/%.pdf: %/index.xml $(PDFDIR) xslt/latex.xsl %-images-latex-png %-image
 $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
-%.eps: %.svg
-	$(INKSCAPE) -z -f $(abspath $<) --export-eps=$(abspath $@)
-
-%.png: %.svg
-	$(INKSCAPE) -z -f $(abspath $<) --export-png=$(abspath $@)
-
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
-
-%.pdf: %.svg
-	$(INKSCAPE) -z -f $(abspath $<) --export-pdf=$(abspath $@)
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp $(XSLTPROC_DEPS)
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \

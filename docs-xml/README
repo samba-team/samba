@@ -60,7 +60,6 @@ To generate the docs, you need to have the following packages installed:
  * GNU Make
  * GNU autoconf
  * xsltproc
- * inkscape
 
 For generating PDF and PostScript (thru LaTeX):
  * dblatex (from http://dblatex.sf.net/)
