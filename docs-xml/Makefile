@@ -36,20 +36,16 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,ps,manpages,txt,pearson,htmlhelp - Build specific output format"
+	@echo " pdf,tex,ps,manpages,txt,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman - Build HTML version of manpages"
-	@echo " samples - Extract examples"
 
-$(PDFDIR)/Samba3-ByExample.pdf $(PSDIR)/Samba3-ByExample.ps $(DOCBOOKDIR)/Samba3-ByExample.xml Samba3-ByExample.tex: $(wildcard Samba3-ByExample/*.xml)
-$(PDFDIR)/Samba3-HOWTO.pdf $(PSDIR)/Samba3-HOWTO.ps Samba3-HOWTO.tex $(DOCBOOKDIR)/Samba3-HOWTO.xml: $(wildcard Samba3-HOWTO/*.xml) Samba3-HOWTO-attributions.xml
-Samba3-HOWTO/manpages.xml: $(MANPAGEDIR)/smb.conf.5.xml
 $(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCBOOKDIR)/Samba3-Developers-Guide.xml Samba3-Developers-Guide.tex: $(wildcard Samba3-Developers-Guide/*.xml) Samba3-Developers-Guide-attributions.xml
 
 # Pseudo targets 
 all:: $(TARGETS)
-everything:: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson
+everything:: manpages pdf html-single html htmlman txt ps fo htmlhelp
 release:: manpages htmlman html pdf
 clean::
 	@echo "Cleaning up..." 
@@ -74,8 +70,6 @@ tex:: $(addsuffix .tex,$(MAIN_DOCS))
 texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
-pearson:: $(PEARSONDIR)/Samba3-HOWTO.xml
-pearson-verify:: $(PEARSONDIR)/Samba3-HOWTO.report.html
 htmlman:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
 html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html:: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
@@ -237,32 +231,12 @@ $(HTMLDIR)/smb.conf/%.html: $(SMBDOTCONFDOC)/%.xml
 	@mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/smb.conf-html.xsl $<
 
-# Pearson compatible XML
-$(PEARSONDIR)/%.xml: %/index.xml xslt/pearson.xsl
-	@mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --output $@ xslt/sambadoc2pearson.xsl $<
-
-$(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
-	@mkdir -p $(@D)
-	-$(XMLLINT) --valid --noout $< 2> $@
-
 # Validation verification
 %-validate: %/index.xml
 	cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
 
 build/catalog.xml: build/catalog.xml.in
 	sed -e "s|@abs_top_srcdir@|`pwd`|g;s|@abs_top_builddir@|`pwd`|g" < build/catalog.xml.in > build/catalog.xml
-
-samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
-	@mkdir -p examples
-	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
-	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
-
-# Archiving
-archive: pdf
-	@mkdir -p $(ARCHIVEDIR)
-	cp $(PDFDIR)/Samba3-HOWTO.pdf $(ARCHIVEDIR)/TOSHARG-$(DATETIME).pdf
-	cp $(PDFDIR)/Samba3-ByExample.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
 
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl 
@@ -271,7 +245,6 @@ xslt/latex.xsl:
 xslt/expand-sambadoc.xsl: 
 xslt/generate-attributions.xsl: 
 xslt/man.xsl:
-xslt/pearson.xsl:
 
 distclean clobber:: clean
 	rm -f Makefile.settings config.status config.log
@@ -283,4 +256,4 @@ realdistclean:: distclean
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber archive release everything all 
+.PHONY: clean clobber release everything all 

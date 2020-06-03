@@ -1,9 +1,6 @@
 AC_INIT(xslt/latex.xsl)
 
 LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,11pt,openright,twoside"
-AC_ARG_ENABLE(prentice-hall,
-[ --enable-prentice-hall     Produce Prentice-Hall compatible output],
-[ test "$enableval" && LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,10pt,openleft,twoside,ph" ])
 AC_SUBST(LATEX_DOCUMENTCLASS_OPTIONS)
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
@@ -16,7 +13,6 @@ DOCS_TARGET_REQUIRE_PROGRAM(INKSCAPE, inkscape, PS)
 DOCS_TARGET_REQUIRE_PROGRAM(INKSCAPE, inkscape, PDF)
 DOCS_TARGET_REQUIRE_PROGRAM(INKSCAPE, inkscape, HTML)
 DOCS_TARGET_REQUIRE_PROGRAM(INKSCAPE, inkscape, HTMLHELP)
-DOCS_TARGET_REQUIRE_PROGRAM(INKSCAPE, inkscape, PEARSON)
 
 DOCS_TARGET_REQUIRE_PROGRAM(PNGTOPNM, pngtopnm, PS)
 DOCS_TARGET_REQUIRE_PROGRAM(PNMTOPS, pnmtops, PS)
@@ -36,7 +32,6 @@ DOCS_DEFINE_TARGET(HTML, ALL, [HTML versions], [html])
 DOCS_DEFINE_TARGET(HTMLHELP, ALL, [HTML Help versions], [htmlhelp])
 DOCS_DEFINE_TARGET(HTMLMAN, ALL, [HTML versions of the manpages], [htmlman])
 DOCS_DEFINE_TARGET(MANPAGES, ALL, [manpages], [manpages])
-DOCS_DEFINE_TARGET(PEARSON, ALL, [pearson-compatible XML], [pearson])
 DOCS_DEFINE_TARGET(VALIDATE, ALL, [validating docbook output], [])
 DOCS_DEFINE_TARGET(TEXI, ALL, [TexInfo versions], [texi])
 DOCS_DEFINE_TARGET(TEXIINFO, ALL, [TexInfo Info versions], [texiinfo])
