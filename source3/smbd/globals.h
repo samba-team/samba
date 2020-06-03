@@ -373,6 +373,13 @@ struct smbXsrv_connection {
 	} transport;
 
 	struct {
+		uint64_t unacked_bytes;
+		uint32_t rto_usecs;
+		struct tevent_req *checker_subreq;
+		struct smbd_smb2_send_queue *queue;
+	} ack;
+
+	struct {
 		struct {
 			/*
 			 * fd for the fcntl lock and process shared
@@ -686,6 +693,12 @@ struct smbd_smb2_send_queue {
 	NTSTATUS *sendfile_status;
 	struct iovec *vector;
 	int count;
+
+	struct {
+		struct tevent_req *req;
+		struct timeval timeout;
+		uint64_t required_acked_bytes;
+	} ack;
 
 	TALLOC_CTX *mem_ctx;
 };

@@ -142,6 +142,11 @@ interface smbXsrv
 		[ignore] struct smbXsrv_connection	*connections;
 		boolean8		server_multi_channel_enabled;
 		hyper			next_channel_id;
+
+		/*
+		 * A List of pending breaks.
+		 */
+		[ignore] struct smbXsrv_pending_break *pending_breaks;
 	} smbXsrv_client;
 
 	typedef union {
