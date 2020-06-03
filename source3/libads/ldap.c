@@ -92,7 +92,23 @@ static void gotalarm_sig(int signum)
 		return NULL;
 	}
 
-#ifdef HAVE_LDAP_INITIALIZE
+#ifdef HAVE_LDAP_INIT_FD
+	{
+		int fd = -1;
+		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+		status = open_socket_out(ss, port, to, &fd);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+/* define LDAP_PROTO_TCP from openldap.h if required */
+#ifndef LDAP_PROTO_TCP
+#define LDAP_PROTO_TCP 1
+#endif
+		ldap_err = ldap_init_fd(fd, LDAP_PROTO_TCP, uri, &ldp);
+	}
+#elif defined(HAVE_LDAP_INITIALIZE)
 	ldap_err = ldap_initialize(&ldp, uri);
 #else
 	ldp = ldap_open(server, port);
