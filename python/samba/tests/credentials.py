@@ -460,3 +460,9 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_REQUIRED)
         creds.set_smb_ipc_signing(credentials.SMB_SIGNING_OFF)
         self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_OFF)
+
+    def test_smb_encryption(self):
+        creds = credentials.Credentials()
+        self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_DEFAULT)
+        creds.set_smb_encryption(credentials.SMB_ENCRYPTION_REQUIRED)
+        self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_REQUIRED)
