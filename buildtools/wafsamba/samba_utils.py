@@ -719,6 +719,9 @@ def samba_before_apply_obj_vars(self):
         if is_standard_libpath(v, i):
             v['LIBPATH'].remove(i)
 
+# Samba options are mostly on by default (administrators and packagers
+# specify features to remove, not add), which is why default=True
+
 def samba_add_onoff_option(opt, option, help=(), dest=None, default=True,
                            with_name="with", without_name="without"):
     if default is None:

@@ -47,6 +47,25 @@ def options(opt):
     opt.RECURSE('lib/crypto')
     opt.RECURSE('ctdb')
 
+# Optional Libraries
+# ------------------
+#
+# Most of the calls to opt.add_option() use default=True for the --with case
+#
+# To assist users and distributors to build Samba with the full feature
+# set, the build system will abort if our dependent libraries and their
+# header files are not found on the target system.  This will mean for
+# example, that xattr, acl and ldap headers must be installed for the
+# default build to complete.  The configure system will check for these
+# headers, and the error message will indicate the option (such as
+# --without-acl-support) that can be specified to skip this requirement.
+#
+# This will assist users and in particular distributors in building fully
+# functional packages, while allowing those on systems truly without these
+# facilities to continue to build Samba after careful consideration.
+#
+# It also ensures our container image generation in bootstrap/ is correct
+# as otherwise a missing package there would just silently work
 
     opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 
