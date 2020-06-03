@@ -54,6 +54,7 @@ from subprocess import CalledProcessError
 from samba import sites
 from samba.dsdb import _dsdb_load_udv_v2
 from samba.ndr import ndr_pack
+from samba.credentials import SMB_SIGNING_REQUIRED
 
 
 # work out a SID (based on a free RID) to use when the domain gets restored.
@@ -115,7 +116,14 @@ def smb_sysvol_conn(server, lp, creds):
     # the SMB bindings rely on having a s3 loadparm
     s3_lp = s3param.get_context()
     s3_lp.load(lp.configfile)
-    return libsmb.Conn(server, "sysvol", lp=s3_lp, creds=creds, sign=True)
+
+    # Force signing for the connection
+    saved_signing_state = creds.get_smb_signing()
+    creds.set_smb_signing(SMB_SIGNING_REQUIRED)
+    conn = libsmb.Conn(server, "sysvol", lp=s3_lp, creds=creds, sign=True)
+    # Reset signing state
+    creds.set_smb_signing(saved_signing_state)
+    return conn
 
 
 def get_timestamp():

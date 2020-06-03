@@ -62,6 +62,7 @@ from samba.gp_parse.gp_csv import GPAuditCsvParser
 from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
 from samba import param
+from samba.credentials import SMB_SIGNING_REQUIRED
 
 
 def attr_default(msg, attrname, default):
@@ -384,6 +385,9 @@ def create_directory_hier(conn, remotedir):
 
 def smb_connection(dc_hostname, service, lp, creds):
     # SMB connect to DC
+    # Force signing for the smb connection
+    saved_signing_state = creds.get_smb_signing()
+    creds.set_smb_signing(SMB_SIGNING_REQUIRED)
     try:
         # the SMB bindings rely on having a s3 loadparm
         s3_lp = s3param.get_context()
@@ -391,6 +395,8 @@ def smb_connection(dc_hostname, service, lp, creds):
         conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds, sign=True)
     except Exception:
         raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
+    # Reset signing state
+    creds.set_smb_signing(saved_signing_state)
     return conn
 
 

@@ -38,6 +38,7 @@ from tempfile import NamedTemporaryFile
 from samba.dcerpc import preg
 from samba.dcerpc import misc
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.credentials import SMB_SIGNING_REQUIRED
 
 try:
     from enum import Enum
@@ -394,7 +395,13 @@ def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
     # the SMB bindings rely on having a s3 loadparm
     s3_lp = s3param.get_context()
     s3_lp.load(lp.configfile)
+
+    # Force signing for the connection
+    saved_signing_state = creds.get_smb_signing()
+    creds.set_smb_signing(SMB_SIGNING_REQUIRED)
     conn = libsmb.Conn(dc_hostname, 'sysvol', lp=s3_lp, creds=creds, sign=True)
+    # Reset signing state
+    creds.set_smb_signing(saved_signing_state)
     cache_path = lp.cache_path('gpo_cache')
     for gpo in gpos:
         if not gpo.file_sys_path:
