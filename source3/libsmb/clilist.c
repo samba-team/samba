@@ -617,7 +617,7 @@ struct cli_list_trans_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	char *mask;
-	uint16_t attribute;
+	uint32_t attribute;
 	uint16_t info_level;
 
 	int loop_count;
@@ -640,7 +640,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct cli_state *cli,
 					      const char *mask,
-					      uint16_t attribute,
+					      uint32_t attribute,
 					      uint16_t info_level)
 {
 	struct tevent_req *req, *subreq;
@@ -921,7 +921,7 @@ static NTSTATUS cli_list_trans_recv(struct tevent_req *req,
 }
 
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
-			uint16_t attribute, int info_level,
+			uint32_t attribute, int info_level,
 			NTSTATUS (*fn)(const char *mnt, struct file_info *finfo,
 				   const char *mask, void *private_data),
 			void *private_data)
@@ -979,7 +979,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct cli_state *cli,
 				 const char *mask,
-				 uint16_t attribute,
+				 uint32_t attribute,
 				 uint16_t info_level)
 {
 	struct tevent_req *req, *subreq;
@@ -1037,7 +1037,7 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16_t attribute,
+NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint32_t attribute,
 		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state)
 {
