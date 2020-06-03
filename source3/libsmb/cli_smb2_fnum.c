@@ -2012,7 +2012,7 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 
 NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 			uint16_t fnum,
-			uint16_t *mode,
+			uint16_t *pattr,
 			off_t *size,
 			struct timespec *create_time,
 			struct timespec *access_time,
@@ -2073,9 +2073,9 @@ NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 	if (change_time) {
 		*change_time = interpret_long_date((const char *)outbuf.data + 0x18);
 	}
-	if (mode) {
+	if (pattr) {
 		uint32_t attr = IVAL(outbuf.data, 0x20);
-		*mode = (uint16_t)attr;
+		*pattr = (uint16_t)attr;
 	}
 	if (size) {
 		uint64_t file_size = BVAL(outbuf.data, 0x30);
@@ -2102,7 +2102,7 @@ NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 
 NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 			uint16_t fnum,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
@@ -2113,7 +2113,7 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 	struct timespec change_time_ts;
 	NTSTATUS status = cli_smb2_qfileinfo_basic(cli,
 					fnum,
-					attr,
+					pattr,
 					size,
 					NULL,
 					&access_time_ts,
@@ -2146,7 +2146,7 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 
 NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 			const char *name,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
@@ -2185,7 +2185,7 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 	}
 	status = cli_smb2_getattrE(cli,
 				fnum,
-				attr,
+				pattr,
 				size,
 				NULL,
 				NULL,
@@ -2219,7 +2219,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 			struct timespec *write_time,
 			struct timespec *change_time,
 			off_t *size,
-			uint16_t *mode,
+			uint16_t *pattr,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status;
@@ -2258,7 +2258,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 
 	status = cli_smb2_qfileinfo_basic(cli,
 					fnum,
-					mode,
+					pattr,
 					size,
 					create_time,
 					access_time,
