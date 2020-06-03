@@ -14,12 +14,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-   
+
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-   
+
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
@@ -254,19 +254,19 @@ get_nodes ()
 	done
 }
 
-push()
+push ()
 {
-    local host="$1"
-    local files="$2"
+	local host="$1"
+	local files="$2"
 
-    local f
-    for f in $files ; do
-        $verbose && echo "Pushing $f"
-        case "$f" in
-	    /*) rsync "$f" "[${host}]:${f}" ;;
-	    *)  rsync "${PWD}/${f}" "[${host}]:${PWD}/${f}" ;;
-	esac
-    done
+	local f
+	for f in $files ; do
+		$verbose && echo "Pushing $f"
+		case "$f" in
+		/*) rsync "$f" "[${host}]:${f}" ;;
+		*)  rsync "${PWD}/${f}" "[${host}]:${PWD}/${f}" ;;
+		esac
+	done
 }
 
 ######################################################################
