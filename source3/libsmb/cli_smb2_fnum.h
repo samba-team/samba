@@ -95,7 +95,7 @@ struct tevent_req *cli_smb2_unlink_send(
 NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
-			uint16_t attribute,
+			uint32_t attribute,
 			NTSTATUS (*fn)(const char *,
 				struct file_info *,
 				const char *,
@@ -183,7 +183,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 			struct timespec *write_time,
 			struct timespec *change_time,
 			off_t *size,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			SMB_INO_T *ino);
 NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 			const char *name,

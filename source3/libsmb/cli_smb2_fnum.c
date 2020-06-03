@@ -1285,7 +1285,7 @@ static bool windows_parent_dirname(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
-			uint16_t attribute,
+			uint32_t attribute,
 			NTSTATUS (*fn)(const char *,
 				struct file_info *,
 				const char *,
@@ -1418,8 +1418,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				goto fail;
 			}
 
-			if (dir_check_ftype(
-				    finfo->attr, (uint32_t)attribute)) {
+			if (dir_check_ftype(finfo->attr, attribute)) {
 				/*
 				 * Only process if attributes match.
 				 * On SMB1 server does this, so on
@@ -2218,13 +2217,12 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 			struct timespec *write_time,
 			struct timespec *change_time,
 			off_t *size,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status;
 	struct smb2_hnd *ph = NULL;
 	uint16_t fnum = 0xffff;
-	uint32_t attr = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2258,7 +2256,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 
 	status = cli_smb2_qfileinfo_basic(cli,
 					fnum,
-					&attr,
+					pattr,
 					size,
 					create_time,
 					access_time,
@@ -2267,12 +2265,6 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 					ino);
 
   fail:
-
-	if (NT_STATUS_IS_OK(status)) {
-		if (pattr != NULL) {
-			*pattr = attr;
-		}
-	}
 
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
