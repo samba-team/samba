@@ -48,7 +48,7 @@ static ino_t generate_inode(const char *name)
 void setup_stat(struct stat *st,
 		const char *fname,
 		off_t size,
-		int mode,
+		int attr,
 		ino_t ino,
 		dev_t dev,
 		struct timespec access_time_ts,
@@ -57,22 +57,22 @@ void setup_stat(struct stat *st,
 {
 	st->st_mode = 0;
 
-	if (IS_DOS_DIR(mode)) {
+	if (IS_DOS_DIR(attr)) {
 		st->st_mode = SMBC_DIR_MODE;
 	} else {
 		st->st_mode = SMBC_FILE_MODE;
 	}
 
-	if (IS_DOS_ARCHIVE(mode)) {
+	if (IS_DOS_ARCHIVE(attr)) {
 		st->st_mode |= S_IXUSR;
 	}
-	if (IS_DOS_SYSTEM(mode)) {
+	if (IS_DOS_SYSTEM(attr)) {
 		st->st_mode |= S_IXGRP;
 	}
-	if (IS_DOS_HIDDEN(mode)) {
+	if (IS_DOS_HIDDEN(attr)) {
 		st->st_mode |= S_IXOTH;
 	}
-	if (!IS_DOS_READONLY(mode)) {
+	if (!IS_DOS_READONLY(attr)) {
 		st->st_mode |= S_IWUSR;
 	}
 
@@ -89,7 +89,7 @@ void setup_stat(struct stat *st,
 	st->st_uid = getuid();
 	st->st_gid = getgid();
 
-	if (IS_DOS_DIR(mode)) {
+	if (IS_DOS_DIR(attr)) {
 		st->st_nlink = 2;
 	} else {
 		st->st_nlink = 1;
@@ -232,7 +232,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
         struct timespec access_time_ts;
         struct timespec write_time_ts;
 	off_t size;
-	uint16_t mode;
+	uint16_t attr;
 	char *server = NULL;
 	char *share = NULL;
 	char *user = NULL;
@@ -292,7 +292,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
 	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
-				     targetcli, file->cli_fd, &mode, &size,
+				     targetcli, file->cli_fd, &attr, &size,
 				     NULL,
 				     &access_time_ts,
 				     &write_time_ts,
@@ -300,7 +300,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 				     &ino))) {
 		time_t change_time, access_time, write_time;
 
-		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &mode, &size,
+		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &attr, &size,
                                   &change_time, &access_time, &write_time))) {
 			errno = EINVAL;
 			TALLOC_FREE(frame);
@@ -314,7 +314,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	setup_stat(st,
 		path,
 		size,
-		mode,
+		attr,
 		ino,
 		file->srv->dev,
 		access_time_ts,
