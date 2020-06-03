@@ -453,7 +453,7 @@ SMBC_getatr(SMBCCTX * context,
 	char *fixedpath = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
-	uint16_t mode = 0;
+	uint16_t attr = 0;
 	off_t size = 0;
 	struct timespec create_time_ts = {0};
 	struct timespec access_time_ts = {0};
@@ -508,7 +508,7 @@ SMBC_getatr(SMBCCTX * context,
 					&write_time_ts,
 					&change_time_ts,
 					&size,
-					&mode,
+					&attr,
 					&ino);
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
@@ -525,7 +525,7 @@ SMBC_getatr(SMBCCTX * context,
 					&write_time_ts,
 					&change_time_ts,
 					&size,
-					&mode,
+					&attr,
 					&ino);
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
@@ -539,7 +539,7 @@ SMBC_getatr(SMBCCTX * context,
 		goto all_failed;
         }
 
-	status = cli_getatr(targetcli, targetpath, &mode, &size, &write_time);
+	status = cli_getatr(targetcli, targetpath, &attr, &size, &write_time);
 	if (NT_STATUS_IS_OK(status)) {
 		struct timespec w_time_ts =
 			convert_time_t_to_timespec(write_time);
@@ -553,7 +553,7 @@ setup_stat:
 	setup_stat(sb,
 		   path,
 		   size,
-		   mode,
+		   attr,
 		   ino,
 		   srv->dev,
 		   access_time_ts,
@@ -580,7 +580,7 @@ all_failed:
  * provided.  Create time, if zero, will be determined from the actual create
  * time of the file.  If non-zero, the create time will be set as well.
  *
- * "mode" (attributes) parameter may be set to -1 if it is not to be set.
+ * "attr" (attributes) parameter may be set to -1 if it is not to be set.
  */
 bool
 SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
@@ -588,7 +588,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             struct timespec access_time,
             struct timespec write_time,
             struct timespec change_time,
-            uint16_t mode)
+            uint16_t attr)
 {
         uint16_t fd;
         int ret;
@@ -606,7 +606,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 						 access_time,
 						 write_time,
 						 change_time,
-						 mode))) {
+						 attr))) {
 
                 /*
                  * setpathinfo is not supported; go to plan B.
@@ -639,12 +639,12 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 
                 /*
                  * Unfortunately, setattrE() doesn't have a provision for
-                 * setting the access mode (attributes).  We'll have to try
+                 * setting the access attr (attributes).  We'll have to try
                  * cli_setatr() for that, and with only this parameter, it
                  * seems to work on win98.
                  */
-                if (ret && mode != (uint16_t) -1) {
-                        ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, mode, 0));
+                if (ret && attr != (uint16_t) -1) {
+                        ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, attr, 0));
                 }
 
                 if (! ret) {
