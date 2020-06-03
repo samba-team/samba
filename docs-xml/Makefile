@@ -63,8 +63,6 @@ pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
 ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 tex:: $(addsuffix .tex,$(MAIN_DOCS))
-texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
-texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
 htmlman:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
 html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
@@ -178,14 +176,6 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp $(XSLTPROC_DEPS)
 				--stringparam manifest.in.base.dir "$@/" \
 				--stringparam base.dir "$@/" \
 	http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
-
-# Texinfo docs
-$(TEXINFODIR)/%.texi: $(DOCBOOKDIR)/%.xml
-	@mkdir -p $(@D)
-	cd $(@D) && $(DB2TEXI) $(shell pwd)/$<
-
-$(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
-	$(MAKEINFO) --no-validate --force -o $@ "$<"
 
 # Manpages
 $(MANPAGEDIR)/smb.conf.5.xml: parameters
