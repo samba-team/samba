@@ -2420,7 +2420,7 @@ NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 
 NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 			const char *name,
-			uint16_t attr,
+			uint32_t attr,
 			time_t mtime)
 {
 	uint8_t inbuf_store[40];
@@ -2456,7 +2456,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 		attr = 0;
 	}
 
-	SSVAL(inbuf.data, 32, attr);
+	SIVAL(inbuf.data, 32, attr);
 	if (mtime != 0) {
 		put_long_date((char *)inbuf.data + 16,mtime);
 	}

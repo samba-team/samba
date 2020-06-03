@@ -197,7 +197,7 @@ NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 			const DATA_BLOB *p_in_data);
 NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 			const char *fname,
-			uint16_t attr,
+			uint32_t attr,
 			time_t mtime);
 NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
                         uint16_t fnum,
