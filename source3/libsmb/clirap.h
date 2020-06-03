@@ -49,20 +49,20 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 			     time_t *access_time,
 			     time_t *write_time,
 			     off_t *size,
-			     uint16_t *mode);
+			     uint16_t *pattr);
 NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			const char *fname,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time,
 			off_t *size,
-			uint16_t *mode);
+			uint16_t *pattr);
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec create_time,
 			     struct timespec access_time,
 			     struct timespec write_time,
 			     struct timespec change_time,
-			     uint16_t mode);
+			     uint16_t attr);
 struct tevent_req *cli_setfileinfo_ext_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
@@ -72,7 +72,7 @@ struct tevent_req *cli_setfileinfo_ext_send(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t mode);
+	uint16_t attr);
 NTSTATUS cli_setfileinfo_ext_recv(struct tevent_req *req);
 NTSTATUS cli_setfileinfo_ext(
 	struct cli_state *cli,
@@ -81,7 +81,7 @@ NTSTATUS cli_setfileinfo_ext(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t mode);
+	uint16_t attr);
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,
@@ -91,21 +91,21 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
 			     struct timespec *change_time,
-			     off_t *size, uint16_t *mode,
+			     off_t *size, uint16_t *pattr,
 			     SMB_INO_T *ino);
 NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			struct timespec *create_time,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16_t *mode,
+			off_t *size, uint16_t *pattr,
 			SMB_INO_T *ino);
 NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			struct timespec *create_time,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16_t *mode,
+			off_t *size, uint16_t *pattr,
 			SMB_INO_T *ino);
 struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -126,7 +126,7 @@ bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 		       TALLOC_CTX *mem_ctx, char **name);
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint16_t *mode, off_t *size,
+			     uint16_t *pattr, off_t *size,
 			     struct timespec *create_time,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
