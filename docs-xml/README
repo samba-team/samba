@@ -35,8 +35,8 @@ The format
 ----------
 
 If you are new to xml, regard an xml file as 'source code'. You don't
-read it directly, but use it to create other formats (like the txt and html
-included in ../txtdocs and ../htmldocs).
+read it directly, but use it to create other formats (like the html
+included in ../htmldocs).
 
 Docbook is a particular XML style, particularly suited to producing
 technical manuals. 

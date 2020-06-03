@@ -36,7 +36,7 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,ps,manpages,txt,htmlhelp - Build specific output format"
+	@echo " pdf,tex,ps,manpages,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman - Build HTML version of manpages"
@@ -45,7 +45,7 @@ $(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCB
 
 # Pseudo targets 
 all:: $(TARGETS)
-everything:: manpages pdf html-single html htmlman txt ps fo htmlhelp
+everything:: manpages pdf html-single html htmlman ps fo htmlhelp
 release:: manpages htmlman html pdf
 clean::
 	@echo "Cleaning up..." 
@@ -61,7 +61,6 @@ clean::
 # Output format targets
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
 ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
-txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 tex:: $(addsuffix .tex,$(MAIN_DOCS))
 manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
 htmlman:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
@@ -117,11 +116,6 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl $(XSLT
 	@cp -f templates/attributions.xml $@
 	@$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
-# Text files
-$(TXTDIR)/%.txt: $(HTMLDIR)/%.html
-	@mkdir -p $(@D)
-	$(HTML2TEXT) -nobs -style pretty -o $@ $<
-
 # Tex files
 %.tex: %/index.xml xslt/latex.xsl
 	@echo "Generating $@..."
@@ -132,7 +126,6 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl $(XSLTPROC_DEPS)
 	@echo "Generating dependency file for $*" 
 	@$(XSLTPROC) --novalid \
-		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
 	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@

@@ -125,6 +125,7 @@ others:
     - script/autobuild.py tdb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
     - script/autobuild.py tevent   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
     - script/autobuild.py samba-xc $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+    - script/autobuild.py docs-xml $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba:
   extends: .shared_template

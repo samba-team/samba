@@ -126,7 +126,8 @@ builddirs = {
     "talloc": "lib/talloc",
     "replace": "lib/replace",
     "tevent": "lib/tevent",
-    "pidl": "pidl"
+    "pidl": "pidl",
+    "docs-xml": "docs-xml"
 }
 
 ctdb_configure_params = " --enable-developer ${PREFIX}"
@@ -187,6 +188,14 @@ tasks = {
         ("install", "make install"),
         ("test", "make autotest"),
         ("check-clean-tree", "../script/clean-source-tree.sh"),
+        ("clean", "make clean"),
+        ],
+
+    "docs-xml": [
+        ("random-sleep", random_sleep(300, 900)),
+        ("autoconf", "autoconf"),
+        ("configure", "./configure"),
+        ("make", "make html htmlman"),
         ("clean", "make clean"),
         ],
 
