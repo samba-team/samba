@@ -4110,7 +4110,7 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_getattrE_recv(struct tevent_req *req,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
@@ -4123,8 +4123,8 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	if (attr) {
-		*attr = state->attr;
+	if (pattr) {
+		*pattr = state->attr;
 	}
 	if (size) {
 		*size = state->size;
@@ -4143,7 +4143,7 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 
 NTSTATUS cli_getattrE(struct cli_state *cli,
 			uint16_t fnum,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
@@ -4157,7 +4157,7 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_getattrE(cli,
 					fnum,
-					attr,
+					pattr,
 					size,
 					change_time,
 					access_time,
@@ -4191,7 +4191,7 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 	}
 
 	status = cli_getattrE_recv(req,
-					attr,
+					pattr,
 					size,
 					change_time,
 					access_time,
@@ -4284,7 +4284,7 @@ static void cli_getatr_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
@@ -4295,8 +4295,8 @@ NTSTATUS cli_getatr_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	if (attr) {
-		*attr = state->attr;
+	if (pattr) {
+		*pattr = state->attr;
 	}
 	if (size) {
 		*size = state->size;
@@ -4309,7 +4309,7 @@ NTSTATUS cli_getatr_recv(struct tevent_req *req,
 
 NTSTATUS cli_getatr(struct cli_state *cli,
 			const char *fname,
-			uint16_t *attr,
+			uint16_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
@@ -4321,7 +4321,7 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_getatr(cli,
 					fname,
-					attr,
+					pattr,
 					size,
 					write_time);
 	}
@@ -4353,7 +4353,7 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 	}
 
 	status = cli_getatr_recv(req,
-				attr,
+				pattr,
 				size,
 				write_time);
 
