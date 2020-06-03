@@ -2145,14 +2145,13 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 
 NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 			const char *name,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
-	uint32_t attr = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2185,17 +2184,13 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 	}
 	status = cli_smb2_getattrE(cli,
 				fnum,
-				&attr,
+				pattr,
 				size,
 				NULL,
 				NULL,
 				write_time);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
-	}
-
-	if (pattr != NULL) {
-		*pattr = attr;
 	}
 
   fail:

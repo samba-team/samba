@@ -4327,11 +4327,19 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_getatr(cli,
+		uint32_t attr;
+		status = cli_smb2_getatr(cli,
 					fname,
-					pattr,
+					&attr,
 					size,
 					write_time);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (pattr != NULL) {
+			*pattr = attr;
+		}
+		return status;
 	}
 
 	frame = talloc_stackframe();

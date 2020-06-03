@@ -173,7 +173,7 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 			time_t *write_time);
 NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 			const char *name,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *write_time);
 NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
