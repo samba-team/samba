@@ -154,7 +154,7 @@ get_nodes_with_status ()
     (
 	local i
 	IFS="${IFS}|"
-	while IFS="" read i ; do
+	while IFS="" read -r i ; do
 
 	    # Intentional word splitting
 	    # shellcheck disable=SC2086
@@ -193,7 +193,7 @@ get_any_available_node ()
     # We do a recursive onnode to find which nodes are up and running.
     local out line
     out=$("$0" -pq all ctdb pnn 2>&1)
-    while read line ; do
+    while read -r line ; do
 	if [[ "$line" =~ ^[0-9]+$ ]] ; then
 	    local pnn="$line"
 	    # Intentional multi-word expansion
