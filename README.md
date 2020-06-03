@@ -13,10 +13,6 @@ Desktops into Active Directory environments. It can function both as a
 domain controller or as a regular domain member.
 
 
-NOTE: Installation instructions may be found
-      for the file/print server and domain member in:
-      docs/htmldocs/Samba3-HOWTO/install.html
-
 For the AD DC implementation a full HOWTO is provided at:
       https://wiki.samba.org/index.php/Samba4/HOWTO
 
@@ -32,31 +28,17 @@ called COPYING).
 CONTRIBUTIONS
 =============
 
-1. To contribute via GitLab
-  - fork the official Samba team repository on GitLab
-      * see https://gitlab.com/samba-team/samba
-  - become familiar with the coding standards as described in README.Coding
-  - make sure you read the Samba copyright policy
-      * see https://www.samba.org/samba/devel/copyright-policy.html
-  - create a feature branch
-  - make changes
-  - when committing, be sure to add signed-off-by tags
-      * see https://wiki.samba.org/index.php/CodeReview#commit_message_tags
-  - send a merge request for your branch through GitLab
-  - this will send an email to everyone registered on GitLab
-  - discussion happens on the samba-technical mailing list as described below
-  - more info on using Git for Samba development can be found on the Samba Wiki
-      * see https://wiki.samba.org/index.php/Using_Git_for_Samba_Development
+Please see https://wiki.samba.org/index.php/Contribute
+for detailed set-by-step instructions on how to submit a patch
+for Samba via GitLab.
 
-2. If you want to contribute to the development of the software then
-please join the mailing list. The Samba team accepts patches
-(preferably in "diff -u" format, see https://www.samba.org/samba/devel/
-for more details) and are always glad to receive feedback or
-suggestions to the address samba@lists.samba.org.  More information
-on the various Samba mailing lists can be found at https://lists.samba.org/.
+Samba's GitLab mirror is at https://gitlab.com/samba-team/samba
 
-You can also get the Samba sourcecode straight from the git repository - see
-https://wiki.samba.org/index.php/Using_Git_for_Samba_Development.
+OUR CONTRIBUTORS
+================
+
+See https://www.samba.org/samba/team/ for details of the Samba Team,
+as well as details of all those currently active in Samba development.
 
 If you like a particular feature then look through the git change-log
 (on the web at https://gitweb.samba.org/?p=samba.git;a=summary) and see
@@ -74,16 +56,11 @@ DOCUMENTATION
 -------------
 
 There is quite a bit of documentation included with the package,
-including man pages, and lots of .html files with hints and useful
-info. This is also available from the webpage. There is a growing
-collection of information under docs/.
+including man pages and the wiki at https://wiki.samba.org
 
-A list of Samba documentation in languages other than English is
-available on the webpage.
-
-If you would like to help with the documentation, please coordinate
-on the samba@lists.samba.org mailing list.  See the next section for details
-on subscribing to samba mailing lists.
+If you would like to help with our documentation, please contribute
+that improved content to the wiki, we are moving as much content there
+as possible.
 
 
 MAILING LIST
