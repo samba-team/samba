@@ -2012,7 +2012,7 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 
 NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 			uint16_t fnum,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			struct timespec *create_time,
 			struct timespec *access_time,
@@ -2074,8 +2074,7 @@ NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 		*change_time = interpret_long_date((const char *)outbuf.data + 0x18);
 	}
 	if (pattr) {
-		uint32_t attr = IVAL(outbuf.data, 0x20);
-		*pattr = (uint16_t)attr;
+		*pattr = IVAL(outbuf.data, 0x20);
 	}
 	if (size) {
 		uint64_t file_size = BVAL(outbuf.data, 0x30);
@@ -2111,9 +2110,10 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 	struct timespec access_time_ts;
 	struct timespec write_time_ts;
 	struct timespec change_time_ts;
+	uint32_t attr = 0;
 	NTSTATUS status = cli_smb2_qfileinfo_basic(cli,
 					fnum,
-					pattr,
+					&attr,
 					size,
 					NULL,
 					&access_time_ts,
@@ -2135,6 +2135,9 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 	}
 	if (write_time) {
 		*write_time = write_time_ts.tv_sec;
+	}
+	if (pattr != NULL) {
+		*pattr = attr;
 	}
 	return NT_STATUS_OK;
 }
@@ -2225,6 +2228,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 	NTSTATUS status;
 	struct smb2_hnd *ph = NULL;
 	uint16_t fnum = 0xffff;
+	uint32_t attr = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2258,7 +2262,7 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 
 	status = cli_smb2_qfileinfo_basic(cli,
 					fnum,
-					pattr,
+					&attr,
 					size,
 					create_time,
 					access_time,
@@ -2267,6 +2271,12 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 					ino);
 
   fail:
+
+	if (NT_STATUS_IS_OK(status)) {
+		if (pattr != NULL) {
+			*pattr = attr;
+		}
+	}
 
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
