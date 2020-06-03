@@ -276,7 +276,6 @@ parse_options "$@"
 ssh_opts=
 if $push ; then
 	ONNODE_SSH=push
-	ONNODE_SSH_OPTS=""
 else
 	$current && command="cd $PWD && $command"
 
@@ -313,7 +312,7 @@ retcode=0
 for n in $nodes ; do
 	set -o pipefail 2>/dev/null
 
-	ssh_cmd="$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS"
+	ssh_cmd="$ONNODE_SSH $ssh_opts"
 	if $parallel ; then
 		if $verbose ; then
 			$ssh_cmd "$n" "$command" 2>&1 | sed -e "s@^@[$n] @"
