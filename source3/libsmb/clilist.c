@@ -257,8 +257,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
 			p += 8;
 			p += 8; /* alloc size */
-			/* NB. We need to enlarge finfo->attr to be 32-bits. */
-			finfo->attr = (uint16_t)IVAL(p,0);
+			finfo->attr = IVAL(p,0);
 			p += 4;
 			namelen = IVAL(p,0);
 			p += 4;

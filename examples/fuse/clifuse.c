@@ -496,7 +496,7 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
 	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
 	finfo->size = IVAL2_TO_SMB_BIG_UINT(dir_data + 40, 0);
-	finfo->attr = (uint16_t)IVAL(dir_data + 56, 0);
+	finfo->attr = IVAL(dir_data + 56, 0);
 	namelen = IVAL(dir_data + 60,0);
 	if (namelen > (dir_data_length - 104)) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
