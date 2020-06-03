@@ -11453,10 +11453,10 @@ static NTSTATUS msdfs_attribute_list_fn(const char *mnt,
 				  const char *mask,
 				  void *private_data)
 {
-	uint16_t *p_mode = (uint16_t *)private_data;
+	uint32_t *p_attr = (uint32_t *)private_data;
 
 	if (strequal(finfo->name, test_filename)) {
-		*p_mode = finfo->attr;
+		*p_attr = finfo->attr;
 	}
 
 	return NT_STATUS_OK;
@@ -11466,7 +11466,7 @@ static bool run_msdfs_attribute(int dummy)
 {
 	static struct cli_state *cli;
 	bool correct = false;
-	uint16_t mode = 0;
+	uint32_t attr = 0;
 	NTSTATUS status;
 
 	printf("Starting MSDFS-ATTRIBUTE test\n");
@@ -11492,26 +11492,26 @@ static bool run_msdfs_attribute(int dummy)
 			"*",
 			FILE_ATTRIBUTE_DIRECTORY,
 			msdfs_attribute_list_fn,
-			&mode);
+			&attr);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_list failed with %s\n",
 			nt_errstr(status));
 		goto out;
 	}
-	if ((mode & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+	if ((attr & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
 		printf("file %s should have "
 			"FILE_ATTRIBUTE_REPARSE_POINT set. attr = 0x%x\n",
 			test_filename,
-			(unsigned int)mode);
+			(unsigned int)attr);
 		goto out;
 	}
 
-	if ((mode & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+	if ((attr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
 		printf("file %s should have "
 			"FILE_ATTRIBUTE_DIRECTORY set. attr = 0x%x\n",
 			test_filename,
-			(unsigned int)mode);
+			(unsigned int)attr);
 		goto out;
 	}
 
