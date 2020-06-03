@@ -361,7 +361,7 @@ struct cli_list_old_state {
 	uint16_t vwv[2];
 	char *mask;
 	int num_asked;
-	uint16_t attribute;
+	uint32_t attribute;
 	uint8_t search_status[23];
 	bool first;
 	bool done;
@@ -374,7 +374,7 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct cli_state *cli,
 					    const char *mask,
-					    uint16_t attribute)
+					    uint32_t attribute)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_list_old_state *state;
@@ -568,7 +568,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
-		      uint16_t attribute,
+		      uint32_t attribute,
 		      NTSTATUS (*fn)(const char *, struct file_info *,
 				 const char *, void *), void *state)
 {
