@@ -4210,7 +4210,7 @@ static void cli_getatr_done(struct tevent_req *subreq);
 
 struct cli_getatr_state {
 	int zone_offset;
-	uint16_t attr;
+	uint32_t attr;
 	off_t size;
 	time_t write_time;
 };
@@ -4284,7 +4284,7 @@ static void cli_getatr_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
@@ -4309,7 +4309,7 @@ NTSTATUS cli_getatr_recv(struct tevent_req *req,
 
 NTSTATUS cli_getatr(struct cli_state *cli,
 			const char *fname,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *write_time)
 {
@@ -4319,19 +4319,11 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		uint32_t attr;
-		status = cli_smb2_getatr(cli,
+		return cli_smb2_getatr(cli,
 					fname,
-					&attr,
+					pattr,
 					size,
 					write_time);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (pattr != NULL) {
-			*pattr = attr;
-		}
-		return status;
 	}
 
 	frame = talloc_stackframe();

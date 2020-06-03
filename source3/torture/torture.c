@@ -3975,9 +3975,9 @@ static bool run_browsetest(int dummy)
 
 static bool check_attributes(struct cli_state *cli,
 				const char *fname,
-				uint16_t expected_attrs)
+				uint32_t expected_attrs)
 {
-	uint16_t attrs = 0;
+	uint32_t attrs = 0;
 	NTSTATUS status = cli_getatr(cli,
 				fname,
 				&attrs,
@@ -6248,7 +6248,7 @@ static bool run_rename(int dummy)
 	const char *fname1 = "\\test1.txt";
 	bool correct = True;
 	uint16_t fnum1;
-	uint16_t attr;
+	uint32_t attr;
 	NTSTATUS status;
 
 	printf("starting rename test\n");
@@ -9539,7 +9539,7 @@ static bool run_openattrtest(int dummy)
 	const char *fname = "\\openattr.file";
 	uint16_t fnum1;
 	bool correct = True;
-	uint16_t attr;
+	uint32_t attr;
 	unsigned int i, j, k, l;
 	NTSTATUS status;
 

@@ -5305,7 +5305,7 @@ out:
 int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
 {
 	extern struct cli_state *cli;
-	uint16_t old_attr;
+	uint32_t old_attr;
 	NTSTATUS status;
 
 	status = cli_getatr(cli, filename, &old_attr, NULL, NULL);

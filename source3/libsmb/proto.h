@@ -548,12 +548,12 @@ struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 				struct cli_state *cli,
 				const char *fname);
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
-				uint16_t *pattr,
+				uint32_t *pattr,
 				off_t *size,
 				time_t *write_time);
 NTSTATUS cli_getatr(struct cli_state *cli,
 			const char *fname,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *write_time);
 struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
