@@ -976,6 +976,52 @@ static PyObject *py_creds_set_smb_signing(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_get_smb_ipc_signing(PyObject *self, PyObject *unused)
+{
+	enum smb_signing_setting signing_state;
+	struct cli_credentials *creds = NULL;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	signing_state = cli_credentials_get_smb_ipc_signing(creds);
+	return PyLong_FromLong(signing_state);
+}
+
+static PyObject *py_creds_set_smb_ipc_signing(PyObject *self, PyObject *args)
+{
+	enum smb_signing_setting signing_state;
+	struct cli_credentials *creds = NULL;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+	if (!PyArg_ParseTuple(args, "i|i", &signing_state, &obt)) {
+		return NULL;
+	}
+
+	switch (signing_state) {
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_OFF:
+	case SMB_SIGNING_IF_REQUIRED:
+	case SMB_SIGNING_DESIRED:
+	case SMB_SIGNING_REQUIRED:
+		break;
+	default:
+		PyErr_Format(PyExc_TypeError, "Invalid signing state value");
+		return NULL;
+	}
+
+	cli_credentials_set_smb_ipc_signing(creds, signing_state, obt);
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "get_username",
@@ -1264,6 +1310,16 @@ static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "set_smb_signing",
 		.ml_meth  = py_creds_set_smb_signing,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_smb_ipc_signing",
+		.ml_meth  = py_creds_get_smb_ipc_signing,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_smb_ipc_signing",
+		.ml_meth  = py_creds_set_smb_ipc_signing,
 		.ml_flags = METH_VARARGS,
 	},
 	{ .ml_name = NULL }
