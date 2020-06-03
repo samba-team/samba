@@ -1957,7 +1957,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	char *path = NULL;
-	uint16_t attr;
+	uint32_t attr;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;

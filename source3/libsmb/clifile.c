@@ -4497,7 +4497,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname,
-				uint16_t attr,
+				uint32_t attr,
 				time_t mtime)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
@@ -4572,7 +4572,7 @@ NTSTATUS cli_setatr_recv(struct tevent_req *req)
 
 NTSTATUS cli_setatr(struct cli_state *cli,
 		const char *fname,
-		uint16_t attr,
+		uint32_t attr,
 		time_t mtime)
 {
 	TALLOC_CTX *frame = NULL;
