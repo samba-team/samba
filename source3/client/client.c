@@ -854,7 +854,7 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 ****************************************************************************/
 
 NTSTATUS do_list(const char *mask,
-			uint16_t attribute,
+			uint32_t attribute,
 			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
 				   const char *dir),
 			bool rec,
@@ -971,7 +971,7 @@ NTSTATUS do_list(const char *mask,
 static int cmd_dir(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint32_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	int rc = 1;
@@ -1026,7 +1026,7 @@ static int cmd_dir(void)
 static int cmd_du(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint32_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status;
@@ -1223,7 +1223,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	}
 
 	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
-		cli_setatr(cli, rname, attr & ~(uint16_t)FILE_ATTRIBUTE_ARCHIVE, 0);
+		cli_setatr(cli, rname, attr & ~(uint32_t)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -1496,7 +1496,7 @@ static int cmd_more(void)
 static int cmd_mget(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint32_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mget_mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -1727,7 +1727,7 @@ static int cmd_altname(void)
 	return 0;
 }
 
-static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t attr)
+static char *attr_str(TALLOC_CTX *mem_ctx, uint32_t attr)
 {
 	char *attrs = talloc_zero_array(mem_ctx, char, 17);
 	int i = 0;
@@ -2535,7 +2535,7 @@ static int cmd_del(void)
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint32_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse) {
 		attribute |= FILE_ATTRIBUTE_DIRECTORY;
@@ -2656,7 +2656,7 @@ static int cmd_deltree(void)
 	NTSTATUS status = NT_STATUS_OK;
 	struct file_list *deltree_list_norecurse = NULL;
 	struct file_list *deltree_list_iter = NULL;
-	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM |
+	uint32_t attribute = FILE_ATTRIBUTE_SYSTEM |
 			     FILE_ATTRIBUTE_HIDDEN |
 			     FILE_ATTRIBUTE_DIRECTORY;
 	bool ok;
@@ -2755,7 +2755,7 @@ static int cmd_wdel(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
 	char *buf = NULL;
-	uint16_t attribute;
+	uint32_t attribute;
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 	NTSTATUS status;
@@ -2765,7 +2765,7 @@ static int cmd_wdel(void)
 		return 1;
 	}
 
-	attribute = (uint16_t)strtol(buf, (char **)NULL, 16);
+	attribute = (uint32_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
@@ -5303,7 +5303,7 @@ out:
  *
  * Update the file attributes with the one provided.
  */
-int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
+int set_remote_attr(const char *filename, uint32_t new_attr, int mode)
 {
 	extern struct cli_state *cli;
 	uint32_t old_attr;
@@ -5340,7 +5340,7 @@ int cmd_setmode(void)
 {
 	char *buf;
 	char *fname = NULL;
-	uint16_t attr[2] = {0};
+	uint32_t attr[2] = {0};
 	int mode = ATTR_SET;
 	int err = 0;
 	bool ok;

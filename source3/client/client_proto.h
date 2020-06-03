@@ -37,12 +37,12 @@ const char *client_get_cur_dir(void);
 const char *client_set_cur_dir(const char *newdir);
 char *client_clean_name(TALLOC_CTX *ctx, const char *name);
 NTSTATUS do_list(const char *mask,
-			uint16_t attribute,
+			uint32_t attribute,
 			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
 				   const char *dir),
 			bool rec,
 			bool dirs);
-int set_remote_attr(const char *filename, uint16_t new_attr, int mode);
+int set_remote_attr(const char *filename, uint32_t new_attr, int mode);
 int cmd_iosize(void);
 
 /* The following definitions come from client/dnsbrowse.c  */
