@@ -128,7 +128,7 @@
 /* Timout (in seconds) to wait for an oplock break
    message to return from the client. */
 
-#define OPLOCK_BREAK_TIMEOUT 30
+#define OPLOCK_BREAK_TIMEOUT 35
 
 /* Timout (in seconds) to add to the oplock break timeout
    to wait for the smbd to smbd message to return. */
