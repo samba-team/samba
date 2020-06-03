@@ -509,9 +509,10 @@ SMBC_getatr(SMBCCTX * context,
 					&write_time_ts,
 					&change_time_ts,
 					&size,
-					&sattr,
+					&attr,
 					&ino);
 		if (NT_STATUS_IS_OK(status)) {
+			sattr = attr;
 			goto setup_stat;
 		}
         }

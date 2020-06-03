@@ -958,7 +958,7 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
 			     struct timespec *change_time,
-			     off_t *size, uint16_t *pattr,
+			     off_t *size, uint32_t *pattr,
 			     SMB_INO_T *ino)
 {
 	struct cli_qpathinfo2_state *state = tevent_req_data(
@@ -982,7 +982,8 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 		*change_time = interpret_long_date((char *)state->data+24);
 	}
 	if (pattr) {
-		*pattr = SVAL(state->data, 32);
+		/* SMB_QUERY_FILE_ALL_INFO returns 32-bit attributes. */
+		*pattr = IVAL(state->data, 32);
 	}
 	if (size) {
                 *size = IVAL2_TO_SMB_BIG_UINT(state->data,48);
@@ -1006,7 +1007,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16_t *pattr,
+			off_t *size, uint32_t *pattr,
 			SMB_INO_T *ino)
 {
 	TALLOC_CTX *frame = NULL;
@@ -1015,23 +1016,15 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		uint32_t attr = 0;
-		status = cli_smb2_qpathinfo2(cli,
+		return cli_smb2_qpathinfo2(cli,
 					fname,
 					create_time,
 					access_time,
 					write_time,
 					change_time,
 					size,
-					&attr,
+					pattr,
 					ino);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (pattr != NULL) {
-			*pattr = attr;
-		}
-		return status;
 	}
 
 	frame = talloc_stackframe();
@@ -1601,9 +1594,16 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 	uint64_t pos;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_qpathinfo2(cli, fname,
+		status = cli_qpathinfo2(cli, fname,
 				      create_time, access_time, write_time, change_time,
-				      size, pattr, ino);
+				      size, &attr, ino);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (pattr != NULL) {
+			*pattr = attr;
+		}
+		return status;
 	}
 
 	if (create_time || access_time || write_time || change_time || pattr) {
