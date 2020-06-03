@@ -1137,7 +1137,7 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 	 */
 	file = Py_BuildValue("{s:s,s:i,s:s,s:O,s:l}",
 			     "name", finfo->name,
-			     "attrib", (int)finfo->mode,
+			     "attrib", (int)finfo->attr,
 			     "short_name", finfo->short_name,
 			     "size", size,
 			     "mtime",
@@ -1407,7 +1407,7 @@ static NTSTATUS delete_tree_callback(const char *mntpoint,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 
 		/* recursively delete the sub-directory and its contents */
 		status = delete_dir_tree(state->self, filepath);

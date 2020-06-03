@@ -187,7 +187,7 @@ static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
 	info->ctime_ts = finfo->ctime_ts;
 	info->mtime_ts = finfo->mtime_ts;
 	info->gid = finfo->gid;
-	info->attrs = finfo->mode;
+	info->attrs = finfo->attr;
 	info->size = finfo->size;
 	info->uid = finfo->uid;
 	info->name = SMB_STRDUP(finfo->name);
@@ -341,7 +341,7 @@ dir_list_fn(const char *mnt,
 	int ret;
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "",
-		       (finfo->mode&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
+		       (finfo->attr&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
 		SMBCFILE *dir = (SMBCFILE *)state;
 		return map_nt_error_from_unix(dir->dir_error);
 	}

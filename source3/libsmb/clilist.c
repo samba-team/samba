@@ -152,7 +152,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->mtime_ts = convert_time_t_to_timespec(
 				make_unix_date2(p+12, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->size = IVAL(p,16);
-			finfo->mode = SVAL(p,24);
+			finfo->attr = SVAL(p,24);
 			len = CVAL(p, 26);
 			p += 27;
 			if (recv_flags2 & FLAGS2_UNICODE_STRINGS) {
@@ -211,7 +211,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->mtime_ts = convert_time_t_to_timespec(
 				make_unix_date2(p+12, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->size = IVAL(p,16);
-			finfo->mode = SVAL(p,24);
+			finfo->attr = SVAL(p,24);
 			len = CVAL(p, 30);
 			p += 31;
 			/* check for unisys! */
@@ -257,8 +257,8 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
 			p += 8;
 			p += 8; /* alloc size */
-			/* NB. We need to enlarge finfo->mode to be 32-bits. */
-			finfo->mode = (uint16_t)IVAL(p,0);
+			/* NB. We need to enlarge finfo->attr to be 32-bits. */
+			finfo->attr = (uint16_t)IVAL(p,0);
 			p += 4;
 			namelen = IVAL(p,0);
 			p += 4;
@@ -325,7 +325,7 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	size_t ret;
 	ZERO_STRUCTP(finfo);
 
-	finfo->mode = CVAL(p,21);
+	finfo->attr = CVAL(p,21);
 
 	/* We don't get birth time. */
 	finfo->btime_ts.tv_sec = 0;

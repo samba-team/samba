@@ -3993,7 +3993,7 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
 
 	/* DIRECTORY */
-	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
 
 		DEBUG(3,("got dir: %s\n", f->name));
 

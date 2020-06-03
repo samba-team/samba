@@ -1199,8 +1199,8 @@ static NTSTATUS parse_finfo_id_both_directory_info(const uint8_t *dir_data,
 	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
 	finfo->size = IVAL2_TO_SMB_BIG_UINT(dir_data + 40, 0);
 	finfo->allocated_size = IVAL2_TO_SMB_BIG_UINT(dir_data + 48, 0);
-	/* NB. We need to enlarge finfo->mode to be 32-bits. */
-	finfo->mode = (uint16_t)IVAL(dir_data + 56, 0);
+	/* NB. We need to enlarge finfo->attr to be 32-bits. */
+	finfo->attr = (uint16_t)IVAL(dir_data + 56, 0);
 	finfo->ino = IVAL2_TO_SMB_BIG_UINT(dir_data + 96, 0);
 	namelen = IVAL(dir_data + 60,0);
 	if (namelen > (dir_data_length - 104)) {
@@ -1419,7 +1419,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				goto fail;
 			}
 
-			if (dir_check_ftype((uint32_t)finfo->mode,
+			if (dir_check_ftype((uint32_t)finfo->attr,
 					(uint32_t)attribute)) {
 				/*
 				 * Only process if attributes match.

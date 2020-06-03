@@ -537,7 +537,7 @@ static bool do_this_one(struct file_info *finfo)
 		return false;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		return true;
 	}
 
@@ -552,7 +552,7 @@ static bool do_this_one(struct file_info *finfo)
 		return false;
 	}
 
-	if ((archive_level==1 || archive_level==2) && !(finfo->mode & FILE_ATTRIBUTE_ARCHIVE)) {
+	if ((archive_level==1 || archive_level==2) && !(finfo->attr & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
 		return false;
 	}
@@ -579,7 +579,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 	if (!showacls) {
 		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
-			 attrib_string(talloc_tos(), finfo->mode),
+			 attrib_string(talloc_tos(), finfo->attr),
 		 	(double)finfo->size,
 			time_to_asc(t));
 		dir_total += finfo->size;
@@ -601,7 +601,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		}
 		/* print file meta date header */
 		d_printf( "FILENAME:%s\n", finfo->name);
-		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->mode));
+		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->attr));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
 		status = cli_ntcreate(
@@ -793,7 +793,7 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 		*dir_end = '\0';
 	}
 
-	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(f)) {
 			status = do_list_fn(cli_state, f, dir);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1308,7 +1308,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		if (asprintf(&quest,
 			 "Get directory %s? ",finfo->name) < 0) {
 			return NT_STATUS_NO_MEMORY;
@@ -1326,7 +1326,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	}
 	SAFE_FREE(quest);
 
-	if (!(finfo->mode & FILE_ATTRIBUTE_DIRECTORY)) {
+	if (!(finfo->attr & FILE_ATTRIBUTE_DIRECTORY)) {
 		rname = talloc_asprintf(ctx,
 				"%s%s",
 				client_get_cur_dir(),
@@ -2511,7 +2511,7 @@ static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		TALLOC_FREE(mask);
 		return NT_STATUS_OK;
 	}
@@ -2641,7 +2641,7 @@ static NTSTATUS do_deltree_list(struct cli_state *cli_state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		dt->isdir = true;
 	}
 
@@ -5771,7 +5771,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 		return NT_STATUS_OK;
 	}
 
-	if ((info->dirmask[0] == 0) && !(f->mode & FILE_ATTRIBUTE_DIRECTORY))
+	if ((info->dirmask[0] == 0) && !(f->attr & FILE_ATTRIBUTE_DIRECTORY))
 		info->matches[info->count] = SMB_STRDUP(f->name);
 	else {
 		TALLOC_CTX *ctx = talloc_stackframe();
@@ -5787,7 +5787,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 			TALLOC_FREE(ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
+		if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
 			tmp = talloc_asprintf_append(tmp, "%s",
 						     CLI_DIRSEP_STR);
 		}
@@ -5801,7 +5801,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 	if (info->matches[info->count] == NULL) {
 		return NT_STATUS_OK;
 	}
-	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		smb_readline_ca_char(0);
 	}
 	if (info->count == 1) {

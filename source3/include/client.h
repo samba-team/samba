@@ -100,7 +100,7 @@ struct cli_state {
 struct file_info {
 	uint64_t size;
 	uint64_t allocated_size;
-	uint16_t mode;
+	uint16_t attr;
 	uid_t uid;
 	gid_t gid;
 	uint64_t ino;

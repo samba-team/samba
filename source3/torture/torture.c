@@ -9729,7 +9729,7 @@ static NTSTATUS del_fn(const char *mnt, struct file_info *finfo, const char *mas
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
 			printf("del_fn: failed to rmdir %s\n,", fname );
 	} else {
@@ -11456,7 +11456,7 @@ static NTSTATUS msdfs_attribute_list_fn(const char *mnt,
 	uint16_t *p_mode = (uint16_t *)private_data;
 
 	if (strequal(finfo->name, test_filename)) {
-		*p_mode = finfo->mode;
+		*p_mode = finfo->attr;
 	}
 
 	return NT_STATUS_OK;
@@ -11805,7 +11805,7 @@ static NTSTATUS shortname_del_fn(const char *mnt, struct file_info *finfo,
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		status = cli_rmdir(pcli, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("del_fn: failed to rmdir %s\n,", fname );

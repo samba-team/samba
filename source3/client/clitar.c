@@ -861,7 +861,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		goto out;
 	}
 
-	isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+	isdir = finfo->attr & FILE_ATTRIBUTE_DIRECTORY;
 	if (isdir) {
 		old_dir = talloc_strdup(ctx, initial_dir);
 		new_dir = talloc_asprintf(ctx, "%s\\", remote_name);
@@ -938,7 +938,7 @@ static int tar_get_file(struct tar *t,
 	uint64_t off = 0;
 	uint16_t remote_fd = (uint16_t)-1;
 	int err = 0, r;
-	const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+	const bool isdir = finfo->attr & FILE_ATTRIBUTE_DIRECTORY;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 
 	if (ctx == NULL) {
@@ -1459,7 +1459,7 @@ static NTSTATUS tar_create_skip_path(struct tar *t,
 				     bool *_skip)
 {
 	/* syntaxic sugar */
-	const mode_t mode = finfo->mode;
+	const mode_t mode = finfo->attr;
 	const bool isdir = mode & FILE_ATTRIBUTE_DIRECTORY;
 	const bool exclude = t->mode.selection == TAR_EXCLUDE;
 	bool in = true;

@@ -155,7 +155,7 @@ static NTSTATUS gpo_sync_func(const char *mnt,
 	DEBUG(5,("gpo_sync_func: got mask: [%s], name: [%s]\n",
 		mask, info->name));
 
-	if (info->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (info->attr & FILE_ATTRIBUTE_DIRECTORY) {
 
 		DEBUG(3,("got dir: [%s]\n", info->name));
 

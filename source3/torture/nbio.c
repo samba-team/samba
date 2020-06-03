@@ -328,7 +328,7 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 		printf("asprintf failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
 		if (asprintf(&s2, "%s\\*", s) == -1) {
 			printf("asprintf failed\n");

@@ -496,7 +496,7 @@ static NTSTATUS parse_finfo_id_both_directory_info(uint8_t *dir_data,
 	finfo->mtime_ts = interpret_long_date((const char *)dir_data + 24);
 	finfo->ctime_ts = interpret_long_date((const char *)dir_data + 32);
 	finfo->size = IVAL2_TO_SMB_BIG_UINT(dir_data + 40, 0);
-	finfo->mode = (uint16_t)IVAL(dir_data + 56, 0);
+	finfo->attr = (uint16_t)IVAL(dir_data + 56, 0);
 	namelen = IVAL(dir_data + 60,0);
 	if (namelen > (dir_data_length - 104)) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
@@ -572,10 +572,10 @@ static void cli_smb2_listdir_done(struct tevent_req *subreq)
 			return;
 		}
 
-		ok = dir_check_ftype(finfo->mode, state->attribute);
+		ok = dir_check_ftype(finfo->attr, state->attribute);
 
 		DEBUG(10, ("%s: dir_check_ftype(%u,%u) returned %u\n",
-			   __func__, (unsigned)finfo->mode,
+			   __func__, (unsigned)finfo->attr,
 			   (unsigned)state->attribute, (unsigned)ok));
 
 		if (ok) {
