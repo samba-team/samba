@@ -453,7 +453,7 @@ SMBC_getatr(SMBCCTX * context,
 	char *fixedpath = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
-	uint16_t attr = 0;
+	uint16_t sattr = 0;
 	off_t size = 0;
 	struct timespec create_time_ts = {0};
 	struct timespec access_time_ts = {0};
@@ -508,7 +508,7 @@ SMBC_getatr(SMBCCTX * context,
 					&write_time_ts,
 					&change_time_ts,
 					&size,
-					&attr,
+					&sattr,
 					&ino);
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
@@ -525,7 +525,7 @@ SMBC_getatr(SMBCCTX * context,
 					&write_time_ts,
 					&change_time_ts,
 					&size,
-					&attr,
+					&sattr,
 					&ino);
 		if (NT_STATUS_IS_OK(status)) {
 			goto setup_stat;
@@ -539,7 +539,7 @@ SMBC_getatr(SMBCCTX * context,
 		goto all_failed;
         }
 
-	status = cli_getatr(targetcli, targetpath, &attr, &size, &write_time);
+	status = cli_getatr(targetcli, targetpath, &sattr, &size, &write_time);
 	if (NT_STATUS_IS_OK(status)) {
 		struct timespec w_time_ts =
 			convert_time_t_to_timespec(write_time);
@@ -553,7 +553,7 @@ setup_stat:
 	setup_stat(sb,
 		   path,
 		   size,
-		   attr,
+		   sattr,
 		   ino,
 		   srv->dev,
 		   access_time_ts,
