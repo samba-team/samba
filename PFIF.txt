@@ -2,6 +2,5 @@ This code was developed in participation with the Protocol Freedom
 Information Foundation.
 
 Please see 
-  http://protocolfreedom.org/ and
-  http://samba.org/samba/PFIF/ 
+  https://www.samba.org/samba/PFIF/
 for more details.
