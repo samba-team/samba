@@ -448,3 +448,9 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_principal(), "user@samba.org")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
+
+    def test_smb_signing(self):
+        creds = credentials.Credentials()
+        self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_DEFAULT)
+        creds.set_smb_signing(credentials.SMB_SIGNING_REQUIRED)
+        self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_REQUIRED)
