@@ -275,6 +275,9 @@ parse_options "$@"
 
 ssh_opts=
 if $push ; then
+	if [ -n "$ONNODE_SSH" ] ; then
+		export RSYNC_RSH="$ONNODE_SSH"
+	fi
 	ONNODE_SSH=push
 else
 	$current && command="cd $PWD && $command"
