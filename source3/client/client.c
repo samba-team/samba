@@ -1727,49 +1727,49 @@ static int cmd_altname(void)
 	return 0;
 }
 
-static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t mode)
+static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t attr)
 {
 	char *attrs = talloc_zero_array(mem_ctx, char, 17);
 	int i = 0;
 
-	if (!(mode & FILE_ATTRIBUTE_NORMAL)) {
-		if (mode & FILE_ATTRIBUTE_ENCRYPTED) {
+	if (!(attr & FILE_ATTRIBUTE_NORMAL)) {
+		if (attr & FILE_ATTRIBUTE_ENCRYPTED) {
 			attrs[i++] = 'E';
 		}
-		if (mode & FILE_ATTRIBUTE_NONINDEXED) {
+		if (attr & FILE_ATTRIBUTE_NONINDEXED) {
 			attrs[i++] = 'N';
 		}
-		if (mode & FILE_ATTRIBUTE_OFFLINE) {
+		if (attr & FILE_ATTRIBUTE_OFFLINE) {
 			attrs[i++] = 'O';
 		}
-		if (mode & FILE_ATTRIBUTE_COMPRESSED) {
+		if (attr & FILE_ATTRIBUTE_COMPRESSED) {
 			attrs[i++] = 'C';
 		}
-		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 			attrs[i++] = 'r';
 		}
-		if (mode & FILE_ATTRIBUTE_SPARSE) {
+		if (attr & FILE_ATTRIBUTE_SPARSE) {
 			attrs[i++] = 's';
 		}
-		if (mode & FILE_ATTRIBUTE_TEMPORARY) {
+		if (attr & FILE_ATTRIBUTE_TEMPORARY) {
 			attrs[i++] = 'T';
 		}
-		if (mode & FILE_ATTRIBUTE_NORMAL) {
+		if (attr & FILE_ATTRIBUTE_NORMAL) {
 			attrs[i++] = 'N';
 		}
-		if (mode & FILE_ATTRIBUTE_READONLY) {
+		if (attr & FILE_ATTRIBUTE_READONLY) {
 			attrs[i++] = 'R';
 		}
-		if (mode & FILE_ATTRIBUTE_HIDDEN) {
+		if (attr & FILE_ATTRIBUTE_HIDDEN) {
 			attrs[i++] = 'H';
 		}
-		if (mode & FILE_ATTRIBUTE_SYSTEM) {
+		if (attr & FILE_ATTRIBUTE_SYSTEM) {
 			attrs[i++] = 'S';
 		}
-		if (mode & FILE_ATTRIBUTE_DIRECTORY) {
+		if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 			attrs[i++] = 'D';
 		}
-		if (mode & FILE_ATTRIBUTE_ARCHIVE) {
+		if (attr & FILE_ATTRIBUTE_ARCHIVE) {
 			attrs[i++] = 'A';
 		}
 	}
@@ -1785,7 +1785,7 @@ static int do_allinfo(const char *name)
 	fstring altname;
 	struct timespec b_time, a_time, m_time, c_time;
 	off_t size;
-	uint16_t mode;
+	uint16_t attr;
 	NTTIME tmp;
 	uint16_t fnum;
 	unsigned int num_streams;
@@ -1813,7 +1813,7 @@ static int do_allinfo(const char *name)
 	d_printf("altname: %s\n", altname);
 
 	status = cli_qpathinfo3(cli, name, &b_time, &a_time, &m_time, &c_time,
-				&size, &mode, NULL);
+				&size, &attr, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getting pathinfo for %s\n", nt_errstr(status),
 			 name);
@@ -1832,7 +1832,7 @@ static int do_allinfo(const char *name)
 	tmp = full_timespec_to_nt_time(&c_time);
 	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
 
-	d_printf("attributes: %s (%x)\n", attr_str(talloc_tos(), mode), mode);
+	d_printf("attributes: %s (%x)\n", attr_str(talloc_tos(), attr), attr);
 
 	status = cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
 				       &streams);
@@ -1847,7 +1847,7 @@ static int do_allinfo(const char *name)
 			 (unsigned long long)streams[i].size);
 	}
 
-	if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+	if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 		char *subst, *print;
 		uint32_t flags;
 
