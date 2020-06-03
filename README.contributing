@@ -1,16 +1,11 @@
 How to contribute a patch to Samba
 ----------------------------------
 
-Simple, just make the code change, and email it as either a "diff -u"
-change, or as a "git format-patch" change against the original source
-code to samba-technical@lists.samba.org, or attach it to a bug report at
-http://bugzilla.samba.org
+Please see https://wiki.samba.org/index.php/Contribute
+for detailed set-by-step instructions on how to submit a patch
+for Samba via GitLab.
 
-For larger code changes, breaking the changes up into a set of simple
-patches, each of which does a single thing, are much easier to review.
-Patch sets like that will most likely have an easier time being merged
-into the Samba code than large single patches that make lots of
-changes in one large diff.
+Samba's GitLab mirror is at https://gitlab.com/samba-team/samba
 
 Ownership of the contributed code
 ---------------------------------
