@@ -165,7 +165,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	uint16_t fnum_src = 0;
 	uint16_t fnum_dst = 0;
 	struct security_descriptor *sd = NULL;
-	uint16_t attr;
+	uint32_t attr;
 	time_t f_atime, f_ctime, f_mtime;
 
 	if (!copy_timestamps && !copy_acls && !copy_attrs)

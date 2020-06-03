@@ -4050,7 +4050,7 @@ static void cli_getattrE_done(struct tevent_req *subreq);
 struct cli_getattrE_state {
 	uint16_t vwv[1];
 	int zone_offset;
-	uint16_t attr;
+	uint32_t attr;
 	off_t size;
 	time_t change_time;
 	time_t access_time;
@@ -4110,7 +4110,7 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_getattrE_recv(struct tevent_req *req,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
@@ -4143,7 +4143,7 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 
 NTSTATUS cli_getattrE(struct cli_state *cli,
 			uint16_t fnum,
-			uint16_t *pattr,
+			uint32_t *pattr,
 			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
@@ -4155,21 +4155,13 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		uint32_t attr = 0;
-		status = cli_smb2_getattrE(cli,
+		return cli_smb2_getattrE(cli,
 					fnum,
-					&attr,
+					pattr,
 					size,
 					change_time,
 					access_time,
 					write_time);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (pattr != NULL) {
-			*pattr = attr;
-		}
-		return status;
 	}
 
 	frame = talloc_stackframe();

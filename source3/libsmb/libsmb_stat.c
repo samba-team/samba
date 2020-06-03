@@ -299,9 +299,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
 				     &change_time_ts,
 				     &ino))) {
 		time_t change_time, access_time, write_time;
-		uint16_t sattr = 0;
 
-		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &sattr, &size,
+		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &attr, &size,
                                   &change_time, &access_time, &write_time))) {
 			errno = EINVAL;
 			TALLOC_FREE(frame);
@@ -310,7 +309,6 @@ SMBC_fstat_ctx(SMBCCTX *context,
 		change_time_ts = convert_time_t_to_timespec(change_time);
 		access_time_ts = convert_time_t_to_timespec(access_time);
 		write_time_ts = convert_time_t_to_timespec(write_time);
-		attr = sattr;
 	}
 
 	setup_stat(st,
