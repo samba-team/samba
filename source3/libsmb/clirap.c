@@ -1585,7 +1585,7 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16_t *pattr,
+			off_t *size, uint32_t *pattr,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -1594,19 +1594,24 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 	uint64_t pos;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		status = cli_qpathinfo2(cli, fname,
+		/*
+		 * NB. cli_qpathinfo2() checks pattr is valid before
+		 * storing a value into it, so we don't need to use
+		 * an intermediate attr variable as below but can
+		 * pass pattr directly.
+		 */
+		return cli_qpathinfo2(cli, fname,
 				      create_time, access_time, write_time, change_time,
-				      size, &attr, ino);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (pattr != NULL) {
-			*pattr = attr;
-		}
-		return status;
+				      size, pattr, ino);
 	}
 
 	if (create_time || access_time || write_time || change_time || pattr) {
+		/*
+		 * cli_qpathinfo_basic() always indirects the passed
+		 * in pointers so we use intermediate variables to
+		 * collect all of them before assigning any requested
+		 * below.
+		 */
 		status = cli_qpathinfo_basic(cli, fname, &st, &attr);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

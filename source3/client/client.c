@@ -1785,7 +1785,7 @@ static int do_allinfo(const char *name)
 	fstring altname;
 	struct timespec b_time, a_time, m_time, c_time;
 	off_t size;
-	uint16_t attr;
+	uint32_t attr;
 	NTTIME tmp;
 	uint16_t fnum;
 	unsigned int num_streams;

@@ -105,7 +105,7 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16_t *pattr,
+			off_t *size, uint32_t *pattr,
 			SMB_INO_T *ino);
 struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
