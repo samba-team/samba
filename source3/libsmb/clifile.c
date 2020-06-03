@@ -4155,13 +4155,21 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_getattrE(cli,
+		uint32_t attr = 0;
+		status = cli_smb2_getattrE(cli,
 					fnum,
-					pattr,
+					&attr,
 					size,
 					change_time,
 					access_time,
 					write_time);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (pattr != NULL) {
+			*pattr = attr;
+		}
+		return status;
 	}
 
 	frame = talloc_stackframe();
