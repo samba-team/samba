@@ -4521,6 +4521,16 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (attr & 0xFFFF0000) {
+		/*
+		 * Don't allow attributes greater than
+		 * 16-bits for a 16-bit protocol value.
+		 */
+		if (tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	SSVAL(state->vwv+0, 0, attr);
 	push_dos_date3((uint8_t *)&state->vwv[1], 0, mtime, smb1cli_conn_server_time_zone(cli->conn));
 
