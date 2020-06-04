@@ -1310,6 +1310,7 @@ struct cli_qfileinfo_basic_state {
 
 static void cli_qfileinfo_basic_done(struct tevent_req *subreq);
 static void cli_qfileinfo_basic_doneE(struct tevent_req *subreq);
+static void cli_qfileinfo_basic_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_qfileinfo_basic_send(
 	TALLOC_CTX *mem_ctx,
@@ -1348,6 +1349,26 @@ struct tevent_req *cli_qfileinfo_basic_send(
 		}
 		tevent_req_set_callback(
 			subreq, cli_qfileinfo_basic_doneE, req);
+		return req;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_query_info_fnum_send(
+			state,	/* mem_ctx */
+			ev,	/* ev */
+			cli,	/* cli */
+			fnum,	/* fnum */
+			1,	/* in_info_type */
+			(SMB_FILE_ALL_INFORMATION - 1000), /* in_file_info_class */
+			0xFFFF, /* in_max_output_length */
+			NULL,	/* in_input_buffer */
+			0,	/* in_additional_info */
+			0);	/* in_flags */
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, cli_qfileinfo_basic_done2, req);
 		return req;
 	}
 
@@ -1417,6 +1438,44 @@ static void cli_qfileinfo_basic_doneE(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void cli_qfileinfo_basic_done2(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qfileinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_basic_state);
+	DATA_BLOB outbuf = {0};
+	NTSTATUS status;
+
+	status = cli_smb2_query_info_fnum_recv(subreq, state, &outbuf);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/* Parse the reply. */
+	if (outbuf.length < 0x60) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	state->create_time = interpret_long_date(
+		(const char *)outbuf.data + 0x0);
+	state->access_time = interpret_long_date(
+		(const char *)outbuf.data + 0x8);
+	state->write_time = interpret_long_date(
+		(const char *)outbuf.data + 0x10);
+	state->change_time = interpret_long_date(
+		(const char *)outbuf.data + 0x18);
+	state->attr = IVAL(outbuf.data, 0x20);
+	state->size = BVAL(outbuf.data, 0x30);
+	state->ino = BVAL(outbuf.data, 0x40);
+
+	data_blob_free(&outbuf);
+
+	tevent_req_done(req);
+}
+
 NTSTATUS cli_qfileinfo_basic_recv(
 	struct tevent_req *req,
 	uint32_t *attr,
@@ -1479,18 +1538,6 @@ NTSTATUS cli_qfileinfo_basic(
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_qfileinfo_basic(cli,
-						fnum,
-						attr,
-						size,
-						create_time,
-						access_time,
-						write_time,
-						change_time,
-						ino);
-	}
-
 	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -1521,6 +1568,9 @@ NTSTATUS cli_qfileinfo_basic(
 		write_time,
 		change_time,
 		ino);
+
+	/* cli_smb2_query_info_fnum_recv doesn't set this */
+	cli->raw_status = status;
 fail:
 	TALLOC_FREE(frame);
 	return status;
