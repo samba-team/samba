@@ -821,14 +821,24 @@ class SessionedPosixAclMappingTests(PosixAclMappingTests):
         """
         if str(domsid) != str(self.samdb.get_domain_sid()):
             # fake it with admin session as domsid is not in local db
-            return auth.admin_session(self.lp, str(domsid))
+            admin_session = auth.admin_session(self.lp, str(domsid))
+            auth.session_info_fill_unix(admin_session,
+                                        lp_ctx=self.lp,
+                                        user_name="Administrator")
+            return admin_session
 
         dn = '<SID={0}-{1}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
         flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
                  auth.AUTH_SESSION_INFO_AUTHENTICATED |
                  auth.AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
-        return auth.user_session(self.samdb, lp_ctx=self.lp, dn=dn,
-                                 session_info_flags=flags)
+        user_session = auth.user_session(self.samdb,
+                                         lp_ctx=self.lp,
+                                         dn=dn,
+                                         session_info_flags=flags)
+        auth.session_info_fill_unix(user_session,
+                                    lp_ctx=self.lp,
+                                    user_name="Administrator")
+        return user_session
 
 
 class UnixSessionedPosixAclMappingTests(PosixAclMappingTests):
@@ -842,7 +852,11 @@ class UnixSessionedPosixAclMappingTests(PosixAclMappingTests):
         """
         if str(domsid) != str(self.samdb.get_domain_sid()):
             # fake it with admin session as domsid is not in local db
-            return auth.admin_session(self.lp, str(domsid))
+            admin_session = auth.admin_session(self.lp, str(domsid))
+            auth.session_info_fill_unix(admin_session,
+                                        lp_ctx=self.lp,
+                                        user_name="Administrator")
+            return admin_session
 
         dn = '<SID={0}-{1}>'.format(domsid, security.DOMAIN_RID_ADMINISTRATOR)
         flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
