@@ -136,26 +136,21 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 }
 
 /*
-  Fill in the auth_user_info_unix and auth_unix_token elements in a struct session_info
-*/
-NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
-				     const char *original_user_name,
-				     struct auth_session_info *session_info)
+ * Fill in the unix_info elements in a struct session_info
+ */
+NTSTATUS fill_unix_info(struct loadparm_context *lp_ctx,
+			const char *original_user_name,
+			struct auth_session_info *session_info)
 {
-	NTSTATUS status = security_token_to_unix_token(session_info,
-						       session_info->security_token,
-						       &session_info->unix_token);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
+	session_info->unix_info = talloc_zero(session_info,
+					      struct auth_user_info_unix);
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info);
 
-	session_info->unix_info->unix_name = talloc_asprintf(session_info->unix_info,
-							     "%s%s%s", session_info->info->domain_name,
-							     lpcfg_winbind_separator(lp_ctx),
-							     session_info->info->account_name);
+	session_info->unix_info->unix_name =
+		talloc_asprintf(session_info->unix_info,
+				"%s%s%s", session_info->info->domain_name,
+				lpcfg_winbind_separator(lp_ctx),
+				session_info->info->account_name);
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info->unix_name);
 
 	if (original_user_name == NULL) {
@@ -167,6 +162,32 @@ NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
 				    original_user_name,
 				    ". _-$");
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info->sanitized_username);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  Fill in the auth_user_info_unix and auth_unix_token elements in a struct session_info
+*/
+NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
+				     const char *original_user_name,
+				     struct auth_session_info *session_info)
+{
+	NTSTATUS status = NT_STATUS_OK;
+
+	status = security_token_to_unix_token(session_info,
+					      session_info->security_token,
+					      &session_info->unix_token);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fill_unix_info(lp_ctx,
+				original_user_name,
+				session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
