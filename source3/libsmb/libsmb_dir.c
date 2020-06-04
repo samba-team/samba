@@ -1957,7 +1957,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	char *path = NULL;
-	uint16_t mode;
+	uint16_t attr;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
@@ -2020,14 +2020,14 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	mode = 0;
+	attr = 0;
 
-	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= FILE_ATTRIBUTE_READONLY;
-	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= FILE_ATTRIBUTE_ARCHIVE;
-	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= FILE_ATTRIBUTE_SYSTEM;
-	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= FILE_ATTRIBUTE_HIDDEN;
+	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) attr |= FILE_ATTRIBUTE_READONLY;
+	if ((newmode & S_IXUSR) && lp_map_archive(-1)) attr |= FILE_ATTRIBUTE_ARCHIVE;
+	if ((newmode & S_IXGRP) && lp_map_system(-1)) attr |= FILE_ATTRIBUTE_SYSTEM;
+	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) attr |= FILE_ATTRIBUTE_HIDDEN;
 
-	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, mode, 0))) {
+	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, attr, 0))) {
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
