@@ -4151,67 +4151,6 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_getattrE(struct cli_state *cli,
-			uint16_t fnum,
-			uint32_t *pattr,
-			off_t *size,
-			time_t *change_time,
-			time_t *access_time,
-			time_t *write_time)
-{
-	TALLOC_CTX *frame = NULL;
-	struct tevent_context *ev = NULL;
-	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_getattrE(cli,
-					fnum,
-					pattr,
-					size,
-					change_time,
-					access_time,
-					write_time);
-	}
-
-	frame = talloc_stackframe();
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = cli_getattrE_send(frame, ev, cli, fnum);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-
-	status = cli_getattrE_recv(req,
-					pattr,
-					size,
-					change_time,
-					access_time,
-					write_time);
-
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /****************************************************************************
  Do a SMBgetatr call
 ****************************************************************************/

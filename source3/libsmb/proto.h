@@ -523,13 +523,6 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
                         time_t *change_time,
                         time_t *access_time,
                         time_t *write_time);
-NTSTATUS cli_getattrE(struct cli_state *cli,
-			uint16_t fnum,
-			uint32_t *pattr,
-			off_t *size,
-			time_t *change_time,
-			time_t *access_time,
-			time_t *write_time);
 struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
