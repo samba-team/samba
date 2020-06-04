@@ -2093,51 +2093,6 @@ NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 }
 
 /***************************************************************
- Wrapper that allows SMB2 to query an fnum.
- Implement on top of cli_smb2_qfileinfo_basic().
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
-			uint16_t fnum,
-			uint32_t *pattr,
-			off_t *size,
-			time_t *change_time,
-			time_t *access_time,
-			time_t *write_time)
-{
-	struct timespec access_time_ts;
-	struct timespec write_time_ts;
-	struct timespec change_time_ts;
-	NTSTATUS status = cli_smb2_qfileinfo_basic(cli,
-					fnum,
-					pattr,
-					size,
-					NULL,
-					&access_time_ts,
-					&write_time_ts,
-					&change_time_ts,
-                                        NULL);
-
-	cli->raw_status = status;
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (change_time) {
-		*change_time = change_time_ts.tv_sec;
-	}
-	if (access_time) {
-		*access_time = access_time_ts.tv_sec;
-	}
-	if (write_time) {
-		*write_time = write_time_ts.tv_sec;
-	}
-	return NT_STATUS_OK;
-}
-
-/***************************************************************
  Wrapper that allows SMB2 to get pathname attributes.
  Synchronous only.
 ***************************************************************/
