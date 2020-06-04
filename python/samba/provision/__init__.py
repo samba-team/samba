@@ -1742,6 +1742,11 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
 
     session_info = auth.user_session(samdb, lp_ctx=lp, dn=userdn,
                                      session_info_flags=flags)
+    auth.session_info_set_unix(session_info,
+                               lp_ctx=lp,
+                               user_name="Administrator",
+                               uid=uid,
+                               gid=gid)
 
     def _setntacl(path):
         """A helper to reuse args"""
