@@ -282,6 +282,74 @@ static PyObject *py_session_info_fill_unix(PyObject *module,
 }
 
 
+static PyObject *py_session_info_set_unix(PyObject *module,
+					  PyObject *args,
+					  PyObject *kwargs)
+{
+	NTSTATUS nt_status;
+	char *user_name = NULL;
+	int uid = -1;
+	int gid = -1;
+	struct loadparm_context *lp_ctx = NULL;
+	struct auth_session_info *session_info;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_session = Py_None;
+	TALLOC_CTX *frame;
+
+	const char * const kwnames[] = { "session_info",
+					 "user_name",
+					 "uid",
+					 "gid",
+					 "lp_ctx",
+					 NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ozii|O",
+					 discard_const_p(char *, kwnames),
+					 &py_session,
+					 &user_name,
+					 &uid,
+					 &gid,
+					 &py_lp_ctx)) {
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_session,
+				  "samba.dcerpc.auth",
+				  "session_info")) {
+		return NULL;
+	}
+	session_info = pytalloc_get_type(py_session,
+					 struct auth_session_info);
+	if (!session_info) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info "
+			     "argument got %s",
+			     pytalloc_get_name(py_session));
+		return NULL;
+	}
+
+	frame = talloc_stackframe();
+
+	lp_ctx = lpcfg_from_py_object(frame, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	nt_status = auth_session_info_set_unix(lp_ctx,
+					       user_name,
+					       uid,
+					       gid,
+					       session_info);
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
+	}
+
+	Py_RETURN_NONE;
+}
+
+
 static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
 					const char *paramname)
 {
@@ -428,6 +496,10 @@ static PyMethodDef py_auth_methods[] = {
 			  METH_VARARGS|METH_KEYWORDS, NULL },
 	{ "session_info_fill_unix",
 	  PY_DISCARD_FUNC_SIG(PyCFunction,py_session_info_fill_unix),
+	  METH_VARARGS|METH_KEYWORDS,
+	  NULL },
+	{ "session_info_set_unix",
+	  PY_DISCARD_FUNC_SIG(PyCFunction,py_session_info_set_unix),
 	  METH_VARARGS|METH_KEYWORDS,
 	  NULL },
 	{ "copy_session_info",
