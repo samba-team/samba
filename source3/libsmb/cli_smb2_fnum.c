@@ -2151,6 +2151,7 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
 	struct smb2_hnd *ph = NULL;
+	struct timespec write_time_ts;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2181,15 +2182,21 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
-	status = cli_smb2_getattrE(cli,
-				fnum,
-				pattr,
-				size,
-				NULL,
-				NULL,
-				write_time);
+	status = cli_qfileinfo_basic(
+		cli,
+		fnum,
+		pattr,
+		size,
+		NULL,		/* create_time */
+		NULL,		/* access_time */
+		&write_time_ts,
+		NULL,		/* change_time */
+		NULL);		/* ino */
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
+	}
+	if (write_time != NULL) {
+		*write_time = write_time_ts.tv_sec;
 	}
 
   fail:
