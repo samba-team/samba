@@ -4015,6 +4015,13 @@ static bool run_attrtest(int dummy)
 		return False;
 	}
 
+	/* Ensure we can't unlink with out-of-range (unknown) attribute. */
+	status = cli_unlink(cli, fname, 0x20000);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		correct = false;
+		goto out;
+	}
+
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_openx(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
@@ -4034,6 +4041,13 @@ static bool run_attrtest(int dummy)
 	}
 
 	t2 = t-60*60*24; /* 1 day ago */
+
+	/* Ensure we can't set with out-of-range (unknown) attribute. */
+	status = cli_setatr(cli, fname, 0x20000, t2);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		correct = false;
+		goto out;
+	}
 
 	status = cli_setatr(cli, fname, 0, t2);
 	if (!NT_STATUS_IS_OK(status)) {
