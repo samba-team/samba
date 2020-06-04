@@ -191,3 +191,38 @@ NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/*
+ * Set the given auth_user_info_unix and auth_unix_token elements in a
+ * struct session_info, similar auth_session_info_fill_unix().
+ * Receives the uid and gid for the unix token as parameters and does
+ * not query the unix token from winbind (via security_token_to_unix_token()).
+ * This is useful to fill a user session info manually if winbind is not
+ * available.
+ */
+NTSTATUS auth_session_info_set_unix(struct loadparm_context *lp_ctx,
+				    const char *original_user_name,
+				    int uid,
+				    int gid,
+				    struct auth_session_info *session_info)
+{
+	NTSTATUS status;
+
+	session_info->unix_token = talloc_zero(session_info,
+					       struct security_unix_token);
+	if (session_info->unix_token == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session_info->unix_token->uid = uid;
+	session_info->unix_token->gid = gid;
+
+	status = fill_unix_info(lp_ctx,
+				original_user_name,
+				session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
