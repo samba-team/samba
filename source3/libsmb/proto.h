@@ -361,9 +361,9 @@ struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
                                 struct tevent_context *ev,
                                 struct cli_state *cli,
                                 const char *fname,
-                                uint16_t mayhave_attrs);
+                                uint32_t mayhave_attrs);
 NTSTATUS cli_unlink_recv(struct tevent_req *req);
-NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_attrs);
+NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint32_t mayhave_attrs);
 
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,

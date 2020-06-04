@@ -1257,7 +1257,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 static NTSTATUS unlink_file(struct py_cli_state *self, const char *filename)
 {
 	NTSTATUS status;
-	uint16_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	uint32_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	struct tevent_req *req = NULL;
 
 	req = cli_unlink_send(
