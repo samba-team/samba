@@ -455,10 +455,32 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         creds.set_smb_signing(credentials.SMB_SIGNING_REQUIRED)
         self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_REQUIRED)
 
+    def test_smb_signing_set_conf(self):
+        lp = samba.tests.env_loadparm()
+
+        creds = credentials.Credentials()
+        creds.set_conf(lp)
+        self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_DEFAULT)
+        creds.set_smb_signing(credentials.SMB_SIGNING_OFF)
+        self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_OFF)
+        creds.set_conf(lp)
+        self.assertEqual(creds.get_smb_signing(), credentials.SMB_SIGNING_OFF)
+
     def test_smb_ipc_signing(self):
         creds = credentials.Credentials()
         self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_REQUIRED)
         creds.set_smb_ipc_signing(credentials.SMB_SIGNING_OFF)
+        self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_OFF)
+
+    def test_smb_ipc_signing_set_conf(self):
+        lp = samba.tests.env_loadparm()
+
+        creds = credentials.Credentials()
+        creds.set_conf(lp)
+        self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_REQUIRED)
+        creds.set_smb_ipc_signing(credentials.SMB_SIGNING_OFF)
+        self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_OFF)
+        creds.set_conf(lp)
         self.assertEqual(creds.get_smb_ipc_signing(), credentials.SMB_SIGNING_OFF)
 
     def test_smb_encryption(self):
@@ -466,3 +488,14 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_DEFAULT)
         creds.set_smb_encryption(credentials.SMB_ENCRYPTION_REQUIRED)
         self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_REQUIRED)
+
+    def test_smb_encryption_set_conf(self):
+        lp = samba.tests.env_loadparm()
+
+        creds = credentials.Credentials()
+        creds.set_conf(lp)
+        self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_DEFAULT)
+        creds.set_smb_encryption(credentials.SMB_ENCRYPTION_OFF)
+        self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_OFF)
+        creds.set_conf(lp)
+        self.assertEqual(creds.get_smb_encryption(), credentials.SMB_ENCRYPTION_OFF)

@@ -621,6 +621,42 @@ static PyObject *py_creds_set_forced_sasl_mech(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_set_conf(PyObject *self, PyObject *args)
+{
+	PyObject *py_lp_ctx = Py_None;
+	struct loadparm_context *lp_ctx;
+	TALLOC_CTX *mem_ctx;
+	struct cli_credentials *creds;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx)) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	cli_credentials_set_conf(creds, lp_ctx);
+
+	talloc_free(mem_ctx);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_guess(PyObject *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
@@ -1277,6 +1313,11 @@ static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "set_krb_forwardable",
 		.ml_meth  = py_creds_set_krb_forwardable,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "set_conf",
+		.ml_meth  = py_creds_set_conf,
 		.ml_flags = METH_VARARGS,
 	},
 	{
