@@ -883,27 +883,15 @@ static NTSTATUS py_smb_filesize(struct py_cli_state *self, uint16_t fnum,
 				off_t *size)
 {
 	NTSTATUS status;
+	struct tevent_req *req = NULL;
 
-	if (self->is_smb1) {
-		uint8_t *rdata = NULL;
-		struct tevent_req *req = NULL;
-
-		req = cli_qfileinfo_send(NULL, self->ev, self->cli, fnum,
-					 SMB_QUERY_FILE_ALL_INFO, 68,
-					 CLI_BUFFER_SIZE);
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		status = cli_qfileinfo_recv(req, NULL, NULL, &rdata, NULL);
-		if (NT_STATUS_IS_OK(status)) {
-			*size = IVAL2_TO_SMB_BIG_UINT(rdata, 48);
-		}
-		TALLOC_FREE(req);
-		TALLOC_FREE(rdata);
-	} else {
-		status = cli_qfileinfo_basic(self->cli, fnum, NULL, size,
-					     NULL, NULL, NULL, NULL, NULL);
+	req = cli_qfileinfo_basic_send(NULL, self->ev, self->cli, fnum);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
+	status = cli_qfileinfo_basic_recv(
+		req, NULL, size, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(req);
 	return status;
 }
 
