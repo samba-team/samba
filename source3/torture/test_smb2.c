@@ -1929,7 +1929,7 @@ static NTSTATUS check_size(struct cli_state *cli,
 				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_smb2_qfileinfo_basic of %s failed (%s)\n",
+		printf("cli_qfileinfo_basic of %s failed (%s)\n",
 			fname,
 			nt_errstr(status));
 		return status;
