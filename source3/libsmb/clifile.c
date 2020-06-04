@@ -1890,6 +1890,16 @@ struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	if (mayhave_attrs & 0xFFFF0000) {
+		/*
+		 * Don't allow attributes greater than
+		 * 16-bits for a 16-bit protocol value.
+		 */
+		if (tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	SSVAL(state->vwv+0, 0, mayhave_attrs);
 
 	bytes = talloc_array(state, uint8_t, 1);
