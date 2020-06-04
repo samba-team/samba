@@ -1309,6 +1309,7 @@ struct cli_qfileinfo_basic_state {
 };
 
 static void cli_qfileinfo_basic_done(struct tevent_req *subreq);
+static void cli_qfileinfo_basic_doneE(struct tevent_req *subreq);
 
 struct tevent_req *cli_qfileinfo_basic_send(
 	TALLOC_CTX *mem_ctx,
@@ -1325,11 +1326,29 @@ struct tevent_req *cli_qfileinfo_basic_send(
 		return NULL;
 	}
 
-	/* if its a win95 server then fail this - win95 totally screws it
-	   up */
-	if (cli->win95) {
-		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		return tevent_req_post(req, ev);
+	if ((smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN2) ||
+	    cli->win95) {
+		/*
+		 * According to
+		 * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/3d9d8f3e-dc70-410d-a3fc-6f4a881e8cab
+		 * SMB_COM_TRANSACTION2 used in cli_qfileinfo_send()
+		 * further down was introduced with the LAN Manager
+		 * 1.2 dialect, which we encode as PROTOCOL_LANMAN2.
+		 *
+		 * The "win95" check was introduced with commit
+		 * 27e5850fd3e1c8 in 1998. Hard to check these days,
+		 * but leave it in.
+		 *
+		 * Use a lowerlevel fallback in both cases.
+		 */
+
+		subreq = cli_getattrE_send(state, ev, cli, fnum);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, cli_qfileinfo_basic_doneE, req);
+		return req;
 	}
 
 	subreq = cli_qfileinfo_send(
@@ -1373,6 +1392,28 @@ static void cli_qfileinfo_basic_done(struct tevent_req *subreq)
 	state->ino = PULL_LE_U32(rdata, 64);
 	TALLOC_FREE(rdata);
 
+	tevent_req_done(req);
+}
+
+static void cli_qfileinfo_basic_doneE(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qfileinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_basic_state);
+	NTSTATUS status;
+
+	status = cli_getattrE_recv(
+		subreq,
+		&state->attr,
+		&state->size,
+		&state->change_time.tv_sec,
+		&state->access_time.tv_sec,
+		&state->write_time.tv_sec);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	tevent_req_done(req);
 }
 
