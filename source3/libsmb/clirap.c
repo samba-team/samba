@@ -1739,7 +1739,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 }
 
 /****************************************************************************
- Send a qpathinfo SMB_QUERY_FILE_STADNDARD_INFO call.
+ Send a qpathinfo SMB_QUERY_FILE_STANDARD_INFO call.
 ****************************************************************************/
 
 NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
