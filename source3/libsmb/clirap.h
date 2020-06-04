@@ -72,7 +72,7 @@ struct tevent_req *cli_setfileinfo_ext_send(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t attr);
+	uint32_t attr);
 NTSTATUS cli_setfileinfo_ext_recv(struct tevent_req *req);
 NTSTATUS cli_setfileinfo_ext(
 	struct cli_state *cli,
@@ -81,7 +81,7 @@ NTSTATUS cli_setfileinfo_ext(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t attr);
+	uint32_t attr);
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,

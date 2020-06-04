@@ -108,7 +108,7 @@ static void create_ts_opened(struct tevent_req *subreq)
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
 		mtime,
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
-		UINT16_MAX);	/* mode */
+		UINT32_MAX);	/* attr */
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

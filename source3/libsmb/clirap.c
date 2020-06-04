@@ -781,7 +781,7 @@ struct tevent_req *cli_setfileinfo_ext_send(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t attr)
+	uint32_t attr)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_setfileinfo_ext_state *state = NULL;
@@ -797,7 +797,7 @@ struct tevent_req *cli_setfileinfo_ext_send(
 		access_time,
 		write_time,
 		change_time,
-		(uint32_t)attr);
+		attr);
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->in_data = (DATA_BLOB) {
@@ -860,7 +860,7 @@ NTSTATUS cli_setfileinfo_ext(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t attr)
+	uint32_t attr)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev = NULL;
