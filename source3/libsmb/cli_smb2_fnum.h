@@ -155,15 +155,6 @@ NTSTATUS cli_smb2_query_info_fnum(
 	uint32_t in_flags,
 	TALLOC_CTX *mem_ctx,
 	DATA_BLOB *outbuf);
-NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
-			uint16_t fnum,
-			uint32_t *pattr,
-			off_t *size,
-			struct timespec *create_time,
-			struct timespec *access_time,
-			struct timespec *write_time,
-			struct timespec *change_time,
-			SMB_INO_T *ino);
 NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 			const char *name,
 			uint32_t *pattr,
