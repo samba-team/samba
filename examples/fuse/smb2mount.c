@@ -37,8 +37,7 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 				NULL, port,
 				share, "?????",
 				get_cmdline_auth_info_creds(auth_info),
-				flags,
-				get_cmdline_auth_info_signing_state(auth_info));
+				flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("cli_full_connection failed! (%s)\n",
 			nt_errstr(nt_status));

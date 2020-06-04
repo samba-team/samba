@@ -99,8 +99,7 @@ static struct con_struct *create_cs(struct net_context *c,
 					&loopback_ss, 0,
 					"IPC$", "IPC",
 					anon_creds,
-					CLI_FULL_CONNECTION_IPC,
-					SMB_SIGNING_OFF);
+					CLI_FULL_CONNECTION_IPC);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));

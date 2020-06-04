@@ -3538,10 +3538,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 				"IPC$", "IPC",
 				get_cmdline_auth_info_creds(
 					popt_get_cmdline_auth_info()),
-				CLI_FULL_CONNECTION_IPC,
-				get_cmdline_auth_info_signing_state(
-					popt_get_cmdline_auth_info()));
-
+				CLI_FULL_CONNECTION_IPC);
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return WERR_GEN_FAILURE;
 

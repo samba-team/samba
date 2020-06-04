@@ -108,7 +108,6 @@ NTSTATUS connect_to_service(struct net_context *c,
 			    const char *service_type)
 {
 	NTSTATUS nt_status;
-	enum smb_signing_setting signing_setting = SMB_SIGNING_DEFAULT;
 	struct cli_credentials *creds = NULL;
 	int flags = 0;
 
@@ -119,7 +118,6 @@ NTSTATUS connect_to_service(struct net_context *c,
 	}
 
 	if (strequal(service_type, "IPC")) {
-		signing_setting = SMB_SIGNING_IPC_DEFAULT;
 		flags |= CLI_FULL_CONNECTION_IPC;
 	}
 
@@ -127,8 +125,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 					server_ss, c->opt_port,
 					service_name, service_type,
 					creds,
-					flags,
-					signing_setting);
+					flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
 			  server_name);
@@ -199,8 +196,7 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 					server_name, server_ss, c->opt_port,
 					"IPC$", "IPC",
 					anon_creds,
-					CLI_FULL_CONNECTION_IPC,
-					SMB_SIGNING_OFF);
+					CLI_FULL_CONNECTION_IPC);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

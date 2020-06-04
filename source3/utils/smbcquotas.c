@@ -527,9 +527,7 @@ static struct cli_state *connect_one(const char *share)
 					    share, "?????",
 					    get_cmdline_auth_info_creds(
 						popt_get_cmdline_auth_info()),
-					    flags,
-					    get_cmdline_auth_info_signing_state(
-						popt_get_cmdline_auth_info()));
+					    flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;

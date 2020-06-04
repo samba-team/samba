@@ -360,7 +360,6 @@ static NTSTATUS winexe_svc_upload(
 		"ADMIN$",
 		"?????",
 		credentials,
-		0,
 		0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("cli_full_connection_creds failed: %s\n",
@@ -1919,8 +1918,7 @@ int main(int argc, const char *argv[])
 		"IPC$",
 		"?????",
 		options.credentials,
-		CLI_FULL_CONNECTION_IPC,
-		0);
+		CLI_FULL_CONNECTION_IPC);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("cli_full_connection_creds failed: %s\n",

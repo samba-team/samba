@@ -2482,8 +2482,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 	ret = cli_full_connection_creds( pp_cli, lp_netbios_name(), remote_machine,
 		&rm_addr, 0, "IPC$", "IPC",
 		anon_creds,
-		CLI_FULL_CONNECTION_IPC,
-		SMB_SIGNING_OFF);
+		CLI_FULL_CONNECTION_IPC);
 	TALLOC_FREE(anon_creds);
 	if ( !NT_STATUS_IS_OK( ret ) ) {
 		DEBUG(2,("spoolss_connect_to_client: connection to [%s] failed!\n",

@@ -153,8 +153,7 @@ int main(int argc, char **argv)
 					   "IPC$",
 					   "IPC",
 					   creds,
-					   flags,
-					   SMB_SIGNING_IPC_DEFAULT);
+					   flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Cannot connect to server: %s\n", nt_errstr(status));
 		goto fail;

@@ -217,8 +217,15 @@ static struct cli_state *connect_one(char *share)
 
 	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
-	nt_status = cli_full_connection_creds(&c, myname, server_n, NULL, 0, share, "?????",
-					      creds, 0, SMB_SIGNING_DEFAULT);
+	nt_status = cli_full_connection_creds(&c,
+					      myname,
+					      server_n,
+					      NULL,
+					      0,
+					      share,
+					      "?????",
+					      creds,
+					      0);
 	TALLOC_FREE(creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));

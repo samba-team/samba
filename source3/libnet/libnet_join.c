@@ -1095,8 +1095,7 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   creds,
-					   flags,
-					   SMB_SIGNING_IPC_DEFAULT);
+					   flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -1716,8 +1715,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   cli_creds,
-					   flags,
-					   SMB_SIGNING_IPC_DEFAULT);
+					   flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		struct cli_credentials *anon_creds = NULL;
@@ -1734,8 +1732,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 						   NULL, 0,
 						   "IPC$", "IPC",
 						   anon_creds,
-						   flags,
-						   SMB_SIGNING_OFF);
+						   flags);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

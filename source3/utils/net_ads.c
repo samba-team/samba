@@ -2520,8 +2520,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 					&server_ss, 0,
 					"IPC$", "IPC",
 					creds,
-					CLI_FULL_CONNECTION_IPC,
-					SMB_SIGNING_IPC_DEFAULT);
+					CLI_FULL_CONNECTION_IPC);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		d_fprintf(stderr, _("Unable to open a connection to %s to "

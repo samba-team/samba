@@ -109,8 +109,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 				   const struct sockaddr_storage *dest_ss, int port,
 				   const char *service, const char *service_type,
 				   struct cli_credentials *creds,
-				   int flags,
-				   enum smb_signing_setting signing_state);
+				   int flags);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16_t *max_xmit, uint16_t *tid);
