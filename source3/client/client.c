@@ -5282,7 +5282,8 @@ static int cmd_utimes(void)
 		   timespec_string_buf(&times[3], false, &tbuf[3])));
 
 	status = cli_setpathinfo_ext(
-		cli, fname, times[0], times[1], times[2], times[3], -1);
+		cli, fname, times[0], times[1], times[2], times[3],
+		(uint32_t)-1);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("cli_setpathinfo_ext failed: %s\n",
 			 nt_errstr(status));

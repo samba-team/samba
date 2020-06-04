@@ -4126,7 +4126,7 @@ static bool run_attrtest(int dummy)
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* access */
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* write */
 		(struct timespec) { .tv_nsec = SAMBA_UTIME_OMIT }, /* change */
-		(uint16_t)-1);
+		(uint32_t)-1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_setpathinfo_ext failed with %s\n",
 			nt_errstr(status));

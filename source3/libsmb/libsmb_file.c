@@ -592,7 +592,21 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 {
         uint16_t fd;
         int ret;
+	uint32_t lattr = (uint32_t)attr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (attr == (uint16_t)-1) {
+		/*
+		 * External ABI only passes in
+		 * 16-bits of attribute. Make
+		 * sure we correctly map to
+		 * (uint32_t)-1 meaning don't
+		 * change attributes if attr was
+		 * passed in as 16-bit -1.
+		 */
+		lattr = (uint32_t)-1;
+	}
+
 
         /*
          * First, try setpathinfo (if qpathinfo succeeded), for it is the
@@ -606,7 +620,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 						 access_time,
 						 write_time,
 						 change_time,
-						 attr))) {
+						 lattr))) {
 
                 /*
                  * setpathinfo is not supported; go to plan B.

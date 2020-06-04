@@ -688,7 +688,7 @@ static void prep_basic_information_buf(
 	struct timespec access_time,
 	struct timespec write_time,
 	struct timespec change_time,
-	uint16_t attr)
+	uint32_t attr)
 {
 	char *p = (char *)buf;
 	/*
@@ -710,7 +710,7 @@ static void prep_basic_information_buf(
 		TIMESTAMP_SET_NT_OR_BETTER, p, &change_time);
 	p += 8;
 
-	if (attr == (uint16_t)-1 || attr == FILE_ATTRIBUTE_NORMAL) {
+	if (attr == (uint32_t)-1 || attr == FILE_ATTRIBUTE_NORMAL) {
 		/* No change. */
 		attr = 0;
 	} else if (attr == 0) {
@@ -735,7 +735,7 @@ NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec access_time,
 			     struct timespec write_time,
 			     struct timespec change_time,
-			     uint16_t attr)
+			     uint32_t attr)
 {
 	uint8_t buf[40];
 
@@ -797,7 +797,7 @@ struct tevent_req *cli_setfileinfo_ext_send(
 		access_time,
 		write_time,
 		change_time,
-		attr);
+		(uint32_t)attr);
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->in_data = (DATA_BLOB) {
