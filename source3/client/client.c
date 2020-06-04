@@ -1186,15 +1186,11 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	status = cli_qfileinfo_basic(targetcli, fnum, &attr, &size, NULL, NULL,
 				     NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = cli_getattrE(targetcli, fnum, &attr, &size, NULL, NULL,
-				      NULL);
-		if(!NT_STATUS_IS_OK(status)) {
-			d_printf("getattrib: %s\n", nt_errstr(status));
-			if (newhandle) {
-				close(handle);
-			}
-			return 1;
+		d_printf("getattrib: %s\n", nt_errstr(status));
+		if (newhandle) {
+			close(handle);
 		}
+		return 1;
 	}
 
 	DEBUG(1,("getting file %s of size %.0f as %s ",
@@ -1994,11 +1990,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 			if (!NT_STATUS_IS_OK(status = cli_qfileinfo_basic(
 						     targetcli, fnum, NULL,
 						     &start, NULL, NULL,
-						     NULL, NULL, NULL)) &&
-			    !NT_STATUS_IS_OK(status = cli_getattrE(
-						     targetcli, fnum, NULL,
-						     &start, NULL, NULL,
-						     NULL))) {
+						     NULL, NULL, NULL))) {
 				d_printf("getattrib: %s\n", nt_errstr(status));
 				return 1;
 			}

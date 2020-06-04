@@ -715,14 +715,9 @@ SMBC_lseek_ctx(SMBCCTX *context,
 					     file->targetcli, file->cli_fd, NULL,
 					     &size, NULL, NULL, NULL, NULL,
 					     NULL))) {
-                        off_t b_size = size;
-			if (!NT_STATUS_IS_OK(cli_getattrE(file->targetcli, file->cli_fd,
-                                          NULL, &b_size, NULL, NULL, NULL))) {
-                                errno = EINVAL;
-                                TALLOC_FREE(frame);
-                                return -1;
-                        } else
-                                size = b_size;
+			errno = EINVAL;
+			TALLOC_FREE(frame);
+			return -1;
 		}
 		file->offset = size + offset;
 		break;
