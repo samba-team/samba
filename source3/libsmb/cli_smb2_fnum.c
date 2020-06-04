@@ -2168,7 +2168,7 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 
 /***************************************************************
  Wrapper that allows SMB2 to query a pathname info (basic level).
- Implement on top of cli_smb2_qfileinfo_basic().
+ Implement on top of cli_qfileinfo_basic().
  Synchronous only.
 ***************************************************************/
 
@@ -2216,15 +2216,16 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_smb2_qfileinfo_basic(cli,
-					fnum,
-					pattr,
-					size,
-					create_time,
-					access_time,
-					write_time,
-					change_time,
-					ino);
+	status = cli_qfileinfo_basic(
+		cli,
+		fnum,
+		pattr,
+		size,
+		create_time,
+		access_time,
+		write_time,
+		change_time,
+		ino);
 
   fail:
 
