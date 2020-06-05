@@ -832,18 +832,7 @@ NTSTATUS do_list(const char *mask,
 	add_to_do_list_queue(mask);
 
 	while (!do_list_queue_empty()) {
-		/*
-		 * Need to copy head so that it doesn't become
-		 * invalid inside the call to cli_list.  This
-		 * would happen if the list were expanded
-		 * during the call.
-		 * Fix from E. Jay Berkenbilt (ejb@ql.org)
-		 */
-		char *head = talloc_strdup(ctx, do_list_queue_head());
-
-		if (!head) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		const char *head = do_list_queue_head();
 
 		/* check for dfs */
 
@@ -885,7 +874,6 @@ NTSTATUS do_list(const char *mask,
 				*save_ch = CLI_DIRSEP_CHAR;
 			}
 		}
-		TALLOC_FREE(head);
 		TALLOC_FREE(targetpath);
 	}
 
