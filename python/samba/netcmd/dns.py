@@ -790,7 +790,8 @@ class cmd_zonedelete(Command):
 class cmd_query(Command):
     """Query a name."""
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|TXT|ALL> [options]'
+    synopsis = ('%prog <server> <zone> <name> '
+                '<A|AAAA|PTR|CNAME|MX|NS|SOA|SRV|TXT|ALL> [options]')
 
     takes_args = ['server', 'zone', 'name', 'rtype']
 
