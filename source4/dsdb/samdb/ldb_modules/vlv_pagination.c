@@ -746,6 +746,13 @@ vlv_copy_down_controls(TALLOC_CTX *mem_ctx, struct ldb_control **controls)
 			continue;
 		}
 		new_controls[j] = talloc_steal(new_controls, control);
+		/*
+		 * Sadly the caller is not obliged to make this a
+		 * proper talloc tree, so we do so here.
+		 */
+		if (control->data) {
+			talloc_steal(control, control->data);
+		}
 		j++;
 	}
 	new_controls[j] = NULL;
