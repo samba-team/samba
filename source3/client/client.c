@@ -651,12 +651,18 @@ static NTSTATUS do_du(struct cli_state *cli_state, struct file_info *finfo,
 	return NT_STATUS_OK;
 }
 
+struct do_list_queue_entry {
+	struct do_list_queue_entry *prev, *next;
+	char name[];
+};
+
+struct do_list_queue {
+	struct do_list_queue_entry *list;
+};
+
 static bool do_list_recurse;
 static bool do_list_dirs;
-static char *do_list_queue = 0;
-static long do_list_queue_size = 0;
-static long do_list_queue_start = 0;
-static long do_list_queue_end = 0;
+static struct do_list_queue *queue = NULL;
 static NTSTATUS (*do_list_fn)(struct cli_state *cli_state, struct file_info *,
 			  const char *dir);
 
@@ -664,111 +670,52 @@ static NTSTATUS (*do_list_fn)(struct cli_state *cli_state, struct file_info *,
  Functions for do_list_queue.
 ****************************************************************************/
 
-/*
- * The do_list_queue is a NUL-separated list of strings stored in a
- * char*.  Since this is a FIFO, we keep track of the beginning and
- * ending locations of the data in the queue.  When we overflow, we
- * double the size of the char*.  When the start of the data passes
- * the midpoint, we move everything back.  This is logically more
- * complex than a linked list, but easier from a memory management
- * angle.  In any memory error condition, do_list_queue is reset.
- * Functions check to ensure that do_list_queue is non-NULL before
- * accessing it.
- */
-
 static void reset_do_list_queue(void)
 {
-	SAFE_FREE(do_list_queue);
-	do_list_queue_size = 0;
-	do_list_queue_start = 0;
-	do_list_queue_end = 0;
+	TALLOC_FREE(queue);
 }
 
 static void init_do_list_queue(void)
 {
-	reset_do_list_queue();
-	do_list_queue_size = 1024;
-	do_list_queue = (char *)SMB_MALLOC(do_list_queue_size);
-	if (do_list_queue == 0) {
-		d_printf("malloc fail for size %d\n",
-			 (int)do_list_queue_size);
-		reset_do_list_queue();
-	} else {
-		memset(do_list_queue, 0, do_list_queue_size);
-	}
-}
-
-static void adjust_do_list_queue(void)
-{
-	/*
-	 * If the starting point of the queue is more than half way through,
-	 * move everything toward the beginning.
-	 */
-
-	if (do_list_queue == NULL) {
-		DEBUG(4,("do_list_queue is empty\n"));
-		do_list_queue_start = do_list_queue_end = 0;
-		return;
-	}
-
-	if (do_list_queue_start == do_list_queue_end) {
-		DEBUG(4,("do_list_queue is empty\n"));
-		do_list_queue_start = do_list_queue_end = 0;
-		*do_list_queue = '\0';
-	} else if (do_list_queue_start > (do_list_queue_size / 2)) {
-		DEBUG(4,("sliding do_list_queue backward\n"));
-		memmove(do_list_queue,
-			do_list_queue + do_list_queue_start,
-			do_list_queue_end - do_list_queue_start);
-		do_list_queue_end -= do_list_queue_start;
-		do_list_queue_start = 0;
-	}
+	TALLOC_FREE(queue);
+	queue = talloc_zero(NULL, struct do_list_queue);
 }
 
 static void add_to_do_list_queue(const char *entry)
 {
-	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
-	while (new_end > do_list_queue_size) {
-		do_list_queue_size *= 2;
-		DEBUG(4,("enlarging do_list_queue to %d\n",
-			 (int)do_list_queue_size));
-		do_list_queue = (char *)SMB_REALLOC(do_list_queue, do_list_queue_size);
-		if (! do_list_queue) {
-			d_printf("failure enlarging do_list_queue to %d bytes\n",
-				 (int)do_list_queue_size);
-			reset_do_list_queue();
-		} else {
-			memset(do_list_queue + do_list_queue_size / 2,
-			       0, do_list_queue_size / 2);
-		}
+	struct do_list_queue_entry *e = NULL;
+	size_t entry_str_len = strlen(entry)+1;
+	size_t entry_len = offsetof(struct do_list_queue_entry, name);
+
+	entry_len += entry_str_len;
+	SMB_ASSERT(entry_len >= entry_str_len);
+
+	e = talloc_size(queue, entry_len);
+	if (e == NULL) {
+		d_printf("talloc failed for entry %s\n", entry);
+		return;
 	}
-	if (do_list_queue) {
-		strlcpy_base(do_list_queue + do_list_queue_end,
-				 entry, do_list_queue, do_list_queue_size);
-		do_list_queue_end = new_end;
-		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
-			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
-	}
+	talloc_set_name_const(e, "struct do_list_queue_entry");
+
+	memcpy(e->name, entry, entry_str_len);
+	DLIST_ADD_END(queue->list, e);
 }
 
 static char *do_list_queue_head(void)
 {
-	return do_list_queue + do_list_queue_start;
+	return queue->list->name;
 }
 
 static void remove_do_list_queue_head(void)
 {
-	if (do_list_queue_end > do_list_queue_start) {
-		do_list_queue_start += strlen(do_list_queue_head()) + 1;
-		adjust_do_list_queue();
-		DEBUG(4,("removed head of do_list_queue (start=%d, end=%d)\n",
-			 (int)do_list_queue_start, (int)do_list_queue_end));
-	}
+	struct do_list_queue_entry *e = queue->list;
+	DLIST_REMOVE(queue->list, e);
+	TALLOC_FREE(e);
 }
 
 static int do_list_queue_empty(void)
 {
-	return (! (do_list_queue && *do_list_queue));
+	return (queue == NULL) || (queue->list == NULL);
 }
 
 /****************************************************************************
