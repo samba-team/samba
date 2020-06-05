@@ -3765,8 +3765,9 @@ static int cmd_getfacl(void)
 	char *retbuf = NULL;
 	size_t rb_size = 0;
 	SMB_STRUCT_STAT sbuf;
-	uint16_t num_file_acls = 0;
-	uint16_t num_dir_acls = 0;
+	size_t num_file_acls = 0;
+	size_t num_dir_acls = 0;
+	size_t expected_buflen;
 	uint16_t i;
 	NTSTATUS status;
 
@@ -3835,11 +3836,21 @@ static int cmd_getfacl(void)
 
 	num_file_acls = SVAL(retbuf,2);
 	num_dir_acls = SVAL(retbuf,4);
-	if (rb_size != SMB_POSIX_ACL_HEADER_SIZE + SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls)) {
-		d_printf("getfacl file %s, incorrect POSIX acl buffer size (should be %u, was %u).\n",
-			src,
-			(unsigned int)(SMB_POSIX_ACL_HEADER_SIZE + SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls)),
-			(unsigned int)rb_size);
+
+	/*
+	 * No overflow check, num_*_acls comes from a 16-bit value,
+	 * and we expect expected_buflen (size_t) to be of at least 32
+	 * bit.
+	 */
+	expected_buflen = SMB_POSIX_ACL_HEADER_SIZE +
+		SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls);
+
+	if (rb_size != expected_buflen) {
+		d_printf("getfacl file %s, incorrect POSIX acl buffer size "
+			 "(should be %zu, was %zu).\n",
+			 src,
+			 expected_buflen,
+			 rb_size);
 		return 1;
 	}
 
