@@ -269,7 +269,7 @@ static void send_message(const char *username)
 {
 	char buf[1600];
 	NTSTATUS status;
-	int i;
+	size_t i;
 
 	d_printf("Type your message, ending it with a Control-D\n");
 
@@ -4852,7 +4852,7 @@ static bool browse_host_rpc(bool sort)
 	struct srvsvc_NetShareCtr1 ctr1;
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
-	int i;
+	uint32_t i;
 	struct dcerpc_binding_handle *b;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc,
