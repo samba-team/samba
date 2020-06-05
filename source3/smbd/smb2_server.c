@@ -3494,6 +3494,7 @@ struct smbd_smb2_send_break_state {
 };
 
 static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
+				     uint64_t session_id,
 				     const uint8_t *body,
 				     size_t body_len)
 {
@@ -3520,9 +3521,9 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	SIVAL(state->hdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
 	SIVAL(state->hdr, SMB2_HDR_NEXT_COMMAND,	0);
 	SBVAL(state->hdr, SMB2_HDR_MESSAGE_ID,		UINT64_MAX);
-	SIVAL(state->hdr, SMB2_HDR_PID,		0);
-	SIVAL(state->hdr, SMB2_HDR_TID,		0);
-	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,		0);
+	SIVAL(state->hdr, SMB2_HDR_PID,			0);
+	SIVAL(state->hdr, SMB2_HDR_TID,			0);
+	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,		session_id);
 	memset(state->hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	state->vector[0] = (struct iovec) {
@@ -3586,7 +3587,10 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	return smbd_smb2_send_break(xconn, body, sizeof(body));
+	return smbd_smb2_send_break(xconn,
+				    op->compat->vuid,
+				    body,
+				    sizeof(body));
 }
 
 NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
@@ -3609,7 +3613,10 @@ NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
 	SIVAL(body, 0x24, 0);		/* AccessMaskHint, MUST be 0 */
 	SIVAL(body, 0x28, 0);		/* ShareMaskHint, MUST be 0 */
 
-	return smbd_smb2_send_break(xconn, body, sizeof(body));
+	return smbd_smb2_send_break(xconn,
+				    0, /* no session_id */
+				    body,
+				    sizeof(body));
 }
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
