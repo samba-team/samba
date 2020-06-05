@@ -783,6 +783,8 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 	char *dir = NULL;
 	char *dir_end = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	char *mask2 = NULL;
+	char *p = NULL;
 
 	/* Work out the directory. */
 	dir = talloc_strdup(ctx, mask);
@@ -807,44 +809,45 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 			return status;
 		}
 	}
-	if (do_list_recurse &&
-	    f->name &&
-	    !strequal(f->name,".") &&
-	    !strequal(f->name,"..")) {
-		char *mask2 = NULL;
-		char *p = NULL;
 
-		if (!f->name[0]) {
-			d_printf("Empty dir name returned. Possible server misconfiguration.\n");
-			TALLOC_FREE(dir);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		mask2 = talloc_asprintf(ctx,
-					"%s%s",
-					mntpoint,
-					mask);
-		if (!mask2) {
-			TALLOC_FREE(dir);
-			return NT_STATUS_NO_MEMORY;
-		}
-		p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
-		if (p) {
-			p[1] = 0;
-		} else {
-			mask2[0] = '\0';
-		}
-		mask2 = talloc_asprintf_append(mask2,
-					       "%s%s*",
-					       f->name,
-					       CLI_DIRSEP_STR);
-		if (!mask2) {
-			TALLOC_FREE(dir);
-			return NT_STATUS_NO_MEMORY;
-		}
-		add_to_do_list_queue(mask2);
-		TALLOC_FREE(mask2);
+	if (!do_list_recurse ||
+	    (f->name == NULL) ||
+	    ISDOT(f->name) ||
+	    ISDOTDOT(f->name)) {
+		return NT_STATUS_OK;
 	}
+
+	if (!f->name[0]) {
+		d_printf("Empty dir name returned. Possible server misconfiguration.\n");
+		TALLOC_FREE(dir);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	mask2 = talloc_asprintf(ctx,
+				"%s%s",
+				mntpoint,
+				mask);
+	if (!mask2) {
+		TALLOC_FREE(dir);
+		return NT_STATUS_NO_MEMORY;
+	}
+	p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
+	if (p) {
+		p[1] = 0;
+	} else {
+		mask2[0] = '\0';
+	}
+	mask2 = talloc_asprintf_append(mask2,
+				       "%s%s*",
+				       f->name,
+				       CLI_DIRSEP_STR);
+	if (!mask2) {
+		TALLOC_FREE(dir);
+		return NT_STATUS_NO_MEMORY;
+	}
+	add_to_do_list_queue(mask2);
+	TALLOC_FREE(mask2);
+
 	TALLOC_FREE(dir);
 	return NT_STATUS_OK;
 }
