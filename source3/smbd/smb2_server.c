@@ -3852,8 +3852,6 @@ struct smbd_smb2_break_state {
 	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
-static int smbd_smb2_break_state_destructor(struct smbd_smb2_break_state *state);
-
 static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbXsrv_connection *xconn,
@@ -3874,7 +3872,6 @@ static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
 
 	state->req = req;
 	tevent_req_defer_callback(req, ev);
-	talloc_set_destructor(state, smbd_smb2_break_state_destructor);
 
 	SIVAL(state->hdr, 0,				SMB2_MAGIC);
 	SSVAL(state->hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -3921,6 +3918,27 @@ static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * We require TCP acks for this PDU to the client!
+	 * We want 5 retransmissions and timeout when the
+	 * retransmission timeout (rto) passed 6 times.
+	 *
+	 * required_acked_bytes gets a dummy value of
+	 * UINT64_MAX, as long it's in xconn->smb2.send_queue,
+	 * it'll get the real value when it's moved to
+	 * xconn->ack.queue.
+	 *
+	 * state->queue_entry.ack.req gets completed with
+	 * 1.  tevent_req_done(), when all bytes are acked.
+	 * 2a. tevent_req_nterror(NT_STATUS_IO_TIMEOUT), when
+	 *     the timeout expired before all bytes were acked.
+	 * 2b. tevent_req_nterror(transport_error), when the
+	 *     connection got a disconnect from the kernel.
+	 */
+	state->queue_entry.ack.timeout =
+		timeval_current_ofs_usec(xconn->ack.rto_usecs * 6);
+	state->queue_entry.ack.required_acked_bytes = UINT64_MAX;
+	state->queue_entry.ack.req = req;
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
@@ -3933,20 +3951,6 @@ static struct tevent_req *smbd_smb2_break_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
-}
-
-static int smbd_smb2_break_state_destructor(struct smbd_smb2_break_state *state)
-{
-	if (state->queue_entry.mem_ctx != NULL) {
-		/*
-		 * We used tevent_req_defer_callback()
-		 */
-		tevent_req_done(state->req);
-		state->queue_entry.mem_ctx = NULL;
-		return -1;
-	}
-
-	return 0;
 }
 
 static NTSTATUS smbd_smb2_break_recv(struct tevent_req *req)
@@ -3991,7 +3995,14 @@ static NTSTATUS smbXsrv_pending_break_submit(struct smbXsrv_pending_break *pb);
 
 static NTSTATUS smbXsrv_pending_break_schedule(struct smbXsrv_pending_break *pb)
 {
+	struct smbXsrv_client *client = pb->client;
 	NTSTATUS status;
+
+	DLIST_ADD_END(client->pending_breaks, pb);
+	status = smbXsrv_client_pending_breaks_updated(client);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = smbXsrv_pending_break_submit(pb);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4149,7 +4160,14 @@ static void smbXsrv_pending_break_done(struct tevent_req *subreq)
 	}
 
 remove:
+	DLIST_REMOVE(client->pending_breaks, pb);
 	TALLOC_FREE(pb);
+
+	status = smbXsrv_client_pending_breaks_updated(client);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_disconnect_client(client, nt_errstr(status));
+		return;
+	}
 }
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_client *client,
