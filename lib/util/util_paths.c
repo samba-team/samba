@@ -86,6 +86,19 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 	}
 
 	rc = getpwuid_r(getuid(), &pwd, buf, len, &pwdbuf);
+	while (rc == ERANGE) {
+		size_t newlen = 2 * len;
+		if (newlen < len) {
+			/* Overflow */
+			goto done;
+		}
+		len = newlen;
+		buf = talloc_realloc_size(mem_ctx, buf, len);
+		if (buf == NULL) {
+			goto done;
+		}
+		rc = getpwuid_r(getuid(), &pwd, buf, len, &pwdbuf);
+	}
 	if (rc != 0 || pwdbuf == NULL ) {
 		const char *szPath = getenv("HOME");
 		if (szPath == NULL) {
