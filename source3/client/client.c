@@ -793,60 +793,60 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 		*dir_end = '\0';
 	}
 
-	if (f->attr & FILE_ATTRIBUTE_DIRECTORY) {
-		if (do_list_dirs && do_this_one(f)) {
+	if (!(f->attr & FILE_ATTRIBUTE_DIRECTORY)) {
+		if (do_this_one(f)) {
 			status = do_list_fn(cli_state, f, dir);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
 		}
-		if (do_list_recurse &&
-		    f->name &&
-		    !strequal(f->name,".") &&
-		    !strequal(f->name,"..")) {
-			char *mask2 = NULL;
-			char *p = NULL;
+		TALLOC_FREE(dir);
+		return status;
+	}
 
-			if (!f->name[0]) {
-				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
-				TALLOC_FREE(dir);
-				return NT_STATUS_UNSUCCESSFUL;
-			}
+	if (do_list_dirs && do_this_one(f)) {
+		status = do_list_fn(cli_state, f, dir);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	if (do_list_recurse &&
+	    f->name &&
+	    !strequal(f->name,".") &&
+	    !strequal(f->name,"..")) {
+		char *mask2 = NULL;
+		char *p = NULL;
 
-			mask2 = talloc_asprintf(ctx,
+		if (!f->name[0]) {
+			d_printf("Empty dir name returned. Possible server misconfiguration.\n");
+			TALLOC_FREE(dir);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		mask2 = talloc_asprintf(ctx,
 					"%s%s",
 					mntpoint,
 					mask);
-			if (!mask2) {
-				TALLOC_FREE(dir);
-				return NT_STATUS_NO_MEMORY;
-			}
-			p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
-			if (p) {
-				p[1] = 0;
-			} else {
-				mask2[0] = '\0';
-			}
-			mask2 = talloc_asprintf_append(mask2,
-					"%s%s*",
-					f->name,
-					CLI_DIRSEP_STR);
-			if (!mask2) {
-				TALLOC_FREE(dir);
-				return NT_STATUS_NO_MEMORY;
-			}
-			add_to_do_list_queue(mask2);
-			TALLOC_FREE(mask2);
+		if (!mask2) {
+			TALLOC_FREE(dir);
+			return NT_STATUS_NO_MEMORY;
 		}
-		TALLOC_FREE(dir);
-		return NT_STATUS_OK;
-	}
-
-	if (do_this_one(f)) {
-		status = do_list_fn(cli_state, f, dir);
+		p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
+		if (p) {
+			p[1] = 0;
+		} else {
+			mask2[0] = '\0';
+		}
+		mask2 = talloc_asprintf_append(mask2,
+					       "%s%s*",
+					       f->name,
+					       CLI_DIRSEP_STR);
+		if (!mask2) {
+			TALLOC_FREE(dir);
+			return NT_STATUS_NO_MEMORY;
+		}
+		add_to_do_list_queue(mask2);
+		TALLOC_FREE(mask2);
 	}
 	TALLOC_FREE(dir);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1786,7 +1786,7 @@ static int do_allinfo(const char *name)
 	uint16_t fnum;
 	unsigned int num_streams;
 	struct stream_struct *streams;
-	int num_snapshots;
+	int j, num_snapshots;
 	char **snapshots = NULL;
 	unsigned int i;
 	NTSTATUS status;
@@ -1894,12 +1894,12 @@ static int do_allinfo(const char *name)
 		return 0;
 	}
 
-	for (i=0; i<num_snapshots; i++) {
+	for (j=0; j<num_snapshots; j++) {
 		char *snap_name;
 
-		d_printf("%s\n", snapshots[i]);
+		d_printf("%s\n", snapshots[j]);
 		snap_name = talloc_asprintf(talloc_tos(), "%s%s",
-					    snapshots[i], name);
+					    snapshots[j], name);
 		status = cli_qpathinfo3(cli, snap_name, &b_time, &a_time,
 					&m_time, &c_time, &size,
 					NULL, NULL);
