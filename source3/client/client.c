@@ -878,85 +878,65 @@ NTSTATUS do_list(const char *mask,
 	do_list_dirs = dirs;
 	do_list_fn = fn;
 
-	if (rec) {
-		init_do_list_queue();
-		add_to_do_list_queue(mask);
+	init_do_list_queue();
+	add_to_do_list_queue(mask);
 
-		while (!do_list_queue_empty()) {
-			/*
-			 * Need to copy head so that it doesn't become
-			 * invalid inside the call to cli_list.  This
-			 * would happen if the list were expanded
-			 * during the call.
-			 * Fix from E. Jay Berkenbilt (ejb@ql.org)
-			 */
-			char *head = talloc_strdup(ctx, do_list_queue_head());
+	while (!do_list_queue_empty()) {
+		/*
+		 * Need to copy head so that it doesn't become
+		 * invalid inside the call to cli_list.  This
+		 * would happen if the list were expanded
+		 * during the call.
+		 * Fix from E. Jay Berkenbilt (ejb@ql.org)
+		 */
+		char *head = talloc_strdup(ctx, do_list_queue_head());
 
-			if (!head) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			/* check for dfs */
-
-			status = cli_resolve_path(ctx, "",
-					popt_get_cmdline_auth_info(),
-					cli, head, &targetcli, &targetpath);
-			if (!NT_STATUS_IS_OK(status)) {
-				d_printf("do_list: [%s] %s\n", head,
-					 nt_errstr(status));
-				remove_do_list_queue_head();
-				continue;
-			}
-
-			status = cli_list(targetcli, targetpath, attribute,
-				 do_list_helper, targetcli);
-			if (!NT_STATUS_IS_OK(status)) {
-				d_printf("%s listing %s\n",
-					 nt_errstr(status), targetpath);
-				ret_status = status;
-			}
-			remove_do_list_queue_head();
-			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
-				char *next_file = do_list_queue_head();
-				char *save_ch = 0;
-				if ((strlen(next_file) >= 2) &&
-				    (next_file[strlen(next_file) - 1] == '*') &&
-				    (next_file[strlen(next_file) - 2] == CLI_DIRSEP_CHAR)) {
-					save_ch = next_file +
-						strlen(next_file) - 2;
-					*save_ch = '\0';
-					if (showacls) {
-						/* cwd is only used if showacls is on */
-						client_set_cwd(next_file);
-					}
-				}
-				if (!showacls) /* don't disturbe the showacls output */
-					d_printf("\n%s\n",next_file);
-				if (save_ch) {
-					*save_ch = CLI_DIRSEP_CHAR;
-				}
-			}
-			TALLOC_FREE(head);
-			TALLOC_FREE(targetpath);
+		if (!head) {
+			return NT_STATUS_NO_MEMORY;
 		}
-	} else {
+
 		/* check for dfs */
+
 		status = cli_resolve_path(ctx, "",
-				popt_get_cmdline_auth_info(), cli, mask,
-				  &targetcli, &targetpath);
-		if (NT_STATUS_IS_OK(status)) {
-			status = cli_list(targetcli, targetpath, attribute,
-					  do_list_helper, targetcli);
-			if (!NT_STATUS_IS_OK(status)) {
-				d_printf("%s listing %s\n",
-					 nt_errstr(status), targetpath);
-				ret_status = status;
-			}
-			TALLOC_FREE(targetpath);
-		} else {
-			d_printf("do_list: [%s] %s\n", mask, nt_errstr(status));
+					  popt_get_cmdline_auth_info(),
+					  cli, head, &targetcli, &targetpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("do_list: [%s] %s\n", head,
+				 nt_errstr(status));
+			remove_do_list_queue_head();
+			continue;
+		}
+
+		status = cli_list(targetcli, targetpath, attribute,
+				  do_list_helper, targetcli);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("%s listing %s\n",
+				 nt_errstr(status), targetpath);
 			ret_status = status;
 		}
+		remove_do_list_queue_head();
+		if ((! do_list_queue_empty()) && (fn == display_finfo)) {
+			char *next_file = do_list_queue_head();
+			char *save_ch = 0;
+			if ((strlen(next_file) >= 2) &&
+			    (next_file[strlen(next_file) - 1] == '*') &&
+			    (next_file[strlen(next_file) - 2] == CLI_DIRSEP_CHAR)) {
+				save_ch = next_file +
+					strlen(next_file) - 2;
+				*save_ch = '\0';
+				if (showacls) {
+					/* cwd is only used if showacls is on */
+					client_set_cwd(next_file);
+				}
+			}
+			if (!showacls) /* don't disturbe the showacls output */
+				d_printf("\n%s\n",next_file);
+			if (save_ch) {
+				*save_ch = CLI_DIRSEP_CHAR;
+			}
+		}
+		TALLOC_FREE(head);
+		TALLOC_FREE(targetpath);
 	}
 
 	in_do_list = 0;
