@@ -68,24 +68,41 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 {
 	struct passwd pwd = {0};
 	struct passwd *pwdbuf = NULL;
-	char buf[NSS_BUFLEN_PASSWD] = {0};
+	char *buf = NULL;
+	char *out = NULL;
+	long int initlen;
 	size_t len;
 	int rc;
 
-	rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
+	initlen = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if (initlen == -1) {
+		len = 1024;
+	} else {
+		len = (size_t)initlen;
+	}
+	buf = talloc_size(mem_ctx, len);
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	rc = getpwuid_r(getuid(), &pwd, buf, len, &pwdbuf);
 	if (rc != 0 || pwdbuf == NULL ) {
 		const char *szPath = getenv("HOME");
 		if (szPath == NULL) {
-			return NULL;
+			goto done;
 		}
 		len = strnlen(szPath, PATH_MAX);
 		if (len >= PATH_MAX) {
 			return NULL;
 		}
-		return talloc_strdup(mem_ctx, szPath);
+		out = talloc_strdup(mem_ctx, szPath);
+		goto done;
 	}
 
-	return talloc_strdup(mem_ctx, pwd.pw_dir);
+	out = talloc_strdup(mem_ctx, pwd.pw_dir);
+done:
+	TALLOC_FREE(buf);
+	return out;
 }
 
 char *path_expand_tilde(TALLOC_CTX *mem_ctx, const char *d)
