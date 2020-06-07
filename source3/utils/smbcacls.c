@@ -816,6 +816,9 @@ int main(int argc, char *argv[])
 	/* numeric is set when the user wants numeric SIDs and ACEs rather
 	   than going via LSA calls to resolve them */
 	int numeric = 0;
+	struct cli_state *targetcli = NULL;
+	char *targetfile = NULL;
+	NTSTATUS status;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1077,16 +1080,28 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	status = cli_resolve_path(frame,
+				  "",
+				  popt_get_cmdline_auth_info(),
+				  cli,
+				  filename,
+				  &targetcli,
+				  &targetfile);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("cli_resolve_path failed for %s! (%s)\n", filename, nt_errstr(status)));
+		return -1;
+	}
+
 	/* Perform requested action */
 
 	if (change_mode == REQUEST_INHERIT) {
-		result = inherit(cli, filename, owner_username);
+		result = inherit(targetcli, targetfile, owner_username);
 	} else if (change_mode != REQUEST_NONE) {
-		result = owner_set(cli, change_mode, filename, owner_username);
+		result = owner_set(targetcli, change_mode, targetfile, owner_username);
 	} else if (the_acl) {
-		result = cacl_set(cli, filename, the_acl, mode, numeric);
+		result = cacl_set(targetcli, targetfile, the_acl, mode, numeric);
 	} else {
-		result = cacl_dump(cli, filename, numeric);
+		result = cacl_dump(targetcli, targetfile, numeric);
 	}
 
 	popt_free_cmdline_auth_info();
