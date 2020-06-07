@@ -1221,6 +1221,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		READ_CONTROL_ACCESS;
 	bool creating = !file_existed && (flags & O_CREAT);
 	bool truncating = (flags & O_TRUNC);
+	bool open_fd = false;
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -1273,6 +1274,10 @@ static NTSTATUS open_file(files_struct *fsp,
 	}
 
 	if ((open_access_mask & need_fd_mask) || creating || truncating) {
+		open_fd = true;
+	}
+
+	if (open_fd) {
 		const char *wild;
 		int ret;
 
