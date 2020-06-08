@@ -837,6 +837,461 @@ done:
 	return ret;
 }
 
+struct test_multichannel_oplock_break_state;
+
+struct test_multichannel_oplock_break_channel {
+	struct test_multichannel_oplock_break_state *state;
+	size_t idx;
+	char name[64];
+	struct smb2_tree *tree;
+	bool blocked;
+	struct timeval break_time;
+	double full_duration;
+	double relative_duration;
+	uint8_t level;
+	size_t break_num;
+};
+
+struct test_multichannel_oplock_break_state {
+	struct torture_context *tctx;
+	struct timeval open_req_time;
+	struct timeval open_rep_time;
+	size_t num_breaks;
+	struct timeval last_break_time;
+	struct test_multichannel_oplock_break_channel channels[32];
+};
+
+static bool test_multichannel_oplock_break_handler(struct smb2_transport *transport,
+						   const struct smb2_handle *handle,
+						   uint8_t level,
+						   void *private_data)
+{
+	struct test_multichannel_oplock_break_channel *c =
+		(struct test_multichannel_oplock_break_channel *)private_data;
+	struct test_multichannel_oplock_break_state *state = c->state;
+
+	c->break_time = timeval_current();
+	c->full_duration = timeval_elapsed2(&state->open_req_time,
+					    &c->break_time);
+	c->relative_duration = timeval_elapsed2(&state->last_break_time,
+						&c->break_time);
+	state->last_break_time = c->break_time;
+	c->level = level;
+	c->break_num = ++state->num_breaks;
+
+	torture_comment(state->tctx, "Got OPLOCK break %zu on %s after %f ( %f)\n",
+			c->break_num, c->name,
+			c->relative_duration,
+			c->full_duration);
+
+	return torture_oplock_ack_handler(transport, handle, level, c->tree);
+}
+
+static bool test_multichannel_oplock_break_test3_windows(struct torture_context *tctx,
+							 struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct test_multichannel_oplock_break_state state = {
+		.tctx = tctx,
+	};
+	struct test_multichannel_oplock_break_channel *open2_channel = NULL;
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_create io1;
+	struct smb2_create io2;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\oplock_break_test3w.dat";
+	struct smb2_tree *trees2[32] = { NULL, };
+	size_t i;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options transport2_options;
+	struct smb2_session *session1 = tree1->session;
+	uint16_t local_port = 0;
+	bool block_setup = false;
+	bool block_ok = false;
+	double open_duration;
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Oplock break retry: Test3 (Windows behavior)\n");
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io2, fname1,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channel_array(tctx, host, share, credentials,
+						     &transport2_options,
+						     ARRAY_SIZE(trees2), trees2);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = trees2[i]->session->transport;
+
+		c->state = &state;
+		c->idx = i+1;
+		c->tree = trees2[i];
+		snprintf(c->name, sizeof(c->name), "trees2_%zu", c->idx);
+
+		t->oplock.handler = test_multichannel_oplock_break_handler;
+		t->oplock.private_data = c;
+	}
+
+	open2_channel = &state.channels[0];
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via %s\n",
+			open2_channel->name);
+	status = smb2_create(open2_channel->tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io2.out.file.handle;
+	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io2.out.durable_open_v2, false);
+	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(break_info.count, 0);
+
+	block_setup = test_setup_blocked_transports(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_transports");
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = c->tree->session->transport;
+
+		torture_comment(tctx, "Blocking %s\n", c->name);
+		block_ok = _test_block_smb2_transport(tctx, t, c->name);
+		torture_assert_goto(tctx, block_ok, ret, done, "we could not block tcp transport");
+		c->blocked = true;
+	}
+
+	/* 1 opens file2 */
+	torture_comment(tctx,
+			"Client opens fname1 with session 1 with all %zu blocked\n",
+			ARRAY_SIZE(trees2));
+	smb2_oplock_create_share(&io1, fname1,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	CHECK_VAL(lease_break_info.count, 0);
+	state.open_req_time = timeval_current();
+	state.last_break_time = state.open_req_time;
+	status = smb2_create(tree1, mem_ctx, &io1);
+	state.open_rep_time = timeval_current();
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("s"));
+
+	CHECK_VAL(break_info.count, 1);
+
+	open_duration = timeval_elapsed2(&state.open_req_time,
+					 &state.open_rep_time);
+	torture_comment(tctx, "open_duration: %f\n", open_duration);
+	CHECK_VAL_GREATER_THAN(open_duration, 35);
+
+	if (break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected oplock break!!\n");
+	} else {
+		torture_comment(tctx, "Received %d oplock break(s)!!\n",
+				break_info.count);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		size_t expected_break_num = 0;
+
+		/*
+		 * Only the latest channel gets a break notification
+		 */
+		if (i == (ARRAY_SIZE(state.channels) - 1)) {
+			expected_break_num = 1;
+		}
+
+		torture_comment(tctx, "Verify %s\n", c->name);
+		torture_assert_int_equal(tctx, c->break_num, expected_break_num,
+					 "Got oplock break on wrong channel");
+		if (expected_break_num != 0) {
+			CHECK_VAL(c->level, smb2_util_oplock_level("s"));
+		}
+	}
+
+done:
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = NULL;
+
+		if (!c->blocked) {
+			continue;
+		}
+
+		t = c->tree->session->transport;
+
+		torture_comment(tctx, "Unblocking %s\n", c->name);
+		_test_unblock_smb2_transport(tctx, t, c->name);
+		c->blocked = false;
+	}
+	if (block_setup) {
+		test_cleanup_blocked_transports(tctx);
+	}
+
+	tree1->session = session1;
+
+	smb2_util_close(tree1, h_client1_file1);
+	if (trees2[0] != NULL) {
+		smb2_util_close(trees2[0], h_client2_file1);
+	}
+
+	if (h != NULL) {
+		smb2_util_close(tree1, *h);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_deltree(tree1, BASEDIR);
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		if (trees2 == NULL || trees2[i] == NULL) {
+			continue;
+		}
+		TALLOC_FREE(trees2[i]);
+	}
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+static bool test_multichannel_oplock_break_test3_specification(struct torture_context *tctx,
+							       struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct test_multichannel_oplock_break_state state = {
+		.tctx = tctx,
+	};
+	struct test_multichannel_oplock_break_channel *open2_channel = NULL;
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_create io1;
+	struct smb2_create io2;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\oplock_break_test3s.dat";
+	struct smb2_tree *trees2[32] = { NULL, };
+	size_t i;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options transport2_options;
+	struct smb2_session *session1 = tree1->session;
+	uint16_t local_port = 0;
+	bool block_setup = false;
+	bool block_ok = false;
+	double open_duration;
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Oplock break retry: Test3 (Specification behavior)\n");
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io2, fname1,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channel_array(tctx, host, share, credentials,
+						     &transport2_options,
+						     ARRAY_SIZE(trees2), trees2);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = trees2[i]->session->transport;
+
+		c->state = &state;
+		c->idx = i+1;
+		c->tree = trees2[i];
+		snprintf(c->name, sizeof(c->name), "trees2_%zu", c->idx);
+
+		t->oplock.handler = test_multichannel_oplock_break_handler;
+		t->oplock.private_data = c;
+	}
+
+	open2_channel = &state.channels[0];
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via %s\n",
+			open2_channel->name);
+	status = smb2_create(open2_channel->tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io2.out.file.handle;
+	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io2.out.durable_open_v2, false);
+	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(break_info.count, 0);
+
+	block_setup = test_setup_blocked_transports(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_transports");
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = c->tree->session->transport;
+
+		torture_comment(tctx, "Blocking %s\n", c->name);
+		block_ok = _test_block_smb2_transport(tctx, t, c->name);
+		torture_assert_goto(tctx, block_ok, ret, done, "we could not block tcp transport");
+		c->blocked = true;
+	}
+
+	/* 1 opens file2 */
+	torture_comment(tctx,
+			"Client opens fname1 with session 1 with all %zu blocked\n",
+			ARRAY_SIZE(trees2));
+	smb2_oplock_create_share(&io1, fname1,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	CHECK_VAL(lease_break_info.count, 0);
+	state.open_req_time = timeval_current();
+	state.last_break_time = state.open_req_time;
+	status = smb2_create(tree1, mem_ctx, &io1);
+	state.open_rep_time = timeval_current();
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+
+	CHECK_VAL_GREATER_THAN(break_info.count, 1);
+
+	open_duration = timeval_elapsed2(&state.open_req_time,
+					 &state.open_rep_time);
+	torture_comment(tctx, "open_duration: %f\n", open_duration);
+	if (break_info.count < ARRAY_SIZE(state.channels)) {
+		CHECK_VAL_GREATER_THAN(open_duration, 35);
+		CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("s"));
+	} else {
+		CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	}
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		if (break_info.count >= ARRAY_SIZE(state.channels)) {
+			break;
+		}
+		torture_comment(tctx, "Received %d oplock break(s) wait for more!!\n",
+				break_info.count);
+		torture_wait_for_oplock_break(tctx);
+	}
+
+	if (break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected oplock break!!\n");
+	} else {
+		torture_comment(tctx, "Received %d oplock break(s)!!\n",
+				break_info.count);
+	}
+
+	if (break_info.count < ARRAY_SIZE(state.channels)) {
+		CHECK_VAL_GREATER_THAN(break_info.count, 3);
+	} else {
+		CHECK_VAL(break_info.count, ARRAY_SIZE(state.channels));
+	}
+
+	for (i = 0; i < break_info.count; i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+
+		torture_comment(tctx, "Verify %s\n", c->name);
+		torture_assert_int_equal(tctx, c->break_num, c->idx,
+					 "Got oplock break on wrong channel");
+		CHECK_VAL(c->level, smb2_util_oplock_level("s"));
+	}
+
+done:
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_oplock_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = NULL;
+
+		if (!c->blocked) {
+			continue;
+		}
+
+		t = c->tree->session->transport;
+
+		torture_comment(tctx, "Unblocking %s\n", c->name);
+		_test_unblock_smb2_transport(tctx, t, c->name);
+		c->blocked = false;
+	}
+	if (block_setup) {
+		test_cleanup_blocked_transports(tctx);
+	}
+
+	tree1->session = session1;
+
+	smb2_util_close(tree1, h_client1_file1);
+	if (trees2[0] != NULL) {
+		smb2_util_close(trees2[0], h_client2_file1);
+	}
+
+	if (h != NULL) {
+		smb2_util_close(tree1, *h);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_deltree(tree1, BASEDIR);
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		if (trees2 == NULL || trees2[i] == NULL) {
+			continue;
+		}
+		TALLOC_FREE(trees2[i]);
+	}
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static const uint64_t LEASE1F1 = 0xBADC0FFEE0DDF00Dull;
 static const uint64_t LEASE1F2 = 0xBADC0FFEE0DDD00Dull;
 static const uint64_t LEASE1F3 = 0xDADC0FFEE0DDD00Dull;
@@ -1912,6 +2367,10 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 				     test_multichannel_oplock_break_test1);
 	torture_suite_add_1smb2_test(suite_oplocks, "test2",
 				     test_multichannel_oplock_break_test2);
+	torture_suite_add_1smb2_test(suite_oplocks, "test3_windows",
+				     test_multichannel_oplock_break_test3_windows);
+	torture_suite_add_1smb2_test(suite_oplocks, "test3_specification",
+				     test_multichannel_oplock_break_test3_specification);
 	torture_suite_add_1smb2_test(suite_leases, "test1",
 				     test_multichannel_lease_break_test1);
 	torture_suite_add_1smb2_test(suite_leases, "test2",
