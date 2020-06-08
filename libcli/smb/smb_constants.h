@@ -583,6 +583,14 @@ enum csc_policy {
 #define FSCTL_VALIDATE_NEGOTIATE_INFO	(FSCTL_NETWORK_FILESYSTEM | FSCTL_ACCESS_ANY | 0x0204 | FSCTL_METHOD_BUFFERED)
 
 /*
+ * For testing various details we use special codes via
+ * smbtorture in order to test failures
+ */
+#define FSCTL_SMBTORTURE	0x83840000
+#define FSCTL_SMBTORTURE_FORCE_UNACKED_TIMEOUT \
+	(FSCTL_SMBTORTURE | FSCTL_ACCESS_WRITE | 0x0000 | FSCTL_METHOD_NEITHER)
+
+/*
  * A few values from [MS-FSCC] 2.1.2.1 Reparse Tags
  */
 
