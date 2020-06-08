@@ -4965,7 +4965,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 0,			/* oplock_request */
 			 NULL,			/* lease */
 			 0,			/* allocation_size */
-			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* private_flags */
+			 0,			/* private_flags */
 			 NULL,			/* sd */
 			 NULL,			/* ea_list */
 			 &streams[i],		/* result */
