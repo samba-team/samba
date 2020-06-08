@@ -5649,8 +5649,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && is_ntfs_stream_smb_fname(smb_fname)
-	    && (!(private_flags & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
+	    && is_ntfs_stream_smb_fname(smb_fname))
+	{
 		uint32_t base_create_disposition;
 		struct smb_filename *smb_fname_base = NULL;
 		uint32_t base_privflags;
