@@ -1201,6 +1201,17 @@ static NTSTATUS smbXsrv_connection_get_acked_bytes(struct smbXsrv_connection *xc
 
 	*_acked_bytes = 0;
 
+	if (xconn->ack.force_unacked_timeout) {
+		/*
+		 * Smbtorture tries to test channel failures...
+		 * Just pretend nothing was acked...
+		 */
+		DBG_INFO("Simulating channel failure: "
+			 "xconn->ack.unacked_bytes[%llu]\n",
+			 (unsigned long long)xconn->ack.unacked_bytes);
+		return NT_STATUS_OK;
+	}
+
 #ifdef __IOCTL_SEND_QUEUE_SIZE_OPCODE
 	{
 		int value = 0;
@@ -3045,6 +3056,42 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	} else if (opcode == SMB2_OP_CANCEL) {
 		/* Cancel requests are allowed to skip the signing */
+	} else if (opcode == SMB2_OP_IOCTL) {
+		/*
+		 * Some special IOCTL calls don't require
+		 * file, tcon nor session.
+		 *
+		 * They typically don't do any real action
+		 * on behalf of the client.
+		 *
+		 * They are mainly used to alter the behavior
+		 * of the connection for testing. So we can
+		 * run as root and skip all file, tcon and session
+		 * checks below.
+		 */
+		static const struct smbd_smb2_dispatch_table _root_ioctl_call = {
+			_OP(SMB2_OP_IOCTL),
+			.as_root = true,
+		};
+		const uint8_t *body = SMBD_SMB2_IN_BODY_PTR(req);
+		size_t body_size = SMBD_SMB2_IN_BODY_LEN(req);
+		uint32_t in_ctl_code;
+		size_t needed = 4;
+
+		if (needed > body_size) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		in_ctl_code = IVAL(body, 0x04);
+		/*
+		 * Only add trusted IOCTL codes here!
+		 */
+		switch (in_ctl_code) {
+		case FSCTL_SMBTORTURE_FORCE_UNACKED_TIMEOUT:
+			call = &_root_ioctl_call;
+			break;
+		}
 	} else if (signing_required) {
 		/*
 		 * If signing is required we try to sign

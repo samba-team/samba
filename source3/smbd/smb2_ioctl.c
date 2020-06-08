@@ -194,6 +194,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	case FSCTL_VALIDATE_NEGOTIATE_INFO_224:
 	case FSCTL_VALIDATE_NEGOTIATE_INFO:
 	case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
+	case FSCTL_SMBTORTURE_FORCE_UNACKED_TIMEOUT:
 		/*
 		 * Some SMB2 specific CtlCodes like FSCTL_DFS_GET_REFERRALS or
 		 * FSCTL_PIPE_WAIT does not take a file handle.
@@ -366,6 +367,45 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	}
 }
 
+static struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					struct smbd_smb2_ioctl_state *state)
+{
+	NTSTATUS status;
+	bool ok;
+
+	ok = lp_parm_bool(-1, "smbd", "FSCTL_SMBTORTURE", false);
+	if (!ok) {
+		goto not_supported;
+	}
+
+	switch (ctl_code) {
+	case FSCTL_SMBTORTURE_FORCE_UNACKED_TIMEOUT:
+		if (state->in_input.length != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		state->smb2req->xconn->ack.force_unacked_timeout = true;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+
+	default:
+		goto not_supported;
+	}
+
+not_supported:
+	if (IS_IPC(state->smbreq->conn)) {
+		status = NT_STATUS_FS_DRIVER_REQUIRED;
+	} else {
+		status = NT_STATUS_INVALID_DEVICE_REQUEST;
+	}
+
+	tevent_req_nterror(req, status);
+	return tevent_req_post(req, ev);
+}
+
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -414,6 +454,9 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		break;
 	case FSCTL_NETWORK_FILESYSTEM:
 		return smb2_ioctl_network_fs(in_ctl_code, ev, req, state);
+		break;
+	case FSCTL_SMBTORTURE:
+		return smb2_ioctl_smbtorture(in_ctl_code, ev, req, state);
 		break;
 	default:
 		if (IS_IPC(smbreq->conn)) {

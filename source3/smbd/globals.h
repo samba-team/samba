@@ -375,6 +375,7 @@ struct smbXsrv_connection {
 	} transport;
 
 	struct {
+		bool force_unacked_timeout;
 		uint64_t unacked_bytes;
 		uint32_t rto_usecs;
 		struct tevent_req *checker_subreq;
