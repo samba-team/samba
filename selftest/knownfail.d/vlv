@@ -1,2 +1,2 @@
 samba4.ldap.vlv.python.*__main__.VLVTests.test_vlv_change_search_expr
-samba4.ldap.vlv.python.*__main__.PagedResultsTests.test_paged_cant_change_controls_data
+samba4.ldap.vlv.python.*__main__.PagedResultsTestsRW.test_paged_cant_change_controls_data
