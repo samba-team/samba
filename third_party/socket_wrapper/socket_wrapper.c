@@ -66,6 +66,9 @@
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#ifdef HAVE_NETINET_TCP_FSM_H
+#include <netinet/tcp_fsm.h>
+#endif
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -264,6 +267,7 @@ struct socket_info
 	int defer_connect;
 	int pktinfo;
 	int tcp_nodelay;
+	int listening;
 
 	/* The unix path so we can unlink it on close() */
 	struct sockaddr_un un_addr;
@@ -658,7 +662,7 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 		handle = swrap.libc.handle = swrap.libc.socket_handle = RTLD_NEXT;
 #else
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "Failed to dlopen library: %s\n",
+			  "Failed to dlopen library: %s",
 			  dlerror());
 		exit(-1);
 #endif
@@ -677,7 +681,7 @@ static void *_swrap_bind_symbol(enum swrap_lib lib, const char *fn_name)
 	func = dlsym(handle, fn_name);
 	if (func == NULL) {
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "Failed to find %s: %s\n",
+			  "Failed to find %s: %s",
 			  fn_name,
 			  dlerror());
 		exit(-1);
@@ -1221,7 +1225,7 @@ static in_addr_t swrap_ipv4_net(void)
 	ret = inet_pton(AF_INET, net_str, &nv);
 	if (ret <= 0) {
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "INVALID IPv4 Network [%s]\n",
+			  "INVALID IPv4 Network [%s]",
 			  net_str);
 		abort();
 	}
@@ -1238,7 +1242,7 @@ static in_addr_t swrap_ipv4_net(void)
 	default:
 		SWRAP_LOG(SWRAP_LOG_ERROR,
 			  "INVALID IPv4 Network [%s][0x%x] should be "
-			  "127.0.0.0 or 10.53.57.0\n",
+			  "127.0.0.0 or 10.53.57.0",
 			  net_str, (unsigned)hv);
 		abort();
 	}
@@ -1268,7 +1272,7 @@ static in_addr_t swrap_ipv4_iface(unsigned int iface)
 
 	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "swrap_ipv4_iface(%u) invalid!\n",
+			  "swrap_ipv4_iface(%u) invalid!",
 			  iface);
 		abort();
 		return -1;
@@ -1370,13 +1374,72 @@ static void swrap_set_next_free(struct socket_info *si, int next_free)
 	sic->meta.next_free = next_free;
 }
 
+static int swrap_un_path(struct sockaddr_un *un,
+			 const char *swrap_dir,
+			 char type,
+			 unsigned int iface,
+			 unsigned int prt)
+{
+	int ret;
+
+	ret = snprintf(un->sun_path,
+		       sizeof(un->sun_path),
+		       "%s/"SOCKET_FORMAT,
+		       swrap_dir,
+		       type,
+		       iface,
+		       prt);
+	if ((size_t)ret >= sizeof(un->sun_path)) {
+		return ENAMETOOLONG;
+	}
+
+	return 0;
+}
+
+static int swrap_un_path_EINVAL(struct sockaddr_un *un,
+				const char *swrap_dir)
+{
+	int ret;
+
+	ret = snprintf(un->sun_path,
+		       sizeof(un->sun_path),
+		       "%s/EINVAL",
+		       swrap_dir);
+
+	if ((size_t)ret >= sizeof(un->sun_path)) {
+		return ENAMETOOLONG;
+	}
+
+	return 0;
+}
+
+static bool swrap_dir_usable(const char *swrap_dir)
+{
+	struct sockaddr_un un;
+	int ret;
+
+	ret = swrap_un_path(&un, swrap_dir, SOCKET_TYPE_CHAR_TCP, 0, 0);
+	if (ret == 0) {
+		return true;
+	}
+
+	ret = swrap_un_path_EINVAL(&un, swrap_dir);
+	if (ret == 0) {
+		return true;
+	}
+
+	return false;
+}
+
 static char *socket_wrapper_dir(void)
 {
 	char *swrap_dir = NULL;
 	char *s = getenv("SOCKET_WRAPPER_DIR");
+	char *t;
+	bool ok;
 
 	if (s == NULL) {
-		SWRAP_LOG(SWRAP_LOG_WARN, "SOCKET_WRAPPER_DIR not set\n");
+		SWRAP_LOG(SWRAP_LOG_WARN, "SOCKET_WRAPPER_DIR not set");
 		return NULL;
 	}
 
@@ -1385,9 +1448,43 @@ static char *socket_wrapper_dir(void)
 		SWRAP_LOG(SWRAP_LOG_ERROR,
 			  "Unable to resolve socket_wrapper dir path: %s",
 			  strerror(errno));
-		return NULL;
+		abort();
 	}
 
+	ok = swrap_dir_usable(swrap_dir);
+	if (ok) {
+		goto done;
+	}
+
+	free(swrap_dir);
+
+	ok = swrap_dir_usable(s);
+	if (!ok) {
+		SWRAP_LOG(SWRAP_LOG_ERROR, "SOCKET_WRAPPER_DIR is too long");
+		abort();
+	}
+
+	t = getenv("SOCKET_WRAPPER_DIR_ALLOW_ORIG");
+	if (t == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "realpath(SOCKET_WRAPPER_DIR) too long and "
+			  "SOCKET_WRAPPER_DIR_ALLOW_ORIG not set");
+		abort();
+
+	}
+
+	swrap_dir = strdup(s);
+	if (swrap_dir == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Unable to duplicate socket_wrapper dir path");
+		abort();
+	}
+
+	SWRAP_LOG(SWRAP_LOG_WARN,
+		  "realpath(SOCKET_WRAPPER_DIR) too long, "
+		  "using original SOCKET_WRAPPER_DIR\n");
+
+done:
 	SWRAP_LOG(SWRAP_LOG_TRACE, "socket_wrapper_dir: %s", swrap_dir);
 	return swrap_dir;
 }
@@ -1631,7 +1728,7 @@ static unsigned int socket_wrapper_default_iface(void)
 static void set_socket_info_index(int fd, int idx)
 {
 	SWRAP_LOG(SWRAP_LOG_TRACE,
-		  "fd=%d idx=%d\n",
+		  "fd=%d idx=%d",
 		  fd, idx);
 	socket_fds_idx[fd] = idx;
 	/* This builtin issues a full memory barrier. */
@@ -1641,7 +1738,7 @@ static void set_socket_info_index(int fd, int idx)
 static void reset_socket_info_index(int fd)
 {
 	SWRAP_LOG(SWRAP_LOG_TRACE,
-		  "fd=%d idx=%d\n",
+		  "fd=%d idx=%d",
 		  fd, -1);
 	set_socket_info_index(fd, -1);
 }
@@ -1844,7 +1941,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			b_type = SOCKET_TYPE_CHAR_UDP;
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -1891,7 +1988,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -1914,13 +2011,13 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	}
 #endif
 	default:
-		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family!\n");
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family!");
 		errno = ENETUNREACH;
 		return -1;
 	}
 
 	if (prt == 0) {
-		SWRAP_LOG(SWRAP_LOG_WARN, "Port not set\n");
+		SWRAP_LOG(SWRAP_LOG_WARN, "Port not set");
 		errno = EINVAL;
 		return -1;
 	}
@@ -1932,16 +2029,14 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	}
 
 	if (is_bcast) {
-		snprintf(un->sun_path, sizeof(un->sun_path),
-			 "%s/EINVAL", swrap_dir);
+		swrap_un_path_EINVAL(un, swrap_dir);
 		SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 		SAFE_FREE(swrap_dir);
 		/* the caller need to do more processing */
 		return 0;
 	}
 
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-		 swrap_dir, type, iface, prt);
+	swrap_un_path(un, swrap_dir, type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 
 	SAFE_FREE(swrap_dir);
@@ -1987,7 +2082,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			b_type = SOCKET_TYPE_CHAR_UDP;
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -2046,7 +2141,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -2087,7 +2182,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	}
 #endif
 	default:
-		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
+		SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family");
 		errno = EADDRNOTAVAIL;
 		return -1;
 	}
@@ -2109,8 +2204,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	if (prt == 0) {
 		/* handle auto-allocation of ephemeral ports */
 		for (prt = 5001; prt < 10000; prt++) {
-			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-				 swrap_dir, type, iface, prt);
+			swrap_un_path(un, swrap_dir, type, iface, prt);
 			if (stat(un->sun_path, &st) == 0) continue;
 
 			set_port(si->family, prt, &si->myname);
@@ -2126,8 +2220,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		}
 	}
 
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-		 swrap_dir, type, iface, prt);
+	swrap_un_path(un, swrap_dir, type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
 
 	SAFE_FREE(swrap_dir);
@@ -2329,7 +2422,7 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 		case SOCK_DGRAM:
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -2343,7 +2436,7 @@ static int sockaddr_convert_to_un(struct socket_info *si,
 	}
 
 	errno = EAFNOSUPPORT;
-	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
+	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family");
 	return -1;
 }
 
@@ -2374,7 +2467,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 		case SOCK_DGRAM:
 			break;
 		default:
-			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!\n");
+			SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown socket type!");
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
@@ -2387,7 +2480,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 		break;
 	}
 
-	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family\n");
+	SWRAP_LOG(SWRAP_LOG_ERROR, "Unknown address family");
 	errno = EAFNOSUPPORT;
 	return -1;
 }
@@ -3719,9 +3812,11 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 
 	for (i = 0; i < SOCKET_MAX_SOCKETS; i++) {
 		port = autobind_start + i;
-		snprintf(un_addr.sa.un.sun_path, sizeof(un_addr.sa.un.sun_path),
-			 "%s/"SOCKET_FORMAT, swrap_dir, type,
-			 socket_wrapper_default_iface(), port);
+		swrap_un_path(&un_addr.sa.un,
+			      swrap_dir,
+			      type,
+			      socket_wrapper_default_iface(),
+			      port);
 		if (stat(un_addr.sa.un.sun_path, &st) == 0) continue;
 
 		ret = libc_bind(fd, &un_addr.sa.s, un_addr.sa_socklen);
@@ -3787,7 +3882,7 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 
 	if (si->family != serv_addr->sa_family) {
 		SWRAP_LOG(SWRAP_LOG_ERROR,
-			  "called for fd=%d (family=%d) called with invalid family=%d\n",
+			  "called for fd=%d (family=%d) called with invalid family=%d",
 			  s, si->family, serv_addr->sa_family);
 		errno = EINVAL;
 		ret = -1;
@@ -4097,6 +4192,9 @@ static int swrap_listen(int s, int backlog)
 	}
 
 	ret = libc_listen(s, backlog);
+	if (ret == 0) {
+		si->listening = 1;
+	}
 
 out:
 	SWRAP_UNLOCK_SI(si);
@@ -4446,6 +4544,56 @@ static int swrap_getsockopt(int s, int level, int optname,
 			ret = 0;
 			goto done;
 #endif /* TCP_NODELAY */
+#ifdef TCP_INFO
+		case TCP_INFO: {
+			struct tcp_info info;
+			socklen_t ilen = sizeof(info);
+
+#ifdef HAVE_NETINET_TCP_FSM_H
+/* This is FreeBSD */
+# define __TCP_LISTEN TCPS_LISTEN
+# define __TCP_ESTABLISHED TCPS_ESTABLISHED
+# define __TCP_CLOSE TCPS_CLOSED
+#else
+/* This is Linux */
+# define __TCP_LISTEN TCP_LISTEN
+# define __TCP_ESTABLISHED TCP_ESTABLISHED
+# define __TCP_CLOSE TCP_CLOSE
+#endif
+
+			ZERO_STRUCT(info);
+			if (si->listening) {
+				info.tcpi_state = __TCP_LISTEN;
+			} else if (si->connected) {
+				/*
+				 * For now we just fake a few values
+				 * supported both by FreeBSD and Linux
+				 */
+				info.tcpi_state = __TCP_ESTABLISHED;
+				info.tcpi_rto = 200000;  /* 200 msec */
+				info.tcpi_rtt = 5000;    /* 5 msec */
+				info.tcpi_rttvar = 5000; /* 5 msec */
+			} else {
+				info.tcpi_state = __TCP_CLOSE;
+				info.tcpi_rto = 1000000;  /* 1 sec */
+				info.tcpi_rtt = 0;
+				info.tcpi_rttvar = 250000; /* 250 msec */
+			}
+
+			if (optval == NULL || optlen == NULL ||
+			    *optlen < (socklen_t)ilen) {
+				errno = EINVAL;
+				ret = -1;
+				goto done;
+			}
+
+			*optlen = ilen;
+			memcpy(optval, &info, ilen);
+
+			ret = 0;
+			goto done;
+		}
+#endif /* TCP_INFO */
 		default:
 			break;
 		}
@@ -4578,7 +4726,7 @@ static int swrap_vioctl(int s, unsigned long int r, va_list va)
 {
 	struct socket_info *si = find_socket_info(s);
 	va_list ap;
-	int value;
+	int *value_ptr = NULL;
 	int rc;
 
 	if (!si) {
@@ -4593,12 +4741,32 @@ static int swrap_vioctl(int s, unsigned long int r, va_list va)
 
 	switch (r) {
 	case FIONREAD:
-		value = *((int *)va_arg(ap, int *));
+		if (rc == 0) {
+			value_ptr = ((int *)va_arg(ap, int *));
+		}
 
 		if (rc == -1 && errno != EAGAIN && errno != ENOBUFS) {
 			swrap_pcap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
-		} else if (value == 0) { /* END OF FILE */
+		} else if (value_ptr != NULL && *value_ptr == 0) { /* END OF FILE */
 			swrap_pcap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+		}
+		break;
+#ifdef FIONWRITE
+	case FIONWRITE:
+		/* this is FreeBSD */
+		FALL_THROUGH; /* to TIOCOUTQ */
+#endif /* FIONWRITE */
+	case TIOCOUTQ: /* same as SIOCOUTQ on Linux */
+		/*
+		 * This may return more bytes then the application
+		 * sent into the socket, for tcp it should
+		 * return the number of unacked bytes.
+		 *
+		 * On AF_UNIX, all bytes are immediately acked!
+		 */
+		if (rc == 0) {
+			value_ptr = ((int *)va_arg(ap, int *));
+			*value_ptr = 0;
 		}
 		break;
 	}
@@ -5529,9 +5697,11 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 		}
 
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-			snprintf(un_addr.sa.un.sun_path,
-				 sizeof(un_addr.sa.un.sun_path),
-				 "%s/"SOCKET_FORMAT, swrap_dir, type, iface, prt);
+			swrap_un_path(&un_addr.sa.un,
+				      swrap_dir,
+				      type,
+				      iface,
+				      prt);
 			if (stat(un_addr.sa.un.sun_path, &st) != 0) continue;
 
 			/* ignore the any errors in broadcast sends */
@@ -6038,8 +6208,7 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 		}
 
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT,
-				 swrap_dir, type, iface, prt);
+			swrap_un_path(&un_addr, swrap_dir, type, iface, prt);
 			if (stat(un_addr.sun_path, &st) != 0) continue;
 
 			msg.msg_name = &un_addr;           /* optional address */
