@@ -3352,6 +3352,10 @@ static int cli_full_connection_creds_state_destructor(
 static void cli_full_connection_creds_conn_done(struct tevent_req *subreq);
 static void cli_full_connection_creds_sess_start(struct tevent_req *req);
 static void cli_full_connection_creds_sess_done(struct tevent_req *subreq);
+static void cli_full_connection_creds_enc_start(struct tevent_req *req);
+static void cli_full_connection_creds_enc_tcon(struct tevent_req *subreq);
+static void cli_full_connection_creds_enc_ver(struct tevent_req *subreq);
+static void cli_full_connection_creds_enc_done(struct tevent_req *subreq);
 static void cli_full_connection_creds_tcon_start(struct tevent_req *req);
 static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq);
 
@@ -3366,6 +3370,8 @@ struct tevent_req *cli_full_connection_creds_send(
 	struct tevent_req *req, *subreq;
 	struct cli_full_connection_creds_state *state;
 	enum smb_signing_setting signing_state;
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(creds);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_full_connection_creds_state);
@@ -3384,6 +3390,16 @@ struct tevent_req *cli_full_connection_creds_send(
 		signing_state = cli_credentials_get_smb_ipc_signing(creds);
 	} else {
 		signing_state = cli_credentials_get_smb_signing(creds);
+	}
+
+	if (encryption_state == SMB_ENCRYPTION_REQUIRED) {
+		if (flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK) {
+			encryption_state = SMB_ENCRYPTION_DESIRED;
+		}
+	}
+
+	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
+		signing_state = SMB_SIGNING_REQUIRED;
 	}
 
 	subreq = cli_start_connection_send(
@@ -3456,6 +3472,156 @@ static void cli_full_connection_creds_sess_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	cli_full_connection_creds_enc_start(req);
+}
+
+static void cli_full_connection_creds_enc_start(struct tevent_req *req)
+{
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(state->creds);
+	struct tevent_req *subreq = NULL;
+	NTSTATUS status;
+
+	if (encryption_state < SMB_ENCRYPTION_DESIRED) {
+		cli_full_connection_creds_tcon_start(req);
+		return;
+	}
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		status = smb2cli_session_encryption_on(state->cli->smb2.session);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
+				cli_full_connection_creds_tcon_start(req);
+				return;
+			}
+			d_printf("Encryption required and "
+				"server doesn't support "
+				"SMB3 encryption - failing connect\n");
+			tevent_req_nterror(req, status);
+			return;
+		} else if (!NT_STATUS_IS_OK(status)) {
+			d_printf("Encryption required and "
+				"setup failed with error %s.\n",
+				nt_errstr(status));
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		cli_full_connection_creds_tcon_start(req);
+		return;
+	}
+
+	if (!SERVER_HAS_UNIX_CIFS(state->cli)) {
+		if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
+			cli_full_connection_creds_tcon_start(req);
+			return;
+		}
+
+		status = NT_STATUS_NOT_SUPPORTED;
+		d_printf("Encryption required and "
+			"server doesn't support "
+			"SMB1 Unix Extensions - failing connect\n");
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/*
+	 * We do a tcon on IPC$ just to setup the encryption,
+	 * the real tcon will be encrypted then.
+	 */
+	subreq = cli_tree_connect_send(state, state->ev, state->cli,
+				       "IPC$", "IPC", NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_full_connection_creds_enc_tcon, req);
+}
+
+static void cli_full_connection_creds_enc_tcon(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	NTSTATUS status;
+
+	status = cli_tree_connect_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_unix_extensions_version_send(state, state->ev, state->cli);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_full_connection_creds_enc_ver, req);
+}
+
+static void cli_full_connection_creds_enc_ver(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(state->creds);
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
+	NTSTATUS status;
+
+	status = cli_unix_extensions_version_recv(subreq,
+						  &major, &minor,
+						  &caplow,
+						  &caphigh);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
+			cli_full_connection_creds_tcon_start(req);
+			return;
+		}
+		DEBUG(10, ("%s: cli_unix_extensions_version "
+			   "returned %s\n", __func__, nt_errstr(status)));
+		tevent_req_nterror(req, NT_STATUS_UNKNOWN_REVISION);
+		return;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+		if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
+			cli_full_connection_creds_tcon_start(req);
+			return;
+		}
+		DEBUG(10, ("%s: CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP "
+			   "not supported\n", __func__));
+		tevent_req_nterror(req, NT_STATUS_UNSUPPORTED_COMPRESSION);
+		return;
+	}
+
+	subreq = cli_smb1_setup_encryption_send(state, state->ev,
+						state->cli,
+						state->creds);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_full_connection_creds_enc_done,
+				req);
+}
+
+static void cli_full_connection_creds_enc_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb1_setup_encryption_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
