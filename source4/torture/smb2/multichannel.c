@@ -108,6 +108,40 @@
 		CHECK_VAL((__io)->out.lease_response.lease_epoch, 0); \
 	} while (0)
 
+#define CHECK_LEASE_V2(__io, __state, __oplevel, __key, __flags, __parent, __epoch) \
+	do {								\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_version, 2); \
+		if (__oplevel) {					\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], (__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], ~(__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, smb2_util_lease_state(__state)); \
+		} else {						\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_NONE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, 0); \
+		}							\
+									\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_flags, __flags); \
+		if (__flags & SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET) { \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[0], (__parent)); \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[1], ~(__parent)); \
+		} \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_duration, 0); \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_epoch, (__epoch)); \
+	} while(0)
+
+#define CHECK_LEASE_BREAK_V2(__lb, __key, __from, __to, __break_flags, __new_epoch) \
+	do {								\
+		CHECK_VAL((__lb).current_lease.lease_key.data[0], (__key)); \
+		CHECK_VAL((__lb).current_lease.lease_key.data[1], ~(__key)); \
+		CHECK_VAL((__lb).current_lease.lease_state, smb2_util_lease_state(__from)); \
+		CHECK_VAL((__lb).new_epoch, (__new_epoch)); \
+		CHECK_VAL((__lb).break_flags, (__break_flags)); \
+		CHECK_VAL((__lb).new_lease_state, smb2_util_lease_state(__to)); \
+	} while(0)
+
 static bool test_ioctl_network_interface_info(struct torture_context *tctx,
 					      struct smb2_tree *tree,
 					      struct fsctl_net_iface_info *info)
@@ -1594,6 +1628,268 @@ static bool test_multichannel_num_channels(struct torture_context *tctx,
 	return ret;
 }
 
+struct test_multichannel_lease_break_state;
+
+struct test_multichannel_lease_break_channel {
+	struct test_multichannel_lease_break_state *state;
+	size_t idx;
+	char name[64];
+	struct smb2_tree *tree;
+	bool blocked;
+	struct timeval break_time;
+	double full_duration;
+	double relative_duration;
+	struct smb2_lease_break lb;
+	size_t break_num;
+};
+
+struct test_multichannel_lease_break_state {
+	struct torture_context *tctx;
+	struct timeval open_req_time;
+	struct timeval open_rep_time;
+	size_t num_breaks;
+	struct timeval last_break_time;
+	struct test_multichannel_lease_break_channel channels[32];
+};
+
+static bool test_multichannel_lease_break_handler(struct smb2_transport *transport,
+						  const struct smb2_lease_break *lb,
+						  void *private_data)
+{
+	struct test_multichannel_lease_break_channel *c =
+		(struct test_multichannel_lease_break_channel *)private_data;
+	struct test_multichannel_lease_break_state *state = c->state;
+
+	c->break_time = timeval_current();
+	c->full_duration = timeval_elapsed2(&state->open_req_time,
+					    &c->break_time);
+	c->relative_duration = timeval_elapsed2(&state->last_break_time,
+						&c->break_time);
+	state->last_break_time = c->break_time;
+	c->lb = *lb;
+	c->break_num = ++state->num_breaks;
+
+	torture_comment(state->tctx, "Got LEASE break epoch[0x%x] %zu on %s after %f ( %f)\n",
+			c->lb.new_epoch, c->break_num, c->name,
+			c->relative_duration,
+			c->full_duration);
+
+	return torture_lease_handler(transport, lb, c->tree);
+}
+
+static bool test_multichannel_lease_break_test4(struct torture_context *tctx,
+						struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct test_multichannel_lease_break_state state = {
+		.tctx = tctx,
+	};
+	struct test_multichannel_lease_break_channel *open2_channel = NULL;
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_create io1;
+	struct smb2_create io2;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\lease_break_test4.dat";
+	struct smb2_tree *trees2[32] = { NULL, };
+	size_t i;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options transport2_options;
+	struct smb2_session *session1 = tree1->session;
+	uint16_t local_port = 0;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	bool block_setup = false;
+	bool block_ok = false;
+	double open_duration;
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Lease break retry: Test4\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_lease_v2_create(&io2, &ls2, false, fname1,
+			     LEASE2F1, NULL,
+			     smb2_util_lease_state("RHW"),
+			     0x20);
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channel_array(tctx, host, share, credentials,
+						     &transport2_options,
+						     ARRAY_SIZE(trees2), trees2);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		struct test_multichannel_lease_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = trees2[i]->session->transport;
+
+		c->state = &state;
+		c->idx = i+1;
+		c->tree = trees2[i];
+		snprintf(c->name, sizeof(c->name), "trees2_%zu", c->idx);
+
+		t->lease.handler = test_multichannel_lease_break_handler;
+		t->lease.private_data = c;
+	}
+
+	open2_channel = &state.channels[0];
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via %s\n",
+			open2_channel->name);
+	status = smb2_create(open2_channel->tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io2.out.file.handle;
+	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io2, "RHW", true, LEASE2F1, 0, 0, 0x21);
+	CHECK_VAL(io2.out.durable_open_v2, false);
+	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	block_setup = test_setup_blocked_transports(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_transports");
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_lease_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = c->tree->session->transport;
+
+		torture_comment(tctx, "Blocking %s\n", c->name);
+		block_ok = _test_block_smb2_transport(tctx, t, c->name);
+		torture_assert_goto(tctx, block_ok, ret, done, "we could not block tcp transport");
+		c->blocked = true;
+	}
+
+	/* 1 opens file2 */
+	torture_comment(tctx,
+			"Client opens fname1 with session 1 with all %zu blocked\n",
+			ARRAY_SIZE(trees2));
+	smb2_lease_v2_create(&io1, &ls1, false, fname1,
+			     LEASE1F1, NULL,
+			     smb2_util_lease_state("RHW"),
+			     0x10);
+	CHECK_VAL(lease_break_info.count, 0);
+	state.open_req_time = timeval_current();
+	state.last_break_time = state.open_req_time;
+	status = smb2_create(tree1, mem_ctx, &io1);
+	state.open_rep_time = timeval_current();
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+
+	CHECK_VAL_GREATER_THAN(lease_break_info.count, 1);
+
+	open_duration = timeval_elapsed2(&state.open_req_time,
+					 &state.open_rep_time);
+	torture_comment(tctx, "open_duration: %f\n", open_duration);
+	if (lease_break_info.count < ARRAY_SIZE(state.channels)) {
+		CHECK_VAL_GREATER_THAN(open_duration, 35);
+		CHECK_LEASE_V2(&io1, "RH", true, LEASE1F1, 0, 0, 0x11);
+	} else {
+		CHECK_LEASE_V2(&io1, "RWH", true, LEASE1F1, 0, 0, 0x11);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		if (lease_break_info.count >= ARRAY_SIZE(state.channels)) {
+			break;
+		}
+		torture_comment(tctx, "Received %d lease break(s) wait for more!!\n",
+				lease_break_info.count);
+		torture_wait_for_lease_break(tctx);
+	}
+
+	if (lease_break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected lease break!!\n");
+	} else {
+		torture_comment(tctx, "Received %d lease break(s)!!\n",
+				lease_break_info.count);
+	}
+
+	if (lease_break_info.count < ARRAY_SIZE(state.channels)) {
+		CHECK_VAL_GREATER_THAN(lease_break_info.count, 3);
+	} else {
+		CHECK_VAL(lease_break_info.count, ARRAY_SIZE(state.channels));
+	}
+
+	for (i = 0; i < lease_break_info.count; i++) {
+		struct test_multichannel_lease_break_channel *c = &state.channels[i];
+
+		torture_comment(tctx, "Verify %s\n", c->name);
+		torture_assert_int_equal(tctx, c->break_num, c->idx,
+					 "Got lease break in wrong order");
+		CHECK_LEASE_BREAK_V2(c->lb, LEASE2F1, "RWH", "RH",
+				     SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED,
+				     0x22);
+	}
+
+done:
+	for (i = 0; i < ARRAY_SIZE(state.channels); i++) {
+		struct test_multichannel_lease_break_channel *c = &state.channels[i];
+		struct smb2_transport *t = NULL;
+
+		if (!c->blocked) {
+			continue;
+		}
+
+		t = c->tree->session->transport;
+
+		torture_comment(tctx, "Unblocking %s\n", c->name);
+		_test_unblock_smb2_transport(tctx, t, c->name);
+		c->blocked = false;
+	}
+	if (block_setup) {
+		test_cleanup_blocked_transports(tctx);
+	}
+
+	tree1->session = session1;
+
+	smb2_util_close(tree1, h_client1_file1);
+	if (trees2[0] != NULL) {
+		smb2_util_close(trees2[0], h_client2_file1);
+	}
+
+	if (h != NULL) {
+		smb2_util_close(tree1, *h);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_deltree(tree1, BASEDIR);
+
+	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
+		if (trees2 == NULL || trees2[i] == NULL) {
+			continue;
+		}
+		TALLOC_FREE(trees2[i]);
+	}
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
@@ -1622,6 +1918,8 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 				     test_multichannel_lease_break_test2);
 	torture_suite_add_1smb2_test(suite_leases, "test3",
 				     test_multichannel_lease_break_test3);
+	torture_suite_add_1smb2_test(suite_leases, "test4",
+				     test_multichannel_lease_break_test4);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
