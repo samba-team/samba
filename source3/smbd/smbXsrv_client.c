@@ -522,7 +522,8 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	client->raw_ev_ctx = ev_ctx;
 	client->msg_ctx = msg_ctx;
 
-	client->server_multi_channel_enabled = lp_server_multi_channel_support();
+	client->server_multi_channel_enabled =
+		smbXsrv_server_multi_channel_enabled();
 	if (client->server_multi_channel_enabled) {
 		client->next_channel_id = 1;
 	}

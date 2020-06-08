@@ -250,6 +250,8 @@ NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 
 DATA_BLOB smbd_smb2_generate_outbody(struct smbd_smb2_request *req, size_t size);
 
+bool smbXsrv_server_multi_channel_enabled(void);
+
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
 				    DATA_BLOB *info,

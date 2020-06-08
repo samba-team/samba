@@ -15,6 +15,11 @@
     it may result in data corruption under some race conditions.
     Future releases may improve this situation.
     </para>
+
+    <para>Due to dependencies to kernel APIs of Linux or FreeBSD, it's only possible
+    to use this feature on Linux and FreeBSD for now. For testing this restriction
+    can be overwritten by specifying <constant>force:server multi channel support=yes</constant>
+    in addition.</para>
 </description>
 
 <value type="default">no</value>

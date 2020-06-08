@@ -37,9 +37,11 @@
 /* SIOCOUTQ TIOCOUTQ are the same */
 #define __IOCTL_SEND_QUEUE_SIZE_OPCODE TIOCOUTQ
 #define __HAVE_TCP_INFO_RTO 1
+#define __ALLOW_MULTI_CHANNEL_SUPPORT 1
 #elif defined(FREEBSD)
 #define __IOCTL_SEND_QUEUE_SIZE_OPCODE FIONWRITE
 #define __HAVE_TCP_INFO_RTO 1
+#define __ALLOW_MULTI_CHANNEL_SUPPORT 1
 #endif
 
 #include "lib/crypto/gnutls_helpers.h"
@@ -1114,6 +1116,30 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	DLIST_ADD_END(xconn->smb2.requests, req);
 
 	return NT_STATUS_OK;
+}
+
+bool smbXsrv_server_multi_channel_enabled(void)
+{
+	bool enabled = lp_server_multi_channel_support();
+#ifndef __ALLOW_MULTI_CHANNEL_SUPPORT
+	bool forced = false;
+	/*
+	 * If we don't have support from the kernel
+	 * to ask for the un-acked number of bytes
+	 * in the socket send queue, we better
+	 * don't support multi-channel.
+	 */
+	forced = lp_parm_bool(-1, "force", "server multi channel support", false);
+	if (enabled && !forced) {
+		D_NOTICE("'server multi channel support' enabled "
+			 "but not supported on %s (%s)\n",
+			 SYSTEM_UNAME_SYSNAME, SYSTEM_UNAME_RELEASE);
+		DEBUGADD(DBGLVL_NOTICE, ("Please report this on "
+			"https://bugzilla.samba.org/show_bug.cgi?id=11897\n"));
+		enabled = false;
+	}
+#endif /* ! __ALLOW_MULTI_CHANNEL_SUPPORT */
+	return enabled;
 }
 
 static NTSTATUS smbXsrv_connection_get_rto_usecs(struct smbXsrv_connection *xconn,
