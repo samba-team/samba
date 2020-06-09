@@ -47,7 +47,30 @@ _PUBLIC_ uint64_t generate_random_u64(void)
 	return BVAL(v, 0);
 }
 
+static struct generate_unique_u64_state {
+	uint64_t next_value;
+	int pid;
+} generate_unique_u64_state;
 
+_PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
+{
+	int pid = getpid();
+
+	if (unlikely(pid != generate_unique_u64_state.pid)) {
+		generate_unique_u64_state = (struct generate_unique_u64_state) {
+			.pid = pid,
+			.next_value = veto_value,
+		};
+	}
+
+	while (unlikely(generate_unique_u64_state.next_value == veto_value)) {
+		generate_nonce_buffer(
+				(void *)&generate_unique_u64_state.next_value,
+				sizeof(generate_unique_u64_state.next_value));
+	}
+
+	return generate_unique_u64_state.next_value++;
+}
 
 /**
   Microsoft composed the following rules (among others) for quality

@@ -94,9 +94,36 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 _PUBLIC_ uint32_t generate_random(void);
 
 /**
-  generate a single random uint64_t
+ * generate a single random uint64_t
+ * @see generate_unique_u64
 **/
 _PUBLIC_ uint64_t generate_random_u64(void);
+
+/**
+ * @brief Generate random nonces usable for re-use detection.
+ *
+ * We have a lot of places which require a unique id that can
+ * be used as a unique identitier for caching states.
+ *
+ * Always using generate_nonce_buffer() has it's performance costs,
+ * it's typically much better than generate_random_buffer(), but
+ * still it's overhead we want to avoid in performance critical
+ * workloads.
+ *
+ * We call generate_nonce_buffer() just once per given state
+ * and process.
+ *
+ * This is much lighter than generate_random_u64() and it's
+ * designed for performance critical code paths.
+ *
+ * @veto_value It is garanteed that the return value if different from
+ *             the veto_value.
+ *
+ * @return a unique value per given state and process
+ *
+ * @see generate_random_u64
+ */
+uint64_t generate_unique_u64(uint64_t veto_value);
 
 /**
   very basic password quality checker
