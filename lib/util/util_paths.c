@@ -69,21 +69,20 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 	struct passwd pwd = {0};
 	struct passwd *pwdbuf = NULL;
 	char buf[NSS_BUFLEN_PASSWD] = {0};
+	size_t len;
 	int rc;
 
 	rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
 	if (rc != 0 || pwdbuf == NULL ) {
-		int len_written;
 		const char *szPath = getenv("HOME");
 		if (szPath == NULL) {
 			return NULL;
 		}
-		len_written = snprintf(buf, sizeof(buf), "%s", szPath);
-		if (len_written >= sizeof(buf) || len_written < 0) {
-			/* Output was truncated or an error. */
+		len = strnlen(szPath, PATH_MAX);
+		if (len >= PATH_MAX) {
 			return NULL;
 		}
-		return talloc_strdup(mem_ctx, buf);
+		return talloc_strdup(mem_ctx, szPath);
 	}
 
 	return talloc_strdup(mem_ctx, pwd.pw_dir);
