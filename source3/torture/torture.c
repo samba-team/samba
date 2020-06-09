@@ -12952,36 +12952,21 @@ static bool run_local_rbtree(int dummy)
 	}
 
 	for (i=0; i<1000; i++) {
-		char *key, *value;
+		char key[sizeof("key-9223372036854775807")];
+		char value[sizeof("value-9223372036854775807")];
 
-		if (asprintf(&key, "key%ld", random()) == -1) {
-			goto done;
-		}
-		if (asprintf(&value, "value%ld", random()) == -1) {
-			SAFE_FREE(key);
-			goto done;
-		}
+		snprintf(key, sizeof(key), "key%ld", random());
+		snprintf(value, sizeof(value) ,"value%ld", random());
 
 		if (!rbt_testval(db, key, value)) {
-			SAFE_FREE(key);
-			SAFE_FREE(value);
 			goto done;
 		}
 
-		SAFE_FREE(value);
-		if (asprintf(&value, "value%ld", random()) == -1) {
-			SAFE_FREE(key);
-			goto done;
-		}
+		snprintf(value, sizeof(value) ,"value%ld", random());
 
 		if (!rbt_testval(db, key, value)) {
-			SAFE_FREE(key);
-			SAFE_FREE(value);
 			goto done;
 		}
-
-		SAFE_FREE(key);
-		SAFE_FREE(value);
 	}
 
 	ret = true;
