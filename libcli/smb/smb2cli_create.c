@@ -249,6 +249,7 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*fid_persistent = state->fid_persistent;
@@ -260,6 +261,7 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 		blobs->num_blobs = state->blobs.num_blobs;
 		blobs->blobs = talloc_move(mem_ctx, &state->blobs.blobs);
 	}
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
