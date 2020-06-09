@@ -4012,13 +4012,8 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		for (i=0; i < num_expected; i++) {
 			if (NT_STATUS_EQUAL(status, expected[i].status)) {
-				found_status = true;
-				break;
+				return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			}
-		}
-
-		if (found_status) {
-			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		}
 
 		return status;
