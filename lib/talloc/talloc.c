@@ -1438,6 +1438,8 @@ static inline int talloc_unreference(const void *context, const void *ptr)
   remove a specific parent context from a pointer. This is a more
   controlled variant of talloc_free()
 */
+
+/* coverity[ -tainted_data_sink : arg-1 ] */
 _PUBLIC_ int talloc_unlink(const void *context, void *ptr)
 {
 	struct talloc_chunk *tc_p, *new_p, *tc_c;
