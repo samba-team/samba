@@ -12880,6 +12880,54 @@ static bool run_local_gencache(int dummy)
 	return True;
 }
 
+static bool rbt_testflags(struct db_context *db, const char *key,
+			  const char *value)
+{
+	bool ret = false;
+	NTSTATUS status;
+	struct db_record *rec;
+
+	rec = dbwrap_fetch_locked(db, db, string_tdb_data(key));
+	if (rec == NULL) {
+		d_fprintf(stderr, "fetch_locked failed\n");
+		goto done;
+	}
+
+	status = dbwrap_record_store(rec, string_tdb_data(value), TDB_MODIFY);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		d_fprintf(stderr, "store TDB_MODIFY unexpected status: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dbwrap_record_store(rec, string_tdb_data("overwriteme"),
+				     TDB_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "store TDB_INSERT failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dbwrap_record_store(rec, string_tdb_data(value), TDB_INSERT);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		d_fprintf(stderr, "store TDB_INSERT unexpected status: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dbwrap_record_store(rec, string_tdb_data(value), TDB_MODIFY);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "store TDB_MODIFY failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	ret = true;
+done:
+	TALLOC_FREE(rec);
+	return ret;
+}
+
 static bool rbt_testval(struct db_context *db, const char *key,
 			const char *value)
 {
@@ -12951,7 +12999,11 @@ static bool run_local_rbtree(int dummy)
 		return false;
 	}
 
-	for (i=0; i<1000; i++) {
+	if (!rbt_testflags(db, "firstkey", "firstval")) {
+		goto done;
+	}
+
+	for (i = 0; i < 999; i++) {
 		char key[sizeof("key-9223372036854775807")];
 		char value[sizeof("value-9223372036854775807")];
 
