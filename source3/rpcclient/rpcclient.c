@@ -1214,17 +1214,6 @@ out_free:
 		goto done;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info())) {
-		nt_status = cli_cm_force_encryption_creds(cli,
-					get_cmdline_auth_info_creds(
-						popt_get_cmdline_auth_info()),
-					"IPC$");
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			result = 1;
-			goto done;
-		}
-	}
-
 #if 0	/* COMMENT OUT FOR TESTING */
 	memset(cmdline_auth_info.password,'X',sizeof(cmdline_auth_info.password));
 #endif
