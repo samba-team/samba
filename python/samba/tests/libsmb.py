@@ -21,10 +21,12 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
 from samba.samba3 import param as s3param
 from samba import credentials
+from samba.credentials import SMB_ENCRYPTION_REQUIRED
 import samba.tests
 import threading
 import sys
 import os
+import random
 
 
 class LibsmbTestCase(samba.tests.TestCase):
@@ -77,6 +79,41 @@ class LibsmbTestCase(samba.tests.TestCase):
             if t.exc:
                 raise t.exc[0](t.exc[1])
 
+    def test_SMB3EncryptionRequired(self):
+        test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
+
+        lp = s3param.get_context()
+        lp.load(os.getenv("SMB_CONF_PATH"))
+
+        creds = credentials.Credentials()
+        creds.guess(lp)
+        creds.set_username(os.getenv("USERNAME"))
+        creds.set_password(os.getenv("PASSWORD"))
+        creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
+
+        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
+                        lp, creds)
+
+        c.mkdir(test_dir)
+        c.rmdir(test_dir)
+
+    def test_SMB1EncryptionRequired(self):
+        test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
+
+        lp = s3param.get_context()
+        lp.load(os.getenv("SMB_CONF_PATH"))
+
+        creds = credentials.Credentials()
+        creds.guess(lp)
+        creds.set_username(os.getenv("USERNAME"))
+        creds.set_password(os.getenv("PASSWORD"))
+        creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
+
+        c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
+                        lp, creds, force_smb1=True)
+
+        c.mkdir(test_dir)
+        c.rmdir(test_dir)
 
 if __name__ == "__main__":
     import unittest
