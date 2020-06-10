@@ -1230,7 +1230,8 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 	sl_array_t *fm_array;
 	sl_nil_t nil;
 	char *path = NULL;
-	struct stat_ex sb;
+	struct stat_ex sb = {0};
+	struct stat_ex *sp = NULL;
 	struct sl_inode_path_map *elem = NULL;
 	void *p;
 	TDB_DATA val = tdb_null;
@@ -1302,9 +1303,10 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		if (result != 0) {
 			goto error;
 		}
+		sp = &sb;
 	}
 
-	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, &sb);
+	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, sp);
 	if (!ok) {
 		goto error;
 	}
