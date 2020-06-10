@@ -377,6 +377,9 @@ void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info)
 /* This should only be used by lib/popt_common.c JRA */
 void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info)
 {
+	cli_credentials_set_smb_encryption(auth_info->creds,
+					   SMB_ENCRYPTION_REQUIRED,
+					   CRED_SPECIFIED);
 	auth_info->smb_encrypt = true;
 }
 
