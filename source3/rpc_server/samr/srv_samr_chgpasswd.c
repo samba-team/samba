@@ -638,6 +638,9 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 					chatsequence,
 					"%n",
 					newpass);
+	if (chatsequence == NULL) {
+		return false;
+	}
 	return chat_with_program(passwordprogram,
 				pass,
 				chatsequence,
