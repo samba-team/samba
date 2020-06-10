@@ -39,7 +39,12 @@ int main(int argc, const char *argv[])
 	setup_logging("notifyd", DEBUG_DEFAULT_STDOUT);
 	lp_set_cmdline("log level", "10");
 
-	lp_load_initial_only(get_dyn_CONFIGFILE());
+	ok = lp_load_initial_only(get_dyn_CONFIGFILE());
+	if (!ok) {
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
+			get_dyn_CONFIGFILE());
+		return 1;
+	}
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
