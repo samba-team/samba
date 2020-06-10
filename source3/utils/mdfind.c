@@ -159,13 +159,6 @@ int main(int argc, char **argv)
 		goto fail;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(auth)) {
-		status = cli_cm_force_encryption_creds(cli, creds, "IPC$");
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
-
 	status = cli_rpc_pipe_open_noauth_transport(cli,
 						    NCACN_NP,
 						    &ndr_table_mdssvc,
