@@ -919,6 +919,18 @@ void fsp_free(files_struct *fsp)
 
 	fsp->conn->num_files_open--;
 
+	if (fsp->fsp_name != NULL &&
+	    fsp->fsp_name->fsp_link != NULL)
+	{
+		/*
+		 * Free fsp_link of fsp->fsp_name. To do this in the correct
+		 * talloc destructor order we have to do it here. The
+		 * talloc_free() of the link should set the fsp pointer to NULL.
+		 */
+		TALLOC_FREE(fsp->fsp_name->fsp_link);
+		SMB_ASSERT(fsp->fsp_name->fsp == NULL);
+	}
+
 	/* this is paranoia, just in case someone tries to reuse the
 	   information */
 	ZERO_STRUCTP(fsp);
