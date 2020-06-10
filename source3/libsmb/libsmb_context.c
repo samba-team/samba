@@ -171,7 +171,7 @@ smbc_new_context(void)
 
         smbc_setOptionFullTimeNames(context, False);
         smbc_setOptionOpenShareMode(context, SMBC_SHAREMODE_DENY_NONE);
-        smbc_setOptionSmbEncryptionLevel(context, SMBC_ENCRYPTLEVEL_NONE);
+        smbc_setOptionSmbEncryptionLevel(context, SMBC_ENCRYPTLEVEL_DEFAULT);
         smbc_setOptionUseCCache(context, True);
         smbc_setOptionCaseSensitive(context, False);
         smbc_setOptionBrowseMaxLmbCount(context, 3);    /* # LMBs to query */
@@ -474,6 +474,8 @@ smbc_option_get(SMBCCTX *context,
         } else if (strcmp(option_name, "smb_encrypt_level") == 0) {
                 switch(smbc_getOptionSmbEncryptionLevel(context))
                 {
+                case SMBC_ENCRYPTLEVEL_DEFAULT:
+                        return discard_const_p(void, "default");
                 case 0:
                         return discard_const_p(void, "none");
                 case 1:

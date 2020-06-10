@@ -284,6 +284,29 @@ static struct cli_credentials *SMBC_auth_credentials(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	switch (context->internal->smb_encryption_level) {
+	case SMBC_ENCRYPTLEVEL_DEFAULT:
+		/* Use the config option */
+		break;
+	case SMBC_ENCRYPTLEVEL_NONE:
+		cli_credentials_set_smb_encryption(creds,
+						   SMB_ENCRYPTION_OFF,
+						   CRED_SPECIFIED);
+		break;
+	case SMBC_ENCRYPTLEVEL_REQUEST:
+		cli_credentials_set_smb_encryption(creds,
+						   SMB_ENCRYPTION_DESIRED,
+						   CRED_SPECIFIED);
+		break;
+	case SMBC_ENCRYPTLEVEL_REQUIRE:
+	default:
+		cli_credentials_set_smb_encryption(creds,
+						   SMB_ENCRYPTION_REQUIRED,
+						   CRED_SPECIFIED);
+		break;
+	}
+
+
 	return creds;
 }
 
@@ -625,30 +648,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		smbXcli_tcon_set_fs_attributes(tcon, fs_attrs);
         }
 
-	if (context->internal->smb_encryption_level) {
-		/* Attempt encryption. */
-		status = cli_cm_force_encryption_creds(c,
-						       creds,
-						       share);
-		if (!NT_STATUS_IS_OK(status)) {
-
-			/*
-			 * context->smb_encryption_level == 1
-			 * means don't fail if encryption can't be negotiated,
-			 * == 2 means fail if encryption can't be negotiated.
-			 */
-
-			DEBUG(4,(" SMB encrypt failed\n"));
-
-			if (context->internal->smb_encryption_level == 2) {
-	                        cli_shutdown(c);
-				errno = EPERM;
-				return NULL;
-			}
-		}
-		DEBUG(4,(" SMB encrypt ok\n"));
-	}
-
 	/*
 	 * Ok, we have got a nice connection
 	 * Let's allocate a server structure.
@@ -824,31 +823,6 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         return NULL;
                 }
 		talloc_steal(ipc_cli, creds);
-
-		if (context->internal->smb_encryption_level) {
-			/* Attempt encryption. */
-			nt_status = cli_cm_force_encryption_creds(ipc_cli,
-								  creds,
-								  "IPC$");
-			if (!NT_STATUS_IS_OK(nt_status)) {
-
-				/*
-				 * context->smb_encryption_level ==
-				 * 1 means don't fail if encryption can't be
-				 * negotiated, == 2 means fail if encryption
-				 * can't be negotiated.
-				 */
-
-				DEBUG(4,(" SMB encrypt failed on IPC$\n"));
-
-				if (context->internal->smb_encryption_level == 2) {
-		                        cli_shutdown(ipc_cli);
-					errno = EPERM;
-					return NULL;
-				}
-			}
-			DEBUG(4,(" SMB encrypt ok on IPC$\n"));
-		}
 
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
                 if (!ipc_srv) {

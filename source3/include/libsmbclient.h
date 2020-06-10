@@ -225,6 +225,7 @@ typedef enum smbc_share_mode
  */
 typedef enum smbc_smb_encrypt_level
 {
+    SMBC_ENCRYPTLEVEL_DEFAULT   = -1,
     SMBC_ENCRYPTLEVEL_NONE      = 0,
     SMBC_ENCRYPTLEVEL_REQUEST   = 1,
     SMBC_ENCRYPTLEVEL_REQUIRE   = 2
