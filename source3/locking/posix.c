@@ -581,8 +581,6 @@ static void fd_close_posix_fn(
 
 int fd_close_posix(const struct files_struct *fsp)
 {
-	int saved_errno = 0;
-	int ret;
 	NTSTATUS status;
 
 	if (!lp_locking(fsp->conn->params) ||
@@ -627,14 +625,7 @@ int fd_close_posix(const struct files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = close(fsp->fh->fd);
-
-	if (ret == 0 && saved_errno != 0) {
-		errno = saved_errno;
-		ret = -1;
-	}
-
-	return ret;
+	return close(fsp->fh->fd);
 }
 
 /****************************************************************************
