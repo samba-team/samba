@@ -382,7 +382,11 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	set_socket_options(state->fd, lp_socket_options());
 
 	/* Set server socket to non-blocking for the accept. */
-	set_blocking(state->fd, false);
+	rc = set_blocking(state->fd, false);
+	if (rc < 0) {
+		status = map_nt_error_from_unix_common(errno);
+		goto out;
+	}
 
 	rc = listen(state->fd, SMBD_LISTEN_BACKLOG);
 	if (rc == -1) {
@@ -612,7 +616,11 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	}
 
 	/* Set server socket to non-blocking for the accept. */
-	set_blocking(state->fd, false);
+	rc = set_blocking(state->fd, false);
+	if (rc < 0) {
+		status = map_nt_error_from_unix_common(errno);
+		goto out;
+	}
 
 	errno = 0;
 	fde = tevent_add_fd(state->ev_ctx,
