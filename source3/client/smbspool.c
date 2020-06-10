@@ -584,16 +584,6 @@ smb_complete_connection(struct cli_state **output_cli,
 
 		return nt_status;
 	}
-#if 0
-	/* Need to work out how to specify this on the URL. */
-	if (smb_encrypt) {
-		if (!cli_cm_force_encryption_creds(cli, creds, share)) {
-			fprintf(stderr, "ERROR: encryption setup failed\n");
-			cli_shutdown(cli);
-			return NULL;
-		}
-	}
-#endif
 
 	*output_cli = cli;
 	return NT_STATUS_OK;
