@@ -815,7 +815,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 
 static bool torture_libsmbclient_readdirplus2(struct torture_context *tctx)
 {
-	SMBCCTX *ctx;
+	SMBCCTX *ctx = NULL;
 	int dhandle = -1;
 	int fhandle = -1;
 	bool found = false;
