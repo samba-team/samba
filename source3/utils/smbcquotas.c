@@ -533,17 +533,6 @@ static struct cli_state *connect_one(const char *share)
 		return NULL;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info())) {
-		nt_status = cli_cm_force_encryption_creds(c,
-					get_cmdline_auth_info_creds(
-						popt_get_cmdline_auth_info()),
-					share);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(c);
-			return NULL;
-		}
-	}
-
 	return c;
 }
 
