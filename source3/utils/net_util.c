@@ -148,16 +148,6 @@ NTSTATUS connect_to_service(struct net_context *c,
 		return nt_status;
 	}
 
-	if (c->smb_encrypt) {
-		nt_status = cli_cm_force_encryption_creds(*cli_ctx,
-							  creds,
-							  service_name);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(*cli_ctx);
-			*cli_ctx = NULL;
-		}
-	}
-
 	return nt_status;
 }
 
@@ -575,6 +565,12 @@ struct cli_credentials *net_context_creds(struct net_context *c,
 		cli_credentials_set_password(creds,
 					     c->opt_password,
 					     CRED_SPECIFIED);
+	}
+
+	if (c->smb_encrypt) {
+		cli_credentials_set_smb_encryption(creds,
+						   SMB_ENCRYPTION_REQUIRED,
+						   CRED_SPECIFIED);
 	}
 
 	return creds;
