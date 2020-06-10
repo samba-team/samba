@@ -2391,7 +2391,7 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
 		   type == ADOUBLE_META ? "meta" : "rsrc",
-		   smb_fname->base_name));
+		   smb_fname != NULL ? smb_fname->base_name : "???"));
 
 	ad = ad_alloc(ctx, type);
 	if (ad == NULL) {
