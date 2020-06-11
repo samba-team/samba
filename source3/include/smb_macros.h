@@ -164,13 +164,6 @@
 #define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == SMB_SIGNING_REQUIRED) : false)
 #define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
-/*****************************************************************
- splits out the last subkey of a key
- *****************************************************************/  
-
-#define reg_get_subkey(full_keyname, key_name, subkey_name) \
-	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
-
 /****************************************************************************
  Return True if the offset is at zero.
 ****************************************************************************/
