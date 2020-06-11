@@ -497,7 +497,7 @@ joining the domain.
 </para>
 
 <para>
-[FQDN] (ADS only) set the dnsHosName attribute during the join.
+[FQDN] (ADS only) set the dnsHostName attribute during the join.
 The default format is netbiosname.dnsdomain.
 </para>
 
