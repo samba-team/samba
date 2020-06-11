@@ -3685,6 +3685,40 @@ out:
 /********************************************************************
 ********************************************************************/
 
+static char **get_addl_hosts(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+			      LDAPMessage *msg, size_t *num_values)
+{
+	const char *field = "msDS-AdditionalDnsHostName";
+	struct berval **values = NULL;
+	char **ret = NULL;
+	size_t i, converted_size;
+
+	values = ldap_get_values_len(ads->ldap.ld, msg, field);
+	if (values == NULL) {
+		return NULL;
+	}
+
+	*num_values = ldap_count_values_len(values);
+
+	ret = talloc_array(mem_ctx, char *, *num_values + 1);
+	if (ret == NULL) {
+		ldap_value_free_len(values);
+		return NULL;
+	}
+
+	for (i = 0; i < *num_values; i++) {
+		if (!pull_utf8_talloc(mem_ctx, &ret[i], values[i]->bv_val,
+				      &converted_size)) {
+			ldap_value_free_len(values);
+			return NULL;
+		}
+	}
+	ret[i] = NULL;
+
+	ldap_value_free_len(values);
+	return ret;
+}
+
 ADS_STATUS ads_get_additional_dns_hostnames(TALLOC_CTX *mem_ctx,
 					    ADS_STRUCT *ads,
 					    const char *machine_name,
@@ -3710,9 +3744,7 @@ ADS_STATUS ads_get_additional_dns_hostnames(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*hostnames_array = ads_pull_strings(ads, mem_ctx, res,
-					    "msDS-AdditionalDnsHostName",
-					    num_hostnames);
+	*hostnames_array = get_addl_hosts(ads, mem_ctx, res, num_hostnames);
 	if (*hostnames_array == NULL) {
 		DEBUG(1, ("Host account for %s does not have msDS-AdditionalDnsHostName.\n",
 			  machine_name));
