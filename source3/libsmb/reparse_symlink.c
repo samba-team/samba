@@ -53,7 +53,15 @@ bool symlink_reparse_buffer_marshall(
 				   &print_utf16, &print_len)) {
 		goto fail;
 	}
-	dst_len = 20 + subst_len + print_len;
+
+	dst_len = subst_len + 20;
+	if (dst_len < 20) {
+		goto fail;
+	}
+	dst_len += print_len;
+	if (dst_len < print_len) {
+		goto fail;
+	}
 	dst = talloc_array(mem_ctx, uint8_t, dst_len);
 	if (dst == NULL) {
 		goto fail;
