@@ -164,12 +164,6 @@
 #define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == SMB_SIGNING_REQUIRED) : false)
 #define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
-/****************************************************************************
-true if two IPv4 addresses are equal
-****************************************************************************/
-
-#define ip_equal_v4(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
-
 /*****************************************************************
  splits out the last subkey of a key
  *****************************************************************/  

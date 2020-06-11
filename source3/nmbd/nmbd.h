@@ -28,4 +28,10 @@
 #include "libsmb/nmblib.h"
 #include "nmbd/nmbd_proto.h"
 
+/****************************************************************************
+true if two IPv4 addresses are equal
+****************************************************************************/
+
+#define ip_equal_v4(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+
 #endif /* _NMBD_NMBD_H_ */
