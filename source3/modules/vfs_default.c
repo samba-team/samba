@@ -35,6 +35,7 @@
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "offload_token.h"
+#include "util_reparse.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1367,18 +1368,21 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 	case FSCTL_GET_REPARSE_POINT:
 	{
-		/* Fail it with STATUS_NOT_A_REPARSE_POINT */
-		DEBUG(10, ("FSCTL_GET_REPARSE_POINT: called on %s. "
-			   "Status: NOT_IMPLEMENTED\n", fsp_fnum_dbg(fsp)));
-		return NT_STATUS_NOT_A_REPARSE_POINT;
+		status = fsctl_get_reparse_point(
+			fsp, ctx, out_data, max_out_len, out_len);
+		return status;
 	}
 
 	case FSCTL_SET_REPARSE_POINT:
 	{
-		/* Fail it with STATUS_NOT_A_REPARSE_POINT */
-		DEBUG(10, ("FSCTL_SET_REPARSE_POINT: called on %s. "
-			   "Status: NOT_IMPLEMENTED\n", fsp_fnum_dbg(fsp)));
-		return NT_STATUS_NOT_A_REPARSE_POINT;
+		status = fsctl_set_reparse_point(fsp, ctx, _in_data, in_len);
+		return status;
+	}
+
+	case FSCTL_DELETE_REPARSE_POINT:
+	{
+		status = fsctl_del_reparse_point(fsp, ctx, _in_data, in_len);
+		return status;
 	}
 
 	case FSCTL_GET_SHADOW_COPY_DATA:
