@@ -656,3 +656,16 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP_STATE',
     source='gen_ndr/ndr_fsrvp_state.c',
     public_deps='ndr'
     )
+#
+# Cmocka tests
+#
+
+bld.SAMBA_BINARY('test_ndr_dns_nbt',
+                 source='tests/test_ndr_dns_nbt.c',
+                 deps='''
+                      cmocka
+                      ndr
+                      ndr_nbt
+                      NDR_DNS
+                      ''',
+                 install=False)
