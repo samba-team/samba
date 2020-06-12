@@ -1293,59 +1293,58 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	resolved_fname = SMB_VFS_REALPATH(conn, ctx, smb_fname);
 
 	if (resolved_fname == NULL) {
-		switch (errno) {
-			case ENOTDIR:
-				DEBUG(3,("check_reduced_name: Component not a "
-					 "directory in getting realpath for "
-					 "%s\n", fname));
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			case ENOENT:
-			{
-				struct smb_filename *dir_fname = NULL;
-				struct smb_filename *last_component = NULL;
+		struct smb_filename *dir_fname = NULL;
+		struct smb_filename *last_component = NULL;
 
-				/* Last component didn't exist.
-				   Remove it and try and canonicalise
-				   the directory name. */
+		if (errno == ENOTDIR) {
+			DBG_NOTICE("Component not a directory in getting "
+				   "realpath for %s\n",
+				   fname);
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+		if (errno != ENOENT) {
+			NTSTATUS status = map_nt_error_from_unix(errno);
+			DBG_NOTICE("couldn't get realpath for %s: %s\n",
+				   fname,
+				   strerror(errno));
+			return status;
+		}
 
-				ok = parent_smb_fname(ctx,
-						      smb_fname,
-						      &dir_fname,
-						      &last_component);
-				if (!ok) {
-					return NT_STATUS_NO_MEMORY;
-				}
+		/* errno == ENOENT */
 
-				resolved_fname = SMB_VFS_REALPATH(conn,
-							ctx,
-							dir_fname);
-				if (resolved_fname == NULL) {
-					NTSTATUS status = map_nt_error_from_unix(errno);
+		/*
+		 * Last component didn't exist. Remove it and try and
+		 * canonicalise the directory name.
+		 */
 
-					if (errno == ENOENT || errno == ENOTDIR) {
-						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					}
+		ok = parent_smb_fname(ctx,
+				      smb_fname,
+				      &dir_fname,
+				      &last_component);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-					DEBUG(3,("check_reduce_name: "
-						 "couldn't get realpath for "
-						 "%s (%s)\n",
-						smb_fname_str_dbg(dir_fname),
-						nt_errstr(status)));
-					return status;
-				}
-				resolved_name = talloc_asprintf(ctx,
+		resolved_fname = SMB_VFS_REALPATH(conn, ctx, dir_fname);
+		if (resolved_fname == NULL) {
+			NTSTATUS status = map_nt_error_from_unix(errno);
+
+			if (errno == ENOENT || errno == ENOTDIR) {
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+
+			DBG_NOTICE("couldn't get realpath for "
+				   "%s (%s)\n",
+				   smb_fname_str_dbg(dir_fname),
+				   nt_errstr(status));
+			return status;
+		}
+		resolved_name = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_fname->base_name,
 						last_component->base_name);
-				if (resolved_name == NULL) {
-					return NT_STATUS_NO_MEMORY;
-				}
-				break;
-			}
-			default:
-				DEBUG(3,("check_reduced_name: couldn't get "
-					 "realpath for %s\n", fname));
-				return map_nt_error_from_unix(errno);
+		if (resolved_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		resolved_name = resolved_fname->base_name;
