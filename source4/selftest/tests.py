@@ -1303,6 +1303,8 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit.errors", "none",
               [os.path.join(bindir(), "test_group_audit_errors")])
 plantestsuite("samba4.dcerpc.dnsserver.dnsutils", "none",
               [os.path.join(bindir(), "test_rpc_dns_server_dnsutils")])
+plantestsuite("librpc.ndr.ndr_dns_nbt", "none",
+              [os.path.join(bindir(), "test_ndr_dns_nbt")])
 plantestsuite("libcli.ldap.ldap_message", "none",
               [os.path.join(bindir(), "test_ldap_message")])
 
