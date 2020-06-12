@@ -1,11 +1,6 @@
-Coding conventions in the Samba tree
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Coding conventions in the Samba tree
 
-.. contents::
-
-===========
-Quick Start
-===========
+## Quick Start
 
 Coding style guidelines are about reducing the number of unnecessary
 reformatting patches and making things easier for developers to work
@@ -21,10 +16,10 @@ Documentation/CodingStyle in the kernel source tree). This closely matches
 what most Samba developers use already anyways, with a few exceptions as
 mentioned below.
 
-The coding style for Python code is documented in PEP8,
-https://www.python.org/dev/peps/pep-0008/. New Python code should be compatible
+The coding style for Python code is documented in
+[PEP8](https://www.python.org/dev/peps/pep-0008/). New Python code should be compatible
 with Python 2.6, 2.7, and Python 3.4 onwards. This means using Python 3 syntax
-with the appropriate 'from __future__' imports.
+with the appropriate `from __future__` imports.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
@@ -32,49 +27,52 @@ are the highlights.
 * Maximum Line Width is 80 Characters
   The reason is not about people with low-res screens but rather sticking
   to 80 columns prevents you from easily nesting more than one level of
-  if statements or other code blocks.  Use source3/script/count_80_col.pl
+  if statements or other code blocks.  Use [source3/script/count_80_col.pl](source3/script/count_80_col.pl)
   to check your changes.
 
 * Use 8 Space Tabs to Indent
   No whitespace fillers.
 
 * No Trailing Whitespace
-  Use source3/script/strip_trail_ws.pl to clean up your files before
+  Use [source3/script/strip_trail_ws.pl](source3/script/strip_trail_ws.pl) to clean up your files before
   committing.
 
 * Follow the K&R guidelines.  We won't go through all of them here. Do you
   have a copy of "The C Programming Language" anyways right? You can also use
-  the format_indent.sh script found in source3/script/ if all else fails.
+  the [format_indent.sh script found in source3/script/](source3/script/format_indent.sh) if all else fails.
 
 
 
-============
-Editor Hints
-============
+## Editor Hints
 
-Emacs
------
+### Emacs
+
 Add the follow to your $HOME/.emacs file:
 
+```
   (add-hook 'c-mode-hook
 	(lambda ()
 		(c-set-style "linux")
 		(c-toggle-auto-state)))
+```
 
 
-Vi
---
+### Vi
+
 (Thanks to SATOH Fumiyasu <fumiyas@osstech.jp> for these hints):
 
 For the basic vi editor included with all variants of \*nix, add the
 following to $HOME/.exrc:
 
+```
   set tabstop=8
   set shiftwidth=8
+```
 
 For Vim, the following settings in $HOME/.vimrc will also deal with
 displaying trailing whitespace:
 
+```
   if has("syntax") && (&t_Co > 2 || has("gui_running"))
 	syntax on
 	function! ActivateInvisibleCharIndicator()
@@ -89,9 +87,11 @@ displaying trailing whitespace:
   " highlight overly long lines same as TODOs.
   set textwidth=80
   autocmd BufNewFile,BufRead *.c,*.h exec 'match Todo /\%>' . &textwidth . 'v.\+/'
+```
 
-clang-format
-------------
+### clang-format
+
+```
 BasedOnStyle: LLVM
 IndentWidth: 8
 UseTab: true
@@ -101,14 +101,12 @@ IndentCaseLabels: false
 BinPackParameters: false
 BinPackArguments: false
 SortIncludes: false
+```
 
 
-=========================
-FAQ & Statement Reference
-=========================
+## FAQ & Statement Reference
 
-Comments
---------
+### Comments
 
 Comments should always use the standard C syntax.  C++
 style comments are not currently allowed.
@@ -120,6 +118,7 @@ of multiple following code blocks.
 
 This is good:
 
+```
 	...
 	int i;
 
@@ -155,9 +154,11 @@ This is good:
 	 * @return              0 on success and -1 on error.
 	 */
 	int example(int param1, int *result1);
+```
 
 This is bad:
 
+```
 	...
 	int i;
 	/*
@@ -185,9 +186,9 @@ This is bad:
 	/*
 	 * This is a multi line comment,
 	 * with some more words...*/
+```
 
-Indention & Whitespace & 80 columns
------------------------------------
+### Indention & Whitespace & 80 columns
 
 To avoid confusion, indentations have to be tabs with length 8 (not 8
 ' ' characters).  When wrapping parameters for function calls,
@@ -195,8 +196,10 @@ align the parameter list with the first parameter on the previous line.
 Use tabs to get as close as possible and then fill in the final 7
 characters or less with whitespace.  For example,
 
+```
 	var1 = foo(arg1, arg2,
 		   arg3);
+```
 
 The previous example is intended to illustrate alignment of function
 parameters across lines and not as encourage for gratuitous line
@@ -210,18 +213,21 @@ line. The rationale is that if there are many parameters, each one
 should be on its own line to make tracking interface changes easier.
 
 
-If, switch, & Code blocks
--------------------------
+## If, switch, & Code blocks
 
-Always follow an 'if' keyword with a space but don't include additional
+Always follow an `if` keyword with a space but don't include additional
 spaces following or preceding the parentheses in the conditional.
 This is good:
 
+```
 	if (x == 1)
+```
 
 This is bad:
 
+```
 	if ( x == 1 )
+```
 
 Yes we have a lot of code that uses the second form and we are trying
 to clean it up without being overly intrusive.
@@ -230,7 +236,7 @@ Note that this is a rule about parentheses following keywords and not
 functions.  Don't insert a space between the name and left parentheses when
 invoking functions.
 
-Braces for code blocks used by for, if, switch, while, do..while, etc.
+Braces for code blocks used by `for`, `if`, `switch`, `while`, `do..while`, etc.
 should begin on the same line as the statement keyword and end on a line
 of their own. You should always include braces, even if the block only
 contains one statement.  NOTE: Functions are different and the beginning left
@@ -240,11 +246,12 @@ If the beginning statement has to be broken across lines due to length,
 the beginning brace should be on a line of its own.
 
 The exception to the ending rule is when the closing brace is followed by
-another language keyword such as else or the closing while in a do..while
+another language keyword such as else or the closing while in a `do..while`
 loop.
 
 Good examples:
 
+```
 	if (x == 1) {
 		printf("good\n");
 	}
@@ -263,9 +270,11 @@ Good examples:
 	do {
 		printf("also good\n");
 	} while (1);
+```
 
 Bad examples:
 
+```
 	while (1)
 	{
 		print("I'm in a loop!\n"); }
@@ -279,12 +288,12 @@ Bad examples:
 
 	if (i < 10)
 		print("I should be in braces.\n");
+```
 
 
-Goto
-----
+### Goto
 
-While many people have been academically taught that "goto"s are
+While many people have been academically taught that `goto`s are
 fundamentally evil, they can greatly enhance readability and reduce memory
 leaks when used as the single exit point from a function. But in no Samba
 world what so ever is a goto outside of a function or block of code a good
@@ -292,6 +301,7 @@ idea.
 
 Good Examples:
 
+```
 	int function foo(int y)
 	{
 		int *z = NULL;
@@ -314,10 +324,10 @@ Good Examples:
 
 		return ret;
 	}
+```
 
 
-Primitive Data Types
---------------------
+### Primitive Data Types
 
 Samba has large amounts of historical code which makes use of data types
 commonly supported by the C99 standard. However, at the time such types
@@ -326,31 +336,31 @@ were forced to provide their own.  Now that these types are guaranteed to
 be available either as part of the compiler C99 support or from
 lib/replace/, new code should adhere to the following conventions:
 
-  * Booleans are of type "bool" (not BOOL)
-  * Boolean values are "true" and "false" (not True or False)
-  * Exact width integers are of type [u]int[8|16|32|64]_t
+  * Booleans are of type `bool` (not `BOOL`)
+  * Boolean values are `true` and `false` (not `True` or `False`)
+  * Exact width integers are of type `[u]int[8|16|32|64]_t`
 
 Most of the time a good name for a boolean variable is 'ok'. Here is an
 example we often use:
 
+```
 	bool ok;
 
 	ok = foo();
 	if (!ok) {
 		/* do something */
 	}
+```
 
 It makes the code more readable and is easy to debug.
 
-Typedefs
---------
+### Typedefs
 
-Samba tries to avoid "typedef struct { .. } x_t;" so we do always try to use
-"struct x { .. };". We know there are still such typedefs in the code,
+Samba tries to avoid `typedef struct { .. } x_t;` so we do always try to use
+`struct x { .. };`. We know there are still such typedefs in the code,
 but for new code, please don't do that anymore.
 
-Initialize pointers
--------------------
+### Initialize pointers
 
 All pointer variables MUST be initialized to NULL. History has
 demonstrated that uninitialized pointer variables have lead to various
@@ -362,6 +372,7 @@ instructions sequence may change over time.
 
 Good Example:
 
+```
 	char *pointer1 = NULL;
 	char *pointer2 = NULL;
 
@@ -370,9 +381,11 @@ Good Example:
 	...
 
 	pointer1 = some_func1();
+```
 
 Bad Example:
 
+```
 	char *pointer1;
 	char *pointer2;
 
@@ -381,9 +394,9 @@ Bad Example:
 	...
 
 	pointer1 = some_func1();
+```
 
-Make use of helper variables
-----------------------------
+### Make use of helper variables
 
 Please try to avoid passing function calls as function parameters
 in new code. This makes the code much easier to read and
@@ -391,6 +404,7 @@ it's also easier to use the "step" command within gdb.
 
 Good Example:
 
+```
 	char *name = NULL;
 	int ret;
 
@@ -401,12 +415,15 @@ Good Example:
 
 	ret = some_function_my_name(name);
 	...
+```
 
 
 Bad Example:
 
+```
 	ret = some_function_my_name(get_some_name());
 	...
+```
 
 Please try to avoid passing function return values to if- or
 while-conditions. The reason for this is better handling of code under a
@@ -414,23 +431,29 @@ debugger.
 
 Good example:
 
+```
 	x = malloc(sizeof(short)*10);
 	if (x == NULL) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
+```
 
 Bad example:
 
+```
 	if ((x = malloc(sizeof(short)*10)) == NULL ) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
+```
 
 There are exceptions to this rule. One example is walking a data structure in
 an iterator style:
 
+```
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		   ... do something with opt ...
 	}
+```
 
 Another exception: DBG messages for example printing a SID or a GUID:
 Here we don't expect any surprise from the printing functions, and the
@@ -439,6 +462,7 @@ rarely exists for this particular use case, and we gain some
 efficiency because the DBG_ macros don't evaluate their arguments if
 the debuglevel is not high enough.
 
+```
 	if (!NT_STATUS_IS_OK(status)) {
 		struct dom_sid_buf sid_buf;
 		struct GUID_txt_buf guid_buf;
@@ -447,27 +471,27 @@ the debuglevel is not high enough.
 		    dom_sid_str_buf(objectsid, &sid_buf),
 		    GUID_buf_string(&cache->entries[idx], &guid_buf));
 	}
+```
 
 But in general, please try to avoid this pattern.
 
 
-Control-Flow changing macros
-----------------------------
+### Control-Flow changing macros
 
-Macros like NT_STATUS_NOT_OK_RETURN that change control flow
-(return/goto/etc) from within the macro are considered bad, because
+Macros like `NT_STATUS_NOT_OK_RETURN` that change control flow
+(`return`/`goto`/etc) from within the macro are considered bad, because
 they look like function calls that never change control flow. Please
 do not use them in new code.
 
 The only exception is the test code that depends repeated use of calls
-like CHECK_STATUS, CHECK_VAL and others.
+like `CHECK_STATUS`, `CHECK_VAL` and others.
 
 
-Error and out logic
--------------------
+### Error and out logic
 
 Don't do this:
 
+```
 	frame = talloc_stackframe();
 
 	if (ret == LDB_SUCCESS) {
@@ -486,9 +510,11 @@ Don't do this:
 
 	TALLOC_FREE(frame);
 	return ret;
+```
 
 It should be:
 
+```
 	frame = talloc_stackframe();
 
 	if (ret != LDB_SUCCESS) {
@@ -510,23 +536,27 @@ It should be:
 	*msg = talloc_move(mem_ctx, &match);
 	TALLOC_FREE(frame);
 	return LDB_SUCCESS;
+```
 
 
-DEBUG statements
-----------------
+### DEBUG statements
 
 Use these following macros instead of DEBUG:
 
-DBG_ERR	log level 0		error conditions
-DBG_WARNING	log level 1		warning conditions
-DBG_NOTICE	log level 3		normal, but significant, condition
-DBG_INFO	log level 5		informational message
-DBG_DEBUG	log level 10		debug-level message
+```
+DBG_ERR         log level 0		error conditions
+DBG_WARNING     log level 1		warning conditions
+DBG_NOTICE      log level 3		normal, but significant, condition
+DBG_INFO        log level 5		informational message
+DBG_DEBUG       log level 10		debug-level message
+```
 
 Example usage:
 
+```
 DBG_ERR("Memory allocation failed\n");
 DBG_DEBUG("Received %d bytes\n", count);
+```
 
 The messages from these macros are automatically prefixed with the
 function name.
