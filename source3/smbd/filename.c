@@ -1918,6 +1918,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_filename **_smb_fname)
 {
 	struct smb_filename *smb_fname = NULL;
+	bool has_wild;
 	NTSTATUS status;
 
 	*_smb_fname = NULL;
@@ -1982,6 +1983,50 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status) ));
 		TALLOC_FREE(smb_fname);
+		return status;
+	}
+
+	has_wild = ms_has_wild(name_in);
+	if (has_wild) {
+		DBG_DEBUG("[%s] contains wildcard, skipping pathref fsp\n",
+			  name_in);
+		*_smb_fname = smb_fname;
+		return NT_STATUS_OK;
+	}
+
+	if (!VALID_STAT(smb_fname->st)) {
+		DBG_DEBUG("[%s] does not exist, skipping pathref fsp\n",
+			  smb_fname_str_dbg(smb_fname));
+		*_smb_fname = smb_fname;
+		return NT_STATUS_OK;
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		/*
+		 * Don't leak NT_STATUS_STOPPED_ON_SYMLINK into the callers:
+		 * it's a special SMB2 error that needs an extended SMB2 error
+		 * response. We don't support that for SMB2 and it doesn't exist
+		 * at all in SMB1.
+		 *
+		 * So we deal with symlinks here as we do in
+		 * SMB_VFS_CREATE_FILE(): return success for POSIX clients with
+		 * the notable difference that there will be no fsp in
+		 * smb_fname->fsp.
+		 *
+		 * For Windows (non POSIX) clients fail with
+		 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
+		 */
+		if (ucf_flags & UCF_POSIX_PATHNAMES) {
+			status = NT_STATUS_OK;
+		} else {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("open_pathref_fsp [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
 		return status;
 	}
 
