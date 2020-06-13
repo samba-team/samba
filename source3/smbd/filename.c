@@ -1111,7 +1111,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * If we're providing case insensitive semantics or
 	 * the underlying filesystem is case insensitive,
 	 * then a case-normalized hit in the stat-cache is
-	 * authoratitive. JRA.
+	 * authoritative. JRA.
 	 *
 	 * Note: We're only checking base_name.  The stream_name will be
 	 * added and verified in build_stream_path().
