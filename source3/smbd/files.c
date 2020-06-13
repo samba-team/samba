@@ -591,6 +591,10 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	uint64_t fnum = fsp->fnum;
 
+	if (fsp == fsp->conn->cwd_fsp) {
+		return;
+	}
+
 	if (fsp->notify) {
 		size_t len = fsp_fullbasepath(fsp, NULL, 0);
 		char fullpath[len+1];
