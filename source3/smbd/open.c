@@ -908,6 +908,10 @@ NTSTATUS fd_close(files_struct *fsp)
 {
 	int ret;
 
+	if (fsp == fsp->conn->cwd_fsp) {
+		return NT_STATUS_OK;
+	}
+
 	if (fsp->dptr) {
 		dptr_CloseDir(fsp);
 	}
