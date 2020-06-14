@@ -128,7 +128,7 @@ functions similar to the readv(2)/writev(2)/close(2) syscalls.
 The tstream_pending_bytes() function is able to report how many bytes of
 the incoming stream have been received but have not been consumed yet.
 It returns -1 and sets 'errno' on failure.
-Otherwise it returns the number of uncomsumed bytes (it can return 0!).
+Otherwise it returns the number of unconsumed bytes (it can return 0!).
 
   ssize_t tstream_pending_bytes(struct tstream_context *stream);
 
