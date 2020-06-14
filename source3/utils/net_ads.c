@@ -3215,7 +3215,7 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 static int net_ads_kerberos_pac_dump(struct net_context *c, int argc, const char **argv)
 {
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
-	int i;
+	int i, num_buffers;
 	int ret = -1;
 	enum PAC_TYPE type = 0;
 
@@ -3253,7 +3253,9 @@ static int net_ads_kerberos_pac_dump(struct net_context *c, int argc, const char
 		return 0;
 	}
 
-	for (i=0; i < pac_data_ctr->pac_data->num_buffers; i++) {
+	num_buffers = pac_data_ctr->pac_data->num_buffers;
+
+	for (i=0; i<num_buffers; i++) {
 
 		char *s = NULL;
 
