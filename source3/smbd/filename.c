@@ -973,8 +973,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	if (state->conn->printer) {
 		/* we don't ever use the filenames on a printer share as a
 			filename - so don't convert them */
-		if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname,
-							   state->orig_path))) {
+		state->smb_fname->base_name = talloc_strdup(
+			state->smb_fname, state->orig_path);
+		if (state->smb_fname->base_name == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto err;
 		}
@@ -991,7 +992,9 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Start with the full orig_path as given by the caller. */
-	if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname, state->orig_path))) {
+	state->smb_fname->base_name = talloc_strdup(
+		state->smb_fname, state->orig_path);
+	if (state->smb_fname->base_name == NULL) {
 		DBG_ERR("talloc_strdup failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
@@ -1012,7 +1015,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (state->smb_fname->base_name[0] == '\0') {
-		if (!(state->smb_fname->base_name = talloc_strdup(state->smb_fname, "."))) {
+		state->smb_fname->base_name = talloc_strdup(state->smb_fname, ".");
+		if (state->smb_fname->base_name == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto err;
 		}
@@ -1139,10 +1143,13 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 	 * building the directories with talloc_asprintf and free it.
 	 */
 
-	if ((state->dirpath == NULL) && (!(state->dirpath = talloc_strdup(state->mem_ctx,".")))) {
-		DBG_ERR("talloc_strdup failed\n");
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
+	if (state->dirpath == NULL) {
+		state->dirpath = talloc_strdup(state->mem_ctx,".");
+		if (state->dirpath == NULL) {
+			DBG_ERR("talloc_strdup failed\n");
+			status = NT_STATUS_NO_MEMORY;
+			goto err;
+		}
 	}
 
 	/*
@@ -1376,13 +1383,17 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
  fail:
 	DBG_DEBUG("Conversion failed: dirpath [%s] name [%s]\n",
 		  state->dirpath, state->name);
-	if (state->dirpath && !ISDOT(state->dirpath)) {
-		state->smb_fname->base_name = talloc_asprintf(state->smb_fname, "%s/%s",
-						       state->dirpath, state->name);
+	if ((state->dirpath != NULL) && !ISDOT(state->dirpath)) {
+		state->smb_fname->base_name = talloc_asprintf(
+			state->smb_fname,
+			"%s/%s",
+			state->dirpath,
+			state->name);
 	} else {
-		state->smb_fname->base_name = talloc_strdup(state->smb_fname, state->name);
+		state->smb_fname->base_name = talloc_strdup(
+			state->smb_fname, state->name);
 	}
-	if (!state->smb_fname->base_name) {
+	if (state->smb_fname->base_name == NULL) {
 		DBG_ERR("talloc_asprintf failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
