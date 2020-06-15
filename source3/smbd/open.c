@@ -6024,7 +6024,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 
 		fake_file_type = is_fake_file(smb_fname);
 
-		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
+		if (req != NULL && fake_file_type != FAKE_FILE_TYPE_NONE) {
 
 			/*
 			 * Here we go! support for changing the disk quotas
