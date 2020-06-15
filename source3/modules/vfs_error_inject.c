@@ -115,7 +115,8 @@ static int vfs_error_inject_openat(struct vfs_handle_struct *handle,
 				   mode_t mode)
 {
 	int error = inject_unix_error("openat", handle);
-	if (error != 0) {
+
+	if (!fsp->fsp_flags.is_pathref && error != 0) {
 		errno = error;
 		return -1;
 	}
