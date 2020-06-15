@@ -107,10 +107,13 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			if (errstr == NULL) {
 				errstr = ldb_errstring(ldb);
 			}
-			fprintf(stderr, "ERR: (%s) \"%s\" on DN %s at block before line %llu\n",
+			fprintf(stderr,
+				"ERR: (%s) \"%s\" on DN %s at block before "
+				"line %zu\n",
 				ldb_strerror(ret),
-				errstr, ldb_dn_get_linearized(ldif->msg->dn), 
-				(unsigned long long)state.line_no);
+				errstr,
+				ldb_dn_get_linearized(ldif->msg->dn),
+				state.line_no);
 			fun_ret = ret;
 		} else {
 			(*count)++;
