@@ -886,8 +886,15 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	lpcfg_string_set(Globals.ctx, &Globals._tls_keyfile, "tls/key.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_certfile, "tls/cert.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_cafile, "tls/ca.pem");
-	lpcfg_string_set(Globals.ctx, &Globals.tls_priority,
-			 "NORMAL:-VERS-SSL3.0");
+#ifdef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
+	lpcfg_string_set(Globals.ctx,
+			 &Globals.tls_priority,
+			 "@SAMBA,SYSTEM,NORMAL:!-VERS-SSL3.0");
+#else
+	lpcfg_string_set(Globals.ctx,
+			 &Globals.tls_priority,
+			 "NORMAL!-VERS-SSL3.0");
+#endif
 
 	lpcfg_string_set(Globals.ctx, &Globals.share_backend, "classic");
 

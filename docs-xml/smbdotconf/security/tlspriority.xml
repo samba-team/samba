@@ -7,15 +7,15 @@
    to be supported in the parts of Samba that use GnuTLS, specifically
    the AD DC.
    </para>
-   <para>The default turns off SSLv3, as this protocol is no longer considered
-   secure after CVE-2014-3566 (otherwise known as POODLE) impacted SSLv3 use
-   in HTTPS applications.
-   </para>
+   <para>The string is appended to the default priority list of GnuTLS.</para>
    <para>The valid options are described in the
    <ulink url="http://gnutls.org/manual/html_node/Priority-Strings.html">GNUTLS
    Priority-Strings documentation at http://gnutls.org/manual/html_node/Priority-Strings.html</ulink>
    </para>
+   <para>By default it will try to find a config file matching "SAMBA", but if
+   that does not exist will use the entry for "SYSTEM" and last fallback to
+   NORMAL. In all cases the SSL3.0 protocol will be disabled.</para>
  </description>
 
- <value type="default">NORMAL:-VERS-SSL3.0</value>
+ <value type="default">@SAMBA,SYSTEM,NORMAL:!-VERS-SSL3.0</value>
 </samba:parameter>
