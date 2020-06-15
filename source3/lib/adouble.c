@@ -1842,7 +1842,7 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	struct adouble *ad = NULL;
 	unsigned int num_streams = 0;
 	size_t to_convert = 0;
-	bool have_rsrc;
+	bool have_rsrc = false;
 	files_struct *fsp = NULL;
 	size_t i;
 	NTSTATUS status;
