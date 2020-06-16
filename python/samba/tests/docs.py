@@ -100,6 +100,9 @@ def get_documented_tuples(sourcedir, omit_no_default=True):
 class SmbDotConfTests(TestCase):
 
     # defines the cases where the defaults may differ from the documentation
+    #
+    # Please pass the default via waf rather than adding to this
+    # list if at all possible.
     special_cases = set([
         'log level',
         'path',
