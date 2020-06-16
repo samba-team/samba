@@ -34,6 +34,15 @@ CTDB CHANGES
   recmaster".
 
 
+NT4-like 'classic' Samba domain controllers
+-------------------------------------------
+
+Samba 4.13 deprecates Samba's original domain controller mode.
+
+Sites using Samba as a Domain Controller should upgrade from the
+NT4-like 'classic' Domain Controller to a Samba Active Directory DC
+to ensure full operation with modern windows clients.
+
 REMOVED FEATURES
 ================
 
@@ -45,6 +54,7 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
   ldap ssl ads                       removed
+  domain logons                      Deprecated                 no
 
 
 

@@ -2,8 +2,15 @@
                  context="G"
                  type="boolean"
                  function="_domain_logons"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+        <para>This parameter has been deprecated since Samba 4.13 and
+        support for NT4-style domain logons(as distinct from the Samba
+        AD DC) will be removed in a future Samba release.</para>
+        <para>That is, in the future, the current default of
+        <command>domain logons = no</command>
+        will be the enforced behaviour.</para>
 	<para>
 	If set to <constant>yes</constant>, the Samba server will
 	provide the netlogon service for Windows 9X network logons for the
