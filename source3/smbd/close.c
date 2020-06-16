@@ -639,9 +639,35 @@ static NTSTATUS ntstatus_keeperror(NTSTATUS s1, NTSTATUS s2)
 static void assert_no_pending_aio(struct files_struct *fsp,
 				  enum file_close_type close_type)
 {
+	struct smbXsrv_client *client = global_smbXsrv_client;
+	size_t num_connections_alive;
 	unsigned num_requests = fsp->num_aio_requests;
 
 	if (num_requests == 0) {
+		return;
+	}
+
+	num_connections_alive = smbXsrv_client_valid_connections(client);
+
+	if (close_type == SHUTDOWN_CLOSE && num_connections_alive == 0) {
+		/*
+		 * fsp->aio_requests and the contents (fsp->aio_requests[x])
+		 * are both independently owned by fsp and are not in a
+		 * talloc heirarchy. This allows the fsp->aio_requests array to
+		 * be reallocated independently of the array contents so it can
+		 * grow on demand.
+		 *
+		 * This means we must ensure order of deallocation
+		 * on a SHUTDOWN_CLOSE by deallocating the fsp->aio_requests[x]
+		 * contents first, as their destructors access the
+		 * fsp->aio_request array. If we don't deallocate them
+		 * first, when fsp is deallocated fsp->aio_requests
+		 * could have been deallocated *before* its contents
+		 * fsp->aio_requests[x], causing a crash.
+		 */
+		while (fsp->num_aio_requests != 0) {
+			TALLOC_FREE(fsp->aio_requests[0]);
+		}
 		return;
 	}
 
