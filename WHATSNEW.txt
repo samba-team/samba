@@ -52,6 +52,15 @@ causing administrators who need this functionality to have to explicitly
 add the vfs_widelinks module into the "vfs objects =" parameter lists.
 The release notes will be updated to note this change when it occurs.
 
+NT4-like 'classic' Samba domain controllers
+-------------------------------------------
+
+Samba 4.13 deprecates Samba's original domain controller mode.
+
+Sites using Samba as a Domain Controller should upgrade from the
+NT4-like 'classic' Domain Controller to a Samba Active Directory DC
+to ensure full operation with modern windows clients.
+
 REMOVED FEATURES
 ================
 
@@ -64,6 +73,7 @@ smb.conf changes
   --------------                     -----------                -------
   ldap ssl ads                       removed
   smb2 disable lock sequence checking				No
+  domain logons                      Deprecated                 no
 
 
 CHANGES SINCE 4.13.0rc1
