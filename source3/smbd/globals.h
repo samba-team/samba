@@ -222,6 +222,7 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
 void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,
 					     NTSTATUS status);
+size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client);
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location);

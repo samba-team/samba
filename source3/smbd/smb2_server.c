@@ -1121,7 +1121,7 @@ void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,
 	DO_PROFILE_INC(disconnect);
 }
 
-static size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
+size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
 {
 	struct smbXsrv_connection *xconn = NULL;
 	size_t num_ok = 0;
