@@ -119,8 +119,9 @@ def smbdotconf_generate_parameter_list(task):
 
     entities = bld.pathconfig_entities()
 
-    # We need this if we build with Heimdal
-    mit_kdc_path = '"/usr/sbin/krb5kdc"'
+    # We need this if we build with Heimdal as we can't easily make
+    # the whole option go away
+    mit_kdc_path = '""'
     # The MIT krb5kdc path is set if we build with MIT Kerberos
     if bld.CONFIG_SET('MIT_KDC_PATH'):
         mit_kdc_path = bld.CONFIG_GET('MIT_KDC_PATH')

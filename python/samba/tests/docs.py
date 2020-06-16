@@ -122,7 +122,6 @@ class SmbDotConfTests(TestCase):
         'template homedir',
         'max open files',
         'include system krb5 conf',
-        'mit kdc command',
         'smbd max async dosmode',
     ])
 
