@@ -109,7 +109,6 @@ class SmbDotConfTests(TestCase):
         'server string',
         'netbios name',
         'socket options',
-        'use mmap',
         'ctdbd socket',
         'printing',
         'printcap name',
