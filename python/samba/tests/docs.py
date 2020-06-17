@@ -25,6 +25,8 @@ import samba.tests
 import os
 import subprocess
 import xml.etree.ElementTree as ET
+import multiprocessing
+import concurrent.futures
 
 config_h = os.path.join("bin/default/include/config.h")
 config_hash = dict()
@@ -50,6 +52,30 @@ class TestCase(samba.tests.TestCaseInTempDir):
         parameters.sort()
         return message + '\n\n    %s' % ('\n    '.join(parameters))
 
+def get_max_worker_count():
+    cpu_count = multiprocessing.cpu_count()
+
+    # Always run two processes in parallel
+    if cpu_count <= 2:
+        return 2
+
+    max_workers = int(cpu_count / 2)
+    if max_workers < 1:
+        return 1
+
+    return max_workers
+
+def check_or_set_smbconf_default(cmdline, topdir, param, default_param):
+    p = subprocess.Popen(cmdline,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         cwd=topdir).communicate()
+    result = p[0].decode().upper().strip()
+    if result != default_param.upper():
+        if not (result == "" and default_param == '""'):
+            return result, param, default_param
+
+    return None
 
 def get_documented_parameters(sourcedir):
     path = os.path.join(sourcedir, "bin", "default", "docs-xml", "smbdotconf")
@@ -221,34 +247,40 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        for tuples in self.defaults:
-            param, default, context, param_type = tuples
+        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+            result_futures = []
 
-            if param in self.special_cases:
-                continue
-            # bad, bad parametric options - we don't have their default values
-            if ':' in param:
-                continue
-            section = None
-            if context == "G":
-                section = "global"
-            elif context == "S":
-                section = "test"
-            else:
-                self.fail("%s has no valid context" % param)
-            p = subprocess.Popen(program + ["-s",
-                                            self.smbconf,
-                                            "--section-name",
-                                            section,
-                                            "--parameter-name",
-                                            param],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 cwd=self.topdir).communicate()
-            result = p[0].decode().upper().strip()
-            if result != default.upper():
-                if not (result == "" and default == '""'):
-                    doc_triple = "%s\n      Expected: %s" % (param, default)
+            for tuples in self.defaults:
+                param, default, context, param_type = tuples
+
+                if param in self.special_cases:
+                    continue
+                # bad, bad parametric options - we don't have their default values
+                if ':' in param:
+                    continue
+                section = None
+                if context == "G":
+                    section = "global"
+                elif context == "S":
+                    section = "test"
+                else:
+                    self.fail("%s has no valid context" % param)
+
+                cmdline = program + ["-s",
+                                     self.smbconf,
+                                     "--section-name",
+                                     section,
+                                     "--parameter-name",
+                                     param]
+
+                future = executor.submit(check_or_set_smbconf_default, cmdline, self.topdir, param, default)
+                result_futures.append(future)
+
+            for f in concurrent.futures.as_completed(result_futures):
+                if f.result():
+                    result, param, default_param = f.result()
+
+                    doc_triple = "%s\n      Expected: %s" % (param, default_param)
                     failset.add("%s\n      Got: %s" % (doc_triple, result))
 
         if len(failset) > 0:
@@ -262,38 +294,43 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        for tuples in self.defaults:
-            param, default, context, param_type = tuples
+        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+            result_futures = []
 
-            exceptions = set([
-                'printing',
-                'smbd max async dosmode',
-            ])
+            for tuples in self.defaults:
+                param, default, context, param_type = tuples
 
-            if param in exceptions:
-                continue
+                exceptions = set([
+                    'printing',
+                    'smbd max async dosmode',
+                ])
 
-            section = None
-            if context == "G":
-                section = "global"
-            elif context == "S":
-                section = "test"
-            else:
-                self.fail("%s has no valid context" % param)
-            p = subprocess.Popen(program + ["-s",
-                                            self.smbconf,
-                                            "--section-name",
-                                            section,
-                                            "--parameter-name",
-                                            param,
-                                            "--option",
-                                            "%s = %s" % (param, default)],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 cwd=self.topdir).communicate()
-            result = p[0].decode().upper().strip()
-            if result != default.upper():
-                if not (result == "" and default == '""'):
+                if param in exceptions:
+                    continue
+
+                section = None
+                if context == "G":
+                    section = "global"
+                elif context == "S":
+                    section = "test"
+                else:
+                    self.fail("%s has no valid context" % param)
+
+                cmdline = program + ["-s",
+                                     self.smbconf,
+                                     "--section-name",
+                                     section,
+                                     "--parameter-name",
+                                     param,
+                                     "--option",
+                                     "%s = %s" % (param, default)]
+                future = executor.submit(check_or_set_smbconf_default, cmdline, self.topdir, param, default)
+                result_futures.append(future)
+
+            for f in concurrent.futures.as_completed(result_futures):
+                if f.result():
+                    result, param, default_param = f.result()
+
                     doc_triple = "%s\n      Expected: %s" % (param, default)
                     failset.add("%s\n      Got: %s" % (doc_triple, result))
 
