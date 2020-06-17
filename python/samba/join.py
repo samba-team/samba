@@ -746,7 +746,7 @@ class DCJoinContext(object):
             except ldb.LdbError as e2:
                 (num, _) = e2.args
                 if num != ldb.ERR_UNWILLING_TO_PERFORM:
-                    pass
+                    raise
                 ctx.net.set_password(account_name=ctx.samname,
                                      domain_name=ctx.domain_name,
                                      newpassword=ctx.acct_pass)
