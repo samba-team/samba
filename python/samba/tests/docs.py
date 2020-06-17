@@ -27,6 +27,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 import multiprocessing
 import concurrent.futures
+import tempfile
 
 config_h = os.path.join("bin/default/include/config.h")
 config_hash = dict()
@@ -74,6 +75,70 @@ def check_or_set_smbconf_default(cmdline, topdir, param, default_param):
     if result != default_param.upper():
         if not (result == "" and default_param == '""'):
             return result, param, default_param
+
+    return None
+
+def set_smbconf_arbitary(cmdline, topdir, param, param_type, value_to_use):
+    p = subprocess.Popen(cmdline,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         cwd=topdir).communicate()
+    result = p[0].decode().upper().strip()
+    if result != value_to_use.upper():
+        # currently no way to distinguish command lists
+        if param_type == 'list':
+            if ", ".join(result.split()) == value_to_use.upper():
+                return None
+
+    # currently no way to identify octal
+    if param_type == 'integer':
+        try:
+            if int(value_to_use, 8) == int(p[0].strip(), 8):
+                return None
+        except:
+            pass
+
+        return result, param, value_to_use
+
+    return None
+
+def set_smbconf_arbitary_opposite(cmdline, topdir, tempdir, section, param, opposite_value, value_to_use):
+    g = tempfile.NamedTemporaryFile(mode='w', dir=tempdir, delete=False)
+    try:
+        towrite = section + "\n"
+        towrite += param + " = " + opposite_value
+        g.write(towrite)
+    finally:
+        g.close()
+
+    p = subprocess.Popen(cmdline + ["-s", g.name],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         cwd=topdir).communicate()
+    os.unlink(g.name)
+
+    # testparm doesn't display a value if they are equivalent
+    if (value_to_use.lower() != opposite_value.lower()):
+        for line in p[0].decode().splitlines():
+            if not line.strip().startswith(param):
+                return None
+
+            value_found = line.split("=")[1].upper().strip()
+            if value_found != value_to_use.upper():
+                # currently no way to distinguish command lists
+                if param_type == 'list':
+                    if ", ".join(value_found.split()) == value_to_use.upper():
+                        return None
+
+                # currently no way to identify octal
+                if param_type == 'integer':
+                    try:
+                        if int(value_to_use, 8) == int(value_found, 8):
+                            continue
+                    except:
+                        pass
+
+                    return param, value_to_use, value_found
 
     return None
 
@@ -360,105 +425,70 @@ class SmbDotConfTests(TestCase):
 
         failset = set()
 
-        for tuples in self.defaults_all:
-            param, default, context, param_type = tuples
+        with concurrent.futures.ProcessPoolExecutor(max_workers=get_max_worker_count()) as executor:
+            result_futures1 = []
+            result_futures2 = []
 
-            if param in ['printing', 'copy', 'include', 'log level']:
-                continue
+            for tuples in self.defaults_all:
+                param, default, context, param_type = tuples
 
-            # currently no easy way to set an arbitrary value for these
-            if param_type in ['enum', 'boolean-auto']:
-                continue
-
-            if exceptions is not None:
-                if param in exceptions:
+                if param in ['printing', 'copy', 'include', 'log level']:
                     continue
 
-            section = None
-            if context == "G":
-                section = "global"
-            elif context == "S":
-                section = "test"
-            else:
-                self.fail("%s has no valid context" % param)
+                # currently no easy way to set an arbitrary value for these
+                if param_type in ['enum', 'boolean-auto']:
+                    continue
 
-            value_to_use = arbitrary.get(param_type)
-            if value_to_use is None:
-                self.fail("%s has an invalid type" % param)
-
-            p = subprocess.Popen(program + ["-s",
-                                            self.smbconf,
-                                            "--section-name",
-                                            section,
-                                            "--parameter-name",
-                                            param,
-                                            "--option",
-                                            "%s = %s" % (param, value_to_use)],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 cwd=self.topdir).communicate()
-            result = p[0].decode().upper().strip()
-            if result != value_to_use.upper():
-                # currently no way to distinguish command lists
-                if param_type == 'list':
-                    if ", ".join(result.split()) == value_to_use.upper():
+                if exceptions is not None:
+                    if param in exceptions:
                         continue
 
-                # currently no way to identify octal
-                if param_type == 'integer':
-                    try:
-                        if int(value_to_use, 8) == int(p[0].strip(), 8):
-                            continue
-                    except:
-                        pass
+                section = None
+                if context == "G":
+                    section = "global"
+                elif context == "S":
+                    section = "test"
+                else:
+                    self.fail("%s has no valid context" % param)
 
-                doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
-                failset.add("%s\n      Got: %s" % (doc_triple, p[0].upper().strip()))
+                value_to_use = arbitrary.get(param_type)
+                if value_to_use is None:
+                    self.fail("%s has an invalid type" % param)
 
-            opposite_value = opposite_arbitrary.get(param_type)
-            tempconf = os.path.join(self.tempdir, "tempsmb.conf")
-            g = open(tempconf, 'w')
-            try:
-                towrite = section + "\n"
-                towrite += param + " = " + opposite_value
-                g.write(towrite)
-            finally:
-                g.close()
+                cmdline = program + ["-s",
+                                     self.smbconf,
+                                     "--section-name",
+                                     section,
+                                     "--parameter-name",
+                                     param,
+                                     "--option",
+                                     "%s = %s" % (param, value_to_use)]
 
-            p = subprocess.Popen(program + ["-s",
-                                            tempconf,
-                                            "--suppress-prompt",
-                                            "--option",
-                                            "%s = %s" % (param, value_to_use)],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 cwd=self.topdir).communicate()
+                future = executor.submit(set_smbconf_arbitary, cmdline, self.topdir, param, param_type, value_to_use)
+                result_futures1.append(future)
 
-            os.unlink(tempconf)
+                opposite_value = opposite_arbitrary.get(param_type)
 
-            # testparm doesn't display a value if they are equivalent
-            if (value_to_use.lower() != opposite_value.lower()):
-                for line in p[0].decode().splitlines():
-                    if not line.strip().startswith(param):
-                        continue
+                cmdline = program + ["--suppress-prompt",
+                                     "--option",
+                                     "%s = %s" % (param, value_to_use)]
 
-                    value_found = line.split("=")[1].upper().strip()
-                    if value_found != value_to_use.upper():
-                        # currently no way to distinguish command lists
-                        if param_type == 'list':
-                            if ", ".join(value_found.split()) == value_to_use.upper():
-                                continue
+                future = executor.submit(set_smbconf_arbitary_opposite, cmdline, self.topdir, self.tempdir, section, param, opposite_value, value_to_use)
+                result_futures2.append(future)
 
-                        # currently no way to identify octal
-                        if param_type == 'integer':
-                            try:
-                                if int(value_to_use, 8) == int(value_found, 8):
-                                    continue
-                            except:
-                                pass
+            for f in concurrent.futures.as_completed(result_futures1):
+                if f.result():
+                    result, param, value_to_use = f.result()
 
-                        doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
-                        failset.add("%s\n      Got: %s" % (doc_triple, value_found))
+                    doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
+                    failset.add("%s\n      Got: %s" % (doc_triple, result))
+
+            for f in concurrent.futures.as_completed(result_futures2):
+                if f.result():
+                    param, value_to_use, value_found = f.result()
+
+                    doc_triple = "%s\n      Expected: %s" % (param, value_to_use)
+                    failset.add("%s\n      Got: %s" % (doc_triple, value_found))
 
         if len(failset) > 0:
             self.fail(self._format_message(failset,
