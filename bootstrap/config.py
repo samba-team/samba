@@ -230,7 +230,10 @@ set -xueo pipefail
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
+
+yum -v repolist all
 yum config-manager --set-enabled PowerTools -y
+yum config-manager --set-enabled Devel -y
 yum update -y
 
 yum install -y \
@@ -460,7 +463,6 @@ RPM_DISTS = {
             'perl-JSON-Parse': '', # does not exist?
             'perl-Test-Base': 'perl-Test-Simple',
             'policycoreutils-python': 'python3-policycoreutils',
-            'quota-devel': '', # FIXME: Add me back, once available!
             'liburing-devel': '', # not available yet, Add me back, once available!
         }
     },

@@ -78,6 +78,7 @@ packages:
   - python3-markdown
   - python3-policycoreutils
   - python3-pyasn1
+  - quota-devel
   - readline-devel
   - redhat-lsb
   - rng-tools

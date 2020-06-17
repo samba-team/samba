@@ -10,7 +10,10 @@ set -xueo pipefail
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
+
+yum -v repolist all
 yum config-manager --set-enabled PowerTools -y
+yum config-manager --set-enabled Devel -y
 yum update -y
 
 yum install -y \
@@ -93,6 +96,7 @@ yum install -y \
     python3-markdown \
     python3-policycoreutils \
     python3-pyasn1 \
+    quota-devel \
     readline-devel \
     redhat-lsb \
     rng-tools \
