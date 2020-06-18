@@ -527,6 +527,15 @@ def build(bld):
                          deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
 
+        # If both libldap and liblber are available, test ldb_ldap
+        # code for a regression of bz#14413 -- even if we don't build
+        # it ourselves and simply using the system version
+        if bld.env.LIB_LDAP and bld.env.LIB_LBER:
+            bld.SAMBA_BINARY('lldb_ldap_test',
+                             source='tests/lldb_ldap.c',
+                             deps='cmocka talloc lber ldap ldb',
+                             install=False)
+
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
@@ -627,6 +636,11 @@ def test(ctx):
                  # support
                  # 'ldb_key_value_sub_txn_tdb_test'
                  'ldb_parse_test']
+
+    # if LIB_LDAP and LIB_LBER defined, then we can test ldb_ldap backend
+    # behavior regression for bz#14413
+    if env.LIB_LDAP and env.LIB_LBER:
+        test_exes += ["lldb_ldap_test"]
 
     if env.HAVE_LMDB:
         test_exes += ['ldb_mdb_mod_op_test',
