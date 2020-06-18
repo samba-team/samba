@@ -636,18 +636,62 @@ static NTSTATUS dcesrv_assoc_group_new(struct dcesrv_call_state *call,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_assoc_group_reference(struct dcesrv_call_state *call,
+					     uint32_t assoc_group_id)
+{
+	struct dcesrv_connection *conn = call->conn;
+	const struct dcesrv_endpoint *endpoint = conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
+	struct dcesrv_assoc_group *assoc_group = NULL;
+	void *id_ptr = NULL;
+
+	/* find an association group given a assoc_group_id */
+	id_ptr = idr_find(conn->dce_ctx->assoc_groups_idr, assoc_group_id);
+	if (id_ptr == NULL) {
+		/*
+		 * FIXME If the association group is not found it has
+		 * been created in other process (preforking daemons).
+		 * Until this is properly fixed we just create a new
+		 * association group in this process
+		 */
+		DBG_NOTICE("Failed to find assoc_group 0x%08x in this "
+			   "server process, creating a new one\n",
+			   assoc_group_id);
+		return dcesrv_assoc_group_new(call, assoc_group_id);
+	}
+	assoc_group = talloc_get_type_abort(id_ptr, struct dcesrv_assoc_group);
+
+	if (assoc_group->transport != transport) {
+		const char *at =
+			derpc_transport_string_by_transport(
+				assoc_group->transport);
+		const char *ct =
+			derpc_transport_string_by_transport(
+				transport);
+
+		DBG_NOTICE("assoc_group 0x%08x (transport %s) "
+			   "is not available on transport %s",
+			   assoc_group_id, at, ct);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	conn->assoc_group = talloc_reference(conn, assoc_group);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dcesrv_assoc_group_find(
 	struct dcesrv_call_state *call,
 	void *private_data)
 {
 	uint32_t assoc_group_id = call->pkt.u.bind.assoc_group_id;
 
-	/* If not requested by client create a new association group */
-	if (assoc_group_id == 0) {
-		assoc_group_id = 0x53F0;
+	if (assoc_group_id != 0) {
+		return dcesrv_assoc_group_reference(call, assoc_group_id);
 	}
 
-	return dcesrv_assoc_group_new(call, assoc_group_id);
+	/* If not requested by client create a new association group */
+	return dcesrv_assoc_group_new(call, 0x53F0);
 }
 
 void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
