@@ -2882,14 +2882,21 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	}
 
 	if (p == NULL || p == directory) {
+		struct smb_filename *old_name = smb_dname;
+
 		/* Ensure we don't have a directory name of "". */
-		directory = talloc_strdup(talloc_tos(), ".");
-		if (!directory) {
+		smb_dname = synthetic_smb_fname(talloc_tos(),
+						".",
+						NULL,
+						&old_name->st,
+						old_name->flags,
+						old_name->twrp);
+		TALLOC_FREE(old_name);
+		if (smb_dname == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
-		/* Ensure smb_dname->base_name matches. */
-		smb_dname->base_name = directory;
+		directory = smb_dname->base_name;
 	}
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
