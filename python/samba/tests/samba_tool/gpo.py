@@ -24,7 +24,9 @@ import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
 from samba.netcmd.gpo import get_gpo_dn, get_gpo_info
+from samba.param import LoadParm
 
+source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
     """Use this function to determine if the GPO backup differs from another.
@@ -516,6 +518,29 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
             shutil.rmtree(os.path.join(self.tempdir, "policy"))
             shutil.rmtree(os.path.join(self.tempdir, 'temp'))
+
+    def test_admx_load(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        admx_path = os.path.join(local_path, os.environ['REALM'].lower(),
+                                 'Policies', 'PolicyDefinitions')
+        (result, out, err) = self.runsubcmd("gpo", "admxload",
+                                            "-H", "ldap://%s" %
+                                            os.environ["SERVER"],
+                                            "--admx-dir=%s" %
+                                            os.path.join(source_path,
+                                                         'libgpo/admx'),
+                                            "-U%s%%%s" %
+                                            (os.environ["USERNAME"],
+                                            os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Filling PolicyDefinitions failed')
+        self.assertTrue(os.path.exists(admx_path),
+                        'PolicyDefinitions was not created')
+        self.assertTrue(os.path.exists(os.path.join(admx_path, 'samba.admx')),
+                        'Filling PolicyDefinitions failed')
+        shutil.rmtree(admx_path)
 
     def setUp(self):
         """set up a temporary GPO to work with"""
