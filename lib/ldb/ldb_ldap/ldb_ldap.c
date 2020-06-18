@@ -176,8 +176,6 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 		el->num_values++;
 	}
 
-	msg->num_elements++;
-
 	return 0;
 }
 
