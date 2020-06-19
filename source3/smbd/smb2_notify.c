@@ -348,7 +348,7 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 	if (!NT_STATUS_IS_OK(error_code)) {
 		/* nothing */
 	} else if (len == 0) {
-		state->status = STATUS_NOTIFY_ENUM_DIR;
+		state->status = NT_STATUS_NOTIFY_ENUM_DIR;
 	} else {
 		state->out_output_buffer = data_blob_talloc(state, buf, len);
 		if (state->out_output_buffer.data == NULL) {
