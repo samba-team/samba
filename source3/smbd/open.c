@@ -4375,16 +4375,15 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 static NTSTATUS open_directory(connection_struct *conn,
 			       struct smb_request *req,
 			       struct files_struct **dirfsp,
-			       struct smb_filename *smb_dname,
 			       uint32_t access_mask,
 			       uint32_t share_access,
 			       uint32_t create_disposition,
 			       uint32_t create_options,
 			       uint32_t file_attributes,
 			       int *pinfo,
-			       files_struct **result)
+			       struct files_struct *fsp)
 {
-	files_struct *fsp = NULL;
+	struct smb_filename *smb_dname = fsp->fsp_name;
 	bool dir_existed = VALID_STAT(smb_dname->st);
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
@@ -4560,11 +4559,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
-	status = file_new(req, conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/*
 	 * Setup the files_struct for it.
 	 */
@@ -4589,17 +4583,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
 	}
-	status = fsp_set_smb_fname(fsp, smb_dname);
-	if (!NT_STATUS_IS_OK(status)) {
-		file_free(req, fsp);
-		return status;
-	}
-
-	if (*dirfsp == fsp->conn->cwd_fsp) {
-		fsp->dirfsp = fsp->conn->cwd_fsp;
-	} else {
-		fsp->dirfsp = talloc_move(fsp, dirfsp);
-	}
 
 	/* Don't store old timestamps for directory
 	   handles in the internal database. We don't
@@ -4622,14 +4605,12 @@ static NTSTATUS open_directory(connection_struct *conn,
 			"%s (%s)\n",
 			smb_fname_str_dbg(smb_dname),
 			nt_errstr(status));
-		file_free(req, fsp);
 		return status;
 	}
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
-		file_free(req, fsp);
 		return status;
 	}
 
@@ -4637,7 +4618,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		DEBUG(5,("open_directory: %s is not a directory !\n",
 			 smb_fname_str_dbg(smb_dname)));
                 fd_close(fsp);
-                file_free(req, fsp);
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
@@ -4649,7 +4629,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 			"directory %s.\n",
 			smb_fname_str_dbg(smb_dname)));
 		fd_close(fsp);
-		file_free(req, fsp);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -4661,14 +4640,12 @@ static NTSTATUS open_directory(connection_struct *conn,
 		DEBUG(0, ("open_directory: Could not get share mode lock for "
 			  "%s\n", smb_fname_str_dbg(smb_dname)));
 		fd_close(fsp);
-		file_free(req, fsp);
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	if (has_delete_on_close(lck, fsp->name_hash)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-		file_free(req, fsp);
 		return NT_STATUS_DELETE_PENDING;
 	}
 
@@ -4678,7 +4655,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-		file_free(req, fsp);
 		return status;
 	}
 
@@ -4704,7 +4680,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 	if (!ok) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-		file_free(req, fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -4716,7 +4691,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-			file_free(req, fsp);
 			return status;
 		}
 
@@ -4745,7 +4719,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		*pinfo = info;
 	}
 
-	*result = fsp;
 	return NT_STATUS_OK;
 }
 
@@ -5736,6 +5709,31 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		fd_close(base_fsp);
 	}
 
+	status = file_new(req, conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = fsp_set_smb_fname(fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (*dirfsp == fsp->conn->cwd_fsp) {
+		fsp->dirfsp = fsp->conn->cwd_fsp;
+	} else {
+		fsp->dirfsp = talloc_move(fsp, dirfsp);
+	}
+
+	if (base_fsp) {
+		/*
+		 * We're opening the stream element of a
+		 * base_fsp we already opened. Set up the
+		 * base_fsp pointer.
+		 */
+		fsp->base_fsp = base_fsp;
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -5764,44 +5762,18 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		status = open_directory(conn,
 					req,
 					dirfsp,
-					smb_fname,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
 					file_attributes,
 					&info,
-					&fsp);
+					fsp);
 	} else {
 
 		/*
 		 * Ordinary file case.
 		 */
-
-		status = file_new(req, conn, &fsp);
-		if(!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-
-		status = fsp_set_smb_fname(fsp, smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-
-		if (*dirfsp == fsp->conn->cwd_fsp) {
-			fsp->dirfsp = fsp->conn->cwd_fsp;
-		} else {
-			fsp->dirfsp = talloc_move(fsp, dirfsp);
-		}
-
-		if (base_fsp) {
-			/*
-			 * We're opening the stream element of a
-			 * base_fsp we already opened. Set up the
-			 * base_fsp pointer.
-			 */
-			fsp->base_fsp = base_fsp;
-		}
 
 		if (allocation_size) {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn,
@@ -5820,12 +5792,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					    private_flags,
 					    &info,
 					    fsp);
-
-		if(!NT_STATUS_IS_OK(status)) {
-			file_free(req, fsp);
-			fsp = NULL;
-		}
-
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 			/* A stream open never opens a directory */
@@ -5849,18 +5815,19 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			status = open_directory(conn,
 						req,
 						dirfsp,
-						smb_fname,
 						access_mask,
 						share_access,
 						create_disposition,
 						create_options,
 						file_attributes,
 						&info,
-						&fsp);
+						fsp);
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		file_free(req, fsp);
+		fsp = NULL;
 		goto fail;
 	}
 
