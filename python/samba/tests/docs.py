@@ -57,12 +57,12 @@ def get_max_worker_count():
     cpu_count = multiprocessing.cpu_count()
 
     # Always run two processes in parallel
-    if cpu_count <= 2:
+    if cpu_count < 2:
         return 2
 
     max_workers = int(cpu_count / 2)
-    if max_workers < 1:
-        return 1
+    if max_workers < 2:
+        return 2
 
     return max_workers
 
