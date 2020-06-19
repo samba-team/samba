@@ -408,6 +408,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 void fsp_set_gen_id(files_struct *fsp);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
+NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req);
 void file_close_conn(connection_struct *conn);
 bool file_init_global(void);
 bool file_init(struct smbd_server_connection *sconn);

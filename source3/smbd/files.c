@@ -99,6 +99,39 @@ void fsp_set_gen_id(files_struct *fsp)
  Find first available file slot.
 ****************************************************************************/
 
+NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
+{
+	struct smbXsrv_open *op = NULL;
+	NTTIME now;
+	NTSTATUS status;
+
+	if (req == NULL) {
+		DBG_DEBUG("INTERNAL_OPEN_ONLY, skipping smbXsrv_open\n");
+		return NT_STATUS_OK;
+	}
+
+	now = timeval_to_nttime(&fsp->open_time);
+
+	status = smbXsrv_open_create(req->xconn,
+				     fsp->conn->session_info,
+				     now,
+				     &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	fsp->op = op;
+	op->compat = fsp;
+	fsp->fnum = op->local_id;
+
+	fsp->mid = req->mid;
+	req->chain_fsp = fsp;
+
+	DBG_DEBUG("fsp [%s] mid [%" PRIu64"]\n",
+		fsp_str_dbg(fsp), fsp->mid);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result)
 {
@@ -113,24 +146,10 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	GetTimeOfDay(&fsp->open_time);
 
-	if (req) {
-		struct smbXsrv_connection *xconn = req->xconn;
-		struct smbXsrv_open *op = NULL;
-		NTTIME now = timeval_to_nttime(&fsp->open_time);
-
-		status = smbXsrv_open_create(xconn,
-					     conn->session_info,
-					     now, &op);
-		if (!NT_STATUS_IS_OK(status)) {
-			file_free(NULL, fsp);
-			return status;
-		}
-		fsp->op = op;
-		op->compat = fsp;
-		fsp->fnum = op->local_id;
-	} else {
-		DEBUG(10, ("%s: req==NULL, INTERNAL_OPEN_ONLY, smbXsrv_open "
-			   "allocated\n", __func__));
+	status = fsp_bind_smb(fsp, req);
+	if (!NT_STATUS_IS_OK(status)) {
+		file_free(NULL, fsp);
+		return status;
 	}
 
 	fsp_set_gen_id(fsp);
@@ -153,11 +172,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	DEBUG(5,("allocated file structure %s (%u used)\n",
 		 fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
-
-	if (req != NULL) {
-		fsp->mid = req->mid;
-		req->chain_fsp = fsp;
-	}
 
 	/* A new fsp invalidates the positive and
 	  negative fsp_fi_cache as the new fsp is pushed
