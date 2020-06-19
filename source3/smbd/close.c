@@ -1117,7 +1117,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	NTSTATUS notify_status;
 
 	if (fsp->conn->sconn->using_smb2) {
-		notify_status = STATUS_NOTIFY_CLEANUP;
+		notify_status = NT_STATUS_NOTIFY_CLEANUP;
 	} else {
 		notify_status = NT_STATUS_OK;
 	}

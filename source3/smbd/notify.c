@@ -411,11 +411,11 @@ static void smbd_notify_cancel_by_map(struct notify_mid_map *map)
 		}
 
 		if (!NT_STATUS_IS_OK(sstatus)) {
-			notify_status = STATUS_NOTIFY_CLEANUP;
+			notify_status = NT_STATUS_NOTIFY_CLEANUP;
 		} else if (smb2req->tcon == NULL) {
-			notify_status = STATUS_NOTIFY_CLEANUP;
+			notify_status = NT_STATUS_NOTIFY_CLEANUP;
 		} else if (!NT_STATUS_IS_OK(smb2req->tcon->status)) {
-			notify_status = STATUS_NOTIFY_CLEANUP;
+			notify_status = NT_STATUS_NOTIFY_CLEANUP;
 		}
 	}
 
