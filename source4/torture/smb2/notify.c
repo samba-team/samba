@@ -466,7 +466,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 9);
 
 done:
@@ -1338,7 +1338,7 @@ static bool torture_smb2_notify_tree_disconnect_1(
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 done:
@@ -1409,7 +1409,7 @@ static bool torture_smb2_notify_close(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 done:
@@ -1479,7 +1479,7 @@ static bool torture_smb2_notify_ulogoff(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 done:
@@ -1556,7 +1556,7 @@ static bool torture_smb2_notify_session_reconnect(struct torture_context *tortur
 		       "session setup with previous_session_id failed");
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 	status = smb2_logoff(tree1->session);
@@ -1644,7 +1644,7 @@ static bool torture_smb2_notify_invalid_reauth(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_CLEANUP);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_CLEANUP);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 done:
