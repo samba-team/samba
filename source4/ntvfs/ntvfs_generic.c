@@ -1595,7 +1595,7 @@ static NTSTATUS ntvfs_map_notify_finish(struct ntvfs_module_context *ntvfs,
 	switch (nt->nttrans.level) {
 	case RAW_NOTIFY_SMB2:
 		if (nt2->nttrans.out.num_changes == 0) {
-			return STATUS_NOTIFY_ENUM_DIR;
+			return NT_STATUS_NOTIFY_ENUM_DIR;
 		}
 		nt->smb2.out.num_changes	= nt2->nttrans.out.num_changes;
 		nt->smb2.out.changes		= talloc_steal(req, nt2->nttrans.out.changes);
