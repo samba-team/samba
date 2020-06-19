@@ -2284,6 +2284,8 @@ sub provision($$)
 	client min protocol = SMB2_02
 	server min protocol = SMB2_02
 
+	server multi channel support = yes
+
 	workgroup = $domain
 
 	private dir = $privatedir

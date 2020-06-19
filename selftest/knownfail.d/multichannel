@@ -1,0 +1,7 @@
+^samba3.smb2.multichannel.oplocks.test2.nt4_dc              # expects windows behavior => smb2 disable oplock break retry = yes
+^samba3.smb2.multichannel.oplocks.test3_windows.nt4_dc      # expects windows behavior => smb2 disable oplock break retry = yes
+^samba3.smb2.multichannel.oplocks.test3_specification.ad_dc # expects samba (MS-SMB2) behavior
+^samba3.smb2.multichannel.leases.test1.ad_dc                # requires lease support
+^samba3.smb2.multichannel.leases.test2.ad_dc                # requires lease support
+^samba3.smb2.multichannel.leases.test3.ad_dc                # requires lease support
+^samba3.smb2.multichannel.leases.test4.ad_dc                # requires lease support

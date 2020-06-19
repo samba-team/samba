@@ -763,6 +763,8 @@ sub provision_raw_step1($$)
 	tls crlfile = ${crlfile}
 	tls verify peer = no_check
 	panic action = $RealBin/gdb_backtrace \%d
+	smbd:suicide mode = yes
+	smbd:FSCTL_SMBTORTURE = yes
 	wins support = yes
 	server role = $ctx->{server_role}
 	server services = +echo $services
@@ -1905,6 +1907,8 @@ sub provision_ad_dc($$$$$$$)
 	kernel oplocks = no
 	kernel change notify = no
 	smb2 leases = no
+	smb2 disable oplock break retry = yes
+	server multi channel support = yes
 
 	logging = file
 	printing = bsd
