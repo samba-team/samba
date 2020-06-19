@@ -292,7 +292,7 @@ static void smb2_request_done(struct tevent_req *subreq)
 	req->recv_iov = NULL;
 
 	req->status = smb2cli_req_recv(req->subreq, req, &req->recv_iov, NULL, 0);
-	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
+	if (NT_STATUS_EQUAL(req->status, NT_STATUS_PENDING)) {
 		struct timeval endtime = smbXcli_req_endtime(subreq);
 		bool ok;
 
