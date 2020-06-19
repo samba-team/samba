@@ -628,7 +628,7 @@ NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 		return status;
 	}
 
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
+	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(NT_STATUS_PENDING));
 	SSVAL(req->out.hdr, SMB2_HDR_CREDIT, credits);
 
 	SSVAL(req->out.body, 0x02, 0);
