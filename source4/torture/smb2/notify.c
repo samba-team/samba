@@ -2564,7 +2564,7 @@ static bool torture_smb2_inotify_rename(struct torture_context *torture,
 	req = smb2_notify_send(tree1, &notify);
 	torture_assert_not_null_goto(torture, req, ok, done, "smb2_notify_send failed\n");
 
-	while (!NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
+	while (!NT_STATUS_EQUAL(req->status, NT_STATUS_PENDING)) {
 		if (tevent_loop_once(torture->ev) != 0) {
 			goto done;
 		}
