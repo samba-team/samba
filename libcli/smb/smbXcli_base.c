@@ -3735,7 +3735,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 
 		status = NT_STATUS(IVAL(inhdr, SMB2_HDR_STATUS));
 		if ((flags & SMB2_HDR_FLAG_ASYNC) &&
-		    NT_STATUS_EQUAL(status, STATUS_PENDING)) {
+		    NT_STATUS_EQUAL(status, NT_STATUS_PENDING)) {
 			uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
 
 			if (state->smb2.got_async) {
@@ -4006,7 +4006,7 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 
 	if (tevent_req_is_in_progress(req) && state->smb2.got_async) {
-		return STATUS_PENDING;
+		return NT_STATUS_PENDING;
 	}
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -4076,7 +4076,7 @@ NTSTATUS smb2cli_req_get_sent_iov(struct tevent_req *req,
 		struct smbXcli_req_state);
 
 	if (tevent_req_is_in_progress(req)) {
-		return STATUS_PENDING;
+		return NT_STATUS_PENDING;
 	}
 
 	sent_iov[0].iov_base = state->smb2.hdr;
