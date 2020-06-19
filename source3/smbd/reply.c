@@ -3473,6 +3473,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		while ((dname = ReadDirName(dir_hnd, &offset,
 					    &smb_fname->st, &talloced))) {
 			TALLOC_CTX *frame = talloc_stackframe();
+			char *p = NULL;
+			struct smb_filename *f = NULL;
 
 			if (!is_visible_file(conn,
 					dir_hnd,
@@ -3498,19 +3500,27 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				continue;
 			}
 
-			TALLOC_FREE(smb_fname->base_name);
 			if (ISDOT(fname_dir)) {
 				/* Ensure we use canonical names on open. */
-				smb_fname->base_name =
-					talloc_asprintf(smb_fname, "%s",
-						dname);
+				p = talloc_asprintf(smb_fname, "%s", dname);
 			} else {
-				smb_fname->base_name =
-					talloc_asprintf(smb_fname, "%s/%s",
-						fname_dir, dname);
+				p = talloc_asprintf(smb_fname, "%s/%s",
+						    fname_dir, dname);
 			}
-
-			if (!smb_fname->base_name) {
+			if (p == NULL) {
+				TALLOC_FREE(dir_hnd);
+				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(frame);
+				TALLOC_FREE(talloced);
+				goto out;
+			}
+			f = synthetic_smb_fname(frame,
+						p,
+						NULL,
+						&smb_fname->st,
+						smb_fname->flags,
+						smb_fname->twrp);
+			if (f == NULL) {
 				TALLOC_FREE(dir_hnd);
 				status = NT_STATUS_NO_MEMORY;
 				TALLOC_FREE(frame);
@@ -3518,7 +3528,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				goto out;
 			}
 
-			status = check_name(conn, smb_fname);
+			status = check_name(conn, f);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
@@ -3526,7 +3536,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				goto out;
 			}
 
-			status = do_unlink(conn, req, smb_fname, dirtype);
+			status = do_unlink(conn, req, f, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
@@ -3535,8 +3545,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			}
 
 			count++;
-			DEBUG(3,("unlink_internals: successful unlink [%s]\n",
-				 smb_fname->base_name));
+			DBG_DEBUG("successful unlink [%s]\n",
+				  smb_fname_str_dbg(f));
 
 			TALLOC_FREE(frame);
 			TALLOC_FREE(talloced);
