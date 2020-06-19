@@ -140,7 +140,7 @@ static bool test_valid_request(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
-	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_ENUM_DIR);
 
 	/*
 	 * if the change response fits in the buffer we get
@@ -191,7 +191,7 @@ static bool test_valid_request(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
-	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_ENUM_DIR);
 
 	n.in.buffer_size        = max_buffer_size;
 	req = smb2_notify_send(tree, &n);
@@ -205,7 +205,7 @@ static bool test_valid_request(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
-	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_ENUM_DIR);
 
 	/* if the buffer size is too large, we get invalid parameter */
 	n.in.recursive		= 0x0000;
@@ -2158,7 +2158,7 @@ static bool torture_smb2_notify_overflow(struct torture_context *torture,
 
 	req1 = smb2_notify_send(tree, &(notify.smb2));
 	status = smb2_notify_recv(req1, torture, &(notify.smb2));
-	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+	CHECK_STATUS(status, NT_STATUS_NOTIFY_ENUM_DIR);
 	CHECK_VAL(notify.smb2.out.num_changes, 0);
 
 done:
