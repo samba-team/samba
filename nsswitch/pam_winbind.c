@@ -2645,6 +2645,80 @@ out:
 	return retval;
 }
 
+#ifdef SECURITY_OPENPAM_H_INCLUDED
+/*
+ * Logic below is copied from openpam_check_error_code() in
+ *./contrib/openpam/lib/libpam/openpam_dispatch.c on FreeBSD.
+ */
+static int openpam_convert_error_code(struct pwb_context *ctx,
+				      enum pam_winbind_request_type req,
+				      int r)
+{
+	if (r == PAM_SUCCESS ||
+	    r == PAM_SYSTEM_ERR ||
+	    r == PAM_SERVICE_ERR ||
+	    r == PAM_BUF_ERR ||
+	    r == PAM_CONV_ERR ||
+	    r == PAM_PERM_DENIED ||
+	    r == PAM_ABORT) {
+		return r;
+	}
+
+	/* specific winbind request types */
+	switch (req) {
+	case PAM_WINBIND_AUTHENTICATE:
+		if (r == PAM_AUTH_ERR ||
+		    r == PAM_CRED_INSUFFICIENT ||
+		    r == PAM_AUTHINFO_UNAVAIL ||
+		    r == PAM_USER_UNKNOWN ||
+		    r == PAM_MAXTRIES) {
+			return r;
+		}
+		break;
+	case PAM_WINBIND_SETCRED:
+		if (r == PAM_CRED_UNAVAIL ||
+		    r == PAM_CRED_EXPIRED ||
+		    r == PAM_USER_UNKNOWN ||
+		    r == PAM_CRED_ERR) {
+			return r;
+		}
+		break;
+	case PAM_WINBIND_ACCT_MGMT:
+		if (r == PAM_USER_UNKNOWN ||
+		    r == PAM_AUTH_ERR ||
+		    r == PAM_NEW_AUTHTOK_REQD ||
+		    r == PAM_ACCT_EXPIRED) {
+			return r;
+		}
+		break;
+	case PAM_WINBIND_OPEN_SESSION:
+	case PAM_WINBIND_CLOSE_SESSION:
+		if (r == PAM_SESSION_ERR) {
+			return r;
+		}
+		break;
+	case PAM_WINBIND_CHAUTHTOK:
+		if (r == PAM_PERM_DENIED ||
+		    r == PAM_AUTHTOK_ERR ||
+		    r == PAM_AUTHTOK_RECOVERY_ERR ||
+		    r == PAM_AUTHTOK_LOCK_BUSY ||
+		    r == PAM_AUTHTOK_DISABLE_AGING ||
+		    r == PAM_TRY_AGAIN) {
+			return r;
+		}
+		break;
+	default:
+		break;
+	}
+	_pam_log(ctx, LOG_INFO,
+		 "Converting PAM error [%d] to PAM_SERVICE_ERR.\n", r);
+	return PAM_SERVICE_ERR;
+};
+#define pam_error_code(a, b, c) openpam_convert_error_code(a, b, c)
+#else
+#define pam_error_code(a, b, c) (c)
+#endif
+
 PAM_EXTERN
 int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 			int argc, const char **argv)
@@ -2849,7 +2923,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 	TALLOC_FREE(ctx);
 
-	return ret;
+	return pam_error_code(ctx, PAM_WINBIND_SETCRED, ret);
 }
 
 /*
@@ -2952,7 +3026,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 
 	TALLOC_FREE(ctx);
 
-	return ret;
+	return pam_error_code(ctx, PAM_WINBIND_ACCT_MGMT, ret);
 }
 
 PAM_EXTERN
@@ -2979,7 +3053,7 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
 	TALLOC_FREE(ctx);
 
-	return ret;
+	return pam_error_code(ctx, PAM_WINBIND_OPEN_SESSION, ret);
 }
 
 PAM_EXTERN
@@ -3001,7 +3075,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 
 	TALLOC_FREE(ctx);
 
-	return ret;
+	return pam_error_code(ctx, PAM_WINBIND_CLOSE_SESSION, ret);
 }
 
 /**
@@ -3353,7 +3427,7 @@ out:
 
 	TALLOC_FREE(ctx);
 
-	return ret;
+	return pam_error_code(ctx, PAM_WINBIND_CHAUTHTOK, ret);
 }
 
 #ifdef PAM_STATIC
