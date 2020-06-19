@@ -4515,7 +4515,7 @@ static int cmd_notify(void)
 		status = cli_notify(cli, fnum, 1000, FILE_NOTIFY_CHANGE_ALL,
 				    true,
 				    talloc_tos(), &num_changes, &changes);
-		if (NT_STATUS_EQUAL(status, STATUS_NOTIFY_ENUM_DIR)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOTIFY_ENUM_DIR)) {
 			printf("NOTIFY_ENUM_DIR\n");
 			status = NT_STATUS_OK;
 		}
