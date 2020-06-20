@@ -3707,8 +3707,12 @@ static char **get_addl_hosts(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < *num_values; i++) {
-		if (!pull_utf8_talloc(mem_ctx, &ret[i], values[i]->bv_val,
-				      &converted_size)) {
+		ret[i] = NULL;
+		if (!convert_string_talloc(mem_ctx, CH_UTF8, CH_UNIX,
+					   values[i]->bv_val,
+					   strnlen(values[i]->bv_val,
+						   values[i]->bv_len),
+					   &ret[i], &converted_size)) {
 			ldap_value_free_len(values);
 			return NULL;
 		}
