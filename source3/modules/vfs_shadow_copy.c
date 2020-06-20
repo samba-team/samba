@@ -192,8 +192,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	dir_hnd = OpenDir(talloc_tos(), handle->conn, smb_fname, NULL, 0);
 	TALLOC_FREE(smb_fname);
 	if (dir_hnd == NULL) {
-		DBG_ERR("SMB_VFS_NEXT_OPENDIR() failed for [%s]\n",
-			fsp->conn->connectpath);
+		DBG_ERR("OpenDir() failed for [%s]\n", fsp->conn->connectpath);
 		return -1;
 	}
 
