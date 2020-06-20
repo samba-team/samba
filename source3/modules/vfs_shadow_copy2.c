@@ -2016,8 +2016,8 @@ static int shadow_copy2_get_shadow_copy_data(
 
 	p = SMB_VFS_NEXT_FDOPENDIR(handle, dirfsp, NULL, 0);
 	if (!p) {
-		DEBUG(2,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s'"
-			 " - %s\n", snapdir, strerror(errno)));
+		DBG_NOTICE("shadow_copy2: SMB_VFS_NEXT_FDOPENDIR() failed for '%s'"
+			   " - %s\n", snapdir, strerror(errno));
 		errno = ENOSYS;
 		goto done;
 	}
