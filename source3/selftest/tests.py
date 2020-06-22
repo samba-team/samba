@@ -966,6 +966,14 @@ plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
                smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
                configuration, '$LOCAL_PATH', '$LOCK_DIR'])
 
+plantestsuite("samba3.blackbox.aio-outstanding", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_aio_outstanding.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               '$SERVER_IP',
+               "aio_delay_inject"])
+
 plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh")])
 
