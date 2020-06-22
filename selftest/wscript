@@ -271,6 +271,9 @@ def cmd_testonly(opt):
         # GSS_KRB5_CRED_NO_CI_FLAGS_X
         env.OPTIONS += " --exclude=${srcdir}/selftest/skip.no-GSS_KRB5_CRED_NO_CI_FLAGS_X"
 
+    if os.environ.get('DISABLE_OPATH'):
+        env.OPTIONS += " --exclude=${srcdir}/selftest/skip.opath-required"
+
     if env.ADDRESS_SANITIZER:
         # We try to find the correct libasan automatically
         libasan = Utils.cmd_output(

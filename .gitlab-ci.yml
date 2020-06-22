@@ -226,6 +226,9 @@ samba-schemaupgrade:
 samba-ad-dc-1-mitkrb5:
   extends: .private_template
 
+samba-no-opath:
+  extends: .private_template
+
 # 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
 pages:
   image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}

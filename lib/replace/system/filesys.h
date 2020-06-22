@@ -199,6 +199,10 @@
 #define mkdir(d,m) _mkdir(d)
 #endif
 
+#ifdef DISABLE_OPATH
+#undef O_PATH
+#endif
+
 /*
    this allows us to use a uniform error handling for our xattr
    wrappers

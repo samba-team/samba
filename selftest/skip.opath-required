@@ -1,0 +1,9 @@
+# Opening O_RDONLY screws kernel oplocks which is not a problem
+# as only Linux has kernel oplocks and as Linux has O_PATH, we
+# don't need O_RDONLY in the first place.
+^samba3.smb2.kernel-oplocks.*
+^samba3.smbtorture_s3.plain.OPLOCK5.*
+#
+# These fail because become_root() doesn't work in make test
+^samba3.blackbox.dropbox.*
+^samba3.raw.samba3hide.*

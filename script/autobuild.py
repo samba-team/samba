@@ -375,6 +375,27 @@ tasks = {
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
 
+    "samba-no-opath": [
+        ("random-sleep", random_sleep(300, 900)),
+        ("configure", "ADDITIONAL_CFLAGS='-DDISABLE_OPATH=1' ./configure.developer --without-ad-dc --with-selftest-prefix=./bin/ab" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(
+            cmd="make test DISABLE_OPATH=1",
+            include_envs=[
+            "nt4_dc",
+            "nt4_dc_smb1",
+            "nt4_dc_smb1_done",
+            "nt4_dc_schannel",
+            "nt4_member",
+            "simpleserver",
+            "fileserver",
+            "fileserver_smb1",
+            "fileserver_smb1_done",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
     "samba-ad-dc-1": [
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
