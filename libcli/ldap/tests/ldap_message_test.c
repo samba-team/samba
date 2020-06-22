@@ -115,7 +115,7 @@ static void test_empty_input(void **state)
 	struct asn1_data *asn1;
 	struct ldap_message *ldap_msg;
 	NTSTATUS status;
-	uint8_t buf[0];
+	uint8_t *buf = NULL;
 	size_t len = 0;
 	struct ldap_request_limits limits = {
 		.max_search_size = 256000,
