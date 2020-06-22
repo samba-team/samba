@@ -30,3 +30,14 @@ bool torture_unblock_tcp_output_port(struct torture_context *tctx,
 bool torture_block_tcp_output_setup(struct torture_context *tctx);
 bool torture_unblock_tcp_output_cleanup(struct torture_context *tctx);
 
+bool test_setup_blocked_transports(struct torture_context *tctx);
+void test_cleanup_blocked_transports(struct torture_context *tctx);
+
+#define test_block_smb2_transport(_tctx, _t) _test_block_smb2_transport(_tctx, _t, #_t)
+bool _test_block_smb2_transport(struct torture_context *tctx,
+				struct smb2_transport *transport,
+				const char *name);
+#define test_unblock_smb2_transport(_tctx, _t) _test_unblock_smb2_transport(_tctx, _t, #_t)
+bool _test_unblock_smb2_transport(struct torture_context *tctx,
+				  struct smb2_transport *transport,
+				  const char *name);
