@@ -184,7 +184,7 @@ samba-ad-dc-4-mitkrb5:
 
 samba-fips:
   extends: .shared_template
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora31
+  image: $SAMBA_CI_CONTAINER_IMAGE_fedora32
 
 .private_template:
   extends: .shared_template
