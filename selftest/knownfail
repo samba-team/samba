@@ -160,7 +160,7 @@
 ^samba4.smb2.oplock.levelii500\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.levelii502\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.brl1\(.*\)$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch22\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch22.\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch19\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch12\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch11\(.*\)$ # samba 4 oplocks are a mess
