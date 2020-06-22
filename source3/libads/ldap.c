@@ -3693,6 +3693,12 @@ static char **get_addl_hosts(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	char **ret = NULL;
 	size_t i, converted_size;
 
+	/*
+	 * Windows DC implicitly adds a short name for each FQDN added to
+	 * msDS-AdditionalDnsHostName, but it comes with a strage binary
+	 * suffix "\0$" which we should ignore (see bug #14406).
+	 */
+
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 	if (values == NULL) {
 		return NULL;
