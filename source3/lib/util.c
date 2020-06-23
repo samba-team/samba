@@ -867,11 +867,6 @@ const char *readdirname(DIR *p)
 
 	dname = ptr->d_name;
 
-#ifdef HAVE_BROKEN_READDIR_NAME
-	/* using /usr/ucb/cc is BAD */
-	dname = dname - 2;
-#endif
-
 	return talloc_strdup(talloc_tos(), dname);
 }
 
