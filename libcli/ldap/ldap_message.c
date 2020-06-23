@@ -1540,7 +1540,8 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		if (!ldap_decode_response(msg, data, &r->response)) goto prot_err;
 
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(10))) {
-			if (!asn1_read_ContextSimple(data, msg, 1, &tmp_blob)) goto prot_err;
+			if (!asn1_read_ContextSimple(data, msg, 10, &tmp_blob))
+				goto prot_err;
 			r->oid = blob2string_talloc(msg, tmp_blob);
 			data_blob_free(&tmp_blob);
 			if (!r->oid) {
@@ -1551,7 +1552,8 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		}
 
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(11))) {
-			if (!asn1_read_ContextSimple(data, msg, 1, &tmp_blob)) goto prot_err;
+			if (!asn1_read_ContextSimple(data, msg, 11, &tmp_blob))
+				goto prot_err;
 			r->value = talloc(msg, DATA_BLOB);
 			if (!r->value) {
 				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
