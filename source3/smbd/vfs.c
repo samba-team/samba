@@ -855,11 +855,6 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 	dname = ptr->d_name;
 
 
-#ifdef NEXT2
-	if (telldir(p) < 0)
-		return(NULL);
-#endif
-
 #ifdef HAVE_BROKEN_READDIR_NAME
 	/* using /usr/ucb/cc is BAD */
 	dname = dname - 2;
