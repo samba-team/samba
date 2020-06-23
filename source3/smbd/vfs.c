@@ -854,12 +854,6 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 
 	dname = ptr->d_name;
 
-
-#ifdef HAVE_BROKEN_READDIR_NAME
-	/* using /usr/ucb/cc is BAD */
-	dname = dname - 2;
-#endif
-
 	status = SMB_VFS_TRANSLATE_NAME(conn, dname, vfs_translate_to_windows,
 					talloc_tos(), &translated);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
