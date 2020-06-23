@@ -1,0 +1,39 @@
+<samba:parameter name="smb2 disable oplock break retry"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This boolean parameter controls whether
+    <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will trigger
+    smb2 oplock break notification retries when using
+    <smbconfoption name="server multi channel support">yes</smbconfoption>.
+    </para>
+
+    <para>The [MS-SMB2] specification documents that a server should
+    send smb2 oplock break notification retries on all available channel
+    to the given client.</para>
+
+    <para>But Windows Server versions (at least up to 2019) do not send
+    smb2 oplock break notification retries on channel failures.
+    That means they do not implement the behavior specified
+    in [MS-SMB2].</para>
+
+    <para>By default Samba behaves according to the specification
+    and send smb2 oplock break notification retries.</para>
+
+    <para>Warning: Only enable this option if existing clients can't
+    handle possible retries and it turns out that the Windows Server
+    behavior is required.</para>
+
+    <para>Note: it's likely that this option gets removed again
+    if future Windows versions change their behavior.</para>
+
+    <para>Note: this only applies to oplocks and not SMB2 leases.</para>
+</description>
+
+<related>server multi channel support</related>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
