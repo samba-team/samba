@@ -1149,6 +1149,9 @@ static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
 	block_ok = test_block_smb2_transport(tctx, transport2A);
 	torture_assert(tctx, block_ok, "we could not block tcp transport");
 
+	torture_wait_for_lease_break(tctx);
+	CHECK_VAL(lease_break_info.count, 0);
+
 	/* 1 opens file2 */
 	torture_comment(tctx,
 			"Client opens fname2 with session1 with 2A blocked\n");
@@ -1171,7 +1174,14 @@ static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
 				lease_break_info.count);
 	}
 
-	CHECK_VAL(lease_break_info.count, 1);
+	/*
+	 * We got breaks on both channels
+	 * (one failed on the blocked connection)
+	 */
+	CHECK_VAL(lease_break_info.count, 2);
+	lease_break_info.count -= 1;
+	CHECK_VAL(lease_break_info.failures, 1);
+	lease_break_info.failures -= 1;
 	CHECK_BREAK_INFO("RHW", "RH", LEASE2F2);
 	torture_reset_lease_break_info(tctx, &lease_break_info);
 
