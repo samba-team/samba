@@ -167,8 +167,23 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 
+	/*
+	 * Given a zero length, data_blob_talloc() returns the
+	 * NULL blob {NULL, 0}.
+	 *
+	 * We only want to error return here on a real out of memory condition
+	 * (i.e. dsize != 0, so the UDP packet has data, but the return of the
+	 * allocation failed, so blob.data==NULL).
+	 *
+	 * Given an actual zero length UDP packet having blob.data == NULL
+	 * isn't an out of memory error condition, that's the defined semantics
+	 * of data_blob_talloc() when asked for zero bytes.
+	 *
+	 * We still need to continue to do the zero-length socket_recvfrom()
+	 * read in order to clear the "read pending" condition on the socket.
+	 */
 	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-	if (blob.data == NULL) {
+	if (blob.data == NULL && dsize != 0) {
 		talloc_free(tmp_ctx);
 		return;
 	}
