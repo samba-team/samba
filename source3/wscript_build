@@ -501,7 +501,7 @@ bld.SAMBA3_LIBRARY('smbldap',
                     abi_directory='lib/ABI',
                     abi_match='smbldap_*',
                     pc_files=[],
-                    vnum='2',
+                    vnum='2.1.0',
                     public_headers='include/smbldap.h include/smb_ldap.h')
 
 bld.SAMBA3_LIBRARY('ads',

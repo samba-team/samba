@@ -17,6 +17,12 @@ NEW FEATURES/CHANGES
 ====================
 
 
+The "ldap ssl ads" option no longer depends on "ldap ssl" option:
+-----------------------------------------------------------------
+With this release, the "ldap ssl ads" can be set to "yes" even if "ldap ssl"
+is off.
+
+
 REMOVED FEATURES
 ================
 

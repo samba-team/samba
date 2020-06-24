@@ -72,6 +72,7 @@ int smbldap_modify(struct smbldap_state *ldap_state,
                    const char *dn,
                    LDAPMod *attrs[]);
 int smbldap_start_tls(LDAP *ldap_struct, int version);
+int smbldap_start_tls_start(LDAP *ldap_struct, int version);
 int smbldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
 int smbldap_search(struct smbldap_state *ldap_state,
 		   const char *base, int scope, const char *filter,

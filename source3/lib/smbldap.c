@@ -598,20 +598,27 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 }
 
 /********************************************************************
- start TLS on an existing LDAP connection
+ start TLS on an existing LDAP connection per config
 *******************************************************************/
 
 int smbldap_start_tls(LDAP *ldap_struct, int version)
-{ 
-#ifdef LDAP_OPT_X_TLS
-	int rc,tls;
-#endif
-
+{
 	if (lp_ldap_ssl() != LDAP_SSL_START_TLS) {
 		return LDAP_SUCCESS;
 	}
 
+	return smbldap_start_tls_start(ldap_struct, version);
+}
+
+/********************************************************************
+ start TLS on an existing LDAP connection unconditionally
+*******************************************************************/
+
+int smbldap_start_tls_start(LDAP *ldap_struct, int version)
+{
 #ifdef LDAP_OPT_X_TLS
+	int rc,tls;
+
 	/* check if we use ldaps already */
 	ldap_get_option(ldap_struct, LDAP_OPT_X_TLS, &tls);
 	if (tls == LDAP_OPT_X_TLS_HARD) {
