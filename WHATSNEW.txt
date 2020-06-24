@@ -1,3 +1,62 @@
+                   ===============================
+                   Release Notes for Samba 4.11.10
+                            June 30, 2020
+		   ===============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.9
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14374: Fix segfault when using SMBC_opendir_ctx() routine for share
+     folder that contains incorrect symbols in any file name.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14350: vfs_shadow_copy2 doesn't fail case looking in snapdirseverywhere
+     mode.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14413: ldb_ldap: Fix off-by-one increment in lldb_add_msg_attr.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14366: Malicous SMB1 server can crash libsmbclient.
+   * BUG 14382: winbindd: Fix a use-after-free when winbind clients exit.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14330: ldb: Bump version to 2.0.11, LMDB databases can grow without
+     bounds.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14358: docs-xml: Fix usernames in pam_winbind manpages.
+   * BUG 14370: Client tools are not able to read gencache anymore.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
                    ==============================
                    Release Notes for Samba 4.11.9
                             May 05, 2020
@@ -81,8 +140,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.8
