@@ -123,7 +123,7 @@ bool test_durable_v2_open_create_blob(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 
 	/* disconnect */
 	TALLOC_FREE(tree);
@@ -547,7 +547,7 @@ bool test_durable_v2_open_reopen1(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 
 	/* try a durable reconnect while the file is still open */
 	ZERO_STRUCT(io);
@@ -623,7 +623,7 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 
 	/*
 	 * a session reconnect on a second tcp connection
@@ -666,7 +666,7 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 0);
 	_h = io.out.file.handle;
 	h = &_h;
 
@@ -710,7 +710,7 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 0);
 	_h = io.out.file.handle;
 	h = &_h;
 
@@ -795,7 +795,7 @@ bool test_durable_v2_open_reopen1a_lease(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease_key);
 	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease_key);
@@ -885,7 +885,7 @@ bool test_durable_v2_open_reopen1a_lease(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 0);
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease_key);
 	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease_key);
@@ -961,7 +961,7 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 
 	/* disconnect, leaving the durable open */
 	TALLOC_FREE(tree);
@@ -1122,7 +1122,7 @@ bool test_durable_v2_open_reopen2b(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 
 	/* disconnect, leaving the durable open */
 	TALLOC_FREE(tree);
@@ -1294,7 +1294,7 @@ bool test_durable_v2_open_reopen2_lease(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease_key);
 	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease_key);
@@ -1547,7 +1547,7 @@ bool test_durable_v2_open_reopen2_lease_v2(struct torture_context *tctx,
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(io.out.timeout, 300*1000);
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.lease_response_v2.lease_key.data[0], lease_key);
 	CHECK_VAL(io.out.lease_response_v2.lease_key.data[1], ~lease_key);
@@ -1787,7 +1787,7 @@ bool test_durable_v2_open_app_instance(struct torture_context *tctx,
 	CHECK_VAL(io1.out.durable_open, false);
 	CHECK_VAL(io1.out.durable_open_v2, true);
 	CHECK_VAL(io1.out.persistent_open, false);
-	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+	CHECK_VAL(io1.out.timeout, 300*1000);
 
 	/*
 	 * try to open the file as durable from a second tree with
@@ -1814,7 +1814,7 @@ bool test_durable_v2_open_app_instance(struct torture_context *tctx,
 	CHECK_VAL(io2.out.durable_open, false);
 	CHECK_VAL(io2.out.durable_open_v2, true);
 	CHECK_VAL(io2.out.persistent_open, false);
-	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+	CHECK_VAL(io2.out.timeout, 300*1000);
 
 	CHECK_VAL(break_info.count, 0);
 
