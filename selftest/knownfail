@@ -211,9 +211,8 @@
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.smb2.compound.aio.interim2 # wrong return code (STATUS_CANCELLED)
-^samba3.smb2.replay.channel-sequence
-^samba3.smb2.replay.replay3
-^samba3.smb2.replay.replay4
+^samba3.smb2.replay.replay3 # This requires multi-chanel
+^samba3.smb2.replay.replay4 # This requires multi-chanel
 ^samba3.smb2.lock.replay_smb3_specification # This requires multi-chanel or durable handles
 ^samba3.smb2.lock.*replay_broken_windows # This tests the windows behaviour
 ^samba3.smb2.lease.statopen3

@@ -1580,7 +1580,6 @@ static bool test_channel_sequence(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\channel_sequence.dat";
 	struct smb2_transport *transport1 = tree->session->transport;
 	struct smb2_handle handle;
-	uint32_t server_capabilities;
 	uint16_t opcodes[] = { SMB2_OP_WRITE, SMB2_OP_IOCTL, SMB2_OP_SETINFO };
 	int i;
 
@@ -1589,14 +1588,9 @@ static bool test_channel_sequence(struct torture_context *tctx,
 				   "Replay tests\n");
 	}
 
-	server_capabilities = smb2cli_conn_server_capabilities(
-					tree->session->transport->conn);
-	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
-		torture_skip(tctx,
-			     "Server does not support multi-channel.");
-	}
-
 	torture_comment(tctx, "Testing channel sequence numbers\n");
+
+	smbXcli_conn_set_force_channel_sequence(transport1->conn, true);
 
 	torture_assert_ntstatus_ok_goto(tctx,
 		torture_smb2_testdir(tree, BASEDIR, &handle),
