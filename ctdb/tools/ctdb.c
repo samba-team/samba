@@ -6027,7 +6027,7 @@ static const struct ctdb_cmd {
 		"show event script status",
 		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
 	{ "natgw", control_natgw, false, false,
-		"show natgw configuration", "master|list|status" },
+		"show natgw configuration", "leader|list|status" },
 	{ "getreclock", control_getreclock, false, true,
 		"get recovery lock file", NULL },
 	{ "setlmasterrole", control_setlmasterrole, false, true,

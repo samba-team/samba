@@ -715,13 +715,13 @@ CTDB_LVS_NODES=/usr/local/etc/ctdb/lvs_nodes
       </para>
       <para>
 	In each NATGW group, one of the nodes is selected by CTDB to
-	be the NATGW master and the other nodes are consider to be
-	NATGW slaves.  NATGW slaves establish a fallback default route
-	to the NATGW master via the private network.  When a NATGW
-	slave hosts no public IP addresses then it will use this route
-	for outbound connections.  The NATGW master hosts the NATGW
+	be the NATGW leader and the other nodes are consider to be
+	NATGW followers.  NATGW followers establish a fallback default route
+	to the NATGW leader via the private network.  When a NATGW
+	follower hosts no public IP addresses then it will use this route
+	for outbound connections.  The NATGW leader hosts the NATGW
 	public IP address and routes outgoing connections from
-	slave nodes via this IP address.  It also establishes a
+	follower nodes via this IP address.  It also establishes a
 	fallback default route.
       </para>
     </refsect2>
@@ -742,9 +742,9 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 
       <para>
 	Normally any node in a NATGW group can act as the NATGW
-	master.  Some configurations may have special nodes that lack
+	leader.  Some configurations may have special nodes that lack
 	connectivity to a public network.  In such cases, those nodes
-	can be flagged with the "slave-only" option in the
+	can be flagged with the "follower-only" option in the
 	<varname>CTDB_NATGW_NODES</varname> file to limit the NATGW
 	functionality of those nodes.
       </para>
@@ -765,15 +765,15 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 	When the NATGW functionality is used, one of the nodes is
 	selected to act as a NAT gateway for all the other nodes in
 	the group when they need to communicate with the external
-	services.  The NATGW master is selected to be a node that is
+	services.  The NATGW leader is selected to be a node that is
 	most likely to have usable networks.
       </para>
 
       <para>
-	The NATGW master hosts the NATGW public IP address
+	The NATGW leader hosts the NATGW public IP address
 	<varname>CTDB_NATGW_PUBLIC_IP</varname> on the configured public
 	interfaces <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and acts as
-	a router, masquerading outgoing connections from slave nodes
+	a router, masquerading outgoing connections from follower nodes
 	via this IP address.  If
 	<varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is set then it
 	also establishes a fallback default route to the configured
@@ -783,8 +783,8 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
       </para>
 
       <para>
-	A NATGW slave establishes its fallback default route to the
-	NATGW master via the private network
+	A NATGW follower establishes its fallback default route to the
+	NATGW leader via the private network
 	<varname>CTDB_NATGW_PRIVATE_NETWORK</varname>with a metric of 10.
 	This route is used for outbound connections when no other
 	default route is available because the node hosts no public

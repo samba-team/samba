@@ -2,13 +2,13 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "slave node, static routes, custom gateway"
+define_test "follower node, static routes, custom gateway"
 
 setup
 
 setup_ctdb_natgw <<EOF
 192.168.1.21
-192.168.1.22 master
+192.168.1.22 leader
 192.168.1.23
 192.168.1.24
 EOF
@@ -20,8 +20,8 @@ EOF
 ok_null
 simple_test_event "ipreallocated"
 
-ok_natgw_slave_static_routes
+ok_natgw_follower_static_routes
 simple_test_command ip route show
 
-ok_natgw_slave_ip_addr_show
+ok_natgw_follower_ip_addr_show
 simple_test_command ip addr show "$CTDB_NATGW_PUBLIC_IFACE"

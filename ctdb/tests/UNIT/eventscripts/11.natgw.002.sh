@@ -7,7 +7,7 @@ define_test "missing config file"
 setup
 
 setup_ctdb_natgw <<EOF
-192.168.1.21 master
+192.168.1.21 leader
 192.168.1.22
 192.168.1.23
 192.168.1.24

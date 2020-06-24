@@ -445,7 +445,7 @@ Duration of last recovery/failover: 2.248552 seconds
     </refsect2>
 
     <refsect2>
-      <title>natgw {master|list|status}</title>
+      <title>natgw {leader|list|status}</title>
       <para>
 	This command shows different aspects of NAT gateway status.
 	For an overview of CTDB's NAT gateway functionality please see
@@ -456,11 +456,11 @@ Duration of last recovery/failover: 2.248552 seconds
 
       <variablelist>
 	<varlistentry>
-	  <term>master</term>
+	  <term>leader</term>
 	  <listitem>
 	    <para>
 	      Show the PNN and private IP address of the current NAT
-	      gateway master node.
+	      gateway leader node.
 	    </para>
 	    <para>
 	      Example output:
@@ -475,14 +475,14 @@ Duration of last recovery/failover: 2.248552 seconds
 	  <listitem>
 	    <para>
 	      List the private IP addresses of nodes in the current
-	      NAT gateway group, annotating the master node.
+	      NAT gateway group, annotating the leader node.
 	    </para>
 	    <para>
 	      Example output:
 	    </para>
 	    <screen>
 192.168.2.200
-192.168.2.201	MASTER
+192.168.2.201	LEADER
 192.168.2.202
 192.168.2.203
 	    </screen>

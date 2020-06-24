@@ -2,12 +2,12 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "CTDB_NATGW_PUBLIC_IFACE unset, not slave-only"
+define_test "CTDB_NATGW_PUBLIC_IFACE unset, not follower-only"
 
 setup
 
 setup_ctdb_natgw <<EOF
-192.168.1.21 master
+192.168.1.21 leader
 192.168.1.22
 192.168.1.23
 192.168.1.24

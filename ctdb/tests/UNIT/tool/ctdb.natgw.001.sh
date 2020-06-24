@@ -23,12 +23,12 @@ required_result 0 <<EOF
 0 192.168.20.41
 EOF
 
-simple_test master
+simple_test leader
 
 #####
 
 required_result 0 <<EOF
-192.168.20.41	MASTER
+192.168.20.41	LEADER
 192.168.20.42
 192.168.20.43
 EOF

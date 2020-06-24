@@ -14,12 +14,12 @@ setup_ctdb_natgw ()
 	# Read from stdin
 	while read _ip _opts ; do
 		case "$_opts" in
-		master)
-			export FAKE_CTDB_NATGW_MASTER="$_ip"
+		leader)
+			export FAKE_CTDB_NATGW_LEADER="$_ip"
 			echo "$_ip"
 			;;
-		slave-only)
-			printf "%s\tslave-only\n" "$_ip"
+		follower-only)
+			printf "%s\tfollower-only\n" "$_ip"
 			;;
 		*)
 			echo "$_ip"
@@ -43,7 +43,7 @@ CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
 EOF
 }
 
-ok_natgw_master_ip_addr_show ()
+ok_natgw_leader_ip_addr_show ()
 {
 	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
 	       cksum |
@@ -60,7 +60,7 @@ ok_natgw_master_ip_addr_show ()
 EOF
 }
 
-ok_natgw_slave_ip_addr_show ()
+ok_natgw_follower_ip_addr_show ()
 {
 	_mac=$(echo "$CTDB_NATGW_PUBLIC_IFACE" |
 	       cksum |
@@ -72,7 +72,7 @@ ok_natgw_slave_ip_addr_show ()
 EOF
 }
 
-ok_natgw_master_static_routes ()
+ok_natgw_leader_static_routes ()
 {
 	_nl="
 "
@@ -97,7 +97,7 @@ ok_natgw_master_static_routes ()
 	ok "$_t"
 }
 
-ok_natgw_slave_static_routes ()
+ok_natgw_follower_static_routes ()
 {
 	_nl="
 "
@@ -112,7 +112,7 @@ ok_natgw_slave_static_routes ()
 		# implicitly added by "ip route" but our stub doesn't
 		# do this and adds "ethXXX".
 		_t="${_t}${_t:+${_nl}}"
-		_t="${_t}${_net} via ${FAKE_CTDB_NATGW_MASTER} dev ethXXX  metric 10 "
+		_t="${_t}${_net} via ${FAKE_CTDB_NATGW_LEADER} dev ethXXX  metric 10 "
 	done
 	_t=$(echo "$_t" | sort)
 	ok "$_t"

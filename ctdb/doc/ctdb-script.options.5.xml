@@ -125,9 +125,9 @@
 	when they do not host any public IP addresses.  For example,
 	it allows unhealthy nodes to reliably communicate with
 	external infrastructure.  One node in a NAT gateway group will
-	be designated as the NAT gateway master node and other (slave)
+	be designated as the NAT gateway leader node and other (follower)
 	nodes will be configured with fallback routes via the NAT
-	gateway master node.  For more information, see the
+	gateway leader node.  For more information, see the
 	<citetitle>NAT GATEWAY</citetitle> section in
 	<citerefentry><refentrytitle>ctdb</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry>.
@@ -140,12 +140,12 @@
 	  <listitem>
 	    <para>
 	      IPADDR is an alternate network gateway to use on the NAT
-	      gateway master node.  If set, a fallback default route
+	      gateway leader node.  If set, a fallback default route
 	      is added via this network gateway.
 	    </para>
 	    <para>
 	      No default.  Setting this variable is optional - if not
-	      set that no route is created on the NAT gateway master
+	      set that no route is created on the NAT gateway leader
 	      node.
 	    </para>
 	  </listitem>
@@ -161,7 +161,7 @@
 	    <para>
 	      File format:
 	      <screen>
-<parameter>IPADDR</parameter> <optional>slave-only</optional>
+<parameter>IPADDR</parameter> <optional>follower-only</optional>
 	      </screen>
 	    </para>
 	    <para>
@@ -169,8 +169,8 @@
 	      gateway group.
 	    </para>
 	    <para>
-	      If "slave-only" is specified then the corresponding node
-	      can not be the NAT gateway master node.  In this case
+	      If "follower-only" is specified then the corresponding node
+	      can not be the NAT gateway leader node.  In this case
 	      <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and
 	      <varname>CTDB_NATGW_PUBLIC_IP</varname> are optional and
 	      unused.
@@ -187,7 +187,7 @@
 	  <listitem>
 	    <para>
 	      IPADDR/MASK is the private sub-network that is
-	      internally routed via the NAT gateway master node.  This
+	      internally routed via the NAT gateway leader node.  This
 	      is usually the private network that is used for node
 	      addresses.
 	    </para>
@@ -216,7 +216,7 @@
 	    <para>
 	      IPADDR/MASK indicates the IP address that is used for
 	      outgoing traffic (originating from
-	      CTDB_NATGW_PRIVATE_NETWORK) on the NAT gateway master
+	      CTDB_NATGW_PRIVATE_NETWORK) on the NAT gateway leader
 	      node.  This <emphasis>must not</emphasis> be a
 	      configured public IP address.
 	    </para>
@@ -239,19 +239,19 @@
 	    </para>
 	    <para>
 	      If GATEWAY is specified then the corresponding route on
-	      the NATGW master node will be via GATEWAY.  Such routes
+	      the NATGW leader node will be via GATEWAY.  Such routes
 	      are created even if
 	      <varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is not
 	      specified.  If GATEWAY is not specified for some
 	      networks then routes are only created on the NATGW
-	      master node for those networks if
+	      leader node for those networks if
 	      <varname>CTDB_NATGW_DEFAULT_GATEWAY</varname> is
 	      specified.
 	    </para>
 	    <para>
 	      This should be used with care to avoid causing traffic
 	      to unnecessarily double-hop through the NAT gateway
-	      master, even when a node is hosting public IP addresses.
+	      leader, even when a node is hosting public IP addresses.
 	      Each specified network or host should probably have a
 	      corresponding automatically created link route or static
 	      route to avoid this.

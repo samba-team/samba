@@ -23,14 +23,14 @@ ctdb_setup_state_dir "failover" "$service_name"
 # shellcheck disable=SC2154
 natgw_cfg_new="${script_state_dir}/cfg_new"
 natgw_cfg_old="${script_state_dir}/cfg_old"
-natgw_master_old="${script_state_dir}/master_old"
+natgw_leader_old="${script_state_dir}/leader_old"
 
-ctdb_natgw_slave_only ()
+ctdb_natgw_follower_only ()
 {
     _ip_address=$(ctdb_get_ip_address)
 
     awk -v my_ip="$_ip_address" \
-	'$1 == my_ip { if ($2 ~ "slave-only") { exit 0 } else { exit 1 } }' \
+	'$1 == my_ip { if ($2 ~ "follower-only") { exit 0 } else { exit 1 } }' \
 	"$CTDB_NATGW_NODES"
 }
 
@@ -38,7 +38,7 @@ natgw_check_config ()
 {
     [ -r "$CTDB_NATGW_NODES" ] || \
 	die "error: CTDB_NATGW_NODES=${CTDB_NATGW_NODES} unreadable"
-    if ! ctdb_natgw_slave_only ; then
+    if ! ctdb_natgw_follower_only ; then
 	[ -n "$CTDB_NATGW_PUBLIC_IP" ] || \
 	    die "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
 	[ -n "$CTDB_NATGW_PUBLIC_IFACE" ] || \
@@ -113,7 +113,7 @@ natgw_clear ()
     fi
 }
 
-natgw_set_master ()
+natgw_set_leader ()
 {
     set_proc sys/net/ipv4/ip_forward 1
     iptables -A POSTROUTING -t nat \
@@ -141,7 +141,7 @@ natgw_set_master ()
     done
 }
 
-natgw_set_slave ()
+natgw_set_follower ()
 {
     _natgwip="$1"
 
@@ -151,33 +151,33 @@ natgw_set_slave ()
     done
 }
 
-natgw_ensure_master ()
+natgw_ensure_leader ()
 {
     # Intentional word splitting here
     # shellcheck disable=SC2046
-    set -- $("${CTDB_HELPER_BINDIR}/ctdb_natgw" master)
-    natgwmaster="${1:--1}" # Default is -1, for failure above
+    set -- $("${CTDB_HELPER_BINDIR}/ctdb_natgw" leader)
+    natgwleader="${1:--1}" # Default is -1, for failure above
     natgwip="$2"
 
-    if [ "$natgwmaster" = "-1" ]; then
+    if [ "$natgwleader" = "-1" ]; then
 	# Fail...
-	die "There is no NATGW master node"
+	die "There is no NATGW leader node"
     fi
 }
 
-natgw_master_has_changed ()
+natgw_leader_has_changed ()
 {
-    if [ -r "$natgw_master_old" ] ; then
-	read _old_natgwmaster <"$natgw_master_old"
+    if [ -r "$natgw_leader_old" ] ; then
+	read _old_natgwleader <"$natgw_leader_old"
     else
-	_old_natgwmaster=""
+	_old_natgwleader=""
     fi
-    [ "$_old_natgwmaster" != "$natgwmaster" ]
+    [ "$_old_natgwleader" != "$natgwleader" ]
 }
 
 natgw_save_state ()
 {
-    echo "$natgwmaster" >"$natgw_master_old"
+    echo "$natgwleader" >"$natgw_leader_old"
     # Created by natgw_config_has_changed()
     mv "$natgw_cfg_new" "$natgw_cfg_old"
 }
@@ -205,17 +205,17 @@ startup)
 updatenatgw|ipreallocated)
 	natgw_check_config
 
-	natgw_ensure_master
+	natgw_ensure_leader
 
-	natgw_config_has_changed || natgw_master_has_changed || exit 0
+	natgw_config_has_changed || natgw_leader_has_changed || exit 0
 
 	natgw_clear
 
 	pnn=$(ctdb_get_pnn)
-	if [ "$pnn" = "$natgwmaster" ]; then
-	    natgw_set_master
+	if [ "$pnn" = "$natgwleader" ]; then
+	    natgw_set_leader
 	else
-	    natgw_set_slave "$natgwip"
+	    natgw_set_follower "$natgwip"
 	fi
 
 	# flush our route cache

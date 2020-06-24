@@ -2,10 +2,10 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, node 0 is slave-only, all stopped"
+define_test "3 nodes, node 0 is follower-only, all stopped"
 
 setup_natgw <<EOF
-192.168.20.41	slave-only
+192.168.20.41	follower-only
 192.168.20.42
 192.168.20.43
 EOF
@@ -23,13 +23,13 @@ required_result 0 <<EOF
 1 192.168.20.42
 EOF
 
-simple_test master
+simple_test leader
 
 #####
 
 required_result 0 <<EOF
-192.168.20.41	slave-only
-192.168.20.42	MASTER
+192.168.20.41	follower-only
+192.168.20.42	LEADER
 192.168.20.43
 EOF
 

@@ -23,8 +23,8 @@ cat <<EOF
 $0 <option>
 
 <option> is one of:
-  master     Display node number and private IP address of master node
-  list       List private IP addresses of nodes in group, annotate master
+  leader     Display node number and private IP address of leader node
+  list       List private IP addresses of nodes in group, annotate leader
   status     Show status of nodes in NAT gateway group
 EOF
     exit 1
@@ -68,7 +68,7 @@ get_natgw_nodes ()
 	    \#*) continue ;;
 	esac
 	case "$_options" in
-	    slave-only|"") : ;;
+	    follower-only|"") : ;;
 	    *) die "${prog}: Invalid options \"${_options}\" in  \"$CTDB_NATGW_NODES\""
 	esac
     done <<EOF
@@ -78,15 +78,15 @@ EOF
     return 0
 }
 
-# Print the PNN and IP address of the NAT gateway master node
-find_master ()
+# Print the PNN and IP address of the NAT gateway leader node
+find_leader ()
 {
     get_natgw_nodes || \
 	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
     get_nodestatus_X  || \
 	die "${prog}: Unable to get status of nodes"
 
-    # $_ms is an @-delimited list of nodes that are allowed to be the master
+    # $_ms is an @-delimited list of nodes that are allowed to be the leader
     _ms="@"
     while read _ip _options ; do
 	case "$_options" in
@@ -99,7 +99,7 @@ EOF
     # Now filter by $ms and by status of nodes...
 
     # Note that the 3 awk invocations below have "||" between them, so
-    # the first to succeed will select the master node.
+    # the first to succeed will select the leader node.
 
     # First try for a fully active and healthy node, so must not be
     # DISABLED, UNHEALTHY or INACTIVE (last covers DISCONNECTED,
@@ -131,21 +131,21 @@ $nodestatus_X
 EOF
 }
 
-# List all nodes in the NAT gateway group, annotating the master node
+# List all nodes in the NAT gateway group, annotating the leader node
 nodes_list ()
 {
     get_natgw_nodes || \
 	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
     # Intentional word splitting here
     # shellcheck disable=SC2046
-    set -- $(find_master)  || \
-	die "${prog}: Unable to determine NAT gateway master node"
-    _master_ip="$2"
+    set -- $(find_leader)  || \
+	die "${prog}: Unable to determine NAT gateway leader node"
+    _leader_ip="$2"
 
-    # Annotate the master node
+    # Annotate the leader node
     while read _ip _options ; do
-	if [ "$_ip" = "$_master_ip" ] ; then
-	    _options="MASTER${_options:+,}${_options}"
+	if [ "$_ip" = "$_leader_ip" ] ; then
+	    _options="LEADER${_options:+,}${_options}"
 	fi
 	# There is no other way to do this and keep shellcheck happy.
 	# The tab character must be in the format string and the
@@ -187,7 +187,7 @@ prog=$(basename "$0")
 cmd="$1"
 
 case "$cmd" in
-    master)    find_master ;;
+    leader)    find_leader ;;
     list)      nodes_list ;;
     status)    nodes_status ;;
     *)         usage ;;
