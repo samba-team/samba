@@ -1157,7 +1157,7 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 		 * durable handle v2 request processed below
 		 */
 		state->durable_requested = true;
-		state->durable_timeout_msec = durable_v2_timeout;
+		state->durable_timeout_msec = MIN(durable_v2_timeout, 300*1000);
 		if (state->durable_timeout_msec == 0) {
 			/*
 			 * Set the timeout to 1 min as default.
