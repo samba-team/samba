@@ -155,6 +155,19 @@ class TestDnsPacketBase(TestCase):
         rcode = self.decode_reply(data)['rcode']
         return expected_rcode == rcode
 
+    def _test_empty_packet(self):
+
+        packet = b""
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.sendto(packet, self.server)
+        s.close()
+
+        # It is reasonable not to reply to an empty packet
+        # but it is not reasonable to render the server
+        # unresponsive.
+        ok = self._known_good_query()
+        self.assertTrue(ok, "the server is unresponsive")
+
 
 class TestDnsPackets(TestDnsPacketBase):
     server = (SERVER, 53)
@@ -172,6 +185,9 @@ class TestDnsPackets(TestDnsPacketBase):
     def test_127_half_dotty_components(self):
         label = b'x.' * 31 + b'x'
         self._test_many_repeated_components(label, 127)
+
+    def test_empty_packet(self):
+        self._test_empty_packet()
 
 
 class TestNbtPackets(TestDnsPacketBase):
@@ -208,3 +224,6 @@ class TestNbtPackets(TestDnsPacketBase):
     def test_127_half_dotty_components(self):
         label = b'x.' * 31 + b'x'
         self._test_many_repeated_components(label, 127)
+
+    def test_empty_packet(self):
+        self._test_empty_packet()
