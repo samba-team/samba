@@ -398,7 +398,7 @@ static int lldb_rename(struct lldb_context *lldb_ac)
 
 	if ((rdn_name != NULL) && (rdn_val != NULL)) {
 		newrdn = talloc_asprintf(lldb_ac, "%s=%s", rdn_name,
-					 rdn_val->length > 0 ? ldb_dn_escape_value(lldb, *rdn_val) : "");
+					 rdn_val->length > 0 ? ldb_dn_escape_value(lldb_ac, *rdn_val) : "");
 	} else {
 		newrdn = talloc_strdup(lldb_ac, "");
 	}
