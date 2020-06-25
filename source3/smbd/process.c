@@ -3750,6 +3750,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_steal(frame, xconn);
+	xconn->client = client;
 	xconn->connect_time = now;
 	if (client->next_channel_id != 0) {
 		xconn->channel_id = client->next_channel_id++;
@@ -3867,7 +3868,6 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		 * to the client
 		 */
 		DLIST_ADD_END(client->connections, xconn);
-		xconn->client = client;
 		talloc_steal(client, xconn);
 
 		*_xconn = xconn;
@@ -3917,7 +3917,6 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 
 	/* for now we only have one connection */
 	DLIST_ADD_END(client->connections, xconn);
-	xconn->client = client;
 	talloc_steal(client, xconn);
 
 	*_xconn = xconn;
