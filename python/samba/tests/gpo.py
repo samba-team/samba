@@ -342,6 +342,7 @@ class GPOTests(tests.TestCase):
 
         reg_key = b'Software\\Policies\\Samba\\Unix Settings'
         sections = { b'%s\\Daily Scripts' % reg_key : '.cron.daily',
+                     b'%s\\Monthly Scripts' % reg_key : '.cron.monthly',
                      b'%s\\Hourly Scripts' % reg_key : '.cron.hourly' }
         for keyname in sections.keys():
             # Stage the Registry.pol file with test data
