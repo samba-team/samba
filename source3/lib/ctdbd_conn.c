@@ -1179,6 +1179,75 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	return 0;
 }
 
+int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
+				 uint32_t flags,
+				 TALLOC_CTX *mem_ctx,
+				 struct ctdb_public_ip_list_old **_ips)
+{
+	struct ctdb_public_ip_list_old *ips = NULL;
+	TDB_DATA outdata;
+	int32_t cstatus = -1;
+	size_t min_dsize;
+	size_t max_ips;
+	int ret;
+
+	*_ips = NULL;
+
+	ret = ctdbd_control_local(conn,
+				  CTDB_CONTROL_GET_PUBLIC_IPS,
+				  0, /* srvid */
+				  flags,
+				  tdb_null, /* indata */
+				  mem_ctx,
+				  &outdata,
+				  &cstatus);
+	if (ret != 0 || cstatus != 0) {
+		DBG_ERR("ctdb_control for getpublicips failed ret:%d cstatus:%d\n",
+			ret, (int)cstatus);
+		return -1;
+	}
+
+	min_dsize = offsetof(struct ctdb_public_ip_list_old, ips);
+	if (outdata.dsize < min_dsize) {
+		DBG_ERR("outdata.dsize=%zu < min_dsize=%zu\n",
+			outdata.dsize, min_dsize);
+		return -1;
+	}
+	max_ips = (outdata.dsize - min_dsize)/sizeof(struct ctdb_public_ip);
+	ips = (struct ctdb_public_ip_list_old *)outdata.dptr;
+	if ((size_t)ips->num > max_ips) {
+		DBG_ERR("ips->num=%zu > max_ips=%zu\n",
+			(size_t)ips->num, max_ips);
+		return -1;
+	}
+
+	*_ips = ips;
+	return 0;
+}
+
+bool ctdbd_find_in_public_ips(const struct ctdb_public_ip_list_old *ips,
+			      const struct sockaddr_storage *ip)
+{
+	uint32_t i;
+
+	for (i=0; i < ips->num; i++) {
+		struct samba_sockaddr tmp = {
+			.u = {
+				.ss = *ip,
+			},
+		};
+		bool match;
+
+		match = sockaddr_equal(&ips->ips[i].addr.sa,
+				       &tmp.u.sa);
+		if (match) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /*
   call a control on the local node
  */

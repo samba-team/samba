@@ -62,6 +62,21 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	return ENOSYS;
 }
 
+int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
+				 uint32_t flags,
+				 TALLOC_CTX *mem_ctx,
+				 struct ctdb_public_ip_list_old **_ips)
+{
+	*_ips = NULL;
+	return ENOSYS;
+}
+
+bool ctdbd_find_in_public_ips(const struct ctdb_public_ip_list_old *ips,
+			      const struct sockaddr_storage *ip)
+{
+	return false;
+}
+
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid, uint64_t unique_id)
 {

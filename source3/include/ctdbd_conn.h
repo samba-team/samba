@@ -85,6 +85,14 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 				 void *private_data),
 		       void *private_data);
 
+struct ctdb_public_ip_list_old;
+int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
+				 uint32_t flags,
+				 TALLOC_CTX *mem_ctx,
+				 struct ctdb_public_ip_list_old **_ips);
+bool ctdbd_find_in_public_ips(const struct ctdb_public_ip_list_old *ips,
+			      const struct sockaddr_storage *ip);
+
 int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,
 			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
