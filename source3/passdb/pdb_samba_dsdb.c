@@ -791,7 +791,7 @@ static NTSTATUS pdb_samba_dsdb_delete_user(struct pdb_methods *m,
 
 /* This interface takes a fully populated struct samu and places it in
  * the database.  This is not implemented at this time as we need to
- * be careful around the creation of arbitary SIDs (ie, we must ensrue
+ * be careful around the creation of arbitrary SIDs (ie, we must ensure
  * they are not left in a RID pool */
 static NTSTATUS pdb_samba_dsdb_add_sam_account(struct pdb_methods *m,
 					struct samu *sampass)
@@ -880,8 +880,8 @@ static NTSTATUS pdb_samba_dsdb_rename_sam_account(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-/* This is not implemented, as this module is exptected to be used
- * with auth_samba_dsdb, and this is responible for login counters etc
+/* This is not implemented, as this module is expected to be used
+ * with auth_samba_dsdb, and this is responsible for login counters etc
  *
  */
 static NTSTATUS pdb_samba_dsdb_update_login_attempts(struct pdb_methods *m,
