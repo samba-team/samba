@@ -321,43 +321,75 @@ static void ldap_connection_recv_done(struct tevent_req *subreq)
 	return;
 }
 
-/*
-  parse a ldap URL
-*/
-static NTSTATUS ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
-				     char **host, uint16_t *port, bool *ldaps)
+enum ldap_proto {
+	LDAP_PROTO_NONE,
+	LDAP_PROTO_LDAP,
+	LDAP_PROTO_LDAPS,
+	LDAP_PROTO_LDAPI
+};
+
+static int ldap_parse_basic_url(
+	const char *url,
+	enum ldap_proto *pproto,
+	TALLOC_CTX *mem_ctx,
+	char **pdest,		/* path for ldapi, host for ldap[s] */
+	uint16_t *pport)	/* Not set for ldapi */
 {
-	int tmp_port = 0;
-	char protocol[11];
-	char tmp_host[1025];
-	int ret;
+	enum ldap_proto proto = LDAP_PROTO_NONE;
+	char *host = NULL;
+	int ret, port;
 
-	/* Paranoia check */
-	SMB_ASSERT(sizeof(protocol)>10 && sizeof(tmp_host)>254);
-		
-	ret = sscanf(url, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
-	if (ret < 2) {
-		return NT_STATUS_INVALID_PARAMETER;
+	if (url == NULL) {
+		return EINVAL;
 	}
 
-	if (strequal(protocol, "ldap")) {
-		*port = 389;
-		*ldaps = false;
-	} else if (strequal(protocol, "ldaps")) {
-		*port = 636;
-		*ldaps = true;
-	} else {
-		DEBUG(0, ("unrecognised ldap protocol (%s)!\n", protocol));
-		return NT_STATUS_PROTOCOL_UNREACHABLE;
+	if (strncasecmp_m(url, "ldapi://", strlen("ldapi://")) == 0) {
+		char *path = NULL, *end = NULL;
+
+		path = talloc_strdup(mem_ctx, url+8);
+		if (path == NULL) {
+			return ENOMEM;
+		}
+		end = rfc1738_unescape(path);
+		if (end == NULL) {
+			TALLOC_FREE(path);
+			return EINVAL;
+		}
+
+		*pproto = LDAP_PROTO_LDAPI;
+		*pdest = path;
+		return 0;
 	}
 
-	if (tmp_port != 0)
-		*port = tmp_port;
+	if (strncasecmp_m(url, "ldap://", strlen("ldap://")) == 0) {
+		url += 7;
+		proto = LDAP_PROTO_LDAP;
+		port = 389;
+	}
+	if (strncasecmp_m(url, "ldaps://", strlen("ldaps://")) == 0) {
+		url += 8;
+		port = 636;
+		proto = LDAP_PROTO_LDAPS;
+	}
 
-	*host = talloc_strdup(mem_ctx, tmp_host);
-	NT_STATUS_HAVE_NO_MEMORY(*host);
+	if (proto == LDAP_PROTO_NONE) {
+		return EPROTONOSUPPORT;
+	}
 
-	return NT_STATUS_OK;
+	ret = sscanf(url, "%m[^:/]:%d", &host, &port);
+	if (ret < 1) {
+		return EINVAL;
+	}
+
+	*pdest = talloc_strdup(mem_ctx, host);
+	SAFE_FREE(host);
+	if (*pdest == NULL) {
+		return ENOMEM;
+	}
+	*pproto = proto;
+	*pport = port;
+
+	return 0;
 }
 
 /*
@@ -381,7 +413,9 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 {
 	struct composite_context *result, *ctx;
 	struct ldap_connect_state *state;
-	char protocol[11];
+	enum ldap_proto proto;
+	char *dest = NULL;
+	uint16_t port;
 	int ret;
 
 	result = talloc_zero(conn, struct composite_context);
@@ -402,30 +436,21 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		if (conn->reconnect.url == NULL) goto failed;
 	}
 
-	/* Paranoia check */
-	SMB_ASSERT(sizeof(protocol)>10);
-
-	ret = sscanf(url, "%10[^:]://", protocol);
-	if (ret < 1) {
-		return NULL;
+	ret = ldap_parse_basic_url(url, &proto, conn, &dest, &port);
+	if (ret != 0) {
+		composite_error(result, map_nt_error_from_unix_common(ret));
+		return result;
 	}
 
-	if (strequal(protocol, "ldapi")) {
+	if (proto == LDAP_PROTO_LDAPI) {
 		struct socket_address *unix_addr;
-		char path[1025];
-		char *end = NULL;
 		NTSTATUS status = socket_create(state, "unix",
 						SOCKET_TYPE_STREAM,
 						&state->sock, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
-		SMB_ASSERT(sizeof(protocol)>10);
-		SMB_ASSERT(sizeof(path)>1024);
-	
-		/* LDAPI connections are to localhost, so give the
-		 * local host name as the target for gensec's
-		 * DIGEST-MD5 mechanism */
+
 		conn->host = talloc_asprintf(conn, "%s.%s",
 					     lpcfg_netbios_name(conn->lp_ctx),
 					     lpcfg_dnsdomain(conn->lp_ctx));
@@ -433,22 +458,8 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 			return result;
 		}
 
-		/* The %c specifier doesn't null terminate :-( */
-		ZERO_STRUCT(path);
-		ret = sscanf(url, "%10[^:]://%1025c", protocol, path);
-		if (ret < 2) {
-			composite_error(state->ctx, NT_STATUS_INVALID_PARAMETER);
-			return result;
-		}
-
-		end = rfc1738_unescape(path);
-		if (end == NULL) {
-			composite_error(state->ctx,
-					NT_STATUS_INVALID_PARAMETER);
-			return result;
-		}	
 		unix_addr = socket_address_from_strings(state, state->sock->backend_name,
-							path, 0);
+							dest, 0);
 		if (composite_nomem(unix_addr, result)) {
 			return result;
 		}
@@ -458,13 +469,14 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		ctx->async.fn = ldap_connect_recv_unix_conn;
 		ctx->async.private_data = state;
 		return result;
-	} else {
-		NTSTATUS status = ldap_parse_basic_url(conn, url, &conn->host,
-							  &conn->port, &conn->ldaps);
-		if (!NT_STATUS_IS_OK(status)) {
-			composite_error(result, status);
-			return result;
-		}
+	}
+
+	if ((proto == LDAP_PROTO_LDAP) || (proto == LDAP_PROTO_LDAPS)) {
+
+		conn->ldaps = (proto == LDAP_PROTO_LDAPS);
+
+		conn->host = talloc_move(conn, &dest);
+		conn->port = port;
 
 		if (conn->ldaps) {
 			char *ca_file = lpcfg_tls_cafile(state, conn->lp_ctx);
@@ -472,6 +484,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 			const char *tls_priority = lpcfg_tls_priority(conn->lp_ctx);
 			enum tls_verify_peer_state verify_peer =
 				lpcfg_tls_verify_peer(conn->lp_ctx);
+			NTSTATUS status;
 
 			status = tstream_tls_params_client(state,
 							   ca_file,
