@@ -1717,8 +1717,11 @@ static void test_get_size(void **state)
 	/*
 	 * The tdb implementation of get_size over estimates for sparse files
 	 * which is perfectly acceptable for it's intended use.
+	 * mipsel, ia64: 9994
+	 * ppc64el, powerpc, ppc64: 13369
+	 * sparc64: 5046
 	 */
-	assert_in_range(size, 2500, 5000);
+	assert_in_range(size, 2500, 15000);
 #endif
 
 	/*
@@ -1746,8 +1749,11 @@ static void test_get_size(void **state)
 	/*
 	 * The tdb implementation of get_size over estimates for sparse files
 	 * which is perfectly acceptable for it's intended use.
+	 * mipsel, ia64: 9994
+	 * ppc64el, powerpc, ppc64: 13369
+	 * sparc64: 5046
 	 */
-	assert_in_range(size, 2500, 5000);
+	assert_in_range(size, 2500, 15000);
 #endif
 	talloc_free(tmp_ctx);
 }
