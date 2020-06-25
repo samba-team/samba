@@ -24,6 +24,7 @@
 #include "serverid.h"
 #include "ctdbd_conn.h"
 #include "system/select.h"
+#include "lib/util/util_net.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/select.h"
@@ -275,10 +276,17 @@ uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)
 
 static int ctdbd_connect(const char *sockname, int *pfd)
 {
-	struct sockaddr_un addr = { 0, };
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+		.u = {
+			.un = {
+				.sun_family = AF_UNIX,
+			},
+		},
+	};
 	int fd;
-	socklen_t salen;
 	size_t namelen;
+	int ret;
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
@@ -287,19 +295,18 @@ static int ctdbd_connect(const char *sockname, int *pfd)
 		return err;
 	}
 
-	addr.sun_family = AF_UNIX;
-
-	namelen = strlcpy(addr.sun_path, sockname, sizeof(addr.sun_path));
-	if (namelen >= sizeof(addr.sun_path)) {
+	namelen = strlcpy(addr.u.un.sun_path,
+			  sockname,
+			  sizeof(addr.u.un.sun_path));
+	if (namelen >= sizeof(addr.u.un.sun_path)) {
 		DEBUG(3, ("%s: Socket name too long: %s\n", __func__,
 			  sockname));
 		close(fd);
 		return ENAMETOOLONG;
 	}
 
-	salen = sizeof(struct sockaddr_un);
-
-	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
+	ret = connect(fd, &addr.u.sa, addr.sa_socklen);
+	if (ret == -1) {
 		int err = errno;
 		DEBUG(1, ("connect(%s) failed: %s\n", sockname,
 			  strerror(err)));
