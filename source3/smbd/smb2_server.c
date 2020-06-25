@@ -1106,6 +1106,20 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
+{
+	struct smbXsrv_connection *xconn = NULL;
+	size_t num_ok = 0;
+
+	for (xconn = client->connections; xconn != NULL; xconn = xconn->next) {
+		if (NT_STATUS_IS_OK(xconn->transport.status)) {
+			num_ok++;
+		}
+	}
+
+	return num_ok;
+}
+
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
