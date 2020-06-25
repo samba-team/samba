@@ -320,7 +320,7 @@ class GPOTests(tests.TestCase):
             gpttmpl = gpofile % (local_path, guid)
             unstage_file(gpttmpl)
 
-    def test_gp_daily_scripts(self):
+    def test_gp_scripts(self):
         local_path = self.lp.cache_path('gpo_cache')
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         reg_pol = os.path.join(local_path, policies, guid,
@@ -340,25 +340,31 @@ class GPOTests(tests.TestCase):
         if ads.connect():
             gpos = ads.get_gpo_list(machine_creds.get_username())
 
-        # Stage the Registry.pol file with test data
-        stage = preg.file()
-        e = preg.entry()
-        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Daily Scripts'
-        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
-        e.type = 1
-        e.data = b'echo hello world'
-        stage.num_entries = 1
-        stage.entries = [e]
-        ret = stage_file(reg_pol, ndr_pack(stage))
-        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+        reg_key = b'Software\\Policies\\Samba\\Unix Settings'
+        sections = { b'%s\\Daily Scripts' % reg_key : '.cron.daily',
+                     b'%s\\Hourly Scripts' % reg_key : '.cron.hourly' }
+        for keyname in sections.keys():
+            # Stage the Registry.pol file with test data
+            stage = preg.file()
+            e = preg.entry()
+            e.keyname = keyname
+            e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+            e.type = 1
+            e.data = b'echo hello world'
+            stage.num_entries = 1
+            stage.entries = [e]
+            ret = stage_file(reg_pol, ndr_pack(stage))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
 
-        # Process all gpos, with temp output directory
-        with TemporaryDirectory() as dname:
-            ext.process_group_policy([], gpos, dname)
-            scripts = os.listdir(dname)
-            self.assertEquals(len(scripts), 1, 'The daily script was not created')
-            out, _ = Popen([os.path.join(dname, scripts[0])], stdout=PIPE).communicate()
-            self.assertIn(b'hello world', out, 'Daily script execution failed')
+            # Process all gpos, with temp output directory
+            with TemporaryDirectory(sections[keyname]) as dname:
+                ext.process_group_policy([], gpos, dname)
+                scripts = os.listdir(dname)
+                self.assertEquals(len(scripts), 1,
+                    'The %s script was not created' % keyname.decode())
+                out, _ = Popen([os.path.join(dname, scripts[0])], stdout=PIPE).communicate()
+                self.assertIn(b'hello world', out,
+                    '%s script execution failed' % keyname.decode())
 
-        # Unstage the Registry.pol file
-        unstage_file(reg_pol)
+            # Unstage the Registry.pol file
+            unstage_file(reg_pol)
