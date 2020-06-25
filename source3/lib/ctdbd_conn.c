@@ -1162,10 +1162,10 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * can send an extra ack to trigger a reset for our client, so it
 	 * immediately reconnects
 	 */
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_TCP_CLIENT, 0,
-			    CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
-			    NULL);
+	ret = ctdbd_control_local(conn,
+				  CTDB_CONTROL_TCP_CLIENT, 0,
+				  CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
+				  NULL);
 	if (ret != 0) {
 		return ret;
 	}
