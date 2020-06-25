@@ -3866,7 +3866,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		 * so that the caller can return an error message
 		 * to the client
 		 */
-		client->connections = xconn;
+		DLIST_ADD_END(client->connections, xconn);
 		xconn->client = client;
 		talloc_steal(client, xconn);
 
