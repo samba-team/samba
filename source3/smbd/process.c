@@ -2802,6 +2802,25 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (xconn->client->server_multi_channel_enabled) {
+		struct ctdb_public_ip_list_old *ips = NULL;
+
+		ret = ctdbd_control_get_public_ips(cconn,
+						   0, /* flags */
+						   state,
+						   &ips);
+		if (ret != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		xconn->has_ctdb_public_ip = ctdbd_find_in_public_ips(ips, srv);
+		TALLOC_FREE(ips);
+		if (xconn->has_ctdb_public_ip) {
+			DBG_DEBUG("CTDB public ip on %s\n",
+				  smbXsrv_connection_dbg(xconn));
+		}
+	}
+
 	ret = ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);

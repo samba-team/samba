@@ -1635,6 +1635,22 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		  smbXsrv_connection_dbg(xconn), num_ok,
 		  reason, location);
 
+	if (xconn->has_ctdb_public_ip) {
+		/*
+		 * If the connection has a ctdb public address
+		 * we disconnect all client connections,
+		 * as the public address might be moved to
+		 * a different node.
+		 *
+		 * In future we may recheck which node currently
+		 * holds this address, but for now we keep it simple.
+		 */
+		smbd_server_disconnect_client_ex(xconn->client,
+						 reason,
+						 location);
+		return;
+	}
+
 	if (num_ok != 0) {
 		struct tevent_req *subreq = NULL;
 
