@@ -30,6 +30,8 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/messages_ctdb.h"
+#include "ctdbd_conn.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -302,12 +304,25 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 	size_t i;
 	size_t num_ifaces = iface_count();
 	enum ndr_err_code ndr_err;
+	struct ctdb_public_ip_list_old *ips = NULL;
 
 	if (in_input->length != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	*out_output = data_blob_null;
+
+	if (lp_clustering()) {
+		int ret;
+
+		ret = ctdbd_control_get_public_ips(messaging_ctdb_connection(),
+						   0, /* flags */
+						   mem_ctx,
+						   &ips);
+		if (ret != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
 
 	array = talloc_zero_array(mem_ctx,
 				  struct fsctl_net_iface_info,
@@ -343,6 +358,19 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 		if (addr == NULL) {
 			TALLOC_FREE(array);
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (ips != NULL) {
+			bool is_public_ip;
+
+			is_public_ip = ctdbd_find_in_public_ips(ips, ifss);
+			if (is_public_ip) {
+				DBG_DEBUG("Interface [%s] - "
+					  "has public ip - "
+					  "skipping address [%s].\n",
+					  iface->name, addr);
+				continue;
+			}
 		}
 
 		cur->ifindex = iface->if_index;
