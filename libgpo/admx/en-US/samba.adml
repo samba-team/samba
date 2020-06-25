@@ -9,8 +9,10 @@
       <string id="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6">Unix Settings</string>
       <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">Daily Scripts</string>
       <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1">Hourly Scripts</string>
+      <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6">Monthly Scripts</string>
       <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061_Help">This policy setting allows you to execute commands, either local or on remote storage, daily.</string>
       <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1_Help">This policy setting allows you to execute commands, either local or on remote storage, hourly.</string>
+      <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6_Help">This policy setting allows you to execute commands, either local or on remote storage, monthly.</string>
     </stringTable>
     <presentationTable>
       <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
@@ -18,6 +20,9 @@
       </presentation>
       <presentation id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1">
         <listBox refId="LST_1AA93D59_6372_4F1E_90BB_D4CBBBB77238">Script and arguments</listBox>
+      </presentation>
+      <presentation id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6">
+        <listBox refId="LST_8BC6757D_B1FB_4780_83B4_F85F27BF6E60">Script and arguments</listBox>
       </presentation>
     </presentationTable>
   </resources>

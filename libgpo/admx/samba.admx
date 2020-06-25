@@ -26,5 +26,12 @@
         <list id="LST_1AA93D59_6372_4F1E_90BB_D4CBBBB77238" key="Software\Policies\Samba\Unix Settings\Hourly Scripts" valueName="Hourly Scripts" />
       </elements>
     </policy>
+    <policy name="POL_D298F3BD_44D9_426D_AF11_3163D31582F6" class="Machine" displayName="$(string.POL_D298F3BD_44D9_426D_AF11_3163D31582F6)" explainText="$(string.POL_D298F3BD_44D9_426D_AF11_3163D31582F6_Help)" presentation="$(presentation.POL_D298F3BD_44D9_426D_AF11_3163D31582F6)" key="Software\Policies\Samba\Unix Settings">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <list id="LST_8BC6757D_B1FB_4780_83B4_F85F27BF6E60" key="Software\Policies\Samba\Unix Settings\Monthly Scripts" valueName="Monthly Scripts" />
+      </elements>
+    </policy>
   </policies>
 </policyDefinitions>

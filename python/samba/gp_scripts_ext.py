@@ -36,6 +36,7 @@ class gp_scripts_ext(gp_pol_ext):
             if gpo.file_sys_path:
                 reg_key = 'Software\\Policies\\Samba\\Unix Settings'
                 sections = { '%s\\Daily Scripts' % reg_key : '/etc/cron.daily',
+                             '%s\\Monthly Scripts' % reg_key : '/etc/cron.monthly',
                              '%s\\Hourly Scripts' % reg_key : '/etc/cron.hourly' }
                 self.gp_db.set_guid(gpo.name)
                 pol_file = 'MACHINE/Registry.pol'
