@@ -19,5 +19,12 @@
         <list id="LST_2E9A4684_3C0E_415B_8FD6_D4AF68BC8AC6" key="Software\Policies\Samba\Unix Settings\Daily Scripts" valueName="Daily Scripts" />
       </elements>
     </policy>
+    <policy name="POL_825D441F_905E_4C7E_9E4B_03013697C6C1" class="Machine" displayName="$(string.POL_825D441F_905E_4C7E_9E4B_03013697C6C1)" explainText="$(string.POL_825D441F_905E_4C7E_9E4B_03013697C6C1_Help)" presentation="$(presentation.POL_825D441F_905E_4C7E_9E4B_03013697C6C1)" key="Software\Policies\Samba\Unix Settings">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <list id="LST_1AA93D59_6372_4F1E_90BB_D4CBBBB77238" key="Software\Policies\Samba\Unix Settings\Hourly Scripts" valueName="Hourly Scripts" />
+      </elements>
+    </policy>
   </policies>
 </policyDefinitions>

@@ -21,9 +21,9 @@ from tempfile import NamedTemporaryFile
 
 class gp_scripts_ext(gp_pol_ext):
     def __str__(self):
-        return 'Unix Settings/Daily Scripts'
+        return 'Unix Settings/Scripts'
 
-    def process_group_policy(self, deleted_gpo_list, changed_gpo_list, cdir='/etc/cron.daily'):
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list, cdir=None):
         for gpo in deleted_gpo_list:
             self.gp_db.set_guid(gpo[0])
             if str(self) in gpo[1]:
@@ -34,7 +34,9 @@ class gp_scripts_ext(gp_pol_ext):
 
         for gpo in changed_gpo_list:
             if gpo.file_sys_path:
-                section_name = 'Software\\Policies\\Samba\\Unix Settings\\Daily Scripts'
+                reg_key = 'Software\\Policies\\Samba\\Unix Settings'
+                sections = { '%s\\Daily Scripts' % reg_key : '/etc/cron.daily',
+                             '%s\\Hourly Scripts' % reg_key : '/etc/cron.hourly' }
                 self.gp_db.set_guid(gpo.name)
                 pol_file = 'MACHINE/Registry.pol'
                 path = os.path.join(gpo.file_sys_path, pol_file)
@@ -42,11 +44,14 @@ class gp_scripts_ext(gp_pol_ext):
                 if not pol_conf:
                     continue
                 for e in pol_conf.entries:
-                    if e.keyname == section_name and e.data.strip():
-                        attribute = b64encode(e.data.encode()).decode()
+                    if e.keyname in sections.keys() and e.data.strip():
+                        cron_dir = sections[e.keyname] if not cdir else cdir
+                        attribute = '%s:%s' % (e.keyname,
+                                b64encode(e.data.encode()).decode())
                         old_val = self.gp_db.retrieve(str(self), attribute)
                         if not old_val:
-                            with NamedTemporaryFile(mode="w+", delete=False, dir=cdir) as f:
+                            with NamedTemporaryFile(mode="w+", delete=False,
+                                    dir=cron_dir) as f:
                                 f.write('#!/bin/sh\n%s' % e.data)
                                 os.chmod(f.name, 0o700)
                                 self.gp_db.store(str(self), attribute, f.name)
