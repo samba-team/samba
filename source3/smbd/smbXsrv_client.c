@@ -680,6 +680,10 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 				     sock_fd,
 				     pass_info0->initial_connect_time,
 				     &xconn);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+		DLIST_REMOVE(client->connections, xconn);
+		TALLOC_FREE(xconn);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		close(sock_fd);
 		sock_fd = -1;
