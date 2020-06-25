@@ -33,5 +33,12 @@
         <list id="LST_8BC6757D_B1FB_4780_83B4_F85F27BF6E60" key="Software\Policies\Samba\Unix Settings\Monthly Scripts" valueName="Monthly Scripts" />
       </elements>
     </policy>
+    <policy name="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674" class="Machine" displayName="$(string.POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674)" explainText="$(string.POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674_Help)" presentation="$(presentation.POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674)" key="Software\Policies\Samba\Unix Settings">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <list id="LST_1E7198A6_7850_4CAB_B656_BC18752564FC" key="Software\Policies\Samba\Unix Settings\Weekly Scripts" valueName="Weekly Scripts" />
+      </elements>
+    </policy>
   </policies>
 </policyDefinitions>
