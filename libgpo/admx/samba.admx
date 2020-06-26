@@ -43,5 +43,12 @@
         <list id="LST_1E7198A6_7850_4CAB_B656_BC18752564FC" key="Software\Policies\Samba\Unix Settings\Weekly Scripts" valueName="Weekly Scripts" />
       </elements>
     </policy>
+    <policy name="POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3" class="Machine" displayName="$(string.POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3)" explainText="$(string.POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3_Help)" presentation="$(presentation.POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3)" key="Software\Policies\Samba\Unix Settings">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <list id="LST_4F4BA073_4F7B_4B64_A61D_8E75257A4B9F" key="Software\Policies\Samba\Unix Settings\Sudo Rights" valueName="Sudo Rights" />
+      </elements>
+    </policy>
   </policies>
 </policyDefinitions>

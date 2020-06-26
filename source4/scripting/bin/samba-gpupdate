@@ -33,6 +33,7 @@ from samba.gpclass import apply_gp, unapply_gp, GPOStorage
 from samba.gp_sec_ext import gp_sec_ext
 from samba.gp_ext_loader import get_gp_client_side_extensions
 from samba.gp_scripts_ext import gp_scripts_ext
+from samba.gp_sudoers_ext import gp_sudoers_ext
 import logging
 
 if __name__ == "__main__":
@@ -82,6 +83,7 @@ if __name__ == "__main__":
     if opts.target == 'Computer':
         gp_extensions.append(gp_sec_ext(logger, lp, creds, store))
         gp_extensions.append(gp_scripts_ext(logger, lp, creds, store))
+        gp_extensions.append(gp_sudoers_ext(logger, lp, creds, store))
         for ext in machine_exts:
             gp_extensions.append(ext(logger, lp, creds, store))
     elif opts.target == 'User':

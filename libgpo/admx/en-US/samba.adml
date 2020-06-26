@@ -12,10 +12,12 @@
       <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1">Hourly</string>
       <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6">Monthly</string>
       <string id="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674">Weekly</string>
+      <string id="POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3">Sudo Rights</string>
       <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061_Help">This policy setting allows you to execute commands, either local or on remote storage, daily.</string>
       <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1_Help">This policy setting allows you to execute commands, either local or on remote storage, hourly.</string>
       <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6_Help">This policy setting allows you to execute commands, either local or on remote storage, monthly.</string>
       <string id="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674_Help">This policy setting allows you to execute commands, either local or on remote storage, weekly.</string>
+      <string id="POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3_Help">This policy configures the sudoers file with the lines specified.</string>
     </stringTable>
     <presentationTable>
       <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
@@ -29,6 +31,9 @@
       </presentation>
       <presentation id="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674">
         <listBox refId="LST_1E7198A6_7850_4CAB_B656_BC18752564FC">Script and arguments</listBox>
+      </presentation>
+      <presentation id="POL_DB5DF501_6F87_42D4_9FEC_E7F32C498BD3">
+        <listBox refId="LST_4F4BA073_4F7B_4B64_A61D_8E75257A4B9F">Sudoers commands</listBox>
       </presentation>
     </presentationTable>
   </resources>
