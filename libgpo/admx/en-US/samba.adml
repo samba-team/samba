@@ -7,10 +7,11 @@
     <stringTable>
       <string id="CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9">Samba</string>
       <string id="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6">Unix Settings</string>
-      <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">Daily Scripts</string>
-      <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1">Hourly Scripts</string>
-      <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6">Monthly Scripts</string>
-      <string id="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674">Weekly Scripts</string>
+      <string id="CAT_2B6D622C_5721_4C23_A2D6_5C70D6E059BA">Scripts</string>
+      <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">Daily</string>
+      <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1">Hourly</string>
+      <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6">Monthly</string>
+      <string id="POL_3ACC7ECD_8086_4F4A_96DF_85B8FDE2F674">Weekly</string>
       <string id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061_Help">This policy setting allows you to execute commands, either local or on remote storage, daily.</string>
       <string id="POL_825D441F_905E_4C7E_9E4B_03013697C6C1_Help">This policy setting allows you to execute commands, either local or on remote storage, hourly.</string>
       <string id="POL_D298F3BD_44D9_426D_AF11_3163D31582F6_Help">This policy setting allows you to execute commands, either local or on remote storage, monthly.</string>
