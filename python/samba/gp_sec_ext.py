@@ -26,26 +26,60 @@ except ImportError:
     pass
 
 
-class inf_to_kdc_tdb(gp_ext_setter):
-    def mins_to_hours(self):
-        return '%d' % (int(self.val) / 60)
+class gp_krb_ext(gp_inf_ext):
+    apply_map = { 'MaxTicketAge':  'kdc:user_ticket_lifetime',
+                  'MaxServiceAge': 'kdc:service_ticket_lifetime',
+                  'MaxRenewAge':   'kdc:renewal_lifetime' }
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        if self.lp.get('server role') != 'active directory domain controller':
+            return
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        for gpo in deleted_gpo_list:
+            self.gp_db.set_guid(gpo[0])
+            for section in gpo[1].keys():
+                if section == str(self):
+                    for att, value in gpo[1][section].items():
+                        update_samba, _ = self.mapper().get(att)
+                        update_samba(att, value)
+                        self.gp_db.delete(section, att)
+                        self.gp_db.commit()
 
-    def days_to_hours(self):
-        return '%d' % (int(self.val) * 24)
+        for gpo in changed_gpo_list:
+            if gpo.file_sys_path:
+                self.gp_db.set_guid(gpo.name)
+                path = os.path.join(gpo.file_sys_path, inf_file)
+                inf_conf = self.parse(path)
+                if not inf_conf:
+                    continue
+                for section in inf_conf.sections():
+                    if section == str(self):
+                        for key, value in inf_conf.items(section):
+                            att = gp_krb_ext.apply_map[key]
+                            (update_samba, value_func) = self.mapper().get(att)
+                            update_samba(att, value_func(value))
+                            self.gp_db.commit()
 
-    def set_kdc_tdb(self, val):
-        old_val = self.gp_db.gpostore.get(self.attribute)
-        self.logger.info('%s was changed from %s to %s' % (self.attribute,
+    def mins_to_hours(self, val):
+        return '%d' % (int(val) / 60)
+
+    def days_to_hours(self, val):
+        return '%d' % (int(val) * 24)
+
+    def set_kdc_tdb(self, attribute, val):
+        old_val = self.gp_db.gpostore.get(attribute)
+        self.logger.info('%s was changed from %s to %s' % (attribute,
                                                            old_val, val))
         if val is not None:
-            self.gp_db.gpostore.store(self.attribute, get_string(val))
-            self.gp_db.store(str(self), self.attribute, get_string(old_val) if old_val else None)
+            self.gp_db.gpostore.store(attribute, get_string(val))
+            self.gp_db.store(str(self), attribute, get_string(old_val) \
+                    if old_val else None)
         else:
-            self.gp_db.gpostore.delete(self.attribute)
-            self.gp_db.delete(str(self), self.attribute)
+            self.gp_db.gpostore.delete(attribute)
+            self.gp_db.delete(str(self), attribute)
 
     def mapper(self):
-        return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
+        return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb,
+                                             lambda val: val),
                 'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
                                                 self.mins_to_hours),
                 'kdc:renewal_lifetime': (self.set_kdc_tdb,
@@ -54,6 +88,19 @@ class inf_to_kdc_tdb(gp_ext_setter):
 
     def __str__(self):
         return 'Kerberos Policy'
+
+    def rsop(self, gpo):
+        output = {}
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        if gpo.file_sys_path:
+            path = os.path.join(gpo.file_sys_path, inf_file)
+            inf_conf = self.parse(path)
+            if not inf_conf:
+                return output
+            for section in inf_conf.sections():
+                output[section] = {k: v for k, v in inf_conf.items(section) \
+                                      if gp_krb_ext.apply_map.get(k)}
+        return output
 
 
 class inf_to_ldb(gp_ext_setter):
@@ -146,19 +193,6 @@ class gp_sec_ext(gp_inf_ext):
                                   "PasswordComplexity": ("pwdProperties",
                                                          inf_to_ldb),
                                   },
-                "Kerberos Policy": {"MaxTicketAge": (
-                                        "kdc:user_ticket_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                    "MaxServiceAge": (
-                                        "kdc:service_ticket_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                    "MaxRenewAge": (
-                                        "kdc:renewal_lifetime",
-                                        inf_to_kdc_tdb
-                                    ),
-                                    }
                 }
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):

@@ -30,7 +30,7 @@ sys.path.insert(0, "bin/python")
 import optparse
 from samba import getopt as options
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage, rsop
-from samba.gp_sec_ext import gp_sec_ext
+from samba.gp_sec_ext import gp_krb_ext, gp_sec_ext
 from samba.gp_ext_loader import get_gp_client_side_extensions
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     gp_extensions = []
     if opts.target == 'Computer':
         gp_extensions.append(gp_sec_ext(logger, lp, creds, store))
+        gp_extensions.append(gp_krb_ext(logger, lp, creds, store))
         gp_extensions.append(gp_scripts_ext(logger, lp, creds, store))
         gp_extensions.append(gp_sudoers_ext(logger, lp, creds, store))
         for ext in machine_exts:

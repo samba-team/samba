@@ -24,7 +24,7 @@ from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from samba.gp_sec_ext import gp_sec_ext
+from samba.gp_sec_ext import gp_krb_ext, gp_sec_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.gpclass import gp_inf_ext
@@ -283,7 +283,7 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_sec_ext(logger, self.lp, machine_creds, store)
+        ext = gp_krb_ext(logger, self.lp, machine_creds, store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -466,7 +466,7 @@ class GPOTests(tests.TestCase):
             gpos = ads.get_gpo_list(machine_creds.get_username())
 
         gp_extensions = []
-        gp_extensions.append(gp_sec_ext(logger, self.lp, machine_creds, store))
+        gp_extensions.append(gp_krb_ext(logger, self.lp, machine_creds, store))
         gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
             store))
 
@@ -499,7 +499,7 @@ class GPOTests(tests.TestCase):
                                   'A single policy should have been displayed')
 
                 # Check the Security Extension
-                if type(ext) == gp_sec_ext:
+                if type(ext) == gp_krb_ext:
                     self.assertIn('Kerberos Policy', ret.keys(),
                                   'Kerberos Policy not found')
                     self.assertIn('MaxTicketAge', ret['Kerberos Policy'],
