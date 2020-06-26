@@ -954,7 +954,7 @@ static const struct {
 */
 _PUBLIC_ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r)
 {
-	int i;
+	size_t i;
 	const char *codename = "unknown";
 
 	if (r->resultcode == LDAP_SUCCESS) {
@@ -966,7 +966,7 @@ _PUBLIC_ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_
 	}
 
 	for (i=0;i<ARRAY_SIZE(ldap_code_map);i++) {
-		if (r->resultcode == ldap_code_map[i].code) {
+		if ((enum ldap_result_code)r->resultcode == ldap_code_map[i].code) {
 			codename = ldap_code_map[i].str;
 			break;
 		}
@@ -1034,7 +1034,7 @@ _PUBLIC_ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if ((*msg) != NULL && (*msg)->type != type) {
+	if ((*msg) != NULL && (*msg)->type != (enum ldap_request_tag)type) {
 		*msg = NULL;
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
