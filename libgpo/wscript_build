@@ -20,4 +20,5 @@ bld.SAMBA3_PYTHON('python_samba_libgpo', 'pygpo.c',
                   deps='%s gpext talloc ads TOKEN_UTIL auth %s' % (pyparam_util, pyrpc_util),
                   realname='samba/gpo.so')
 
-bld.RECURSE('admx')
+if bld.AD_DC_BUILD_IS_ENABLED():
+    bld.RECURSE('admx')
