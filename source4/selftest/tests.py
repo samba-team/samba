@@ -479,6 +479,13 @@ planpythontestsuite("nt4_dc_smb1", "samba.tests.libsmb")
 # the API. These mainly test that the various command-line options of commands
 # work correctly.
 
+# smbtorture --fullname parameter test
+plantestsuite("samba4.blackbox.smbtorture_subunit_names", "none",
+              [
+                 os.path.join(bbdir, "test_smbtorture_test_names.sh"),
+                 smbtorture4
+              ])
+
 for env in ["ad_member", "s4member", "ad_dc_ntvfs", "chgdcpass"]:
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient4])
 
