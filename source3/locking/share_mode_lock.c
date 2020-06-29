@@ -1765,8 +1765,9 @@ static size_t share_mode_entry_find(
 {
 	ssize_t left, right, middle;
 
+	*match = false;
+
 	if (num_share_modes == 0) {
-		*match = false;
 		return 0;
 	}
 
@@ -1790,7 +1791,7 @@ static size_t share_mode_entry_find(
 		ok = share_mode_entry_get(middle_ptr, e);
 		if (!ok) {
 			DBG_DEBUG("share_mode_entry_get failed\n");
-			return false;
+			return 0;
 		}
 
 		cmp = share_mode_entry_cmp(
@@ -1807,7 +1808,6 @@ static size_t share_mode_entry_find(
 		}
 	}
 
-	*match = false;
 	return left;
 }
 
