@@ -437,10 +437,6 @@ static bool test_LookupHandleFree(struct torture_context *tctx,
 	NTSTATUS status;
 	struct epm_LookupHandleFree r;
 
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		torture_skip(tctx, "Skip Insert test against Samba4");
-	}
-
 	if (ndr_policy_handle_empty(entry_handle)) {
 		torture_comment(tctx,
 				"epm_LookupHandleFree failed - empty policy_handle\n");
