@@ -23,9 +23,9 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
+#include "lib/replace/replace.h"
 #include <talloc.h>
 
-#include "lib/replace/replace.h"
 #include "lib/util/util_paths.c"
 
 static int setup(void **state)
