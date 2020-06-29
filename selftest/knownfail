@@ -87,7 +87,10 @@
 ^samba4.local.registry.*.local.security
 ^samba4.rpc.wkssvc
 ^samba4.rpc.handles.*.lsarpc-shared
-^samba4.rpc.epmapper
+^samba4.rpc.epmapper.*.Lookup_simple
+^samba4.rpc.epmapper.*.Lookup_terminate_search
+^samba4.rpc.epmapper.*.Map_simple
+^samba4.rpc.epmapper.*.Map_full
 ^samba4.rpc.lsalookup on ncalrpc
 ^samba4.rpc.lsalookup on ncacn_np
 ^samba4.rpc.lsalookup with seal,padcheck
