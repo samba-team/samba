@@ -261,7 +261,16 @@ failed:
 static error_status_t dcesrv_epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 					   struct epm_LookupHandleFree *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h = NULL;
+
+	r->out.entry_handle = r->in.entry_handle;
+
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.entry_handle, HTYPE_LOOKUP);
+	TALLOC_FREE(h);
+
+	ZERO_STRUCTP(r->out.entry_handle);
+
+	return EPMAPPER_STATUS_OK;
 }
 
 static error_status_t dcesrv_epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
