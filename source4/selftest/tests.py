@@ -544,6 +544,12 @@ plantestsuite("samba4.blackbox.client_etypes_strong(ad_dc:client)", "ad_dc:clien
 plantestsuite("samba4.blackbox.net_ads_dns(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_net_ads_dns.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$USERNAME', '$PASSWORD'])
 plantestsuite("samba4.blackbox.samba-tool_ntacl(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_samba-tool_ntacl.sh"), '$PREFIX', '$DOMSID'])
 
+for nomech in ["none", "gse_krb5", "ntlmssp"]:
+    # we can't test TLS with ad_dc env as it doesn't allow SASL over TLS
+    plantestsuite("samba4.blackbox.net_ads_base.nomech=%s" % nomech, "ad_dc:client", [os.path.join(bbdir, "test_net_ads_base.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', 'no', nomech, '$PREFIX_ABS'])
+    plantestsuite("samba4.blackbox.net_ads_tls.nomech=%s" % nomech, "fl2008dc:client", [os.path.join(bbdir, "test_net_ads_base.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', 'yes', nomech, '$PREFIX_ABS'])
+    plantestsuite("samba4.blackbox.net_ads_tls.nomech=%s" % nomech, "fl2008r2dc:client", [os.path.join(bbdir, "test_net_ads_base.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', 'noverify', nomech, '$PREFIX_ABS'])
+
 if have_gnutls_crypto_policies:
     plantestsuite("samba4.blackbox.weak_crypto.client", "ad_dc", [os.path.join(bbdir, "test_weak_crypto.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc"])
 
@@ -554,6 +560,8 @@ if have_gnutls_crypto_policies:
     t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
     plantestsuite("samba3.wbinfo_simple.fips.%s" % t, "ad_member_fips:local", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
     plantestsuite("samba4.wbinfo_name_lookup.fips", "ad_member_fips", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_name_lookup.sh"), '$DOMAIN', '$REALM', '$DC_USERNAME'])
+    for nomech in ["none", "ntlmssp"]:
+        plantestsuite("samba4.blackbox.net_ads_base.nomech=%s" % nomech, "ad_dc_fips:client", [os.path.join(bbdir, "test_net_ads_base.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', 'no', nomech, '$PREFIX_ABS'])
 
 plantestsuite_loadlist("samba4.rpc.echo against NetBIOS alias", "ad_dc_ntvfs", [valgrindify(smbtorture4), "$LISTOPT", "$LOADLIST", 'ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD', 'rpc.echo'])
 # json tests hook into ``chgdcpass'' to make them run in contributor CI on
