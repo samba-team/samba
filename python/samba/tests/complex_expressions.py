@@ -114,7 +114,7 @@ class ComplexExpressionTests(TestCase):
 
         for ldap_object in ldap_objects:
             # It's useful to keep appropriate python types in the ldap_object
-            # dict but smdb's 'add' function expects strings.
+            # dict but samdb's 'add' function expects strings.
             stringed_ldap_object = {k: str(v)
                                     for (k, v) in ldap_object.items()}
             try:
