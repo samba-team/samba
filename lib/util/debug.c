@@ -30,6 +30,7 @@
 #include "util_strlist.h" /* LIST_SEP */
 #include "blocking.h"
 #include "debug.h"
+#include <assert.h>
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
@@ -1113,6 +1114,7 @@ static bool reopen_one_log(int *fd, const char *logfile)
 */
 bool reopen_logs_internal(void)
 {
+	struct debug_backend *b = NULL;
 	mode_t oldumask;
 	int new_fd = 0;
 	size_t i;
@@ -1140,14 +1142,12 @@ bool reopen_logs_internal(void)
 		dbgc_config[DBGC_ALL].fd = 2;
 		return true;
 
-	case DEBUG_FILE: {
-		struct debug_backend *b = debug_find_backend("file");
+	case DEBUG_FILE:
+		b = debug_find_backend("file");
+		assert(b != NULL);
 
-		if (b != NULL) {
-			b->log_level = dbgc_config[DBGC_ALL].loglevel;
-		}
+		b->log_level = dbgc_config[DBGC_ALL].loglevel;
 		break;
-	}
 	}
 
 	oldumask = umask( 022 );
