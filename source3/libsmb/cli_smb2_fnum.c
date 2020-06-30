@@ -3251,6 +3251,7 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	smb_ucs2_t *converted_str = NULL;
 	size_t converted_size_bytes = 0;
 	size_t namelen = 0;
+	size_t inbuf_size;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3308,8 +3309,29 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	}
 	converted_size_bytes -= 2;
 
-	inbuf = data_blob_talloc_zero(frame,
-				20 + converted_size_bytes);
+	inbuf_size = 20 + converted_size_bytes;
+	if (inbuf_size < 20) {
+		/* Integer wrap check. */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	/*
+	 * The Windows 10 SMB2 server has a minimum length
+	 * for a SMB2_FILE_RENAME_INFORMATION buffer of
+	 * 24 bytes. It returns NT_STATUS_INFO_LENGTH_MISMATCH
+	 * if the length is less. This isn't an alignment
+	 * issue as Windows client happily 2-byte align
+	 * for larget target name sizes. Also the Windows 10
+	 * SMB1 server doesn't have this restriction.
+	 *
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14403
+	 */
+	if (inbuf_size < 24) {
+		inbuf_size = 24;
+	}
+
+	inbuf = data_blob_talloc_zero(frame, inbuf_size);
 	if (inbuf.data == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
