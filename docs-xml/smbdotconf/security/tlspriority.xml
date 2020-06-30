@@ -12,10 +12,8 @@
    <ulink url="http://gnutls.org/manual/html_node/Priority-Strings.html">GNUTLS
    Priority-Strings documentation at http://gnutls.org/manual/html_node/Priority-Strings.html</ulink>
    </para>
-   <para>By default it will try to find a config file matching "SAMBA", but if
-   that does not exist will use the entry for "SYSTEM" and last fallback to
-   NORMAL. In all cases the SSL3.0 protocol will be disabled.</para>
+   <para>The SSL3.0 protocol will be disabled.</para>
  </description>
 
- <value type="default">@SAMBA,SYSTEM,NORMAL:!-VERS-SSL3.0</value>
+ <value type="default">NORMAL:-VERS-SSL3.0</value>
 </samba:parameter>

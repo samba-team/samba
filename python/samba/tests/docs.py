@@ -29,22 +29,6 @@ import multiprocessing
 import concurrent.futures
 import tempfile
 
-config_h = os.path.join("bin/default/include/config.h")
-config_hash = dict()
-
-if os.path.exists(config_h):
-    config_hash = dict()
-    f = open(config_h, 'r')
-    try:
-        lines = f.readlines()
-        config_hash = dict((x[0], ' '.join(x[1:]))
-                           for x in map(lambda line: line.strip().split(' ')[1:],
-                                        list(filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines))))
-    finally:
-        f.close()
-
-have_gnutls_system_config_support = ("HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND" in config_hash)
-
 class TestCase(samba.tests.TestCaseInTempDir):
 
     def _format_message(self, parameters, message):
@@ -233,11 +217,6 @@ class SmbDotConfTests(TestCase):
         'include system krb5 conf',
         'smbd max async dosmode',
     ])
-
-    # 'tls priority' has a legacy default value if we don't link against a
-    # modern GnuTLS version.
-    if not have_gnutls_system_config_support:
-        special_cases.add('tls priority')
 
     def setUp(self):
         super(SmbDotConfTests, self).setUp()

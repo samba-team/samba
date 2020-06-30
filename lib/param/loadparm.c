@@ -2818,15 +2818,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
-#ifdef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
-	lpcfg_do_global_parameter(lp_ctx,
-				  "tls priority",
-				  "@SAMBA,SYSTEM,NORMAL:!-VERS-SSL3.0");
-#else
 	lpcfg_do_global_parameter(lp_ctx,
 				  "tls priority",
 				  "NORMAL:-VERS-SSL3.0");
-#endif
 
 	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
