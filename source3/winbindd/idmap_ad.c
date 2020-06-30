@@ -162,6 +162,14 @@ static TLDAPRC get_attrnames_by_oids(struct tldap_context *ld,
 	}
 
 	TALLOC_FREE(msgs);
+	for (i=0; i<num_oids; i++) {
+		if (names[i] == NULL) {
+			DBG_ERR("Failed to retrieve schema name for "
+				"oid [%s]. Schema mode is incorrect "
+				"for this domain.\n", oids[i]);
+			return TLDAP_FILTER_ERROR;
+		}
+	}
 
 	return TLDAP_SUCCESS;
 }
