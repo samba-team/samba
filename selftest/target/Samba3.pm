@@ -1329,6 +1329,9 @@ sub setup_fileserver
 	my $tarmode_sharedir="$share_dir/tarmode";
 	push(@dirs,$tarmode_sharedir);
 
+	my $smbcacls_sharedir="$share_dir/smbcacls";
+	push(@dirs,$smbcacls_sharedir);
+
 	my $usershare_sharedir="$share_dir/usershares";
 	push(@dirs,$usershare_sharedir);
 

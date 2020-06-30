@@ -925,6 +925,8 @@ planoldpythontestsuite("none", "samba.tests.loadparm")
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.mdfind",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.smbcacls_basic")
 
 #
 # Want a selection of environments across the process models
