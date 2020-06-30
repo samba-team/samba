@@ -1146,7 +1146,7 @@ bool reopen_logs_internal(void)
 		b = debug_find_backend("file");
 		assert(b != NULL);
 
-		b->log_level = dbgc_config[DBGC_ALL].loglevel;
+		b->log_level = MAX_DEBUG_LEVEL;
 		break;
 	}
 
