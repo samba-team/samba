@@ -376,6 +376,33 @@ static int ldap_parse_basic_url(
 		return EPROTONOSUPPORT;
 	}
 
+	if (url[0] == '[') {
+		/*
+		 * IPv6 with [aa:bb:cc..]:port
+		 */
+		const char *end = NULL;
+
+		url +=1;
+
+		end = strchr(url, ']');
+		if (end == NULL) {
+			return EINVAL;
+		}
+
+		ret = sscanf(end+1, ":%d", &port);
+		if (ret < 0) {
+			return EINVAL;
+		}
+
+		*pdest = talloc_strndup(mem_ctx, url, end-url);
+		if (*pdest == NULL) {
+			return ENOMEM;
+		}
+		*pproto = proto;
+		*pport = port;
+		return 0;
+	}
+
 	ret = sscanf(url, "%m[^:/]:%d", &host, &port);
 	if (ret < 1) {
 		return EINVAL;
