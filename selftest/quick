@@ -35,3 +35,6 @@ rpc.echo
 smb.signing
 drs.unit
 samba4.blackbox.dbcheck.dc
+# This needs to be here to get testing of crypt_r()
+# behaviour on multiple OS distributions.
+samba.tests.samba_tool.user_virtualCryptSHA_userPassword
