@@ -168,15 +168,20 @@ static struct smb2_tree *test_multichannel_create_channel(
 				const char *host,
 				const char *share,
 				struct cli_credentials *credentials,
-				const struct smbcli_options *transport_options,
+				const struct smbcli_options *_transport_options,
 				struct smb2_tree *parent_tree
 				)
 {
+	struct smbcli_options transport_options = *_transport_options;
 	NTSTATUS status;
 	struct smb2_transport *transport;
 	struct smb2_session *session;
 	bool ret = true;
 	struct smb2_tree *tree;
+
+	if (parent_tree) {
+		transport_options.only_negprot = true;
+	}
 
 	status = smb2_connect(tctx,
 			host,
@@ -186,7 +191,7 @@ static struct smb2_tree *test_multichannel_create_channel(
 			credentials,
 			&tree,
 			tctx->ev,
-			transport_options,
+			&transport_options,
 			lpcfg_socket_options(tctx->lp_ctx),
 			lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 			);
@@ -1804,7 +1809,13 @@ static bool test_multichannel_num_channels(struct torture_context *tctx,
 		transport2[i] = tree2[i]->session->transport;
 
 		if (i == 0) {
-			/* done for the 1st channel */
+			/*
+			 * done for the 1st channel
+			 *
+			 * For all remaining channels we do the
+			 * session setup on our own.
+			 */
+			transport2_options.only_negprot = true;
 			continue;
 		}
 
