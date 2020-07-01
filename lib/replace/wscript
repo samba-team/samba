@@ -649,6 +649,7 @@ def configure(conf):
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
     conf.CHECK_FUNCS_IN('crypt_r', 'crypt', checklibc=True)
+    conf.CHECK_FUNCS_IN('crypt_rn', 'crypt', checklibc=True)
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
                         headers='readline.h readline/readline.h readline/history.h')
