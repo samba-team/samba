@@ -104,6 +104,7 @@ struct smbcli_options {
 	uint32_t smb2_capabilities;
 	struct GUID client_guid;
 	uint64_t max_credits;
+	unsigned int only_negprot;
 };
 
 /* this is the context for the client transport layer */

@@ -218,6 +218,15 @@ static void smb2_connect_session_start(struct tevent_req *req)
 		return;
 	}
 
+	if (state->options.only_negprot) {
+		state->tree = smb2_tree_init(state->session, state, true);
+		if (tevent_req_nomem(state->tree, req)) {
+			return;
+		}
+		tevent_req_done(req);
+		return;
+	}
+
 	subreq = smb2_session_setup_spnego_send(state, state->ev,
 						state->session,
 						state->credentials,
