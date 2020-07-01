@@ -1473,8 +1473,10 @@ static int setup_primary_userPassword_hash(
 	int rounds = 0;                 /* The number of hash rounds */
 	DATA_BLOB *hash_blob = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-#ifdef HAVE_CRYPT_R
-	struct crypt_data crypt_data;   /* working storage used by crypt */
+#if defined(HAVE_CRYPT_R) || defined(HAVE_CRYPT_RN)
+	struct crypt_data crypt_data = {
+		.initialized = 0        /* working storage used by crypt */
+	};
 #endif
 
 	/* Genrate a random password salt */
@@ -1515,8 +1517,32 @@ static int setup_primary_userPassword_hash(
 	 * Relies on the assertion that cleartext_utf8->data is a zero
 	 * terminated UTF-8 string
 	 */
+
+	/*
+	 * crypt_r() and crypt() may return a null pointer upon error
+	 * depending on how libcrypt was configured, so we prefer
+	 * crypt_rn() from libcrypt / libxcrypt which always returns
+	 * NULL on error.
+	 *
+	 * POSIX specifies returning a null pointer and setting
+	 * errno.
+	 *
+	 * RHEL 7 (which does not use libcrypt / libxcrypt) returns a
+	 * non-NULL pointer from crypt_r() on success but (always?)
+	 * sets errno during internal processing in the NSS crypto
+	 * subsystem.
+	 *
+	 * By preferring crypt_rn we avoid the 'return non-NULL but
+	 * set-errno' that we otherwise cannot tell apart from the
+	 * RHEL 7 behaviour.
+	 */
 	errno = 0;
-#ifdef HAVE_CRYPT_R
+#ifdef HAVE_CRYPT_RN
+	hash = crypt_rn((char *)io->n.cleartext_utf8->data,
+			cmd,
+			&crypt_data,
+			sizeof(crypt_data));
+#elif HAVE_CRYPT_R
 	hash = crypt_r((char *)io->n.cleartext_utf8->data, cmd, &crypt_data);
 #else
 	/*
@@ -1525,10 +1551,7 @@ static int setup_primary_userPassword_hash(
 	 */
 	hash = crypt((char *)io->n.cleartext_utf8->data, cmd);
 #endif
-	/* crypt_r and crypt may return a null pointer upon error depending on
-	 * how libcrypt was configured. POSIX specifies returning a null
-	 * pointer and setting errno. */
-	if (hash == NULL || errno != 0) {
+	if (hash == NULL) {
 		char buf[1024];
 		int err = strerror_r(errno, buf, sizeof(buf));
 		if (err != 0) {
