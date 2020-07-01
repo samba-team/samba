@@ -892,12 +892,47 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	}
 
 	if (ISDOT(smb_fname->base_name)) {
+		/*
+		 * passing a '.' is a noop,
+		 * and we only expect this after
+		 * everything is initialized.
+		 *
+		 * So the first vfs_ChDir() on a given
+		 * connection_struct must not be '.'.
+		 *
+		 * Note: conn_new() sets
+		 * conn->cwd_fsp->fh->fd = -1
+		 * and vfs_ChDir() leaves with
+		 * conn->cwd_fsp->fh->fd = AT_FDCWD
+		 * on success!
+		 */
+		if (conn->cwd_fsp->fh->fd != AT_FDCWD) {
+			/*
+			 * This should never happen and
+			 * we might change this to
+			 * SMB_ASSERT() in future.
+			 */
+			DBG_ERR("Called with '.' as first operation!\n");
+			log_stack_trace();
+			errno = EINVAL;
+			return -1;
+		}
 		return 0;
 	}
 
 	if (smb_fname->base_name[0] == '/' &&
 	    strcsequal(LastDir,smb_fname->base_name))
 	{
+		/*
+		 * conn->cwd_fsp->fsp_name and the kernel
+		 * are already correct, but conn->cwd_fsp->fh->fd
+		 * might still be -1 as initialized in conn_new().
+		 *
+		 * This can happen when a client made a 2nd
+		 * tree connect to a share with the same underlying
+		 * path (may or may not the same share).
+		 */
+		conn->cwd_fsp->fh->fd = AT_FDCWD;
 		return 0;
 	}
 
