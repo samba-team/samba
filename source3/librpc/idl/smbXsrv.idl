@@ -284,6 +284,7 @@ interface smbXsrv
 		uint8					in_security_mode;
 		NTTIME					creation_time;
 		NTTIME					idle_time;
+		hyper					channel_id;
 	} smbXsrv_session_auth0;
 
 	typedef struct {

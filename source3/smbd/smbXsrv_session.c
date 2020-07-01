@@ -1464,6 +1464,10 @@ NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
 	struct smbXsrv_session_auth0 *a;
 
 	for (a = session->pending_auth; a != NULL; a = a->next) {
+		if (a->channel_id != conn->channel_id) {
+			continue;
+		}
+
 		if (a->connection == conn) {
 			if (now != 0) {
 				a->idle_time = now;
@@ -1512,6 +1516,7 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 	a->in_security_mode = in_security_mode;
 	a->creation_time = now;
 	a->idle_time = now;
+	a->channel_id = conn->channel_id;
 
 	if (conn->protocol >= PROTOCOL_SMB3_10) {
 		a->preauth = talloc(a, struct smbXsrv_preauth);
