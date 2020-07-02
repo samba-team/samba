@@ -1,4 +1,88 @@
                    ===============================
+                   Release Notes for Samba 4.10.17
+                            July 02, 2020
+                   ===============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2020-10730: NULL pointer de-reference and use-after-free in Samba AD DC
+		  LDAP Server with ASQ, VLV and paged_results.
+o CVE-2020-10745: Parsing and packing of NBT and DNS packets can consume
+		  excessive CPU
+o CVE-2020-10760: LDAP Use-after-free in Samba AD DC Global Catalog with
+		  paged_results and VLV.
+o CVE-2020-14303: Empty UDP packet DoS in Samba AD DC nbtd.
+
+
+=======
+Details
+=======
+
+o  CVE-2020-10730:
+   A client combining the 'ASQ' and 'VLV' LDAP controls can cause a NULL pointer
+   de-reference and further combinations with the LDAP paged_results feature can
+   give a use-after-free in Samba's AD DC LDAP server.
+
+o  CVE-2020-10745: Parsing and packing of NBT and DNS packets can consume
+   excessive CPU.
+
+o  CVE-2020-10760:
+   The use of the paged_results or VLV controls against the Global Catalog LDAP
+   server on the AD DC will cause a use-after-free.
+
+o  CVE-2020-14303:
+   The AD DC NBT server in Samba 4.0 will enter a CPU spin and not process
+   further requests once it receives an empty (zero-length) UDP packet to
+   port 137.
+
+For more details, please refer to the security advisories.
+
+
+Changes since 4.10.16
+---------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14378: CVE-2020-10745: Invalid DNS or NBT queries containing dots use
+     several seconds of CPU each.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14364: CVE-2020-10730: NULL de-reference in AD DC LDAP server when ASQ
+     and VLV combined.
+   * BUG 14402: CVE-2020-10760: Fix use-after-free in AD DC Global Catalog LDAP
+     server with paged_result or VLV.
+   * BUG 14417: CVE-2020-14303: Fix endless loop from empty UDP packet sent to
+     AD DC nbt_server.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14364: CVE-2020-10730: NULL de-reference in AD DC LDAP server when ASQ
+     and VLV combined, ldb: Bump version to 1.5.8.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.10.16
                             May 25, 2020
                    ===============================
@@ -46,8 +130,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ===============================
                    Release Notes for Samba 4.10.15

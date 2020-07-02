@@ -416,6 +416,16 @@ plantestsuite_loadlist("samba.tests.dns_wildcard", "ad_dc", [python, os.path.joi
 
 plantestsuite_loadlist("samba.tests.dns_invalid", "ad_dc", [python, os.path.join(srcdir(), "python/samba/tests/dns_invalid.py"), '$SERVER_IP', '--machine-pass', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
+plantestsuite_loadlist("samba.tests.dns_packet",
+                       "ad_dc",
+                       [python,
+                        '-msamba.subunit.run',
+                        '$LOADLIST',
+                        "$LISTOPT"
+                        "samba.tests.dns_packet"
+                       ])
+
+
 for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorture4testsuite(t, "ad_dc_ntvfs:local", '//$SERVER/whavever')
 
@@ -1293,6 +1303,8 @@ plantestsuite("samba4.dsdb.samdb.ldb_modules.group_audit.errors", "none",
               [os.path.join(bindir(), "test_group_audit_errors")])
 plantestsuite("samba4.dcerpc.dnsserver.dnsutils", "none",
               [os.path.join(bindir(), "test_rpc_dns_server_dnsutils")])
+plantestsuite("librpc.ndr.ndr_dns_nbt", "none",
+              [os.path.join(bindir(), "test_ndr_dns_nbt")])
 plantestsuite("libcli.ldap.ldap_message", "none",
               [os.path.join(bindir(), "test_ldap_message")])
 
