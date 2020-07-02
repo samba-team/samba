@@ -56,8 +56,10 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,
 				 struct smbcli_session_options *options)
 {
-	options->lanman_auth = lpcfg_client_lanman_auth(lp_ctx);
-	options->ntlmv2_auth = lpcfg_client_ntlmv2_auth(lp_ctx);
-	options->plaintext_auth = lpcfg_client_plaintext_auth(lp_ctx);
+	*options = (struct smbcli_session_options) {
+		.lanman_auth = lpcfg_client_lanman_auth(lp_ctx),
+		.ntlmv2_auth = lpcfg_client_ntlmv2_auth(lp_ctx),
+		.plaintext_auth = lpcfg_client_plaintext_auth(lp_ctx),
+	};
 }
 
