@@ -707,6 +707,10 @@ got_connection:
 		if (!ADS_ERR_OK(status)) {
 			goto out;
 		}
+		if (!ads_set_sasl_wrap_flags(ads, 0)) {
+			status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
+			goto out;
+		}
 	}
 
 	/* fill in the current time and offsets */
