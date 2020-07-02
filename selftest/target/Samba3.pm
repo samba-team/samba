@@ -1991,6 +1991,9 @@ sub provision($$)
 	my $msdfs_deeppath="$msdfs_shrdir/deeppath";
 	push(@dirs,$msdfs_deeppath);
 
+	my $smbcacls_sharedir_dfs="$shrdir/smbcacls_sharedir_dfs";
+	push(@dirs,$smbcacls_sharedir_dfs);
+
 	my $badnames_shrdir="$shrdir/badnames";
 	push(@dirs,$badnames_shrdir);
 
@@ -2072,6 +2075,8 @@ sub provision($$)
 	symlink "msdfs:$server_ip\\ro-tmp,$server_ipv6\\ro-tmp",
 		"$msdfs_shrdir/msdfs-src1";
 	symlink "msdfs:$server_ipv6\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
+	symlink "msdfs:$server_ip\\smbcacls_sharedir_dfs,$server_ipv6\\smbcacls_sharedir_dfs",
+		"$msdfs_shrdir/smbcacls_sharedir_dfs";
 
 	##
 	## create bad names in $badnames_shrdir
@@ -2316,6 +2321,9 @@ sub provision($$)
 	}
 
 	print CONF "
+[smbcacls_sharedir_dfs]
+	path = $smbcacls_sharedir_dfs
+        comment = smb username is [%U]
 [tmp]
 	path = $shrdir
         comment = smb username is [%U]

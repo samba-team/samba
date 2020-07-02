@@ -927,6 +927,11 @@ planoldpythontestsuite("fileserver",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic")
+planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.smbcacls_basic",
+                       "samba.tests.blackbox.smbcacls_basic(DFS)",
+                       environ={'SHARE': 'msdfs-share',
+                                 'TESTDIR': 'smbcacls_sharedir_dfs'})
 
 #
 # Want a selection of environments across the process models
