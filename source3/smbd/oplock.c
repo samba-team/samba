@@ -172,8 +172,8 @@ static void downgrade_file_oplock(files_struct *fsp)
 	TALLOC_FREE(fsp->oplock_timeout);
 }
 
-uint32_t get_lease_type(const struct share_mode_data *d,
-			const struct share_mode_entry *e)
+uint32_t get_lease_type(struct share_mode_data *d,
+			struct share_mode_entry *e)
 {
 	NTSTATUS status;
 	uint32_t current_state;
