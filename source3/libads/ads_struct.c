@@ -176,13 +176,17 @@ ADS_STRUCT *ads_init(const char *realm,
 /****************************************************************
 ****************************************************************/
 
-bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, int flags)
+bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, unsigned flags)
 {
+	unsigned other_flags;
+
 	if (!ads) {
 		return false;
 	}
 
-	ads->auth.flags = flags;
+	other_flags = ads->auth.flags & ~(ADS_AUTH_SASL_SIGN|ADS_AUTH_SASL_SEAL);
+
+	ads->auth.flags = flags | other_flags;
 
 	return true;
 }

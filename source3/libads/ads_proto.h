@@ -47,7 +47,7 @@ ADS_STRUCT *ads_init(const char *realm,
 		     const char *workgroup,
 		     const char *ldap_server,
 		     enum ads_sasl_state_e sasl_state);
-bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, int flags);
+bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, unsigned flags);
 void ads_destroy(ADS_STRUCT **ads);
 
 /* The following definitions come from libads/disp_sec.c  */
