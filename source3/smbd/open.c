@@ -719,7 +719,7 @@ static int non_widelink_open(files_struct *fsp,
 		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=12860
 		 */
 		if (saved_errno == ELOOP || saved_errno == ENOTDIR) {
-			if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+			if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
 				/* Never follow symlinks on posix open. */
 				goto out;
 			}
