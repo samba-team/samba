@@ -628,6 +628,7 @@ static int non_widelink_open(files_struct *fsp,
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status;
 	int fd = -1;
+	struct smb_filename *tmp_fsp_name = fsp->fsp_name;
 	struct smb_filename *smb_fname_rel = NULL;
 	int saved_errno = 0;
 	struct smb_filename *oldwd_fname = NULL;
@@ -690,20 +691,16 @@ static int non_widelink_open(files_struct *fsp,
 
 	flags |= O_NOFOLLOW;
 
-	{
-		struct smb_filename *tmp_name = fsp->fsp_name;
+	fsp->fsp_name = smb_fname_rel;
 
-		fsp->fsp_name = smb_fname_rel;
+	fd = SMB_VFS_OPENAT(conn,
+			    cwdfsp,
+			    smb_fname_rel,
+			    fsp,
+			    flags,
+			    mode);
 
-		fd = SMB_VFS_OPENAT(conn,
-				    cwdfsp,
-				    smb_fname_rel,
-				    fsp,
-				    flags,
-				    mode);
-
-		fsp->fsp_name = tmp_name;
-	}
+	fsp->fsp_name = tmp_fsp_name;
 
 	if (fd == -1) {
 		saved_errno = link_errno_convert(errno);
