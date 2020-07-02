@@ -733,8 +733,13 @@ NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 
 	status = leases_db_del(client_guid, lease_key, &d->id);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("leases_db_del failed: %s\n",
-			  nt_errstr(status));
+		int level = DBGLVL_DEBUG;
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			level = DBGLVL_ERR;
+		}
+		DBG_PREFIX(level, ("leases_db_del failed: %s\n",
+			   nt_errstr(status)));
 	}
 	return status;
 }
