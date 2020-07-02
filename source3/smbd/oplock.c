@@ -171,6 +171,8 @@ static void downgrade_file_oplock(files_struct *fsp)
 
 uint32_t get_lease_type(struct share_mode_entry *e, struct file_id id)
 {
+	struct GUID_txt_buf guid_strbuf;
+	struct file_id_buf file_id_strbuf;
 	NTSTATUS status;
 	uint32_t current_state;
 
@@ -187,8 +189,22 @@ uint32_t get_lease_type(struct share_mode_entry *e, struct file_id id)
 			       NULL,	/* breaking_to_required */
 			       NULL,	/* lease_version */
 			       NULL);	/* epoch */
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
-	return current_state;
+	if (NT_STATUS_IS_OK(status)) {
+		return current_state;
+	}
+
+	if (share_entry_stale_pid(e)) {
+		return 0;
+	}
+	DBG_ERR("leases_db_get for client_guid [%s] "
+		"lease_key [%"PRIu64"/%"PRIu64"] "
+		"file_id [%s] failed: %s\n",
+		GUID_buf_string(&e->client_guid, &guid_strbuf),
+		e->lease_key.data[0],
+		e->lease_key.data[1],
+		file_id_str_buf(id, &file_id_strbuf),
+		nt_errstr(status));
+	smb_panic("leases_db_get() failed");
 }
 
 /****************************************************************************
