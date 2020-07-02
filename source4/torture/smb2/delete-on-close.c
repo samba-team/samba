@@ -698,6 +698,46 @@ done:
 	return ret;
 }
 
+/*
+ * This is a regression test for
+ * https://bugzilla.samba.org/show_bug.cgi?id=14427
+ *
+ * It's not really a delete-on-close specific test.
+ */
+static bool test_doc_bug14427(struct torture_context *tctx, struct smb2_tree *tree1)
+{
+	struct smb2_tree *tree2 = NULL;
+	NTSTATUS status;
+	char fname[256];
+	bool ret = false;
+	bool ok;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "doc_bug14427_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	ok = torture_smb2_tree_connect(tctx, tree1->session, tctx, &tree2);
+	torture_assert_goto(tctx, ok, ret, done,
+		"torture_smb2_tree_connect() failed.\n");
+
+	status = torture_setup_simple_file(tctx, tree1, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"torture_setup_simple_file() failed on tree1.\n");
+
+	status = smb2_util_unlink(tree2, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"smb2_util_unlink() failed on tree2.\n");
+	TALLOC_FREE(tree2);
+	ret = true;
+done:
+	if (tree2 != NULL) {
+		TALLOC_FREE(tree2);
+		smb2_util_unlink(tree1, fname);
+	}
+
+	TALLOC_FREE(tree1);
+	return ret;
+}
 
 /*
  *  Extreme testing of Delete On Close and permissions
@@ -713,7 +753,8 @@ struct torture_suite *torture_smb2_doc_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "CREATE_IF", test_doc_create_if);
 	torture_suite_add_1smb2_test(suite, "CREATE_IF Existing", test_doc_create_if_exist);
 	torture_suite_add_1smb2_test(suite, "FIND_and_set_DOC", test_doc_find_and_set_doc);
-	torture_suite_add_1smb2_test(suite,  "READONLY", test_doc_read_only);
+	torture_suite_add_1smb2_test(suite, "READONLY", test_doc_read_only);
+	torture_suite_add_1smb2_test(suite, "BUG14427", test_doc_bug14427);
 
 	suite->description = talloc_strdup(suite, "SMB2-Delete-on-Close-Perms tests");
 
