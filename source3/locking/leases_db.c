@@ -549,8 +549,8 @@ static void leases_db_get_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 		&blob, value, value,
 		(ndr_pull_flags_fn_t)ndr_pull_leases_db_value);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_DEBUG("ndr_pull_struct_blob_failed: %s\n",
-			  ndr_errstr(ndr_err));
+		DBG_ERR("ndr_pull_struct_blob_failed: %s\n",
+			ndr_errstr(ndr_err));
 		TALLOC_FREE(value);
 		state->status = ndr_map_error2ntstatus(ndr_err);
 		return;
