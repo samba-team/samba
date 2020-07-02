@@ -879,8 +879,9 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		return 0;
 	}
 
-	if (*smb_fname->base_name == '/' &&
-			strcsequal(LastDir,smb_fname->base_name)) {
+	if (smb_fname->base_name[0] == '/' &&
+	    strcsequal(LastDir,smb_fname->base_name))
+	{
 		return 0;
 	}
 
