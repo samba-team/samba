@@ -52,8 +52,8 @@ class gp_scripts_ext(gp_pol_ext):
                                 b64encode(e.data.encode()).decode())
                         old_val = self.gp_db.retrieve(str(self), attribute)
                         if not old_val:
-                            with NamedTemporaryFile(mode="w+", delete=False,
-                                    dir=cron_dir) as f:
+                            with NamedTemporaryFile(prefix='gp_', mode="w+",
+                                    delete=False, dir=cron_dir) as f:
                                 f.write('#!/bin/sh\n%s' % e.data)
                                 os.chmod(f.name, 0o700)
                                 self.gp_db.store(str(self), attribute, f.name)
