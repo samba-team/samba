@@ -1,4 +1,67 @@
                    ==============================
+                   Release Notes for Samba 4.12.5
+                            July 02, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+
+
+Changes since 4.12.4
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14301: Fix smbd panic on force-close share during async io.
+   * BUG 14374: Fix segfault when using SMBC_opendir_ctx() routine for share
+     folder that contains incorrect symbols in any file name.
+   * BUG 14391: Fix DFS links.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14310: Can't use DNS functionality after a Windows DC has been in
+     domain.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14413: ldapi search to FreeIPA crashes.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14396: Add net-ads-join dnshostname=fqdn option.
+   * BUG 14406: Fix adding msDS-AdditionalDnsHostName to keytab with Windows DC.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14386: docs-xml: Update list of posible VFS operations for
+     vfs_full_audit.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14382: winbindd: Fix a use-after-free when winbind clients exit.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14370: Client tools are not able to read gencache anymore.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.12.4
                             July 02, 2020
 		   ==============================
@@ -79,8 +142,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.12.3
