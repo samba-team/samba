@@ -31,7 +31,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DNSSERVER',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DNS',
-    source='gen_ndr/ndr_dns.c ndr/ndr_dns.c',
+    source='gen_ndr/ndr_dns.c ndr/ndr_dns.c ndr/ndr_dns_utils.c',
     public_deps='ndr NDR_DNSP'
     )
 
@@ -415,7 +415,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT',
 
 bld.SAMBA_LIBRARY('ndr_nbt',
     source='gen_ndr/ndr_nbt.c ndr/ndr_nbt.c',
-    public_deps='ndr NDR_NBT_BUF NDR_SECURITY',
+    public_deps='ndr NDR_NBT_BUF NDR_SECURITY NDR_DNS',
     public_headers='gen_ndr/nbt.h gen_ndr/ndr_nbt.h ndr/ndr_nbt.h',
     header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')],
     pc_files='ndr_nbt.pc',
@@ -696,5 +696,14 @@ bld.SAMBA_BINARY('test_ndr_string',
                       cmocka
                       talloc
                       ndr
+                      ''',
+                 for_selftest=True)
+
+bld.SAMBA_BINARY('test_ndr_dns_nbt',
+                 source='tests/test_ndr_dns_nbt.c',
+                 deps='''
+                      cmocka
+                      ndr
+                      ndr_nbt
                       ''',
                  for_selftest=True)

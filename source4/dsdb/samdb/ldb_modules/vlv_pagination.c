@@ -387,7 +387,7 @@ static int vlv_calc_real_offset(int offset, int denominator, int n_entries)
    has been prepared earlier and saved -- or by vlv_search_callback() when a
    search has just been completed. */
 
-static int vlv_results(struct vlv_context *ac)
+static int vlv_results(struct vlv_context *ac, struct ldb_reply *ares)
 {
 	struct ldb_vlv_resp_control *vlv;
 	unsigned int num_ctrls;
@@ -397,7 +397,9 @@ static int vlv_results(struct vlv_context *ac)
 	int target = 0;
 
 	if (ac->store == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	if (ac->store->first_ref) {
@@ -406,6 +408,10 @@ static int vlv_results(struct vlv_context *ac)
 		*/
 		ret = send_referrals(ac->store, ac->req);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * send_referrals will have called ldb_module_done
+			 * if there was an error.
+			 */
 			return ret;
 		}
 	}
@@ -419,14 +425,23 @@ static int vlv_results(struct vlv_context *ac)
 						    vlv_details,
 						    sort_details, &ret);
 			if (ret != LDB_SUCCESS) {
-				return ret;
+				return ldb_module_done(
+					ac->req,
+					ac->controls,
+					ares->response,
+					ret);
 			}
 		} else {
 			target = vlv_calc_real_offset(vlv_details->match.byOffset.offset,
 						      vlv_details->match.byOffset.contentCount,
 						      ac->store->num_entries);
 			if (target == -1) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OPERATIONS_ERROR;
+				return ldb_module_done(
+					ac->req,
+					ac->controls,
+					ares->response,
+					ret);
 			}
 		}
 
@@ -442,21 +457,40 @@ static int vlv_results(struct vlv_context *ac)
 			ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid,
 						    ac->req->op.search.attrs);
 
-			if (ret == LDAP_NO_SUCH_OBJECT) {
-				/* The thing isn't there, which we quietly
-				   ignore and go on to send an extra one
-				   instead. */
+			if (ret == LDAP_NO_SUCH_OBJECT
+			    || result->count != 1) {
+				/*
+				 * The thing isn't there, which we quietly
+				 * ignore and go on to send an extra one
+				 * instead.
+				 *
+				 * result->count == 0 or > 1 can only
+				 * happen if ASQ (which breaks all the
+				 * rules) is somehow invoked (as this
+				 * is a BASE search).
+				 *
+				 * (We skip the ASQ cookie for the
+				 * GUID searches)
+				 */
 				if (last_i < ac->store->num_entries - 1) {
 					last_i++;
 				}
 				continue;
 			} else if (ret != LDB_SUCCESS) {
-				return ret;
+				return ldb_module_done(
+					ac->req,
+					ac->controls,
+					ares->response,
+					ret);
 			}
 
 			ret = ldb_module_send_entry(ac->req, result->msgs[0],
 						    NULL);
 			if (ret != LDB_SUCCESS) {
+				/*
+				 * ldb_module_send_entry will have called
+				 * ldb_module_done if there was an error
+				 */
 				return ret;
 			}
 		}
@@ -477,7 +511,9 @@ static int vlv_results(struct vlv_context *ac)
 
 	ac->controls = talloc_array(ac, struct ldb_control *, num_ctrls + 1);
 	if (ac->controls == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 	ac->controls[num_ctrls] = NULL;
 
@@ -487,20 +523,26 @@ static int vlv_results(struct vlv_context *ac)
 
 	ac->controls[i] = talloc(ac->controls, struct ldb_control);
 	if (ac->controls[i] == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	ac->controls[i]->oid = talloc_strdup(ac->controls[i],
 					     LDB_CONTROL_VLV_RESP_OID);
 	if (ac->controls[i]->oid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 
 	ac->controls[i]->critical = 0;
 
 	vlv = talloc(ac->controls[i], struct ldb_vlv_resp_control);
 	if (vlv == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_done(
+			ac->req, ac->controls, ares->response, ret);
 	}
 	ac->controls[i]->data = vlv;
 
@@ -589,7 +631,13 @@ static int vlv_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		store->result_array_size = store->num_entries;
 
 		ac->store->controls = talloc_move(ac->store, &ares->controls);
-		ret = vlv_results(ac);
+		ret = vlv_results(ac, ares);
+		if (ret != LDB_SUCCESS) {
+			/* vlv_results will have called ldb_module_done
+			 * if there was an error.
+			 */
+			return ret;
+		}
 		return ldb_module_done(ac->req, ac->controls,
 					ares->response, ret);
 	}
@@ -682,11 +730,29 @@ vlv_copy_down_controls(TALLOC_CTX *mem_ctx, struct ldb_control **controls)
 		if (control->oid == NULL) {
 			break;
 		}
-		if (strncmp(control->oid, LDB_CONTROL_VLV_REQ_OID, sizeof(LDB_CONTROL_VLV_REQ_OID)) == 0 ||
-		    strncmp(control->oid, LDB_CONTROL_SERVER_SORT_OID, sizeof(LDB_CONTROL_SERVER_SORT_OID)) == 0) {
+		/*
+		 * Do not re-use VLV, nor the server-sort, both are
+		 * already handled here.
+		 */
+		if (strcmp(control->oid, LDB_CONTROL_VLV_REQ_OID) == 0 ||
+		    strcmp(control->oid, LDB_CONTROL_SERVER_SORT_OID) == 0) {
+			continue;
+		}
+		/*
+		 * ASQ changes everything, do not copy it down for the
+		 * per-GUID search
+		 */
+		if (strcmp(control->oid, LDB_CONTROL_ASQ_OID) == 0) {
 			continue;
 		}
 		new_controls[j] = talloc_steal(new_controls, control);
+		/*
+		 * Sadly the caller is not obliged to make this a
+		 * proper talloc tree, so we do so here.
+		 */
+		if (control->data) {
+			talloc_steal(control, control->data);
+		}
 		j++;
 	}
 	new_controls[j] = NULL;
@@ -823,9 +889,9 @@ static int vlv_search(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		ret = vlv_results(ac);
+		ret = vlv_results(ac, NULL);
 		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(req, NULL, NULL, ret);
+			return ret;
 		}
 		return ldb_module_done(req, ac->controls, NULL,
 				       LDB_SUCCESS);

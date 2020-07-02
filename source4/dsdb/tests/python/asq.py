@@ -162,6 +162,60 @@ class ASQLDAPTest(samba.tests.TestCase):
                 self.assertIn(ldb.Dn(self.ldb, str(group)),
                               self.members)
 
+    def test_asq_vlv(self):
+        """Testing ASQ behaviour with VLV set.
+
+        ASQ is very strange, it turns a BASE search into a search for
+        all the objects pointed to by the specified attribute,
+        returning multiple entries!
+
+        """
+
+        sort_control = "server_sort:1:0:cn"
+
+        msgs = self.ldb.search(base=self.top_dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=["objectGUID", "cn", "member"],
+                               controls=["asq:1:member",
+                                         sort_control,
+                                         "vlv:1:20:20:11:0"])
+
+        self.assertEqual(len(msgs), 20)
+
+        for msg in msgs:
+            self.assertNotEqual(msg.dn, self.top_dn)
+            self.assertIn(msg.dn, self.members2)
+            for group in msg["member"]:
+                self.assertIn(ldb.Dn(self.ldb, str(group)),
+                              self.members)
+
+    def test_asq_vlv_paged(self):
+        """Testing ASQ behaviour with VLV and paged_results set.
+
+        ASQ is very strange, it turns a BASE search into a search for
+        all the objects pointed to by the specified attribute,
+        returning multiple entries!
+
+        Thankfully combining both of these gives
+        unavailable-critical-extension against Windows 1709
+
+        """
+
+        sort_control = "server_sort:1:0:cn"
+
+        try:
+            msgs = self.ldb.search(base=self.top_dn,
+                                   scope=ldb.SCOPE_BASE,
+                                   attrs=["objectGUID", "cn", "member"],
+                                   controls=["asq:1:member",
+                                             sort_control,
+                                             "vlv:1:20:20:11:0",
+                                             "paged_results:1:1024"])
+            self.fail("should have failed with LDAP_UNAVAILABLE_CRITICAL_EXTENSION")
+        except ldb.LdbError as e:
+            (enum, estr) = e.args
+            self.assertEqual(enum, ldb.ERR_UNSUPPORTED_CRITICAL_EXTENSION)
+
 if "://" not in url:
     if os.path.isfile(url):
         url = "tdb://%s" % url
