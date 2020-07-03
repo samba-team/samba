@@ -96,15 +96,15 @@ static bool run_matching(struct torture_context *torture,
 	}
 
 	for (t = suite->testcases; t; t = t->next) {
-		char *name = talloc_asprintf(torture, "%s.%s", prefix, t->name);
-		if (gen_fnmatch(expr, name) == 0) {
+		char *tname = prefix_name(torture, prefix, t->name);
+		if (gen_fnmatch(expr, tname) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
 			ret &= torture_run_tcase_restricted(torture, t, restricted);
 		}
 		for (p = t->tests; p; p = p->next) {
-			name = talloc_asprintf(torture, "%s.%s.%s", prefix, t->name, p->name);
-			if (gen_fnmatch(expr, name) == 0) {
+			char *pname = prefix_name(torture, tname, p->name);
+			if (gen_fnmatch(expr, pname) == 0) {
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
 				ret &= torture_run_test_restricted(torture, t, p, restricted);
