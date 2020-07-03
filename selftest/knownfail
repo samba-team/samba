@@ -83,8 +83,8 @@
 ^samba4.raw.rename.*.osxrename
 ^samba4.raw.rename.*.directory rename
 ^samba4.rpc.winreg.*security
-^samba4.local.registry.(dir|ldb).check hive security
-^samba4.local.registry.local.security
+^samba4.local.registry.*.(dir|ldb).check hive security
+^samba4.local.registry.*.local.security
 ^samba4.rpc.wkssvc
 ^samba4.rpc.handles.*.lsarpc-shared
 ^samba4.rpc.epmapper

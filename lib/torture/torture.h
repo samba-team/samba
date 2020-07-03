@@ -83,12 +83,19 @@ void torture_ui_report_time(struct torture_context *context);
  * specified below.
  */
 
+struct torture_subunit_prefix {
+	const struct torture_subunit_prefix *parent;
+	char subunit_prefix[256];
+};
+
 struct torture_context
 {
 	struct torture_results *results;
 
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
+	struct torture_subunit_prefix _initial_prefix;
+	const struct torture_subunit_prefix *active_prefix;
 
 	enum torture_result last_result;
 	char *last_reason;
@@ -225,6 +232,8 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 char *torture_subunit_test_name(struct torture_context *ctx,
 				struct torture_tcase *tcase,
 				struct torture_test *test);
+void torture_subunit_prefix_reset(struct torture_context *ctx,
+				  const char *name);
 
 /* Run the specified testsuite recursively */
 bool torture_run_suite(struct torture_context *context,
