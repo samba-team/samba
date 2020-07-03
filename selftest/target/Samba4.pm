@@ -2568,7 +2568,7 @@ sub setup_rodc
 	return $env;
 }
 
-sub setup_ad_dc
+sub _setup_ad_dc
 {
 	my ($self, $path, $conf_opts, $server, $dom) = @_;
 
@@ -2607,6 +2607,12 @@ sub setup_ad_dc
 	return $env;
 }
 
+sub setup_ad_dc
+{
+	my ($self, $path) = @_;
+	return _setup_ad_dc($self, $path, undef, undef, undef);
+}
+
 sub setup_ad_dc_smb1
 {
 	my ($self, $path) = @_;
@@ -2615,7 +2621,7 @@ sub setup_ad_dc_smb1
 	client min protocol = CORE
 	server min protocol = LANMAN1
 ";
-	return setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
+	return _setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
 }
 
 sub setup_ad_dc_smb1_done
