@@ -41,17 +41,6 @@ static void torture_subunit_suite_start(struct torture_context *ctx,
 {
 }
 
-static char *torture_subunit_test_name(struct torture_context *ctx,
-				   struct torture_tcase *tcase,
-				   struct torture_test *test)
-{
-	if (!strcmp(tcase->name, test->name)) {
-		return talloc_strdup(ctx, test->name);
-	} else {
-		return talloc_asprintf(ctx, "%s.%s", tcase->name, test->name);
-	}
-}
-
 static void torture_subunit_report_time(struct torture_context *tctx)
 {
 	struct timespec tp;

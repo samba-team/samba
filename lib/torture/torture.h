@@ -218,6 +218,10 @@ struct torture_tcase *torture_suite_add_simple_test(
 bool torture_suite_add_suite(struct torture_suite *suite,
 		struct torture_suite *child);
 
+char *torture_subunit_test_name(struct torture_context *ctx,
+				struct torture_tcase *tcase,
+				struct torture_test *test);
+
 /* Run the specified testsuite recursively */
 bool torture_run_suite(struct torture_context *context,
 					   struct torture_suite *suite);

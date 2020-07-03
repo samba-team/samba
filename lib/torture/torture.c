@@ -313,6 +313,17 @@ struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 	return tcase;
 }
 
+char *torture_subunit_test_name(struct torture_context *ctx,
+				struct torture_tcase *tcase,
+				struct torture_test *test)
+{
+	if (!strcmp(tcase->name, test->name)) {
+		return talloc_strdup(ctx, test->name);
+	} else {
+		return talloc_asprintf(ctx, "%s.%s", tcase->name, test->name);
+	}
+}
+
 int torture_suite_children_count(const struct torture_suite *suite)
 {
 	int ret = 0;
@@ -407,13 +418,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 					  const char **restricted)
 {
 	bool success;
-	char *subunit_testname = NULL;
-
-	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) {
-		subunit_testname = talloc_asprintf(context, "%s.%s", tcase->name, test->name);
-	} else {
-		subunit_testname = talloc_strdup(context, test->name);
-	}
+	char *subunit_testname = torture_subunit_test_name(context, tcase, test);
 
 	if (!test_needs_running(subunit_testname, restricted))
 		return true;
