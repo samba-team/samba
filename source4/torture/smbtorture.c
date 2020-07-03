@@ -87,10 +87,12 @@ static bool run_matching(struct torture_context *torture,
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
-			if (restricted != NULL)
-				ret &= torture_run_suite_restricted(torture, o, restricted);
-			else
-				ret &= torture_run_suite(torture, o);
+			ret &= torture_run_suite_restricted(torture, o, restricted);
+			/*
+			 * torture_run_suite_restricted() already implements
+			 * recursion, so we're done with this child suite.
+			 */
+			continue;
 		}
 		ret &= run_matching(torture, name, expr, restricted, o, matched);
 	}
@@ -101,6 +103,11 @@ static bool run_matching(struct torture_context *torture,
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
 			ret &= torture_run_tcase_restricted(torture, t, restricted);
+			/*
+			 * torture_run_tcase_restricted() already implements
+			 * recursion, so we're done for this tcase.
+			 */
+			continue;
 		}
 		for (p = t->tests; p; p = p->next) {
 			char *pname = prefix_name(torture, tname, p->name);
