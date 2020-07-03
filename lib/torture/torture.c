@@ -297,6 +297,7 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 	tcase->tests = NULL;
 
 	DLIST_ADD_END(suite->testcases, tcase);
+	tcase->suite = suite;
 
 	return true;
 }
@@ -623,6 +624,7 @@ struct torture_tcase *torture_suite_add_simple_tcase_const(
 	test->dangerous = false;
 
 	DLIST_ADD_END(tcase->tests, test);
+	test->tcase = tcase;
 
 	return tcase;
 }
@@ -671,6 +673,7 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 		return false;
 
 	DLIST_ADD_END(suite->children, child);
+	child->parent = suite;
 
 	/* FIXME: Check for duplicates and return false if the 
 	 * added suite already exists as a child */

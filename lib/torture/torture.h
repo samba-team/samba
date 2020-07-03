@@ -143,6 +143,8 @@ struct torture_test {
 
 	/** Use data for this test */
 	const void *data;
+
+	struct torture_tcase *tcase;
 };
 
 /* 
@@ -157,6 +159,7 @@ struct torture_tcase {
 	void *data;
 	struct torture_test *tests;
 	struct torture_tcase *prev, *next;
+	const struct torture_suite *suite;
 };
 
 struct torture_suite
@@ -165,6 +168,7 @@ struct torture_suite
 	const char *description;
 	struct torture_tcase *testcases;
 	struct torture_suite *children;
+	const struct torture_suite *parent;
 
 	/* Pointers to siblings of this torture suite */
 	struct torture_suite *prev, *next;
