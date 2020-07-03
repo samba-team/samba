@@ -38,6 +38,8 @@
 #include <readline/history.h>
 #endif
 
+static int use_fullname;
+
 static char *prefix_name(TALLOC_CTX *mem_ctx, const char *prefix, const char *name)
 {
 	if (prefix == NULL)
@@ -87,7 +89,13 @@ static bool run_matching(struct torture_context *torture,
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
+			if (use_fullname == 1) {
+				torture_subunit_prefix_reset(torture, prefix);
+			}
 			ret &= torture_run_suite_restricted(torture, o, restricted);
+			if (use_fullname == 1) {
+				torture_subunit_prefix_reset(torture, NULL);
+			}
 			/*
 			 * torture_run_suite_restricted() already implements
 			 * recursion, so we're done with this child suite.
@@ -102,7 +110,13 @@ static bool run_matching(struct torture_context *torture,
 		if (gen_fnmatch(expr, tname) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
+			if (use_fullname == 1) {
+				torture_subunit_prefix_reset(torture, prefix);
+			}
 			ret &= torture_run_tcase_restricted(torture, t, restricted);
+			if (use_fullname == 1) {
+				torture_subunit_prefix_reset(torture, NULL);
+			}
 			/*
 			 * torture_run_tcase_restricted() already implements
 			 * recursion, so we're done for this tcase.
@@ -114,7 +128,15 @@ static bool run_matching(struct torture_context *torture,
 			if (gen_fnmatch(expr, pname) == 0) {
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
+				if (use_fullname == 1) {
+					torture_subunit_prefix_reset(torture,
+								     tname);
+				}
 				ret &= torture_run_test_restricted(torture, t, p, restricted);
+				if (use_fullname == 1) {
+					torture_subunit_prefix_reset(torture,
+								     NULL);
+				}
 			}
 		}
 	}
@@ -400,6 +422,8 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		{"fullname",	0, POPT_ARG_NONE, &use_fullname, 0,
+		 "use full name for the test", NULL },
 		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit)", NULL },
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
 		{"basedir",	  0, POPT_ARG_STRING, &basedir, 0, "base directory", "BASEDIR" },
