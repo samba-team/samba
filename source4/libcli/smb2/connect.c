@@ -408,7 +408,7 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
 		      struct tevent_context *ev,
-		      struct smbcli_options *options,
+		      const struct smbcli_options *options,
 		      const char *socket_options,
 		      struct gensec_settings *gensec_settings)
 {
