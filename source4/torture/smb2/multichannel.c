@@ -168,7 +168,7 @@ static struct smb2_tree *test_multichannel_create_channel(
 				const char *host,
 				const char *share,
 				struct cli_credentials *credentials,
-				struct smbcli_options *transport_options,
+				const struct smbcli_options *transport_options,
 				struct smb2_tree *parent_tree
 				)
 {
