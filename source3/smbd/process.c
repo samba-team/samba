@@ -3914,6 +3914,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
+	tevent_fd_set_auto_close(xconn->transport.fde);
 
 	/* for now we only have one connection */
 	DLIST_ADD_END(client->connections, xconn);

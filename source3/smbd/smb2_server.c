@@ -231,8 +231,6 @@ bool smbd_smb2_is_compound(const struct smbd_smb2_request *req)
 static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 				     uint64_t expected_seq_low)
 {
-	TALLOC_FREE(xconn->transport.fde);
-
 	xconn->smb2.credits.seq_low = expected_seq_low;
 	xconn->smb2.credits.seq_range = 1;
 	xconn->smb2.credits.granted = 1;
@@ -243,6 +241,9 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	tevent_fd_set_close_fn(xconn->transport.fde, NULL);
+	TALLOC_FREE(xconn->transport.fde);
+
 	xconn->transport.fde = tevent_add_fd(
 					xconn->client->raw_ev_ctx,
 					xconn,
@@ -251,8 +252,11 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 					smbd_smb2_connection_handler,
 					xconn);
 	if (xconn->transport.fde == NULL) {
+		close(xconn->transport.sock);
+		xconn->transport.sock = -1;
 		return NT_STATUS_NO_MEMORY;
 	}
+	tevent_fd_set_auto_close(xconn->transport.fde);
 
 	/* Ensure child is set to non-blocking mode */
 	set_blocking(xconn->transport.sock, false);
