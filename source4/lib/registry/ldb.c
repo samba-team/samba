@@ -25,6 +25,7 @@
 #include "ldb_wrap.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
+#include "lib/util/smb_strtox.h"
 
 static struct hive_operations reg_backend_ldb;
 

@@ -24,6 +24,7 @@
 	#include "rpc_server/mdssvc/mdssvc_es.h"
 	#include "rpc_server/mdssvc/es_parser.tab.h"
 	#include "rpc_server/mdssvc/es_mapping.h"
+	#include "lib/util/smb_strtox.h"
 	#include <jansson.h>
 
 	/*

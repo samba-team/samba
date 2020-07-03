@@ -23,6 +23,7 @@
 #include "torture/smbtorture.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include "lib/util/smb_strtox.h"
 
 #include "torture/nbench/proto.h"
 

@@ -73,6 +73,7 @@
 #include "lib/util/samba_util.h"
 #include "libcli/auth/ntlm_check.h"
 #include "lib/crypto/gnutls_helpers.h"
+#include "lib/util/smb_strtox.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>

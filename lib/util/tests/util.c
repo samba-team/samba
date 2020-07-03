@@ -30,6 +30,7 @@
 #include "torture/local/proto.h"
 
 #include "lib/util/samba_util.h"
+#include "lib/util/smb_strtox.h"
 
 #include "limits.h"
 #include "string.h"

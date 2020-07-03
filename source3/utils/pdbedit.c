@@ -27,6 +27,7 @@
 #include "passdb.h"
 #include "cmdline_contexts.h"
 #include "passwd_proto.h"
+#include "lib/util/smb_strtox.h"
 
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008

@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/util/asn1.h"
+#include "lib/util/smb_strtox.h"
 
 
 /**

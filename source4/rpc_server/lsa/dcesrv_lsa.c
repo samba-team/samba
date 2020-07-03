@@ -33,6 +33,7 @@
 #include "libcli/lsarpc/util_lsarpc.h"
 #include "lib/messaging/irpc.h"
 #include "libds/common/roles.h"
+#include "lib/util/smb_strtox.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>

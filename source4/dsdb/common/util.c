@@ -49,6 +49,7 @@
 #include "lib/util/util_str_hex.h"
 #include "lib/util/sys_rw_data.h"
 #include "libcli/util/ntstatus.h"
+#include "lib/util/smb_strtox.h"
 
 /*
  * This included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in

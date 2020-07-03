@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/locale.h"
+#include "smb_strtox.h"
 #undef strncasecmp
 #undef strcasemp
 

@@ -28,6 +28,7 @@
 #include "net_idmap_check.h"
 #include "util_tdb.h"
 #include "idmap_autorid_tdb.h"
+#include "lib/util/smb_strtox.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \

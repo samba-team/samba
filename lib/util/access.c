@@ -21,6 +21,7 @@
 #include "lib/util/memory.h"
 #include "lib/util/access.h"
 #include "lib/util/unix_match.h"
+#include "lib/util/smb_strtox.h"
 
 #if defined(HAVE_NETGROUP)
 #include "system/nis.h"

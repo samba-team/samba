@@ -24,7 +24,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
-#include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
 wbcErr wbcCtxSidToUid(struct wbcContext *ctx, const struct wbcDomainSid *sid,

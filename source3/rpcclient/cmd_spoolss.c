@@ -34,6 +34,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
 #include "popt_common_cmdline.h"
+#include "lib/util/smb_strtox.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \

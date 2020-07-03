@@ -26,7 +26,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
-#include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 /* Convert a sid to a string into a buffer. Return the string
  * length. If buflen is too small, return the string length that would

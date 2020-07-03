@@ -32,6 +32,7 @@
 #include "lib/util/iov_buf.h"
 #include "lib/util/blocking.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/smb_strtox.h"
 
 #define MESSAGING_DGM_FRAGMENT_LENGTH 1024
 

@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
+#include "lib/util/smb_strtox.h"
 
 struct preopen_state;
 

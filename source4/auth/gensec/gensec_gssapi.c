@@ -45,6 +45,7 @@
 #include "lib/util/util_net.h"
 #include "auth/kerberos/pac_utils.h"
 #include "auth/kerberos/gssapi_helper.h"
+#include "lib/util/smb_strtox.h"
 
 #ifndef gss_mech_spnego
 gss_OID_desc spnego_mech_oid_desc =

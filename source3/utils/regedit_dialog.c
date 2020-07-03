@@ -24,6 +24,7 @@
 #include "regedit_hexedit.h"
 #include "util_reg.h"
 #include "lib/registry/registry.h"
+#include "lib/util/smb_strtox.h"
 #include <stdarg.h>
 #include <form.h>
 

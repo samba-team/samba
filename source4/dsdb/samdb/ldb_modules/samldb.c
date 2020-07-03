@@ -45,6 +45,7 @@
 #include "libds/common/flag_mapping.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/irpc.h"
+#include "lib/util/smb_strtox.h"
 
 struct samldb_ctx;
 enum samldb_add_type {

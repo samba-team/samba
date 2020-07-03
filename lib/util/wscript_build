@@ -81,9 +81,14 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                               strv_util.c bitmap.c select.c pidfile.c
                               become_daemon.c mkdir_p.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
-                            tevent execinfo pthread strv tini''',
+                            tevent execinfo pthread strv tini smb_strtox''',
                     public_deps='systemd systemd-daemon sys_rw LIBUNWIND',
                     local_include=False)
+
+bld.SAMBA_SUBSYSTEM('smb_strtox',
+                    source='smb_strtox.c',
+                    local_include=False)
+
 
 bld.SAMBA_LIBRARY('iov_buf',
                   source='iov_buf.c',

@@ -32,6 +32,7 @@
 #include "lib/util/time.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"

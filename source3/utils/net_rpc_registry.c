@@ -32,6 +32,7 @@
 #include "../libcli/security/display_sec.h"
 #include "../libcli/registry/util_reg.h"
 #include "client.h"
+#include "lib/util/smb_strtox.h"
 
 
 /*******************************************************************

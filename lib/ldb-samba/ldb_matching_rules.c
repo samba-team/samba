@@ -27,6 +27,7 @@
 #include "libcli/security/security.h"
 #include "dsdb/common/util.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
+#include "lib/util/smb_strtox.h"
 
 static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,

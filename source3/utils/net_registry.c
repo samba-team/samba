@@ -38,6 +38,7 @@
 #include "passdb/machine_sid.h"
 #include "net_registry_check.h"
 #include "lib/util/util_tdb.h"
+#include "lib/util/smb_strtox.h"
 
 /*
  *

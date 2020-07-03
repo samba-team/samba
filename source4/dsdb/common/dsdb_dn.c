@@ -24,6 +24,7 @@
 #include <ldb_module.h>
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/util/smb_strtox.h"
 
 enum dsdb_dn_format dsdb_dn_oid_to_format(const char *oid) 
 {

@@ -21,6 +21,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/smb_strtox.h"
 
 extern int torture_nprocs;
 extern int torture_numops;

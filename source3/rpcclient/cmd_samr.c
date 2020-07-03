@@ -31,6 +31,7 @@
 #include "rpc_client/init_samr.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "lib/util/smb_strtox.h"
 
 static struct dom_sid domain_sid;
 

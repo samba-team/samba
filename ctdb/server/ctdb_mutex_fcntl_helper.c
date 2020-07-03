@@ -30,6 +30,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 /* protocol.h is just needed for ctdb_sock_addr, which is used in system.h */
 #include "protocol/protocol.h"

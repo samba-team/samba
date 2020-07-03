@@ -25,6 +25,7 @@
 #include "lib/socket/netif.h"
 #include "../lib/util/util_net.h"
 #include "../lib/util/dlinklist.h"
+#include "lib/util/smb_strtox.h"
 
 /* used for network interfaces */
 struct interface {

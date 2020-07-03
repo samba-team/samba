@@ -27,6 +27,7 @@
 #include "../libcli/security/security.h"
 #include "lib/privileges.h"
 #include "lib/gencache.h"
+#include "lib/util/smb_strtox.h"
 
 static struct db_context *db;
 

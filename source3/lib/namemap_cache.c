@@ -26,6 +26,7 @@
 #include "lib/util/talloc_stack.h"
 #include "lib/util/charset/charset.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/util/smb_strtox.h"
 
 bool namemap_cache_set_sid2name(const struct dom_sid *sid,
 				const char *domain, const char *name,

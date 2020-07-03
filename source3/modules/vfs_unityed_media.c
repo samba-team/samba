@@ -60,6 +60,7 @@
 #include "../smbd/globals.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/util/smb_strtox.h"
 #include <libgen.h>
 
 #define UM_PARAM_TYPE_NAME "unityed_media"

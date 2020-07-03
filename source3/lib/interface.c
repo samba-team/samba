@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/socket/interfaces.h"
 #include "librpc/gen_ndr/ioctl.h"
+#include "lib/util/smb_strtox.h"
 
 static struct iface_struct *probed_ifaces;
 static int total_probed;

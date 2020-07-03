@@ -29,6 +29,7 @@
 #include "util_tdb.h"
 #include "../libcli/security/security.h"
 #include "groupdb/mapping_tdb.h"
+#include "lib/util/smb_strtox.h"
 
 static struct db_context *db; /* used for driver files */
 

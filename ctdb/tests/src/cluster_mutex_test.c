@@ -27,6 +27,7 @@
 #include <tevent.h>
 
 #include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 /*
  * ctdb_cluster_mutex.c is included below.  This requires a few hacks...

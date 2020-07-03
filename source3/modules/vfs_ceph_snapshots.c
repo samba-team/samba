@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/smb_strtox.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

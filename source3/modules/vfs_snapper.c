@@ -37,6 +37,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/smb_strtox.h"
 
 #define SNAPPER_SIG_LIST_SNAPS_RSP "a(uquxussa{ss})"
 #define SNAPPER_SIG_LIST_CONFS_RSP "a(ssa{ss})"

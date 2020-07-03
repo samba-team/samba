@@ -27,6 +27,7 @@
 #include "lib/util/util.h"
 #include "librpc/gen_ndr/security.h"
 #include "dom_sid.h"
+#include "lib/util/smb_strtox.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.

@@ -27,6 +27,7 @@
 #include "protocol.h"
 #include "protocol_util.h"
 #include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 
 static struct {
 	enum ctdb_runstate runstate;

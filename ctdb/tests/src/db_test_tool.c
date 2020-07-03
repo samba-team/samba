@@ -34,6 +34,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/util.h"
+#include "lib/util/smb_strtox.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 
 #include "common/cmdline.h"

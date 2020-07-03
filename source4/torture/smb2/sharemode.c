@@ -25,6 +25,7 @@
 #include "libcli/security/security.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "lib/util/smb_strtox.h"
 #include <tevent.h>
 
 #define BASEDIRHOLD "sharemode_hold_test"

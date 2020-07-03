@@ -31,6 +31,7 @@
 #include "lib/privileges.h"
 #include "secrets.h"
 #include "idmap.h"
+#include "lib/util/smb_strtox.h"
 
 /*
  * Set a user's data

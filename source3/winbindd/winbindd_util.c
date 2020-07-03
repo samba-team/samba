@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "auth/credentials/credentials.h"
 #include "libsmb/samlogon_cache.h"
+#include "lib/util/smb_strtox.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

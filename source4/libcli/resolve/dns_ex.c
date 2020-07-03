@@ -41,6 +41,7 @@
 #include "lib/addns/dnsquery.h"
 #include "lib/addns/dns.h"
 #include "lib/util/sys_rw.h"
+#include "lib/util/smb_strtox.h"
 #include <arpa/nameser.h>
 #include <resolv.h>
 

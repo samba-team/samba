@@ -28,6 +28,7 @@
 #include "lib/winbind_util.h"
 #include <tdb.h>
 #include "groupdb/mapping_tdb.h"
+#include "lib/util/smb_strtox.h"
 
 static const struct mapping_backend *backend;
 

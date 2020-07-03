@@ -20,6 +20,7 @@
 #include "dsdb/samdb/ldb_modules/partition.h"
 #include "lib/ldb-samba/ldb_wrap.h"
 #include "system/filesys.h"
+#include "lib/util/smb_strtox.h"
 
 #define LDB_METADATA_SEQ_NUM	"SEQ_NUM"
 

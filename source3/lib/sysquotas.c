@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/util_file.h"
+#include "lib/util/smb_strtox.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA

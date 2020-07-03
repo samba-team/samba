@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
+#include "lib/util/smb_strtox.h"
 
 struct winbindd_lookuprids_state {
 	struct tevent_context *ev;
