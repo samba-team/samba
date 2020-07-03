@@ -3167,8 +3167,10 @@ done:
  * Hopefully this will be fixed in future Windows versions and they
  * will avoid Note <314>.
  */
-static bool test_replay_smb3_specification(struct torture_context *torture,
-					   struct smb2_tree *tree)
+static bool _test_replay_smb3_specification(struct torture_context *torture,
+					    struct smb2_tree *tree,
+					    const char *testname,
+					    bool use_durable)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -3176,7 +3178,7 @@ static bool test_replay_smb3_specification(struct torture_context *torture,
 	struct smb2_handle h;
 	struct smb2_lock lck;
 	struct smb2_lock_element el;
-	const char *fname = BASEDIR "\\replay_smb3_specification.txt";
+	char fname[256];
 	struct smb2_transport *transport = tree->session->transport;
 
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
@@ -3184,22 +3186,24 @@ static bool test_replay_smb3_specification(struct torture_context *torture,
 				required for Lock Replay tests\n");
 	}
 
+	snprintf(fname, sizeof(fname), "%s\\%s.dat", BASEDIR, testname);
+
 	status = torture_smb2_testdir(tree, BASEDIR, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smb2_util_close(tree, h);
 
-	torture_comment(torture, "Testing Open File:\n");
+	torture_comment(torture, "%s: Testing Open File:\n", testname);
 
 	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
-	io.in.durable_open = true;
+	io.in.durable_open = use_durable;
 
 	status = smb2_create(tree, torture, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h = io.out.file.handle;
 	CHECK_VALUE(io.out.oplock_level, smb2_util_oplock_level("b"));
-	CHECK_VALUE(io.out.durable_open, true);
+	CHECK_VALUE(io.out.durable_open, use_durable);
 	CHECK_VALUE(io.out.durable_open_v2, false);
 	CHECK_VALUE(io.out.persistent_open, false);
 
@@ -3363,6 +3367,41 @@ done:
 	return ret;
 }
 
+static bool test_replay_smb3_specification_durable(struct torture_context *torture,
+						   struct smb2_tree *tree)
+{
+	const char *testname = "replay_smb3_specification_durable";
+	struct smb2_transport *transport = tree->session->transport;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB2_10) {
+		torture_skip(torture, "SMB 2.1.0 Dialect family or above \
+				required for Lock Replay tests on durable handles\n");
+	}
+
+	return _test_replay_smb3_specification(torture, tree, testname, true);
+}
+
+static bool test_replay_smb3_specification_multi(struct torture_context *torture,
+						 struct smb2_tree *tree)
+{
+	const char *testname = "replay_smb3_specification_multi";
+	struct smb2_transport *transport = tree->session->transport;
+	uint32_t server_capabilities;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(torture, "SMB 3.0.0 Dialect family or above \
+			required for Lock Replay tests on without durable handles\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(torture, "MULTI_CHANNEL is \
+			required for Lock Replay tests on without durable handles\n");
+	}
+
+	return _test_replay_smb3_specification(torture, tree, testname, false);
+}
+
 /**
  * Test lock interaction between smbd and ctdb with tombstone records.
  *
@@ -3462,8 +3501,10 @@ struct torture_suite *torture_smb2_lock_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "truncate", test_truncate);
 	torture_suite_add_1smb2_test(suite, "replay_broken_windows",
 				     test_replay_broken_windows);
-	torture_suite_add_1smb2_test(suite, "replay_smb3_specification",
-				     test_replay_smb3_specification);
+	torture_suite_add_1smb2_test(suite, "replay_smb3_specification_durable",
+				     test_replay_smb3_specification_durable);
+	torture_suite_add_1smb2_test(suite, "replay_smb3_specification_multi",
+				     test_replay_smb3_specification_multi);
 	torture_suite_add_1smb2_test(suite, "ctdb-delrec-deadlock", test_deadlock);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");

@@ -215,7 +215,8 @@
 ^samba3.smb2.compound.aio.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.smb2.replay.replay3 # This requires multi-chanel
 ^samba3.smb2.replay.replay4 # This requires multi-chanel
-^samba3.smb2.lock.replay_smb3_specification # This requires multi-chanel or durable handles
+^samba3.smb2.lock.replay_smb3_specification_multi # This requires multi-chanel
+^samba3.smb2.lock.replay_smb3_specification_durable\(nt4_dc\) # Requires durable handles
 ^samba3.smb2.lock.*replay_broken_windows # This tests the windows behaviour
 ^samba3.smb2.lease.statopen3
 ^samba3.smb2.lease.unlink # we currently do not downgrade RH lease to R after unlink
