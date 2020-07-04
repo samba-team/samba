@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			    long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
-	poptSetOtherOptionHelp(pc, "mdfind [OPTIONS] <server> <share> <query>\n");
+	poptSetOtherOptionHelp(pc, "mdsearch [OPTIONS] <server> <share> <query>\n");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		DBG_ERR("Invalid option %s: %s\n",

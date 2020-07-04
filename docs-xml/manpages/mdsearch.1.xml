@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="mdfind.1">
+<refentry id="mdsearch.1">
 
   <refmeta>
-    <refentrytitle>mdfind</refentrytitle>
+    <refentrytitle>mdsearch</refentrytitle>
     <manvolnum>1</manvolnum>
     <refmiscinfo class="source">Samba</refmiscinfo>
     <refmiscinfo class="manual">User Commands</refmiscinfo>
@@ -11,7 +11,7 @@
   </refmeta>
 
   <refnamediv>
-    <refname>mdfind</refname>
+    <refname>mdsearch</refname>
     <refpurpose>Run Spotlight searches against an SMB server</refpurpose>
   </refnamediv>
 
@@ -32,7 +32,7 @@
     <para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
     <manvolnum>1</manvolnum></citerefentry> suite.</para>
 
-    <para>mdfind is a simple utility to run Spotlight searches against an SMB server
+    <para>mdsearch is a simple utility to run Spotlight searches against an SMB server
     that runs the Spotlight <emphasis>mdssvc</emphasis> RPC service.</para>
   </refsect1>
 
@@ -143,6 +143,6 @@
     Andrew Tridgell. Samba is now developed by the Samba Team as an Open
     Source project similar to the way the Linux kernel is developed.</para>
 
-    <para>The mdfind manpage was written by Ralph Boehme.</para>
+    <para>The mdsearch manpage was written by Ralph Boehme.</para>
   </refsect1>
 </refentry>

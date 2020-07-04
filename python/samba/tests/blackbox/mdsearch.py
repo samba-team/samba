@@ -1,5 +1,5 @@
 #
-# Blackbox tests for mdfind
+# Blackbox tests for mdsearch
 #
 # Copyright (C) Ralph Boehme                    2019
 #
@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Blackbox test for mdfind"""
+"""Blackbox test for mdsearch"""
 
 import os
 import time
@@ -95,8 +95,8 @@ class MdfindBlackboxTests(BlackboxTestCase):
         self.server.server_activate()
         self.server.serve_forever()
 
-    def test_mdfind(self):
-        """Simple blackbox test for mdfind"""
+    def test_mdsearch(self):
+        """Simple blackbox test for mdsearch"""
 
         username = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
@@ -123,7 +123,7 @@ class MdfindBlackboxTests(BlackboxTestCase):
         self.server.json_in = json_in.replace("%BASEPATH%", self.sharepath)
         self.server.json_out = json_out.replace("%BASEPATH%", self.sharepath)
 
-        output = self.check_output("mdfind -s %s -U %s%%%s fileserver spotlight '*==\"samba*\"'" % (config, username, password))
+        output = self.check_output("mdsearch -s %s -U %s%%%s fileserver spotlight '*==\"samba*\"'" % (config, username, password))
 
         actual = output.decode('utf-8').splitlines()
         expected = ["%s/%s" % (self.sharepath, file) for file in testfiles]

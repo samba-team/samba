@@ -313,8 +313,8 @@ bld.SAMBA3_BINARY('smbstatus',
                       CONN_TDB
                       ''')
 
-bld.SAMBA3_BINARY('mdfind',
-                 source='mdfind.c',
+bld.SAMBA3_BINARY('mdsearch',
+                 source='mdsearch.c',
                  deps='''
                  talloc
                  tevent
