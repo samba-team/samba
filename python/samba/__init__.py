@@ -386,6 +386,23 @@ def arcfour_encrypt(key, data):
     return arcfour_crypt_blob(data, key)
 
 
+def enable_net_export_keytab():
+    """This function modifies the samba.net.Net class to contain
+    an export_keytab() method."""
+    # This looks very strange because it is.
+    #
+    # The dckeytab modules contains nothing, but the act of importing
+    # it pushes a method into samba.net.Net. It ended up this way
+    # because Net.export_keytab() only works on Heimdal builds, and
+    # people sometimes want to compile Samba without Heimdal while
+    # still having a working samba-tool.
+    #
+    # There is probably a better way to do this than a magic module
+    # import (yes, that's a FIXME if you can be bothered).
+    from samba import net
+    from samba import dckeytab
+
+
 version = _glue.version
 interface_ips = _glue.interface_ips
 fault_setup = _glue.fault_setup

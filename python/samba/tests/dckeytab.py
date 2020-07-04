@@ -20,9 +20,13 @@ import os
 import sys
 import string
 from samba.net import Net
-import samba.dckeytab
+from samba import enable_net_export_keytab
+
 from samba import tests
 from samba.param import LoadParm
+
+
+enable_net_export_keytab()
 
 
 def open_bytes(filename):

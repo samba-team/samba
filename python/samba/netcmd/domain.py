@@ -40,6 +40,7 @@ from samba import NTSTATUSError
 from samba import werror
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
+from samba import enable_net_export_keytab
 import samba.ntacls
 from samba.join import join_RODC, join_DC
 from samba.auth import system_session
@@ -162,7 +163,7 @@ def get_testparm_var(testparm, smbconf, varname):
 
 
 try:
-    import samba.dckeytab
+    enable_net_export_keytab()
 except ImportError:
     cmd_domain_export_keytab = None
 else:
