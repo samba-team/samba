@@ -17,7 +17,7 @@
 #
 
 import samba.tests
-from samba.compat import StringIO
+from io import StringIO
 from samba.compat import get_string
 from samba.netcmd.main import cmd_sambatool
 from samba.credentials import Credentials

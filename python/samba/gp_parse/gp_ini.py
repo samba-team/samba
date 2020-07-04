@@ -23,7 +23,7 @@ import re
 
 from xml.etree.ElementTree import Element, SubElement
 from samba.compat import ConfigParser
-from samba.compat import StringIO
+from io import StringIO
 
 from samba.gp_parse import GPParser, ENTITY_USER_ID
 

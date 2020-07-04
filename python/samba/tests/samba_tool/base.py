@@ -25,7 +25,7 @@ import random
 import string
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.compat import StringIO
+from io import StringIO
 from samba.netcmd.main import cmd_sambatool
 import samba.tests
 

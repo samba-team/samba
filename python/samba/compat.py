@@ -76,8 +76,6 @@ if PY3:
     binary_type = bytes
 
     # alias
-    import io
-    StringIO = io.StringIO
     def ConfigParser(defaults=None, dict_type=dict, allow_no_value=False):
         from configparser import ConfigParser
         return ConfigParser(defaults, dict_type, allow_no_value, interpolation=None)

@@ -22,7 +22,7 @@ import tdb
 sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
 from samba.compat import ConfigParser
-from samba.compat import StringIO
+from io import StringIO
 from samba.compat import get_bytes
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree

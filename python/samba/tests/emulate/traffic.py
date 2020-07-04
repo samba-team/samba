@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # from pprint import pprint
-from samba.compat import StringIO
+from io import StringIO
 
 import samba.tests
 

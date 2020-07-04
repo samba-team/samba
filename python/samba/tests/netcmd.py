@@ -17,7 +17,7 @@
 
 """Tests for samba.netcmd."""
 
-from samba.compat import StringIO
+from io import StringIO
 from samba.netcmd import Command
 from samba.netcmd.testparm import cmd_testparm
 from samba.netcmd.main import cmd_sambatool
