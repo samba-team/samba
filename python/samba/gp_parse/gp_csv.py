@@ -23,7 +23,6 @@ import io
 
 from io import BytesIO
 from xml.etree.ElementTree import Element, SubElement
-from samba.compat import PY3
 from samba.gp_parse import GPParser
 from samba.compat import text_type
 # [MS-GPAC] Group Policy Audit Configuration
