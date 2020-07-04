@@ -27,7 +27,6 @@ import random
 import socket
 import uuid
 import time
-from samba.compat import binary_type
 
 
 class DNSTest(TestCaseInTempDir):
@@ -278,7 +277,7 @@ class DNSTKeyTest(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
         tkey_record = response.answers[0].rdata
-        server_to_client = binary_type(bytearray(tkey_record.key_data))
+        server_to_client = bytes(tkey_record.key_data)
         (finished, client_to_server) = self.g.update(server_to_client)
         self.assertTrue(finished)
 
@@ -288,7 +287,7 @@ class DNSTKeyTest(DNSTest):
         self.assertEqual(response.additional[0].rr_type, dns.DNS_QTYPE_TSIG)
 
         tsig_record = response.additional[0].rdata
-        mac = binary_type(bytearray(tsig_record.mac))
+        mac = bytes(tsig_record.mac)
 
         # Cut off tsig record from dns response packet for MAC verification
         # and reset additional record count.
@@ -305,7 +304,7 @@ class DNSTKeyTest(DNSTest):
             response_packet_list[11] = chr(0)
 
         # convert modified list (of string char or int) to str/bytes
-        response_packet_wo_tsig = binary_type(bytearray(response_packet_list))
+        response_packet_wo_tsig = bytes(response_packet_list)
 
         fake_tsig = dns.fake_tsig_rec()
         fake_tsig.name = self.key_name

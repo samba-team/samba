@@ -33,7 +33,6 @@ import samba.dcerpc.lsa
 import struct
 from samba import gensec
 from samba.tests.dcerpc.raw_testcase import RawDCERPCTest
-from samba.compat import binary_type
 from samba.ntstatus import (
     NT_STATUS_SUCCESS
 )
@@ -1930,12 +1929,12 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                                epmap=True, return_ack=True)
 
         server = '\\\\' + self.target_hostname
-        if isinstance(server, binary_type):
+        if isinstance(server, bytes):
             server_utf16 = server.decode('utf-8').encode('utf-16-le')
         else:
             server_utf16 = server.encode('utf-16-le')
         computer = 'UNKNOWNCOMPUTER'
-        if isinstance(server, binary_type):
+        if isinstance(server, bytes):
             computer_utf16 = computer.decode('utf-8').encode('utf-16-le')
         else:
             computer_utf16 = computer.encode('utf-16-le')

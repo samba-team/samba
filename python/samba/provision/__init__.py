@@ -27,7 +27,6 @@
 __docformat__ = "restructuredText"
 
 from urllib.parse import quote as urllib_quote
-from samba.compat import binary_type
 from base64 import b64encode
 import errno
 import os
@@ -2332,7 +2331,7 @@ def provision(logger, session_info, smbconf=None,
             adminpass = samba.generate_random_password(12, 32)
             adminpass_generated = True
         else:
-            if isinstance(adminpass, binary_type):
+            if isinstance(adminpass, bytes):
                 adminpass = adminpass.decode('utf-8')
             adminpass_generated = False
 

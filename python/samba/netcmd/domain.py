@@ -101,7 +101,6 @@ from samba.provision.common import (
 from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
-from samba.compat import binary_type
 from samba.compat import get_string
 
 string_version_to_constant = {
@@ -536,7 +535,7 @@ class cmd_domain_provision(Command):
     def _adminpass_issue(self, adminpass):
         """Returns error string for a bad administrator password,
         or None if acceptable"""
-        if isinstance(adminpass, binary_type):
+        if isinstance(adminpass, bytes):
             adminpass = adminpass.decode('utf8')
         if len(adminpass) < DEFAULT_MIN_PWD_LENGTH:
             return "Administrator password does not meet the default minimum" \

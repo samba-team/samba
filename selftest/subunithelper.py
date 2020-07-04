@@ -26,7 +26,6 @@ from samba import subunit
 from samba.subunit.run import TestProtocolClient
 from samba.subunit import iso8601
 import unittest
-from samba.compat import binary_type
 
 
 VALID_RESULTS = set(['success', 'successful', 'failure', 'fail', 'skip',
@@ -93,7 +92,7 @@ def parse_results(msg_ops, statistics, fh):
                     else:
                         reason += l
 
-                if isinstance(reason, binary_type):
+                if isinstance(reason, bytes):
                     remote_error = subunit.RemoteError(reason.decode("utf-8"))
                 else:
                     remote_error = subunit.RemoteError(reason)

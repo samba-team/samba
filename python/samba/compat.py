@@ -73,7 +73,6 @@ if PY3:
 
     # compat types
     text_type = str
-    binary_type = bytes
 
     # alias
     def ConfigParser(defaults=None, dict_type=dict, allow_no_value=False):
