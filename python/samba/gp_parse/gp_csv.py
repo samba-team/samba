@@ -24,7 +24,6 @@ import io
 from io import BytesIO
 from xml.etree.ElementTree import Element, SubElement
 from samba.gp_parse import GPParser
-from samba.compat import text_type
 # [MS-GPAC] Group Policy Audit Configuration
 class GPAuditCsvParser(GPParser):
     encoding = 'utf-8'
@@ -81,14 +80,14 @@ class GPAuditCsvParser(GPParser):
                 header = False
                 self.header = []
                 for v in r.findall('Value'):
-                    if not isinstance(v.text, text_type):
+                    if not isinstance(v.text, str):
                         v.text = v.text.decode(self.output_encoding)
                     self.header.append(v.text)
             else:
                 line = {}
                 for i, v in enumerate(r.findall('Value')):
                     line[self.header[i]] = v.text if v.text is not None else ''
-                    if not isinstance(self.header[i], text_type):
+                    if not isinstance(self.header[i], str):
                         line[self.header[i]] = line[self.header[i]].decode(self.output_encoding)
 
                 self.lines.append(line)

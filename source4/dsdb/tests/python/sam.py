@@ -17,7 +17,7 @@ import samba.getopt as options
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.auth import system_session
 from samba.compat import get_string
-from samba.compat import text_type
+
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
@@ -1746,7 +1746,7 @@ class SamTests(samba.tests.TestCase):
 
         username = "ldaptestuser"
         password = "thatsAcomplPASS2"
-        utf16pw = text_type('"' + password + '"').encode('utf-16-le')
+        utf16pw = ('"' + password + '"').encode('utf-16-le')
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,

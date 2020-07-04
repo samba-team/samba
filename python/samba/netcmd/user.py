@@ -53,7 +53,6 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-from samba.compat import text_type
 from samba.compat import get_bytes
 from samba.compat import get_string
 from . import common
@@ -748,7 +747,7 @@ class cmd_user_password(Command):
                 self.outf.write("Sorry, passwords do not match.\n")
 
         try:
-            if not isinstance(password, text_type):
+            if not isinstance(password, str):
                 password = password.decode('utf8')
             net.change_password(password)
         except Exception as msg:
@@ -1283,7 +1282,7 @@ class GetPasswordCommand(Command):
 
         def get_utf8(a, b, username):
             try:
-                u = text_type(get_bytes(b), 'utf-16-le')
+                u = str(get_bytes(b), 'utf-16-le')
             except UnicodeDecodeError as e:
                 self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
                                 username, a))

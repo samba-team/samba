@@ -32,7 +32,6 @@ from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
-from samba.compat import text_type
 from samba.compat import get_bytes
 from samba.dcerpc import security
 
@@ -772,7 +771,7 @@ member: %s
             if len(res) > 1:
                 raise Exception('Matched %u multiple users with filter "%s"' % (len(res), search_filter))
             user_dn = res[0].dn
-            if not isinstance(password, text_type):
+            if not isinstance(password, str):
                 pw = password.decode('utf-8')
             else:
                 pw = password

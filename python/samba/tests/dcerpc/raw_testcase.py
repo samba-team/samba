@@ -27,7 +27,6 @@ from samba import gensec
 from samba.credentials import Credentials
 from samba.tests import TestCase
 from samba.ndr import ndr_pack, ndr_unpack, ndr_unpack_out
-from samba.compat import text_type
 from samba.ntstatus import (
     NT_STATUS_CONNECTION_DISCONNECTED,
     NT_STATUS_PIPE_DISCONNECTED,

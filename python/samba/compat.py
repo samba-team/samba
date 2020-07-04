@@ -71,9 +71,6 @@ if PY3:
     # compat functions
     from functools import cmp_to_key as cmp_to_key_fn
 
-    # compat types
-    text_type = str
-
     # alias
     def ConfigParser(defaults=None, dict_type=dict, allow_no_value=False):
         from configparser import ConfigParser

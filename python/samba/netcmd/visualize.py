@@ -38,7 +38,6 @@ import time
 import re
 from samba.kcc import KCC, ldif_import_export
 from samba.kcc.kcc_utils import KCCError
-from samba.compat import text_type
 from samba.uptodateness import (
     get_partition_maps,
     get_partition,
@@ -198,7 +197,7 @@ def colour_hash(x):
     given object."""
     from hashlib import md5
     tmp_str = str(x)
-    if isinstance(tmp_str, text_type):
+    if isinstance(tmp_str, str):
         tmp_str = tmp_str.encode('utf8')
     c = int(md5(tmp_str).hexdigest()[:6], base=16) & 0x7f7f7f
     return '#%06x' % c

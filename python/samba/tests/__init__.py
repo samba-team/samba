@@ -34,7 +34,6 @@ import re
 from enum import IntEnum, unique
 import samba.auth
 import samba.dcerpc.base
-from samba.compat import text_type
 from random import randint
 from random import SystemRandom
 from contextlib import contextmanager

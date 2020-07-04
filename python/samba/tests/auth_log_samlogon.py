@@ -35,7 +35,6 @@ from samba.auth import system_session
 from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
-from samba.compat import text_type
 from samba.dcerpc.windows_event_ids import (
     EVT_ID_SUCCESSFUL_LOGON,
     EVT_LOGON_NETWORK
@@ -81,7 +80,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         else:
             binding = "[schannel]"
 
-        utf16pw = text_type('"' + self.machinepass + '"').encode('utf-16-le')
+        utf16pw = ('"' + self.machinepass + '"').encode('utf-16-le')
         self.ldb.add({
             "dn": self.samlogon_dn,
             "objectclass": "computer",

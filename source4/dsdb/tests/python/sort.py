@@ -16,7 +16,6 @@ import samba
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.compat import cmp_fn
 from samba.compat import cmp_to_key_fn
-from samba.compat import text_type
 import samba.getopt as options
 
 from samba.auth import system_session
@@ -57,7 +56,7 @@ creds = credopts.get_credentials(lp)
 
 
 def norm(x):
-    if not isinstance(x, text_type):
+    if not isinstance(x, str):
         x = x.decode('utf8')
     return normalize('NFKC', x).upper()
 

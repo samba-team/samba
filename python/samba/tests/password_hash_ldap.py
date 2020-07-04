@@ -46,7 +46,6 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs, drsuapi, misc
 from samba import drs_utils, net
 from samba.credentials import Credentials
-from samba.compat import text_type
 import binascii
 import os
 
@@ -73,7 +72,7 @@ class PassWordHashLDAPTests(PassWordHashTests):
         req8.destination_dsa_guid          = null_guid
         req8.source_dsa_invocation_id      = null_guid
         req8.naming_context                = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn             = text_type(dn)
+        req8.naming_context.dn             = dn
 
         req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
         req8.highwatermark.tmp_highest_usn = 0
