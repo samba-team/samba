@@ -2040,7 +2040,8 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
  * tcp disconnect, reconnect, do a durable reopen (succeeds)
  */
 static bool test_durable_v2_reconnect_delay(struct torture_context *tctx,
-					    struct smb2_tree *tree)
+					    struct smb2_tree *tree,
+					    struct smb2_tree *tree2)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
@@ -2053,6 +2054,7 @@ static bool test_durable_v2_reconnect_delay(struct torture_context *tctx,
 	uint64_t previous_session_id;
 	uint8_t b = 0;
 	bool ret = true;
+	bool ok;
 
 	options = tree->session->transport->options;
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
@@ -2087,20 +2089,17 @@ static bool test_durable_v2_reconnect_delay(struct torture_context *tctx,
 
 	/* disconnect, leaving the durable open */
 	TALLOC_FREE(tree);
+	h = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id,
-					 &options, &tree)) {
-		torture_warning(tctx, "couldn't reconnect, bailing\n");
-		ret = false;
-		goto done;
-	}
+	ok = torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree);
+	torture_assert_goto(tctx, ok, ret, done, "couldn't reconnect, bailing\n");
 
 	ZERO_STRUCT(io);
 	io.in.fname = fname;
 	io.in.durable_open_v2 = false;
-	io.in.durable_handle_v2 = h;
+	io.in.durable_handle_v2 = &_h;
 	io.in.create_guid = create_guid;
-	h = NULL;
 
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -2112,10 +2111,11 @@ done:
 	if (h != NULL) {
 		smb2_util_close(tree, *h);
 	}
+	TALLOC_FREE(tree);
 
-	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree2, fname);
 
-	talloc_free(tree);
+	TALLOC_FREE(tree2);
 
 	talloc_free(mem_ctx);
 
@@ -2126,8 +2126,9 @@ done:
  * basic test for doing a durable open with 1msec cleanup time
  * tcp disconnect, wait a bit, reconnect, do a durable reopen (fails)
  */
-static bool test_durable_v2_reconnect_delay_msec(
-	struct torture_context *tctx, struct smb2_tree *tree)
+static bool test_durable_v2_reconnect_delay_msec(struct torture_context *tctx,
+						 struct smb2_tree *tree,
+						 struct smb2_tree *tree2)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
@@ -2141,6 +2142,7 @@ static bool test_durable_v2_reconnect_delay_msec(
 	uint64_t previous_session_id;
 	uint8_t b = 0;
 	bool ret = true;
+	bool ok;
 
 	options = tree->session->transport->options;
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
@@ -2179,22 +2181,19 @@ static bool test_durable_v2_reconnect_delay_msec(
 
 	/* disconnect, leaving the durable open */
 	TALLOC_FREE(tree);
+	h = NULL;
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id,
-					 &options, &tree)) {
-		torture_warning(tctx, "couldn't reconnect, bailing\n");
-		ret = false;
-		goto done;
-	}
+	ok = torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree);
+	torture_assert_goto(tctx, ok, ret, done, "couldn't reconnect, bailing\n");
 
 	sleep(10);
 
 	ZERO_STRUCT(io);
 	io.in.fname = fname;
 	io.in.durable_open_v2 = false;
-	io.in.durable_handle_v2 = h;
+	io.in.durable_handle_v2 = &_h;
 	io.in.create_guid = create_guid;
-	h = NULL;
 
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -2205,10 +2204,11 @@ done:
 	if (h != NULL) {
 		smb2_util_close(tree, *h);
 	}
+	TALLOC_FREE(tree);
 
-	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree2, fname);
 
-	talloc_free(tree);
+	TALLOC_FREE(tree2);
 
 	talloc_free(mem_ctx);
 
@@ -2220,8 +2220,10 @@ struct torture_suite *torture_smb2_durable_v2_delay_init(TALLOC_CTX *ctx)
 	struct torture_suite *suite =
 	    torture_suite_create(ctx, "durable-v2-delay");
 
-	torture_suite_add_1smb2_test(suite, "durable_v2_reconnect_delay", test_durable_v2_reconnect_delay);
-	torture_suite_add_1smb2_test(suite,
+	torture_suite_add_2smb2_test(suite,
+				     "durable_v2_reconnect_delay",
+				     test_durable_v2_reconnect_delay);
+	torture_suite_add_2smb2_test(suite,
 				     "durable_v2_reconnect_delay_msec",
 				     test_durable_v2_reconnect_delay_msec);
 
