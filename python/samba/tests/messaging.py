@@ -26,7 +26,6 @@ from samba.ndr import ndr_print
 from samba.dcerpc import server_id
 import random
 import os
-from samba.compat import integer_types
 
 
 class MessagingTests(TestCase):
@@ -41,7 +40,7 @@ class MessagingTests(TestCase):
         def callback():
             pass
         msg_type = x.register((callback, None))
-        self.assertTrue(isinstance(msg_type, integer_types))
+        self.assertTrue(isinstance(msg_type, int))
         x.deregister(callback, msg_type)
 
     def test_all_servers(self):

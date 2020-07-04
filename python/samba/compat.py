@@ -72,7 +72,6 @@ if PY3:
     from functools import cmp_to_key as cmp_to_key_fn
 
     # compat types
-    integer_types = int,
     string_types = str
     text_type = str
     binary_type = bytes
