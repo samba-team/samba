@@ -27,7 +27,6 @@
 __docformat__ = "restructuredText"
 
 from urllib.parse import quote as urllib_quote
-from samba.compat import string_types
 from samba.compat import binary_type
 from base64 import b64encode
 import errno
@@ -1606,7 +1605,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
         names.ntdsguid = samdb.searchone(basedn=ntds_dn,
                                          attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE).decode('utf8')
-        assert isinstance(names.ntdsguid, string_types)
+        assert isinstance(names.ntdsguid, str)
 
     return samdb
 
@@ -2014,7 +2013,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
                                      attribute="objectGUID").decode('utf8')
-        assert isinstance(domainguid, string_types)
+        assert isinstance(domainguid, str)
 
     lastProvisionUSNs = get_last_provision_usn(samdb)
     maxUSN = get_max_usn(samdb, str(names.rootdn))

@@ -35,7 +35,6 @@ from enum import IntEnum, unique
 import samba.auth
 import samba.dcerpc.base
 from samba.compat import text_type
-from samba.compat import string_types
 from random import randint
 from random import SystemRandom
 from contextlib import contextmanager
@@ -92,7 +91,7 @@ class TestCase(unittest.TestCase):
     def hexdump(self, src):
         N = 0
         result = ''
-        is_string = isinstance(src, string_types)
+        is_string = isinstance(src, str)
         while src:
             ll = src[:8]
             lr = src[8:16]
