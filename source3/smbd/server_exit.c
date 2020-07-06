@@ -83,6 +83,11 @@ static void exit_server_common(enum server_exit_reason how,
 	struct messaging_context *msg_ctx = global_messaging_context();
 	NTSTATUS disconnect_status;
 
+	if (!exit_firsttime) {
+		exit(0);
+	}
+	exit_firsttime = false;
+
 	switch (how) {
 	case SERVER_EXIT_NORMAL:
 		disconnect_status = NT_STATUS_LOCAL_DISCONNECT;
@@ -98,9 +103,6 @@ static void exit_server_common(enum server_exit_reason how,
 		xconn = client->connections;
 	}
 
-	if (!exit_firsttime)
-		exit(0);
-	exit_firsttime = false;
 
 	change_to_root_user();
 
