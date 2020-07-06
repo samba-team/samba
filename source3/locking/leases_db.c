@@ -116,7 +116,7 @@ static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
 			value,
 			(ndr_pull_flags_fn_t)ndr_pull_leases_db_value);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DBG_DEBUG("ndr_pull_struct_blob_failed: %s\n",
+			DBG_ERR("ndr_pull_struct_blob_failed: %s\n",
 				  ndr_errstr(ndr_err));
 			state->status = ndr_map_error2ntstatus(ndr_err);
 			goto done;
@@ -132,7 +132,7 @@ static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
 	if (value->num_files == 0) {
 		state->status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(state->status)) {
-			DBG_DEBUG("dbwrap_record_delete returned %s\n",
+			DBG_ERR("dbwrap_record_delete returned %s\n",
 				  nt_errstr(state->status));
 		}
 		goto done;
@@ -144,7 +144,7 @@ static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
 		value,
 		(ndr_push_flags_fn_t)ndr_push_leases_db_value);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_DEBUG("ndr_push_struct_blob_failed: %s\n",
+		DBG_ERR("ndr_push_struct_blob_failed: %s\n",
 			  ndr_errstr(ndr_err));
 		state->status = ndr_map_error2ntstatus(ndr_err);
 		goto done;
@@ -159,7 +159,7 @@ static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
 
 	state->status = dbwrap_record_store(rec, db_value, 0);
 	if (!NT_STATUS_IS_OK(state->status)) {
-		DBG_DEBUG("dbwrap_record_store returned %s\n",
+		DBG_ERR("dbwrap_record_store returned %s\n",
 			  nt_errstr(state->status));
 	}
 
