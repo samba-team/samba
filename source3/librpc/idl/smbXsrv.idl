@@ -142,6 +142,7 @@ interface smbXsrv
 		[ignore] struct smbXsrv_connection	*connections;
 		boolean8		server_multi_channel_enabled;
 		hyper			next_channel_id;
+		[ignore] struct tevent_req		*connection_pass_subreq;
 
 		/*
 		 * A List of pending breaks.

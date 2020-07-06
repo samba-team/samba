@@ -568,6 +568,7 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, smbXsrv_client_connection_pass_loop, client);
+	client->connection_pass_subreq = subreq;
 
 	*_client = client;
 	return NT_STATUS_OK;
@@ -606,6 +607,8 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	NTSTATUS status;
 	int sock_fd = -1;
 	uint64_t seq_low;
+
+	client->connection_pass_subreq = NULL;
 
 	ret = messaging_filtered_read_recv(subreq, talloc_tos(), &rec);
 	TALLOC_FREE(subreq);
@@ -731,6 +734,7 @@ next:
 		return;
 	}
 	tevent_req_set_callback(subreq, smbXsrv_client_connection_pass_loop, client);
+	client->connection_pass_subreq = subreq;
 }
 
 NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client)
@@ -796,6 +800,8 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 	if (!client->global->stored) {
 		return NT_STATUS_OK;
 	}
+
+	TALLOC_FREE(client->connection_pass_subreq);
 
 	client->global->db_rec = smbXsrv_client_global_fetch_locked(
 					table->global.db_ctx,

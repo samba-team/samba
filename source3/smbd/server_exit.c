@@ -99,10 +99,25 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 
 	if (client != NULL) {
+		NTSTATUS status;
+
 		sconn = client->sconn;
 		xconn = client->connections;
-	}
 
+		/*
+		 * Make sure we stop handling new multichannel
+		 * connections early!
+		 *
+		 * From here, we're not able to handle them.
+		 */
+		status = smbXsrv_client_remove(client);
+		if (!NT_STATUS_IS_OK(status)) {
+			D_ERR("Server exit (%s)\n",
+			      (reason ? reason : "normal exit"));
+			DBG_ERR("smbXsrv_client_remove() failed (%s)\n",
+				nt_errstr(status));
+		}
+	}
 
 	change_to_root_user();
 
