@@ -71,3 +71,19 @@ class gp_scripts_ext(gp_pol_ext):
                                 os.chmod(f.name, 0o700)
                                 self.gp_db.store(str(self), attribute, f.name)
                         self.gp_db.commit()
+
+    def rsop(self, gpo):
+        output = {}
+        pol_file = 'MACHINE/Registry.pol'
+        if gpo.file_sys_path:
+            path = os.path.join(gpo.file_sys_path, pol_file)
+            pol_conf = self.parse(path)
+            if not pol_conf:
+                return output
+            for e in pol_conf.entries:
+                key = e.keyname.split('\\')[-1]
+                if key.endswith('Scripts') and e.data.strip():
+                    if key not in output.keys():
+                        output[key] = []
+                    output[key].append(e.data)
+        return output
