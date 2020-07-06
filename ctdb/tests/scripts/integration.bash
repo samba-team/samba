@@ -583,9 +583,15 @@ ctdb_init ()
 {
 	ctdb_nodes_stop >/dev/null 2>&1 || :
 
-	ctdb_nodes_start || ctdb_test_error "Cluster start failed"
+	if ! ctdb_nodes_start ; then
+		echo "Cluster start failed"
+		return 1
+	fi
 
-	wait_until_ready 120 || ctdb_test_error "Cluster didn't become ready"
+	if ! wait_until_ready 120 ; then
+		echo "Cluster didn't become ready"
+		return 1
+	fi
 
 	echo "Setting RerecoveryTimeout to 1"
 	onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
@@ -596,13 +602,16 @@ ctdb_init ()
 
 	if ! onnode -q all "$CTDB_TEST_WRAPPER _cluster_is_recovered" ; then
 		echo "Cluster has gone into recovery again, waiting..."
-		wait_until 30/2 onnode -q all \
-			   "$CTDB_TEST_WRAPPER _cluster_is_recovered" || \
-			ctdb_test_error "Cluster did not come out of recovery"
+		if ! wait_until 30/2 onnode -q all \
+		     "$CTDB_TEST_WRAPPER _cluster_is_recovered" ; then
+			echo "Cluster did not come out of recovery"
+			return 1
+		fi
 	fi
 
 	if ! onnode 0 "$CTDB_TEST_WRAPPER _cluster_is_healthy" ; then
-		ctdb_test_error "Cluster became UNHEALTHY again [$(date)]"
+		echo "Cluster became UNHEALTHY again [$(date)]"
+		return 1
 	fi
 
 	echo "Doing a sync..."
