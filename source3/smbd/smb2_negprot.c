@@ -127,10 +127,19 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 	return PROTOCOL_NONE;
 }
 
+struct smbd_smb2_request_process_negprot_state {
+	struct smbd_smb2_request *req;
+	DATA_BLOB outbody;
+	DATA_BLOB outdyn;
+};
+
+static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq);
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
+	struct smbd_smb2_request_process_negprot_state *state = NULL;
 	struct smbXsrv_connection *xconn = req->xconn;
-	struct smbXsrv_client_global0 *global0 = NULL;
+	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;
@@ -675,38 +684,83 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_done(req, outbody, &outdyn);
 	}
 
-	status = smb2srv_client_lookup_global(xconn->client,
-					      xconn->smb2.client.guid,
-					      req, &global0);
-	/*
-	 * TODO: check for races...
-	 */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECTID_NOT_FOUND)) {
+	state = talloc_zero(req, struct smbd_smb2_request_process_negprot_state);
+	if (state == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	*state = (struct smbd_smb2_request_process_negprot_state) {
+		.req = req,
+		.outbody = outbody,
+		.outdyn = outdyn,
+	};
+
+	subreq = smb2srv_client_mc_negprot_send(state,
+						req->xconn->client->raw_ev_ctx,
+						req);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq,
+				smbd_smb2_request_process_negprot_mc_done,
+				state);
+	return NT_STATUS_OK;
+}
+
+static void smbd_smb2_request_process_negprot_mc_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request_process_negprot_state *state =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_request_process_negprot_state);
+	struct smbd_smb2_request *req = state->req;
+	struct smbXsrv_connection *xconn = req->xconn;
+	NTSTATUS status;
+
+	status = smb2srv_client_mc_negprot_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MESSAGE_RETRIEVED)) {
 		/*
-		 * This stores the new client information in
-		 * smbXsrv_client_global.tdb
+		 * The connection was passed to another process
 		 */
-		xconn->client->global->client_guid =
-			xconn->smb2.client.guid;
-		status = smbXsrv_client_update(xconn->client);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		xconn->smb2.client.guid_verified = true;
-	} else if (NT_STATUS_IS_OK(status)) {
-		status = smb2srv_client_connection_pass(req,
-							global0);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
-		}
-
 		smbd_server_connection_terminate(xconn,
 						 "passed connection");
-		return NT_STATUS_OBJECTID_EXISTS;
-	} else {
-		return smbd_smb2_request_error(req, status);
+		/*
+		 * smbd_server_connection_terminate() should not return!
+		 */
+		smb_panic(__location__);
+		return;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		status = smbd_smb2_request_error(req, status);
+		if (NT_STATUS_IS_OK(status)) {
+			return;
+		}
+
+		/*
+		 * The connection was passed to another process
+		 */
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
+		/*
+		 * smbd_server_connection_terminate() should not return!
+		 */
+		smb_panic(__location__);
+		return;
 	}
 
-	return smbd_smb2_request_done(req, outbody, &outdyn);
+	/*
+	 * We're the first connection...
+	 */
+	status = smbd_smb2_request_done(req, state->outbody, &state->outdyn);
+	if (NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	/*
+	 * The connection was passed to another process
+	 */
+	smbd_server_connection_terminate(xconn, nt_errstr(status));
+	/*
+	 * smbd_server_connection_terminate() should not return!
+	 */
+	smb_panic(__location__);
+	return;
 }

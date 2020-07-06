@@ -550,14 +550,11 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 			       struct messaging_context *msg_ctx,
 			       NTTIME now,
 			       struct smbXsrv_client **_client);
-NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client);
 NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client);
-NTSTATUS smb2srv_client_lookup_global(struct smbXsrv_client *client,
-				      struct GUID client_guid,
-				      TALLOC_CTX *mem_ctx,
-				      struct smbXsrv_client_global0 **_pass);
-NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
-					struct smbXsrv_client_global0 *global);
+struct tevent_req *smb2srv_client_mc_negprot_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct smbd_smb2_request *smb2req);
+NTSTATUS smb2srv_client_mc_negprot_recv(struct tevent_req *req);
 
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol);

@@ -167,11 +167,15 @@ interface smbXsrv
 
 	/*
 	 * smbXsrv_connection_pass is used in the MSG_SMBXSRV_CONNECTION_PASS
-	 * message
+	 * message and echo'ed as MSG_SMBXSRV_CONNECTION_PASSED message with
+	 * negotiate_request.length = 0.
 	 */
 	typedef struct {
-		NTTIME					initial_connect_time;
 		GUID					client_guid;
+		server_id				src_server_id;
+		NTTIME					xconn_connect_time;
+		server_id				dst_server_id;
+		NTTIME					client_connect_time;
 		DATA_BLOB 				negotiate_request;
 	} smbXsrv_connection_pass0;
 

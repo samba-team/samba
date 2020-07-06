@@ -38,6 +38,7 @@
 #include "serverid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/iov_buf.h"
+#include "lib/global_contexts.h"
 
 struct smbXsrv_client_table {
 	struct {
@@ -54,6 +55,7 @@ static struct db_context *smbXsrv_client_global_db_ctx = NULL;
 NTSTATUS smbXsrv_client_global_init(void)
 {
 	const char *global_path = NULL;
+	struct db_context *backend = NULL;
 	struct db_context *db_ctx = NULL;
 
 	if (smbXsrv_client_global_db_ctx != NULL) {
@@ -68,20 +70,26 @@ NTSTATUS smbXsrv_client_global_init(void)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	db_ctx = db_open(NULL, global_path,
-			 0, /* hash_size */
-			 TDB_DEFAULT |
-			 TDB_CLEAR_IF_FIRST |
-			 TDB_INCOMPATIBLE_HASH,
-			 O_RDWR | O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1,
-			 DBWRAP_FLAG_NONE);
-	if (db_ctx == NULL) {
+	backend = db_open(NULL, global_path,
+			  0, /* hash_size */
+			  TDB_DEFAULT |
+			  TDB_CLEAR_IF_FIRST |
+			  TDB_INCOMPATIBLE_HASH,
+			  O_RDWR | O_CREAT, 0600,
+			  DBWRAP_LOCK_ORDER_1,
+			  DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
 		NTSTATUS status;
 
 		status = map_nt_error_from_unix_common(errno);
 
 		return status;
+	}
+
+	db_ctx = db_open_watched(NULL, &backend, global_messaging_context());
+	if (db_ctx == NULL) {
+		TALLOC_FREE(backend);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	smbXsrv_client_global_db_ctx = db_ctx;
@@ -265,47 +273,8 @@ static void smbXsrv_client_global_verify_record(struct db_record *db_rec,
 	TALLOC_FREE(frame);
 }
 
-NTSTATUS smb2srv_client_lookup_global(struct smbXsrv_client *client,
-				      struct GUID client_guid,
-				      TALLOC_CTX *mem_ctx,
-				      struct smbXsrv_client_global0 **_global)
-{
-	struct smbXsrv_client_table *table = client->table;
-	struct smbXsrv_client_global0 *global = NULL;
-	bool is_free = false;
-	struct db_record *db_rec;
-
-	db_rec = smbXsrv_client_global_fetch_locked(table->global.db_ctx,
-						    &client_guid,
-						    talloc_tos());
-	if (db_rec == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	smbXsrv_client_global_verify_record(db_rec,
-					    &is_free,
-					    NULL,
-					    mem_ctx,
-					    &global);
-	TALLOC_FREE(db_rec);
-
-	if (is_free) {
-		return NT_STATUS_OBJECTID_NOT_FOUND;
-	}
-
-	if (global == NULL) {
-		/*
-		 * most likely ndr_pull_struct_blob() failed
-		 */
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	*_global = global;
-	return NT_STATUS_OK;
-}
-
-NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
-					struct smbXsrv_client_global0 *global)
+static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
+					       struct smbXsrv_client_global0 *global)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -315,8 +284,13 @@ NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
 	ssize_t reqlen;
 	struct iovec iov;
 
-	pass_info0.initial_connect_time = global->initial_connect_time;
-	pass_info0.client_guid = global->client_guid;
+	pass_info0 = (struct smbXsrv_connection_pass0) {
+		.client_guid = global->client_guid,
+		.src_server_id = smb2req->xconn->client->global->server_id,
+		.xconn_connect_time = smb2req->xconn->client->global->initial_connect_time,
+		.dst_server_id = global->server_id,
+		.client_connect_time = global->initial_connect_time,
+	};
 
 	reqlen = iov_buflen(smb2req->in.vector, smb2req->in.vector_count);
 	if (reqlen == -1) {
@@ -434,6 +408,285 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	TALLOC_FREE(global->db_rec);
 
 	return NT_STATUS_OK;
+}
+
+struct smb2srv_client_mc_negprot_state {
+	struct tevent_context *ev;
+	struct smbd_smb2_request *smb2req;
+	struct db_record *db_rec;
+};
+
+static void smb2srv_client_mc_negprot_cleanup(struct tevent_req *req,
+					      enum tevent_req_state req_state)
+{
+	struct smb2srv_client_mc_negprot_state *state =
+		tevent_req_data(req,
+		struct smb2srv_client_mc_negprot_state);
+
+	TALLOC_FREE(state->db_rec);
+}
+
+static void smb2srv_client_mc_negprot_next(struct tevent_req *req);
+static bool smb2srv_client_mc_negprot_filter(struct messaging_rec *rec, void *private_data);
+static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq);
+static void smb2srv_client_mc_negprot_watched(struct tevent_req *subreq);
+
+struct tevent_req *smb2srv_client_mc_negprot_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct smbd_smb2_request *smb2req)
+{
+	struct tevent_req *req = NULL;
+	struct smb2srv_client_mc_negprot_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2srv_client_mc_negprot_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->smb2req = smb2req;
+
+	tevent_req_set_cleanup_fn(req, smb2srv_client_mc_negprot_cleanup);
+
+	smb2srv_client_mc_negprot_next(req);
+
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void smb2srv_client_mc_negprot_next(struct tevent_req *req)
+{
+	struct smb2srv_client_mc_negprot_state *state =
+		tevent_req_data(req,
+		struct smb2srv_client_mc_negprot_state);
+	struct smbXsrv_connection *xconn = state->smb2req->xconn;
+	struct smbXsrv_client *client = xconn->client;
+	struct smbXsrv_client_table *table = client->table;
+	struct GUID client_guid = xconn->smb2.client.guid;
+	struct smbXsrv_client_global0 *global = NULL;
+	bool is_free = false;
+	struct tevent_req *subreq = NULL;
+	NTSTATUS status;
+
+	SMB_ASSERT(state->db_rec == NULL);
+	state->db_rec = smbXsrv_client_global_fetch_locked(table->global.db_ctx,
+							   &client_guid,
+							   state);
+	if (state->db_rec == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_DB_ERROR);
+		return;
+	}
+
+	smbXsrv_client_global_verify_record(state->db_rec,
+					    &is_free,
+					    NULL,
+					    state,
+					    &global);
+	if (is_free) {
+		/*
+		 * This stores the new client information in
+		 * smbXsrv_client_global.tdb
+		 */
+		client->global->client_guid = xconn->smb2.client.guid;
+
+		client->global->db_rec = state->db_rec;
+		state->db_rec = NULL;
+		status = smbXsrv_client_global_store(client->global);
+		SMB_ASSERT(client->global->db_rec == NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			struct GUID_txt_buf buf;
+			DBG_ERR("client_guid[%s] store failed - %s\n",
+				GUID_buf_string(&client->global->client_guid,
+						&buf),
+				nt_errstr(status));
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		if (DEBUGLVL(DBGLVL_DEBUG)) {
+			struct smbXsrv_clientB client_blob = {
+				.version = SMBXSRV_VERSION_0,
+				.info.info0 = client,
+			};
+			struct GUID_txt_buf buf;
+
+			DBG_DEBUG("client_guid[%s] stored\n",
+				  GUID_buf_string(&client->global->client_guid,
+						  &buf));
+			NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
+		}
+
+		xconn->smb2.client.guid_verified = true;
+		tevent_req_done(req);
+		return;
+	}
+
+	if (global == NULL) {
+		/*
+		 * most likely ndr_pull_struct_blob() failed
+		 */
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_DB_CORRUPTION);
+		return;
+	}
+
+	subreq = messaging_filtered_read_send(state,
+					      state->ev,
+					      client->msg_ctx,
+					      smb2srv_client_mc_negprot_filter,
+					      NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_done, req);
+
+	subreq = dbwrap_watched_watch_send(state,
+					   state->ev,
+					   state->db_rec,
+					   global->server_id);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smb2srv_client_mc_negprot_watched, req);
+
+	status = smb2srv_client_connection_pass(state->smb2req,
+						global);
+	TALLOC_FREE(global);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	TALLOC_FREE(state->db_rec);
+	return;
+}
+
+static bool smb2srv_client_mc_negprot_filter(struct messaging_rec *rec, void *private_data)
+{
+	if (rec->msg_type != MSG_SMBXSRV_CONNECTION_PASSED) {
+		return false;
+	}
+
+	if (rec->num_fds != 0) {
+		return false;
+	}
+
+	if (rec->buf.length < SMB2_HDR_BODY) {
+		return false;
+	}
+
+	return true;
+}
+
+static void smb2srv_client_mc_negprot_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb2srv_client_mc_negprot_state *state =
+		tevent_req_data(req,
+		struct smb2srv_client_mc_negprot_state);
+	struct smbXsrv_connection *xconn = state->smb2req->xconn;
+	struct smbXsrv_client *client = xconn->client;
+	struct messaging_rec *rec = NULL;
+	struct smbXsrv_connection_passB passed_blob;
+	enum ndr_err_code ndr_err;
+	struct smbXsrv_connection_pass0 *passed_info0 = NULL;
+	NTSTATUS status;
+	int ret;
+
+	ret = messaging_filtered_read_recv(subreq, state, &rec);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(ret);
+		DBG_ERR("messaging_filtered_read_recv() - %s\n",
+			nt_errstr(status));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	DBG_DEBUG("MSG_SMBXSRV_CONNECTION_PASSED: received...\n");
+
+	ndr_err = ndr_pull_struct_blob(&rec->buf, rec, &passed_blob,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_connection_passB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("ndr_pull_struct_blob - %s\n", nt_errstr(status));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+	}
+
+	if (passed_blob.version != SMBXSRV_VERSION_0) {
+		DBG_ERR("ignore invalid version %u\n", passed_blob.version);
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	passed_info0 = passed_blob.info.info0;
+	if (passed_info0 == NULL) {
+		DBG_ERR("ignore NULL info %u\n", passed_blob.version);
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	if (!GUID_equal(&xconn->smb2.client.guid, &passed_info0->client_guid)) {
+		struct GUID_txt_buf buf1, buf2;
+
+		DBG_ERR("client's client_guid [%s] != passed guid [%s]\n",
+			GUID_buf_string(&xconn->smb2.client.guid,
+					&buf1),
+			GUID_buf_string(&passed_info0->client_guid,
+					&buf2));
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	if (client->global->initial_connect_time !=
+	    passed_info0->xconn_connect_time)
+	{
+		DBG_ERR("client's initial connect time [%s] (%llu) != "
+			"passed xconn connect time [%s] (%llu)\n",
+			nt_time_string(talloc_tos(),
+				       client->global->initial_connect_time),
+			(unsigned long long)client->global->initial_connect_time,
+			nt_time_string(talloc_tos(),
+				       passed_info0->xconn_connect_time),
+			(unsigned long long)passed_info0->xconn_connect_time);
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_MESSAGE_RETRIEVED);
+}
+
+static void smb2srv_client_mc_negprot_watched(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	NTSTATUS status;
+
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	smb2srv_client_mc_negprot_next(req);
+}
+
+NTSTATUS smb2srv_client_mc_negprot_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global0 *global)
@@ -573,6 +826,53 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smb2srv_client_connection_passed(struct smbXsrv_client *client,
+				const struct smbXsrv_connection_pass0 *recv_info0)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	struct smbXsrv_connection_pass0 passed_info0;
+	struct smbXsrv_connection_passB passed_blob;
+	struct iovec iov;
+
+	/*
+	 * We echo back the message with a cleared negotiate_request
+	 */
+	passed_info0 = *recv_info0;
+	passed_info0.negotiate_request = data_blob_null;
+
+	ZERO_STRUCT(passed_blob);
+	passed_blob.version = smbXsrv_version_global_current();
+	passed_blob.info.info0 = &passed_info0;
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &passed_blob);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &passed_blob,
+			(ndr_push_flags_fn_t)ndr_push_smbXsrv_connection_passB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		return status;
+	}
+
+	iov.iov_base = blob.data;
+	iov.iov_len = blob.length;
+
+	status = messaging_send_iov(client->msg_ctx,
+				    recv_info0->src_server_id,
+				    MSG_SMBXSRV_CONNECTION_PASSED,
+				    &iov, 1,
+				    NULL, 0);
+	data_blob_free(&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static bool smbXsrv_client_connection_pass_filter(struct messaging_rec *rec, void *private_data)
 {
 	if (rec->msg_type != MSG_SMBXSRV_CONNECTION_PASS) {
@@ -665,7 +965,7 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 	}
 
 	if (client->global->initial_connect_time !=
-	    pass_info0->initial_connect_time)
+	    pass_info0->client_connect_time)
 	{
 		DBG_WARNING("client's initial connect time [%s] (%llu) != "
 			"passed initial connect time [%s] (%llu)\n",
@@ -673,22 +973,30 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 				       client->global->initial_connect_time),
 			(unsigned long long)client->global->initial_connect_time,
 			nt_time_string(talloc_tos(),
-				       pass_info0->initial_connect_time),
-			(unsigned long long)pass_info0->initial_connect_time);
+				       pass_info0->client_connect_time),
+			(unsigned long long)pass_info0->client_connect_time);
 		if (DEBUGLVL(DBGLVL_WARNING)) {
 			NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
 		}
 		goto next;
 	}
 
+	status = smb2srv_client_connection_passed(client, pass_info0);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *r = "smb2srv_client_connection_passed() failed";
+		DBG_ERR("%s => %s\n", r, nt_errstr(status));
+		NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
+		exit_server_cleanly(r);
+		return;
+	}
+
 	status = smbd_add_connection(client,
 				     sock_fd,
-				     pass_info0->initial_connect_time,
+				     pass_info0->xconn_connect_time,
 				     &xconn);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		rec->num_fds = 0;
-		DLIST_REMOVE(client->connections, xconn);
-		TALLOC_FREE(xconn);
+		smbd_server_connection_terminate(xconn, nt_errstr(status));
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("smbd_add_connection => %s\n", nt_errstr(status));
@@ -734,53 +1042,6 @@ next:
 	}
 	tevent_req_set_callback(subreq, smbXsrv_client_connection_pass_loop, client);
 	client->connection_pass_subreq = subreq;
-}
-
-NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client)
-{
-	struct smbXsrv_client_table *table = client->table;
-	NTSTATUS status;
-
-	if (client->global->db_rec != NULL) {
-		struct GUID_txt_buf buf;
-		DBG_ERR("guid [%s]: Called with db_rec != NULL'\n",
-			GUID_buf_string(&client->global->client_guid,
-					&buf));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	client->global->db_rec = smbXsrv_client_global_fetch_locked(
-					table->global.db_ctx,
-					&client->global->client_guid,
-					client->global /* TALLOC_CTX */);
-	if (client->global->db_rec == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	status = smbXsrv_client_global_store(client->global);
-	if (!NT_STATUS_IS_OK(status)) {
-		struct GUID_txt_buf buf;
-		DBG_ERR("client_guid[%s] store failed - %s\n",
-			GUID_buf_string(&client->global->client_guid,
-					&buf),
-			nt_errstr(status));
-		return status;
-	}
-
-	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		struct smbXsrv_clientB client_blob = {
-			.version = SMBXSRV_VERSION_0,
-			.info.info0 = client,
-		};
-		struct GUID_txt_buf buf;
-
-		DBG_DEBUG("client_guid[%s] stored\n",
-			  GUID_buf_string(&client->global->client_guid,
-					  &buf));
-		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
-	}
-
-	return NT_STATUS_OK;
 }
 
 NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
