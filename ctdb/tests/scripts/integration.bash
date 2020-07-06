@@ -157,7 +157,7 @@ try_command_on_node ()
 
     if $verbose ; then
 	echo "Output of \"$cmd\":"
-	cat "$outfile"
+	cat "$outfile" || true
     fi
 }
 
