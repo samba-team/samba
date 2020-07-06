@@ -44,17 +44,6 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 		return NULL;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(auth_info)) {
-		nt_status = cli_cm_force_encryption_creds(
-			c,
-			get_cmdline_auth_info_creds(auth_info),
-			share);
-                if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(c);
-			c = NULL;
-                }
-	}
-
 	return c;
 }
 
