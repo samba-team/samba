@@ -29,7 +29,7 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 from samba import getopt as options
-from samba.gpclass import apply_gp, unapply_gp, GPOStorage
+from samba.gpclass import apply_gp, unapply_gp, GPOStorage, rsop
 from samba.gp_sec_ext import gp_sec_ext
 from samba.gp_ext_loader import get_gp_client_side_extensions
 from samba.gp_scripts_ext import gp_scripts_ext
@@ -49,6 +49,8 @@ if __name__ == "__main__":
     parser.add_option('--target', default='Computer', help='{Computer | User}',
                       choices=['Computer', 'User'])
     parser.add_option('--force', help='Reapplies all policy settings',
+                      action='store_true')
+    parser.add_option('--rsop', help='Print the Resultant Set of Policy',
                       action='store_true')
     parser.add_option_group(credopts)
 
@@ -90,7 +92,9 @@ if __name__ == "__main__":
         for ext in user_exts:
             gp_extensions.append(ext(logger, lp, creds, store))
 
-    if not opts.unapply:
+    if opts.rsop:
+        rsop(lp, creds, gp_extensions, opts.target)
+    elif not opts.unapply:
         apply_gp(lp, creds, logger, store, gp_extensions, opts.force)
     else:
         unapply_gp(lp, creds, logger, store, gp_extensions)

@@ -317,6 +317,10 @@ class gp_ext(object):
     def __str__(self):
         pass
 
+    @abstractmethod
+    def rsop(self, gpo):
+        return {}
+
 
 class gp_ext_setter(object):
     __metaclass__ = ABCMeta
@@ -502,6 +506,40 @@ def unapply_gp(lp, creds, logger, store, gp_extensions):
             logger.error('Message was: ' + str(e))
             continue
     store.commit()
+
+
+def __rsop_vals(vals, level=4):
+    if type(vals) == dict:
+        ret = [' '*level + '[ %s ] = %s' % (k, __rsop_vals(v, level+2))
+                for k, v in vals.items()]
+        return '\n'.join(ret)
+    elif type(vals) == list:
+        ret = [' '*level + '[ %s ]' % __rsop_vals(v, level+2) for v in vals]
+        return '\n'.join(ret)
+    else:
+        return vals
+
+def rsop(lp, creds, gp_extensions, target):
+    dc_hostname = get_dc_hostname(creds, lp)
+    gpos = get_gpo_list(dc_hostname, creds, lp)
+    check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
+
+    print('Resultant Set of Policy')
+    print('%s Policy\n' % target)
+    term_width = os.get_terminal_size()[0]
+    for gpo in gpos:
+        print('GPO: %s' % gpo.display_name)
+        print('='*term_width)
+        for ext in gp_extensions:
+            print('  CSE: %s' % ext.__module__.split('.')[-1])
+            print('  ' + ('-'*int(term_width/2)))
+            for section, settings in ext.rsop(gpo).items():
+                print('    Policy Type: %s' % section)
+                print('    ' + ('-'*int(term_width/2)))
+                print(__rsop_vals(settings))
+                print('    ' + ('-'*int(term_width/2)))
+            print('  ' + ('-'*int(term_width/2)))
+        print('%s\n' % ('='*term_width))
 
 
 def parse_gpext_conf(smb_conf):
