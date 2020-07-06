@@ -2380,7 +2380,42 @@ static bool delay_for_oplock_fn(
 			NULL, /* breaking_to_required */
 			NULL, /* lease_version */
 			NULL); /* epoch */
-		SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+		/*
+		 * leases_db_get() can return NT_STATUS_NOT_FOUND
+		 * if the share_mode_entry e is stale and the
+		 * lease record was already removed. In this case return
+		 * false so the traverse continues.
+		 */
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) &&
+		    share_entry_stale_pid(e))
+		{
+			struct GUID_txt_buf guid_strbuf;
+			struct file_id_buf file_id_strbuf;
+			DBG_DEBUG("leases_db_get for client_guid [%s] "
+				  "lease_key [%"PRIu64"/%"PRIu64"] "
+				  "file_id [%s] failed for stale "
+				  "share_mode_entry\n",
+				  GUID_buf_string(&e->client_guid, &guid_strbuf),
+				  e->lease_key.data[0],
+				  e->lease_key.data[1],
+				  file_id_str_buf(fsp->file_id, &file_id_strbuf));
+			return false;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			struct GUID_txt_buf guid_strbuf;
+			struct file_id_buf file_id_strbuf;
+			DBG_ERR("leases_db_get for client_guid [%s] "
+				"lease_key [%"PRIu64"/%"PRIu64"] "
+				"file_id [%s] failed: %s\n",
+				GUID_buf_string(&e->client_guid, &guid_strbuf),
+				e->lease_key.data[0],
+				e->lease_key.data[1],
+				file_id_str_buf(fsp->file_id, &file_id_strbuf),
+				nt_errstr(status));
+			smb_panic("leases_db_get() failed");
+		}
 	}
 
 	if (!state->got_handle_lease &&
