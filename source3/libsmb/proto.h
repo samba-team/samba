@@ -123,9 +123,6 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 
 /* The following definitions come from libsmb/clidfs.c  */
 
-NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
-				       struct cli_credentials *creds,
-				       const char *sharename);
 NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,

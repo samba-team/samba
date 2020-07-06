@@ -43,9 +43,9 @@
  Ensure a connection is encrypted.
 ********************************************************************/
 
-NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
-				       struct cli_credentials *creds,
-				       const char *sharename)
+static NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
+					      struct cli_credentials *creds,
+					      const char *sharename)
 {
 	uint16_t major, minor;
 	uint32_t caplow, caphigh;
