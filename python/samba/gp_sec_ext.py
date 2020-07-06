@@ -204,3 +204,19 @@ class gp_sec_ext(gp_inf_ext):
                                    self.creds, att, value).update_samba()
                             self.gp_db.commit()
 
+    def rsop(self, gpo):
+        output = {}
+        inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
+        apply_map = self.apply_map()
+        if gpo.file_sys_path:
+            path = os.path.join(gpo.file_sys_path, inf_file)
+            inf_conf = self.parse(path)
+            if not inf_conf:
+                return output
+            for section in inf_conf.sections():
+                current_section = apply_map.get(section)
+                if not current_section:
+                    continue
+                output[section] = {k: v for k, v in inf_conf.items(section) \
+                                      if current_section.get(k)}
+        return output
