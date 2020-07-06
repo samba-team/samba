@@ -351,12 +351,12 @@ class gp_ext_setter(object):
 
 class gp_inf_ext(gp_ext):
     def read(self, data_file):
-        policy = open(data_file, 'r').read()
+        policy = open(data_file, 'rb').read()
         inf_conf = ConfigParser()
         inf_conf.optionxform = str
         try:
-            inf_conf.readfp(StringIO(policy))
-        except:
+            inf_conf.readfp(StringIO(policy.decode()))
+        except UnicodeDecodeError:
             inf_conf.readfp(StringIO(policy.decode('utf-16')))
         return inf_conf
 
