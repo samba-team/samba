@@ -641,7 +641,7 @@ bool run_notify_bench3(int dummy)
 	struct tevent_context *ev;
 	struct tevent_barrier *small;
 	struct tevent_barrier *large;
-	unsigned i, j;
+	int i;
 	unsigned num_done = 0;
 	struct timeval ts, now;
 
@@ -680,6 +680,7 @@ bool run_notify_bench3(int dummy)
 	}
 
 	for (i=0; i<torture_nprocs; i++) {
+		int j;
 		for (j=0; j<torture_numops; j++) {
 			int idx = i * torture_numops + j;
 			struct tevent_req *req;
