@@ -53,7 +53,7 @@ interface open_files
 	} share_mode_flags;
 
 	typedef [public] struct {
-		hyper sequence_number;
+		hyper unique_content_epoch;
 		share_mode_flags flags;
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;

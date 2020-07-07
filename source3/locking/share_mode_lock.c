@@ -161,9 +161,9 @@ static void share_mode_memcache_store(struct share_mode_data *d)
 	const DATA_BLOB key = memcache_key(&d->id);
 	struct file_id_buf idbuf;
 
-	DBG_DEBUG("stored entry for file %s seq %"PRIx64" key %s\n",
+	DBG_DEBUG("stored entry for file %s epoch %"PRIx64" key %s\n",
 		  d->base_name,
-		  d->sequence_number,
+		  d->unique_content_epoch,
 		  file_id_str_buf(d->id, &idbuf));
 
 	/* Ensure everything stored in the cache is pristine. */
@@ -193,13 +193,13 @@ static void share_mode_memcache_store(struct share_mode_data *d)
  */
 
 static enum ndr_err_code get_share_mode_blob_header(
-	const uint8_t *buf, size_t buflen, uint64_t *pseq, uint16_t *pflags)
+	const uint8_t *buf, size_t buflen, uint64_t *pepoch, uint16_t *pflags)
 {
 	struct ndr_pull ndr = {
 		.data = discard_const_p(uint8_t, buf),
 		.data_size = buflen,
 	};
-	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
+	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pepoch));
 	NDR_CHECK(ndr_pull_uint16(&ndr, NDR_SCALARS, pflags));
 	return NDR_ERR_SUCCESS;
 }
@@ -278,7 +278,7 @@ static struct share_mode_data *share_mode_memcache_fetch(
 {
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
-	uint64_t sequence_number;
+	uint64_t unique_content_epoch;
 	uint16_t flags;
 	void *ptr;
 	struct file_id id;
@@ -303,7 +303,7 @@ static struct share_mode_data *share_mode_memcache_fetch(
 	}
 	/* sequence number key is at start of blob. */
 	ndr_err = get_share_mode_blob_header(
-		buf, buflen, &sequence_number, &flags);
+		buf, buflen, &unique_content_epoch, &flags);
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		/* Bad blob. Remove entry. */
 		DBG_DEBUG("bad blob %u key %s\n",
@@ -316,11 +316,11 @@ static struct share_mode_data *share_mode_memcache_fetch(
 	}
 
 	d = (struct share_mode_data *)ptr;
-	if (d->sequence_number != sequence_number) {
-		DBG_DEBUG("seq changed (cached %"PRIx64") (new %"PRIx64") "
+	if (d->unique_content_epoch != unique_content_epoch) {
+		DBG_DEBUG("epoch changed (cached %"PRIx64") (new %"PRIx64") "
 			  "for key %s\n",
-			  d->sequence_number,
-			  sequence_number,
+			  d->unique_content_epoch,
+			  unique_content_epoch,
 			  file_id_str_buf(id, &idbuf));
 		/* Cache out of date. Remove entry. */
 		memcache_delete(NULL,
@@ -346,9 +346,9 @@ static struct share_mode_data *share_mode_memcache_fetch(
 	/* And reset the destructor to none. */
 	talloc_set_destructor(d, NULL);
 
-	DBG_DEBUG("fetched entry for file %s seq %"PRIx64" key %s\n",
+	DBG_DEBUG("fetched entry for file %s epoch %"PRIx64" key %s\n",
 		  d->base_name,
-		  d->sequence_number,
+		  d->unique_content_epoch,
 		  file_id_str_buf(id, &idbuf));
 
 	return d;
@@ -662,7 +662,7 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	d->sequence_number += 1;
+	d->unique_content_epoch = generate_unique_u64(d->unique_content_epoch);
 
 	status = locking_tdb_data_fetch(key, d, &ltdb);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -714,8 +714,7 @@ static struct share_mode_data *fresh_share_mode_lock(
 	if (d == NULL) {
 		goto fail;
 	}
-	/* New record - new sequence number. */
-	generate_random_buffer((uint8_t *)&d->sequence_number, 8);
+	d->unique_content_epoch = generate_unique_u64(0);
 
 	d->base_name = talloc_strdup(d, smb_fname->base_name);
 	if (d->base_name == NULL) {
