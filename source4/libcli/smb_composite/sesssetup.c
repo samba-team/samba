@@ -620,9 +620,16 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	struct composite_context *c;
 	struct sesssetup_state *state;
 	NTSTATUS status;
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(io->in.credentials);
 
 	c = composite_create(session, session->transport->ev);
 	if (c == NULL) return NULL;
+
+	if (encryption_state > SMB_ENCRYPTION_DESIRED) {
+		composite_error(c, NT_STATUS_PROTOCOL_NOT_SUPPORTED);
+		return c;
+	}
 
 	state = talloc_zero(c, struct sesssetup_state);
 	if (composite_nomem(state, c)) return c;
