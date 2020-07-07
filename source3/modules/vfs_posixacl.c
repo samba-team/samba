@@ -274,7 +274,8 @@ static int smb_acl_set_mode(acl_entry_t entry, SMB_ACL_PERM_T perm)
 	    ((ret = acl_add_perm(permset, ACL_EXECUTE)) != 0)) {
 		return ret;
 	}
-        return acl_set_permset(entry, permset);
+
+	return 0;
 }
 
 static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
