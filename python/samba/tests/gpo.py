@@ -450,3 +450,67 @@ class GPOTests(tests.TestCase):
                           'Kerberos Policy was not read from the file')
             self.assertEquals(inf_conf.get('Kerberos Policy', 'MaxTicketAge'),
                               '99', 'MaxTicketAge was not read from the file')
+
+    def test_rsop(self):
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        local_path = self.lp.cache_path('gpo_cache')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        gp_extensions = []
+        gp_extensions.append(gp_sec_ext(logger, self.lp, machine_creds, store))
+        gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
+            store))
+
+        # Create registry stage data
+        reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
+        reg_stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Daily Scripts'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'echo hello world'
+        reg_stage.num_entries = 1
+        reg_stage.entries = [e]
+
+        # Create krb stage date
+        gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
+                  'WINDOWS NT/SECEDIT/GPTTMPL.INF')
+        krb_stage = '[Kerberos Policy]\nMaxTicketAge = 99\n'
+
+        for g in [g for g in gpos if g.file_sys_path]:
+            ret = stage_file(gpofile % g.name, krb_stage)
+            self.assertTrue(ret, 'Could not create the target %s' %
+                                 (gpofile % g.name))
+            ret = stage_file(reg_pol % g.name, ndr_pack(reg_stage))
+            self.assertTrue(ret, 'Could not create the target %s' %
+                                 (reg_pol % g.name))
+            for ext in gp_extensions:
+                ret = ext.rsop(g)
+                self.assertEquals(len(ret.keys()), 1,
+                                  'A single policy should have been displayed')
+
+                # Check the Security Extension
+                if type(ext) == gp_sec_ext:
+                    self.assertIn('Kerberos Policy', ret.keys(),
+                                  'Kerberos Policy not found')
+                    self.assertIn('MaxTicketAge', ret['Kerberos Policy'],
+                                  'MaxTicketAge setting not found')
+                    self.assertEquals(ret['Kerberos Policy']['MaxTicketAge'], '99',
+                                      'MaxTicketAge was not set to 99')
+                # Check the Scripts Extension
+                elif type(ext) == gp_scripts_ext:
+                    self.assertIn('Daily Scripts', ret.keys(),
+                                  'Daily Scripts not found')
+                    self.assertIn('echo hello world', ret['Daily Scripts'],
+                                  'Daily script was not created')
+            unstage_file(gpofile % g.name)
+            unstage_file(reg_pol % g.name)
