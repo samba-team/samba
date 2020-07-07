@@ -403,6 +403,7 @@ static void notifyd_sig_hup_handler(struct tevent_context *ev,
 {
 	DBG_NOTICE("notifyd: Reloading services after SIGHUP\n");
 	reload_services(NULL, NULL, false);
+	reopen_logs();
 }
 
 static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
@@ -410,10 +411,10 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 {
 	struct tevent_context *ev = messaging_tevent_context(msg);
 	struct tevent_req *req;
+	struct tevent_signal *se = NULL;
 	pid_t pid;
 	NTSTATUS status;
 	bool ok;
-	struct tevent_signal *se;
 
 	if (interactive) {
 		req = notifyd_req(msg, ev);
@@ -570,6 +571,17 @@ static void notifyd_started(struct tevent_req *req)
 	}
 }
 
+static void cleanupd_sig_hup_handler(struct tevent_context *ev,
+				     struct tevent_signal *se,
+				     int signum,
+				     int count,
+				     void *siginfo,
+				     void *pvt)
+{
+	DBG_NOTICE("cleanupd: Reloading services after SIGHUP\n");
+	reopen_logs();
+}
+
 static void cleanupd_stopped(struct tevent_req *req);
 
 static bool cleanupd_init(struct messaging_context *msg, bool interactive,
@@ -577,6 +589,7 @@ static bool cleanupd_init(struct messaging_context *msg, bool interactive,
 {
 	struct tevent_context *ev = messaging_tevent_context(msg);
 	struct server_id parent_id = messaging_server_id(msg);
+	struct tevent_signal *se = NULL;
 	struct tevent_req *req;
 	pid_t pid;
 	NTSTATUS status;
@@ -644,6 +657,17 @@ static bool cleanupd_init(struct messaging_context *msg, bool interactive,
 		c = 1;
 		sys_write(up_pipe[1], &c, 1);
 
+		exit(1);
+	}
+
+	se = tevent_add_signal(ev,
+			       ev,
+			       SIGHUP,
+			       0,
+			       cleanupd_sig_hup_handler,
+			       NULL);
+	if (se == NULL) {
+		DBG_ERR("Could not add SIGHUP handler\n");
 		exit(1);
 	}
 
