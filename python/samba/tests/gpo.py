@@ -27,11 +27,13 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from samba.gp_sec_ext import gp_sec_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
+from samba.gpclass import gp_inf_ext
 import logging
 from samba.credentials import Credentials
 from samba.compat import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
+import codecs
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -415,3 +417,36 @@ class GPOTests(tests.TestCase):
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
+
+    def test_gp_inf_ext_utf(self):
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        ext = gp_inf_ext(logger, self.lp, machine_creds, store)
+        test_data = '[Kerberos Policy]\nMaxTicketAge = 99\n'
+
+        with NamedTemporaryFile() as f:
+            with codecs.open(f.name, 'w', 'utf-16') as w:
+                w.write(test_data)
+            try:
+                inf_conf = ext.read(f.name)
+            except UnicodeDecodeError:
+                self.fail('Failed to parse utf-16')
+            self.assertIn('Kerberos Policy', inf_conf.keys(),
+                          'Kerberos Policy was not read from the file')
+            self.assertEquals(inf_conf.get('Kerberos Policy', 'MaxTicketAge'),
+                              '99', 'MaxTicketAge was not read from the file')
+
+        with NamedTemporaryFile() as f:
+            with codecs.open(f.name, 'w', 'utf-8') as w:
+                w.write(test_data)
+            inf_conf = ext.read(f.name)
+            self.assertIn('Kerberos Policy', inf_conf.keys(),
+                          'Kerberos Policy was not read from the file')
+            self.assertEquals(inf_conf.get('Kerberos Policy', 'MaxTicketAge'),
+                              '99', 'MaxTicketAge was not read from the file')
