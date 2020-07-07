@@ -237,6 +237,7 @@ static void smb2_connect_session_start(struct tevent_req *req)
 	tevent_req_set_callback(subreq, smb2_connect_session_done, req);
 }
 
+static void smb2_connect_tcon_start(struct tevent_req *req);
 static void smb2_connect_tcon_done(struct tevent_req *subreq);
 
 static void smb2_connect_session_done(struct tevent_req *subreq)
@@ -248,7 +249,6 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2_connect_state);
 	NTSTATUS status;
-	uint32_t timeout_msec;
 
 	status = smb2_session_setup_spnego_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -288,6 +288,17 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(state->tree, req)) {
 		return;
 	}
+
+	smb2_connect_tcon_start(req);
+}
+
+static void smb2_connect_tcon_start(struct tevent_req *req)
+{
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+				struct smb2_connect_state);
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
 
 	timeout_msec = state->transport->options.request_timeout * 1000;
 
