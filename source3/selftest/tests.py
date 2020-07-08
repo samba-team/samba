@@ -365,6 +365,11 @@ env = "nt4_member:local"
 plantestsuite("samba3.wbinfo_sids_to_xids", env,
               [os.path.join(srcdir(),
                             "nsswitch/tests/test_wbinfo_sids_to_xids.sh")])
+plantestsuite(
+    "samba.wbinfo_lookuprids_cache",
+    env,
+    [os.path.join(samba3srcdir,
+                  "script/tests/test_wbinfo_lookuprids_cache.sh")])
 
 env = "ad_member"
 t = "WBCLIENT-MULTI-PING"
