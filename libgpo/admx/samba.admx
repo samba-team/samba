@@ -2521,5 +2521,12 @@
         <text id="TXT_609C208A_3B4D_48F1_8A15_C0DF08EAD4D6" key="Software\Policies\Samba\Unix Settings\Messages" valueName="motd" />
       </elements>
     </policy>
+    <policy name="POL_68E9155C_CB49_428E_AFE0_B89316FFD948" class="Machine" displayName="$(string.POL_68E9155C_CB49_428E_AFE0_B89316FFD948)" explainText="$(string.POL_68E9155C_CB49_428E_AFE0_B89316FFD948_Help)" presentation="$(presentation.POL_68E9155C_CB49_428E_AFE0_B89316FFD948)" key="Software\Policies\Samba\Unix Settings\Messages">
+      <parentCategory ref="CAT_9DEF582D_447A_47E9_A1F5_363558D03FA9" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="TXT_8075D9EA_6E15_4B2A_833A_B918EE90856F" key="Software\Policies\Samba\Unix Settings\Messages" valueName="issue" />
+      </elements>
+    </policy>
   </policies>
 </policyDefinitions>

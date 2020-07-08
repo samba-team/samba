@@ -29,6 +29,8 @@ class gp_msgs_ext(gp_pol_ext):
                 for attribute, msg in settings[str(self)].items():
                     if attribute == 'motd':
                         mfile = os.path.join(cdir, 'motd')
+                    elif attribute == 'issue':
+                        mfile = os.path.join(cdir, 'issue')
                     else:
                         continue
                     with open(mfile, 'w') as w:
@@ -52,6 +54,8 @@ class gp_msgs_ext(gp_pol_ext):
                     if e.keyname == section_name and e.data.strip():
                         if e.valuename == 'motd':
                             mfile = os.path.join(cdir, 'motd')
+                        elif e.valuename == 'issue':
+                            mfile = os.path.join(cdir, 'issue')
                         else:
                             continue
                         if os.path.exists(mfile):
