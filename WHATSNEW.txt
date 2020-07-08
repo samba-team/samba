@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.13.  This is *not*
+This is the first release condidate of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -61,6 +61,8 @@ smb.conf changes
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
+
+  smb2 disable lock sequence checking				No
 
 
 KNOWN ISSUES
