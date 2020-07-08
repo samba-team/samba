@@ -24,7 +24,7 @@ from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from samba.gp_sec_ext import gp_krb_ext, gp_sec_ext
+from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.gpclass import gp_inf_ext
@@ -176,7 +176,7 @@ class GPOTests(tests.TestCase):
         samba_path = os.path.realpath(os.path.join(this_path, '../../../'))
         ext_path = os.path.join(samba_path, 'python/samba/gp_sec_ext.py')
         ext_guid = '{827D319E-6EAC-11D2-A4EA-00C04F79F83A}'
-        ret = register_gp_extension(ext_guid, 'gp_sec_ext', ext_path,
+        ret = register_gp_extension(ext_guid, 'gp_access_ext', ext_path,
                                     smb_conf=self.lp.configfile,
                                     machine=True, user=False)
         self.assertTrue(ret, 'Failed to register a gp ext')

@@ -103,14 +103,14 @@ class gp_krb_ext(gp_inf_ext):
         return output
 
 
-class inf_to_ldb(gp_ext_setter):
+class gp_access_ext(gp_inf_ext):
     '''This class takes the .inf file parameter (essentially a GPO file mapped
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
     '''
 
-    def __init__(self, logger, gp_db, lp, creds, key, value):
-        super(inf_to_ldb, self).__init__(logger, gp_db, lp, creds, key, value)
+    def __init__(self, *args):
+        super().__init__(*args)
         try:
             self.ldb = SamDB(self.lp.samdb_url(),
                              session_info=system_session(),
@@ -119,104 +119,22 @@ class inf_to_ldb(gp_ext_setter):
         except (NameError, LdbError):
             raise Exception('Failed to load SamDB for assigning Group Policy')
 
-    def ch_minPwdAge(self, val):
-        old_val = self.ldb.get_minPwdAge()
-        self.logger.info('KDC Minimum Password age was changed from %s to %s'
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, str(old_val))
-        self.ldb.set_minPwdAge(val)
-
-    def ch_maxPwdAge(self, val):
-        old_val = self.ldb.get_maxPwdAge()
-        self.logger.info('KDC Maximum Password age was changed from %s to %s'
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, str(old_val))
-        self.ldb.set_maxPwdAge(val)
-
-    def ch_minPwdLength(self, val):
-        old_val = self.ldb.get_minPwdLength()
-        self.logger.info(
-            'KDC Minimum Password length was changed from %s to %s'
-            % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, str(old_val))
-        self.ldb.set_minPwdLength(val)
-
-    def ch_pwdProperties(self, val):
-        old_val = self.ldb.get_pwdProperties()
-        self.logger.info('KDC Password Properties were changed from %s to %s'
-                         % (old_val, val))
-        self.gp_db.store(str(self), self.attribute, str(old_val))
-        self.ldb.set_pwdProperties(val)
-
-    def days2rel_nttime(self):
-        seconds = 60
-        minutes = 60
-        hours = 24
-        sam_add = 10000000
-        val = (self.val)
-        val = int(val)
-        return str(-(val * seconds * minutes * hours * sam_add))
-
-    def mapper(self):
-        '''ldap value : samba setter'''
-        return {"minPwdAge": (self.ch_minPwdAge, self.days2rel_nttime),
-                "maxPwdAge": (self.ch_maxPwdAge, self.days2rel_nttime),
-                # Could be none, but I like the method assignment in
-                # update_samba
-                "minPwdLength": (self.ch_minPwdLength, self.explicit),
-                "pwdProperties": (self.ch_pwdProperties, self.explicit),
-
-                }
-
-    def __str__(self):
-        return 'System Access'
-
-
-class gp_sec_ext(gp_inf_ext):
-    '''This class does the following two things:
-        1) Identifies the GPO if it has a certain kind of filepath,
-        2) Finally parses it.
-    '''
-
-    count = 0
-
-    def __str__(self):
-        return "Security GPO extension"
-
-    def apply_map(self):
-        return {"System Access": {"MinimumPasswordAge": ("minPwdAge",
-                                                         inf_to_ldb),
-                                  "MaximumPasswordAge": ("maxPwdAge",
-                                                         inf_to_ldb),
-                                  "MinimumPasswordLength": ("minPwdLength",
-                                                            inf_to_ldb),
-                                  "PasswordComplexity": ("pwdProperties",
-                                                         inf_to_ldb),
-                                  },
-                }
-
+    apply_map = { 'MinimumPasswordAge':     'minPwdAge',
+                  'MaximumPasswordAge':     'maxPwdAge',
+                  'MinimumPasswordLength':  'minPwdLength',
+                  'PasswordComplexity':     'pwdProperties' }
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         if self.lp.get('server role') != 'active directory domain controller':
             return
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
-        apply_map = self.apply_map()
         for gpo in deleted_gpo_list:
             self.gp_db.set_guid(gpo[0])
             for section in gpo[1].keys():
-                current_section = apply_map.get(section)
-                if not current_section:
-                    continue
-                for key, value in gpo[1][section].items():
-                    setter = None
-                    for _, tup in current_section.items():
-                        if tup[0] == key:
-                            setter = tup[1]
-                    if setter:
-                        value = value.encode('ascii', 'ignore') \
-                             if value else value
-                        setter(self.logger, self.gp_db, self.lp, self.creds,
-                               key, value).delete()
-                        self.gp_db.delete(section, key)
+                if section == str(self):
+                    for att, value in gpo[1][section].items():
+                        update_samba, _ = self.mapper().get(att)
+                        update_samba(att, value)
+                        self.gp_db.delete(section, att)
                         self.gp_db.commit()
 
         for gpo in changed_gpo_list:
@@ -227,30 +145,73 @@ class gp_sec_ext(gp_inf_ext):
                 if not inf_conf:
                     continue
                 for section in inf_conf.sections():
-                    current_section = apply_map.get(section)
-                    if not current_section:
-                        continue
-                    for key, value in inf_conf.items(section):
-                        if current_section.get(key):
-                            (att, setter) = current_section.get(key)
-                            value = value.encode('ascii', 'ignore')
-                            setter(self.logger, self.gp_db, self.lp,
-                                   self.creds, att, value).update_samba()
+                    if section == str(self):
+                        for key, value in inf_conf.items(section):
+                            att = gp_access_ext.apply_map[key]
+                            (update_samba, value_func) = self.mapper().get(att)
+                            update_samba(att, value_func(value))
                             self.gp_db.commit()
+
+    def ch_minPwdAge(self, attribute, val):
+        old_val = self.ldb.get_minPwdAge()
+        self.logger.info('KDC Minimum Password age was changed from %s to %s'
+                         % (old_val, val))
+        self.gp_db.store(str(self), attribute, str(old_val))
+        self.ldb.set_minPwdAge(val)
+
+    def ch_maxPwdAge(self, attribute, val):
+        old_val = self.ldb.get_maxPwdAge()
+        self.logger.info('KDC Maximum Password age was changed from %s to %s'
+                         % (old_val, val))
+        self.gp_db.store(str(self), attribute, str(old_val))
+        self.ldb.set_maxPwdAge(val)
+
+    def ch_minPwdLength(self, attribute, val):
+        old_val = self.ldb.get_minPwdLength()
+        self.logger.info(
+            'KDC Minimum Password length was changed from %s to %s'
+            % (old_val, val))
+        self.gp_db.store(str(self), attribute, str(old_val))
+        self.ldb.set_minPwdLength(val)
+
+    def ch_pwdProperties(self, attribute, val):
+        old_val = self.ldb.get_pwdProperties()
+        self.logger.info('KDC Password Properties were changed from %s to %s'
+                         % (old_val, val))
+        self.gp_db.store(str(self), attribute, str(old_val))
+        self.ldb.set_pwdProperties(val)
+
+    def days2rel_nttime(self, val):
+        seconds = 60
+        minutes = 60
+        hours = 24
+        sam_add = 10000000
+        val = int(val)
+        return str(-(val * seconds * minutes * hours * sam_add))
+
+    def mapper(self):
+        '''ldap value : samba setter'''
+        return {"minPwdAge": (self.ch_minPwdAge, self.days2rel_nttime),
+                "maxPwdAge": (self.ch_maxPwdAge, self.days2rel_nttime),
+                # Could be none, but I like the method assignment in
+                # update_samba
+                "minPwdLength": (self.ch_minPwdLength, lambda val: val),
+                "pwdProperties": (self.ch_pwdProperties, lambda val: val),
+
+                }
+
+    def __str__(self):
+        return 'System Access'
 
     def rsop(self, gpo):
         output = {}
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
-        apply_map = self.apply_map()
         if gpo.file_sys_path:
             path = os.path.join(gpo.file_sys_path, inf_file)
             inf_conf = self.parse(path)
             if not inf_conf:
                 return output
             for section in inf_conf.sections():
-                current_section = apply_map.get(section)
-                if not current_section:
-                    continue
                 output[section] = {k: v for k, v in inf_conf.items(section) \
-                                      if current_section.get(k)}
+                                      if gp_access_ext.apply_map.get(k)}
         return output
