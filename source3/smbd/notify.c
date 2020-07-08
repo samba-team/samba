@@ -289,6 +289,14 @@ NTSTATUS change_notify_create(struct files_struct *fsp,
 	char fullpath[len+1];
 	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
+	/*
+	 * Setting a changenotify needs READ/LIST access
+	 * on the directory handle.
+	 */
+	if (!(fsp->access_mask & SEC_DIR_LIST)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (fsp->notify != NULL) {
 		DEBUG(1, ("change_notify_create: fsp->notify != NULL, "
 			  "fname = %s\n", fsp->fsp_name->base_name));
