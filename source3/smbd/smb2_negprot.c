@@ -657,7 +657,13 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		/*
 		 * Only deal with the client guid database
 		 * if multi-channel is enabled.
+		 *
+		 * But we still need to setup
+		 * xconn->client->global->client_guid to
+		 * the correct value.
 		 */
+		xconn->client->global->client_guid =
+			xconn->smb2.client.guid;
 		return smbd_smb2_request_done(req, outbody, &outdyn);
 	}
 
