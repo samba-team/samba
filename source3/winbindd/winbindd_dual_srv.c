@@ -673,7 +673,8 @@ NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 					r->in.rids->rids, r->in.rids->num_rids,
 					&domain_name, &names, &types);
 	reset_cm_connection_on_error(domain, NULL, status);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 		return status;
 	}
 
