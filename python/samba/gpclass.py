@@ -322,37 +322,6 @@ class gp_ext(object):
         return {}
 
 
-class gp_ext_setter(object):
-    __metaclass__ = ABCMeta
-
-    def __init__(self, logger, gp_db, lp, creds, attribute, val):
-        self.logger = logger
-        self.attribute = attribute
-        self.val = val
-        self.lp = lp
-        self.creds = creds
-        self.gp_db = gp_db
-
-    def explicit(self):
-        return self.val
-
-    def update_samba(self):
-        (upd_sam, value) = self.mapper().get(self.attribute)
-        upd_sam(value())
-
-    @abstractmethod
-    def mapper(self):
-        pass
-
-    def delete(self):
-        upd_sam, _ = self.mapper().get(self.attribute)
-        upd_sam(self.val)
-
-    @abstractmethod
-    def __str__(self):
-        pass
-
-
 class gp_inf_ext(gp_ext):
     def read(self, data_file):
         policy = open(data_file, 'rb').read()
