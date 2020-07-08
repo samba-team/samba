@@ -14,6 +14,9 @@
     <category name="CAT_2B6D622C_5721_4C23_A2D6_5C70D6E059BA" displayName="$(string.CAT_2B6D622C_5721_4C23_A2D6_5C70D6E059BA)">
       <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
     </category>
+    <category name="CAT_9DEF582D_447A_47E9_A1F5_363558D03FA9" displayName="$(string.CAT_9DEF582D_447A_47E9_A1F5_363558D03FA9)">
+      <parentCategory ref="CAT_7D8D7DC8_5A9D_4BE1_8227_F09CDD5AFFC6" />
+    </category>
     <category displayName="$(string.CAT_10827749_64ED_5052_87F7_E81AD421856A)" name="CAT_10827749_64ED_5052_87F7_E81AD421856A">
       <parentCategory ref="CAT_3338C1DD_8A00_4273_8547_158D8B8C19E9"/>
     </category>
@@ -2509,6 +2512,13 @@
       <supportedOn ref="SUPPORTED_WIN7"/>
       <elements>
         <text id="TXT_F35F7924_DBD3_5F6F_B247_7F4893C63844" key="Software\Policies\Samba\smb_conf\wreplsrv:verify_interval" valueName="wreplsrv:verify_interval"/>
+      </elements>
+    </policy>
+    <policy name="POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07" class="Machine" displayName="$(string.POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07)" explainText="$(string.POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07_Help)" presentation="$(presentation.POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07)" key="Software\Policies\Samba\Unix Settings\Messages">
+      <parentCategory ref="CAT_9DEF582D_447A_47E9_A1F5_363558D03FA9" />
+      <supportedOn ref="windows:SUPPORTED_WindowsVista" />
+      <elements>
+        <text id="TXT_609C208A_3B4D_48F1_8A15_C0DF08EAD4D6" key="Software\Policies\Samba\Unix Settings\Messages" valueName="motd" />
       </elements>
     </policy>
   </policies>

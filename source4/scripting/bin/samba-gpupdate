@@ -35,6 +35,7 @@ from samba.gp_ext_loader import get_gp_client_side_extensions
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
+from samba.gp_msgs_ext import gp_msgs_ext
 import logging
 
 if __name__ == "__main__":
@@ -89,6 +90,7 @@ if __name__ == "__main__":
         gp_extensions.append(gp_scripts_ext)
         gp_extensions.append(gp_sudoers_ext)
         gp_extensions.append(gp_smb_conf_ext)
+        gp_extensions.append(gp_msgs_ext)
         gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
         gp_extensions.extend(user_exts)

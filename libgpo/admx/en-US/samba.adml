@@ -3084,6 +3084,9 @@ Example: 192.9.200.1 192.168.2.61</string>
       <string id="POL_F19C445A_AFD5_51B6_B87A_E42499C3C5D8_Help">This is the interval in s till tombstone records are deleted from the WINS database. Defaults to 1 day.</string>
       <string id="POL_8CF1FEA3_BD3E_53C0_9F73_34050187A91E">wreplsrv:verify_interval</string>
       <string id="POL_8CF1FEA3_BD3E_53C0_9F73_34050187A91E_Help">This is the interval in s till we verify active replica records with the owning WINS server. Unfortunately not implemented yet. Defaults to 24 days.</string>
+      <string id="CAT_9DEF582D_447A_47E9_A1F5_363558D03FA9">Messages</string>
+      <string id="POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07">Message of the day</string>
+      <string id="POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07_Help">       The contents of /etc/motd are displayed after a successful login but just before it executes the login shell.</string>
     </stringTable>
     <presentationTable>
       <presentation id="POL_9320E11F_AC80_4A7D_A5C8_1C0F3F727061">
@@ -4589,6 +4592,11 @@ Example: 192.9.200.1 192.168.2.61</string>
         <textBox refId="TXT_F35F7924_DBD3_5F6F_B247_7F4893C63844">
           <label>wreplsrv:verify_interval</label>
           <defaultValue>2073600</defaultValue>
+        </textBox>
+      </presentation>
+      <presentation id="POL_38DA04F0_3FD6_4425_8924_1CEEA685FD07">
+        <textBox refId="TXT_609C208A_3B4D_48F1_8A15_C0DF08EAD4D6">
+          <label>Message of the day</label>
         </textBox>
       </presentation>
     </presentationTable>
