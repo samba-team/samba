@@ -90,5 +90,5 @@ bool fsp_lease_type_is_exclusive(struct files_struct *fsp)
 
 const struct GUID *fsp_client_guid(const files_struct *fsp)
 {
-	return &fsp->conn->sconn->client->connections->smb2.client.guid;
+	return &fsp->conn->sconn->client->global->client_guid;
 }

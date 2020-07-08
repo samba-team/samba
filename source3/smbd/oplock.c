@@ -480,8 +480,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 			 const struct smb2_lease_key *key,
 			 uint32_t lease_state)
 {
-	struct smbXsrv_connection *xconn = client->connections;
-	struct smbd_server_connection *sconn = xconn->client->sconn;
+	struct smbd_server_connection *sconn = client->sconn;
 	const struct GUID *client_guid = NULL;
 	struct share_mode_lock *lck;
 	const struct file_id id = ids[0];
@@ -501,7 +500,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	client_guid = &sconn->client->connections->smb2.client.guid;
+	client_guid = &sconn->client->global->client_guid;
 
 	status = leases_db_get(client_guid,
 			       key,
@@ -607,8 +606,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 				NTSTATUS set_status;
 
 				set_status = leases_db_set(
-					&sconn->client->connections->
-					smb2.client.guid,
+					&sconn->client->global->client_guid,
 					key,
 					current_state,
 					breaking,
@@ -626,7 +624,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 		}
 
 		tevent_schedule_immediate(state->im,
-					  xconn->client->raw_ev_ctx,
+					  client->raw_ev_ctx,
 					  downgrade_lease_additional_trigger,
 					  state);
 

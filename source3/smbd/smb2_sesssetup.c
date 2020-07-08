@@ -1436,7 +1436,7 @@ static void smbd_smb2_logoff_shutdown_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool ok;
 	const struct GUID *client_guid =
-		&state->smb2req->session->client->connections->smb2.client.guid;
+		&state->smb2req->session->client->global->client_guid;
 
 	status = smb2srv_session_shutdown_recv(subreq);
 	if (tevent_req_nterror(req, status)) {
