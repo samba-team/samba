@@ -1582,14 +1582,23 @@ static int _pam_create_homedir(struct pwb_context *ctx,
 			       const char *dirname,
 			       mode_t mode)
 {
-	struct stat sbuf;
+	int ret;
 
-	if (stat(dirname, &sbuf) == 0) {
-		return PAM_SUCCESS;
+	ret = mkdir(dirname, mode);
+	if (ret != 0 && errno == EEXIST) {
+		struct stat sbuf;
+
+		ret = stat(dirname, &sbuf);
+		if (ret != 0) {
+			return PAM_PERM_DENIED;
+		}
+
+		if (!S_ISDIR(sbuf.st_mode)) {
+			return PAM_PERM_DENIED;
+		}
 	}
 
-	if (mkdir(dirname, mode) != 0) {
-
+	if (ret != 0) {
 		_make_remark_format(ctx, PAM_TEXT_INFO,
 				    _("Creating directory: %s failed: %s"),
 				    dirname, strerror(errno));
