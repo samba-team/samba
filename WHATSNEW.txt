@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release condidate of Samba 4.13.  This is *not*
+This is the first pre release of Samba 4.14.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -16,41 +16,6 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-Python 3.6 Required
--------------------
-
-Samba's minimum runtime requirement for python was raised to Python
-3.5 with samba 4.12.  Samba 4.13 raises this minimum version to Python
-3.6 both to access new features and because this is the oldest version
-we test with in our CI infrastructure.
-
-(Build time support for the file server with Python 2.6 has not
-changed)
-
-wide links functionality
-------------------------
-
-For this release, the code implementing the insecure "wide links = yes"
-functionality has been moved out of the core smbd code and into a separate
-VFS module, vfs_widelinks. Currently this vfs module is implicitly loaded
-by smbd as the last but one module before vfs_default if "wide links = yes"
-is enabled on the share (note, the existing restrictions on enabling wide
-links around the SMB1 "unix extensions" and the "allow insecure wide links"
-parameters are still in force). The implicit loading was done to allow
-existing users of "wide links = yes" to keep this functionality without
-having to make a change to existing working smb.conf files.
-
-Please note that the Samba developers recommend changing any Samba
-installations that currently use "wide links = yes" to use bind mounts
-as soon as possible, as "wide links = yes" is an inherently insecure
-configuration which we would like to remove from Samba. Moving the
-feature into a VFS module allows this to be done in a cleaner way
-in future.
-
-A future release to be determined will remove this implicit linkage,
-causing administrators who need this functionality to have to explicitly
-add the vfs_widelinks module into the "vfs objects =" parameter lists.
-The release notes will be updated to note this change when it occurs.
 
 REMOVED FEATURES
 ================
@@ -62,13 +27,12 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
 
-  smb2 disable lock sequence checking				No
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.13#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.14#Release_blocking_bugs
 
 
 #######################################
