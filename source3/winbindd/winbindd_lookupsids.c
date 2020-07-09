@@ -47,7 +47,7 @@ struct tevent_req *winbindd_lookupsids_send(TALLOC_CTX *mem_ctx,
 	DEBUG(3, ("lookupsids\n"));
 
 	if (request->extra_len == 0) {
-		tevent_req_done(req);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 	if (request->extra_data.data[request->extra_len-1] != '\0') {
