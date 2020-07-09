@@ -1110,6 +1110,29 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	return true;
 }
 
+static bool torture_winbind_struct_lookup_sids_invalid(
+	struct torture_context *torture)
+{
+	struct winbindd_request req = {0};
+	struct winbindd_response rep = {0};
+	bool strict = torture_setting_bool(torture, "strict mode", false);
+	bool ok;
+
+	torture_comment(torture,
+			"Running WINBINDD_LOOKUP_SIDS (struct based)\n");
+
+	ok = true;
+	DO_STRUCT_REQ_REP_EXT(WINBINDD_LOOKUPSIDS, &req, &rep,
+			      NSS_STATUS_NOTFOUND,
+			      strict,
+			      ok=false,
+			      talloc_asprintf(
+				      torture,
+				      "invalid lookupsids succeeded"));
+
+	return ok;
+}
+
 struct torture_suite *torture_winbind_struct_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "struct");
@@ -1132,6 +1155,10 @@ struct torture_suite *torture_winbind_struct_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "getpwent", torture_winbind_struct_getpwent);
 	torture_suite_add_simple_test(suite, "endpwent", torture_winbind_struct_endpwent);
 	torture_suite_add_simple_test(suite, "lookup_name_sid", torture_winbind_struct_lookup_name_sid);
+	torture_suite_add_simple_test(
+		suite,
+		"lookup_sids_invalid",
+		torture_winbind_struct_lookup_sids_invalid);
 
 	suite->description = talloc_strdup(suite, "WINBIND - struct based protocol tests");
 
