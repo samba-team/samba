@@ -31,6 +31,7 @@ from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
 import logging
 from samba.credentials import Credentials
+from samba.gp_msgs_ext import gp_msgs_ext
 from samba.compat import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
@@ -715,6 +716,57 @@ class GPOTests(tests.TestCase):
             ldap_timeout = lp.get('ldap timeout')
             self.assertEquals(ldap_timeout, self.lp.get('ldap timeout'),
                               'ldap timeout was not unapplied')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
+    def test_gp_motd(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_msgs_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
+        e.valuename = b'motd'
+        e.type = 1
+        e.data = b'Have a lot of fun!'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            motd_file = os.path.join(dname, 'motd')
+            self.assertTrue(os.path.exists(motd_file),
+                            'Message of the day file not created')
+            data = open(motd_file, 'r').read()
+            self.assertEquals(data, e.data, 'Message of the day not applied')
+
+            # Unapply policy, and ensure the test files are removed
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            data = open(motd_file, 'r').read()
+            self.assertFalse(data, 'Message of the day file not removed')
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
