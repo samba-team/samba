@@ -742,13 +742,18 @@ class GPOTests(tests.TestCase):
 
         # Stage the Registry.pol file with test data
         stage = preg.file()
-        e = preg.entry()
-        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
-        e.valuename = b'motd'
-        e.type = 1
-        e.data = b'Have a lot of fun!'
-        stage.num_entries = 1
-        stage.entries = [e]
+        e1 = preg.entry()
+        e1.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
+        e1.valuename = b'motd'
+        e1.type = 1
+        e1.data = b'Have a lot of fun!'
+        stage.num_entries = 2
+        e2 = preg.entry()
+        e2.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
+        e2.valuename = b'issue'
+        e2.type = 1
+        e2.data = b'Welcome to \\s \\r \\l'
+        stage.entries = [e1, e2]
         ret = stage_file(reg_pol, ndr_pack(stage))
         self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
 
@@ -759,7 +764,12 @@ class GPOTests(tests.TestCase):
             self.assertTrue(os.path.exists(motd_file),
                             'Message of the day file not created')
             data = open(motd_file, 'r').read()
-            self.assertEquals(data, e.data, 'Message of the day not applied')
+            self.assertEquals(data, e1.data, 'Message of the day not applied')
+            issue_file = os.path.join(dname, 'issue')
+            self.assertTrue(os.path.exists(issue_file),
+                            'Login Prompt Message file not created')
+            data = open(issue_file, 'r').read()
+            self.assertEquals(data, e2.data, 'Login Prompt Message not applied')
 
             # Unapply policy, and ensure the test files are removed
             gp_db = store.get_gplog(machine_creds.get_username())
@@ -767,6 +777,8 @@ class GPOTests(tests.TestCase):
             ext.process_group_policy(del_gpos, [], dname)
             data = open(motd_file, 'r').read()
             self.assertFalse(data, 'Message of the day file not removed')
+            data = open(issue_file, 'r').read()
+            self.assertFalse(data, 'Login Prompt Message file not removed')
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
