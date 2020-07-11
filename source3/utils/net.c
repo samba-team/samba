@@ -1289,6 +1289,9 @@ static void get_credentials_file(struct net_context *c,
 		POPT_TABLEEND
 	};
 
+	/* Ignore possible SIGPIPE upon ldap_unbind when over TLS */
+	BlockSignals(True, SIGPIPE);
+
 	zero_sockaddr(&c->opt_dest_ip);
 
 	setup_logging(argv[0], DEBUG_STDERR);
