@@ -513,14 +513,25 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		uint8_t *ctext = NULL;
 		size_t len = 0;
 		int i;
+		TALLOC_CTX *tmp_ctx = NULL;
 
-		ptext = talloc_size(talloc_tos(), ptext_size);
+		/*
+		 * If we come from python bindings, we don't have a stackframe
+		 * around, so use the NULL context.
+		 *
+		 * This is fine as we make sure we free the memory.
+		 */
+		if (talloc_stackframe_exists()) {
+			tmp_ctx = talloc_tos();
+		}
+
+		ptext = talloc_size(tmp_ctx, ptext_size);
 		if (ptext == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		ctext = talloc_size(talloc_tos(), ctext_size);
+		ctext = talloc_size(tmp_ctx, ctext_size);
 		if (ctext == NULL) {
 			TALLOC_FREE(ptext);
 			status = NT_STATUS_NO_MEMORY;
@@ -713,16 +724,27 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		uint8_t *ptext = NULL;
 		size_t len = 0;
 		int i;
+		TALLOC_CTX *tmp_ctx = NULL;
+
+		/*
+		 * If we come from python bindings, we don't have a stackframe
+		 * around, so use the NULL context.
+		 *
+		 * This is fine as we make sure we free the memory.
+		 */
+		if (talloc_stackframe_exists()) {
+			tmp_ctx = talloc_tos();
+		}
 
 		/* GnuTLS doesn't have a iovec API for decryption yet */
 
-		ptext = talloc_size(talloc_tos(), ptext_size);
+		ptext = talloc_size(tmp_ctx, ptext_size);
 		if (ptext == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		ctext = talloc_size(talloc_tos(), ctext_size);
+		ctext = talloc_size(tmp_ctx, ctext_size);
 		if (ctext == NULL) {
 			TALLOC_FREE(ptext);
 			status = NT_STATUS_NO_MEMORY;
