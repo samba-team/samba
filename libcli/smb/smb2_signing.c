@@ -522,6 +522,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 
 		ctext = talloc_size(talloc_tos(), ctext_size);
 		if (ctext == NULL) {
+			TALLOC_FREE(ptext);
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
