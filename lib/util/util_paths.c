@@ -106,7 +106,7 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 		}
 		len = strnlen(szPath, PATH_MAX);
 		if (len >= PATH_MAX) {
-			return NULL;
+			goto done;
 		}
 		out = talloc_strdup(mem_ctx, szPath);
 		goto done;
