@@ -3,10 +3,18 @@
 # This must run as root as CTDB tool commands need to access CTDB socket
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 
-# this script needs to be installed so that statd points to it with the -H 
-# command line argument. The easiest way to do that is to put something like this in 
-# /etc/sysconfig/nfs:
-#   STATD_HOSTNAME="myhostname -H /etc/ctdb/statd-callout"
+# statd must be configured to use this script as its high availability call-out.
+#
+# In most Linux versions this can be done using something like the following...
+#
+# /etc/sysconfig/nfs (Red Hat) or /etc/default/nfs-common (Debian):
+#   NFS_HOSTNAME=myhostname
+#   STATD_HOSTNAME="${NFS_HOSTNAME} -H /etc/ctdb/statd-callout"
+#
+# Newer Red Hat Linux variants instead use /etc/nfs.conf:
+#   [statd]
+#     name = myhostname
+#     ha-callout = /etc/ctdb/statd-callout
 
 [ -n "$CTDB_BASE" ] || \
     CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; echo "$PWD")
@@ -22,6 +30,11 @@ die ()
 
 # Try different variables to find config file for NFS_HOSTNAME
 load_system_config "nfs" "nfs-common"
+
+# If NFS_HOSTNAME not set then try to pull it out of /etc/nfs.conf
+if [ -z "$NFS_HOSTNAME" ] && type nfsconf >/dev/null 2>&1 ; then
+	NFS_HOSTNAME=$(nfsconf --get statd name)
+fi
 
 [ -n "$NFS_HOSTNAME" ] || \
     die "NFS_HOSTNAME is not configured. statd-callout failed"
