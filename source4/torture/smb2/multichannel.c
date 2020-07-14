@@ -1074,7 +1074,7 @@ done:
 	smb2_deltree(tree1, BASEDIR);
 
 	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
-		if (trees2 == NULL || trees2[i] == NULL) {
+		if (trees2[i] == NULL) {
 			continue;
 		}
 		TALLOC_FREE(trees2[i]);
@@ -1281,7 +1281,7 @@ done:
 	smb2_deltree(tree1, BASEDIR);
 
 	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
-		if (trees2 == NULL || trees2[i] == NULL) {
+		if (trees2[i] == NULL) {
 			continue;
 		}
 		TALLOC_FREE(trees2[i]);
@@ -2334,7 +2334,7 @@ done:
 	smb2_deltree(tree1, BASEDIR);
 
 	for (i = 0; i < ARRAY_SIZE(trees2); i++) {
-		if (trees2 == NULL || trees2[i] == NULL) {
+		if (trees2[i] == NULL) {
 			continue;
 		}
 		TALLOC_FREE(trees2[i]);
