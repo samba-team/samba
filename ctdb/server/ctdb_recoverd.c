@@ -456,9 +456,7 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 
 	c.pnn       = pnn;
 	c.old_flags = nodemap->nodes[i].flags;
-	c.new_flags = c.old_flags;
-	c.new_flags |= flags;
-	c.new_flags &= flags;
+	c.new_flags = flags;
 
 	data.dsize = sizeof(c);
 	data.dptr = (unsigned char *)&c;
