@@ -1134,7 +1134,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		}
 
 		ret = update_flags_on_all_nodes(rec,
-						i,
+						nodemap->nodes[i].pnn,
 						nodemap->nodes[i].flags);
 		if (ret != 0) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
