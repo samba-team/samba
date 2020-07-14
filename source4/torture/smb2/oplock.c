@@ -2649,7 +2649,7 @@ static bool test_smb2_oplock_batch22b(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	struct smb2_handle h, h1, h2;
+	struct smb2_handle h, h1, h2 = {{0}};
 	struct timeval tv;
 	int timeout = torture_setting_int(tctx, "oplocktimeout", 35);
 	struct smb2_transport *transport1 = tree1->session->transport;
@@ -2727,7 +2727,9 @@ done:
 	test_cleanup_blocked_transports(tctx);
 
 	smb2_util_close(tree1, h1);
-	smb2_util_close(tree1, h2);
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree1, h2);
+	}
 	smb2_util_close(tree1, h);
 
 	smb2_deltree(tree1, BASEDIR);
