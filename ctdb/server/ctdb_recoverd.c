@@ -246,7 +246,7 @@ struct ctdb_recovery_lock_handle;
  */
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
-	uint32_t recmaster;
+	uint32_t leader;
 	uint32_t pnn;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map_old *nodemap;
@@ -276,7 +276,7 @@ static void ctdb_restart_recd(struct tevent_context *ev,
 
 static bool this_node_is_leader(struct ctdb_recoverd *rec)
 {
-	return rec->recmaster == rec->pnn;
+	return rec->leader == rec->pnn;
 }
 
 /*
@@ -528,7 +528,7 @@ static void ctdb_election_timeout(struct tevent_context *ev,
 	rec->election_timeout = NULL;
 	fast_start = false;
 
-	D_WARNING("Election period ended, master=%u\n", rec->recmaster);
+	D_WARNING("Election period ended, master=%u\n", rec->leader);
 }
 
 
@@ -915,7 +915,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 		if (!this_node_is_leader(rec)) {
 			D_ERR("Recmaster changed to %u, aborting %s\n",
-			      rec->recmaster, type);
+			      rec->leader, type);
 			state->result = 1;
 			break;
 		}
@@ -1117,7 +1117,7 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	if (!this_node_is_leader(rec)) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Recovery master changed to %u, aborting recovery\n",
-		       rec->recmaster));
+		       rec->leader));
 		return -1;
 	}
 
@@ -1156,7 +1156,7 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 				if (!this_node_is_leader(rec)) {
 					D_NOTICE("Recovery master changed to %u,"
 						 " aborting recovery\n",
-						 rec->recmaster);
+						 rec->leader);
 					rec->need_recovery = false;
 					goto fail;
 				}
@@ -1395,7 +1395,7 @@ static int send_election_request(struct ctdb_recoverd *rec)
 		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster\n"));
 		return -1;
 	}
-	rec->recmaster = rec->pnn;
+	rec->leader = rec->pnn;
 
 	/* send an election message to all active nodes */
 	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
@@ -1739,7 +1739,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster"));
 		return;
 	}
-	rec->recmaster = em->pnn;
+	rec->leader = em->pnn;
 
 	return;
 }
@@ -1814,7 +1814,7 @@ static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 	uint32_t *nodes;
 
 	/* read the node flags from the recmaster */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->leader,
 				   tmp_ctx, &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", c->pnn));
@@ -1992,7 +1992,7 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	/* loop over all active nodes and send an async getrecmaster call to
 	   them*/
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn == rec->recmaster) {
+		if (nodemap->nodes[j].pnn == rec->leader) {
 			continue;
 		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
@@ -2317,7 +2317,7 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 	/* When recovery daemon is started, recmaster is set to
 	 * "unknown" so it knows to start an election.
 	 */
-	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
+	if (rec->leader == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Initial recovery master set - forcing election\n"));
 		force_election(rec);
@@ -2330,14 +2330,14 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 	 * recmaster.
 	 */
 	if (!ctdb_node_has_capabilities(rec->caps,
-					rec->recmaster,
+					rec->leader,
 					CTDB_CAP_RECMASTER) &&
 	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
 	    !(nodemap->nodes[rec->pnn].flags & NODE_FLAGS_INACTIVE)) {
 		DEBUG(DEBUG_ERR,
 		      (" Current recmaster node %u does not have CAP_RECMASTER,"
 		       " but we (node %u) have - force an election\n",
-		       rec->recmaster, rec->pnn));
+		       rec->leader, rec->pnn));
 		force_election(rec);
 		return false;
 	}
@@ -2348,49 +2348,49 @@ static bool validate_recovery_master(struct ctdb_recoverd *rec,
 	 * before now.  However, if something strange has happened
 	 * then checking here will ensure we don't index beyond the
 	 * end of the nodemap array. */
-	if (rec->recmaster >= nodemap->num) {
+	if (rec->leader >= nodemap->num) {
 		DEBUG(DEBUG_ERR,
 		      ("Recmaster node %u has been deleted. Force election\n",
-		       rec->recmaster));
+		       rec->leader));
 		force_election(rec);
 		return false;
 	}
 
 	/* if recovery master is disconnected/deleted we must elect a new recmaster */
-	if (nodemap->nodes[rec->recmaster].flags &
+	if (nodemap->nodes[rec->leader].flags &
 	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Recmaster node %u is disconnected/deleted. Force election\n",
-		       rec->recmaster));
+		       rec->leader));
 		force_election(rec);
 		return false;
 	}
 
 	/* get nodemap from the recovery master to check if it is inactive */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->leader,
 				   mem_ctx, &recmaster_nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      (__location__
 		       " Unable to get nodemap from recovery master %u\n",
-			  rec->recmaster));
+			  rec->leader));
 		/* No election, just error */
 		return false;
 	}
 
 
-	if ((recmaster_nodemap->nodes[rec->recmaster].flags & NODE_FLAGS_INACTIVE) &&
+	if ((recmaster_nodemap->nodes[rec->leader].flags & NODE_FLAGS_INACTIVE) &&
 	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Recmaster node %u is inactive. Force election\n",
-		       rec->recmaster));
+		       rec->leader));
 		/*
 		 * update our nodemap to carry the recmaster's notion of
 		 * its own flags, so that we don't keep freezing the
 		 * inactive recmaster node...
 		 */
-		nodemap->nodes[rec->recmaster].flags =
-			recmaster_nodemap->nodes[rec->recmaster].flags;
+		nodemap->nodes[rec->leader].flags =
+			recmaster_nodemap->nodes[rec->leader].flags;
 		force_election(rec);
 		return false;
 	}
@@ -2858,7 +2858,7 @@ static void maybe_log_cluster_state(struct tevent_context *ev,
 	if (is_complete) {
 		if (! was_complete) {
 			D_WARNING("Cluster complete with master=%u\n",
-				  rec->recmaster);
+				  rec->leader);
 			start_incomplete = timeval_zero();
 		}
 		goto done;
@@ -2892,7 +2892,7 @@ static void maybe_log_cluster_state(struct tevent_context *ev,
 log:
 	D_WARNING("Cluster incomplete with master=%u, elapsed=%u minutes, "
 		  "connected=%u\n",
-		  rec->recmaster,
+		  rec->leader,
 		  minutes,
 		  num_connected);
 
@@ -2932,7 +2932,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
 
 	rec->ctdb = ctdb;
-	rec->recmaster = CTDB_UNKNOWN_PNN;
+	rec->leader = CTDB_UNKNOWN_PNN;
 	rec->pnn = ctdb_get_pnn(ctdb);
 	rec->recovery_lock_handle = NULL;
 	rec->helper_pid = -1;
