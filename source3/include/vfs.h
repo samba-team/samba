@@ -333,6 +333,7 @@
  * Version 44 - Make dirfsp arg to SMB_VFS_READLINKAT() const
  * Version 44 - Add a flag 'encryption_required' to files_struct that that
  *              prevents that encrypted connections can be downgraded.
+ * Version 44 - Add a flag 'is_pathref' to struct files_struct.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -398,6 +399,7 @@ typedef struct files_struct {
 	struct timeval open_time;
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	struct {
+		bool is_pathref : 1; /* See below */
 		bool kernel_share_modes_taken : 1;
 		bool update_write_time_triggered : 1;
 		bool update_write_time_on_close : 1;
@@ -489,6 +491,140 @@ typedef struct files_struct {
 	 */
 	uint64_t lock_failure_offset;
 } files_struct;
+
+/*
+ * The fsp flag "is_pathref"
+ * =========================
+ *
+ * Summary
+ * -------
+ *
+ * The flag "is_pathref" is a property of the low-level VFS-layer file
+ * handle. If "is_pathref" is true, only a subset of VFS calls are allowed
+ * on the handle and on systems that support it, the low-level fd is open
+ * with O_PATH. If "is_pathref" is false, the low-level fd is a "normal" file
+ * descriptor that can be used with all VFS calls.
+ *
+ * Details
+ * -------
+ *
+ * On Linux the O_PATH flag to open() can be used to open a filehandle on
+ * a file or directory with interesting properties:
+ *
+ * - the file-handle indicates a location in the filesystem tree,
+ * - no permission checks are done by the kernel and
+ * - only operations that act purely at the file descriptor level are
+ *   allowed.
+ *
+ * The file itself is not opened, and other file operations (e.g.,
+ * read(2), write(2), fchmod(2), fchown(2), fgetxattr(2), ioctl(2),
+ * mmap(2)) fail with the error EBADF.
+ *
+ * The following subset of operations that is relevant to Samba is allowed:
+ *
+ * - close(2),
+ * - fchdir(2), if the file descriptor refers to a directory,
+ * - fstat(2),
+ * - fstatfs(2) and
+ * - passing the file descriptor as the dirfd argument of openat() and the
+ *   other "*at()" system calls. This includes linkat(2) with
+ *   AT_EMPTY_PATH (or via procfs using AT_SYMLINK_FOLLOW) even if the
+ *   file is not a directory.
+ *
+ * Opening a file or directory with the O_PATH flag requires no
+ * permissions on the object itself (but does require execute permission
+ * on the directories in the path prefix). By contrast, obtaining a
+ * reference to a filesystem object by opening it with the O_RDONLY flag
+ * requires that the caller have read permission on the object, even when
+ * the subsequent operation (e.g., fchdir(2), fstat(2)) does not require
+ * read permis‐ sion on the object. [1]
+ *
+ * If for example Samba receives an SMB request to open a file requesting
+ * SEC_FILE_READ_ATTRIBUTE access rights because the client wants to read
+ * the file's metadata from the handle, Samba will have to call POSIX
+ * open() with at least O_RDONLY access rights.
+ *
+ * Usecase for O_PATH in Samba
+ * ---------------------------
+ *
+ * By leveraging this Linux specific flags we can avoid permission
+ * mismatches as described above. Additionally O_PATH allows basing all
+ * filesystem accesses done by the fileserver on handle based syscalls by
+ * opening all client pathnames with O_PATH and consistently using for
+ * example fstat() instead of stat() throughout the codebase.
+ *
+ * Subsequently we will refer to Samba file-handles (fsp's) opened with
+ * O_PATH "path referencing fsp's" or "pathref" fsp's for short.
+ *
+ * Currently Samba bases the decision whether to call POSIX open() on a
+ * client pathname or whether to leave the low-level handle at -1, what we
+ * call a stat-open, in the function open_file() and it is based on the
+ * client requested SMB acccess mask.
+ *
+ * The set of rights that trigger an open() include READ_CONTROL_ACCESS,
+ * resulting in a call to open() with at least O_RDONLY. If the filesystem
+ * supports NT style ACLs natively (like GPFS or ZFS), the filesystem may
+ * grant the user requested right READ_CONTROL_ACCESS, but it may not
+ * grant READ_DATA (O_RDONLY), resulting in a permission denied error.
+ *
+ * Historically the set of access rights that triggered opening a file was:
+ *
+ *   FILE_READ_DATA
+ *   FILE_WRITE_DATA
+ *   FILE_APPEND_DATA
+ *   FILE_EXECUTE
+ *   WRITE_DAC_ACCESS
+ *   WRITE_OWNER_ACCESS
+ *   SEC_FLAG_SYSTEM_SECURITY
+ *   READ_CONTROL_ACCESS
+ *
+ * By using O_PATH this can be trimmed down to
+ *
+ *   FILE_READ_DATA
+ *   FILE_WRITE_DATA
+ *   FILE_APPEND_DATA
+ *   FILE_EXECUTE
+ *
+ * Fallback on systems without O_PATH support
+ * ------------------------------------------
+ *
+ * A fallback is needed that allows opening a file-handle with the same
+ * higher level semantics even if the system doesn't support O_PATH. This
+ * is implemented by qimpersonating the root user for the open()
+ * syscall. To avoid bypassing restrictive permissions on intermediate
+ * directories components of a path, the root user is only impersonated
+ * after changing directory to the parent directory of the client
+ * requested pathname.
+ *
+ * In order to avoid privilege escalation security issues with these root
+ * opened file-handles we must carefully control their usage throughout
+ * the codebase. Therefor we
+ *
+ * - tag the pathref fsp's with the flag "is_pathref" and
+ *
+ * - control access to the file-handle by making the structure private and only
+ *   allowing access with accessor functions.
+ *
+ * Two functions are used to fetch the low-level system file-handle from an fsp
+ *
+ * - fsp_get_io_fd(fsp): enforces fsp is NOT a pathref file-handle and
+ *
+ * - fsp_get_pathref_fd(fsp): allows fsp to be either a pathref file-handle or a
+ *   traditional POSIX file-handle opened with O_RDONLY or any other POSIX open
+ *   flag.
+ *
+ * The general guideline when to use which function is:
+ *
+ * - if you do something like fstat(fd), use fsp_get_pathref_fd(fsp),
+ * - if you do something like *at(dirfd, ...), use fsp_get_pathref_fd(fsp),
+ * - if you want to print the fd for example in DEBUG messages, use
+ *   fsp_get_pathref_fd(fsp),
+ * - if you want to call close(fd), use fsp_get_pathref_fd(fsp),
+ * - if you're doing a logical comparison of fd values, use
+ *   fsp_get_pathref_fd().
+ *
+ * In any other case use fsp_get_io_fd().
+ */
 
 #define FSP_POSIX_FLAGS_OPEN		0x01
 #define FSP_POSIX_FLAGS_RENAME		0x02
