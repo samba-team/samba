@@ -96,9 +96,11 @@ static void gotalarm_sig(int signum)
 	{
 		int fd = -1;
 		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+		unsigned timeout_ms = 1000 * to;
 
-		status = open_socket_out(ss, port, to, &fd);
+		status = open_socket_out(ss, port, timeout_ms, &fd);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("open_socket_out: failed to open socket\n"));
 			return NULL;
 		}
 
