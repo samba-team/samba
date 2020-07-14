@@ -438,18 +438,24 @@ static int update_flags_on_all_nodes(struct ctdb_recoverd *rec,
 	struct ctdb_node_flag_change c;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t *nodes;
+	uint32_t i;
 	int ret;
 
 	nodemap = rec->nodemap;
 
-	if (pnn >= nodemap->num) {
+	for (i = 0; i < nodemap->num; i++) {
+		if (pnn == nodemap->nodes[i].pnn) {
+			break;
+		}
+	}
+	if (i >= nodemap->num) {
 		DBG_ERR("Nodemap does not contain node %d\n", pnn);
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	c.pnn       = pnn;
-	c.old_flags = nodemap->nodes[pnn].flags;
+	c.old_flags = nodemap->nodes[i].flags;
 	c.new_flags = c.old_flags;
 	c.new_flags |= flags;
 	c.new_flags &= flags;
