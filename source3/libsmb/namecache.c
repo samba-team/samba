@@ -24,6 +24,170 @@
 #include "includes.h"
 #include "lib/gencache.h"
 
+#define IPSTR_LIST_SEP	","
+#define IPSTR_LIST_CHAR	','
+
+/**
+ * Add ip string representation to ipstr list. Used also
+ * as part of @function ipstr_list_make
+ *
+ * @param ipstr_list pointer to string containing ip list;
+ *        MUST BE already allocated and IS reallocated if necessary
+ * @param ipstr_size pointer to current size of ipstr_list (might be changed
+ *        as a result of reallocation)
+ * @param ip IP address which is to be added to list
+ * @return pointer to string appended with new ip and possibly
+ *         reallocated to new length
+ **/
+
+static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
+{
+	char *new_ipstr = NULL;
+	char addr_buf[INET6_ADDRSTRLEN];
+	int ret;
+
+	/* arguments checking */
+	if (!ipstr_list || !service) {
+		return NULL;
+	}
+
+	print_sockaddr(addr_buf,
+			sizeof(addr_buf),
+			&service->ss);
+
+	/* attempt to convert ip to a string and append colon separator to it */
+	if (*ipstr_list) {
+		if (service->ss.ss_family == AF_INET) {
+			/* IPv4 */
+			ret = asprintf(&new_ipstr, "%s%s%s:%d",	*ipstr_list,
+				       IPSTR_LIST_SEP, addr_buf,
+				       service->port);
+		} else {
+			/* IPv6 */
+			ret = asprintf(&new_ipstr, "%s%s[%s]:%d", *ipstr_list,
+				       IPSTR_LIST_SEP, addr_buf,
+				       service->port);
+		}
+		SAFE_FREE(*ipstr_list);
+	} else {
+		if (service->ss.ss_family == AF_INET) {
+			/* IPv4 */
+			ret = asprintf(&new_ipstr, "%s:%d", addr_buf,
+				       service->port);
+		} else {
+			/* IPv6 */
+			ret = asprintf(&new_ipstr, "[%s]:%d", addr_buf,
+				       service->port);
+		}
+	}
+	if (ret == -1) {
+		return NULL;
+	}
+	*ipstr_list = new_ipstr;
+	return *ipstr_list;
+}
+
+/**
+ * Allocate and initialise an ipstr list using ip adresses
+ * passed as arguments.
+ *
+ * @param ipstr_list pointer to string meant to be allocated and set
+ * @param ip_list array of ip addresses to place in the list
+ * @param ip_count number of addresses stored in ip_list
+ * @return pointer to allocated ip string
+ **/
+
+char *ipstr_list_make(char **ipstr_list,
+			const struct ip_service *ip_list,
+			int ip_count)
+{
+	int i;
+
+	/* arguments checking */
+	if (!ip_list || !ipstr_list) {
+		return 0;
+	}
+
+	*ipstr_list = NULL;
+
+	/* process ip addresses given as arguments */
+	for (i = 0; i < ip_count; i++) {
+		*ipstr_list = ipstr_list_add(ipstr_list, &ip_list[i]);
+	}
+
+	return (*ipstr_list);
+}
+
+
+/**
+ * Parse given ip string list into array of ip addresses
+ * (as ip_service structures)
+ *    e.g. [IPv6]:port,192.168.1.100:389,192.168.1.78, ...
+ *
+ * @param ipstr ip string list to be parsed
+ * @param ip_list pointer to array of ip addresses which is
+ *        allocated by this function and must be freed by caller
+ * @return number of successfully parsed addresses
+ **/
+
+int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
+{
+	TALLOC_CTX *frame;
+	char *token_str = NULL;
+	size_t i, count;
+
+	if (!ipstr_list || !ip_list)
+		return 0;
+
+	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
+	if ( (*ip_list = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
+		DEBUG(0,("ipstr_list_parse: malloc failed for %lu entries\n",
+					(unsigned long)count));
+		return 0;
+	}
+
+	frame = talloc_stackframe();
+	for ( i=0; next_token_talloc(frame, &ipstr_list, &token_str,
+				IPSTR_LIST_SEP) && i<count; i++ ) {
+		char *s = token_str;
+		char *p = strrchr(token_str, ':');
+
+		if (p) {
+			*p = 0;
+			(*ip_list)[i].port = atoi(p+1);
+		}
+
+		/* convert single token to ip address */
+		if (token_str[0] == '[') {
+			/* IPv6 address. */
+			s++;
+			p = strchr(token_str, ']');
+			if (!p) {
+				continue;
+			}
+			*p = '\0';
+		}
+		if (!interpret_string_addr(&(*ip_list)[i].ss,
+					s,
+					AI_NUMERICHOST)) {
+			continue;
+		}
+	}
+	TALLOC_FREE(frame);
+	return count;
+}
+
+/**
+ * Safely free ip string list
+ *
+ * @param ipstr_list ip string list to be freed
+ **/
+
+void ipstr_list_free(char* ipstr_list)
+{
+	SAFE_FREE(ipstr_list);
+}
+
 #define NBTKEY_FMT  "NBT/%s#%02X"
 
 /**
