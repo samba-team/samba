@@ -28,96 +28,84 @@
 #define IPSTR_LIST_CHAR	','
 
 /**
- * Add ip string representation to ipstr list. Used also
- * as part of @function ipstr_list_make
- *
- * @param ipstr_list pointer to string containing ip list;
- *        MUST BE already allocated and IS reallocated if necessary
- * @param ipstr_size pointer to current size of ipstr_list (might be changed
- *        as a result of reallocation)
- * @param ip IP address which is to be added to list
- * @return pointer to string appended with new ip and possibly
- *         reallocated to new length
- **/
-
-static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
-{
-	char *new_ipstr = NULL;
-	char addr_buf[INET6_ADDRSTRLEN];
-	int ret;
-
-	/* arguments checking */
-	if (!ipstr_list || !service) {
-		return NULL;
-	}
-
-	print_sockaddr(addr_buf,
-			sizeof(addr_buf),
-			&service->ss);
-
-	/* attempt to convert ip to a string and append colon separator to it */
-	if (*ipstr_list) {
-		if (service->ss.ss_family == AF_INET) {
-			/* IPv4 */
-			ret = asprintf(&new_ipstr, "%s%s%s:%d",	*ipstr_list,
-				       IPSTR_LIST_SEP, addr_buf,
-				       service->port);
-		} else {
-			/* IPv6 */
-			ret = asprintf(&new_ipstr, "%s%s[%s]:%d", *ipstr_list,
-				       IPSTR_LIST_SEP, addr_buf,
-				       service->port);
-		}
-		SAFE_FREE(*ipstr_list);
-	} else {
-		if (service->ss.ss_family == AF_INET) {
-			/* IPv4 */
-			ret = asprintf(&new_ipstr, "%s:%d", addr_buf,
-				       service->port);
-		} else {
-			/* IPv6 */
-			ret = asprintf(&new_ipstr, "[%s]:%d", addr_buf,
-				       service->port);
-		}
-	}
-	if (ret == -1) {
-		return NULL;
-	}
-	*ipstr_list = new_ipstr;
-	return *ipstr_list;
-}
-
-/**
  * Allocate and initialise an ipstr list using ip adresses
  * passed as arguments.
  *
- * @param ipstr_list pointer to string meant to be allocated and set
+ * @param ctx TALLOC_CTX to use
  * @param ip_list array of ip addresses to place in the list
  * @param ip_count number of addresses stored in ip_list
  * @return pointer to allocated ip string
  **/
 
-static char *ipstr_list_make(char **ipstr_list,
+static char *ipstr_list_make(TALLOC_CTX *ctx,
 			const struct ip_service *ip_list,
 			int ip_count)
 {
+	char *ipstr_list = NULL;
 	int i;
 
 	/* arguments checking */
-	if (!ip_list || !ipstr_list) {
-		return 0;
+	if (ip_list == NULL) {
+		return NULL;
 	}
-
-	*ipstr_list = NULL;
 
 	/* process ip addresses given as arguments */
 	for (i = 0; i < ip_count; i++) {
-		*ipstr_list = ipstr_list_add(ipstr_list, &ip_list[i]);
+		char addr_buf[INET6_ADDRSTRLEN];
+		char *new_str = NULL;
+
+		print_sockaddr(addr_buf,
+			       sizeof(addr_buf),
+			       &ip_list[i].ss);
+
+		if (ip_list->ss.ss_family == AF_INET) {
+			/* IPv4 */
+			new_str = talloc_asprintf(ctx,
+						  "%s:%d",
+						  addr_buf,
+						  ip_list[i].port);
+		} else {
+			/* IPv6 */
+			new_str = talloc_asprintf(ctx,
+						  "[%s]:%d",
+						  addr_buf,
+						  ip_list[i].port);
+		}
+		if (new_str == NULL) {
+			TALLOC_FREE(ipstr_list);
+			return NULL;
+		}
+
+		if (ipstr_list == NULL) {
+			/* First ip address. */
+			ipstr_list = new_str;
+		} else {
+			/*
+			 * Append the separator "," and then the new
+			 * ip address to the existing list.
+			 *
+			 * The efficiency here is horrible, but
+			 * ip_count should be small enough we can
+			 * live with it.
+			 */
+			char *tmp = talloc_asprintf(ctx,
+						    "%s%s%s",
+						    ipstr_list,
+						    IPSTR_LIST_SEP,
+						    new_str);
+			if (tmp == NULL) {
+				TALLOC_FREE(new_str);
+				TALLOC_FREE(ipstr_list);
+				return NULL;
+			}
+			TALLOC_FREE(new_str);
+			TALLOC_FREE(ipstr_list);
+			ipstr_list = tmp;
+		}
 	}
 
-	return (*ipstr_list);
+	return ipstr_list;
 }
-
 
 /**
  * Parse given ip string list into array of ip addresses
@@ -256,10 +244,9 @@ bool namecache_store(const char *name,
 
 	/*
 	 * Generate string representation of ip addresses list
-	 * First, store the number of ip addresses and then
-	 * place each single ip
 	 */
-	if (!ipstr_list_make(&value_string, ip_list, num_names)) {
+	value_string = ipstr_list_make(frame, ip_list, num_names);
+	if (value_string == NULL) {
 		goto out;
 	}
 
@@ -269,7 +256,7 @@ bool namecache_store(const char *name,
   out:
 
 	TALLOC_FREE(key);
-	SAFE_FREE(value_string);
+	TALLOC_FREE(value_string);
 	TALLOC_FREE(frame);
 	return ret;
 }
