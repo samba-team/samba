@@ -223,8 +223,8 @@ bool namecache_store(const char *name,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (name_type > 255) {
-		TALLOC_FREE(frame);
-		return false; /* Don't store non-real name types. */
+		/* Don't store non-real name types. */
+		goto out;
 	}
 
 	if ( DEBUGLEVEL >= 5 ) {
@@ -248,8 +248,7 @@ bool namecache_store(const char *name,
 
 	key = namecache_key(name, name_type);
 	if (!key) {
-		TALLOC_FREE(frame);
-		return false;
+		goto out;
 	}
 
 	expiry = time(NULL) + lp_name_cache_timeout();
@@ -260,14 +259,14 @@ bool namecache_store(const char *name,
 	 * place each single ip
 	 */
 	if (!ipstr_list_make(&value_string, ip_list, num_names)) {
-		SAFE_FREE(key);
-		SAFE_FREE(value_string);
-		TALLOC_FREE(frame);
-		return false;
+		goto out;
 	}
 
 	/* set the entry */
 	ret = gencache_set(key, value_string, expiry);
+
+  out:
+
 	SAFE_FREE(key);
 	SAFE_FREE(value_string);
 	TALLOC_FREE(frame);
