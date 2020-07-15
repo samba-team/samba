@@ -635,7 +635,6 @@ char *ipstr_list_make(char **ipstr_list,
 			const struct ip_service *ip_list,
 			int ip_count);
 int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
-void ipstr_list_free(char* ipstr_list);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 uint64_t conv_str_size(const char * str);
 int asprintf_strupper_m(char **strp, const char *fmt, ...)

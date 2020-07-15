@@ -177,17 +177,6 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 	return count;
 }
 
-/**
- * Safely free ip string list
- *
- * @param ipstr_list ip string list to be freed
- **/
-
-void ipstr_list_free(char* ipstr_list)
-{
-	SAFE_FREE(ipstr_list);
-}
-
 #define NBTKEY_FMT  "NBT/%s#%02X"
 
 /**
