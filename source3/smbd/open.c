@@ -779,7 +779,6 @@ NTSTATUS fd_open(files_struct *fsp,
 	struct connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
-	int saved_errno = 0;
 
 	/*
 	 * Never follow symlinks on a POSIX client. The
@@ -799,13 +798,6 @@ NTSTATUS fd_open(files_struct *fsp,
 					flags,
 					mode,
 					0);
-	if (fsp->fh->fd == -1) {
-		saved_errno = errno;
-	}
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-
 	if (fsp->fh->fd == -1) {
 		int posix_errno = link_errno_convert(errno);
 		status = map_nt_error_from_unix(posix_errno);
