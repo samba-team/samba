@@ -779,6 +779,7 @@ NTSTATUS fd_open(files_struct *fsp,
 	struct connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
+	int fd;
 
 	/*
 	 * Never follow symlinks on a POSIX client. The
@@ -793,12 +794,8 @@ NTSTATUS fd_open(files_struct *fsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	fsp->fh->fd = non_widelink_open(fsp,
-					smb_fname,
-					flags,
-					mode,
-					0);
-	if (fsp->fh->fd == -1) {
+	fd = non_widelink_open(fsp, smb_fname, flags, mode, 0);
+	if (fd == -1) {
 		int posix_errno = link_errno_convert(errno);
 		status = map_nt_error_from_unix(posix_errno);
 		if (errno == EMFILE) {
@@ -815,12 +812,14 @@ NTSTATUS fd_open(files_struct *fsp,
 
 		DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
 			  smb_fname_str_dbg(smb_fname), flags, (int)mode,
-			  fsp->fh->fd, strerror(errno));
+			  fd, strerror(errno));
 		return status;
 	}
 
+	fsp->fh->fd = fd;
+
 	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
-		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fsp->fh->fd);
+		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fd);
 
 	return status;
 }
