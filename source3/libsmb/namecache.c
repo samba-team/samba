@@ -391,18 +391,21 @@ void namecache_flush(void)
 
 /* Construct a name status record key. */
 
-static char *namecache_status_record_key(const char *name,
+static char *namecache_status_record_key(TALLOC_CTX *ctx,
+				const char *name,
 				int name_type1,
 				int name_type2,
 				const struct sockaddr_storage *keyip)
 {
 	char addr[INET6_ADDRSTRLEN];
-	char *keystr = NULL;
 
 	print_sockaddr(addr, sizeof(addr), keyip);
-	asprintf_strupper_m(&keystr, "NBT/%s#%02X.%02X.%s", name,
-			    name_type1, name_type2, addr);
-	return keystr;
+	return talloc_asprintf_strupper_m(ctx,
+					  "NBT/%s#%02X.%02X.%s",
+					  name,
+					  name_type1,
+					  name_type2,
+					  addr);
 }
 
 /* Store a name status record. */
@@ -415,8 +418,11 @@ bool namecache_status_store(const char *keyname, int keyname_type,
 	time_t expiry;
 	bool ret;
 
-	key = namecache_status_record_key(keyname, keyname_type,
-			name_type, keyip);
+	key = namecache_status_record_key(talloc_tos(),
+					  keyname,
+					  keyname_type,
+					  name_type,
+					  keyip);
 	if (!key)
 		return false;
 
@@ -431,7 +437,7 @@ bool namecache_status_store(const char *keyname, int keyname_type,
 					key ));
 	}
 
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	return ret;
 }
 
@@ -447,15 +453,18 @@ bool namecache_status_fetch(const char *keyname,
 	char *value = NULL;
 	time_t timeout;
 
-	key = namecache_status_record_key(keyname, keyname_type,
-			name_type, keyip);
+	key = namecache_status_record_key(talloc_tos(),
+					  keyname,
+					  keyname_type,
+					  name_type,
+					  keyip);
 	if (!key)
 		return false;
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n",
 					key));
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 		return false;
 	} else {
 		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n",
@@ -463,7 +472,7 @@ bool namecache_status_fetch(const char *keyname,
 	}
 
 	strlcpy(srvname_out, value, 16);
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	TALLOC_FREE(value);
 	return true;
 }
