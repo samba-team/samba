@@ -191,13 +191,14 @@ static int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
  *         type number
  */
 
-static char *namecache_key(const char *name,
-				int name_type)
+static char *namecache_key(TALLOC_CTX *ctx,
+			   const char *name,
+			   int name_type)
 {
-	char *keystr = NULL;
-	asprintf_strupper_m(&keystr, NBTKEY_FMT, name, name_type);
-
-	return keystr;
+	return talloc_asprintf_strupper_m(ctx,
+					  NBTKEY_FMT,
+					  name,
+					  name_type);
 }
 
 /**
@@ -246,7 +247,7 @@ bool namecache_store(const char *name,
 		DEBUGADD(5, ("\n"));
 	}
 
-	key = namecache_key(name, name_type);
+	key = namecache_key(frame, name, name_type);
 	if (!key) {
 		goto out;
 	}
@@ -267,7 +268,7 @@ bool namecache_store(const char *name,
 
   out:
 
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	SAFE_FREE(value_string);
 	TALLOC_FREE(frame);
 	return ret;
@@ -308,14 +309,14 @@ bool namecache_fetch(const char *name,
 	/*
 	 * Use gencache interface - lookup the key
 	 */
-	key = namecache_key(name, name_type);
+	key = namecache_key(talloc_tos(), name, name_type);
 	if (!key) {
 		return false;
 	}
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 		return false;
 	}
 
@@ -326,7 +327,7 @@ bool namecache_fetch(const char *name,
 	 */
 	*num_names = ipstr_list_parse(value, ip_list);
 
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	TALLOC_FREE(value);
 
 	return *num_names > 0; /* true only if some ip has been fetched */
@@ -346,12 +347,12 @@ bool namecache_delete(const char *name, int name_type)
 		return false; /* Don't fetch non-real name types. */
 	}
 
-	key = namecache_key(name, name_type);
+	key = namecache_key(talloc_tos(), name, name_type);
 	if (!key) {
 		return false;
 	}
 	ret = gencache_del(key);
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	return ret;
 }
 
