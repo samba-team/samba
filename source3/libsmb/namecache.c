@@ -141,8 +141,8 @@ static int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 
 	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
 	if ( (*ip_list = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
-		DEBUG(0,("ipstr_list_parse: malloc failed for %lu entries\n",
-					(unsigned long)count));
+		DBG_ERR("malloc failed for %lu entries\n",
+					(unsigned long)count);
 		return 0;
 	}
 
@@ -231,8 +231,8 @@ bool namecache_store(const char *name,
 	if ( DEBUGLEVEL >= 5 ) {
 		char *addr = NULL;
 
-		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
-			num_names, num_names == 1 ? "": "es", name, name_type));
+		DBG_INFO("storing %d address%s for %s#%02x: ",
+			num_names, num_names == 1 ? "": "es", name, name_type);
 
 		for (i = 0; i < num_names; i++) {
 			addr = print_canonical_sockaddr(frame,
@@ -315,12 +315,12 @@ bool namecache_fetch(const char *name,
 	}
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
-		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
+		DBG_INFO("no entry for %s#%02X found.\n", name, name_type);
 		TALLOC_FREE(key);
 		return false;
 	}
 
-	DEBUG(5, ("name %s#%02X found.\n", name, name_type));
+	DBG_INFO("name %s#%02X found.\n", name, name_type);
 
 	/*
 	 * Split up the stored value into the list of IP adresses
@@ -368,7 +368,7 @@ static void flush_netbios_name(const char *key,
 			void *dptr)
 {
 	gencache_del(key);
-	DEBUG(5, ("Deleting entry %s\n", key));
+	DBG_INFO("Deleting entry %s\n", key);
 }
 
 /**
@@ -386,7 +386,7 @@ void namecache_flush(void)
 	 * by flush_netbios_name function
 	 */
 	gencache_iterate(flush_netbios_name, NULL, "NBT/*");
-	DEBUG(5, ("Namecache flushed\n"));
+	DBG_INFO("Namecache flushed\n");
 }
 
 /* Construct a name status record key. */
@@ -430,11 +430,9 @@ bool namecache_status_store(const char *keyname, int keyname_type,
 	ret = gencache_set(key, srvname, expiry);
 
 	if (ret) {
-		DEBUG(5, ("namecache_status_store: entry %s -> %s\n",
-					key, srvname ));
+		DBG_INFO("entry %s -> %s\n", key, srvname);
 	} else {
-		DEBUG(5, ("namecache_status_store: entry %s store failed.\n",
-					key ));
+		DBG_INFO("entry %s store failed.\n", key);
 	}
 
 	TALLOC_FREE(key);
@@ -462,13 +460,11 @@ bool namecache_status_fetch(const char *keyname,
 		return false;
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
-		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n",
-					key));
+		DBG_INFO("no entry for %s found.\n", key);
 		TALLOC_FREE(key);
 		return false;
 	} else {
-		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n",
-					key, value ));
+		DBG_INFO("key %s -> %s\n", key, value);
 	}
 
 	strlcpy(srvname_out, value, 16);
