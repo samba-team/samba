@@ -221,7 +221,7 @@ bool namecache_store(const char *name,
 	bool ret;
 
 	if (name_type > 255) {
-		return False; /* Don't store non-real name types. */
+		return false; /* Don't store non-real name types. */
 	}
 
 	if ( DEBUGLEVEL >= 5 ) {
@@ -247,7 +247,7 @@ bool namecache_store(const char *name,
 
 	key = namecache_key(name, name_type);
 	if (!key) {
-		return False;
+		return false;
 	}
 
 	expiry = time(NULL) + lp_name_cache_timeout();
@@ -293,11 +293,11 @@ bool namecache_fetch(const char *name,
 
 	/* exit now if null pointers were passed as they're required further */
 	if (!ip_list || !num_names) {
-		return False;
+		return false;
 	}
 
 	if (name_type > 255) {
-		return False; /* Don't fetch non-real name types. */
+		return false; /* Don't fetch non-real name types. */
 	}
 
 	*num_names = 0;
@@ -307,13 +307,13 @@ bool namecache_fetch(const char *name,
 	 */
 	key = namecache_key(name, name_type);
 	if (!key) {
-		return False;
+		return false;
 	}
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
 		SAFE_FREE(key);
-		return False;
+		return false;
 	}
 
 	DEBUG(5, ("name %s#%02X found.\n", name, name_type));
@@ -340,12 +340,12 @@ bool namecache_delete(const char *name, int name_type)
 	char *key;
 
 	if (name_type > 255) {
-		return False; /* Don't fetch non-real name types. */
+		return false; /* Don't fetch non-real name types. */
 	}
 
 	key = namecache_key(name, name_type);
 	if (!key) {
-		return False;
+		return false;
 	}
 	ret = gencache_del(key);
 	SAFE_FREE(key);
@@ -414,7 +414,7 @@ bool namecache_status_store(const char *keyname, int keyname_type,
 	key = namecache_status_record_key(keyname, keyname_type,
 			name_type, keyip);
 	if (!key)
-		return False;
+		return false;
 
 	expiry = time(NULL) + lp_name_cache_timeout();
 	ret = gencache_set(key, srvname, expiry);
@@ -446,13 +446,13 @@ bool namecache_status_fetch(const char *keyname,
 	key = namecache_status_record_key(keyname, keyname_type,
 			name_type, keyip);
 	if (!key)
-		return False;
+		return false;
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
 		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n",
 					key));
 		SAFE_FREE(key);
-		return False;
+		return false;
 	} else {
 		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n",
 					key, value ));
@@ -461,5 +461,5 @@ bool namecache_status_fetch(const char *keyname,
 	strlcpy(srvname_out, value, 16);
 	SAFE_FREE(key);
 	TALLOC_FREE(value);
-	return True;
+	return true;
 }
