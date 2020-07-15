@@ -216,9 +216,10 @@ bool namecache_store(const char *name,
 			struct ip_service *ip_list)
 {
 	time_t expiry;
-	char *key, *value_string;
+	char *key = NULL;
+	char *value_string = NULL;
 	int i;
-	bool ret;
+	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (name_type > 255) {
