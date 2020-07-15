@@ -97,7 +97,7 @@ static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
  * @return pointer to allocated ip string
  **/
 
-char *ipstr_list_make(char **ipstr_list,
+static char *ipstr_list_make(char **ipstr_list,
 			const struct ip_service *ip_list,
 			int ip_count)
 {
@@ -130,7 +130,7 @@ char *ipstr_list_make(char **ipstr_list,
  * @return number of successfully parsed addresses
  **/
 
-int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
+static int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 {
 	TALLOC_CTX *frame;
 	char *token_str = NULL;
