@@ -219,20 +219,21 @@ bool namecache_store(const char *name,
 	char *key, *value_string;
 	int i;
 	bool ret;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (name_type > 255) {
+		TALLOC_FREE(frame);
 		return false; /* Don't store non-real name types. */
 	}
 
 	if ( DEBUGLEVEL >= 5 ) {
-		TALLOC_CTX *ctx = talloc_stackframe();
 		char *addr = NULL;
 
 		DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
 			num_names, num_names == 1 ? "": "es", name, name_type));
 
 		for (i = 0; i < num_names; i++) {
-			addr = print_canonical_sockaddr(ctx,
+			addr = print_canonical_sockaddr(frame,
 							&ip_list[i].ss);
 			if (!addr) {
 				continue;
@@ -242,11 +243,11 @@ bool namecache_store(const char *name,
 
 		}
 		DEBUGADD(5, ("\n"));
-		TALLOC_FREE(ctx);
 	}
 
 	key = namecache_key(name, name_type);
 	if (!key) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -260,6 +261,7 @@ bool namecache_store(const char *name,
 	if (!ipstr_list_make(&value_string, ip_list, num_names)) {
 		SAFE_FREE(key);
 		SAFE_FREE(value_string);
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -267,6 +269,7 @@ bool namecache_store(const char *name,
 	ret = gencache_set(key, value_string, expiry);
 	SAFE_FREE(key);
 	SAFE_FREE(value_string);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
