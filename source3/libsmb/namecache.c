@@ -58,7 +58,7 @@ static char *ipstr_list_make(TALLOC_CTX *ctx,
 			       sizeof(addr_buf),
 			       &ip_list[i].ss);
 
-		if (ip_list->ss.ss_family == AF_INET) {
+		if (ip_list[i].ss.ss_family == AF_INET) {
 			/* IPv4 */
 			new_str = talloc_asprintf(ctx,
 						  "%s:%d",
