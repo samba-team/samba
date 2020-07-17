@@ -927,44 +927,6 @@ int get_socket_port(int fd)
 	return -1;
 }
 
-/****************************************************************************
- Return the string of an IP address (IPv4 or IPv6).
-****************************************************************************/
-
-static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
-{
-	struct sockaddr_storage sa;
-	socklen_t length = sizeof(sa);
-
-	/* Ok, returning a hard coded IPv4 address
-	 * is bogus, but it's just as bogus as a
-	 * zero IPv6 address. No good choice here.
-	 */
-
-	if (strlcpy(addr_buf, "0.0.0.0", addr_len) >= addr_len) {
-		/* Truncate ! */
-		return NULL;
-	}
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-
-	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
-		DEBUG(0,("getsockname failed. Error was %s\n",
-			strerror(errno) ));
-		return addr_buf;
-	}
-
-	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
-}
-
-const char *client_socket_addr(int fd, char *addr, size_t addr_len)
-{
-	return get_socket_addr(fd, addr, addr_len);
-}
-
-
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
 typedef struct smb_socket_option {

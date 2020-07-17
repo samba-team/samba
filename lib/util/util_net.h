@@ -121,7 +121,6 @@ char *print_sockaddr(char *dest,
 char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 			const struct sockaddr_storage *pss);
 int get_socket_port(int fd);
-const char *client_socket_addr(int fd, char *addr, size_t addr_len);
 
 void set_socket_options(int fd, const char *options);
 
