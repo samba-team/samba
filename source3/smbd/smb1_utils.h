@@ -32,5 +32,6 @@ struct files_struct *fcb_or_dos_open(
 	uint32_t access_mask,
 	uint32_t create_options,
 	uint32_t private_flags);
+bool send_keepalive(int client);
 
 #endif

@@ -204,20 +204,6 @@ NTSTATUS read_data_ntstatus(int fd, char *buffer, size_t N)
 }
 
 /****************************************************************************
- Send a keepalive packet (rfc1002).
-****************************************************************************/
-
-bool send_keepalive(int client)
-{
-	unsigned char buf[4];
-
-	buf[0] = NBSSkeepalive;
-	buf[1] = buf[2] = buf[3] = 0;
-
-	return(write_data(client,(char *)buf,4) == 4);
-}
-
-/****************************************************************************
  Read 4 bytes of a smb packet and return the smb length of the packet.
  Store the result in the buffer.
  This version of the function will return a length of zero on receiving

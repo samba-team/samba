@@ -535,7 +535,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  size_t *size_ret);
 NTSTATUS read_data_ntstatus(int fd, char *buffer, size_t N);
 
-bool send_keepalive(int client);
 NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 					  unsigned int timeout,
 					  size_t *len);

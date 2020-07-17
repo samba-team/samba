@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smb1_utils.h"
 #include "libcli/security/security.h"
+#include "lib/util/sys_rw_data.h"
 
 /****************************************************************************
  Special FCB or DOS processing in the case of a sharing violation.
@@ -108,4 +109,18 @@ struct files_struct *fcb_or_dos_open(
 	}
 
 	return new_fsp;
+}
+
+/****************************************************************************
+ Send a keepalive packet (rfc1002).
+****************************************************************************/
+
+bool send_keepalive(int client)
+{
+	unsigned char buf[4];
+
+	buf[0] = NBSSkeepalive;
+	buf[1] = buf[2] = buf[3] = 0;
+
+	return(write_data(client,(char *)buf,4) == 4);
 }
