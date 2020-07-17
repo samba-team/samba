@@ -3466,6 +3466,16 @@ NTSTATUS unlink_internals(connection_struct *conn,
 				goto out;
 			}
 
+			status = openat_pathref_fsp(conn->cwd_fsp, f);
+			if (!NT_STATUS_IS_OK(status) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK))
+			{
+				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(frame);
+				TALLOC_FREE(talloced);
+				goto out;
+			}
+
 			status = check_name(conn, f);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
