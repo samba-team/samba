@@ -62,6 +62,22 @@ NTSTATUS ads_dns_lookup_a(TALLOC_CTX *ctx,
 			size_t *num_names_out,
 			char ***hostnames_out,
 			struct samba_sockaddr **addrs_out);
+#if defined(HAVE_IPV6)
+struct tevent_req *ads_dns_lookup_aaaa_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				const char *name);
+NTSTATUS ads_dns_lookup_aaaa_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t *rcode_out,
+				size_t *num_names_out,
+				char ***hostnames_out,
+				struct samba_sockaddr **addrs_out);
+NTSTATUS ads_dns_lookup_aaaa(TALLOC_CTX *ctx,
+			const char *name_in,
+			size_t *num_names_out,
+			char ***hostnames_out,
+			struct samba_sockaddr **addrs_out);
+#endif
 
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			   const char *realm,

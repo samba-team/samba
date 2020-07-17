@@ -574,6 +574,212 @@ fail:
 	return status;
 }
 
+#if defined(HAVE_IPV6)
+/*********************************************************************
+ Async AAAA record lookup.
+*********************************************************************/
+
+struct ads_dns_lookup_aaaa_state {
+	uint8_t rcode;
+	size_t num_names;
+	char **hostnames;
+	struct samba_sockaddr *addrs;
+};
+
+static void ads_dns_lookup_aaaa_done(struct tevent_req *subreq);
+
+struct tevent_req *ads_dns_lookup_aaaa_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    const char *name)
+{
+	struct tevent_req *req, *subreq = NULL;
+	struct ads_dns_lookup_aaaa_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ads_dns_lookup_aaaa_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = dns_lookup_send(
+		state,
+		ev,
+		NULL,
+		name,
+		DNS_QCLASS_IN,
+		DNS_QTYPE_AAAA);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ads_dns_lookup_aaaa_done, req);
+	return req;
+}
+
+static void ads_dns_lookup_aaaa_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ads_dns_lookup_aaaa_state *state = tevent_req_data(
+		req, struct ads_dns_lookup_aaaa_state);
+	int ret;
+	struct dns_name_packet *reply = NULL;
+	uint16_t i;
+
+	ret = dns_lookup_recv(subreq, state, &reply);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		tevent_req_nterror(req, map_nt_error_from_unix_common(ret));
+		return;
+	}
+
+	state->rcode = (reply->operation & DNS_RCODE);
+	if (state->rcode != DNS_RCODE_OK) {
+		/* Don't bother looking for answers. */
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * We don't care about CNAME answers here. We're
+	 * just wanting an async name -> IPv6 lookup.
+	 */
+	for (i = 0; i < reply->ancount; i++) {
+		if (reply->answers[i].rr_type == DNS_QTYPE_AAAA) {
+			state->num_names += 1;
+		}
+	}
+
+	state->hostnames = talloc_zero_array(state,
+					     char *,
+					     state->num_names);
+	if (tevent_req_nomem(state->hostnames, req)) {
+		return;
+	}
+	state->addrs = talloc_zero_array(state,
+					 struct samba_sockaddr,
+					 state->num_names);
+	if (tevent_req_nomem(state->addrs, req)) {
+		return;
+	}
+
+	state->num_names = 0;
+
+	for (i = 0; i < reply->ancount; i++) {
+		bool ok;
+		struct sockaddr_storage ss = {0};
+		struct dns_res_rec *an = &reply->answers[i];
+
+		if (an->rr_type != DNS_QTYPE_AAAA) {
+			continue;
+		}
+		if (an->name == NULL) {
+			/* Can this happen? */
+			continue;
+		}
+		if (an->rdata.ipv6_record == NULL) {
+			/* Can this happen? */
+			continue;
+		}
+		ok = dns_res_rec_get_sockaddr(an,
+					      &ss);
+		if (!ok) {
+			continue;
+		}
+		if (is_zero_addr(&ss)) {
+			continue;
+		}
+		state->addrs[state->num_names].u.ss = ss;
+		state->addrs[state->num_names].sa_socklen =
+					sizeof(struct sockaddr_in6);
+
+		state->hostnames[state->num_names] = talloc_strdup(
+							state->hostnames,
+							an->name);
+		if (tevent_req_nomem(state->hostnames[state->num_names], req)) {
+			return;
+		}
+		state->num_names += 1;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS ads_dns_lookup_aaaa_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  uint8_t *rcode_out,
+				  size_t *num_names_out,
+				  char ***hostnames_out,
+				  struct samba_sockaddr **addrs_out)
+{
+	struct ads_dns_lookup_aaaa_state *state = tevent_req_data(
+		req, struct ads_dns_lookup_aaaa_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (rcode_out != NULL) {
+		/*
+		 * If we got no names, an upper layer may
+		 * want to print a debug message.
+		 */
+		*rcode_out = state->rcode;
+	}
+	if (hostnames_out != NULL) {
+		*hostnames_out = talloc_move(mem_ctx,
+					     &state->hostnames);
+	}
+	if (addrs_out != NULL) {
+		*addrs_out = talloc_move(mem_ctx,
+					 &state->addrs);
+	}
+	*num_names_out = state->num_names;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Simple wrapper for a DNS AAAA query
+*********************************************************************/
+
+NTSTATUS ads_dns_lookup_aaaa(TALLOC_CTX *ctx,
+			     const char *name_in,
+			     size_t *num_names_out,
+			     char ***hostnames_out,
+			     struct samba_sockaddr **addrs_out)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(ctx);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = ads_dns_lookup_aaaa_send(ev, ev, name_in);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	/*
+	 * Sychronous doesn't need to care about the rcode or
+	 * a copy of the name_in.
+	 */
+	status = ads_dns_lookup_aaaa_recv(req,
+					  ctx,
+					  NULL,
+					  num_names_out,
+					  hostnames_out,
+					  addrs_out);
+fail:
+	TALLOC_FREE(ev);
+	return status;
+}
+#endif
+
 /********************************************************************
  Query with optional sitename.
 ********************************************************************/
