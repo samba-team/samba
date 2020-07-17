@@ -543,6 +543,39 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 	return true;
 }
 
+/****************************************************************************
+ Return the port number we've bound to on a socket.
+****************************************************************************/
+
+static int get_socket_port(int fd)
+{
+	struct sockaddr_storage sa;
+	socklen_t length = sizeof(sa);
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getsockname failed. Error was %s\n",
+			       strerror(errno)));
+		return -1;
+	}
+
+#if defined(HAVE_IPV6)
+	if (sa.ss_family == AF_INET6) {
+		struct sockaddr_in6 *sa_in6 = (struct sockaddr_in6 *)&sa;
+		return ntohs(sa_in6->sin6_port);
+	}
+#endif
+	if (sa.ss_family == AF_INET) {
+		struct sockaddr_in *sa_in = (struct sockaddr_in *)&sa;
+		return ntohs(sa_in->sin_port);
+	}
+	return -1;
+}
+
 static bool netbios_session_retarget(struct smbXsrv_connection *xconn,
 				     const char *name, int name_type)
 {

@@ -894,39 +894,6 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	return dest;
 }
 
-/****************************************************************************
- Return the port number we've bound to on a socket.
-****************************************************************************/
-
-int get_socket_port(int fd)
-{
-	struct sockaddr_storage sa;
-	socklen_t length = sizeof(sa);
-
-	if (fd == -1) {
-		return -1;
-	}
-
-	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
-		int level = (errno == ENOTCONN) ? 2 : 0;
-		DEBUG(level, ("getsockname failed. Error was %s\n",
-			       strerror(errno)));
-		return -1;
-	}
-
-#if defined(HAVE_IPV6)
-	if (sa.ss_family == AF_INET6) {
-		struct sockaddr_in6 *sa_in6 = (struct sockaddr_in6 *)&sa;
-		return ntohs(sa_in6->sin6_port);
-	}
-#endif
-	if (sa.ss_family == AF_INET) {
-		struct sockaddr_in *sa_in = (struct sockaddr_in *)&sa;
-		return ntohs(sa_in->sin_port);
-	}
-	return -1;
-}
-
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
 typedef struct smb_socket_option {

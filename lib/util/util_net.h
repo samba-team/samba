@@ -120,7 +120,6 @@ char *print_sockaddr(char *dest,
 			const struct sockaddr_storage *psa);
 char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 			const struct sockaddr_storage *pss);
-int get_socket_port(int fd);
 
 void set_socket_options(int fd, const char *options);
 
