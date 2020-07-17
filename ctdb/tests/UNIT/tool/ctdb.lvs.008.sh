@@ -41,7 +41,7 @@ Failed to detect PNN of the current node.
 Is this node part of CTDB cluster?
 EOF
 
-simple_test master
+simple_test leader
 
 #####
 

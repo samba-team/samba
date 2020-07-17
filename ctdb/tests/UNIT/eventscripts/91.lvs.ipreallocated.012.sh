@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "nodes in config, no master (e.g. all inactive)"
+define_test "nodes in config, no leader (e.g. all inactive)"
 
 setup "10.1.1.201" "eth0" <<EOF
 192.168.1.1

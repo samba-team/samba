@@ -23,7 +23,7 @@ usage ()
 $0 <option>
 
 <option> is one of:
-  master     Display node number of master node
+  leader     Display node number of leader node
   list       List node number and private IP address of usable nodes in group
   status     Show status of all nodes in LVS group
 EOF
@@ -72,7 +72,7 @@ get_lvs_nodes ()
 		\#*) continue ;;
 		esac
 		case "$_options" in
-		slave-only|"") : ;;
+		follower-only|"") : ;;
 		*) die "${prog}: Invalid options \"${_options}\" in  \"$CTDB_LVS_NODES\""
 		esac
 	done <<EOF
@@ -124,13 +124,13 @@ $nodestatus_X
 EOF
 }
 
-# Print the PNN of the LVS master node
-find_master ()
+# Print the PNN of the LVS leader node
+find_leader ()
 {
 	get_lvs_nodes || \
 		die "${prog}: LVS nodes file \"$CTDB_LVS_NODES\" not found"
 
-	# $_ms is an @-delimited list of nodes that are allowed to be the master
+	# $_ms is an @-delimited list of nodes that are allowed to be the leader
 	_ms="@"
 	while read _ip _options ; do
 		case "$_options" in
@@ -140,8 +140,8 @@ find_master ()
 $lvs_nodes
 EOF
 
-	_master_candidates=$(filter_nodes "$_ms") || return $?
-	echo "${_master_candidates%% *}"
+	_leader_candidates=$(filter_nodes "$_ms") || return $?
+	echo "${_leader_candidates%% *}"
 }
 
 # List all usable nodes in the LVS group
@@ -197,7 +197,7 @@ prog=$(basename "$0")
 cmd="$1"
 
 case "$cmd" in
-master) find_master ;;
+leader) find_leader ;;
 list)   nodes_list ;;
 status) nodes_status ;;
 *)      usage ;;

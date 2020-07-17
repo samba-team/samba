@@ -864,7 +864,7 @@ MonitorInterval         = 15
     </refsect2>
 
     <refsect2>
-      <title>lvs {master|list|status}</title>
+      <title>lvs {leader|list|status}</title>
       <para>
 	This command shows different aspects of LVS status.  For an
 	overview of CTDB's LVS functionality please see the
@@ -875,10 +875,10 @@ MonitorInterval         = 15
 
       <variablelist>
 	<varlistentry>
-	  <term>master</term>
+	  <term>leader</term>
 	  <listitem>
 	    <para>
-	      Shows the PNN of the current LVS master node.
+	      Shows the PNN of the current LVS leader node.
 	    </para>
       <para>
 	Example output:

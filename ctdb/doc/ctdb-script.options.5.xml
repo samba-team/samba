@@ -451,7 +451,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    <para>
 	      File format:
 	      <screen>
-<parameter>IPADDR</parameter> <optional>slave-only</optional>
+<parameter>IPADDR</parameter> <optional>follower-only</optional>
 	      </screen>
 	    </para>
 	    <para>
@@ -459,8 +459,8 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	      group.
 	    </para>
 	    <para>
-	      If "slave-only" is specified then the corresponding node
-	      can not be the LVS master node.  In this case
+	      If "follower-only" is specified then the corresponding node
+	      can not be the LVS leader node.  In this case
 	      <varname>CTDB_LVS_PUBLIC_IFACE</varname> and
 	      <varname>CTDB_LVS_PUBLIC_IP</varname> are optional and
 	      unused.
@@ -480,7 +480,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    <para>
 	      INTERFACE is the network interface that clients will use
 	      to connection to <varname>CTDB_LVS_PUBLIC_IP</varname>.
-	      This is optional for slave-only nodes.
+	      This is optional for follower-only nodes.
 	      No default.
 	    </para>
 	  </listitem>

@@ -2,10 +2,10 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "nodes in config, this is master"
+define_test "nodes in config, this is leader"
 
 setup "10.1.1.201" "eth0" <<EOF
-192.168.1.1	master
+192.168.1.1	leader
 192.168.1.2
 192.168.1.3
 EOF

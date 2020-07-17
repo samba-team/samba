@@ -22,7 +22,7 @@ required_result 0 <<EOF
 0
 EOF
 
-simple_test master
+simple_test leader
 
 #####
 

@@ -17,18 +17,18 @@ CTDB_LVS_PUBLIC_IP="$_ip"
 CTDB_LVS_PUBLIC_IFACE="$_iface"
 EOF
 
-	export FAKE_CTDB_LVS_MASTER=""
+	export FAKE_CTDB_LVS_LEADER=""
 
 	# Read from stdin
 	_pnn=0
 	while read _ip _opts ; do
 		case "$_opts" in
-		master)
-			FAKE_CTDB_LVS_MASTER="$_pnn"
+		leader)
+			FAKE_CTDB_LVS_LEADER="$_pnn"
 			echo "$_ip"
 			;;
-		slave-only)
-			printf "%s\tslave-only\n" "$_ip"
+		follower-only)
+			printf "%s\tfollower-only\n" "$_ip"
 			;;
 		*)
 			echo "$_ip"

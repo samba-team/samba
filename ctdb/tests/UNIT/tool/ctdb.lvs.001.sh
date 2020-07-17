@@ -19,7 +19,7 @@ EOF
 required_result 255 <<EOF
 EOF
 
-simple_test master
+simple_test leader
 
 #####
 

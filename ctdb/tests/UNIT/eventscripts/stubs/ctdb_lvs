@@ -13,7 +13,7 @@ not_implemented_exit_code=1
 usage ()
 {
     cat >&2 <<EOF
-Usage: $prog { master | list }
+Usage: $prog { leader | list }
 EOF
     exit 1
 }
@@ -24,10 +24,10 @@ not_implemented ()
     exit $not_implemented_exit_code
 }
 
-ctdb_lvs_master ()
+ctdb_lvs_leader ()
 {
-	if [ -n "$FAKE_CTDB_LVS_MASTER" ] ; then
-		echo "$FAKE_CTDB_LVS_MASTER"
+	if [ -n "$FAKE_CTDB_LVS_LEADER" ] ; then
+		echo "$FAKE_CTDB_LVS_LEADER"
 		return 0
 	else
 		return 255
@@ -46,7 +46,7 @@ ctdb_lvs_list ()
 ######################################################################
 
 case "$1" in
-    master) ctdb_lvs_master "$@" ;;
+    leader) ctdb_lvs_leader "$@" ;;
     list)   ctdb_lvs_list "$@" ;;
     *) not_implemented "$1" ;;
 esac

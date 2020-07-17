@@ -19,11 +19,11 @@ if ! type ipvsadm >/dev/null 2>&1 ; then
 fi
 
 
-lvs_slave_only ()
+lvs_follower_only ()
 {
 	_ip_address=$(ctdb_get_ip_address)
 	awk -v my_ip="$_ip_address" \
-	    '$1 == my_ip { if ($2 ~ "slave-only") { exit 0 } else { exit 1 } }' \
+	    '$1 == my_ip { if ($2 ~ "follower-only") { exit 0 } else { exit 1 } }' \
 	    "$CTDB_LVS_NODES"
 }
 
@@ -33,7 +33,7 @@ lvs_check_config ()
 		die "error: CTDB_LVS_NODES=${CTDB_LVS_NODES} unreadable"
 	[ -n "$CTDB_LVS_PUBLIC_IP" ] || \
 		die "Invalid configuration: CTDB_LVS_PUBLIC_IP not set"
-	if ! lvs_slave_only ; then
+	if ! lvs_follower_only ; then
 		[ -n "$CTDB_LVS_PUBLIC_IFACE" ] || \
 			die "Invalid configuration: CTDB_LVS_PUBLIC_IFACE not set"
 	fi
@@ -78,9 +78,9 @@ ipreallocated)
 		"$CTDB_LVS_PUBLIC_IFACE" "$CTDB_LVS_PUBLIC_IP"
 
 	pnn=$(ctdb_get_pnn)
-	lvsmaster=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" master)
-	if [ "$pnn" != "$lvsmaster" ] ; then
-	    # This node is not the LVS master so change the IP address
+	lvsleader=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" leader)
+	if [ "$pnn" != "$lvsleader" ] ; then
+	    # This node is not the LVS leader so change the IP address
 	    # to have scope "host" so this node won't respond to ARPs
 	    ip addr del "${CTDB_LVS_PUBLIC_IP}/32" dev lo >/dev/null 2>&1
 	    ip addr add "${CTDB_LVS_PUBLIC_IP}/32" dev lo scope host

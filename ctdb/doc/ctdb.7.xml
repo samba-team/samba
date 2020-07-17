@@ -528,13 +528,13 @@ Node 3:/usr/local/etc/ctdb/public_addresses
 
     <para>
       In each LVS group, one of the nodes is selected by CTDB to be
-      the LVS master.  This node receives all traffic from clients
+      the LVS leader.  This node receives all traffic from clients
       coming in to the LVS public address and multiplexes it across
       the internal network to one of the nodes that LVS is using.
       When responding to the client, that node will send the data back
-      directly to the client, bypassing the LVS master node.  The
-      command <command>ctdb lvs master</command> will show which node
-      is the current LVS master.
+      directly to the client, bypassing the LVS leader node.  The
+      command <command>ctdb lvs leader</command> will show which node
+      is the current LVS leader.
     </para>
 
     <para>
@@ -542,12 +542,12 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       <orderedlist>
 	<listitem>
 	  <para>
-	    Client sends request packet to LVSMASTER.
+	    Client sends request packet to LVS leader.
 	  </para>
 	</listitem>
 	<listitem>
 	  <para>
-	    LVSMASTER passes the request on to one node across the
+	    LVS leader passes the request on to one node across the
 	    internal network.
 	  </para>
 	</listitem>
@@ -572,7 +572,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       pattern is write-intensive since you will be limited in the
       available network bandwidth that node can handle.  LVS does work
       very well for read-intensive workloads where only smallish READ
-      requests are going through the LVSMASTER bottleneck and the
+      requests are going through the LVS leader bottleneck and the
       majority of the traffic volume (the data in the read replies)
       goes straight from the processing node back to the clients. For
       read-intensive i/o patterns you can achieve very high throughput
@@ -631,21 +631,21 @@ CTDB_LVS_NODES=/usr/local/etc/ctdb/lvs_nodes
       </screen>
 
       <para>
-	Normally any node in an LVS group can act as the LVS master.
+	Normally any node in an LVS group can act as the LVS leader.
 	Nodes that are highly loaded due to other demands maybe
-	flagged with the "slave-only" option in the
+	flagged with the "follower-only" option in the
 	<varname>CTDB_LVS_NODES</varname> file to limit the LVS
 	functionality of those nodes.
       </para>
 
       <para>
 	LVS nodes file that excludes 192.168.1.4 from being
-	the LVS master node:
+	the LVS leader node:
       </para>
       <screen format="linespecific">
 192.168.1.2
 192.168.1.3
-192.168.1.4 slave-only
+192.168.1.4 follower-only
       </screen>
 
     </refsect2>

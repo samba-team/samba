@@ -5954,7 +5954,7 @@ static const struct ctdb_cmd {
 	{ "pnn", control_pnn, false, false,
 		"show the pnn of the currnet node", NULL },
 	{ "lvs", control_lvs, false, false,
-		"show lvs configuration", "master|list|status" },
+		"show lvs configuration", "leader|list|status" },
 	{ "setdebug", control_setdebug, false, true,
 		"set debug level", "ERROR|WARNING|NOTICE|INFO|DEBUG" },
 	{ "getdebug", control_getdebug, false, true,
