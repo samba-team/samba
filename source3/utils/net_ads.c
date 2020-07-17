@@ -2219,6 +2219,80 @@ static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char
 	return 0;
 }
 
+static int net_ads_dns_async(struct net_context *c, int argc, const char **argv)
+{
+	size_t num_names = 0;
+	char **hostnames = NULL;
+	size_t i = 0;
+	struct samba_sockaddr *addrs = NULL;
+	NTSTATUS status;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf(  "%s\n"
+			   "    %s\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("net ads dns async <name>\n"),
+			 _("  Async look up hostname from the DNS server\n"
+			   "    hostname\tName to look up\n"));
+		return -1;
+	}
+
+	status = ads_dns_lookup_a(talloc_tos(),
+				  argv[0],
+				  &num_names,
+				  &hostnames,
+				  &addrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Looking up A record for %s got error %s\n",
+			 argv[0],
+			 nt_errstr(status));
+		return -1;
+	}
+	d_printf("Async A record lookup - got %u names for %s\n",
+		 (unsigned int)num_names,
+		 argv[0]);
+	for (i = 0; i < num_names; i++) {
+		char addr_buf[INET6_ADDRSTRLEN];
+		print_sockaddr(addr_buf,
+			       sizeof(addr_buf),
+			       &addrs[i].u.ss);
+		d_printf("hostname[%u] = %s, IPv4addr = %s\n",
+			(unsigned int)i,
+			hostnames[i],
+			addr_buf);
+	}
+
+#if defined(HAVE_IPV6)
+	status = ads_dns_lookup_aaaa(talloc_tos(),
+				     argv[0],
+				     &num_names,
+				     &hostnames,
+				     &addrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Looking up AAAA record for %s got error %s\n",
+			 argv[0],
+			 nt_errstr(status));
+		return -1;
+	}
+	d_printf("Async AAAA record lookup - got %u names for %s\n",
+		 (unsigned int)num_names,
+		 argv[0]);
+	for (i = 0; i < num_names; i++) {
+		char addr_buf[INET6_ADDRSTRLEN];
+		print_sockaddr(addr_buf,
+			       sizeof(addr_buf),
+			       &addrs[i].u.ss);
+		d_printf("hostname[%u] = %s, IPv6addr = %s\n",
+			(unsigned int)i,
+			hostnames[i],
+			addr_buf);
+	}
+#endif
+	return 0;
+}
+
+
 static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 {
 	struct functable func[] = {
@@ -2245,6 +2319,14 @@ static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 			N_("Look up host"),
 			N_("net ads dns gethostbyname\n"
 			   "    Look up host")
+		},
+		{
+			"async",
+			net_ads_dns_async,
+			NET_TRANSPORT_ADS,
+			N_("Look up host"),
+			N_("net ads dns async\n"
+			   "    Look up host using async DNS")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
