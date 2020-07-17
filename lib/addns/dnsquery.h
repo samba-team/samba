@@ -48,6 +48,21 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
 				int *numns);
+struct tevent_req *ads_dns_lookup_a_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				const char *name);
+NTSTATUS ads_dns_lookup_a_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t *rcode_out,
+				size_t *num_names_out,
+				char ***hostnames_out,
+				struct samba_sockaddr **addrs_out);
+NTSTATUS ads_dns_lookup_a(TALLOC_CTX *ctx,
+			const char *name_in,
+			size_t *num_names_out,
+			char ***hostnames_out,
+			struct samba_sockaddr **addrs_out);
+
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,
