@@ -57,48 +57,6 @@ bool is_a_socket(int fd)
 }
 
 /****************************************************************************
- Read from a socket.
-****************************************************************************/
-
-ssize_t read_udp_v4_socket(int fd,
-			char *buf,
-			size_t len,
-			struct sockaddr_storage *psa)
-{
-	ssize_t ret;
-	socklen_t socklen = sizeof(*psa);
-	struct sockaddr_in *si = (struct sockaddr_in *)psa;
-
-	memset((char *)psa,'\0',socklen);
-
-	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,
-			(struct sockaddr *)psa,&socklen);
-	if (ret <= 0) {
-		/* Don't print a low debug error for a non-blocking socket. */
-		if (errno == EAGAIN) {
-			DEBUG(10,("read_udp_v4_socket: returned EAGAIN\n"));
-		} else {
-			DEBUG(2,("read_udp_v4_socket: failed. errno=%s\n",
-				strerror(errno)));
-		}
-		return 0;
-	}
-
-	if (psa->ss_family != AF_INET) {
-		DEBUG(2,("read_udp_v4_socket: invalid address family %d "
-			"(not IPv4)\n", (int)psa->ss_family));
-		return 0;
-	}
-
-	DEBUG(10,("read_udp_v4_socket: ip %s port %d read: %lu\n",
-			inet_ntoa(si->sin_addr),
-			si->sin_port,
-			(unsigned long)ret));
-
-	return ret;
-}
-
-/****************************************************************************
  Read data from a file descriptor with a timout in msec.
  mincount = if timeout, minimum to read before returning
  maxcount = number to be read.

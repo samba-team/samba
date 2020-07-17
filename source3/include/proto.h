@@ -525,10 +525,6 @@ const char *client_socket_addr(int fd, char *addr, size_t addr_len);
 int client_socket_port(int fd);
 bool is_a_socket(int fd);
 void set_socket_options(int fd, const char *options);
-ssize_t read_udp_v4_socket(int fd,
-			char *buf,
-			size_t len,
-			struct sockaddr_storage *psa);
 NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  size_t mincnt, size_t maxcnt,
 				  unsigned int time_out,
