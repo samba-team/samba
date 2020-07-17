@@ -31,14 +31,6 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 
-#if 0
-/* Not currently used. JRA. */
-int client_socket_port(int fd)
-{
-	return get_socket_port(fd);
-}
-#endif
-
 /****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
