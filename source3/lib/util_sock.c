@@ -31,11 +31,6 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 
-const char *client_addr(int fd, char *addr, size_t addrlen)
-{
-	return get_peer_addr(fd,addr,addrlen);
-}
-
 #if 0
 /* Not currently used. JRA. */
 int client_socket_port(int fd)
