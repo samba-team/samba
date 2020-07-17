@@ -641,59 +641,6 @@ NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd)
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Open a connected UDP socket to host on port
-**************************************************************************/
-
-int open_udp_socket(const char *host, int port)
-{
-	struct sockaddr_storage ss;
-	int res;
-	socklen_t salen;
-
-	if (!interpret_string_addr(&ss, host, 0)) {
-		DEBUG(10,("open_udp_socket: can't resolve name %s\n",
-			host));
-		return -1;
-	}
-
-	res = socket(ss.ss_family, SOCK_DGRAM, 0);
-	if (res == -1) {
-		return -1;
-	}
-
-#if defined(HAVE_IPV6)
-	if (ss.ss_family == AF_INET6) {
-		struct sockaddr_in6 *psa6;
-		psa6 = (struct sockaddr_in6 *)&ss;
-		psa6->sin6_port = htons(port);
-		if (psa6->sin6_scope_id == 0
-				&& IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
-			setup_linklocal_scope_id(
-				(struct sockaddr *)&ss);
-		}
-		salen = sizeof(struct sockaddr_in6);
-	} else 
-#endif
-	if (ss.ss_family == AF_INET) {
-		struct sockaddr_in *psa;
-		psa = (struct sockaddr_in *)&ss;
-		psa->sin_port = htons(port);
-	    salen = sizeof(struct sockaddr_in);
-	} else {
-		DEBUG(1, ("unknown socket family %d", ss.ss_family));
-		close(res);
-		return -1;
-	}
-
-	if (connect(res, (struct sockaddr *)&ss, salen)) {
-		close(res);
-		return -1;
-	}
-
-	return res;
-}
-
 /*******************************************************************
  Return the IP addr of the remote end of a socket as a string.
  Optionally return the struct sockaddr_storage.
