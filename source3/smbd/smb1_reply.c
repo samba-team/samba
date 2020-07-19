@@ -2844,7 +2844,7 @@ static void reply_lockread_locked(struct tevent_req *subreq)
 	/*
 	 * However the requested READ size IS affected by max_send. Insanity.... JRA.
 	 */
-	maxtoread = req->xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+	maxtoread = req->xconn->smb1.sessions.max_send - (MIN_SMB_SIZE + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
 		DBG_WARNING("requested read size (%zu) is greater than "
@@ -2940,7 +2940,7 @@ void reply_read(struct smb_request *req)
 	/*
 	 * The requested read size cannot be greater than max_send. JRA.
 	 */
-	maxtoread = xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+	maxtoread = xconn->smb1.sessions.max_send - (MIN_SMB_SIZE + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
 		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u/%u). \
