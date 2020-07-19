@@ -66,7 +66,7 @@ class AuditLogTestBase(samba.tests.TestCase):
         self.remoteAddress = client_ip
 
         #
-        # Check the remote address of a message against the one beimg used
+        # Check the remote address of a message against the one being used
         # for the tests.
         #
         def isRemote(message):
