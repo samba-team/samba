@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# This always fails for now, since there are no tests that expect to
+# use it.
+exit 1
