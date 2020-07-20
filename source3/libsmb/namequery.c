@@ -2726,20 +2726,21 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
 			struct sockaddr_storage *ss_list = NULL;
-			if (name_type != 0x1D) {
-				status = resolve_wins(name, name_type,
-						      talloc_tos(),
-						      &ss_list,
-						      return_count);
-				if (NT_STATUS_IS_OK(status)) {
-					if (!convert_ss2service(return_iplist,
-								ss_list,
-								return_count)) {
-						status = NT_STATUS_NO_MEMORY;
-						goto fail;
-					}
-					goto done;
+			if (name_type == 0x1D) {
+				continue;
+			}
+			status = resolve_wins(name, name_type,
+					      talloc_tos(),
+					      &ss_list,
+					      return_count);
+			if (NT_STATUS_IS_OK(status)) {
+				if (!convert_ss2service(return_iplist,
+							ss_list,
+							return_count)) {
+					status = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
+				goto done;
 			}
 		} else if (strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list = NULL;
