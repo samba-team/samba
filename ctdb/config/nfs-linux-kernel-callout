@@ -299,6 +299,9 @@ nfs_check_thread_count ()
     # assume that those using the default don't care about the number
     # of threads and that they have switched on this feature in error.
     _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
+    if [ -z "$_configured_threads" ] && type nfsconf >/dev/null 2>&1 ; then
+	    _configured_threads=$(nfsconf --get nfsd threads) || true
+    fi
     [ -n "$_configured_threads" ] || return 0
 
     _threads_file="${PROCFS_PATH}/fs/nfsd/threads"
