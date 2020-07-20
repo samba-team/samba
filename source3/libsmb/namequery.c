@@ -2677,15 +2677,16 @@ NTSTATUS internal_resolve_name(const char *name,
 			status = resolve_hosts(name, name_type,
 					       talloc_tos(), &ss_list,
 					       return_count);
-			if (NT_STATUS_IS_OK(status)) {
-				if (!convert_ss2service(return_iplist,
-							ss_list,
-							return_count)) {
-					status = NT_STATUS_NO_MEMORY;
-					goto fail;
-				}
-				goto done;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+			if (!convert_ss2service(return_iplist,
+						ss_list,
+						return_count)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			goto done;
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
