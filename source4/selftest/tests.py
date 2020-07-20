@@ -481,6 +481,14 @@ for t in smbtorture4_testsuites("dlz_bind9."):
 
 planpythontestsuite("nt4_dc_smb1", "samba.tests.libsmb")
 
+planpythontestsuite("ad_member", "samba.tests.smb-notify",
+                    environ={'USERNAME':'$DC_USERNAME',
+                             'PASSWORD':'$DC_PASSWORD',
+                             'USERNAME_UNPRIV':'alice',
+                             'PASSWORD_UNPRIV':'Secret007',
+                             'STRICT_CHECKING':'0',
+                             'NOTIFY_SHARE':'notify_priv'})
+
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
 # the API. These mainly test that the various command-line options of commands
