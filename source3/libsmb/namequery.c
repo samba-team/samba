@@ -2704,9 +2704,10 @@ NTSTATUS internal_resolve_name(const char *name,
 			 * This will result in a SRV record lookup */
 			status = resolve_ads(name, name_type, sitename,
 					     return_iplist, return_count);
-			if (NT_STATUS_IS_OK(status)) {
-				goto done;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+			goto done;
 		} else if (strequal(tok, "lmhosts")) {
 			struct sockaddr_storage *ss_list;
 			status = resolve_lmhosts_file_as_sockaddr(
