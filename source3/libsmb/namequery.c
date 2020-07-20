@@ -2692,12 +2692,13 @@ NTSTATUS internal_resolve_name(const char *name,
 			 * This will result in a SRV record lookup */
 			status = resolve_ads(name, KDC_NAME_TYPE, sitename,
 					     return_iplist, return_count);
-			if (NT_STATUS_IS_OK(status)) {
-				/* Ensure we don't namecache
-				 * this with the KDC port. */
-				name_type = KDC_NAME_TYPE;
-				goto done;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+			/* Ensure we don't namecache
+			 * this with the KDC port. */
+			name_type = KDC_NAME_TYPE;
+			goto done;
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
