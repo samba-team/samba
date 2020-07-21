@@ -2761,6 +2761,7 @@ NTSTATUS internal_resolve_name(const char *name,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	bool ok;
+	struct sockaddr_storage *ss_list = NULL;
 	TALLOC_CTX *frame = NULL;
 
 	*return_iplist = NULL;
@@ -2841,7 +2842,6 @@ NTSTATUS internal_resolve_name(const char *name,
 		tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_hosts(talloc_tos(),
 					       name,
 					       name_type,
@@ -2861,7 +2861,6 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
-			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     KDC_NAME_TYPE,
@@ -2884,7 +2883,6 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
-			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     name_type,
@@ -2902,7 +2900,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
-			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_lmhosts_file_as_sockaddr(
 				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
@@ -2923,7 +2920,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			goto done;
 		} else if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
-			struct sockaddr_storage *ss_list = NULL;
 			if (name_type == 0x1D) {
 				continue;
 			}
@@ -2944,7 +2940,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 			goto done;
 		} else if (strequal(tok, "bcast")) {
-			struct sockaddr_storage *ss_list = NULL;
 			status = name_resolve_bcast(
 						talloc_tos(),
 						name,
