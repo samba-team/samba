@@ -2708,8 +2708,11 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
-			status = resolve_ads(name, name_type, sitename,
-					     return_iplist, return_count);
+			status = resolve_ads(name,
+					     name_type,
+					     sitename,
+					     return_iplist,
+					     return_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
