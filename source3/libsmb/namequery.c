@@ -2397,7 +2397,6 @@ static NTSTATUS resolve_ads(const char *name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* The DNS code needs fixing to find IPv6 addresses... JRA. */
 	switch (name_type) {
 		case 0x1b:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
