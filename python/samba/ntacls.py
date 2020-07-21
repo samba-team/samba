@@ -339,6 +339,20 @@ class SMBHelper:
 
         return ntacl_sd.as_sddl(self.dom_sid) if as_sddl else ntacl_sd
 
+    def set_acl(self, smb_path, ntacl_sd,
+                sinfo=None, access_mask=None):
+        assert '/' not in smb_path
+
+        assert(isinstance(ntacl_sd, str) or isinstance(ntacl_sd, security.descriptor))
+        if isinstance(ntacl_sd, str):
+            tmp_desc = security.descriptor.from_sddl(ntacl_sd, self.domain_sid)
+        elif isinstance(ntacl_sd, security.descriptor):
+            tmp_desc = ntacl_sd
+
+        self.smb_conn.set_acl(smb_path, tmp_desc,
+                              sinfo=sinfo,
+                              access_mask=access_mask)
+
     def list(self, smb_path=''):
         """
         List file and dir base names in smb_path without recursive.
