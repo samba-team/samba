@@ -2733,15 +2733,16 @@ NTSTATUS internal_resolve_name(const char *name,
 					      talloc_tos(),
 					      &ss_list,
 					      return_count);
-			if (NT_STATUS_IS_OK(status)) {
-				if (!convert_ss2service(return_iplist,
-							ss_list,
-							return_count)) {
-					status = NT_STATUS_NO_MEMORY;
-					goto fail;
-				}
-				goto done;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+			if (!convert_ss2service(return_iplist,
+						ss_list,
+						return_count)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			goto done;
 		} else if (strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list = NULL;
 			status = name_resolve_bcast(
