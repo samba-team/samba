@@ -2748,15 +2748,16 @@ NTSTATUS internal_resolve_name(const char *name,
 			status = name_resolve_bcast(
 				name, name_type, talloc_tos(),
 				&ss_list, return_count);
-			if (NT_STATUS_IS_OK(status)) {
-				if (!convert_ss2service(return_iplist,
-							ss_list,
-							return_count)) {
-					status = NT_STATUS_NO_MEMORY;
-					goto fail;
-				}
-				goto done;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
+			if (!convert_ss2service(return_iplist,
+						ss_list,
+						return_count)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			goto done;
 		} else {
 			DEBUG(0,("resolve_name: unknown name switch type %s\n",
 				tok));
