@@ -2721,10 +2721,10 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if (strequal(tok, "lmhosts")) {
 			struct sockaddr_storage *ss_list;
 			status = resolve_lmhosts_file_as_sockaddr(
+				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
 				name,
 				name_type,
-				talloc_tos(),
 				&ss_list,
 				return_count);
 			if (!NT_STATUS_IS_OK(status)) {

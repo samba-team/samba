@@ -367,9 +367,10 @@ bool getlmhostsent(TALLOC_CTX *ctx, FILE *fp, char **pp_name, int *name_type,
 		   struct sockaddr_storage *pss);
 void endlmhosts(FILE *fp);
 
-NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file, 
-					  const char *name, int name_type,
-					  TALLOC_CTX *mem_ctx, 
+NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
+					  const char *lmhosts_file,
+					  const char *name,
+					  int name_type,
 					  struct sockaddr_storage **return_iplist,
 					  int *return_count);
 
