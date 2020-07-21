@@ -2252,9 +2252,9 @@ NTSTATUS resolve_wins_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
  Resolve via "wins" method.
 *********************************************************/
 
-NTSTATUS resolve_wins(const char *name,
+NTSTATUS resolve_wins(TALLOC_CTX *mem_ctx,
+		const char *name,
 		int name_type,
-		TALLOC_CTX *mem_ctx,
 		struct sockaddr_storage **return_iplist,
 		int *return_count)
 {
@@ -2744,9 +2744,9 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (name_type == 0x1D) {
 				continue;
 			}
-			status = resolve_wins(name,
+			status = resolve_wins(talloc_tos(),
+					      name,
 					      name_type,
-					      talloc_tos(),
 					      &ss_list,
 					      return_count);
 			if (!NT_STATUS_IS_OK(status)) {
