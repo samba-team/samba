@@ -2613,8 +2613,9 @@ NTSTATUS internal_resolve_name(const char *name,
 		(*return_iplist)->port = PORT_NONE;
 
 		/* if it's in the form of an IP address then get the lib to interpret it */
-		if (!interpret_string_addr(&(*return_iplist)->ss,
-					name, AI_NUMERICHOST)) {
+		ok = interpret_string_addr(&(*return_iplist)->ss,
+					name, AI_NUMERICHOST);
+		if (!ok) {
 			DEBUG(1,("internal_resolve_name: interpret_string_addr "
 				"failed on %s\n",
 				name));
