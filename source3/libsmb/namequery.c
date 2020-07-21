@@ -2693,8 +2693,11 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
-			status = resolve_ads(name, KDC_NAME_TYPE, sitename,
-					     return_iplist, return_count);
+			status = resolve_ads(name,
+					     KDC_NAME_TYPE,
+					     sitename,
+					     return_iplist,
+					     return_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
