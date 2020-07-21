@@ -2603,8 +2603,8 @@ NTSTATUS internal_resolve_name(const char *name,
 			name, name_type, sitename ? sitename : "(null)"));
 
 	if (is_ipaddress(name)) {
-		if ((*return_iplist = SMB_MALLOC_P(struct ip_service)) ==
-				NULL) {
+		*return_iplist = SMB_MALLOC_P(struct ip_service);
+		if (*return_iplist == NULL) {
 			DEBUG(0,("internal_resolve_name: malloc fail !\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
