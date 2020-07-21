@@ -717,7 +717,7 @@ bool same_net(const struct sockaddr *ip1,
 		char *p1 = (char *)&ip1_6.sin6_addr;
 		char *p2 = (char *)&ip2_6.sin6_addr;
 		char *m = (char *)&mask_6.sin6_addr;
-		int i;
+		size_t i;
 
 		for (i = 0; i < sizeof(struct in6_addr); i++) {
 			*p1++ &= *m;
