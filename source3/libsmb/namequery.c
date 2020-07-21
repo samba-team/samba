@@ -2280,7 +2280,6 @@ fail:
 	return status;
 }
 
-#if 0
 /********************************************************
  Resolve a list of DNS names to a list of IP addresses.
  As this is a DC / LDAP / KDC lookup any IP address will
@@ -2360,7 +2359,6 @@ static NTSTATUS dns_lookup_list(TALLOC_CTX *ctx,
 	*pp_addrs = ret_addrs;
 	return NT_STATUS_OK;
 }
-#endif
 
 /********************************************************
  Resolve via "hosts" method.
@@ -2469,6 +2467,14 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	struct dns_rr_srv	*dcs = NULL;
 	int			numdcs = 0;
 	int			numaddrs = 0;
+	size_t num_srv_addrs = 0;
+	struct sockaddr_storage *srv_addrs = NULL;
+	size_t num_dns_addrs = 0;
+	struct sockaddr_storage *dns_addrs = NULL;
+	size_t num_dns_names = 0;
+	const char **dns_lookup_names = NULL;
+	struct ip_service *iplist = NULL;
+
 
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
 	    (name_type != 0x1b)) {
@@ -2508,107 +2514,197 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 			break;
 	}
 
-	if ( !NT_STATUS_IS_OK( status ) ) {
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dcs);
 		return status;
 	}
 
 	if (numdcs == 0) {
 		*return_iplist = NULL;
 		*return_count = 0;
+		TALLOC_FREE(dcs);
 		return NT_STATUS_OK;
 	}
 
-	for (i=0;i<numdcs;i++) {
-		if (!dcs[i].ss_s) {
-			numaddrs += 1;
-		} else {
-			numaddrs += dcs[i].num_ips;
-		}
-        }
+	/* Paranoia. */
+	if (numdcs < 0) {
+		TALLOC_FREE(dcs);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	if ((*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs)) ==
-			NULL ) {
-		DEBUG(0,("resolve_ads: malloc failed for %d entries\n",
-					numaddrs ));
+	/*
+	 * Split the returned values into 2 arrays. First one
+	 * is a struct sockaddr_storage array that contains results
+	 * from the SRV record lookup that contain both hostnames
+	 * and IP addresses. We only need to copy out the IP
+	 * addresses. This is srv_addrs.
+	 *
+	 * Second array contains the results from the SRV record
+	 * lookup that only contain hostnames - no IP addresses.
+	 * We must then call dns_lookup_list() to lookup
+	 * hostnames -> IP address. This is dns_addrs.
+	 *
+	 * Finally we will merge these two arrays to create the
+	 * return ip_service array.
+	 */
+
+	/* First count the sizes of each array. */
+	for(i = 0; i < numdcs; i++) {
+		if (dcs[i].ss_s != NULL) {
+			/* IP address returned in SRV record. */
+			if (num_srv_addrs + dcs[i].num_ips < num_srv_addrs) {
+				/* Wrap check. */
+				TALLOC_FREE(dcs);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			/* Add in the number of addresses we got. */
+			num_srv_addrs += dcs[i].num_ips;
+			/*
+			 * If we got any IP addresses zero out
+			 * the hostname so we know we've already
+			 * processed this entry and won't add it
+			 * to the dns_lookup_names array we use
+			 * to do DNS queries below.
+			 */
+			dcs[i].hostname = NULL;
+		} else {
+			/* Ensure we have a hostname to lookup. */
+			if (dcs[i].hostname == NULL) {
+				continue;
+			}
+			/* No IP address returned in SRV record. */
+			if (num_dns_names + 1 < num_dns_names) {
+				/* Wrap check. */
+				TALLOC_FREE(dcs);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			/* One more name to lookup. */
+			num_dns_names += 1;
+		}
+	}
+
+	/* Allocate the list of IP addresses we already have. */
+	srv_addrs = talloc_zero_array(ctx,
+				struct sockaddr_storage,
+				num_srv_addrs);
+	if (srv_addrs == NULL) {
+		TALLOC_FREE(dcs);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* now unroll the list of IP addresses */
+	/* Copy the addresses we already have. */
+	num_srv_addrs = 0;
+	for(i = 0; i < numdcs; i++) {
+		/* Copy all the IP addresses from the SRV response */
+		size_t j;
+		for (j = 0; j < dcs[i].num_ips; j++) {
+			char addr[INET6_ADDRSTRLEN];
 
-	*return_count = 0;
-
-	for (i = 0; i < numdcs && (*return_count<numaddrs); i++ ) {
-		/* If we don't have an IP list for a name, lookup it up */
-		if (!dcs[i].ss_s) {
-			/* We need to get all IP addresses here. */
-			struct addrinfo *res = NULL;
-			struct addrinfo *p;
-			int extra_addrs = 0;
-
-			if (!interpret_string_addr_internal(&res,
-						dcs[i].hostname,
-						0)) {
+			srv_addrs[num_srv_addrs] = dcs[i].ss_s[j];
+			if (is_zero_addr(&srv_addrs[num_srv_addrs])) {
 				continue;
 			}
-			/* Add in every IP from the lookup. How
-			   many is that ? */
-			for (p = res; p; p = p->ai_next) {
-				struct sockaddr_storage ss;
-				memcpy(&ss, p->ai_addr, p->ai_addrlen);
-				if (is_zero_addr(&ss)) {
-					continue;
-				}
-				extra_addrs++;
-			}
-			if (extra_addrs > 1) {
-				/* We need to expand the return_iplist array
-				   as we only budgeted for one address. */
-				numaddrs += (extra_addrs-1);
-				*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
-						struct ip_service,
-						numaddrs);
-				if (*return_iplist == NULL) {
-					if (res) {
-						freeaddrinfo(res);
-					}
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-			for (p = res; p; p = p->ai_next) {
-				(*return_iplist)[*return_count].port = dcs[i].port;
-				memcpy(&(*return_iplist)[*return_count].ss,
-						p->ai_addr,
-						p->ai_addrlen);
-				if (is_zero_addr(&(*return_iplist)[*return_count].ss)) {
-					continue;
-				}
-				(*return_count)++;
-				/* Should never happen, but still... */
-				if (*return_count>=numaddrs) {
-					break;
-				}
-			}
-			if (res) {
-				freeaddrinfo(res);
-			}
-		} else {
-			/* use all the IP addresses from the SRV response */
-			size_t j;
-			for (j = 0; j < dcs[i].num_ips; j++) {
-				(*return_iplist)[*return_count].port = dcs[i].port;
-				(*return_iplist)[*return_count].ss = dcs[i].ss_s[j];
-				if (is_zero_addr(&(*return_iplist)[*return_count].ss)) {
-					continue;
-				}
-                                (*return_count)++;
-				/* Should never happen, but still... */
-				if (*return_count>=numaddrs) {
-					break;
-				}
-			}
+
+			DBG_DEBUG("SRV lookup %s got IP[%zu] %s\n",
+				name,
+				j,
+				print_sockaddr(addr,
+					sizeof(addr),
+					&srv_addrs[num_srv_addrs]));
+
+			num_srv_addrs++;
 		}
 	}
 
+	/* Allocate the array of hostnames we must look up. */
+	dns_lookup_names = talloc_zero_array(ctx,
+					const char *,
+					num_dns_names);
+	if (dns_lookup_names == NULL) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(srv_addrs);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_dns_names = 0;
+	for(i = 0; i < numdcs; i++) {
+		if (dcs[i].hostname == NULL) {
+			/*
+			 * Must have been a SRV return with an IP address.
+			 * We don't need to look up this hostname.
+			 */
+			continue;
+                }
+		dns_lookup_names[num_dns_names] = dcs[i].hostname;
+		num_dns_names++;
+	}
+
+	/* Lookup the addresses on the dns_lookup_list. */
+	status = dns_lookup_list(ctx,
+				num_dns_names,
+				dns_lookup_names,
+				&num_dns_addrs,
+				&dns_addrs);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(srv_addrs);
+		TALLOC_FREE(dns_lookup_names);
+		return status;
+	}
+
+	/*
+	 * Combine the two sockaddr_storage arrays into a MALLOC'ed
+	 * ipservice array return.
+	 */
+
+	numaddrs = num_srv_addrs + num_dns_addrs;
+	/* Wrap check + bloody int conversion check :-(. */
+	if (numaddrs < num_srv_addrs ||
+				numaddrs < 0) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(srv_addrs);
+		TALLOC_FREE(dns_addrs);
+		TALLOC_FREE(dns_lookup_names);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (numaddrs == 0) {
+		/* Keep the same semantics for zero names. */
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(srv_addrs);
+		TALLOC_FREE(dns_addrs);
+		TALLOC_FREE(dns_lookup_names);
+		*return_iplist = NULL;
+		*return_count = 0;
+		return NT_STATUS_OK;
+	}
+
+	iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs);
+	if (iplist == NULL) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(srv_addrs);
+		TALLOC_FREE(dns_addrs);
+		TALLOC_FREE(dns_lookup_names);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_srv_addrs; i++) {
+		iplist[i].ss = srv_addrs[i];
+		iplist[i].port = 0;
+	}
+	for (i = 0; i < num_dns_addrs; i++) {
+		iplist[num_srv_addrs+i].ss = dns_addrs[i];
+		iplist[i].port = 0;
+	}
+
+	TALLOC_FREE(dcs);
+	TALLOC_FREE(srv_addrs);
+	TALLOC_FREE(dns_addrs);
+	TALLOC_FREE(dns_lookup_names);
+
+	*return_iplist = iplist;
+	*return_count = numaddrs;
 	return NT_STATUS_OK;
 }
 
