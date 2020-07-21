@@ -31,6 +31,7 @@
 #include "../libcli/nbt/libnbt.h"
 #include "libads/kerberos_proto.h"
 #include "lib/gencache.h"
+#include "librpc/gen_ndr/dns.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;
@@ -2279,6 +2280,395 @@ fail:
 	TALLOC_FREE(ev);
 	return status;
 }
+
+#if 0
+/********************************************************
+ Use ads_dns_lookup_[a|aaaa]_send() calls to look up a
+ list of names asynchronously.
+*********************************************************/
+
+struct dns_query_state {
+	/* Used to tell our parent we've completed. */
+	struct dns_lookup_list_async_state *p_async_state;
+	const char *query_name; /* For debugging only. */
+	size_t num_addrs;
+	struct samba_sockaddr *addrs;
+};
+
+struct dns_lookup_list_async_state {
+	bool timed_out;
+	size_t num_query_returns;
+	struct dns_query_state *queries;
+};
+
+/* Called on query timeout. */
+static void dns_lookup_send_timeout_handler(struct tevent_context *ev,
+					    struct tevent_timer *te,
+					    struct timeval t,
+					    void *private_data)
+{
+	bool *timed_out = (bool *)private_data;
+	*timed_out = true;
+}
+
+static void dns_lookup_list_a_done(struct tevent_req *req);
+#if defined(HAVE_IPV6)
+static void dns_lookup_list_aaaa_done(struct tevent_req *req);
+#endif
+
+static NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
+				      size_t num_dns_names,
+				      const char **dns_lookup_names,
+				      size_t *p_num_addrs,
+				      struct sockaddr_storage **pp_addrs,
+				      char ***pp_dns_names)
+{
+	struct dns_lookup_list_async_state *state = NULL;
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	struct tevent_timer *timer = NULL;
+	size_t num_queries_sent = 0;
+	size_t queries_size = num_dns_names;
+	size_t i;
+	size_t num_addrs = 0;
+	struct sockaddr_storage *addr_out = NULL;
+	char **dns_names_ret = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	/* Nothing to do. */
+	if (num_dns_names == 0) {
+		*p_num_addrs = 0;
+		*pp_addrs = NULL;
+		if (pp_dns_names != NULL) {
+			*pp_dns_names = NULL;
+		}
+		return NT_STATUS_OK;
+	}
+
+	state = talloc_zero(ctx, struct dns_lookup_list_async_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	ev = samba_tevent_context_init(ctx);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+#if defined(HAVE_IPV6)
+	queries_size = 2 * num_dns_names;
+	/* Wrap protection. */
+	if (queries_size < num_dns_names) {
+		goto fail;
+	}
+#else
+	queries_size = num_dns_names;
+#endif
+
+	state->queries = talloc_zero_array(state,
+					   struct dns_query_state,
+					   queries_size);
+	if (state == NULL) {
+		goto fail;
+	}
+
+	/* Hit all the DNS servers with asnyc lookups for all the names. */
+	for (i = 0; i < num_dns_names; i++) {
+		DBG_INFO("async DNS lookup A record for %s\n",
+			dns_lookup_names[i]);
+
+		/* Setup the query state. */
+		state->queries[num_queries_sent].query_name =
+					dns_lookup_names[i];
+		state->queries[num_queries_sent].p_async_state = state;
+
+		req = ads_dns_lookup_a_send(ev, ev, dns_lookup_names[i]);
+		if (req == NULL) {
+			goto fail;
+		}
+		tevent_req_set_callback(req,
+				dns_lookup_list_a_done,
+				&state->queries[num_queries_sent]);
+		num_queries_sent++;
+
+#if defined(HAVE_IPV6)
+		/* If we're IPv6 capable ask for that too. */
+		state->queries[num_queries_sent].query_name =
+					dns_lookup_names[i];
+		state->queries[num_queries_sent].p_async_state = state;
+
+		DBG_INFO("async DNS lookup AAAA record for %s\n",
+			dns_lookup_names[i]);
+
+		req = ads_dns_lookup_aaaa_send(ev, ev, dns_lookup_names[i]);
+		if (req == NULL) {
+			goto fail;
+		}
+		tevent_req_set_callback(req,
+					dns_lookup_list_aaaa_done,
+					&state->queries[num_queries_sent]);
+		num_queries_sent++;
+#endif
+	}
+
+	/* We must always have a timeout. */
+	timer = tevent_add_timer(ev,
+				 ev,
+				 timeval_current_ofs(lp_get_async_dns_timeout(),
+						     0),
+				 dns_lookup_send_timeout_handler,
+				 &state->timed_out);
+	if (timer == NULL) {
+		goto fail;
+	}
+
+	/* Loop until timed out or got all replies. */
+	for(;;) {
+		int ret;
+
+		if (state->timed_out) {
+			break;
+		}
+		if (state->num_query_returns == num_queries_sent) {
+			break;
+		}
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			goto fail;
+		}
+	}
+
+	/* Count what we got back. */
+	for (i = 0; i < num_queries_sent; i++) {
+		struct dns_query_state *query = &state->queries[i];
+
+		/* Wrap check. */
+		if (num_addrs + query->num_addrs < num_addrs) {
+			goto fail;
+		}
+		num_addrs += query->num_addrs;
+	}
+
+	if (state->timed_out) {
+		DBG_INFO("async DNS lookup timed out after %zu entries "
+			"(not an error)\n",
+			num_addrs);
+	}
+
+	addr_out = talloc_zero_array(ctx,
+				     struct sockaddr_storage,
+				     num_addrs);
+	if (addr_out == NULL) {
+		goto fail;
+	}
+
+	/*
+	 * Did the caller want an array of names back
+	 * that match the IP addresses ? If we provide
+	 * this, dsgetdcname() internals can now use this
+	 * async lookup code also.
+	 */
+	if (pp_dns_names != NULL) {
+		dns_names_ret = talloc_zero_array(ctx,
+						  char *,
+						  num_addrs);
+		if (dns_names_ret == NULL) {
+			goto fail;
+		}
+	}
+
+	/* Copy what we got back. */
+	num_addrs = 0;
+	for (i = 0; i < num_queries_sent; i++) {
+		size_t j;
+		struct dns_query_state *query = &state->queries[i];
+
+		if (query->num_addrs == 0) {
+			continue;
+		}
+
+		if (dns_names_ret != NULL) {
+			/*
+			 * If caller wants a name array matched with
+			 * the addrs array, copy the same queried name for
+			 * each IP address returned.
+			 */
+			for (j = 0; j < query->num_addrs; j++) {
+				dns_names_ret[num_addrs + j] = talloc_strdup(
+						ctx,
+						query->query_name);
+				if (dns_names_ret[num_addrs + j] == NULL) {
+					goto fail;
+				}
+			}
+		}
+
+		for (j = 0; j < query->num_addrs; j++) {
+			addr_out[num_addrs] = query->addrs[j].u.ss;
+		}
+		num_addrs += query->num_addrs;
+	}
+
+	*p_num_addrs = num_addrs;
+	*pp_addrs = addr_out;
+	if (pp_dns_names != NULL) {
+		*pp_dns_names = dns_names_ret;
+	}
+
+	status = NT_STATUS_OK;
+
+  fail:
+
+	TALLOC_FREE(state);
+	TALLOC_FREE(ev);
+	return status;
+}
+
+/*
+ Called when an A record lookup completes.
+*/
+
+static void dns_lookup_list_a_done(struct tevent_req *req)
+{
+	/*
+	 * Callback data is an element of a talloc'ed array,
+	 * not a talloc object in its own right. So use the
+	 * tevent_req_callback_data_void() void * cast function.
+	 */
+	struct dns_query_state *state = (struct dns_query_state *)
+				tevent_req_callback_data_void(req);
+	uint8_t rcode = 0;
+	size_t i;
+	char **hostnames_out = NULL;
+	struct samba_sockaddr *addrs = NULL;
+	size_t num_addrs = 0;
+	NTSTATUS status;
+
+	/* For good or ill, tell the parent we're finished. */
+	state->p_async_state->num_query_returns++;
+
+	status = ads_dns_lookup_a_recv(req,
+				       state->p_async_state,
+				       &rcode,
+				       &num_addrs,
+				       &hostnames_out,
+				       &addrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("async DNS A lookup for %s returned %s\n",
+			state->query_name,
+			nt_errstr(status));
+		return;
+	}
+
+	if (rcode != DNS_RCODE_OK) {
+		DBG_INFO("async DNS A lookup for %s returned DNS code %u\n",
+			state->query_name,
+			(unsigned int)rcode);
+		return;
+	}
+
+	if (num_addrs == 0) {
+		DBG_INFO("async DNS A lookup for %s returned 0 addresses.\n",
+			state->query_name);
+		return;
+	}
+
+	/* Copy data out. */
+	state->addrs = talloc_zero_array(state->p_async_state,
+					 struct samba_sockaddr,
+					 num_addrs);
+	if (state->addrs == NULL) {
+		return;
+	}
+
+	for (i = 0; i < num_addrs; i++) {
+		char addr[INET6_ADDRSTRLEN];
+		DBG_INFO("async DNS A lookup for %s [%zu] got %s -> %s\n",
+			state->query_name,
+			i,
+			hostnames_out[i],
+			print_sockaddr(addr,
+				sizeof(addr),
+				&addrs[i].u.ss));
+
+		state->addrs[i] = addrs[i];
+	}
+	state->num_addrs = num_addrs;
+}
+
+#if defined(HAVE_IPV6)
+/*
+ Called when an AAAA record lookup completes.
+*/
+
+static void dns_lookup_list_aaaa_done(struct tevent_req *req)
+{
+	/*
+	 * Callback data is an element of a talloc'ed array,
+	 * not a talloc object in its own right. So use the
+	 * tevent_req_callback_data_void() void * cast function.
+	 */
+	struct dns_query_state *state = (struct dns_query_state *)
+				tevent_req_callback_data_void(req);
+	uint8_t rcode = 0;
+	size_t i;
+	char **hostnames_out = NULL;
+	struct samba_sockaddr *addrs = NULL;
+	size_t num_addrs = 0;
+	NTSTATUS status;
+
+	/* For good or ill, tell the parent we're finished. */
+	state->p_async_state->num_query_returns++;
+
+	status = ads_dns_lookup_aaaa_recv(req,
+					  state->p_async_state,
+					  &rcode,
+					  &num_addrs,
+					  &hostnames_out,
+					  &addrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("async DNS AAAA lookup for %s returned %s\n",
+			state->query_name,
+			nt_errstr(status));
+		return;
+	}
+
+	if (rcode != DNS_RCODE_OK) {
+		DBG_INFO("async DNS AAAA lookup for %s returned DNS code %u\n",
+			state->query_name,
+			(unsigned int)rcode);
+		return;
+	}
+
+	if (num_addrs == 0) {
+		DBG_INFO("async DNS AAAA lookup for %s returned 0 addresses.\n",
+			state->query_name);
+		return;
+	}
+
+	/* Copy data out. */
+	state->addrs = talloc_zero_array(state->p_async_state,
+					 struct samba_sockaddr,
+					 num_addrs);
+	if (state->addrs == NULL) {
+		return;
+	}
+
+	for (i = 0; i < num_addrs; i++) {
+		char addr[INET6_ADDRSTRLEN];
+		DBG_INFO("async DNS AAAA lookup for %s [%zu] got %s -> %s\n",
+			state->query_name,
+			i,
+			hostnames_out[i],
+			print_sockaddr(addr,
+				sizeof(addr),
+				&addrs[i].u.ss));
+
+		state->addrs[i] = addrs[i];
+	}
+	state->num_addrs = num_addrs;
+}
+#endif
+#endif
 
 /********************************************************
  Resolve a list of DNS names to a list of IP addresses.
