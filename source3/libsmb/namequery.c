@@ -2459,7 +2459,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 			    const char *name,
 			    int name_type,
 			    const char *sitename,
-			    struct ip_service **return_iplist,
+			    struct sockaddr_storage **return_addrs,
 			    int *return_count)
 {
 	int 			i;
@@ -2473,8 +2473,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	struct sockaddr_storage *dns_addrs = NULL;
 	size_t num_dns_names = 0;
 	const char **dns_lookup_names = NULL;
-	struct ip_service *iplist = NULL;
-
+	struct sockaddr_storage *ret_addrs = NULL;
 
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
 	    (name_type != 0x1b)) {
@@ -2520,7 +2519,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	}
 
 	if (numdcs == 0) {
-		*return_iplist = NULL;
+		*return_addrs = NULL;
 		*return_count = 0;
 		TALLOC_FREE(dcs);
 		return NT_STATUS_OK;
@@ -2545,7 +2544,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	 * hostnames -> IP address. This is dns_addrs.
 	 *
 	 * Finally we will merge these two arrays to create the
-	 * return ip_service array.
+	 * return sockaddr_storage array.
 	 */
 
 	/* First count the sizes of each array. */
@@ -2654,9 +2653,9 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	}
 
 	/*
-	 * Combine the two sockaddr_storage arrays into a MALLOC'ed
-	 * ipservice array return.
-	 */
+	 * Combine the two sockaddr_storage arrays into a talloc'ed
+	 * struct sockaddr_storage array return.
+         */
 
 	numaddrs = num_srv_addrs + num_dns_addrs;
 	/* Wrap check + bloody int conversion check :-(. */
@@ -2675,13 +2674,15 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		TALLOC_FREE(srv_addrs);
 		TALLOC_FREE(dns_addrs);
 		TALLOC_FREE(dns_lookup_names);
-		*return_iplist = NULL;
+		*return_addrs = NULL;
 		*return_count = 0;
 		return NT_STATUS_OK;
 	}
 
-	iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs);
-	if (iplist == NULL) {
+	ret_addrs = talloc_zero_array(ctx,
+				struct sockaddr_storage,
+				numaddrs);
+	if (ret_addrs == NULL) {
 		TALLOC_FREE(dcs);
 		TALLOC_FREE(srv_addrs);
 		TALLOC_FREE(dns_addrs);
@@ -2690,12 +2691,10 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	}
 
 	for (i = 0; i < num_srv_addrs; i++) {
-		iplist[i].ss = srv_addrs[i];
-		iplist[i].port = 0;
+		ret_addrs[i] = srv_addrs[i];
 	}
 	for (i = 0; i < num_dns_addrs; i++) {
-		iplist[num_srv_addrs+i].ss = dns_addrs[i];
-		iplist[i].port = 0;
+		ret_addrs[num_srv_addrs+i] = dns_addrs[i];
 	}
 
 	TALLOC_FREE(dcs);
@@ -2703,7 +2702,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	TALLOC_FREE(dns_addrs);
 	TALLOC_FREE(dns_lookup_names);
 
-	*return_iplist = iplist;
+	*return_addrs = ret_addrs;
 	*return_count = numaddrs;
 	return NT_STATUS_OK;
 }
@@ -2862,11 +2861,12 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
+			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     KDC_NAME_TYPE,
 					     sitename,
-					     return_iplist,
+					     &ss_list,
 					     return_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
@@ -2874,18 +2874,31 @@ NTSTATUS internal_resolve_name(const char *name,
 			/* Ensure we don't namecache
 			 * this with the KDC port. */
 			name_type = KDC_NAME_TYPE;
+			ok = convert_ss2service(return_iplist,
+						ss_list,
+						return_count);
+			if (!ok) {
+				status = NT_STATUS_NO_MEMORY;
+			}
 			goto done;
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
+			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     name_type,
 					     sitename,
-					     return_iplist,
+					     &ss_list,
 					     return_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
+			}
+			ok = convert_ss2service(return_iplist,
+						ss_list,
+						return_count);
+			if (!ok) {
+				status = NT_STATUS_NO_MEMORY;
 			}
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
