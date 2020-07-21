@@ -2682,6 +2682,7 @@ NTSTATUS internal_resolve_name(const char *name,
 							ss_list,
 							return_count)) {
 					status = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
 				goto done;
 			}
@@ -2714,6 +2715,7 @@ NTSTATUS internal_resolve_name(const char *name,
 							ss_list,
 							return_count)) {
 					status = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
 				goto done;
 			}
@@ -2730,6 +2732,7 @@ NTSTATUS internal_resolve_name(const char *name,
 								ss_list,
 								return_count)) {
 						status = NT_STATUS_NO_MEMORY;
+						goto fail;
 					}
 					goto done;
 				}
@@ -2744,6 +2747,7 @@ NTSTATUS internal_resolve_name(const char *name,
 							ss_list,
 							return_count)) {
 					status = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
 				goto done;
 			}
@@ -2754,6 +2758,8 @@ NTSTATUS internal_resolve_name(const char *name,
 	}
 
 	/* All of the resolve_* functions above have returned false. */
+
+  fail:
 
 	TALLOC_FREE(frame);
 	SAFE_FREE(*return_iplist);
