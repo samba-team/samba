@@ -2674,7 +2674,7 @@ NTSTATUS internal_resolve_name(const char *name,
 		tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-			struct sockaddr_storage *ss_list;
+			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_hosts(talloc_tos(),
 					       name,
 					       name_type,
@@ -2719,7 +2719,7 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
-			struct sockaddr_storage *ss_list;
+			struct sockaddr_storage *ss_list = NULL;
 			status = resolve_lmhosts_file_as_sockaddr(
 				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
