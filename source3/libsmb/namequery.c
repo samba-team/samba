@@ -1909,9 +1909,9 @@ NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS name_resolve_bcast(const char *name,
+NTSTATUS name_resolve_bcast(TALLOC_CTX *mem_ctx,
+			const char *name,
 			int name_type,
-			TALLOC_CTX *mem_ctx,
 			struct sockaddr_storage **return_iplist,
 			int *return_count)
 {
@@ -2763,9 +2763,9 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if (strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list = NULL;
 			status = name_resolve_bcast(
+						talloc_tos(),
 						name,
 						name_type,
-						talloc_tos(),
 						&ss_list,
 						return_count);
 			if (!NT_STATUS_IS_OK(status)) {

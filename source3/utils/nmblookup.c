@@ -171,9 +171,11 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 				    &bcast_addr, talloc_tos(),
 				    &ip_list, &count, &flags);
 	} else {
-		status = name_resolve_bcast(
-			lookup, lookup_type,
-			talloc_tos(), &ip_list, &count);
+		status = name_resolve_bcast(talloc_tos(),
+					    lookup,
+					    lookup_type,
+					    &ip_list,
+					    &count);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

@@ -606,8 +606,11 @@ SMBC_opendir_ctx(SMBCCTX *context,
                  */
 
                 ip_list = NULL;
-		status = name_resolve_bcast(MSBROWSE, 1, talloc_tos(),
-					    &ip_list, &count);
+		status = name_resolve_bcast(talloc_tos(),
+					    MSBROWSE,
+					    1,
+					    &ip_list,
+					    &count);
                 if (!NT_STATUS_IS_OK(status))
 		{
 

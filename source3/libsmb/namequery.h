@@ -68,9 +68,9 @@ struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
 NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				 struct sockaddr_storage **addrs,
 				 int *num_addrs);
-NTSTATUS name_resolve_bcast(const char *name,
+NTSTATUS name_resolve_bcast(TALLOC_CTX *mem_ctx,
+			const char *name,
 			int name_type,
-			TALLOC_CTX *mem_ctx,
 			struct sockaddr_storage **return_iplist,
 			int *return_count);
 struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
