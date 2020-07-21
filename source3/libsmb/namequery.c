@@ -2599,13 +2599,13 @@ NTSTATUS internal_resolve_name(const char *name,
 	*return_iplist = NULL;
 	*return_count = 0;
 
-	DEBUG(10, ("internal_resolve_name: looking up %s#%x (sitename %s)\n",
-			name, name_type, sitename ? sitename : "(null)"));
+	DBG_DEBUG("looking up %s#%x (sitename %s)\n",
+		name, name_type, sitename ? sitename : "(null)");
 
 	if (is_ipaddress(name)) {
 		*return_iplist = SMB_MALLOC_P(struct ip_service);
 		if (*return_iplist == NULL) {
-			DEBUG(0,("internal_resolve_name: malloc fail !\n"));
+			DBG_ERR("malloc fail !\n");
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -2616,9 +2616,8 @@ NTSTATUS internal_resolve_name(const char *name,
 		ok = interpret_string_addr(&(*return_iplist)->ss,
 					name, AI_NUMERICHOST);
 		if (!ok) {
-			DEBUG(1,("internal_resolve_name: interpret_string_addr "
-				"failed on %s\n",
-				name));
+			DBG_WARNING("interpret_string_addr failed on %s\n",
+				name);
 			SAFE_FREE(*return_iplist);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -2646,7 +2645,7 @@ NTSTATUS internal_resolve_name(const char *name,
 	/* set the name resolution order */
 
 	if (resolve_order && strcmp(resolve_order[0], "NULL") == 0) {
-		DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
+		DBG_DEBUG("all lookups disabled\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2765,8 +2764,8 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 			goto done;
 		} else {
-			DEBUG(0,("resolve_name: unknown name switch type %s\n",
-				tok));
+			DBG_ERR("unknown name switch type %s\n",
+				tok);
 		}
 	}
 
@@ -2810,8 +2809,8 @@ NTSTATUS internal_resolve_name(const char *name,
 	/* Display some debugging info */
 
 	if ( DEBUGLEVEL >= 10 ) {
-		DEBUG(10, ("internal_resolve_name: returning %d addresses: ",
-					*return_count));
+		DBG_DEBUG("returning %d addresses: ",
+				*return_count);
 
 		for (i = 0; i < *return_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
