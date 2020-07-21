@@ -2284,8 +2284,9 @@ fail:
  Resolve via "hosts" method.
 *********************************************************/
 
-static NTSTATUS resolve_hosts(const char *name, int name_type,
-			      TALLOC_CTX *mem_ctx,
+static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
+			      const char *name,
+			      int name_type,
 			      struct sockaddr_storage **return_iplist,
 			      int *return_count)
 {
@@ -2674,9 +2675,9 @@ NTSTATUS internal_resolve_name(const char *name,
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			struct sockaddr_storage *ss_list;
-			status = resolve_hosts(name,
+			status = resolve_hosts(talloc_tos(),
+					       name,
 					       name_type,
-					       talloc_tos(),
 					       &ss_list,
 					       return_count);
 			if (!NT_STATUS_IS_OK(status)) {
