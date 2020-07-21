@@ -2755,9 +2755,10 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			if (!convert_ss2service(return_iplist,
+			ok = convert_ss2service(return_iplist,
 						ss_list,
-						return_count)) {
+						return_count);
+			if (!ok) {
 				status = NT_STATUS_NO_MEMORY;
 				goto fail;
 			}
