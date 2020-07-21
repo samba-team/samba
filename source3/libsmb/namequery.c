@@ -2850,13 +2850,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
 			goto done;
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
@@ -2873,12 +2866,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			/* Ensure we don't namecache
 			 * this with the KDC port. */
 			name_type = KDC_NAME_TYPE;
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-			}
 			goto done;
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
@@ -2892,12 +2879,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-			}
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
 			status = resolve_lmhosts_file_as_sockaddr(
@@ -2909,13 +2890,6 @@ NTSTATUS internal_resolve_name(const char *name,
 				return_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
-			}
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
 			}
 			goto done;
 		} else if (strequal(tok, "wins")) {
@@ -2931,13 +2905,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
 			goto done;
 		} else if (strequal(tok, "bcast")) {
 			status = name_resolve_bcast(
@@ -2949,13 +2916,6 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			ok = convert_ss2service(return_iplist,
-						ss_list,
-						return_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
 			goto done;
 		} else {
 			DBG_ERR("unknown name switch type %s\n",
@@ -2965,8 +2925,6 @@ NTSTATUS internal_resolve_name(const char *name,
 
 	/* All of the resolve_* functions above have returned false. */
 
-  fail:
-
 	TALLOC_FREE(frame);
 	SAFE_FREE(*return_iplist);
 	*return_count = 0;
@@ -2974,6 +2932,14 @@ NTSTATUS internal_resolve_name(const char *name,
 	return status;
 
   done:
+
+	ok = convert_ss2service(return_iplist, ss_list, return_count);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		SAFE_FREE(*return_iplist);
+		*return_count = 0;
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Remove duplicate entries.  Some queries, notably #1c (domain
 	controllers) return the PDC in iplist[0] and then all domain
