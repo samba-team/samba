@@ -2281,7 +2281,6 @@ fail:
 	return status;
 }
 
-#if 0
 /********************************************************
  Use ads_dns_lookup_[a|aaaa]_send() calls to look up a
  list of names asynchronously.
@@ -2668,8 +2667,8 @@ static void dns_lookup_list_aaaa_done(struct tevent_req *req)
 	state->num_addrs = num_addrs;
 }
 #endif
-#endif
 
+#if 0
 /********************************************************
  Resolve a list of DNS names to a list of IP addresses.
  As this is a DC / LDAP / KDC lookup any IP address will
@@ -2749,6 +2748,7 @@ static NTSTATUS dns_lookup_list(TALLOC_CTX *ctx,
 	*pp_addrs = ret_addrs;
 	return NT_STATUS_OK;
 }
+#endif
 
 /********************************************************
  Resolve via "hosts" method.
@@ -3029,11 +3029,12 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	}
 
 	/* Lookup the addresses on the dns_lookup_list. */
-	status = dns_lookup_list(ctx,
+	status = dns_lookup_list_async(ctx,
 				num_dns_names,
 				dns_lookup_names,
 				&num_dns_addrs,
-				&dns_addrs);
+				&dns_addrs,
+				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(dcs);
