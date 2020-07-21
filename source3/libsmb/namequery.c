@@ -2375,7 +2375,8 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 /* Special name type used to cause a _kerberos DNS lookup. */
 #define KDC_NAME_TYPE 0xDCDC
 
-static NTSTATUS resolve_ads(const char *name,
+static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
+			    const char *name,
 			    int name_type,
 			    const char *sitename,
 			    struct ip_service **return_iplist,
@@ -2383,7 +2384,6 @@ static NTSTATUS resolve_ads(const char *name,
 {
 	int 			i;
 	NTSTATUS  		status;
-	TALLOC_CTX		*ctx;
 	struct dns_rr_srv	*dcs = NULL;
 	int			numdcs = 0;
 	int			numaddrs = 0;
@@ -2391,11 +2391,6 @@ static NTSTATUS resolve_ads(const char *name,
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
 	    (name_type != 0x1b)) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
-		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	switch (name_type) {
@@ -2432,14 +2427,12 @@ static NTSTATUS resolve_ads(const char *name,
 	}
 
 	if ( !NT_STATUS_IS_OK( status ) ) {
-		talloc_destroy(ctx);
 		return status;
 	}
 
 	if (numdcs == 0) {
 		*return_iplist = NULL;
 		*return_count = 0;
-		talloc_destroy(ctx);
 		return NT_STATUS_OK;
 	}
 
@@ -2455,7 +2448,6 @@ static NTSTATUS resolve_ads(const char *name,
 			NULL ) {
 		DEBUG(0,("resolve_ads: malloc failed for %d entries\n",
 					numaddrs ));
-		talloc_destroy(ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2497,7 +2489,6 @@ static NTSTATUS resolve_ads(const char *name,
 					if (res) {
 						freeaddrinfo(res);
 					}
-					talloc_destroy(ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 			}
@@ -2536,7 +2527,6 @@ static NTSTATUS resolve_ads(const char *name,
 		}
 	}
 
-	talloc_destroy(ctx);
 	return NT_STATUS_OK;
 }
 
@@ -2694,7 +2684,8 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
-			status = resolve_ads(name,
+			status = resolve_ads(talloc_tos(),
+					     name,
 					     KDC_NAME_TYPE,
 					     sitename,
 					     return_iplist,
@@ -2709,7 +2700,8 @@ NTSTATUS internal_resolve_name(const char *name,
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
-			status = resolve_ads(name,
+			status = resolve_ads(talloc_tos(),
+					     name,
 					     name_type,
 					     sitename,
 					     return_iplist,
