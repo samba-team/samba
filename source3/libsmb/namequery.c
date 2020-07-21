@@ -2315,12 +2315,12 @@ static void dns_lookup_list_a_done(struct tevent_req *req);
 static void dns_lookup_list_aaaa_done(struct tevent_req *req);
 #endif
 
-static NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
-				      size_t num_dns_names,
-				      const char **dns_lookup_names,
-				      size_t *p_num_addrs,
-				      struct sockaddr_storage **pp_addrs,
-				      char ***pp_dns_names)
+NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
+			      size_t num_dns_names,
+			      const char **dns_lookup_names,
+			      size_t *p_num_addrs,
+			      struct sockaddr_storage **pp_addrs,
+			      char ***pp_dns_names)
 {
 	struct dns_lookup_list_async_state *state = NULL;
 	struct tevent_context *ev = NULL;
