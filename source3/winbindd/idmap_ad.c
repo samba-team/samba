@@ -290,6 +290,30 @@ static void PRINTF_ATTRIBUTE(3, 0) idmap_ad_tldap_debug(
        }
 }
 
+static uint32_t gensec_features_from_ldap_sasl_wrapping(void)
+{
+	int wrap_flags;
+	uint32_t gensec_features = 0;
+
+	wrap_flags = lp_client_ldap_sasl_wrapping();
+	if (wrap_flags == -1) {
+		wrap_flags = 0;
+	}
+
+	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
+		gensec_features |= GENSEC_FEATURE_SEAL;
+	}
+	if (wrap_flags & ADS_AUTH_SASL_SIGN) {
+		gensec_features |= GENSEC_FEATURE_SIGN;
+	}
+
+	if (gensec_features != 0) {
+		gensec_features |= GENSEC_FEATURE_LDAP_STYLE;
+	}
+
+	return gensec_features;
+}
+
 static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 				       const char *domname,
 				       struct tldap_context **pld)
@@ -299,6 +323,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
 	struct tldap_context *ld;
+	uint32_t gensec_features = gensec_features_from_ldap_sasl_wrapping();
 	int fd;
 	NTSTATUS status;
 	bool ok;
@@ -368,7 +393,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	rc = tldap_gensec_bind(ld, creds, "ldap", dcinfo->dc_unc, NULL, lp_ctx,
-			       GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+			       gensec_features);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		DBG_DEBUG("tldap_gensec_bind failed: %s\n",
 			  tldap_errstr(dcinfo, ld, rc));
