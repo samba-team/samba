@@ -33,7 +33,7 @@ do_ctdb_reloadips ()
 	local retry_max=10
 	local retry_count=0
 	while : ; do
-		if ctdb_onnode "$test_node" "reloadips all" ; then
+		if try_command_on_node any "$CTDB reloadips all" ; then
 			return 0
 		fi
 
@@ -73,7 +73,7 @@ GOOD: node $test_node is no longer hosting IP $test_ip:
 $out
 EOF
 
-ctdb_onnode "$test_node" sync
+try_command_on_node any $CTDB sync
 
 
 echo "Restoring addresses"
@@ -94,7 +94,7 @@ GOOD: node $test_node has these addresses:
 $out
 EOF
 
-ctdb_onnode "$test_node" sync
+try_command_on_node any $CTDB sync
 
 
 echo "Emptying public addresses file on $test_node"

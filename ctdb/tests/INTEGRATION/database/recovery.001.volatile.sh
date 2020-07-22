@@ -38,7 +38,7 @@ status=0
 
 # Make sure node 0 is not the recovery master
 echo "find out which node is recmaster"
-ctdb_onnode 0 recmaster
+try_command_on_node any $CTDB recmaster
 recmaster="$out"
 if [ "$recmaster" = "0" ]; then
     echo "node 0 is recmaster, disable recmasterrole on node 0"
@@ -56,7 +56,7 @@ if [ "$recmaster" = "0" ]; then
     try_command_on_node 0 $CTDB continue
     wait_until_node_has_status 0 notstopped
 
-    ctdb_onnode 0 recmaster
+    try_command_on_node any $CTDB recmaster
     recmaster="$out"
     if [ "$recmaster" = "0" ]; then
 	echo "failed to move recmaster to different node"
