@@ -594,6 +594,34 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 	char addr[INET6_ADDRSTRLEN];
+	struct samba_sockaddr existing_sa = {0};
+
+	/*
+	 * ads_connect can be passed in a reused ADS_STRUCT
+	 * with an existing non-zero ads->ldap.ss IP address
+	 * that was stored by going through ads_find_dc()
+	 * if ads->server.ldap_server was NULL.
+	 *
+	 * If ads->server.ldap_server is still NULL but
+	 * the target address isn't the zero address, then
+	 * store that address off off before zeroing out
+	 * ads->ldap so we don't keep doing multiple calls
+	 * to ads_find_dc() in the reuse case.
+	 *
+	 * If a caller wants a clean ADS_STRUCT they
+	 * will re-initialize by calling ads_init(), or
+	 * call ads_destroy() both of which ensures
+	 * ads->ldap.ss is a properly zero'ed out valid IP
+	 * address.
+	 */
+	if (ads->server.ldap_server == NULL && !is_zero_addr(&ads->ldap.ss)) {
+		/* Save off the address we previously found by ads_find_dc(). */
+		bool ok = sockaddr_storage_to_samba_sockaddr(&existing_sa,
+							     &ads->ldap.ss);
+		if (!ok) {
+			return ADS_ERROR_NT(NT_STATUS_INVALID_ADDRESS);
+		}
+	}
 
 	ads_zero_ldap(ads);
 	ZERO_STRUCT(ads->ldap_wrap_data);
@@ -638,6 +666,20 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
 			goto out;
 		}
+	}
+
+	if (!is_zero_addr(&existing_sa.u.ss)) {
+		/* We saved off who we should talk to. */
+		bool ok = ads_try_connect(ads,
+					  ads->server.gc,
+					  &existing_sa.u.ss);
+		if (ok) {
+			goto got_connection;
+		}
+		/*
+		 * Keep trying to find a server and fall through
+		 * into ads_find_dc() again.
+		 */
 	}
 
 	ntstatus = ads_find_dc(ads);
