@@ -11,14 +11,17 @@ set -e
 ctdb_test_init
 
 echo "Check that recovery lock is set the same on all nodes..."
-ctdb_onnode all getreclock
+try_command_on_node -v -q all $CTDB getreclock
 
-# outfile is set above by ctdb_onnode
-# shellcheck disable=SC2154
+if [ -z "$out" ] ; then
+    echo "GOOD: Recovery lock is unset on all nodes"
+    exit 0
+fi
+
 n=$(sort -u "$outfile" | wc -l | tr -d '[:space:]')
-
-case "$n" in
-0) echo "GOOD: Recovery lock is unset on all nodes" ;;
-1) echo "GOOD: All nodes have the same recovery lock setting" ;;
-*) ctdb_test_fail "BAD: Recovery lock setting differs across nodes" ;;
-esac
+if [ "$n" = 1 ] ; then
+	echo "GOOD: All nodes have the same recovery lock setting"
+else
+	echo "BAD: Recovery lock setting differs across nodes"
+	exit 1
+fi
