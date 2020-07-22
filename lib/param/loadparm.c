@@ -3678,3 +3678,33 @@ char *lpcfg_substituted_string(TALLOC_CTX *mem_ctx,
 					     raw_value,
 					     lp_sub->private_data);
 }
+
+/**
+ * @brief Parse a string value of a given parameter to its integer enum value.
+ *
+ * @param[in]  param_name    The parameter name (e.g. 'client smb encrypt')
+ *
+ * @param[in]  param_value   The parameter value (e.g. 'required').
+ *
+ * @return The integer value of the enum the param_value matches or INT32_MIN
+ * on error.
+ */
+int32_t lpcfg_parse_enum_vals(const char *param_name,
+			      const char *param_value)
+{
+	struct parm_struct *parm = NULL;
+	int32_t ret = INT32_MIN;
+	bool ok;
+
+	parm = lpcfg_parm_struct(NULL, param_name);
+	if (parm == NULL) {
+		return INT32_MIN;
+	}
+
+	ok = lp_set_enum_parm(parm, param_value, &ret);
+	if (!ok) {
+		return INT32_MIN;
+	}
+
+	return ret;
+}

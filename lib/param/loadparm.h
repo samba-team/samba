@@ -316,6 +316,8 @@ bool lp_do_section(const char *pszSectionName, void *userdata);
 bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
 
 int num_parameters(void);
+int32_t lpcfg_parse_enum_vals(const char *param_name,
+			      const char *param_value);
 
 struct loadparm_substitution;
 #ifdef LOADPARM_SUBSTITUTION_INTERNALS
