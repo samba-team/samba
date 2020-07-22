@@ -599,6 +599,8 @@ wait_until_node_has_no_ips ()
 
 ctdb_init ()
 {
+	ctdb_nodes_stop >/dev/null 2>&1 || :
+
 	if ! ctdb_nodes_start ; then
 		echo "Cluster start failed"
 		return 1
