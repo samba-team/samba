@@ -53,11 +53,6 @@ echo "Waiting for debugging output to appear..."
 # Use test -s because the file is created above using mktemp
 wait_until 60 test -s "$debug_output"
 
-echo
-echo "Debugging output:"
-cat "$debug_output"
-echo
-
 echo "Checking output of hung script debugging..."
 
 # Can we actually read kernel stacks
