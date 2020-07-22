@@ -1,6 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Check that the CTDB version consistency checking operates correctly
+test_info()
+{
+    cat <<EOF
+Check that the CTDB version consistency checking operates correctly.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
@@ -9,6 +14,8 @@ set -e
 ctdb_test_skip_on_cluster
 
 ctdb_test_init
+
+cluster_is_healthy
 
 select_test_node
 

@@ -1,12 +1,36 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify the operation of 'ctdb isnotrecmaster'
+test_info()
+{
+    cat <<EOF
+Verify the operation of 'ctdb isnotrecmaster'.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Run 'ctdb isnotrecmaster' on each node.
+
+3. Verify that only 1 node shows the output 'This node is the
+   recmaster' and all the other nodes show the output 'This node is
+   not the recmaster'.
+
+Expected results:
+
+* 'ctdb isnotrecmaster' shows the correct output.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 cmd="$CTDB isnotrecmaster || true"
 try_command_on_node -v all "$cmd"

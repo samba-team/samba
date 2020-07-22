@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Ensure that vacuuming does not delete a record that is recreated
 # before vacuuming completes.  This needs at least 3 nodes.

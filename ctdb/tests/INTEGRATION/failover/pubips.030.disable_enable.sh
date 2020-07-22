@@ -1,14 +1,21 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify the operation of "ctdb disable" and "ctdb enable"
+test_info()
+{
+    cat <<EOF
+Verify the operation of "ctdb disable" and "ctdb enable"
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
-
-set -e
 
 ctdb_test_init
 
 ########################################
+
+set -e
+
+cluster_is_healthy
 
 select_test_node_and_ips
 

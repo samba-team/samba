@@ -1,17 +1,24 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that the recovery daemon handles unhosted IPs properly
+test_info()
+{
+    cat <<EOF
+Verify that the recovery daemon handles unhosted IPs properly.
 
-# This test does not do any network level checks to make sure the IP
-# address is actually on an interface.  It just consults "ctdb ip".
+This test does not do any network level checks to make sure the IP
+address is actually on an interface.  It just consults "ctdb ip".
 
-# This is a variation of the "addip" test.
+This is a variation of the "addip" test.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 select_test_node_and_ips
 

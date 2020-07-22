@@ -1,6 +1,19 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify CTDB's debugging of timed out eventscripts
+test_info()
+{
+    cat <<EOF
+Verify CTDB's debugging of timed out eventscripts
+
+Prerequisites:
+
+* An active CTDB cluster with monitoring enabled
+
+Expected results:
+
+* When an eventscript times out the correct debugging is executed.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
@@ -9,6 +22,8 @@ set -e
 ctdb_test_skip_on_cluster
 
 ctdb_test_init
+
+cluster_is_healthy
 
 select_test_node
 

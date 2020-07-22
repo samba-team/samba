@@ -1,12 +1,19 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that an interface is deleted when all IPs on it are deleted
+test_info()
+{
+    cat <<EOF
+Verify that an interface is deleted when all IPs on it are deleted.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 select_test_node_and_ips
 

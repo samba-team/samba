@@ -1,28 +1,46 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Test support for read-only records
+test_info()
+{
+    cat <<EOF
+Read-only records can be activated at runtime using a ctdb command.
+If read-only records are not activated, then any attempt to fetch a read-only
+copy should be automatically upgraded to a read-write fetch_lock().
 
-# Read-only records can be activated at runtime using a ctdb command.
-# If read-only records are not activated, then any attempt to fetch a
-# read-only copy should be automatically upgraded to a read-write
-# fetch_locked().
+If read-only delegations are present, then any attempt to aquire a read-write
+fetch_lock will trigger all delegations to be revoked before the fetch lock
+completes.
 
-# If read-only delegations are present, then any attempt to acquire a
-# read-write fetch_lock will trigger revocation of all delegations
-# before the fetch_locked().
 
-# 1. Create a test database and some records
-# 2. Try to fetch read-only records, this should not result in any delegations
-# 3. Activate read-only support
-# 4. Try to fetch read-only records, this should result in delegations
-# 5. Do a fetchlock  and the delegations should be revoked
-# 6. Try to fetch read-only records, this should result in delegations
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. create a test database and some records
+3. try to fetch read-only records, this should not result in any delegations
+4. activate read-only support
+5. try to fetch read-only records, this should result in delegations
+6. do a fetchlock  and the delegations should be revoked
+7. try to fetch read-only records, this should result in delegations
+8. do a recovery  and the delegations should be revoked
+
+Expected results:
+
+Delegations should be created and revoked as above
+
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 ######################################################################
 

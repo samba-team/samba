@@ -1,21 +1,38 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that "ctdb update_record_persistent" creates new records and
-# updates existing records in a persistent database
-#
-# 1. Create and wipe a persistent test database
-# 2. Do a recovery
-# 3. Confirm that the database is empty
-# 4. Create a new record using "ctdb update_record_persistent"
-# 5. Confirm the record exists in the database using "ctdb cattdb"
-# 6. Update the record's value using "ctdb update_record_persistent"
-# 7. Confirm that the original value no longer exists using "ctdb cattdb"
+test_info()
+{
+    cat <<EOF
+UPDATE_RECORD control should be able to create new records and update
+existing records in a persistent database.
+
+Prerequisites:
+
+* An active CTDB cluster with at least one active node.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. create a persistent test database
+3, wipe the database to make sure it is empty
+4, create a new record
+5, update the record
+
+Expected results:
+
+* 4 created record found in the tdb
+* 5 updated record found in the tdb
+
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
@@ -27,7 +44,7 @@ echo "Create persistent test database \"$test_db\""
 try_command_on_node 0 $CTDB attach "$test_db" persistent
 
 
-# 3.
+# 3,
 echo "Wipe the persistent test database"
 try_command_on_node 0 $CTDB wipedb "$test_db"
 echo "Force a recovery"
@@ -42,7 +59,7 @@ else
     exit 1
 fi
 
-# 4.
+# 4,
 echo "Create a new record in the persistent database using UPDATE_RECORD"
 try_command_on_node 0 $CTDB_TEST_WRAPPER $VALGRIND update_record_persistent \
 	-D "$test_db" -k "Update_Record_Persistent" -v "FirstValue"
@@ -55,7 +72,7 @@ else
     exit 1
 fi
 
-# 5.
+# 5,
 echo Modify an existing record in the persistent database using UPDATE_RECORD
 try_command_on_node 0 $CTDB_TEST_WRAPPER $VALGRIND update_record_persistent \
 	-D "$test_db" -k "Update_Record_Persistent" -v "SecondValue"

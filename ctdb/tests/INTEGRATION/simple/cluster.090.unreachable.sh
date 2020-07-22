@@ -1,16 +1,44 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify an error occurs if a ctdb command is run against a node
-# without a ctdbd
+test_info()
+{
+    cat <<EOF
+Verify an error occurs if a ctdb command is run against a node without a ctdbd.
 
-# That is, check that an error message is printed if an attempt is made
-# to execute a ctdb command against a node that is not running ctdbd.
+That is, check that an error message is printed if an attempt is made
+to execute a ctdb command against a node that is not running ctdbd.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Shutdown ctdb on a node using 'ctdb shutdown -n <node>'.
+3. Verify that the status of the node changes to 'DISCONNECTED'.
+4. Now run 'ctdb ip -n <node>' from another node.
+5. Verify that an error message is printed stating that the node is
+   disconnected.
+6. Execute some other commands against the shutdown node.  For example,
+   disable, enable, ban, unban, listvars.
+7. For each command, verify that an error message is printed stating
+   that the node is disconnected. 
+
+Expected results:
+
+* For a node on which ctdb is not running, all commands display an
+  error message stating that the node is disconnected.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 test_node=1
 

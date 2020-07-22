@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Verify that the cluster recovers if the recovery lock is removed.
 

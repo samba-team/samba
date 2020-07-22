@@ -1,18 +1,25 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that 'ctdb moveip' allows movement of public IPs between nodes
+test_info()
+{
+    cat <<EOF
+Verify that  'ctdb moveip' allows movement of public IPs between cluster nodes.
 
-# This test does not do any network level checks to make sure IP
-# addresses are actually on interfaces.  It just consults "ctdb ip".
+This test does not do any network level checks to make sure IP
+addresses are actually on interfaces.  It just consults "ctdb ip".
 
-# To work, this test ensures that IPAllocAlgorithm is not set to 0
-# (Deterministic IPs) and sets NoIPFailback.
+To work, this test ensures that IPAllocAlgorithm is not set to 0
+(Deterministic IPs) and sets NoIPFailback.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 select_test_node_and_ips
 

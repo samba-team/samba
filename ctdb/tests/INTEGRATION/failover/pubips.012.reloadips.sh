@@ -1,15 +1,31 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that IPs can be reconfigured using 'ctdb reloadips'
+test_info()
+{
+    cat <<EOF
+Verify that IPs can be rearrranged using 'ctdb reloadips'.
 
-# Various sub-tests that remove addresses from the public_addresses file
-# on a node or delete the entire contents of the public_addresses file.
+Various sub-tests that remove addresses from the public_addresses file
+on a node or delete the entire contents of the public_addresses file.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Expected results:
+
+* When addresses are deconfigured "ctdb ip" no longer reports them and
+  when added they are seen again.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 select_test_node_and_ips
 

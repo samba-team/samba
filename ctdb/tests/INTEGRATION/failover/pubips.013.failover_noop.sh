@@ -1,9 +1,17 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Check that CTDB operates correctly if:
+test_info()
+{
+    cat <<EOF
+Check that CTDB operates correctly if:
 
-# * failover is disabled; or
-# * there are 0 public IPs configured
+* failover is disabled; or
+* there are 0 public IPs configured
+
+This test only does anything with local daemons.  On a real cluster it
+has no way of updating configuration.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 

@@ -1,15 +1,36 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that 'ctdb statisticsreset' works as expected
+test_info()
+{
+    cat <<EOF
+Verify that 'ctdb statisticsreset' works as expected.
 
-# This is pretty superficial.  It just checks that a few particular
-# items reduce.
+This is pretty superficial.  It just checks that a few particular
+items reduce.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Run 'ctdb statisticsreset' on all nodes and verify that it executes
+   successfully.
+
+Expected results:
+
+* 'ctdb statisticsreset' executes successfully.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"

@@ -1,19 +1,38 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that databases are attached a node joins the cluster:
-# 1. Shut down CTDB on one node
-# 2. Attach test databases
-# 3. Check that databases are attached on all up nodes
-# 4. Start CTDB on the node where it is shut down
-# 5. Verify that the test databases are attached on this node
-# 6. Restart one of the nodes
-# 7. Verify that the test databases are attached on this node
+test_info()
+{
+    cat <<EOF
+Verify the operation of 'ctdb attach' command.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Shut down one of the nodes
+3. Attach test databases
+4. Start shutdown node
+5. Verify that the databases are attached.
+6. Restart one of the nodes
+7. Verify that the databses are attached.
+
+
+Expected results:
+
+* Command 'ctdb attach' command successfully attaches databases.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 ######################################################################
 

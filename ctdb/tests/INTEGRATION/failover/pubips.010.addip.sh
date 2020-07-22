@@ -1,12 +1,22 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that an IP address can be added to a node using 'ctdb addip'
+test_info()
+{
+    cat <<EOF
+Verify that an IP address can be added to a node using 'ctdb addip'.
+
+This test does not do any network level checks to make sure IP
+addresses are actually on interfaces.  It just consults "ctdb ip".
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 select_test_node_and_ips
 get_test_ip_mask_and_iface

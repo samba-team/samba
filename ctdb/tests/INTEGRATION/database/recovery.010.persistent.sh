@@ -1,20 +1,39 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Ensure that persistent databases are correctly recovered by database
-# sequence number
-#
-# 1. Create and wipe a persistent test database
-# 2. Directly add a single record to the database on each node
-# 3. Trigger a recover
-# 4. Ensure that the database contains only a single record
-#
-# Repeat but with sequence numbers set by hand on each node
+test_info()
+{
+    cat <<EOF
+The persistent databases are recovered using sequence number.
+The recovery is performed by picking the copy of the database from the
+node that has the highest sequence number and ignore the content on all
+other nodes.
+
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. create a persistent test database
+3. test that no seqnum record blends the database during recovery
+4. test that seqnum record does not blend the database during recovery
+
+Expected results:
+
+* that 3,4 will recover the highest seqnum database
+
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"

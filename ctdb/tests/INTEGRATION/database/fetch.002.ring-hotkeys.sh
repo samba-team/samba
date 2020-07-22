@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Run the fetch_ring test, sanity check the output and check hot keys
 # statistics

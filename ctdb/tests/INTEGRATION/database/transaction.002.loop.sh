@@ -1,12 +1,23 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Verify that the transaction_loop test succeeds
+test_info()
+{
+    cat <<EOF
+Verify that the transaction_loop test succeeds.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+EOF
+}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
+ctdb_test_init
+
 set -e
 
-ctdb_test_init
+cluster_is_healthy
 
 TESTDB="persistent_trans.tdb"
 
