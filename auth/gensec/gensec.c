@@ -627,7 +627,7 @@ _PUBLIC_ bool gensec_have_feature(struct gensec_security *gensec_security,
 	}
 
 	/* We might 'have' features that we don't 'want', because the
-	 * other end demanded them, or we can't neotiate them off */
+	 * other end demanded them, or we can't negotiate them off */
 	return gensec_security->ops->have_feature(gensec_security, feature);
 }
 
