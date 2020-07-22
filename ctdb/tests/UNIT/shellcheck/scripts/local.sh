@@ -11,7 +11,7 @@ define_test ()
 shellcheck_test ()
 {
 	ok_null
-	if type shellcheck >/dev/null 2>&1 ; then
+	if type shellcheck >/dev/null ; then
 		# Skip some recent checks:
 		#
 		# SC1090: Can't follow non-constant source. Use a
