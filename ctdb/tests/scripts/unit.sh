@@ -32,9 +32,9 @@ required_result ()
 
 required_error ()
 {
-	rc=$(errcode "$1")
+	rc=$(errcode $1)
 	shift
-	required_result "$rc" "$@"
+	required_result $rc "$@"
 }
 
 ok ()
@@ -83,9 +83,7 @@ Output (Exit status: ${_rc}):
 --------------------------------------------------
 EOF
 	# Avoid echo, which might expand unintentional escapes
-	printf '%s\n' "$_out" | \
-		result_filter | \
-		cat "${CTDB_TEST_CAT_RESULTS_OPTS:--}"
+	printf '%s\n' "$_out" | result_filter | cat $CTDB_TEST_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
@@ -95,8 +93,7 @@ Required output (Exit status: ${required_rc}):
 --------------------------------------------------
 EOF
 	# Avoid echo, which might expand unintentional escapes
-	printf '%s\n' "$required_output" | \
-		cat "${CTDB_TEST_CAT_RESULTS_OPTS:--}"
+	printf '%s\n' "$required_output" | cat $CTDB_TEST_CAT_RESULTS_OPTS
 
 	if $CTDB_TEST_DIFF_RESULTS ; then
 	    _outr=$(mktemp)
@@ -145,8 +142,6 @@ result_filter_default ()
     _date_time_pid='[0-9/][0-9/]*\ [0-9:\.][0-9:\.]*\ \[[\ 0-9][\ 0-9]*\]'
     sed -e "s@^${_date_time_pid}:@DATE\ TIME\ \[PID\]:@"
 }
-# Used in testcases
-# shellcheck disable=SC2034
 TEST_DATE_STAMP=""
 
 # Override this function to customise output filtering.
@@ -162,7 +157,7 @@ result_check ()
     # Avoid echo, which might expand unintentional escapes
     _fout=$(printf '%s\n' "$_out" | result_filter)
 
-    if [ "$_fout" = "$required_output" ] && [ "$_rc" = "$required_rc" ] ; then
+    if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	_passed=true
     else
 	_passed=false
