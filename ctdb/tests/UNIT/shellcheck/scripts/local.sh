@@ -32,5 +32,6 @@ shellcheck_test ()
 		unit_test shellcheck --exclude="$_excludes" "$@"
 	else
 		ctdb_test_skip "shellcheck not installed"
+		unit_test true
 	fi
 }
