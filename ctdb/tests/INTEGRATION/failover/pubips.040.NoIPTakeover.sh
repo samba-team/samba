@@ -8,19 +8,19 @@ set -e
 
 ctdb_test_init
 
-ctdb_get_all_pnns
-# out is set above
-# shellcheck disable=SC2154
-num_nodes=$(echo "$out" | wc -l | tr -d '[:space:]')
+try_command_on_node 0 "$CTDB listnodes | wc -l"
+num_nodes="$out"
 echo "There are $num_nodes nodes..."
 
-if [ "$num_nodes" -lt 2 ] ; then
+if [ $num_nodes -lt 2 ] ; then
     echo "Less than 2 nodes!"
     exit 1
 fi
 
-select_test_node_and_ips
 
+echo "Wait until the ips are reallocated"
+sleep_for 30
+try_command_on_node 0 "$CTDB ipreallocate"
 
 # sets: num
 count_ips_on_node ()
@@ -41,31 +41,33 @@ count_ips_on_node ()
 	echo "Number of addresses on node ${node}: ${num}"
 }
 
-
-# test_node is set by select_test_node_and_ips() above
-# shellcheck disable=SC2154
-count_ips_on_node "$test_node"
+count_ips_on_node 1
 
 echo "Turning on NoIPTakeover on all nodes"
-ctdb_onnode all "setvar NoIPTakeover 1"
-ctdb_onnode "$test_node" ipreallocate
+try_command_on_node all "$CTDB setvar NoIPTakeover 1"
+try_command_on_node 1 "$CTDB ipreallocate"
 
-echo "Disable node ${test_node}"
-ctdb_onnode "$test_node" disable
+echo Disable node 1
+try_command_on_node 1 "$CTDB disable"
+try_command_on_node 1 "$CTDB ipreallocate"
 
-count_ips_on_node "$test_node"
+count_ips_on_node 1
 if [ "$num" != "0" ] ; then
 	test_fail "BAD: node 1 still hosts IP addresses"
 fi
 
 
 echo "Enable node 1 again"
-ctdb_onnode "$test_node" enable
+try_command_on_node 1 "$CTDB enable"
+sleep_for 30
+try_command_on_node 1 "$CTDB ipreallocate"
+try_command_on_node 1 "$CTDB ipreallocate"
 
-count_ips_on_node "$test_node"
+count_ips_on_node 1
 if [ "$num" != "0" ] ; then
 	test_fail "BAD: node 1 took over IP addresses"
 fi
 
 
-echo "OK: IP addresses were not taken over"
+echo "OK. ip addresses were not taken over"
+exit 0
