@@ -504,14 +504,17 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 				struct ip_service_name **returned_dclist,
 				int *return_count)
 {
-	int i;
-	size_t j;
+	size_t i;
 	NTSTATUS status;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
-	int numaddrs = 0;
 	struct ip_service_name *dclist = NULL;
-	int count = 0;
+	size_t ret_count = 0;
+	size_t num_dns_lookups = 0;
+	const char **dns_lookups = NULL;
+	size_t num_lookups_ret = 0;
+	struct sockaddr_storage *dns_addrs_ret = NULL;
+	char **dns_lookups_ret = NULL;
 
 	if (flags & DS_PDC_REQUIRED) {
 		status = ads_dns_query_pdc(mem_ctx,
@@ -554,74 +557,204 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dcs);
 		return status;
 	}
 
-	if (numdcs == 0) {
+	/* Wrap protect. */
+	if (numdcs < 0) {
+		TALLOC_FREE(dcs);
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	for (i=0;i<numdcs;i++) {
-		numaddrs += MAX(dcs[i].num_ips,1);
+	if (numdcs == 0) {
+		TALLOC_FREE(dcs);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
+
+	/*
+	 * We're only returning one address per
+	 * DC name, so just allocate size numdcs.
+	 */
 
 	dclist = talloc_zero_array(mem_ctx,
 				   struct ip_service_name,
-				   numaddrs);
+				   numdcs);
 	if (!dclist) {
+		TALLOC_FREE(dcs);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* now unroll the list of IP addresses */
+	/*
+	 * First, copy the SRV record replies that
+	 * have IP addresses returned with them.
+	 */
+	ret_count = 0;
+	for (i = 0; i < numdcs; i++) {
+		size_t j;
 
-	*return_count = 0;
-	i = 0;
-	j = 0;
-
-	while ((i < numdcs) && (count < numaddrs)) {
-
-		struct ip_service_name *r = &dclist[count];
-
-		r->hostname = dcs[i].hostname;
-
-		/* If we don't have an IP list for a name, lookup it up */
-
-		if (!dcs[i].ss_s) {
-			interpret_string_addr_prefer_ipv4(&r->ss,
-						dcs[i].hostname, 0);
-			i++;
-			j = 0;
-		} else {
-			/* use the IP addresses from the SRV response */
-
-			if (j >= dcs[i].num_ips) {
-				i++;
-				j = 0;
-				continue;
-			}
-
-			r->ss = dcs[i].ss_s[j];
-			j++;
+		if (dcs[i].num_ips == 0) {
+			/*
+			 * No addresses returned in the SRV
+			 * reply, we must look this up via
+			 * DNS.
+			 */
+			num_dns_lookups++;
+			continue;
 		}
 
-		/* make sure it is a valid IP.  I considered checking the
-		 * negative connection cache, but this is the wrong place for
-		 * it.  Maybe only as a hack. After think about it, if all of
-		 * the IP addresses returned from DNS are dead, what hope does a
-		 * netbios name lookup have?  The standard reason for falling
-		 * back to netbios lookups is that our DNS server doesn't know
-		 * anything about the DC's   -- jerry */
+		dclist[ret_count].hostname =
+			talloc_move(mem_ctx, &dcs[i].hostname);
 
-		if (!is_zero_addr(&r->ss)) {
-			count++;
+		/*
+		 * Pick the first IPv4 address,
+		 * if none pick the first address.
+		 *
+		 * This is different from the previous
+		 * code which picked a 'next ip' address
+		 * each time, incrementing an index.
+		 * Too complex to maintain :-(.
+		 */
+		for (j = 0; j < dcs[i].num_ips; j++) {
+			if (dcs[i].ss_s[j].ss_family == AF_INET) {
+				dclist[ret_count].ss = dcs[i].ss_s[j];
+				break;
+			}
+		}
+		if (j == dcs[i].num_ips) {
+			/* No IPv4- use the first IPv6 addr. */
+			dclist[ret_count].ss = dcs[i].ss_s[0];
+		}
+		ret_count++;
+	}
+
+	/*
+	 * Now, create an array of hostnames we
+	 * will asynchronously look up in DNS.
+	 */
+	dns_lookups = talloc_zero_array(mem_ctx,
+					const char *,
+					num_dns_lookups);
+	if (dns_lookups == NULL) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(dclist);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_dns_lookups = 0;
+	for (i = 0; i < numdcs; i++) {
+		if (dcs[i].num_ips != 0) {
+			/*
+			 * We already got an address
+			 * for this via SRV return.
+			 */
 			continue;
+		}
+		dns_lookups[num_dns_lookups] =
+			talloc_strdup(mem_ctx, dcs[i].hostname);
+		if (dns_lookups[num_dns_lookups] == NULL) {
+			TALLOC_FREE(dcs);
+			TALLOC_FREE(dclist);
+			TALLOC_FREE(dns_lookups);
+		}
+		num_dns_lookups++;
+	}
+
+	status = dns_lookup_list_async(mem_ctx,
+				       num_dns_lookups,
+				       dns_lookups,
+				       &num_lookups_ret,
+				       &dns_addrs_ret,
+				       &dns_lookups_ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(dclist);
+		TALLOC_FREE(dns_lookups);
+		return status;
+	}
+
+	/*
+	 * Remember, if we timed out or some
+	 * addresses didn't look up then
+	 * num_dns_lookups > num_lookups_ret,
+	 * so there isn't a one to one correspondence.
+	 *
+	 * The order of the requests is preserved
+	 * in the replies, but there may be requests
+	 * for which there are no replies if we
+	 * timed out.
+	 *
+	 * For example this means for looking up
+	 * names:
+	 *     NAME1
+	 *     NAME2
+	 *     NAME3
+	 *
+	 * The replies might look like:
+	 *     NAME1 -> IPv4
+	 *     NAME1 -> IPv4
+	 *     NAME1 -> IPv6
+	 *     NAME1 -> IPv6
+	 *     NAME3 -> IPv6
+	 *
+	 * But they will never be in the order:
+	 *
+	 *     NAME2
+	 *     NAME3
+	 *     NAME1
+	 *
+	 * Also in dns_lookup_list_async()
+	 * we arrange the requests/replies in
+	 * the order IPv4 followed by IPv6, so in
+	 * the replies, we can always pick the first
+	 * reply - we know it will be IPv4 if there
+	 * is an IPv4 for that name.
+	 *
+	 * Here ret_count is the index into the
+	 * next entry in dclist we must fill (may
+	 * be zero).
+	 */
+
+	for (i = 0; i < num_lookups_ret; i++) {
+		dclist[ret_count].hostname =
+			talloc_move(mem_ctx, &dns_lookups_ret[i]);
+		dclist[ret_count].ss = dns_addrs_ret[i];
+		/*
+		 * Is this a duplicate name return.
+		 * Remember we can look up both A and
+		 * AAAA records which can return multiple
+		 * addresses and the order of names
+		 * is preserved.
+		 */
+		if (ret_count > 0) {
+			if (strcmp(dclist[ret_count-1].hostname,
+				   dclist[ret_count].hostname) == 0) {
+				/*
+				 * Same name. Keep the first address
+				 * which is IPv4 by preference.
+				 */
+				continue;
+			}
+		}
+		ret_count++;
+
+		if (ret_count == numdcs) {
+			/* We've filled the return array. */
+			break;
 		}
 	}
 
 	*returned_dclist = dclist;
-	*return_count = count;
+	*return_count = (int)ret_count;
 
-	if (count > 0) {
+	if (*return_count < 0) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(dclist);
+		TALLOC_FREE(dns_lookups);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (ret_count > 0) {
 		return NT_STATUS_OK;
 	}
 
