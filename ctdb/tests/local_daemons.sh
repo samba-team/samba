@@ -339,7 +339,6 @@ local_daemons_start_socket_wrapper ()
 	if [ -d "$_d" ] && [ -f "$_so" ] ; then
 		export SOCKET_WRAPPER_DIR="$_d"
 		export LD_PRELOAD="$_so"
-		export SOCKET_WRAPPER_DIR_ALLOW_ORIG="1"
 	fi
 }
 
