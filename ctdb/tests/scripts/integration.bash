@@ -88,29 +88,9 @@ ctdb_test_cleanup_pid_clear ()
 	ctdb_test_cleanup_pid=""
 }
 
-# -n option means do not configure/start cluster
 ctdb_test_init ()
 {
 	trap "ctdb_test_exit" 0
-
-	ctdb_nodes_stop >/dev/null 2>&1 || true
-
-	if [ "$1" != "-n" ] ; then
-		echo "Configuring cluster..."
-		setup_ctdb || ctdb_test_error "Cluster configuration failed"
-
-		echo "Starting cluster..."
-		ctdb_init || ctdb_test_error "Cluster startup failed"
-	fi
-
-	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
-}
-
-ctdb_nodes_start_custom ()
-{
-	if ctdb_test_on_cluster ; then
-		ctdb_test_error "ctdb_nodes_start_custom() on real cluster"
-	fi
 
 	ctdb_nodes_stop >/dev/null 2>&1 || true
 
@@ -118,7 +98,9 @@ ctdb_nodes_start_custom ()
 	setup_ctdb "$@" || ctdb_test_error "Cluster configuration failed"
 
 	echo "Starting cluster..."
-	ctdb_init || ctdb_test_fail "Cluster startup failed"
+	ctdb_init || ctdb_test_error "Cluster startup failed"
+
+	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
 }
 
 ctdb_test_skip_on_cluster ()

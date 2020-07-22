@@ -12,9 +12,9 @@ set -e
 
 ctdb_test_skip_on_cluster
 
-ctdb_test_init -n
-
 echo "Starting CTDB with recovery lock command configured..."
-ctdb_nodes_start_custom -R
+ctdb_test_init -R
+
+cluster_is_healthy
 
 echo "Good, that seems to work!"
