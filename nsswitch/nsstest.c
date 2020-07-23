@@ -137,7 +137,7 @@ static struct passwd *nss_getpwuid(uid_t uid)
 	return &pwd;
 }
 
-static void nss_setpwent(void)
+static void samba_nss_setpwent(void)
 {
 	NSS_STATUS (*_nss_setpwent)(void) =
 		(NSS_STATUS(*)(void))find_fn("setpwent");
@@ -152,7 +152,7 @@ static void nss_setpwent(void)
 	}
 }
 
-static void nss_endpwent(void)
+static void samba_nss_endpwent(void)
 {
 	NSS_STATUS (*_nss_endpwent)(void) =
 		(NSS_STATUS (*)(void))find_fn("endpwent");
@@ -290,7 +290,7 @@ again:
 	return &grp;
 }
 
-static void nss_setgrent(void)
+static void samba_nss_setgrent(void)
 {
 	NSS_STATUS (*_nss_setgrent)(void) =
 		(NSS_STATUS (*)(void))find_fn("setgrent");
@@ -305,7 +305,7 @@ static void nss_setgrent(void)
 	}
 }
 
-static void nss_endgrent(void)
+static void samba_nss_endgrent(void)
 {
 	NSS_STATUS (*_nss_endgrent)(void) =
 		(NSS_STATUS (*)(void))find_fn("endgrent");
@@ -402,7 +402,7 @@ static void nss_test_users(void)
 {
 	struct passwd *pwd;
 
-	nss_setpwent();
+	samba_nss_setpwent();
 	/* loop over all users */
 	while ((pwd = nss_getpwent())) {
 		printf("Testing user %s\n", pwd->pw_name);
@@ -424,14 +424,14 @@ static void nss_test_users(void)
 		printf("initgroups: "); nss_test_initgroups(pwd->pw_name, pwd->pw_gid);
 		printf("\n");
 	}
-	nss_endpwent();
+	samba_nss_endpwent();
 }
 
 static void nss_test_groups(void)
 {
 	struct group *grp;
 
-	nss_setgrent();
+	samba_nss_setgrent();
 	/* loop over all groups */
 	while ((grp = nss_getgrent())) {
 		printf("Testing group %s\n", grp->gr_name);
@@ -452,7 +452,7 @@ static void nss_test_groups(void)
 		printf("getgrgid: "); print_group(grp);
 		printf("\n");
 	}
-	nss_endgrent();
+	samba_nss_endgrent();
 }
 
 static void nss_test_errors(void)
