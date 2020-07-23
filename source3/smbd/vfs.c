@@ -1571,6 +1571,24 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 			streams);
 }
 
+int vfs_fake_fd(void)
+{
+	int pipe_fds[2];
+	int ret;
+
+	/*
+	 * Return a valid fd, but ensure any attempt to use
+	 * it returns an error (EPIPE).
+	 */
+	ret = pipe(pipe_fds);
+	if (ret != 0) {
+		return -1;
+	}
+
+	close(pipe_fds[1]);
+	return pipe_fds[0];
+}
+
 /*
   generate a file_id from a stat structure
  */

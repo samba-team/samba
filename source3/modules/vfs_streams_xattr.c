@@ -371,7 +371,6 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	struct stream_io *sio = NULL;
 	struct ea_struct ea;
 	char *xattr_name = NULL;
-	int pipe_fds[2];
 	int fakefd = -1;
 	bool set_empty_xattr = false;
 	int ret;
@@ -456,18 +455,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		}
 	}
 
-	/*
-	 * Return a valid fd, but ensure any attempt to use it returns an error
-	 * (EPIPE).
-	 */
-	ret = pipe(pipe_fds);
-	if (ret != 0) {
-		goto fail;
-	}
-
-	close(pipe_fds[1]);
-	pipe_fds[1] = -1;
-	fakefd = pipe_fds[0];
+	fakefd = vfs_fake_fd();
 
         sio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct stream_io, NULL);
         if (sio == NULL) {
