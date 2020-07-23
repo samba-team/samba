@@ -27,7 +27,6 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
-#include "auth/credentials/credentials_proto.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
