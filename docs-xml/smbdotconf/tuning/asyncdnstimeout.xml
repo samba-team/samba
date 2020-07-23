@@ -1,0 +1,21 @@
+<samba:parameter name="async dns timeout"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>The number of seconds the asynchronous DNS
+    resolver code in Samba will wait for responses.
+    Some of the Samba client library code uses internal
+    asynchronous DNS resolution for A and AAAA records
+    when trying to find Active Directory Domain controllers.
+    This value prevents this name resolution code from
+    waiting for DNS server timeouts.
+    </para>
+    <para>The minimum value of this parameter is clamped
+    at 1 second.
+    zero.</para>
+</description>
+
+<value type="default">10</value>
+<value type="example">20</value>
+</samba:parameter>

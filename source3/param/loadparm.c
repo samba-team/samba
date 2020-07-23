@@ -961,6 +961,9 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.ldap_max_authenticated_request_size = 16777216;
 	Globals.ldap_max_search_request_size = 256000;
 
+	/* Async DNS query timeout (in seconds). */
+	Globals.async_dns_timeout = 10;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
@@ -4754,4 +4757,17 @@ enum samba_weak_crypto lp_weak_crypto()
 	}
 
 	return Globals.weak_crypto;
+}
+
+uint32_t lp_get_async_dns_timeout(void)
+{
+	uint32_t val = Globals.async_dns_timeout;
+	/*
+	 * Clamp minimum async dns timeout to 1 second
+	 * as per the man page.
+	 */
+	if (val < 1) {
+		val = 1;
+	}
+	return val;
 }
