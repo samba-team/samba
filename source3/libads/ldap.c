@@ -3272,11 +3272,28 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
         /* establish a new ldap tcp session if necessary */
 
 	if ( !ads->ldap.ld ) {
-		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
-			ads->server.ldap_server, ADS_SASL_PLAIN )) == NULL )
-		{
-			status = ADS_ERROR(LDAP_NO_MEMORY);
-			goto done;
+		/*
+		 * ADS_STRUCT may be being reused after a
+		 * DC lookup, so ads->ldap.ss may already have a
+		 * good address. If not, re-initialize the passed-in
+		 * ADS_STRUCT with the given server.XXXX parameters.
+		 *
+		 * Note that this doesn't depend on
+		 * ads->server.ldap_server != NULL,
+		 * as the case where ads->server.ldap_server==NULL and
+		 * ads->ldap.ss != zero_address is precisely the DC
+		 * lookup case where ads->ldap.ss was found by going
+		 * through ads_find_dc() again we want to avoid repeating.
+		 */
+		if (is_zero_addr(&ads->ldap.ss)) {
+			ads_s = ads_init(ads->server.realm,
+					 ads->server.workgroup,
+					 ads->server.ldap_server,
+					 ADS_SASL_PLAIN );
+			if (ads_s == NULL) {
+				status = ADS_ERROR(LDAP_NO_MEMORY);
+				goto done;
+			}
 		}
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
 		status = ads_connect( ads_s );
