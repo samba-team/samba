@@ -1417,6 +1417,7 @@ static int inheritance_cacl_set(char *filename,
 	bool isdirectory = false;
 	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM
 				| FILE_ATTRIBUTE_HIDDEN;
+	char *save_share = NULL;
 	ctx = talloc_init("inherit_set");
 	if (ctx == NULL) {
 		d_printf("out of memory\n");
@@ -1475,8 +1476,34 @@ static int inheritance_cacl_set(char *filename,
 	 * prepare for automatic propagation of the acl passed on the
 	 * cmdline.
 	 */
+	save_share = talloc_strdup(ctx, cli->share);
+	if (save_share == NULL) {
+		result = EXIT_FAILED;
+		goto out;
+	}
+
 	ntstatus = prepare_inheritance_propagation(ctx, filename,
 							   cbstate);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		d_printf("error: %s processing %s\n",
+			 nt_errstr(ntstatus), filename);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	/*
+	 * sec_desc_parse ends up calling a bunch of functions one of which
+	 * connects to IPC$ (which overwrites cli->share)
+	 * we need a new connection to the share here.
+	 * Note: This only is an issue when the share is a msdfs root
+	 *       because the presence of cli->share gets expanded out
+	 *       later on by cli_resolve_path (when it is constructing a path)
+	 */
+	ntstatus = cli_tree_connect_creds(cli,
+			  save_share,
+			  "?????",
+			  get_cmdline_auth_info_creds(cbstate->auth_info));
+
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_printf("error: %s processing %s\n",
 			 nt_errstr(ntstatus), filename);
