@@ -135,16 +135,18 @@ def planperltestsuite(name, path):
         skiptestsuite(name, "Test::More not available")
 
 
-def planpythontestsuite(env, module, name=None, extra_path=None):
+def planpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
+    environ = dict(environ)
+    py_path = list(extra_path)
+    if py_path is not None:
+        environ["PYTHONPATH"] = ":".join(["$PYTHONPATH"] + py_path)
+    args = ["%s=%s" % item for item in environ.items()]
+    args += [python, "-m", "samba.subunit.run", "$LISTOPT", "$LOADLIST", module]
+    args += extra_args
     if name is None:
         name = module
-    args = [python, "-m", "samba.subunit.run", "$LISTOPT", "$LOADLIST", module]
-    if extra_path:
-        pypath = ["PYTHONPATH=$PYTHONPATH:%s" % ":".join(extra_path)]
-    else:
-        pypath = []
 
-    plantestsuite_loadlist(name, env, pypath + args)
+    plantestsuite_loadlist(name, env, args)
 
 
 def get_env_torture_options():
