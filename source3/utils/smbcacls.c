@@ -60,6 +60,50 @@ struct cacl_callback_state {
 	bool numeric;
 };
 
+/*
+ * if this dfs link is local to this share then we need to
+ * adjust targetpath. A local dfs link is prepended with
+ * '/$SERVER/$SHARE/path_from_args' The 'full' path is not
+ * suitable for passing to cli_list (and will fail)
+ */
+static NTSTATUS local_cli_resolve_path(TALLOC_CTX* ctx,
+			const char *mountpt,
+			const struct user_auth_info *dfs_auth_info,
+			struct cli_state *rootcli,
+			const char *path,
+			struct cli_state **targetcli,
+			char **pp_targetpath)
+{
+	size_t searchlen = 0;
+	char *search = NULL;
+	NTSTATUS status;
+
+	status = cli_resolve_path(ctx,
+				mountpt,
+				dfs_auth_info,
+				rootcli,
+				path,
+				targetcli,
+				pp_targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	search = talloc_asprintf(ctx, "\\%s\\%s",
+			rootcli->server_domain,
+			rootcli->share);
+	if (search == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	searchlen = strlen(search);
+
+	if (strncmp(*pp_targetpath, search, searchlen) == 0) {
+		*pp_targetpath += searchlen;
+	}
+	return status;
+}
+
 static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
@@ -1262,7 +1306,7 @@ static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
 		}
 
 		/* check for dfs */
-		status = cli_resolve_path(dirctx, "", auth_info, cli,
+		status = local_cli_resolve_path(dirctx, "", auth_info, cli,
 			mask2, &targetcli, &targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -1771,7 +1815,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	status = cli_resolve_path(frame,
+	status = local_cli_resolve_path(frame,
 				  "",
 				  popt_get_cmdline_auth_info(),
 				  cli,
