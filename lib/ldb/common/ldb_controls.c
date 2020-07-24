@@ -286,6 +286,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 	if (strcmp(control->oid, LDB_CONTROL_PAGED_RESULTS_OID) == 0) {
 		struct ldb_paged_control *rep_control = talloc_get_type(control->data, struct ldb_paged_control);
 		char *cookie;
+		if (rep_control == NULL) {
+			return NULL;
+		}
 
 		cookie = ldb_base64_encode(mem_ctx, rep_control->cookie, rep_control->cookie_len);
 		if (cookie == NULL) {
@@ -312,6 +315,10 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 
 		char *cookie;
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
+
 		cookie = ldb_base64_encode(mem_ctx,
 					   (char *)rep_control->contextId,
 					   rep_control->ctxid_len);
@@ -334,6 +341,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		struct ldb_sort_resp_control *rep_control = talloc_get_type(control->data,
 								struct ldb_sort_resp_control);
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
 		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%s",
 					LDB_CONTROL_SORT_RESP_NAME,
 					control->critical,
@@ -347,6 +357,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		struct ldb_asq_control *rep_control = talloc_get_type(control->data,
 								struct ldb_asq_control);
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
 		res = talloc_asprintf(mem_ctx, "%s:%d:%d",
 					LDB_CONTROL_SORT_RESP_NAME,
 					control->critical,
@@ -360,6 +373,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		struct ldb_dirsync_control *rep_control = talloc_get_type(control->data,
 								struct ldb_dirsync_control);
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
 		cookie = ldb_base64_encode(mem_ctx, rep_control->cookie,
 				rep_control->cookie_len);
 		if (cookie == NULL) {
@@ -380,6 +396,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		struct ldb_dirsync_control *rep_control = talloc_get_type(control->data,
 								struct ldb_dirsync_control);
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
 		cookie = ldb_base64_encode(mem_ctx, rep_control->cookie,
 				rep_control->cookie_len);
 		if (cookie == NULL) {
@@ -399,6 +418,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 	if (strcmp(control->oid, LDB_CONTROL_VERIFY_NAME_OID) == 0) {
 		struct ldb_verify_name_control *rep_control = talloc_get_type(control->data, struct ldb_verify_name_control);
 
+		if (rep_control == NULL) {
+			return NULL;
+		}
 		if (rep_control->gc != NULL) {
 			res = talloc_asprintf(mem_ctx, "%s:%d:%d:%s",
 						LDB_CONTROL_VERIFY_NAME_NAME,
