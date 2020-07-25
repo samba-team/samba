@@ -34,10 +34,11 @@ CTDB CHANGES
 * The NAT gateway and LVS features now uses the term "leader" to refer
   to the main node in a group through which traffic is routed and
   "follower" for other members of a group.  The command for
-  determining the leader has changed to "ctdb natgw master" from
-  "ctdb natgw leader".  The "slave-only" configuration element has
-  changed to "follower-only" from "slave-only".  Identical changes
-  were made for LVS.
+  determining the leader has changed to "ctdb natgw leader" (from
+  "ctdb natgw master").  The configuration keyword for indicating that
+  a node can not be the leader of a group has changed to
+  "follower-only" (from "slave-only").  Identical changes were made
+  for LVS.
 
 
 REMOVED FEATURES
