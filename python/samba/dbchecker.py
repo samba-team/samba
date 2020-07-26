@@ -621,7 +621,29 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 return 0
 
             nc_root = self.samdb.get_nc_root(dn)
-            target_nc_root = self.samdb.get_nc_root(dsdb_dn.dn)
+            try:
+                target_nc_root = self.samdb.get_nc_root(dsdb_dn.dn)
+            except ldb.LdbError as e:
+                (enum, estr) = e.args
+                if enum != ldb.ERR_NO_SUCH_OBJECT:
+                    raise
+                target_nc_root = None
+
+            if target_nc_root is None:
+                # We don't bump the error count as Samba produces
+                # these in normal operation creating a lab domain (due
+                # to the way the rename is handled, links to
+                # now-expunged objects will never be fixed to stay
+                # inside the NC
+                self.report("WARNING: no target object found for GUID "
+                            "component for link "
+                            "%s in object to %s outside our NCs"
+                            "%s - %s" % (attrname, dsdb_dn.dn, dn, val))
+                self.report("Not removing dangling one-way "
+                            "left-over link outside our NCs "
+                            "(we might be building a renamed/lab domain)")
+                return 0
+
             if nc_root != target_nc_root:
                 # We don't bump the error count as Samba produces these
                 # in normal operation
