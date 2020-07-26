@@ -2696,6 +2696,45 @@ sub setup_backupfromdc
 
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
+	# Set up a dangling forward link to an expunged object
+	#
+	# We need this to ensure that the "samba-tool domain backup rename"
+	# that is part of the creation of the labdc environment can
+	# cope with this situation on the source DC.
+
+	if (not $self->write_ldb_file("$env->{PRIVATEDIR}/sam.ldb", "
+dn: ou=linktest,dc=backupdom,dc=samba,dc=example,dc=com
+objectclass: organizationalUnit
+-
+
+dn: cn=linkto,ou=linktest,dc=backupdom,dc=samba,dc=example,dc=com
+objectclass: msExchConfigurationContainer
+-
+
+dn: cn=linkfrom,ou=linktest,dc=backupdom,dc=samba,dc=example,dc=com
+objectclass: msExchConfigurationContainer
+addressBookRoots: cn=linkto,ou=linktest,dc=backupdom,dc=samba,dc=example,dc=com
+-
+
+")) {
+	    return undef;
+	}
+	my $ldbdel = Samba::bindir_path($self, "ldbdel");
+	my $cmd = "$ldbdel -H $env->{PRIVATEDIR}/sam.ldb cn=linkto,ou=linktest,dc=backupdom,dc=samba,dc=example,dc=com";
+
+	unless(system($cmd) == 0) {
+		warn("Failed to delete link target: \n$cmd");
+		return undef;
+	}
+
+	# Expunge will ensure that linkto is totally wiped from the DB
+	my $samba_tool = Samba::bindir_path($self, "samba-tool");
+	$cmd = "$samba_tool  domain tombstones expunge --tombstone-lifetime=0 $env->{CONFIGURATION}";
+
+	unless(system($cmd) == 0) {
+		warn("Failed to expunge link target: \n$cmd");
+		return undef;
+	}
 	return $env;
 }
 
