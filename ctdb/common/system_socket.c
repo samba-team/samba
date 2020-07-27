@@ -67,16 +67,19 @@
 /*
   uint16 checksum for n bytes
  */
-static uint32_t uint16_checksum(uint16_t *data, size_t n)
+static uint32_t uint16_checksum(uint8_t *data, size_t n)
 {
 	uint32_t sum=0;
+	uint16_t value;
+
 	while (n>=2) {
-		sum += (uint32_t)ntohs(*data);
-		data++;
+		memcpy(&value, data, 2);
+		sum += (uint32_t)ntohs(value);
+		data += 2;
 		n -= 2;
 	}
 	if (n == 1) {
-		sum += (uint32_t)ntohs(*(uint8_t *)data);
+		sum += (uint32_t)ntohs(*data);
 	}
 	return sum;
 }
@@ -117,13 +120,13 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 /*
  * simple TCP checksum - assumes data is multiple of 2 bytes long
  */
-static uint16_t ip_checksum(uint16_t *data, size_t n, struct ip *ip)
+static uint16_t ip_checksum(uint8_t *data, size_t n, struct ip *ip)
 {
 	uint32_t sum = uint16_checksum(data, n);
 	uint16_t sum2;
 
-	sum += uint16_checksum((uint16_t *)&ip->ip_src, sizeof(ip->ip_src));
-	sum += uint16_checksum((uint16_t *)&ip->ip_dst, sizeof(ip->ip_dst));
+	sum += uint16_checksum((uint8_t *)&ip->ip_src, sizeof(ip->ip_src));
+	sum += uint16_checksum((uint8_t *)&ip->ip_dst, sizeof(ip->ip_dst));
 	sum += ip->ip_p + n;
 	sum = (sum & 0xFFFF) + (sum >> 16);
 	sum = (sum & 0xFFFF) + (sum >> 16);
@@ -135,22 +138,22 @@ static uint16_t ip_checksum(uint16_t *data, size_t n, struct ip *ip)
 	return sum2;
 }
 
-static uint16_t ip6_checksum(uint16_t *data, size_t n, struct ip6_hdr *ip6)
+static uint16_t ip6_checksum(uint8_t *data, size_t n, struct ip6_hdr *ip6)
 {
 	uint16_t phdr[3];
 	uint32_t sum = 0;
 	uint16_t sum2;
 	uint32_t len;
 
-	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_src, 16);
-	sum += uint16_checksum((uint16_t *)(void *)&ip6->ip6_dst, 16);
+	sum += uint16_checksum((uint8_t *)&ip6->ip6_src, 16);
+	sum += uint16_checksum((uint8_t *)&ip6->ip6_dst, 16);
 
 	len = htonl(n);
 	phdr[0] = len & UINT16_MAX;
 	phdr[1] = (len >> 16) & UINT16_MAX;
 	/* ip6_nxt is only 8 bits, so fits comfortably into a uint16_t */
 	phdr[2] = htons(ip6->ip6_nxt);
-	sum += uint16_checksum(phdr, sizeof(phdr));
+	sum += uint16_checksum((uint8_t *)phdr, sizeof(phdr));
 
 	sum += uint16_checksum(data, n);
 
@@ -316,7 +319,7 @@ static int ip6_na_build(uint8_t *buffer,
 				   sizeof(struct nd_opt_hdr));
 	memcpy(ea, hwaddr, ETH_ALEN);
 
-	nd_na->nd_na_cksum = ip6_checksum((uint16_t *)nd_na,
+	nd_na->nd_na_cksum = ip6_checksum((uint8_t *)nd_na,
 					  ntohs(ip6->ip6_plen),
 					  ip6);
 
@@ -556,7 +559,7 @@ static int tcp4_build(uint8_t *buf,
 	ip4pkt->tcp.th_off   = sizeof(ip4pkt->tcp)/sizeof(uint32_t);
 	/* this makes it easier to spot in a sniffer */
 	ip4pkt->tcp.th_win   = htons(1234);
-	ip4pkt->tcp.th_sum   = ip_checksum((uint16_t *)&ip4pkt->tcp,
+	ip4pkt->tcp.th_sum   = ip_checksum((uint8_t *)&ip4pkt->tcp,
 					   sizeof(ip4pkt->tcp),
 					   &ip4pkt->ip);
 
@@ -609,7 +612,7 @@ static int tcp6_build(uint8_t *buf,
 	ip6pkt->tcp.th_off    = sizeof(ip6pkt->tcp)/sizeof(uint32_t);
 	/* this makes it easier to spot in a sniffer */
 	ip6pkt->tcp.th_win   = htons(1234);
-	ip6pkt->tcp.th_sum   = ip6_checksum((uint16_t *)&ip6pkt->tcp,
+	ip6pkt->tcp.th_sum   = ip6_checksum((uint8_t *)&ip6pkt->tcp,
 					    sizeof(ip6pkt->tcp),
 					    &ip6pkt->ip6);
 
