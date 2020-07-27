@@ -37,6 +37,7 @@ class SmbCaclsBlockboxTestBase(BlackboxTestCase):
         self.creds.set_password(self.passwd)
         self.testdir = os.getenv("TESTDIR", "smbcacls")
         self.share = os.getenv("SHARE", "tmp")
+        self.dirpath = os.path.join(os.environ["LOCAL_PATH"],self.testdir)
 
     def tearDown(self):
         try:
@@ -50,11 +51,10 @@ class SmbCaclsBlockboxTestBase(BlackboxTestCase):
                 raise Exception("deltree: failed without setting errcode")
         except Exception as e:
             print("remote remove failed: %s" % str(e))
-            dirpath = os.path.join(os.environ["LOCAL_PATH"],self.testdir)
-            print("falling back to removing contents of local dir: %s" % dirpath)
-            if os.path.exists(dirpath):
-                for entry in os.listdir(dirpath):
-                    fullpath = os.path.join(dirpath, entry)
+            print("falling back to removing contents of local dir: %s" % self.dirpath)
+            if os.path.exists(self.dirpath):
+                for entry in os.listdir(self.dirpath):
+                    fullpath = os.path.join(self.dirpath, entry)
                     if os.path.isdir(fullpath):
                         import shutil
                         shutil.rmtree(fullpath)
