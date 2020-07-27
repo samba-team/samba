@@ -10,6 +10,7 @@ def build(bld):
                       deps='''
                            talloc
                            samba-hostconfig
+                           samba-credentials
                            popt
                            ''',
                       private_library=True)

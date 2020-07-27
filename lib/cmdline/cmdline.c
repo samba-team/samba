@@ -21,6 +21,7 @@
 
 static TALLOC_CTX *cmdline_mem_ctx;
 static struct loadparm_context *cmdline_lp_ctx;
+static struct cli_credentials *cmdline_creds;
 
 /* PRIVATE */
 bool samba_cmdline_set_talloc_ctx(TALLOC_CTX *mem_ctx)
@@ -80,4 +81,21 @@ bool samba_cmdline_set_lp_ctx(struct loadparm_context *lp_ctx)
 struct loadparm_context *samba_cmdline_get_lp_ctx(void)
 {
 	return cmdline_lp_ctx;
+}
+
+bool samba_cmdline_set_creds(struct cli_credentials *creds)
+{
+	if (creds == NULL) {
+		return false;
+	}
+
+	TALLOC_FREE(cmdline_creds);
+	cmdline_creds = creds;
+
+	return true;
+}
+
+struct cli_credentials *samba_cmdline_get_creds(void)
+{
+	return cmdline_creds;
 }

@@ -20,6 +20,7 @@
 #include "lib/param/param.h"
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
+#include "auth/credentials/credentials.h"
 #include "cmdline_private.h"
 
 static bool _require_smbconf;
@@ -27,6 +28,7 @@ static bool _require_smbconf;
 bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
 {
 	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
 	bool ok;
 
 	ok = samba_cmdline_init_common(mem_ctx);
@@ -44,6 +46,15 @@ bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
 		return false;
 	}
 	_require_smbconf = require_smbconf;
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		return false;
+	}
+	ok = samba_cmdline_set_creds(creds);
+	if (!ok) {
+		return false;
+	}
 
 	return true;
 }

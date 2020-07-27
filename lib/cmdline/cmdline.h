@@ -18,6 +18,8 @@
 #ifndef _CMDLINE_H
 #define _CMDLINE_H
 
+#include "auth/credentials/credentials.h"
+
 /**
  * @brief Initialize the commandline interface for parsing options.
  *
@@ -41,5 +43,12 @@ bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf);
  * @return The loadparm context.
  */
 struct loadparm_context *samba_cmdline_get_lp_ctx(void);
+
+/**
+ * @brief Get the client credentials of the command line interface.
+ *
+ * @return A pointer to the client credentials.
+ */
+struct cli_credentials *samba_cmdline_get_creds(void);
 
 #endif /* _CMDLINE_H */

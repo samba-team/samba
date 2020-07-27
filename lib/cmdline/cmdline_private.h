@@ -73,4 +73,15 @@ TALLOC_CTX *samba_cmdline_get_talloc_ctx(void);
  */
 bool samba_cmdline_set_lp_ctx(struct loadparm_context *lp_ctx);
 
+/**
+ * @internal
+ *
+ * @brief Set the client credentials for the commandline interface.
+ *
+ * @param[in]  creds   The client credentials to use.
+ *
+ * @return true on success, false if an error occured.
+ */
+bool samba_cmdline_set_creds(struct cli_credentials *creds);
+
 #endif /* _CMDLINE_PRIVATE_H */
