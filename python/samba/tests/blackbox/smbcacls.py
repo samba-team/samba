@@ -55,11 +55,11 @@ class SmbCaclsBlockboxTestBase(BlackboxTestCase):
             if os.path.exists(dirpath):
                 for entry in os.listdir(dirpath):
                     fullpath = os.path.join(dirpath, entry)
-                if os.path.isdir(fullpath):
-                    import shutil
-                    shutil.rmtree(fullpath)
-                else:
-                    os.unlink(fullpath)
+                    if os.path.isdir(fullpath):
+                        import shutil
+                        shutil.rmtree(fullpath)
+                    else:
+                        os.unlink(fullpath)
 
     def ace_dump(self, ace):
         for key, value in ace.items():
