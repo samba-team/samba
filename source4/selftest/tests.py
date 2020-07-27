@@ -947,9 +947,19 @@ planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic(DFS)",
                        environ={'SHARE': 'msdfs-share',
                                  'TESTDIR': 'smbcacls_sharedir_dfs'})
+# Run smbcacls_propagate_inhertance tests on non msdfs root share
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_propagate_inhertance")
-
+#
+# A) Run the smbcacls_propagate_inhertance tests on a msdfs root share
+#    *without* any nested dfs links
+# B) Run the smbcacls_propagate_inhertance tests on a msdfs root share
+#    *with* a nested dfs link
+#
+planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.smbcacls_dfs_propagate_inherit",
+                       "samba.tests.blackbox.smbcacls_dfs_propagate_inherit(DFS-msdfs-root)",
+                       environ={'SHARE': 'smbcacls_share'})
 #
 # Want a selection of environments across the process models
 #

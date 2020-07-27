@@ -1999,6 +1999,12 @@ sub provision($$)
 	my $smbcacls_sharedir_dfs="$shrdir/smbcacls_sharedir_dfs";
 	push(@dirs,$smbcacls_sharedir_dfs);
 
+	my $smbcacls_share="$shrdir/smbcacls_share";
+	push(@dirs,$smbcacls_share);
+
+	my $smbcacls_share_testdir="$shrdir/smbcacls_share/smbcacls";
+	push(@dirs,$smbcacls_share_testdir);
+
 	my $badnames_shrdir="$shrdir/badnames";
 	push(@dirs,$badnames_shrdir);
 
@@ -2327,6 +2333,11 @@ sub provision($$)
 	}
 
 	print CONF "
+[smbcacls_share]
+	path = $smbcacls_share
+        comment = smb username is [%U]
+	msdfs root = yes
+
 [smbcacls_sharedir_dfs]
 	path = $smbcacls_sharedir_dfs
         comment = smb username is [%U]
