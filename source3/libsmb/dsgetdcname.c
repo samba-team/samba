@@ -29,19 +29,20 @@
 #include "../lib/addns/dnsquery.h"
 #include "libsmb/clidgram.h"
 #include "lib/gencache.h"
+#include "lib/util/util_net.h"
 
 /* 15 minutes */
 #define DSGETDCNAME_CACHE_TTL	60*15
 
 struct ip_service_name {
-	struct sockaddr_storage ss;
+	struct samba_sockaddr sa;
 	const char *hostname;
 };
 
 static NTSTATUS make_dc_info_from_cldap_reply(
 	TALLOC_CTX *mem_ctx,
 	uint32_t flags,
-	const struct sockaddr_storage *ss,
+	const struct samba_sockaddr *sa,
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 	struct netr_DsRGetDCNameInfo **info);
 
@@ -181,7 +182,7 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 				  uint32_t flags,
-				  struct sockaddr_storage *ss,
+				  struct samba_sockaddr *sa,
 				  uint32_t nt_version,
 				  struct NETLOGON_SAM_LOGON_RESPONSE_EX *r)
 {
@@ -190,7 +191,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	char addr[INET6_ADDRSTRLEN];
 
-       print_sockaddr(addr, sizeof(addr), ss);
+	print_sockaddr(addr, sizeof(addr), &sa->u.ss);
 
 	/* FIXME */
 	r->sockaddr_size = 0x10; /* the w32 winsock addr size */
@@ -470,14 +471,18 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<count; i++) {
-
+		bool ok;
 		char addr[INET6_ADDRSTRLEN];
 		struct ip_service_name *r = &dclist[i];
 
 		print_sockaddr(addr, sizeof(addr),
 			       &iplist[i].ss);
 
-		r->ss	= iplist[i].ss;
+		ok = sockaddr_storage_to_samba_sockaddr(&r->sa, &iplist[i].ss);
+		if (!ok) {
+			SAFE_FREE(iplist);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
 			SAFE_FREE(iplist);
@@ -617,13 +622,29 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 */
 		for (j = 0; j < dcs[i].num_ips; j++) {
 			if (dcs[i].ss_s[j].ss_family == AF_INET) {
-				dclist[ret_count].ss = dcs[i].ss_s[j];
+				bool ok;
+				ok = sockaddr_storage_to_samba_sockaddr(
+					&dclist[ret_count].sa,
+					&dcs[i].ss_s[j]);
+				if (!ok) {
+					TALLOC_FREE(dcs);
+					TALLOC_FREE(dclist);
+					return NT_STATUS_INVALID_PARAMETER;
+				}
 				break;
 			}
 		}
 		if (j == dcs[i].num_ips) {
 			/* No IPv4- use the first IPv6 addr. */
-			dclist[ret_count].ss = dcs[i].ss_s[0];
+			bool ok;
+			ok = sockaddr_storage_to_samba_sockaddr(
+					&dclist[ret_count].sa,
+					&dcs[i].ss_s[0]);
+			if (!ok) {
+				TALLOC_FREE(dcs);
+				TALLOC_FREE(dclist);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 		}
 		ret_count++;
 	}
@@ -718,7 +739,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < num_lookups_ret; i++) {
 		dclist[ret_count].hostname =
 			talloc_move(mem_ctx, &dns_lookups_ret[i]);
-		dclist[ret_count].ss = dns_addrs_ret[i].u.ss;
+		dclist[ret_count].sa = dns_addrs_ret[i];
 		/*
 		 * Is this a duplicate name return.
 		 * Remember we can look up both A and
@@ -877,7 +898,7 @@ static void map_dc_and_domain_names(uint32_t flags,
 static NTSTATUS make_dc_info_from_cldap_reply(
 	TALLOC_CTX *mem_ctx,
 	uint32_t flags,
-	const struct sockaddr_storage *ss,
+	const struct samba_sockaddr *sa,
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 	struct netr_DsRGetDCNameInfo **info)
 {
@@ -893,8 +914,8 @@ static NTSTATUS make_dc_info_from_cldap_reply(
 
 	char addr[INET6_ADDRSTRLEN];
 
-	if (ss) {
-		print_sockaddr(addr, sizeof(addr), ss);
+	if (sa != NULL) {
+		print_sockaddr(addr, sizeof(addr), &sa->u.ss);
 		dc_address = addr;
 		dc_address_type = DS_ADDRESS_TYPE_INET;
 	} else {
@@ -982,13 +1003,13 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 	nt_version |= map_ds_flags_to_nt_version(flags);
 
 	for (i=0; i<num_dcs; i++) {
-
 		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &dclist[i].ss);
+
+		print_sockaddr(addr, sizeof(addr), &dclist[i].sa.u.ss);
 
 		DEBUG(10,("LDAP ping to %s (%s)\n", dclist[i].hostname, addr));
 
-		if (ads_cldap_netlogon(mem_ctx, &dclist[i].ss,
+		if (ads_cldap_netlogon(mem_ctx, &dclist[i].sa.u.ss,
 					domain_name,
 					nt_version,
 					&r))
@@ -1009,10 +1030,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].sa,
 					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status)) {
-		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+		return store_cldap_reply(mem_ctx, flags, &dclist[i].sa,
 					 nt_version, &r->data.nt5_ex);
 	}
 
@@ -1070,14 +1091,14 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		generate_random_buffer((uint8_t *)&val, 2);
 
-		ip_list.ss = dclist[i].ss;
+		ip_list.ss = dclist[i].sa.u.ss;
 		ip_list.port = 0;
 
 		if (!interpret_string_addr_prefer_ipv4(&ss, dclist[i].hostname, AI_NUMERICHOST)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		status = nbt_getdc(msg_ctx, 10, &dclist[i].ss, domain_name,
+		status = nbt_getdc(msg_ctx, 10, &dclist[i].sa.u.ss, domain_name,
 				   NULL, my_acct_name, ACB_WSTRUST, nt_version,
 				   mem_ctx, &nt_version, &dc_name, &r);
 		if (NT_STATUS_IS_OK(status)) {
@@ -1089,7 +1110,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		if (name_status_find(domain_name,
 				     name_type,
 				     NBT_NAME_SERVER,
-				     &dclist[i].ss,
+				     &dclist[i].sa.u.ss,
 				     tmp_dc_name))
 		{
 			struct NETLOGON_SAM_LOGON_RESPONSE_NT40 logon1;
@@ -1121,10 +1142,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
  make_reply:
 
-	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].sa,
 					       &r->data.nt5_ex, info);
 	if (NT_STATUS_IS_OK(status) && store_cache) {
-		return store_cldap_reply(mem_ctx, flags, &dclist[i].ss,
+		return store_cldap_reply(mem_ctx, flags, &dclist[i].sa,
 					 nt_version, &r->data.nt5_ex);
 	}
 
