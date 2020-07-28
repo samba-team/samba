@@ -2204,10 +2204,12 @@ done:
 		data.dptr = (uint8_t *)&rd;
 		data.dsize = sizeof(rd);
 
-		ret = ctdb_client_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+		ret = ctdb_client_send_message(ctdb,
+					       CTDB_BROADCAST_CONNECTED,
+					       CTDB_SRVID_TAKEOVER_RUN,
+					       data);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,
-			      ("Failed to send takeover run request\n"));
+			D_ERR("Failed to send takeover run request\n");
 		}
 	}
 	talloc_free(mem_ctx);
