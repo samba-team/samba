@@ -23,7 +23,8 @@
 #include <tevent.h>
 
 /* The following definitions come from libsmb/namequery.c  */
-
+bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
+					const struct sockaddr_storage *ss);
 bool saf_store( const char *domain, const char *servername );
 bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
