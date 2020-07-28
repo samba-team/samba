@@ -45,7 +45,9 @@ class SmbCaclsBlockboxTestBase(BlackboxTestCase):
             # so if we fail with remote remove perform local remove
             # (of remote files) instead
             smbclient_args = self.build_test_cmd("smbclient", ["//%s/%s" % (self.server, self.share), "-c", "deltree %s/*" % self.testdir])
-            self.check_output(smbclient_args)
+            out = self.check_output(smbclient_args)
+            if "NT_STATUS_OBJECT_PATH_NOT_FOUND" in out.decode():
+                raise Exception("deltree: failed without setting errcode")
         except Exception as e:
             print("remote remove failed: %s" % str(e))
             dirpath = os.path.join(os.environ["LOCAL_PATH"],self.testdir)
