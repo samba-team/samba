@@ -2346,7 +2346,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 			      size_t num_dns_names,
 			      const char **dns_lookup_names,
 			      size_t *p_num_addrs,
-			      struct sockaddr_storage **pp_addrs,
+			      struct samba_sockaddr **pp_addrs,
 			      char ***pp_dns_names)
 {
 	struct dns_lookup_list_async_state *state = NULL;
@@ -2357,7 +2357,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 	size_t queries_size = num_dns_names;
 	size_t i;
 	size_t num_addrs = 0;
-	struct sockaddr_storage *addr_out = NULL;
+	struct samba_sockaddr *addr_out = NULL;
 	char **dns_names_ret = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -2481,7 +2481,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 	}
 
 	addr_out = talloc_zero_array(ctx,
-				     struct sockaddr_storage,
+				     struct samba_sockaddr,
 				     num_addrs);
 	if (addr_out == NULL) {
 		goto fail;
@@ -2529,7 +2529,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 		}
 
 		for (j = 0; j < query->num_addrs; j++) {
-			addr_out[num_addrs] = query->addrs[j].u.ss;
+			addr_out[num_addrs] = query->addrs[j];
 		}
 		num_addrs += query->num_addrs;
 	}
@@ -2688,7 +2688,6 @@ static void dns_lookup_list_aaaa_done(struct tevent_req *req)
 			print_sockaddr(addr,
 				sizeof(addr),
 				&addrs[i].u.ss));
-
 		state->addrs[i] = addrs[i];
 	}
 	state->num_addrs = num_addrs;
@@ -2805,7 +2804,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	size_t num_srv_addrs = 0;
 	struct sockaddr_storage *srv_addrs = NULL;
 	size_t num_dns_addrs = 0;
-	struct sockaddr_storage *dns_addrs = NULL;
+	struct samba_sockaddr *dns_addrs = NULL;
 	size_t num_dns_names = 0;
 	const char **dns_lookup_names = NULL;
 	struct sockaddr_storage *ret_addrs = NULL;
@@ -3031,7 +3030,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		ret_addrs[i] = srv_addrs[i];
 	}
 	for (i = 0; i < num_dns_addrs; i++) {
-		ret_addrs[num_srv_addrs+i] = dns_addrs[i];
+		ret_addrs[num_srv_addrs+i] = dns_addrs[i].u.ss;
 	}
 
 	TALLOC_FREE(dcs);

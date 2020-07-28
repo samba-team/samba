@@ -513,7 +513,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	size_t num_dns_lookups = 0;
 	const char **dns_lookups = NULL;
 	size_t num_lookups_ret = 0;
-	struct sockaddr_storage *dns_addrs_ret = NULL;
+	struct samba_sockaddr *dns_addrs_ret = NULL;
 	char **dns_lookups_ret = NULL;
 
 	if (flags & DS_PDC_REQUIRED) {
@@ -718,7 +718,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < num_lookups_ret; i++) {
 		dclist[ret_count].hostname =
 			talloc_move(mem_ctx, &dns_lookups_ret[i]);
-		dclist[ret_count].ss = dns_addrs_ret[i];
+		dclist[ret_count].ss = dns_addrs_ret[i].u.ss;
 		/*
 		 * Is this a duplicate name return.
 		 * Remember we can look up both A and
