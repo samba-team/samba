@@ -120,7 +120,7 @@ struct GUID smbd_request_guid(struct smb_request *smb1req, uint16_t idx)
 		v.time_mid = (uint16_t)(uintptr_t)smb1req->vwv;
 	}
 
-	SBVAL((uint8_t *)&v, 8, (uintptr_t)smb1req->xconn);
+	SBVAL((uint8_t *)&v, 8, smb1req->xconn->channel_id);
 
 	return v;
 }
