@@ -380,12 +380,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 			tmp_ctx = ndr->current_mem_ctx;
 			ndr->current_mem_ctx = a;
 			NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+			ndr->current_mem_ctx = tmp_ctx;
 			if ((ndr->data_size - ndr->offset) == 0 && ndr->flags & LIBNDR_FLAG_REMAINING)
 			{
 				a[count] = s;
 				break;
 			}
-			ndr->current_mem_ctx = tmp_ctx;
 			if (strcmp("", s)==0) {
 				a[count] = NULL;
 				break;
