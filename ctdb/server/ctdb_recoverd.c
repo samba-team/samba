@@ -290,6 +290,23 @@ static bool this_node_can_be_leader(struct ctdb_recoverd *rec)
 		(rec->ctdb->capabilities & CTDB_CAP_RECMASTER) != 0;
 }
 
+static bool node_flags(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t *flags)
+{
+	size_t i;
+
+	for (i = 0; i < rec->nodemap->num; i++) {
+		struct ctdb_node_and_flags *node = &rec->nodemap->nodes[i];
+		if (node->pnn == pnn) {
+			if (flags != NULL) {
+				*flags = node->flags;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /*
   ban a node for a period of time
  */
@@ -1398,6 +1415,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 	int ret;
 	struct ctdb_node_map_old *nodemap;
 	struct ctdb_context *ctdb = rec->ctdb;
+	bool ok;
 
 	ZERO_STRUCTP(em);
 
@@ -1410,7 +1428,11 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 		return;
 	}
 
-	rec->node_flags = nodemap->nodes[rec->pnn].flags;
+	ok = node_flags(rec, rec->pnn, &rec->node_flags);
+	if (!ok) {
+		DBG_ERR("Unable to get node flags for this node\n");
+		return;
+	}
 	em->node_flags = rec->node_flags;
 
 	for (i=0;i<nodemap->num;i++) {
