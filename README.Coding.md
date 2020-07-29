@@ -17,9 +17,8 @@ what most Samba developers use already anyways, with a few exceptions as
 mentioned below.
 
 The coding style for Python code is documented in
-[PEP8](https://www.python.org/dev/peps/pep-0008/). New Python code should be compatible
-with Python 2.6, 2.7, and Python 3.4 onwards. This means using Python 3 syntax
-with the appropriate `from __future__` imports.
+[PEP8](https://www.python.org/dev/peps/pep-0008/). New Python code
+should be compatible with Python 3.6 onwards.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
