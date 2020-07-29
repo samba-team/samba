@@ -1864,8 +1864,15 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 	}
 
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
+		char *suppress_env = getenv("SAMBA_DEPRECATED_SUPPRESS");
+		bool print_warning = (suppress_env == NULL
+				      || suppress_env[0] == '\0');
+		if (print_warning) {
+			DBG_WARNING("WARNING: The \"%s\" option "
+				    "is deprecated\n",
+				    pszParmName);
+
+		}
 	}
 
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
@@ -1897,8 +1904,15 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 	}
 
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
-		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
-			  pszParmName));
+		char *suppress_env = getenv("SAMBA_DEPRECATED_SUPPRESS");
+		bool print_warning = (suppress_env == NULL
+				      || suppress_env[0] == '\0');
+		if (print_warning) {
+			DBG_WARNING("WARNING: The \"%s\" option "
+				    "is deprecated\n",
+				    pszParmName);
+
+		}
 	}
 
 	if (parm_table[parmnum].p_class == P_GLOBAL) {
