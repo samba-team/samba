@@ -745,8 +745,3 @@ const struct security_token *get_current_nttok(connection_struct *conn)
 	}
 	return sec_ctx_active_token();
 }
-
-uint64_t get_current_vuid(connection_struct *conn)
-{
-	return current_user.vuid;
-}
