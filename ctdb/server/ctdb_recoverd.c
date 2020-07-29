@@ -254,6 +254,7 @@ struct ctdb_recoverd {
 	struct tevent_timer *leader_broadcast_timeout_te;
 	uint32_t pnn;
 	uint32_t last_culprit_node;
+	struct ctdb_banning_state *banning_state;
 	struct ctdb_node_map_old *nodemap;
 	struct timeval priority_time;
 	bool need_takeover_run;
@@ -342,38 +343,87 @@ enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEED
 /*
   remember the trouble maker
  */
-static void ctdb_set_culprit_count(struct ctdb_recoverd *rec, uint32_t culprit, uint32_t count)
+static void ctdb_set_culprit_count(struct ctdb_recoverd *rec,
+				   uint32_t culprit,
+				   uint32_t count)
 {
-	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
-	struct ctdb_banning_state *ban_state;
+	struct ctdb_context *ctdb = talloc_get_type_abort(
+		rec->ctdb, struct ctdb_context);
+	struct ctdb_banning_state *ban_state = NULL;
+	size_t len;
+	bool ok;
 
-	if (culprit > ctdb->num_nodes) {
-		DEBUG(DEBUG_ERR,("Trying to set culprit %d but num_nodes is %d\n", culprit, ctdb->num_nodes));
+	ok = node_flags(rec, culprit, NULL);
+	if (!ok) {
+		DBG_WARNING("Unknown culprit node %"PRIu32"\n", culprit);
 		return;
 	}
 
 	/* If we are banned or stopped, do not set other nodes as culprits */
 	if (rec->node_flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(DEBUG_NOTICE, ("This node is INACTIVE, cannot set culprit node %d\n", culprit));
+		D_WARNING("This node is INACTIVE, cannot set culprit node %d\n",
+			  culprit);
 		return;
 	}
 
-	if (ctdb->nodes[culprit]->ban_state == NULL) {
-		ctdb->nodes[culprit]->ban_state = talloc_zero(ctdb->nodes[culprit], struct ctdb_banning_state);
-		CTDB_NO_MEMORY_VOID(ctdb, ctdb->nodes[culprit]->ban_state);
-		ctdb->nodes[culprit]->ban_state->pnn = culprit;
+	if (rec->banning_state == NULL) {
+		len = 0;
+	} else {
+		size_t i;
+
+		len = talloc_array_length(rec->banning_state);
+
+		for (i = 0 ; i < len; i++) {
+			if (rec->banning_state[i].pnn == culprit) {
+				ban_state= &rec->banning_state[i];
+				break;
+			}
+		}
 	}
-	ban_state = ctdb->nodes[culprit]->ban_state;
-	if (timeval_elapsed(&ban_state->last_reported_time) > ctdb->tunable.recovery_grace_period) {
-		/* this was the first time in a long while this node
-		   misbehaved so we will forgive any old transgressions.
-		*/
+
+	/* Not found, so extend (or allocate new) array */
+	if (ban_state == NULL) {
+		struct ctdb_banning_state *t;
+
+		len += 1;
+		/*
+		 * talloc_realloc() handles the corner case where
+		 * rec->banning_state is NULL
+		 */
+		t = talloc_realloc(rec,
+				   rec->banning_state,
+				   struct ctdb_banning_state,
+				   len);
+		if (t == NULL) {
+			DBG_WARNING("Memory allocation errror");
+			return;
+		}
+		rec->banning_state = t;
+
+		/* New element is always at the end - initialise it... */
+		ban_state = &rec->banning_state[len - 1];
+		*ban_state = (struct ctdb_banning_state) {
+			.pnn = culprit,
+			.count = 0,
+		};
+	} else if (ban_state->count > 0 &&
+		   timeval_elapsed(&ban_state->last_reported_time) >
+		   ctdb->tunable.recovery_grace_period) {
+		/*
+		 * Forgive old transgressions beyond the tunable time-limit
+		 */
 		ban_state->count = 0;
 	}
 
 	ban_state->count += count;
 	ban_state->last_reported_time = timeval_current();
 	rec->last_culprit_node = culprit;
+}
+
+static void ban_counts_reset(struct ctdb_recoverd *rec)
+{
+	D_NOTICE("Resetting ban count to 0 for all nodes\n");
+	TALLOC_FREE(rec->banning_state);
 }
 
 /*
@@ -948,17 +998,15 @@ static void cluster_lock_release(struct ctdb_recoverd *rec)
 
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 {
-	struct ctdb_context *ctdb = rec->ctdb;
-	unsigned int i;
-	struct ctdb_banning_state *ban_state;
+	size_t len = talloc_array_length(rec->banning_state);
+	size_t i;
+
 
 	*self_ban = false;
-	for (i=0; i<ctdb->num_nodes; i++) {
-		if (ctdb->nodes[i]->ban_state == NULL) {
-			continue;
-		}
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
-		if (ban_state->count < 2*ctdb->num_nodes) {
+	for (i = 0; i < len; i++) {
+		struct ctdb_banning_state *ban_state = &rec->banning_state[i];
+
+		if (ban_state->count < 2 * rec->nodemap->num) {
 			continue;
 		}
 
@@ -1360,25 +1408,10 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	rec->need_recovery = false;
 	ctdb_op_end(rec->recovery);
 
-	/* we managed to complete a full recovery, make sure to forgive
-	   any past sins by the nodes that could now participate in the
-	   recovery.
-	*/
-	DEBUG(DEBUG_ERR,("Resetting ban count to 0 for all nodes\n"));
-	for (i=0;i<nodemap->num;i++) {
-		struct ctdb_banning_state *ban_state;
-
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[nodemap->nodes[i].pnn]->ban_state;
-		if (ban_state == NULL) {
-			continue;
-		}
-
-		ban_state->count = 0;
-	}
+	/*
+	 * Completed a full recovery so forgive any past transgressions
+	 */
+	ban_counts_reset(rec);
 
 	/* We just finished a recovery successfully.
 	   We now wait for rerecovery_timeout before we allow
