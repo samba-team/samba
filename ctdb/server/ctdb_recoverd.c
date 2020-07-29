@@ -237,6 +237,7 @@ static int ctdb_op_disable(struct ctdb_op_state *state,
 }
 
 struct ctdb_banning_state {
+	uint32_t pnn;
 	uint32_t count;
 	struct timeval last_reported_time;
 };
@@ -360,8 +361,7 @@ static void ctdb_set_culprit_count(struct ctdb_recoverd *rec, uint32_t culprit, 
 	if (ctdb->nodes[culprit]->ban_state == NULL) {
 		ctdb->nodes[culprit]->ban_state = talloc_zero(ctdb->nodes[culprit], struct ctdb_banning_state);
 		CTDB_NO_MEMORY_VOID(ctdb, ctdb->nodes[culprit]->ban_state);
-
-		
+		ctdb->nodes[culprit]->ban_state->pnn = culprit;
 	}
 	ban_state = ctdb->nodes[culprit]->ban_state;
 	if (timeval_elapsed(&ban_state->last_reported_time) > ctdb->tunable.recovery_grace_period) {
@@ -963,13 +963,13 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 		}
 
 		D_NOTICE("Node %u reached %u banning credits\n",
-			 ctdb->nodes[i]->pnn,
+			 ban_state->pnn,
 			 ban_state->count);
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn);
+		ctdb_ban_node(rec, ban_state->pnn);
 		ban_state->count = 0;
 
 		/* Banning ourself? */
-		if (ctdb->nodes[i]->pnn == rec->pnn) {
+		if (ban_state->pnn == rec->pnn) {
 			*self_ban = true;
 		}
 	}
