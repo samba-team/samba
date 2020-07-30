@@ -348,6 +348,44 @@ _PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags
 	return ret+strlen(*string)+1;
 }
 
+static uint32_t guess_string_array_size(struct ndr_pull *ndr, int ndr_flags)
+{
+	/*
+	 * Here we could do something clever like count the number of zeros in
+	 * the ndr data, but it is probably sufficient to pick a lowish number
+	 * (compared to the overhead of the talloc header) and let the
+	 * expontential resizing deal with longer arrays.
+	 */
+	return 5;
+}
+
+static enum ndr_err_code extend_string_array(struct ndr_pull *ndr,
+					     const char ***_a,
+					     uint32_t *count)
+{
+	const char **a = *_a;
+	uint32_t inc = *count / 4 + 3;
+	uint32_t alloc_size = *count + inc;
+
+	if (alloc_size < *count) {
+		/* overflow ! */
+		return NDR_ERR_ALLOC;
+	}
+	/*
+	 * We allocate and zero two more bytes than we report back, so that
+	 * the string array will always be NULL terminated.
+	 */
+	a = talloc_realloc(ndr->current_mem_ctx, a,
+			   const char *,
+			   alloc_size);
+	NDR_ERR_HAVE_NO_MEMORY(a);
+
+	memset(a + *count, 0, inc * sizeof(a[0]));
+	*_a = a;
+	*count = alloc_size - 2;
+	return NDR_ERR_SUCCESS;
+}
+
 /**
   pull a general string array from the wire
 */
@@ -357,14 +395,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 	uint32_t count;
 	unsigned flags = ndr->flags;
 	unsigned saved_flags = ndr->flags;
+	uint32_t alloc_size;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
 	}
 
+	alloc_size = guess_string_array_size(ndr, ndr_flags);
+	a = talloc_zero_array(ndr->current_mem_ctx, const char *, alloc_size + 2);
+	NDR_ERR_HAVE_NO_MEMORY(a);
+
 	switch (flags & (LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_NOTERM)) {
 	case LIBNDR_FLAG_STR_NULLTERM:
-		/* 
+		/*
 		 * here the strings are null terminated
 		 * but also the array is null terminated if LIBNDR_FLAG_REMAINING
 		 * is specified
@@ -372,10 +415,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		for (count = 0;; count++) {
 			TALLOC_CTX *tmp_ctx;
 			const char *s = NULL;
-			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
-			NDR_ERR_HAVE_NO_MEMORY(a);
-			a[count]   = NULL;
-			a[count+1]   = NULL;
+			if (count == alloc_size) {
+				NDR_CHECK(extend_string_array(ndr,
+							      &a,
+							      &alloc_size));
+			}
 
 			tmp_ctx = ndr->current_mem_ctx;
 			ndr->current_mem_ctx = a;
@@ -393,6 +437,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 				a[count] = s;
 			}
 		}
+		a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 1);
+		NDR_ERR_HAVE_NO_MEMORY(a);
 
 		*_a =a;
 		break;
@@ -404,7 +450,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		}
 		/*
 		 * here the strings are not null terminated
-		 * but serarated by a null terminator
+		 * but separated by a null terminator
 		 *
 		 * which means the same as:
 		 * Every string is null terminated exept the last
@@ -422,10 +468,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		for (count = 0; ((ndr->data_size - ndr->offset) > 0); count++) {
 			TALLOC_CTX *tmp_ctx;
 			const char *s = NULL;
-			a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
-			NDR_ERR_HAVE_NO_MEMORY(a);
-			a[count]   = NULL;
-			a[count+1]   = NULL;
+			if (count == alloc_size) {
+				NDR_CHECK(extend_string_array(ndr,
+							      &a,
+							      &alloc_size));
+			}
 
 			tmp_ctx = ndr->current_mem_ctx;
 			ndr->current_mem_ctx = a;
@@ -434,7 +481,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 			a[count] = s;
 		}
 
-		*_a =a;
+		a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 1);
+		NDR_ERR_HAVE_NO_MEMORY(a);
+		*_a = a;
 		break;
 
 	default:
