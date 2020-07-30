@@ -261,6 +261,9 @@ static const struct {
 #ifdef EXDEV
 	{NT_STATUS_NOT_SAME_DEVICE, EXDEV},
 #endif
+#ifdef ECANCELED
+	{NT_STATUS_CANCELLED, ECANCELED},
+#endif
 };
 
 int map_errno_from_nt_status(NTSTATUS status)
