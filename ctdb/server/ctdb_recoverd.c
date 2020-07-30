@@ -2237,13 +2237,21 @@ static void async_getnodemap_callback(struct ctdb_context *ctdb,
 	struct remote_nodemaps_state *state =
 		(struct remote_nodemaps_state *)callback_data;
 	struct ctdb_node_map_old **remote_nodemaps = state->remote_nodemaps;
+	struct ctdb_node_map_old *nodemap = state->rec->nodemap;
+	size_t i;
 
-	if (node_pnn >= ctdb->num_nodes) {
-		DBG_ERR("Invalid PNN\n");
+	for (i = 0; i < nodemap->num; i++) {
+		if (nodemap->nodes[i].pnn == node_pnn) {
+			break;
+		}
+	}
+
+	if (i >= nodemap->num) {
+		DBG_ERR("Invalid PNN %"PRIu32"\n", node_pnn);
 		return;
 	}
 
-	remote_nodemaps[node_pnn] = (struct ctdb_node_map_old *)talloc_steal(
+	remote_nodemaps[i] = (struct ctdb_node_map_old *)talloc_steal(
 					remote_nodemaps, outdata.dptr);
 
 }
