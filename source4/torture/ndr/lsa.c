@@ -1631,8 +1631,7 @@ static const uint8_t lsarlookupnames3_in_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static bool lsarlookupnames3_in_check(struct torture_context *tctx,
-									  struct lsa_LookupNames2 *r)
+static bool lsarlookupnames3_in_check(struct torture_context *tctx, struct lsa_LookupNames3 *r)
 {
 	/* FIXME: Handle */
 	torture_assert_int_equal(tctx, r->in.num_names, 7, "num names");
