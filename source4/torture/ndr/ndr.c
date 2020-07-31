@@ -152,10 +152,12 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	ndr_push_flags_fn_t push_fn,
 	ndr_print_fn_t print_fn,
 	ndr_print_function_t print_function,
+	const char *db_name,
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
 	int flags,
+	const char *check_fn_name,
 	bool (*check_fn) (struct torture_context *ctx, void *data))
 {
 	struct torture_test *test;
@@ -166,8 +168,9 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 
 	test = talloc(tcase, struct torture_test);
 
-	test->name = talloc_strdup(test, name);
-	test->description = NULL;
+	test->name = talloc_strdup(test, check_fn_name);
+	test->description = talloc_asprintf(test, "db:%s",
+					    db_name);
 	test->run = wrap_ndr_pullpush_test;
 
 	data = talloc_zero(test, struct ndr_pull_test_data);
@@ -268,10 +271,13 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					const char *name,
 					ndr_pull_flags_fn_t pull_fn,
 					ndr_print_function_t print_function,
+					const char *db_in_name,
 					DATA_BLOB db_in,
+					const char *db_out_name,
 					DATA_BLOB db_out,
 					size_t struct_size,
 					int flags,
+					const char *check_fn_name,
 					bool (*check_fn) (struct torture_context *ctx, void *data))
 {
 	struct torture_test *test;
@@ -282,8 +288,10 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 
 	test = talloc(tcase, struct torture_test);
 
-	test->name = talloc_strdup(test, name);
-	test->description = NULL;
+	test->name = talloc_strdup(test, check_fn_name);
+	test->description = talloc_asprintf(test, "db_in:%s db_out:%s",
+					    db_in_name,
+					    db_out_name);
 	test->run = wrap_ndr_inout_pull_test;
 	data = talloc_zero(test, struct ndr_pull_test_data);
 	data->data = db_out;
@@ -333,6 +341,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 	struct torture_suite *suite,
 	const char *name,
 	ndr_pull_flags_fn_t pull_fn,
+	const char *db_name,
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
@@ -347,7 +356,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 
 	test = talloc(tcase, struct torture_test);
 
-	test->name = talloc_strdup(test, name);
+	test->name = talloc_strdup(test, db_name);
 	test->description = NULL;
 	test->run = wrap_ndr_pull_invalid_data_test;
 

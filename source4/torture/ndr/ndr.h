@@ -31,10 +31,12 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 					ndr_push_flags_fn_t push_fn,
 					ndr_print_fn_t print_fn,
 					ndr_print_function_t print_function,
+					const char *db_name,
 					DATA_BLOB db,
 					size_t struct_size,
 					int ndr_flags,
 					int flags,
+					const char *check_fn_name,
 					bool (*check_fn) (struct torture_context *, void *data));
 
 _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
@@ -42,16 +44,20 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					const char *name,
 					ndr_pull_flags_fn_t pull_fn,
 					ndr_print_function_t print_fn,
+					const char *db_in_name,
 					DATA_BLOB db_in,
+					const char *db_out_name,
 					DATA_BLOB db_out,
 					size_t struct_size,
 					int flags,
+					const char *check_fn_name,
 					bool (*check_fn) (struct torture_context *ctx, void *data));
 
 _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 	struct torture_suite *suite,
 	const char *name,
 	ndr_pull_flags_fn_t pull_fn,
+	const char *db_name,
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
@@ -69,9 +75,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 NULL, \
 			 (ndr_print_fn_t)ndr_print_ ## name, \
 			 NULL, \
+			 #data, \
 			 data_blob_const(data, sizeof(data)), \
 			 sizeof(struct name), \
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -80,6 +88,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			suite, \
 			#name, \
 			(ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			#data, \
 			data_blob_const(data, sizeof(data)), \
 			sizeof(struct name), \
 			NDR_SCALARS|NDR_BUFFERS, 0, \
@@ -96,9 +105,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 NULL, \
 			 NULL, \
 			 (ndr_print_function_t)ndr_print_ ## name, \
+			 #data, \
 			 data_blob_const(data, sizeof(data)), \
 			 sizeof(struct name), \
 			 flags, 0, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -113,9 +124,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 NULL, \
 			 NULL, \
 			 (ndr_print_function_t)ndr_print_ ## name, \
+			 #data, \
 			 data_blob_const(data, sizeof(data)), \
 			 sizeof(struct name), \
 			 flags, flags2, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -130,9 +143,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 (ndr_print_fn_t)ndr_print_ ## name, \
 			 NULL, \
+			 #data, \
 			 data_blob_const(data, sizeof(data)), \
 			 sizeof(struct name), \
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -147,9 +162,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 (ndr_print_fn_t)ndr_print_ ## name, \
 			 NULL, \
+			 #data_blob, \
 			 data_blob, \
 			 sizeof(struct name), \
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -164,9 +181,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 (ndr_print_fn_t)ndr_print_ ## name, \
 			 NULL, \
+			 #b64, \
 			 base64_decode_data_blob_talloc(suite, b64), \
 			 sizeof(struct name), \
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -181,9 +200,11 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 NULL, \
 			 (ndr_print_function_t)ndr_print_ ## name, \
+			 #data, \
 			 data_blob_const(data, sizeof(data)), \
 			 sizeof(struct name), \
 			 flags, flags2, \
+			 #check_fn, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -196,10 +217,13 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT", \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
 			 (ndr_print_function_t)ndr_print_ ## name, \
+			 #data_in, \
 			 data_blob_const(data_in, sizeof(data_in)), \
+			 #data_out, \
 			 data_blob_const(data_out, sizeof(data_out)), \
 			 sizeof(struct name), \
 			 0, \
+			 #check_fn_out, \
 			 check_fn_anon); \
 	} while(0)
 
@@ -212,10 +236,13 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
 		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT_" #flags, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
 			 (ndr_print_function_t)ndr_print_ ## name, \
+			 #data_in, \
 			 data_blob_const(data_in, sizeof(data_in)), \
+			 #data_out, \
 			 data_blob_const(data_out, sizeof(data_out)), \
 			 sizeof(struct name), \
 			 flags, \
+			 #check_fn_out, \
 			 check_fn_anon); \
 	} while(0)
 
