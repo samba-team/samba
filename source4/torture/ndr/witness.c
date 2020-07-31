@@ -400,36 +400,12 @@ struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 					   NDR_OUT,
 					   witness_AsyncNotify_check_fuzz1_OUT);
 
-#if 0
-	/*
-	 * This crashed as ndr_push_witness_IPaddrInfoList->num is 0.
-	 *
-	 * BACKTRACE:
-	 *  #0 log_stack_trace + 0x37 [ip=0x7f06f174ae0d] [sp=0x7fff50a82b50]
-	 *  #1 smb_panic_log + 0x1c0 [ip=0x7f06f174ad66] [sp=0x7fff50a83440]
-	 *  #2 smb_panic + 0x27 [ip=0x7f06f174ada4] [sp=0x7fff50a83470]
-	 *  #3 fault_report + 0x8d [ip=0x7f06f174a8ce] [sp=0x7fff50a834a0]
-	 *  #4 sig_fault + 0x24 [ip=0x7f06f174a8f2] [sp=0x7fff50a83550]
-	 *  #5 funlockfile + 0x50 [ip=0x7f06efeb68a0] [sp=0x7fff50a83580]
-	 *  #6 __nss_passwd_lookup + 0x24861 [ip=0x7f06ef26f811] [sp=0x7fff50a83c18]
-	 *  #7 inet_pton + 0x2b [ip=0x7f06ef2246ab] [sp=0x7fff50a83c20]
-	 *  #8 is_ipaddress_v4 + 0x37 [ip=0x7f06f1758c37] [sp=0x7fff50a83c70]
-	 *  #9 is_ipaddress + 0x27 [ip=0x7f06f1758f4b] [sp=0x7fff50a83ca0]
-	 *  #10 ndr_push_ipv4address + 0x2e [ip=0x7f06f19fbe62] [sp=0x7fff50a83cd0]
-	 *  #11 ndr_push_witness_IPaddrInfo + 0x11b [ip=0x7f06f1222cd5] [sp=0x7fff50a83d10]
-	 *  #12 ndr_size_struct + 0x8d [ip=0x7f06f1a02820] [sp=0x7fff50a83d70]
-	 *  #13 ndr_size_witness_IPaddrInfo + 0x41 [ip=0x7f06f12230f8] [sp=0x7fff50a83dc0]
-	 *  #14 ndr_push_witness_IPaddrInfoList + 0xd9 [ip=0x7f06f12231e7] [sp=0x7fff50a83df0]
-	 *  #15 ndr_push_witness_notifyResponse_message + 0x15c [ip=0x7f06f1223a3a] [sp=0x7fff50a83e60]
-	 *  #16 ndr_push_witness_notifyResponse + 0x28b [ip=0x7f06f122964f] [sp=0x7fff50a83e
-	 */
 	torture_suite_add_ndr_pullpush_fn_test_flags(suite,
 					    witness_AsyncNotify,
 					    witness_AsyncNotify_data_fuzz1_OUT,
 					    NDR_OUT,
 					    0,
 					    witness_AsyncNotify_check_fuzz1_OUT);
-#endif
 
 	return suite;
 }

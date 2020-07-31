@@ -98,14 +98,14 @@ interface witness
 		WITNESS_IPADDR_OFFLINE = 0x10
 	} witness_IPaddrInfo_flags;
 
-	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN),gensize] struct {
+	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
 		witness_IPaddrInfo_flags flags;
 		[flag(NDR_BIG_ENDIAN)] ipv4address ipv4;
 		[flag(NDR_BIG_ENDIAN)] ipv6address ipv6;
 	} witness_IPaddrInfo;
 
-	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
-		[value(12+(r->num*ndr_size_witness_IPaddrInfo(r->addr, ndr->flags)))] uint32 length;
+	typedef [public,flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN),gensize] struct {
+		[value(ndr_size_witness_IPaddrInfoList(r, ndr->flags))] uint32 length;
 		[value(0)] uint32 reserved;
 		uint32 num;
 		witness_IPaddrInfo addr[num];
