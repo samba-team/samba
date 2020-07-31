@@ -21,6 +21,12 @@ export CFLAGS
 LD="$CXX"
 export LD
 
+# Use the system Python, not the OSS-Fuzz provided statically linked
+# and instrumented Python, because we can't statically link.
+
+PYTHON=/usr/bin/python3
+export PYTHON
+
 # $SANITIZER is provided by the oss-fuzz "compile" command
 #
 # We need to add the waf configure option as otherwise when we also
