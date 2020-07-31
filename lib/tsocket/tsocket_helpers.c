@@ -308,6 +308,7 @@ static void tstream_readv_pdu_readv_done(struct tevent_req *subreq)
 	int sys_errno;
 
 	ret = tstream_readv_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		tevent_req_error(req, sys_errno);
 		return;
