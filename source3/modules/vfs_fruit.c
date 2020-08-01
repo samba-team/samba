@@ -4014,7 +4014,8 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	}
 
 	if ((config->locking == FRUIT_LOCKING_NETATALK) &&
-	    (fsp->op != NULL))
+	    (fsp->op != NULL) &&
+	    !fsp->fsp_flags.is_pathref)
 	{
 		status = fruit_check_access(
 			handle, *result,
