@@ -26,9 +26,11 @@ failed=0
 
 test_smbclient_iconv()
 {
+    normal_smbclient_config="$PREFIX/client/client.conf"
     smbclient_config="$PREFIX/client/client_cp850_smbconf"
     cat > $smbclient_config <<EOF
 [global]
+    include = $normal_smbclient_config
     unix charset = cp850
     client min protocol = core
 EOF
