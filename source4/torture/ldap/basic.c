@@ -131,7 +131,7 @@ static bool test_search_rootDSE(struct ldap_connection *conn, const char **based
 		
 	DEBUG(1,("\tdn: %s\n", r->dn));
 	for (i=0; i<r->num_attributes; i++) {
-		int j;
+		unsigned int j;
 		for (j=0; j<r->attributes[i].num_values; j++) {
 			DEBUG(1,("\t%s: %d %.*s\n", r->attributes[i].name,
 				 (int)r->attributes[i].values[j].length,

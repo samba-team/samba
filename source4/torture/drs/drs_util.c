@@ -39,8 +39,7 @@ bool drs_util_oid_from_attid(struct torture_context *tctx,
 			     const char **_oid,
 			     int *map_idx)
 {
-	int i;
-	uint32_t hi_word, lo_word;
+	uint32_t i, hi_word, lo_word;
 	DATA_BLOB bin_oid = {NULL, 0};
 	char *oid;
 	struct drsuapi_DsReplicaOIDMapping *map_entry = NULL;

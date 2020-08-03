@@ -226,7 +226,7 @@ static bool test_dsdb_schema_info_new(struct torture_context *tctx,
 static bool test_dsdb_schema_info_from_blob(struct torture_context *tctx,
 					    struct drsut_schemainfo_data *priv)
 {
-	int i;
+	uint32_t i;
 	WERROR werr;
 	char *msg;
 	struct dsdb_schema_info *schema_info;
@@ -263,7 +263,7 @@ static bool test_dsdb_schema_info_from_blob(struct torture_context *tctx,
 static bool test_dsdb_blob_from_schema_info(struct torture_context *tctx,
 					    struct drsut_schemainfo_data *priv)
 {
-	int i;
+	uint32_t i;
 	WERROR werr;
 	char *msg;
 	DATA_BLOB ndr_blob;
@@ -606,7 +606,7 @@ DONE:
 static bool torture_drs_unit_schemainfo_setup(struct torture_context *tctx,
 					      struct drsut_schemainfo_data **_priv)
 {
-	int i;
+	size_t i;
 	int ldb_err;
 	NTSTATUS status;
 	DATA_BLOB ndr_blob;

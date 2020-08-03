@@ -48,7 +48,7 @@ struct nested_search_context {
 static int nested_search_callback(struct ldb_request *req,
 				  struct ldb_reply *ares)
 {
-	int i;
+	unsigned int i;
 	int res;
 	struct nested_search_context *sctx;
 	struct ldb_result *ldb_res;
