@@ -437,8 +437,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 				a[count] = s;
 			}
 		}
-		a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 1);
-		NDR_ERR_HAVE_NO_MEMORY(a);
 
 		*_a =a;
 		break;
