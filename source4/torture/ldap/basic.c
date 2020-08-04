@@ -1000,6 +1000,8 @@ bool torture_ldap_basic(struct torture_context *torture)
 	torture_ldap_close(conn);
 	talloc_free(mem_ctx);
 
+	torture_assert(torture, ret, "torture_ldap_basic failed");
+
 	return ret;
 }
 
