@@ -30,19 +30,6 @@
 #include "torture/ldap/proto.h"
 
 
-static bool test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
-{
-	NTSTATUS status;
-	bool ret = true;
-
-	status = torture_ldap_bind(conn, userdn, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-	}
-
-	return ret;
-}
-
 static bool test_bind_sasl(struct torture_context *tctx,
 			   struct ldap_connection *conn, struct cli_credentials *creds)
 {
@@ -61,22 +48,25 @@ static bool test_bind_sasl(struct torture_context *tctx,
 
 static bool test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-	bool ret = true;
+	NTSTATUS status;
 
 	printf("Testing multiple binds on a single connection as anonymous and user\n");
 
-	ret = test_bind_simple(conn, NULL, NULL);
-	if (!ret) {
-		printf("1st bind as anonymous failed\n");
-		return ret;
+	status = torture_ldap_bind(conn, NULL, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("1st bind as anonymous failed with %s\n",
+		       nt_errstr(status));
+		return false;
 	}
 
-	ret = test_bind_simple(conn, userdn, password);
-	if (!ret) {
-		printf("2nd bind as authenticated user failed\n");
+	status = torture_ldap_bind(conn, userdn, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("2nd bind as authenticated user failed: %s\n",
+		       nt_errstr(status));
+		return false;
 	}
 
-	return ret;
+	return true;
 }
 
 static bool test_search_rootDSE(struct ldap_connection *conn, const char **basedn,
