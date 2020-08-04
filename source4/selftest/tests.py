@@ -157,7 +157,10 @@ for t in smbtorture4_testsuites("ldap."):
     if t == "ldap.nested-search":
         plansmbtorture4testsuite(t, "ad_dc_default_smb1", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
     else:
-        plansmbtorture4testsuite(t, "ad_dc_default", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
+        plansmbtorture4testsuite(
+            t,
+            "ad_dc_default",
+            '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_ -D "$USERNAME"@"$REALM"##"$PASSWORD"')
 
 for t in smbtorture4_testsuites("dsdb."):
     plansmbtorture4testsuite(t, "ad_dc:local", "localhost")
