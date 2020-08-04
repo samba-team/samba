@@ -48,20 +48,26 @@ static bool test_bind_sasl(struct torture_context *tctx,
 
 static bool test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-	NTSTATUS status;
+	NTSTATUS status, expected;
+	bool ok;
 
 	printf("Testing multiple binds on a single connection as anonymous and user\n");
 
 	status = torture_ldap_bind(conn, NULL, NULL);
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("1st bind as anonymous failed with %s\n",
 		       nt_errstr(status));
 		return false;
 	}
 
+	expected = NT_STATUS_LDAP(LDAP_STRONG_AUTH_REQUIRED);
 	status = torture_ldap_bind(conn, userdn, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("2nd bind as authenticated user failed: %s\n",
+
+	ok = NT_STATUS_EQUAL(status, expected);
+	if (!ok) {
+		printf("2nd bind as authenticated user should have "
+		       "failed with: %s, got %s\n",
+		       nt_errstr(expected),
 		       nt_errstr(status));
 		return false;
 	}
