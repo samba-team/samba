@@ -276,6 +276,7 @@ static void test_decode_exop_response(void **state)
 	uint8_t *buffer = NULL;
 	const size_t BUFF_SIZE = 1048576;
 	size_t len;
+	int ret;
 	struct ldap_request_limits limits = {
 		.max_search_size = 256000,
 	};
@@ -298,6 +299,10 @@ static void test_decode_exop_response(void **state)
 	status = ldap_decode(
 		asn1, &limits, samba_ldap_control_handlers(), ldap_msg);
 	assert_true(NT_STATUS_IS_OK(status));
+
+	ret = fclose(f);
+	f = NULL;
+	assert_true(ret == 0);
 }
 
 int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
