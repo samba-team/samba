@@ -3,8 +3,8 @@
  *
  * Copyright (C) Swen Schillig 2019
  *
- *   ** NOTE! The following LGPL license applies to the tevent
- *   ** library. This does NOT imply that all of Samba is released
+ *   ** NOTE! The following LGPL license applies to this file.
+ *   ** This does NOT imply that all of Samba is released
  *   ** under the LGPL
  *
  * This library is free software; you can redistribute it and/or
