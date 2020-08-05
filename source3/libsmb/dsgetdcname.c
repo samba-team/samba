@@ -1054,7 +1054,6 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   int num_dcs,
 				   struct netr_DsRGetDCNameInfo **info)
 {
-	struct sockaddr_storage ss;
 	struct ip_service ip_list;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 	NTSTATUS status;
@@ -1093,10 +1092,6 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		ip_list.ss = dclist[i].sa.u.ss;
 		ip_list.port = 0;
-
-		if (!interpret_string_addr_prefer_ipv4(&ss, dclist[i].hostname, AI_NUMERICHOST)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
 
 		status = nbt_getdc(msg_ctx, 10, &dclist[i].sa.u.ss, domain_name,
 				   NULL, my_acct_name, ACB_WSTRUST, nt_version,
