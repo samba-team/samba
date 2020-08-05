@@ -26,6 +26,10 @@
 #include "byteorder.h"
 #include "time_basic.h"
 #include "lib/util/time.h" /* Avoid /usr/include/time.h */
+#include <sys/stat.h>
+#ifndef NO_CONFIG_H
+#include "config.h"
+#endif
 
 /**
  * @file
@@ -1231,4 +1235,230 @@ struct timespec time_t_to_full_timespec(time_t t)
 		return (struct timespec){.tv_nsec = SAMBA_UTIME_OMIT};
 	}
 	return (struct timespec){.tv_sec = t};
+}
+
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+
+/* Old system - no ns timestamp. */
+time_t get_atimensec(const struct stat *st)
+{
+	return 0;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return 0;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return 0;
+}
+
+/* Set does nothing with no ns timestamp. */
+void set_atimensec(struct stat *st, time_t ns)
+{
+	return;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	return;
+}
+
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	return;
+}
+
+#elif HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC
+
+time_t get_atimensec(const struct stat *st)
+{
+	return st->st_atimespec.tv_nsec;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return st->st_mtimespec.tv_nsec;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return st->st_ctimespec.tv_nsec;
+}
+
+void set_atimensec(struct stat *st, time_t ns)
+{
+	st->st_atimespec.tv_nsec = ns;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	st->st_mtimespec.tv_nsec = ns;
+}
+
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	st->st_ctimespec.tv_nsec = ns;
+}
+
+#elif HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+
+time_t get_atimensec(const struct stat *st)
+{
+	return st->st_atim.tv_nsec;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return st->st_mtim.tv_nsec;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return st->st_ctim.tv_nsec;
+}
+
+void set_atimensec(struct stat *st, time_t ns)
+{
+	st->st_atim.tv_nsec = ns;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	st->st_mtim.tv_nsec = ns;
+}
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	st->st_ctim.tv_nsec = ns;
+}
+
+#elif HAVE_STRUCT_STAT_ST_MTIMENSEC
+
+time_t get_atimensec(const struct stat *st)
+{
+	return st->st_atimensec;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return st->st_mtimensec;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return st->st_ctimensec;
+}
+
+void set_atimensec(struct stat *st, time_t ns)
+{
+	st->st_atimensec = ns;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	st->st_mtimensec = ns;
+}
+
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	st->st_ctimensec = ns;
+}
+
+#elif HAVE_STRUCT_STAT_ST_MTIME_N
+
+time_t get_atimensec(const struct stat *st)
+{
+	return st->st_atime_n;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return st->st_mtime_n;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return st->st_ctime_n;
+}
+
+void set_atimensec(struct stat *st, time_t ns)
+{
+	st->st_atime_n = ns;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	st->st_mtime_n = ns;
+}
+
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	st->st_ctime_n = ns;
+}
+
+#elif HAVE_STRUCT_STAT_ST_UMTIME
+
+/* Only usec timestamps available. Convert to/from nsec. */
+
+time_t get_atimensec(const struct stat *st)
+{
+	return st->st_uatime * 1000;
+}
+
+time_t get_mtimensec(const struct stat *st)
+{
+	return st->st_umtime * 1000;
+}
+
+time_t get_ctimensec(const struct stat *st)
+{
+	return st->st_uctime * 1000;
+}
+
+void set_atimensec(struct stat *st, time_t ns)
+{
+	st->st_uatime = ns / 1000;
+}
+
+void set_mtimensec(struct stat *st, time_t ns)
+{
+	st->st_umtime = ns / 1000;
+}
+
+void set_ctimensec(struct stat *st, time_t ns)
+{
+	st->st_uctime = ns / 1000;
+}
+
+#else
+#error CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
+#endif
+
+struct timespec get_atimespec(const struct stat *pst)
+{
+	struct timespec ret;
+
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = get_atimensec(pst);
+	return ret;
+}
+
+struct timespec get_mtimespec(const struct stat *pst)
+{
+	struct timespec ret;
+
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = get_mtimensec(pst);
+	return ret;
+}
+
+struct timespec get_ctimespec(const struct stat *pst)
+{
+	struct timespec ret;
+
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = get_ctimensec(pst);
+	return ret;
 }

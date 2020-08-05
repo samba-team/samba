@@ -746,8 +746,6 @@ def configure(conf):
 
     conf.CHECK_CODE('mkdir("foo",0777)', define='HAVE_MKDIR_MODE', headers='sys/stat.h')
 
-    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec', define='HAVE_STAT_TV_NSEC',
-                                headers='sys/stat.h')
     # we need the st_rdev test under two names
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_rdev',
                                 define='HAVE_STRUCT_STAT_ST_RDEV',

@@ -26,6 +26,7 @@
 #include "system/passwd.h"
 #include "system/filesys.h"
 #include "lib/util/setid.h"
+#include "lib/util/time.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -120,124 +121,6 @@ int sys_fcntl_int(int fd, int cmd, int arg)
 		ret = fcntl(fd, cmd, arg);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
-}
-
-/****************************************************************************
- Get/Set all the possible time fields from a stat struct as a timespec.
-****************************************************************************/
-
-static struct timespec get_atimespec(const struct stat *pst)
-{
-#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
-	struct timespec ret;
-
-	/* Old system - no ns timestamp. */
-	ret.tv_sec = pst->st_atime;
-	ret.tv_nsec = 0;
-	return ret;
-#else
-#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_atim.tv_sec;
-	ret.tv_nsec = pst->st_atim.tv_nsec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_atime;
-	ret.tv_nsec = pst->st_atimensec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
-	struct timespec ret;
-	ret.tv_sec = pst->st_atime;
-	ret.tv_nsec = pst->st_atime_n;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
-	struct timespec ret;
-	ret.tv_sec = pst->st_atime;
-	ret.tv_nsec = pst->st_uatime * 1000;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
-	return pst->st_atimespec;
-#else
-#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
-#endif
-#endif
-}
-
-static struct timespec get_mtimespec(const struct stat *pst)
-{
-#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
-	struct timespec ret;
-
-	/* Old system - no ns timestamp. */
-	ret.tv_sec = pst->st_mtime;
-	ret.tv_nsec = 0;
-	return ret;
-#else
-#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_mtim.tv_sec;
-	ret.tv_nsec = pst->st_mtim.tv_nsec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_mtime;
-	ret.tv_nsec = pst->st_mtimensec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
-	struct timespec ret;
-	ret.tv_sec = pst->st_mtime;
-	ret.tv_nsec = pst->st_mtime_n;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
-	struct timespec ret;
-	ret.tv_sec = pst->st_mtime;
-	ret.tv_nsec = pst->st_umtime * 1000;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
-	return pst->st_mtimespec;
-#else
-#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
-#endif
-#endif
-}
-
-static struct timespec get_ctimespec(const struct stat *pst)
-{
-#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
-	struct timespec ret;
-
-	/* Old system - no ns timestamp. */
-	ret.tv_sec = pst->st_ctime;
-	ret.tv_nsec = 0;
-	return ret;
-#else
-#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_ctim.tv_sec;
-	ret.tv_nsec = pst->st_ctim.tv_nsec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-	struct timespec ret;
-	ret.tv_sec = pst->st_ctime;
-	ret.tv_nsec = pst->st_ctimensec;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
-	struct timespec ret;
-	ret.tv_sec = pst->st_ctime;
-	ret.tv_nsec = pst->st_ctime_n;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
-	struct timespec ret;
-	ret.tv_sec = pst->st_ctime;
-	ret.tv_nsec = pst->st_uctime * 1000;
-	return ret;
-#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
-	return pst->st_ctimespec;
-#else
-#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
-#endif
-#endif
 }
 
 /****************************************************************************

@@ -375,4 +375,22 @@ time_t full_timespec_to_time_t(const struct timespec *ts);
 time_t nt_time_to_full_time_t(NTTIME nt);
 struct timespec time_t_to_full_timespec(time_t t);
 
+/*
+ * Functions to get and set the number of nanoseconds for times in a stat field.
+ * If the stat has timestamp granularity less than nanosecond, then the set_*
+ * operations will be lossy.
+ */
+struct stat;
+time_t get_atimensec(const struct stat *);
+time_t get_mtimensec(const struct stat *);
+time_t get_ctimensec(const struct stat *);
+void set_atimensec(struct stat *, time_t);
+void set_mtimensec(struct stat *, time_t);
+void set_ctimensec(struct stat *, time_t);
+
+/* These are convenience wrappers for the above getters. */
+struct timespec get_atimespec(const struct stat *);
+struct timespec get_mtimespec(const struct stat *);
+struct timespec get_ctimespec(const struct stat *);
+
 #endif /* _SAMBA_TIME_H_ */

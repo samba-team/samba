@@ -27,6 +27,7 @@
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/util/time.h"
 
 /*
  * Generate an inode number from file name for those things that need it
@@ -102,18 +103,29 @@ void setup_stat(struct stat *st,
 	}
 
 	st->st_dev = dev;
-	st->st_atim = access_time_ts;
-	st->st_ctim = change_time_ts;
-	st->st_mtim = write_time_ts;
+
+	st->st_atime = access_time_ts.tv_sec;
+	set_atimensec(st, access_time_ts.tv_nsec);
+
+	st->st_ctime = change_time_ts.tv_sec;
+	set_ctimensec(st, change_time_ts.tv_nsec);
+
+	st->st_mtime = write_time_ts.tv_sec;
+	set_mtimensec(st, write_time_ts.tv_nsec);
 }
 
 void setup_stat_from_stat_ex(const struct stat_ex *stex,
 			     const char *fname,
 			     struct stat *st)
 {
-	st->st_atim = stex->st_ex_atime;
-	st->st_ctim = stex->st_ex_ctime;
-	st->st_mtim = stex->st_ex_mtime;
+	st->st_atime = stex->st_ex_atime.tv_sec;
+	set_atimensec(st, stex->st_ex_atime.tv_nsec);
+
+	st->st_ctime = stex->st_ex_ctime.tv_sec;
+	set_ctimensec(st, stex->st_ex_ctime.tv_nsec);
+
+	st->st_mtime = stex->st_ex_mtime.tv_sec;
+	set_mtimensec(st, stex->st_ex_mtime.tv_nsec);
 
 	st->st_mode = stex->st_ex_mode;
 	st->st_size = stex->st_ex_size;

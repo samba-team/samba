@@ -27,6 +27,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
 #include "dynconfig.h"
+#include "lib/util/time.h"
 
 /* test string to compare with when debug_callback is called */
 #define TEST_STRING "smbc_setLogCallback test"
@@ -1231,8 +1232,8 @@ static bool torture_libsmbclient_utimes(struct torture_context *tctx)
 	ret = smbc_fstat(fhandle, &st);
 	torture_assert_int_not_equal(tctx, ret, -1, "smbc_fstat failed");
 
-	tbuf[0] = convert_timespec_to_timeval(st.st_atim);
-	tbuf[1] = convert_timespec_to_timeval(st.st_mtim);
+	tbuf[0] = convert_timespec_to_timeval(get_atimespec(&st));
+	tbuf[1] = convert_timespec_to_timeval(get_mtimespec(&st));
 
 	tbuf[1] = timeval_add(&tbuf[1], 0, 100000); /* 100 msec */
 
@@ -1244,7 +1245,7 @@ static bool torture_libsmbclient_utimes(struct torture_context *tctx)
 
 	torture_assert_int_equal(
 		tctx,
-		st.st_mtim.tv_nsec / 1000,
+		get_mtimensec(&st) / 1000,
 		tbuf[1].tv_usec,
 		"smbc_utimes did not update msec");
 
