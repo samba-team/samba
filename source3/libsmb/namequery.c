@@ -2649,6 +2649,7 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		TALLOC_FREE(dcs);
 		TALLOC_FREE(srv_addrs);
 		TALLOC_FREE(dns_lookup_names);
+		TALLOC_FREE(dns_addrs);
 		return status;
 	}
 
