@@ -17,6 +17,28 @@ NEW FEATURES/CHANGES
 ====================
 
 
+Client Group Policy
+-------------------
+This release extends Samba to support Group Policy functionality for Winbind
+clients. Active Directory Administrators can set policies that apply Sudoers
+configuration, and cron jobs to run hourly, daily, weekly or monthly.
+
+To enable the application of Group Policies on a client, set the global
+smb.conf option 'apply group policies' to 'yes'. Policies are applied on an
+interval of every 90 minutes, plus a random offset between 0 and 30 minutes.
+
+Policies applied by Samba are 'non-tattooing', meaning that changes can be
+reverted by executing the `samba-gpupdate --unapply` command. Policies can be
+re-applied using the `samba-gpupdate --force` command.
+To view what policies have been or will be applied to a system, use the
+`samba-gpupdate --rsop` command.
+
+Administration of Samba policy requires that a Samba ADMX template be uploaded
+to the SYSVOL share. The samba-tool command `samba-tool gpo admxload` is
+provided as a convenient method for adding this policy. Once uploaded, policies
+can be modified in the Group Policy Management Editor under Computer
+Configuration/Policies/Administrative Templates.
+
 CTDB CHANGES
 ============
 
