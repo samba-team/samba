@@ -542,3 +542,84 @@ class GPOTests(tests.TestCase):
                                   'Sudoers policy not created')
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
+
+    def test_gp_unapply(self):
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        gp_extensions = []
+        gp_extensions.append(gp_krb_ext(logger, self.lp, machine_creds, store))
+        gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
+            store))
+        gp_extensions.append(gp_sudoers_ext(logger, self.lp, machine_creds,
+            store))
+
+        # Create registry stage data
+        reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
+        reg_stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Daily Scripts'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'echo hello world'
+        e2 = preg.entry()
+        e2.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e2.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e2.type = 1
+        e2.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
+        reg_stage.num_entries = 2
+        reg_stage.entries = [e, e2]
+
+        # Create krb stage date
+        gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
+                  'WINDOWS NT/SECEDIT/GPTTMPL.INF')
+        krb_stage = '[Kerberos Policy]\nMaxTicketAge = 99\n'
+
+        ret = stage_file(gpofile % guid, krb_stage)
+        self.assertTrue(ret, 'Could not create the target %s' %
+                             (gpofile % guid))
+        ret = stage_file(reg_pol % guid, ndr_pack(reg_stage))
+        self.assertTrue(ret, 'Could not create the target %s' %
+                             (reg_pol % guid))
+
+        # Process all gpos, with temp output directory
+        remove = []
+        with TemporaryDirectory() as dname:
+            for ext in gp_extensions:
+                if type(ext) == gp_krb_ext:
+                    ext.process_group_policy([], gpos)
+                    ret = store.get_int('kdc:user_ticket_lifetime')
+                    self.assertEqual(ret, 99, 'Kerberos policy was not set')
+                elif type(ext) in [gp_scripts_ext, gp_sudoers_ext]:
+                    ext.process_group_policy([], gpos, dname)
+                    gp_db = store.get_gplog(machine_creds.get_username())
+                    applied_settings = gp_db.get_applied_settings([guid])
+                    for _, fname in applied_settings[-1][-1][str(ext)].items():
+                        self.assertIn(dname, fname,
+                                      'Test file not created in tmp dir')
+                        self.assertTrue(os.path.exists(fname),
+                                        'Test file not created')
+                        remove.append(fname)
+
+            # Unapply policy, and ensure policies are removed
+            gpupdate_unapply(self.lp)
+
+            for fname in remove:
+                self.assertFalse(os.path.exists(fname),
+                                 'Unapply did not remove test file')
+            ret = store.get_int('kdc:user_ticket_lifetime')
+            self.assertNotEqual(ret, 99, 'Kerberos policy was not unapplied')
+
+        unstage_file(gpofile % guid)
+        unstage_file(reg_pol % guid)
