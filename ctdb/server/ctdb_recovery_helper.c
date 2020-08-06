@@ -726,7 +726,7 @@ static struct tevent_req *pull_database_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
-			uint32_t pnn, uint32_t caps,
+			uint32_t pnn,
 			struct recdb_context *recdb)
 {
 	struct tevent_req *req, *subreq;
@@ -1326,7 +1326,6 @@ static void collect_highseqnum_db_seqnum_done(struct tevent_req *subreq)
 	unsigned int i;
 	int ret;
 	uint64_t seqnum, max_seqnum;
-	uint32_t max_caps;
 
 	status = ctdb_client_control_multi_recv(subreq, &ret, state,
 						&err_list, &reply);
@@ -1354,7 +1353,6 @@ static void collect_highseqnum_db_seqnum_done(struct tevent_req *subreq)
 
 	max_seqnum = 0;
 	state->max_pnn = state->nlist->pnn_list[0];
-	max_caps = state->nlist->caps[0];
 	for (i=0; i<state->nlist->count; i++) {
 		ret = ctdb_reply_control_get_db_seqnum(reply[i], &seqnum);
 		if (ret != 0) {
@@ -1365,7 +1363,6 @@ static void collect_highseqnum_db_seqnum_done(struct tevent_req *subreq)
 		if (max_seqnum < seqnum) {
 			max_seqnum = seqnum;
 			state->max_pnn = state->nlist->pnn_list[i];
-			max_caps = state->nlist->caps[i];
 		}
 	}
 
@@ -1378,7 +1375,6 @@ static void collect_highseqnum_db_seqnum_done(struct tevent_req *subreq)
 				    state->ev,
 				    state->client,
 				    state->max_pnn,
-				    max_caps,
 				    state->recdb);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -1457,7 +1453,6 @@ static struct tevent_req *collect_all_db_send(
 				    ev,
 				    client,
 				    nlist->pnn_list[state->index],
-				    nlist->caps[state->index],
 				    recdb);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -1495,7 +1490,6 @@ static void collect_all_db_pulldb_done(struct tevent_req *subreq)
 				    state->ev,
 				    state->client,
 				    state->nlist->pnn_list[state->index],
-				    state->nlist->caps[state->index],
 				    state->recdb);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
