@@ -1052,7 +1052,7 @@ bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB 
 /* read a non-negative enumerated value */
 bool asn1_read_enumerated(struct asn1_data *data, int *v)
 {
-	unsigned int val_will_wrap = (0xFF << ((sizeof(int)*8)-8));
+	unsigned int val_will_wrap = (0xFFU << ((sizeof(int)*8)-8));
 	*v = 0;
 
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return false;
