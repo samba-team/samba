@@ -713,7 +713,7 @@ static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
 
 		/*
 		 * Overflow is harmless here, just used below to
-		 * decide if to read or write, but checkd above anyway
+		 * decide if to read or write, but checked above anyway
 		 */
 		length += reply->blob.length;
 
