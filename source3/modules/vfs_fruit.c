@@ -4755,7 +4755,9 @@ static bool fruit_get_bandsize(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	file_data = talloc_array(talloc_tos(), uint8_t, plist_file_size);
+	file_data = talloc_zero_array(talloc_tos(),
+				      uint8_t,
+				      plist_file_size + 1);
 	if (file_data == NULL) {
 		ok = false;
 		goto out;
