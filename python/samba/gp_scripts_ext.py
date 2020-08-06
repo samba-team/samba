@@ -35,10 +35,10 @@ class gp_scripts_ext(gp_pol_ext):
         return 'Unix Settings/Scripts'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list, cdir=None):
-        for gpo in deleted_gpo_list:
-            self.gp_db.set_guid(gpo[0])
-            if str(self) in gpo[1]:
-                for attribute, script in gpo[1][str(self)].items():
+        for guid, settings in deleted_gpo_list:
+            self.gp_db.set_guid(guid)
+            if str(self) in settings:
+                for attribute, script in settings[str(self)].items():
                     os.unlink(script)
                     self.gp_db.delete(str(self), attribute)
             self.gp_db.commit()

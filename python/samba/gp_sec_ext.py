@@ -34,11 +34,11 @@ class gp_krb_ext(gp_inf_ext):
         if self.lp.get('server role') != 'active directory domain controller':
             return
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
-        for gpo in deleted_gpo_list:
-            self.gp_db.set_guid(gpo[0])
-            for section in gpo[1].keys():
+        for guid, settings in deleted_gpo_list:
+            self.gp_db.set_guid(guid)
+            for section in settings.keys():
                 if section == str(self):
-                    for att, value in gpo[1][section].items():
+                    for att, value in settings[section].items():
                         update_samba, _ = self.mapper().get(att)
                         update_samba(att, value)
                         self.gp_db.delete(section, att)
@@ -127,11 +127,11 @@ class gp_access_ext(gp_inf_ext):
         if self.lp.get('server role') != 'active directory domain controller':
             return
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
-        for gpo in deleted_gpo_list:
-            self.gp_db.set_guid(gpo[0])
-            for section in gpo[1].keys():
+        for guid, settings in deleted_gpo_list:
+            self.gp_db.set_guid(guid)
+            for section in settings.keys():
                 if section == str(self):
-                    for att, value in gpo[1][section].items():
+                    for att, value in settings[section].items():
                         update_samba, _ = self.mapper().get(att)
                         update_samba(att, value)
                         self.gp_db.delete(section, att)
