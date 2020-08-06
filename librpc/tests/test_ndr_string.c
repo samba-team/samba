@@ -159,13 +159,47 @@ static void test_ndr_string_n_length(void **state)
 	assert_int_equal(len, 26);
 }
 
+static void test_pull_string_array(void **state)
+{
+	/* We try pulling long string arrays without long strings */
+	const char **r = NULL;
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	size_t len = 1 * 1024 * 1024;
+	uint8_t *data = talloc_array(mem_ctx, uint8_t, len);
+	size_t i;
+
+	for (i = 0; i < len; i++) {
+		data[i] = (i & 1) ? '\0' : 'X';
+	}
+
+	ndr.current_mem_ctx = mem_ctx;
+
+	ndr.flags = (LIBNDR_FLAG_REF_ALLOC |
+		     LIBNDR_FLAG_REMAINING |
+		     LIBNDR_FLAG_STR_NULLTERM |
+		     LIBNDR_FLAG_STR_RAW8);
+	ndr.data = data;
+	ndr.data_size = len;
+
+	err = ndr_pull_string_array(&ndr, NDR_SCALARS, &r);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_string_equal(r[0], "X");
+	assert_string_equal(r[len / 3], "X");
+	assert_string_equal(r[len / 2 - 1], "X");
+	assert_ptr_equal(r[len / 2], NULL);
+	TALLOC_FREE(mem_ctx);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_pull_string_zero_len_nul_term),
 		cmocka_unit_test(test_pull_string_len_1_nul_term),
 		cmocka_unit_test(test_pull_string_len_2_nul_term),
-		cmocka_unit_test(test_ndr_string_n_length)
+		cmocka_unit_test(test_ndr_string_n_length),
+		cmocka_unit_test(test_pull_string_array)
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
