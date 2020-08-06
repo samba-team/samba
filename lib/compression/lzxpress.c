@@ -180,7 +180,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 				}
 			}
 
-			indic |= 1 << (32 - ((indic_bit % 32) + 1));
+			indic |= 1U << (32 - ((indic_bit % 32) + 1));
 
 			if (best_len > 9) {
 				if (nibble_index == 0) {
