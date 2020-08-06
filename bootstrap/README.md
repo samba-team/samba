@@ -39,23 +39,18 @@ the toplevel .gitlab-ci.yml file.
 As a gitlab-ci user, I can use this tool to build new CI docker images:
 
  After committing the result of calling `bootstrap/template.py --render`
- and updating `SAMBA_CI_CONTAINER_TAG` in .gitlab-ci.yml, you can push
- The branch to git@gitlab.com:samba-team/devel/samba.git using:
-
-  git push -o ci.skip git@gitlab.com:samba-team/devel/samba.git ...
-
- The `-o ci.skip` option means gitlab won't start a pipeline
- for the just pushed branch.
-
- Instead you would start a custom pipeline at:
-
-  https://gitlab.com/samba-team/devel/samba/pipelines/new
+ and updating `SAMBA_CI_CONTAINER_TAG` in .gitlab-ci.yml, you can push.
 
  But you need to pass `SAMBA_CI_REBUILD_IMAGES=yes` as environment
  variable. It means the pipeline runs the 'images' stage and builds
  the new container images for all supported distributions and
  uploads the images into the registry.gitlab.com/samba-team/devel/samba
  container registry.
+
+ You can push by specifying the variable (note multiple -o options are allowed,
+ see https://docs.gitlab.com/ee/user/project/push_options.html):
+
+  `git push -o ci.variable='SAMBA_CI_REBUILD_IMAGES=yes' git@gitlab.com:samba-team/devel/samba.git ...`
 
  If you want to try to build images for the (currently) broken
  distributions, you would pass `SAMBA_CI_REBUILD_BROKEN_IMAGES=yes`
