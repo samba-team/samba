@@ -83,15 +83,13 @@ if __name__ == "__main__":
                                                             lp.configfile)
     gp_extensions = []
     if opts.target == 'Computer':
-        gp_extensions.append(gp_access_ext(logger, lp, creds, store))
-        gp_extensions.append(gp_krb_ext(logger, lp, creds, store))
-        gp_extensions.append(gp_scripts_ext(logger, lp, creds, store))
-        gp_extensions.append(gp_sudoers_ext(logger, lp, creds, store))
-        for ext in machine_exts:
-            gp_extensions.append(ext(logger, lp, creds, store))
+        gp_extensions.append(gp_access_ext)
+        gp_extensions.append(gp_krb_ext)
+        gp_extensions.append(gp_scripts_ext)
+        gp_extensions.append(gp_sudoers_ext)
+        gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
-        for ext in user_exts:
-            gp_extensions.append(ext(logger, lp, creds, store))
+        gp_extensions.extend(user_exts)
 
     if opts.rsop:
         rsop(lp, creds, gp_extensions, opts.target)

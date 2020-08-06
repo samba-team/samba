@@ -453,6 +453,7 @@ def apply_gp(lp, creds, logger, store, gp_extensions, force=False):
     store.start()
     for ext in gp_extensions:
         try:
+            ext = ext(logger, lp, creds, store)
             ext.process_group_policy(del_gpos, changed_gpos)
         except Exception as e:
             logger.error('Failed to apply extension  %s' % str(ext))
@@ -476,6 +477,7 @@ def unapply_gp(lp, creds, logger, store, gp_extensions):
     store.start()
     for ext in gp_extensions:
         try:
+            ext = ext(logger, lp, creds, store)
             ext.process_group_policy(del_gpos, [])
         except Exception as e:
             logger.error('Failed to unapply extension  %s' % str(ext))
@@ -507,6 +509,7 @@ def rsop(lp, creds, gp_extensions, target):
         print('GPO: %s' % gpo.display_name)
         print('='*term_width)
         for ext in gp_extensions:
+            ext = ext(logger, lp, creds, store)
             print('  CSE: %s' % ext.__module__.split('.')[-1])
             print('  ' + ('-'*int(term_width/2)))
             for section, settings in ext.rsop(gpo).items():

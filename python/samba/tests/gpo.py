@@ -480,11 +480,9 @@ class GPOTests(tests.TestCase):
             gpos = ads.get_gpo_list(machine_creds.get_username())
 
         gp_extensions = []
-        gp_extensions.append(gp_krb_ext(logger, self.lp, machine_creds, store))
-        gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
-            store))
-        gp_extensions.append(gp_sudoers_ext(logger, self.lp, machine_creds,
-            store))
+        gp_extensions.append(gp_krb_ext)
+        gp_extensions.append(gp_scripts_ext)
+        gp_extensions.append(gp_sudoers_ext)
 
         # Create registry stage data
         reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
@@ -515,6 +513,7 @@ class GPOTests(tests.TestCase):
             self.assertTrue(ret, 'Could not create the target %s' %
                                  (reg_pol % g.name))
             for ext in gp_extensions:
+                ext = ext(logger, self.lp, machine_creds, store)
                 ret = ext.rsop(g)
                 self.assertEquals(len(ret.keys()), 1,
                                   'A single policy should have been displayed')
@@ -559,11 +558,9 @@ class GPOTests(tests.TestCase):
             gpos = ads.get_gpo_list(machine_creds.get_username())
 
         gp_extensions = []
-        gp_extensions.append(gp_krb_ext(logger, self.lp, machine_creds, store))
-        gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
-            store))
-        gp_extensions.append(gp_sudoers_ext(logger, self.lp, machine_creds,
-            store))
+        gp_extensions.append(gp_krb_ext)
+        gp_extensions.append(gp_scripts_ext)
+        gp_extensions.append(gp_sudoers_ext)
 
         # Create registry stage data
         reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
@@ -597,6 +594,7 @@ class GPOTests(tests.TestCase):
         remove = []
         with TemporaryDirectory() as dname:
             for ext in gp_extensions:
+                ext = ext(logger, self.lp, machine_creds, store)
                 if type(ext) == gp_krb_ext:
                     ext.process_group_policy([], gpos)
                     ret = store.get_int('kdc:user_ticket_lifetime')
