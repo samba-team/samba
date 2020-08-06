@@ -68,14 +68,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_GET_DBMAP:
 		break;
 
-	case CTDB_CONTROL_PULL_DB:
-		len = ctdb_pulldb_len(cd->data.pulldb);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
-		len = ctdb_rec_buffer_len(cd->data.recbuf);
-		break;
-
 	case CTDB_CONTROL_GET_RECMODE:
 		break;
 
@@ -447,14 +439,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_uint32_push(&cd->data.loglevel, buf, &np);
 		break;
 
-	case CTDB_CONTROL_PULL_DB:
-		ctdb_pulldb_push(cd->data.pulldb, buf, &np);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
-		break;
-
 	case CTDB_CONTROL_SET_RECMODE:
 		ctdb_uint32_push(&cd->data.recmode, buf, &np);
 		break;
@@ -739,16 +723,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SET_DEBUG:
 		ret = ctdb_uint32_pull(buf, buflen, &cd->data.loglevel, &np);
-		break;
-
-	case CTDB_CONTROL_PULL_DB:
-		ret = ctdb_pulldb_pull(buf, buflen, mem_ctx,
-				       &cd->data.pulldb, &np);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
-		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
@@ -1102,13 +1076,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		len = ctdb_dbid_map_len(cd->data.dbmap);
 		break;
 
-	case CTDB_CONTROL_PULL_DB:
-		len = ctdb_rec_buffer_len(cd->data.recbuf);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
-		break;
-
 	case CTDB_CONTROL_GET_RECMODE:
 		break;
 
@@ -1449,13 +1416,6 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		ctdb_dbid_map_push(cd->data.dbmap, buf, &np);
 		break;
 
-	case CTDB_CONTROL_PULL_DB:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH:
 		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
@@ -1620,14 +1580,6 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_GET_DBMAP:
 		ret = ctdb_dbid_map_pull(buf, buflen, mem_ctx,
 					 &cd->data.dbmap, &np);
-		break;
-
-	case CTDB_CONTROL_PULL_DB:
-		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf, &np);
-		break;
-
-	case CTDB_CONTROL_PUSH_DB:
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
