@@ -469,6 +469,8 @@ class GPOTests(tests.TestCase):
         gp_extensions.append(gp_krb_ext(logger, self.lp, machine_creds, store))
         gp_extensions.append(gp_scripts_ext(logger, self.lp, machine_creds,
             store))
+        gp_extensions.append(gp_sudoers_ext(logger, self.lp, machine_creds,
+            store))
 
         # Create registry stage data
         reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
@@ -478,8 +480,13 @@ class GPOTests(tests.TestCase):
         e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
         e.type = 1
         e.data = b'echo hello world'
-        reg_stage.num_entries = 1
-        reg_stage.entries = [e]
+        e2 = preg.entry()
+        e2.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e2.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e2.type = 1
+        e2.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
+        reg_stage.num_entries = 2
+        reg_stage.entries = [e, e2]
 
         # Create krb stage date
         gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
@@ -512,5 +519,12 @@ class GPOTests(tests.TestCase):
                                   'Daily Scripts not found')
                     self.assertIn('echo hello world', ret['Daily Scripts'],
                                   'Daily script was not created')
+                # Check the Sudoers Extension
+                elif type(ext) == gp_sudoers_ext:
+                    self.assertIn('Sudo Rights', ret.keys(),
+                                  'Sudoers not found')
+                    self.assertIn('fakeu  ALL=(ALL) NOPASSWD: ALL',
+                                  ret['Sudo Rights'],
+                                  'Sudoers policy not created')
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
