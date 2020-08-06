@@ -1196,67 +1196,6 @@ static bool push_database_new_recv(struct tevent_req *req, int *perr)
 }
 
 /*
- * wrapper for push_database_new
- */
-
-struct push_database_state {
-};
-
-static void push_database_new_done(struct tevent_req *subreq);
-
-static struct tevent_req *push_database_send(
-			TALLOC_CTX *mem_ctx,
-			struct tevent_context *ev,
-			struct ctdb_client_context *client,
-			struct node_list *nlist,
-			struct ctdb_tunable_list *tun_list,
-			struct recdb_context *recdb)
-{
-	struct tevent_req *req, *subreq;
-	struct push_database_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct push_database_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	subreq = push_database_new_send(state,
-					ev,
-					client,
-					nlist->pnn_list,
-					nlist->count,
-					recdb,
-					tun_list->rec_buffer_size_limit);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, push_database_new_done, req);
-
-	return req;
-}
-
-static void push_database_new_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	bool status;
-	int ret;
-
-	status = push_database_new_recv(subreq, &ret);
-	if (! status) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	tevent_req_done(req);
-}
-
-static bool push_database_recv(struct tevent_req *req, int *perr)
-{
-	return generic_recv(req, perr);
-}
-
-/*
  * Collect databases using highest sequence number
  */
 
@@ -1933,12 +1872,13 @@ static void recover_db_wipedb_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = push_database_send(state,
-				    state->ev,
-				    state->client,
-				    state->nlist,
-				    state->tun_list,
-				    state->recdb);
+	subreq = push_database_new_send(state,
+					state->ev,
+					state->client,
+					state->nlist->pnn_list,
+					state->nlist->count,
+					state->recdb,
+					state->tun_list->rec_buffer_size_limit);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1955,7 +1895,7 @@ static void recover_db_pushdb_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	status = push_database_recv(subreq, &ret);
+	status = push_database_new_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		tevent_req_error(req, ret);
