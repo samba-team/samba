@@ -221,16 +221,6 @@ int ctdb_reply_control_get_dbmap(struct ctdb_reply_control *reply,
 				 TALLOC_CTX *mem_ctx,
 				 struct ctdb_dbid_map **dbmap);
 
-void ctdb_req_control_pull_db(struct ctdb_req_control *request,
-			      struct ctdb_pulldb *pulldb);
-int ctdb_reply_control_pull_db(struct ctdb_reply_control *reply,
-			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_rec_buffer **recbuf);
-
-void ctdb_req_control_push_db(struct ctdb_req_control *request,
-			      struct ctdb_rec_buffer *recbuf);
-int ctdb_reply_control_push_db(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_get_recmode(struct ctdb_req_control *request);
 int ctdb_reply_control_get_recmode(struct ctdb_reply_control *reply,
 				   int *recmode);
