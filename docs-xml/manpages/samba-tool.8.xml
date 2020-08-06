@@ -872,6 +872,48 @@
 	<para>Show statistics for overall groups and group memberships.</para>
 </refsect3>
 
+<refsect3>
+	<title>group rename <replaceable>groupname</replaceable> [options]</title>
+	<para>Rename a group and related attributes.</para>
+	<para>This command allows to set the group's name related attributes. The
+	group's CN will be renamed automatically.
+	The group's CN will be the sAMAccountName.
+	Use the --force-new-cn option to specify the new CN manually and the
+	--reset-cn to reset this change.</para>
+	<para>Use an empty attribute value to remove the specified attribute.</para>
+	<para>The groupname specified on the command is the sAMAccountName.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--force-new-cn=NEW_CN</term>
+	<listitem><para>
+	Specify a new CN (RDN) instead of using the sAMAccountName.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--reset-cn</term>
+	<listitem><para>
+	Set the CN to the sAMAccountName.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--mail-address=MAIL_ADDRESS</term>
+	<listitem><para>
+	New mail address
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--samaccountname=SAMACCOUNTNAME</term>
+	<listitem><para>
+	New account name (sAMAccountName/logon name)
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
 <refsect2>
 	<title>ldapcmp <replaceable>URL1</replaceable> <replaceable>URL2</replaceable> <replaceable>domain|configuration|schema|dnsdomain|dnsforest</replaceable> [options] </title>
 	<para>Compare two LDAP databases.</para>
