@@ -285,15 +285,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SETVNNMAP:
 		return ctdb_control_setvnnmap(ctdb, opcode, indata, outdata);
 
-	case CTDB_CONTROL_PULL_DB: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_pulldb));
-		return ctdb_control_pull_db(ctdb, indata, outdata);
+	case CTDB_CONTROL_PULL_DB:
+		return control_not_implemented("PULL_DB", NULL);
 
 	case CTDB_CONTROL_SET_DMASTER: 
 		return control_not_implemented("SET_DMASTER", NULL);
 
 	case CTDB_CONTROL_PUSH_DB:
-		return ctdb_control_push_db(ctdb, indata);
+		return control_not_implemented("PUSH_DB", NULL);
 
 	case CTDB_CONTROL_GET_RECMODE: {
 		return ctdb->recovery_mode;

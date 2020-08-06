@@ -794,10 +794,6 @@ int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode,
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
-int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata,
-			     TDB_DATA *outdata);
-int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
-
 int32_t ctdb_control_db_pull(struct ctdb_context *ctdb,
 			     struct ctdb_req_control_old *c,
 			     TDB_DATA indata, TDB_DATA *outdata);

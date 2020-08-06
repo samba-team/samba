@@ -236,8 +236,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_NODEMAPv4           = 10, /* obsolete */
 		    CTDB_CONTROL_SET_DMASTER             = 11, /* obsolete */
 		    /* #12 removed */
-		    CTDB_CONTROL_PULL_DB                 = 13,
-		    CTDB_CONTROL_PUSH_DB                 = 14,
+		    CTDB_CONTROL_PULL_DB                 = 13, /* obsolete */
+		    CTDB_CONTROL_PUSH_DB                 = 14, /* obsolete */
 		    CTDB_CONTROL_GET_RECMODE             = 15,
 		    CTDB_CONTROL_SET_RECMODE             = 16,
 		    CTDB_CONTROL_STATISTICS_RESET        = 17,
