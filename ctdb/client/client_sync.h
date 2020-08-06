@@ -65,15 +65,6 @@ int ctdb_ctrl_get_dbmap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			int destnode, struct timeval timeout,
 			struct ctdb_dbid_map **dbmap);
 
-int ctdb_ctrl_pull_db(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		      struct ctdb_client_context *client, int destnode,
-		      struct timeval timeout, struct ctdb_pulldb *pulldb,
-		      struct ctdb_rec_buffer **recbuf);
-
-int ctdb_ctrl_push_db(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		      struct ctdb_client_context *client, int destnode,
-		      struct timeval timeout, struct ctdb_rec_buffer *recbuf);
-
 int ctdb_ctrl_get_recmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			  struct ctdb_client_context *client,
 			  int destnode, struct timeval timeout,

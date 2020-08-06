@@ -268,64 +268,6 @@ int ctdb_ctrl_get_dbmap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_pull_db(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		      struct ctdb_client_context *client, int destnode,
-		      struct timeval timeout, struct ctdb_pulldb *pulldb,
-		      struct ctdb_rec_buffer **recbuf)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_pull_db(&request, pulldb);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control PULL_DB failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_pull_db(reply, mem_ctx, recbuf);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control PULL_DB failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_push_db(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		      struct ctdb_client_context *client, int destnode,
-		      struct timeval timeout, struct ctdb_rec_buffer *recbuf)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_push_db(&request, recbuf);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control PUSH_DB failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_push_db(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control PUSH_DB failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-
 int ctdb_ctrl_get_recmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			  struct ctdb_client_context *client,
 			  int destnode, struct timeval timeout,
