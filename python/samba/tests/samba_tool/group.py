@@ -304,6 +304,81 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=Domain Users,CN=Users,DC=addom,DC=samba,DC=example,DC=com", out)
 
+    def test_rename_samaccountname(self):
+        """rename the samaccountname of all groups"""
+        for group in self.groups:
+            new_name = "new_samaccountname_of_" + group["name"]
+
+            # change samaccountname
+            (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                "--samaccountname=" + new_name)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_group(new_name)
+            self.assertEqual("%s" % found.get("description"), group["description"])
+            if not "cn" in group or str(group["cn"]) == str(group["name"]):
+                self.assertEqual("%s" % found.get("cn"), new_name)
+            else:
+                self.assertEqual("%s" % found.get("cn"), group["cn"])
+
+            # trying to remove the samaccountname throws an error
+            (result, out, err) = self.runsubcmd("group", "rename", new_name,
+                                                "--samaccountname=")
+            self.assertCmdFail(result)
+            self.assertIn('Failed to rename group', err)
+            self.assertIn('delete protected attribute', err)
+
+            # reset changes
+            (result, out, err) = self.runsubcmd("group", "rename", new_name,
+                                                "--samaccountname=" + group["name"])
+            self.assertCmdSuccess(result, out, err)
+            if "cn" in group:
+                (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                    "--force-new-cn=%s" % group["cn"])
+                self.assertCmdSuccess(result, out, err)
+
+    def test_rename_cn_mail(self):
+        """change and remove the cn and mail attributes of all groups"""
+        for group in self.groups:
+            new_mail = "new mail of " + group["name"]
+            new_cn = "new cn of " + group["name"]
+
+            # change attributes
+            (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                "--mail-address=" + new_mail,
+                                                "--force-new-cn=" + new_cn)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_group(group["name"])
+            self.assertEqual("%s" % found.get("mail"), new_mail)
+            self.assertEqual("%s" % found.get("cn"), new_cn)
+
+            # remove mail
+            (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                "--mail-address=")
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_group(group["name"])
+            self.assertEqual(found.get("mail"), None)
+
+            # trying to remove cn (throws an error)
+            (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                "--force-new-cn=")
+            self.assertCmdFail(result)
+            self.assertIn("Failed to rename group", err)
+            self.assertIn("delete protected attribute", err)
+
+            # reset CN (mail is already empty)
+            (result, out, err) = self.runsubcmd("group", "rename", group["name"],
+                                                "--reset-cn")
+            self.assertCmdSuccess(result, out, err)
+
     def _randomGroup(self, base={}):
         """create a group with random attribute values, you can specify base
  attributes"""
