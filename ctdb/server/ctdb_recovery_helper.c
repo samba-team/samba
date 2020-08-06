@@ -720,7 +720,7 @@ static void pull_database_handler(uint64_t srvid, TDB_DATA data,
 				  void *private_data);
 static void pull_database_register_done(struct tevent_req *subreq);
 static void pull_database_unregister_done(struct tevent_req *subreq);
-static void pull_database_new_done(struct tevent_req *subreq);
+static void pull_database_done(struct tevent_req *subreq);
 
 static struct tevent_req *pull_database_send(
 			TALLOC_CTX *mem_ctx,
@@ -828,10 +828,10 @@ static void pull_database_register_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, pull_database_new_done, req);
+	tevent_req_set_callback(subreq, pull_database_done, req);
 }
 
-static void pull_database_new_done(struct tevent_req *subreq)
+static void pull_database_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
