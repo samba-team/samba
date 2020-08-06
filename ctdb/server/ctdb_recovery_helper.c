@@ -910,7 +910,7 @@ static bool pull_database_recv(struct tevent_req *req, int *perr)
  * Push database to specified nodes (new style)
  */
 
-struct push_database_new_state {
+struct push_database_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
 	struct recdb_context *recdb;
@@ -924,12 +924,12 @@ struct push_database_new_state {
 	unsigned int num_records;
 };
 
-static void push_database_new_started(struct tevent_req *subreq);
-static void push_database_new_send_msg(struct tevent_req *req);
-static void push_database_new_send_done(struct tevent_req *subreq);
-static void push_database_new_confirmed(struct tevent_req *subreq);
+static void push_database_started(struct tevent_req *subreq);
+static void push_database_send_msg(struct tevent_req *req);
+static void push_database_send_done(struct tevent_req *subreq);
+static void push_database_confirmed(struct tevent_req *subreq);
 
-static struct tevent_req *push_database_new_send(
+static struct tevent_req *push_database_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
@@ -939,14 +939,14 @@ static struct tevent_req *push_database_new_send(
 			int max_size)
 {
 	struct tevent_req *req, *subreq;
-	struct push_database_new_state *state;
+	struct push_database_state *state;
 	struct ctdb_req_control request;
 	struct ctdb_pulldb_ext pulldb_ext;
 	char *filename;
 	off_t offset;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct push_database_new_state);
+				struct push_database_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -998,17 +998,17 @@ static struct tevent_req *push_database_new_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, push_database_new_started, req);
+	tevent_req_set_callback(subreq, push_database_started, req);
 
 	return req;
 }
 
-static void push_database_new_started(struct tevent_req *subreq)
+static void push_database_started(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct push_database_new_state *state = tevent_req_data(
-		req, struct push_database_new_state);
+	struct push_database_state *state = tevent_req_data(
+		req, struct push_database_state);
 	int *err_list;
 	int ret;
 	bool status;
@@ -1038,13 +1038,13 @@ static void push_database_new_started(struct tevent_req *subreq)
 		return;
 	}
 
-	push_database_new_send_msg(req);
+	push_database_send_msg(req);
 }
 
-static void push_database_new_send_msg(struct tevent_req *req)
+static void push_database_send_msg(struct tevent_req *req)
 {
-	struct push_database_new_state *state = tevent_req_data(
-		req, struct push_database_new_state);
+	struct push_database_state *state = tevent_req_data(
+		req, struct push_database_state);
 	struct tevent_req *subreq;
 	struct ctdb_rec_buffer *recbuf;
 	struct ctdb_req_message message;
@@ -1065,8 +1065,7 @@ static void push_database_new_send_msg(struct tevent_req *req)
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
-		tevent_req_set_callback(subreq, push_database_new_confirmed,
-					req);
+		tevent_req_set_callback(subreq, push_database_confirmed, req);
 		return;
 	}
 
@@ -1098,7 +1097,7 @@ static void push_database_new_send_msg(struct tevent_req *req)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, push_database_new_send_done, req);
+	tevent_req_set_callback(subreq, push_database_send_done, req);
 
 	state->num_records += recbuf->count;
 
@@ -1106,12 +1105,12 @@ static void push_database_new_send_msg(struct tevent_req *req)
 	talloc_free(recbuf);
 }
 
-static void push_database_new_send_done(struct tevent_req *subreq)
+static void push_database_send_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct push_database_new_state *state = tevent_req_data(
-		req, struct push_database_new_state);
+	struct push_database_state *state = tevent_req_data(
+		req, struct push_database_state);
 	bool status;
 	int ret;
 
@@ -1126,15 +1125,15 @@ static void push_database_new_send_done(struct tevent_req *subreq)
 
 	state->num_buffers_sent += 1;
 
-	push_database_new_send_msg(req);
+	push_database_send_msg(req);
 }
 
-static void push_database_new_confirmed(struct tevent_req *subreq)
+static void push_database_confirmed(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct push_database_new_state *state = tevent_req_data(
-		req, struct push_database_new_state);
+	struct push_database_state *state = tevent_req_data(
+		req, struct push_database_state);
 	struct ctdb_reply_control **reply;
 	int *err_list;
 	bool status;
@@ -1190,7 +1189,7 @@ static void push_database_new_confirmed(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static bool push_database_new_recv(struct tevent_req *req, int *perr)
+static bool push_database_recv(struct tevent_req *req, int *perr)
 {
 	return generic_recv(req, perr);
 }
@@ -1872,13 +1871,13 @@ static void recover_db_wipedb_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = push_database_new_send(state,
-					state->ev,
-					state->client,
-					state->nlist->pnn_list,
-					state->nlist->count,
-					state->recdb,
-					state->tun_list->rec_buffer_size_limit);
+	subreq = push_database_send(state,
+				    state->ev,
+				    state->client,
+				    state->nlist->pnn_list,
+				    state->nlist->count,
+				    state->recdb,
+				    state->tun_list->rec_buffer_size_limit);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1895,7 +1894,7 @@ static void recover_db_pushdb_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	status = push_database_new_recv(subreq, &ret);
+	status = push_database_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		tevent_req_error(req, ret);
