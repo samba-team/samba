@@ -25,7 +25,7 @@
 #include "system/capability.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
-#include "../lib/util/setid.h"
+#include "lib/util/setid.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
