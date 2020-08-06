@@ -1018,6 +1018,160 @@ gidNumber: {1}
         self.outf.write("Modified Group '{}' successfully\n".format(groupname))
 
 
+class cmd_group_rename(Command):
+    """Rename a group and related attributes.
+
+    This command allows to set the group's name related attributes. The
+    group's CN will be renamed automatically.
+
+    The group's CN will be the sAMAccountName.
+    Use the --force-new-cn option to specify the new CN manually and the
+    --reset-cn to reset this change.
+
+    Use an empty attribute value to remove the specified attribute.
+
+    The groupname specified on the command is the sAMAccountName.
+
+    The command may be run locally from the root userid or another authorized
+    userid.
+
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example1:
+    samba-tool group rename employees --samaccountname=staff
+
+    Example1 shows how to change the samaccountname of a group 'employees' to
+    'staff'. The CN of the group employees will also be changed to 'staff',
+    if the previous CN was the previous sAMAccountName.
+
+    Example2:
+    samba-tool group rename employees --mail-address='staff@company.com' \\
+        -H ldap://samba.samdom.example.com -U administrator
+
+    Example2 shows how to rename the mail address of a group 'employees' to
+    'staff@company.com'.
+    The -H parameter is used to specify the remote target server.
+    """
+
+    synopsis = "%prog <groupname> [options]"
+
+    takes_options = [
+        Option("-H", "--URL",
+            help="LDB URL for database or target server",
+            type=str, metavar="URL", dest="H"),
+        Option("--force-new-cn",
+            help="Specify a new CN (RND) instead of using the sAMAccountName.",
+            type=str),
+        Option("--reset-cn",
+               help="Set the CN (RDN) to the sAMAccountName. Use this option "
+                    "to reset the changes made with the --force-new-cn option.",
+               action="store_true"),
+        Option("--mail-address",
+            help="New mail address",
+            type=str),
+        Option("--samaccountname",
+            help="New account name (sAMAccountName/logon name)",
+            type=str)
+        ]
+
+    takes_args = ["groupname"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def run(self, groupname, credopts=None, sambaopts=None, versionopts=None,
+            H=None, mail_address=None, samaccountname=None, force_new_cn=None,
+            reset_cn=None):
+        # illegal options
+        if force_new_cn and reset_cn:
+            raise CommandError("It is not allowed to specify --force-new-cn "
+                               "together with --reset-cn.")
+        if force_new_cn == "":
+            raise CommandError("Failed to rename group - delete protected "
+                               "attribute 'CN'")
+        if samaccountname == "":
+            raise CommandError("Failed to rename group - delete protected "
+                               "attribute 'sAMAccountName'")
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
+
+        filter = ("(&(objectClass=group)(samaccountname=%s))" %
+                  ldb.binary_encode(groupname))
+        try:
+            res = samdb.search(base=domain_dn,
+                               scope=ldb.SCOPE_SUBTREE,
+                               expression=filter,
+                               attrs=["sAMAccountName",
+                                      "cn",
+                                      "mail"]
+                             )
+            old_group = res[0]
+            group_dn = old_group.dn
+        except IndexError:
+           raise CommandError('Unable to find group "%s"' % (groupname))
+
+        group_parent_dn = group_dn.parent()
+        old_cn = old_group["cn"][0]
+
+        # get the actual and the new group cn and the new dn
+        if force_new_cn is not None:
+            new_cn = force_new_cn
+        elif samaccountname is not None:
+            new_cn = samaccountname
+        else:
+            new_cn = old_group["sAMAccountName"]
+
+        # CN must change, if the new CN is different and the old CN is the
+        # standard CN or the change is forced with force-new-cn or reset-cn
+        expected_cn = old_group["sAMAccountName"]
+        must_change_cn = str(old_cn) != str(new_cn) and \
+                         (str(old_cn) == str(expected_cn) or \
+                          reset_cn or bool(force_new_cn))
+
+        new_group_dn = ldb.Dn(samdb, "CN=%s" % new_cn)
+        new_group_dn.add_base(group_parent_dn)
+
+        # format given attributes
+        group_attrs = ldb.Message()
+        group_attrs.dn = group_dn
+        samdb.prepare_attr_replace(group_attrs, old_group, "sAMAccountName",
+                                   samaccountname)
+        samdb.prepare_attr_replace(group_attrs, old_group, "mail", mail_address)
+
+        group_attributes_changed = len(group_attrs) > 0
+
+        # update the group with formatted attributes
+        samdb.transaction_start()
+        try:
+            if group_attributes_changed:
+                samdb.modify(group_attrs)
+            if must_change_cn:
+                samdb.rename(group_dn, new_group_dn)
+        except Exception as e:
+            samdb.transaction_cancel()
+            raise CommandError('Failed to rename group "%s"' % groupname, e)
+        samdb.transaction_commit()
+
+        if must_change_cn:
+            self.outf.write('Renamed CN of group "%s" from "%s" to "%s" '
+                            'successfully\n' % (groupname, old_cn, new_cn))
+
+        if group_attributes_changed:
+            self.outf.write('Following attributes of group "%s" have been '
+                            'changed successfully:\n' % (groupname))
+            for attr in group_attrs.keys():
+                if attr == "dn":
+                    continue
+                self.outf.write('%s: %s\n' % (attr, group_attrs[attr]
+                            if group_attrs[attr] else '[removed]'))
+
 class cmd_group(SuperCommand):
     """Group management."""
 
@@ -1033,3 +1187,4 @@ class cmd_group(SuperCommand):
     subcommands["show"] = cmd_group_show()
     subcommands["stats"] = cmd_group_stats()
     subcommands["addunixattrs"] = cmd_group_add_unix_attrs()
+    subcommands["rename"] = cmd_group_rename()
