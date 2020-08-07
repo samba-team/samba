@@ -163,7 +163,6 @@ else:
                                  debug.h
                                  discard.h
                                  time.h
-                                 string_wrappers.h
                                  idtree.h
                                  idtree_random.h
                                  blocking.h
