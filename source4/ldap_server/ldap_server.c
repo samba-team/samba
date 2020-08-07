@@ -47,6 +47,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../libcli/util/tstream.h"
 #include "libds/common/roles.h"
+#include "lib/util/time.h"
 
 static void ldapsrv_terminate_connection_done(struct tevent_req *subreq);
 
@@ -178,6 +179,9 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	conn->limits.max_page_size = 1000;
 	conn->limits.max_notifications = 5;
 	conn->limits.search_timeout = 120;
+	conn->limits.expire_time = (struct timeval) {
+		.tv_sec = get_time_t_max(),
+	};
 
 
 	tmp_ctx = talloc_new(conn);
