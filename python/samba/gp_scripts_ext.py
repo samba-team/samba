@@ -39,7 +39,8 @@ class gp_scripts_ext(gp_pol_ext):
             self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, script in settings[str(self)].items():
-                    os.unlink(script)
+                    if os.path.exists(script):
+                        os.unlink(script)
                     self.gp_db.delete(str(self), attribute)
             self.gp_db.commit()
 
