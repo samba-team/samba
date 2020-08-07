@@ -52,8 +52,7 @@ class gp_krb_ext(gp_inf_ext):
             for section in settings.keys():
                 if section == str(self):
                     for att, value in settings[section].items():
-                        update_samba, _ = self.mapper().get(att)
-                        update_samba(att, value)
+                        self.set_kdc_tdb(att, value)
                         self.gp_db.delete(section, att)
                         self.gp_db.commit()
 
@@ -68,8 +67,8 @@ class gp_krb_ext(gp_inf_ext):
                     if section == str(self):
                         for key, value in inf_conf.items(section):
                             att = gp_krb_ext.apply_map[key]
-                            (update_samba, value_func) = self.mapper().get(att)
-                            update_samba(att, value_func(value))
+                            value_func = self.mapper().get(att)
+                            self.set_kdc_tdb(att, value_func(value))
                             self.gp_db.commit()
 
     def set_kdc_tdb(self, attribute, val):
@@ -85,12 +84,9 @@ class gp_krb_ext(gp_inf_ext):
             self.gp_db.delete(str(self), attribute)
 
     def mapper(self):
-        return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb,
-                                             lambda val: val),
-                'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
-                                                mins_to_hours),
-                'kdc:renewal_lifetime': (self.set_kdc_tdb,
-                                         days_to_hours),
+        return {'kdc:user_ticket_lifetime': lambda val: val,
+                'kdc:service_ticket_lifetime': mins_to_hours,
+                'kdc:renewal_lifetime': days_to_hours,
                 }
 
     def __str__(self):
