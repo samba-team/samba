@@ -371,6 +371,13 @@ class GPOTests(tests.TestCase):
                 self.assertIn(b'hello world', out,
                     '%s script execution failed' % keyname.decode())
 
+                # Remove policy
+                gp_db = store.get_gplog(machine_creds.get_username())
+                del_gpos = get_deleted_gpos_list(gp_db, [])
+                ext.process_group_policy(del_gpos, [])
+                self.assertEquals(len(os.listdir(dname)), 0,
+                                  'Unapply failed to cleanup scripts')
+
             # Unstage the Registry.pol file
             unstage_file(reg_pol)
 
