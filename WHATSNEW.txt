@@ -29,6 +29,10 @@ CTDB CHANGES
   "follower-only" (from "slave-only").  Identical changes were made
   for LVS.
 
+* Remove "ctdb isnotrecmaster" command.  It isn't used by CTDB's
+  scripts and can be checked by users with "ctdb pnn" and "ctdb
+  recmaster".
+
 
 REMOVED FEATURES
 ================
