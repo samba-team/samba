@@ -23,6 +23,8 @@
 #ifndef _STRING_WRAPPERS_H
 #define _STRING_WRAPPERS_H
 
+#include "lib/replace/replace.h" /* for config symbols */
+
 #define strlcpy_base(dest, src, base, size) \
 do { \
 	const char *_strlcpy_base_src = (const char *)src; \
