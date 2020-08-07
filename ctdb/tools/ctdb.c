@@ -2997,33 +2997,6 @@ static int control_ipreallocate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
-static int control_isnotrecmaster(TALLOC_CTX *mem_ctx,
-				  struct ctdb_context *ctdb,
-				  int argc, const char **argv)
-{
-	uint32_t recmaster;
-	int ret;
-
-	if (argc != 0) {
-		usage("isnotrecmaster");
-	}
-
-	ret = ctdb_ctrl_get_recmaster(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->pnn, TIMEOUT(), &recmaster);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to get recmaster\n");
-		return ret;
-	}
-
-	if (recmaster != ctdb->pnn) {
-		printf("this node is not the recmaster\n");
-		return 1;
-	}
-
-	printf("this node is the recmaster\n");
-	return 0;
-}
-
 static int control_gratarp(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			   int argc, const char **argv)
 {
@@ -5990,8 +5963,6 @@ static const struct ctdb_cmd {
 		"run ip reallocation (deprecated)", NULL },
 	{ "ipreallocate", control_ipreallocate, false, true,
 		"run ip reallocation", NULL },
-	{ "isnotrecmaster", control_isnotrecmaster, false, false,
-		"check if local node is the recmaster", NULL },
 	{ "gratarp", control_gratarp, false, true,
 		"send a gratuitous arp", "<ip> <interface>" },
 	{ "tickle", control_tickle, true, false,

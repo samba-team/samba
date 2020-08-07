@@ -1816,7 +1816,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
   </refsect1>
 
   <!-- UNDOCUMENTED: stats
-       isnotrecmaster addtickle deltickle
+       addtickle deltickle
        tfetch tstore readkey writekey
        checktcpport getdbseqnum
   -->
