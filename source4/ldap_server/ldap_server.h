@@ -61,6 +61,7 @@ struct ldapsrv_connection {
 		int max_notifications;
 		int search_timeout;
 		struct timeval endtime;
+		struct timeval expire_time; /* Krb5 ticket expiry */
 		const char *reason;
 	} limits;
 
