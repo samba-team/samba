@@ -422,6 +422,13 @@ class GPOTests(tests.TestCase):
                     open(os.path.join(dname, sudoers[0]), 'r').read(),
                     'The sudoers entry was not applied')
 
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertEquals(len(os.listdir(dname)), 0,
+                              'Unapply failed to cleanup scripts')
+
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
 
