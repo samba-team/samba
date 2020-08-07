@@ -2158,22 +2158,16 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *rpc_cli,
 				unsigned int timeout)
 {
-	unsigned int old;
-
-	if (rpc_cli->transport == NULL) {
+	if (rpc_cli == NULL) {
 		return RPCCLI_DEFAULT_TIMEOUT;
 	}
 
-	if (rpc_cli->transport->set_timeout == NULL) {
+	if (rpc_cli->binding_handle == NULL) {
 		return RPCCLI_DEFAULT_TIMEOUT;
 	}
 
-	old = rpc_cli->transport->set_timeout(rpc_cli->transport->priv, timeout);
-	if (old == 0) {
-		return RPCCLI_DEFAULT_TIMEOUT;
-	}
-
-	return old;
+	return dcerpc_binding_handle_set_timeout(rpc_cli->binding_handle,
+						 timeout);
 }
 
 bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
@@ -2182,11 +2176,11 @@ bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
 		return false;
 	}
 
-	if (rpc_cli->transport == NULL) {
+	if (rpc_cli->binding_handle == NULL) {
 		return false;
 	}
 
-	return rpc_cli->transport->is_connected(rpc_cli->transport->priv);
+	return dcerpc_binding_handle_is_connected(rpc_cli->binding_handle);
 }
 
 struct rpccli_bh_state {
@@ -2197,8 +2191,17 @@ static bool rpccli_bh_is_connected(struct dcerpc_binding_handle *h)
 {
 	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct rpccli_bh_state);
+	struct rpc_cli_transport *transport = hs->rpc_cli->transport;
 
-	return rpccli_is_connected(hs->rpc_cli);
+	if (transport == NULL) {
+		return false;
+	}
+
+	if (transport->is_connected == NULL) {
+		return false;
+	}
+
+	return transport->is_connected(transport->priv);
 }
 
 static uint32_t rpccli_bh_set_timeout(struct dcerpc_binding_handle *h,
@@ -2206,8 +2209,23 @@ static uint32_t rpccli_bh_set_timeout(struct dcerpc_binding_handle *h,
 {
 	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct rpccli_bh_state);
+	struct rpc_cli_transport *transport = hs->rpc_cli->transport;
+	unsigned int old;
 
-	return rpccli_set_timeout(hs->rpc_cli, timeout);
+	if (transport == NULL) {
+		return RPCCLI_DEFAULT_TIMEOUT;
+	}
+
+	if (transport->set_timeout == NULL) {
+		return RPCCLI_DEFAULT_TIMEOUT;
+	}
+
+	old = transport->set_timeout(transport->priv, timeout);
+	if (old == 0) {
+		return RPCCLI_DEFAULT_TIMEOUT;
+	}
+
+	return old;
 }
 
 static void rpccli_bh_auth_info(struct dcerpc_binding_handle *h,
