@@ -51,7 +51,8 @@ class gp_sudoers_ext(gp_pol_ext):
             self.gp_db.set_guid(guid)
             if str(self) in settings:
                 for attribute, sudoers in settings[str(self)].items():
-                    os.unlink(sudoers)
+                    if os.path.exists(sudoers):
+                        os.unlink(sudoers)
                     self.gp_db.delete(str(self), attribute)
             self.gp_db.commit()
 
