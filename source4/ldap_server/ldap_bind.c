@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec_tstream.h"
 #include "param/param.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/util/time_basic.h"
 
 static char *ldapsrv_bind_error_msg(TALLOC_CTX *mem_ctx,
 				    HRESULT hresult,
@@ -483,6 +484,7 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 	const char *errstr = NULL;
 	char *ldb_errstring = NULL;
 	DATA_BLOB output = data_blob_null;
+	NTTIME expire_time_nt;
 
 	status = gensec_update_recv(subreq, call, &output);
 	TALLOC_FREE(subreq);
@@ -600,6 +602,19 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 				       "ldb new credentials");
 		result = LDB_ERR_OPERATIONS_ERROR;
 		goto do_reply;
+	}
+
+	expire_time_nt = gensec_expire_time(conn->gensec);
+	if (expire_time_nt != GENSEC_EXPIRE_TIME_INFINITY) {
+		struct timeval_buf buf;
+
+		nttime_to_timeval(&conn->limits.expire_time, expire_time_nt);
+
+		DBG_DEBUG("Setting connection expire_time to %s\n",
+			  timeval_str_buf(&conn->limits.expire_time,
+					  false,
+					  true,
+					  &buf));
 	}
 
 	if (context != NULL) {
