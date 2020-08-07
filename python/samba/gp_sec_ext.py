@@ -91,6 +91,8 @@ class gp_krb_ext(gp_inf_ext):
 
     def rsop(self, gpo):
         output = {}
+        if self.lp.get('server role') != 'active directory domain controller':
+            return output
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
         if gpo.file_sys_path:
             path = os.path.join(gpo.file_sys_path, inf_file)
@@ -205,6 +207,8 @@ class gp_access_ext(gp_inf_ext):
 
     def rsop(self, gpo):
         output = {}
+        if self.lp.get('server role') != 'active directory domain controller':
+            return output
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
         if gpo.file_sys_path:
             path = os.path.join(gpo.file_sys_path, inf_file)
