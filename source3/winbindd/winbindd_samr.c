@@ -185,6 +185,7 @@ static bool reset_connection_on_error(struct winbindd_domain *domain,
 				      NTSTATUS status)
 {
 	struct winbind_internal_pipes *internal_pipes = NULL;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	internal_pipes = talloc_get_type_abort(
 		domain->private_data, struct winbind_internal_pipes);
@@ -197,7 +198,7 @@ static bool reset_connection_on_error(struct winbindd_domain *domain,
 		return true;
 	}
 
-	if (!rpccli_is_connected(p)) {
+	if (!dcerpc_binding_handle_is_connected(b)) {
 		TALLOC_FREE(internal_pipes);
 		domain->private_data = NULL;
 		return true;
