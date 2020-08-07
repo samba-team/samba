@@ -25,6 +25,19 @@ try:
 except ImportError:
     pass
 
+def mins_to_hours(val):
+    return '%d' % (int(val) / 60)
+
+def days_to_hours(val):
+    return '%d' % (int(val) * 24)
+
+def days2rel_nttime(val):
+    seconds = 60
+    minutes = 60
+    hours = 24
+    sam_add = 10000000
+    val = int(val)
+    return str(-(val * seconds * minutes * hours * sam_add))
 
 class gp_krb_ext(gp_inf_ext):
     apply_map = { 'MaxTicketAge':  'kdc:user_ticket_lifetime',
@@ -59,12 +72,6 @@ class gp_krb_ext(gp_inf_ext):
                             update_samba(att, value_func(value))
                             self.gp_db.commit()
 
-    def mins_to_hours(self, val):
-        return '%d' % (int(val) / 60)
-
-    def days_to_hours(self, val):
-        return '%d' % (int(val) * 24)
-
     def set_kdc_tdb(self, attribute, val):
         old_val = self.gp_db.gpostore.get(attribute)
         self.logger.info('%s was changed from %s to %s' % (attribute,
@@ -81,9 +88,9 @@ class gp_krb_ext(gp_inf_ext):
         return {'kdc:user_ticket_lifetime': (self.set_kdc_tdb,
                                              lambda val: val),
                 'kdc:service_ticket_lifetime': (self.set_kdc_tdb,
-                                                self.mins_to_hours),
+                                                mins_to_hours),
                 'kdc:renewal_lifetime': (self.set_kdc_tdb,
-                                         self.days_to_hours),
+                                         days_to_hours),
                 }
 
     def __str__(self):
@@ -183,18 +190,10 @@ class gp_access_ext(gp_inf_ext):
         self.gp_db.store(str(self), attribute, str(old_val))
         self.ldb.set_pwdProperties(val)
 
-    def days2rel_nttime(self, val):
-        seconds = 60
-        minutes = 60
-        hours = 24
-        sam_add = 10000000
-        val = int(val)
-        return str(-(val * seconds * minutes * hours * sam_add))
-
     def mapper(self):
         '''ldap value : samba setter'''
-        return {"minPwdAge": (self.ch_minPwdAge, self.days2rel_nttime),
-                "maxPwdAge": (self.ch_maxPwdAge, self.days2rel_nttime),
+        return {"minPwdAge": (self.ch_minPwdAge, days2rel_nttime),
+                "maxPwdAge": (self.ch_maxPwdAge, days2rel_nttime),
                 # Could be none, but I like the method assignment in
                 # update_samba
                 "minPwdLength": (self.ch_minPwdLength, lambda val: val),
