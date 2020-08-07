@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "librpc/gen_ndr/samr.h"
 #include "../lib/util/pidfile.h"
+#include "lib/util/string_wrappers.h"
 
 /*
  * cli_send_mailslot, send a mailslot for client code ...

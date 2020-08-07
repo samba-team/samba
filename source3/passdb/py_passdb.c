@@ -27,6 +27,7 @@
 #include "passdb.h"
 #include "secrets.h"
 #include "idmap.h"
+#include "lib/util/string_wrappers.h"
 
 #ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)

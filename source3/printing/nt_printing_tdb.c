@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "util_tdb.h"
+#include "lib/util/string_wrappers.h"
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"

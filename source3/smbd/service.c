@@ -33,6 +33,7 @@
 #include "messages.h"
 #include "lib/afs/afs_funcs.h"
 #include "lib/util_path.h"
+#include "lib/util/string_wrappers.h"
 
 bool canonicalize_connect_path(connection_struct *conn)
 {

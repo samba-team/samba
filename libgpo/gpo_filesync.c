@@ -22,6 +22,7 @@
 #include "libsmb/libsmb.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
+#include "lib/util/string_wrappers.h"
 
 struct sync_context {
 	TALLOC_CTX *mem_ctx;

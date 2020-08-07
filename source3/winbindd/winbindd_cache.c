@@ -36,6 +36,7 @@
 #include "util_tdb.h"
 #include "libsmb/samlogon_cache.h"
 #include "lib/namemap_cache.h"
+#include "lib/util/string_wrappers.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/crypto.h>

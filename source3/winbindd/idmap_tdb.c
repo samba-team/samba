@@ -33,6 +33,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

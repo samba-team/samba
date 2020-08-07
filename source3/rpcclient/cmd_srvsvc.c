@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/ndr_srvsvc.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../libcli/security/display_sec.h"
+#include "lib/util/string_wrappers.h"
 
 /* Display server query info */
 

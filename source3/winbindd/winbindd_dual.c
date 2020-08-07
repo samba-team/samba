@@ -41,6 +41,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 #include "passdb.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

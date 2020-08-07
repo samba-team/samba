@@ -36,6 +36,7 @@
 #include "../lib/util/pidfile.h"
 #include "serverid.h"
 #include "cmdline_contexts.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_LIBUNWIND_H
 #include <libunwind.h>

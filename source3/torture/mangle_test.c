@@ -23,6 +23,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "util_tdb.h"
+#include "lib/util/string_wrappers.h"
 
 extern int torture_numops;
 

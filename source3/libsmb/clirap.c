@@ -29,6 +29,7 @@
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "cli_smb2_fnum.h"
+#include "lib/util/string_wrappers.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>

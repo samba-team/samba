@@ -43,6 +43,7 @@
 #include "passdb/machine_sid.h"
 #include "auth.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

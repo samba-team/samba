@@ -48,6 +48,7 @@
 #include "lib/util/base64.h"
 #include "cmdline_contexts.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/string_wrappers.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>

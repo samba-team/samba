@@ -37,6 +37,7 @@
 #include "util_tdb.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/sys_rw_data.h"
+#include "lib/util/string_wrappers.h"
 
 extern userdom_struct current_user_info;
 

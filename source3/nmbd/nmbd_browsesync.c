@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "nmbd/nmbd.h"
+#include "lib/util/string_wrappers.h"
 
 /* This is our local master browser list database. */
 extern struct browse_cache_record *lmb_browserlist;

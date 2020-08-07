@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "offload_token.h"
 #include "util_reparse.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

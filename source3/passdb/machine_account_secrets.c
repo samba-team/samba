@@ -37,6 +37,7 @@
 #include "lib/krb5_wrap/krb5_samba.h"
 #include "lib/util/time_basic.h"
 #include "../libds/common/flags.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

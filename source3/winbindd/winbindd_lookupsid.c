@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../libcli/security/security.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_lookupsid_state {
 	struct dom_sid sid;

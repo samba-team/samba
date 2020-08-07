@@ -33,6 +33,7 @@
 #include "lib/gencache.h"
 #include "librpc/gen_ndr/dns.h"
 #include "lib/util/util_net.h"
+#include "lib/util/string_wrappers.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;

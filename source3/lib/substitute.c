@@ -23,6 +23,7 @@
 #include "system/passwd.h"
 #include "secrets.h"
 #include "auth.h"
+#include "lib/util/string_wrappers.h"
 
 /* Max DNS name is 253 + '\0' */
 #define MACHINE_NAME_SIZE 254

@@ -21,6 +21,7 @@
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_svcctl.h"
 #include "../librpc/gen_ndr/ndr_svcctl_c.h"
+#include "lib/util/string_wrappers.h"
 
 struct svc_state_msg {
 	uint32_t flag;

@@ -85,6 +85,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/param/param.h"
 #include "lib/gencache.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

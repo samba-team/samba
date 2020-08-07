@@ -25,6 +25,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "passdb.h"
 #include "lib/afs/afs_settoken.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

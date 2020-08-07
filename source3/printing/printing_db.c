@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "printing.h"
 #include "util_tdb.h"
+#include "lib/util/string_wrappers.h"
 
 static struct tdb_print_db *print_db_head;
 

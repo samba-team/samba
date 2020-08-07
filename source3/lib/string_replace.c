@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "string_replace.h"
+#include "lib/util/string_wrappers.h"
 
 #define MAP_SIZE        0xFF
 #define MAP_NUM         0x101 /* max unicode charval / MAP_SIZE */

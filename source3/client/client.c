@@ -40,6 +40,7 @@
 #include "include/ntioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/util/time_basic.h"
+#include "lib/util/string_wrappers.h"
 
 #ifndef REGISTER
 #define REGISTER 0

@@ -37,6 +37,7 @@
 #include "passdb/pdb_secrets.h"
 #include "lib/util_sid_passdb.h"
 #include "idmap_cache.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

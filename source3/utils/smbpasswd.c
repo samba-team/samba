@@ -25,6 +25,7 @@
 #include "passdb.h"
 #include "cmdline_contexts.h"
 #include "passwd_proto.h"
+#include "lib/util/string_wrappers.h"
 
 /*
  * Next two lines needed for SunOS and don't

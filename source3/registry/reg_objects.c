@@ -27,6 +27,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "../libcli/registry/util_reg.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

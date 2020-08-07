@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "lib/util/string_wrappers.h"
 
 static const char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 			      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Err"};

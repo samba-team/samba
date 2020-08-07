@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libsmb/nmblib.h"
+#include "lib/util/string_wrappers.h"
 
 static const struct opcode_names {
 	const char *nmb_opcode_name;

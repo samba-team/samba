@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "nmbd/nmbd.h"
 #include "../librpc/gen_ndr/svcctl.h"
+#include "lib/util/string_wrappers.h"
 
 extern uint16_t samba_nb_type; /* Samba's NetBIOS name type. */
 

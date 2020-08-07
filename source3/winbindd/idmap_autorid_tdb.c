@@ -25,6 +25,7 @@
 
 #include "idmap_autorid_tdb.h"
 #include "../libcli/security/dom_sid.h"
+#include "lib/util/string_wrappers.h"
 
 /**
  * Build the database keystring for getting a range

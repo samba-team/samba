@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "nmbd/nmbd.h"
+#include "lib/util/string_wrappers.h"
 
 /* forward declarations */
 static void wins_next_registration(struct response_record *rrec);

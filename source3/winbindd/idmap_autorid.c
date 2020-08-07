@@ -80,6 +80,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "libsmb/samlogon_cache.h"
 #include "passdb/machine_sid.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

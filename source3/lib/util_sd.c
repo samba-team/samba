@@ -28,6 +28,7 @@
 #include "../libcli/security/security.h"
 #include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_lsarpc.h"
+#include "lib/util/string_wrappers.h"
 
 /* These values discovered by inspection */
 

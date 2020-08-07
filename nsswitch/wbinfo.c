@@ -28,6 +28,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/afs/afs_settoken.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef DBGC_CLASS
 #undef DBGC_CLASS

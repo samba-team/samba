@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_pam_chauthtok_state {
 	struct winbindd_request *request;

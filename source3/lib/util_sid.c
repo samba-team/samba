@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
+#include "lib/util/string_wrappers.h"
 
 
 /*****************************************************************

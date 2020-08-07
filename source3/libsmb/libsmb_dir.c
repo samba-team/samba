@@ -35,6 +35,7 @@
 #include "../libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/time_basic.h"
+#include "lib/util/string_wrappers.h"
 
 /*
  * Routine to open a directory

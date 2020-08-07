@@ -28,6 +28,7 @@
 #include "ads.h"
 #include "../librpc/gen_ndr/nbt.h"
 #include "lib/param/loadparm.h"
+#include "lib/util/string_wrappers.h"
 
 /**********************************************************************
  Is this our primary domain ?

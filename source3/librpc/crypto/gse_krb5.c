@@ -24,6 +24,7 @@
 #include "gse_krb5.h"
 #include "lib/param/loadparm.h"
 #include "libads/kerberos_proto.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_KRB5
 

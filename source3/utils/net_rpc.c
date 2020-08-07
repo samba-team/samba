@@ -48,6 +48,7 @@
 #include "passdb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "libsmb/dsgetdcname.h"
+#include "lib/util/string_wrappers.h"
 
 static int net_mode_share;
 static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);

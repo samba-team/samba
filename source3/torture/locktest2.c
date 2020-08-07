@@ -21,6 +21,7 @@
 #include "libsmb/libsmb.h"
 #include "system/filesys.h"
 #include "locking/proto.h"
+#include "lib/util/string_wrappers.h"
 
 static fstring password;
 static fstring username;

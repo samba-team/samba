@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "printing/pcap.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_IPRINT
 #include <cups/cups.h>

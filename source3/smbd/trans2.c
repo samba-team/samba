@@ -44,6 +44,7 @@
 #include "messages.h"
 #include "smb1_utils.h"
 #include "libcli/smb/smb2_posix.h"
+#include "lib/util/string_wrappers.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "nmbd/nmbd.h"
+#include "lib/util/string_wrappers.h"
 
 /* Election parameters. */
 extern time_t StartupTime;

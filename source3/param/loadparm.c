@@ -74,6 +74,7 @@
 #include "source4/lib/tls/tls.h"
 #include "libcli/auth/ntlm_check.h"
 #include "lib/crypto/gnutls_helpers.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>

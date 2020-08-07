@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_getdcname_state {
 	struct netr_DsRGetDCNameInfo *dcinfo;

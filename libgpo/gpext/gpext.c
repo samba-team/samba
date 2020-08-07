@@ -27,6 +27,7 @@
 #include "registry.h"
 #include "registry/reg_api.h"
 #include "lib/util/util_paths.h"
+#include "lib/util/string_wrappers.h"
 
 static struct gp_extension *extensions = NULL;
 

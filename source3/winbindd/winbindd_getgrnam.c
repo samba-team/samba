@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;

@@ -22,6 +22,7 @@
 #include "libsmb/namequery.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "libsmb/nmblib.h"
+#include "lib/util/string_wrappers.h"
 
 struct winbindd_wins_byip_state {
 	struct nmb_name star;

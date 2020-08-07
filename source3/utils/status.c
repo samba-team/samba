@@ -50,6 +50,7 @@
 #include "smbd/notifyd/notifyd.h"
 #include "cmdline_contexts.h"
 #include "locking/leases_db.h"
+#include "lib/util/string_wrappers.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */

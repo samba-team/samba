@@ -30,6 +30,7 @@
 #include "rpc_client/rpc_client.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
+#include "lib/util/string_wrappers.h"
 
 /*
  * Find an lsa pipe handle associated with a cli struct.

@@ -26,6 +26,7 @@
 #include "utils/net.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "lib/util/string_wrappers.h"
 
 /*********************************************************
  Figure out if the input was an NT group or a SID string.

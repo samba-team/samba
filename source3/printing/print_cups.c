@@ -27,6 +27,7 @@
 #include "printing/pcap.h"
 #include "librpc/gen_ndr/ndr_printcap.h"
 #include "lib/util/sys_rw.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_CUPS
 #include <cups/cups.h>

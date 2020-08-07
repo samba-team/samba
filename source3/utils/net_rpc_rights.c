@@ -24,6 +24,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "lib/util/string_wrappers.h"
 
 /********************************************************************
 ********************************************************************/

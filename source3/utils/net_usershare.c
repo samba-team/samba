@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "utils/net.h"
 #include "../libcli/security/security.h"
+#include "lib/util/string_wrappers.h"
 
 struct {
 	const char *us_errstr;

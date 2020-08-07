@@ -27,6 +27,7 @@
 #include "smbprofile.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smb_signing.h"
+#include "lib/util/string_wrappers.h"
 
 /*
  * MS-CIFS, 2.2.4.52.2 SMB_COM_NEGOTIATE Response:

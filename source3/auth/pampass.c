@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "auth.h"
 #include "../libcli/auth/pam_errors.h"
+#include "lib/util/string_wrappers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

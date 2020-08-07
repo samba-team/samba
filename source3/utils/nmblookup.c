@@ -23,6 +23,7 @@
 #include "popt_common.h"
 #include "libsmb/nmblib.h"
 #include "libsmb/namequery.h"
+#include "lib/util/string_wrappers.h"
 
 static bool give_flags = false;
 static bool use_bcast = true;

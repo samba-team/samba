@@ -23,6 +23,7 @@
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
+#include "lib/util/string_wrappers.h"
 
 bool torture_utable(int dummy)
 {

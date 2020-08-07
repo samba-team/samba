@@ -42,6 +42,7 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "ntioctl.h"
 #include "librpc/gen_ndr/ndr_quota.h"
+#include "lib/util/string_wrappers.h"
 
 struct smb2_hnd {
 	uint64_t fid_persistent;

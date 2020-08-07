@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "conn_tdb.h"
 #include "util_tdb.h"
+#include "lib/util/string_wrappers.h"
 
 struct connections_forall_state {
 	struct db_context *session_by_pid;

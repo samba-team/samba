@@ -62,6 +62,4 @@
 
 #endif /* !_SPLINT_ */
 
-#include "lib/util/string_wrappers.h"
-
 #endif

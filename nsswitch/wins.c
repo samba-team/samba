@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "nsswitch/winbind_client.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_NS_API_H
 

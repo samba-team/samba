@@ -23,6 +23,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/util/string_wrappers.h"
 
 static fstring password;
 static fstring username;

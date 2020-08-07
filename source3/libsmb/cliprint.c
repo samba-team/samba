@@ -21,6 +21,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/util/string_wrappers.h"
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.

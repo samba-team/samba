@@ -27,6 +27,7 @@
 #include "smbd/smbd.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/string_wrappers.h"
 
 static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 				const struct smb_filename *smb_fname,

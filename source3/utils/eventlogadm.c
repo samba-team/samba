@@ -31,6 +31,7 @@
 #include "registry/reg_backend_db.h"
 #include "../libcli/registry/util_reg.h"
 #include "cmdline_contexts.h"
+#include "lib/util/string_wrappers.h"
 
 extern int optind;
 extern char *optarg;

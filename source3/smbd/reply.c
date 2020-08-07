@@ -47,6 +47,7 @@
 #include "librpc/gen_ndr/open_files.h"
 #include "smb1_utils.h"
 #include "libcli/smb/smb2_posix.h"
+#include "lib/util/string_wrappers.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext

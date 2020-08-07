@@ -26,6 +26,7 @@
 #include "lib/util/bitmap.h"
 #include "../lib/util/memcache.h"
 #include "../librpc/gen_ndr/open_files.h"
+#include "lib/util/string_wrappers.h"
 
 /*
    This module implements directory related functions for Samba.

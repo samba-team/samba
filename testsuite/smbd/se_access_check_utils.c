@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "se_access_check_utils.h"
+#include "lib/util/string_wrappers.h"
 
 void char_to_sid(struct dom_sid *sid, char *sid_str)
 {

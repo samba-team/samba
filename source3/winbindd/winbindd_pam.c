@@ -46,6 +46,7 @@
 #include "rpc_client/util_netlogon.h"
 #include "param/param.h"
 #include "messaging/messaging.h"
+#include "lib/util/string_wrappers.h"
 #include "lib/crypto/gnutls_helpers.h"
 
 #include "lib/crypto/gnutls_helpers.h"

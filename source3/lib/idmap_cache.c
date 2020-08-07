@@ -22,6 +22,7 @@
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/idmap.h"
 #include "lib/gencache.h"
+#include "lib/util/string_wrappers.h"
 
 /**
  * Find a sid2xid mapping

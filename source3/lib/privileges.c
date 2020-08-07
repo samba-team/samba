@@ -27,6 +27,7 @@
 #include "libcli/security/privileges_private.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "lib/util/string_wrappers.h"
 
 #define PRIVPREFIX              "PRIV_"
 

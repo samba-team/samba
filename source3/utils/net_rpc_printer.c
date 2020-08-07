@@ -32,6 +32,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "lib/util/string_wrappers.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {

@@ -23,6 +23,7 @@
 #include "system/passwd.h"
 #include "../lib/util/memcache.h"
 #include "../lib/util/util_pw.h"
+#include "lib/util/string_wrappers.h"
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,

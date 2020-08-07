@@ -29,6 +29,7 @@ struct cli_state;
 #include "passdb/machine_sid.h"
 #include "util_sd.h"
 #include "cmdline_contexts.h"
+#include "lib/util/string_wrappers.h"
 
 static TALLOC_CTX *ctx;
 

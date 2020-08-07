@@ -50,6 +50,7 @@
 #include "lib/util/asn1.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
+#include "lib/util/string_wrappers.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/gencache.h"
+#include "lib/util/string_wrappers.h"
 
 /*
   This is pretty much a complete rewrite of the earlier code. The main
