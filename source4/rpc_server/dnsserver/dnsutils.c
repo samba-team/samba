@@ -28,6 +28,8 @@
 #include "lib/util/util_net.h"
 #include "dnsserver_common.h"
 
+#undef strcasecmp
+
 static struct DNS_ADDR_ARRAY *fill_dns_addr_array(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
 					   bool listen_only)

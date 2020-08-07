@@ -26,6 +26,7 @@
 #include "lib/util/tsort.h"
 #include "torture/raw/proto.h"
 
+#undef strncasecmp
 
 #define BASEDIR "\\testsearch"
 

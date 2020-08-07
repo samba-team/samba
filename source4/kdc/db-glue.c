@@ -38,6 +38,8 @@
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
 
+#undef strcasecmp
+#undef strncasecmp
 
 #define SAMBA_KVNO_GET_KRBTGT(kvno) \
 	((uint16_t)(((uint32_t)kvno) >> 16))

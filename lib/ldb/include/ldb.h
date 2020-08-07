@@ -1944,6 +1944,7 @@ int ldb_dn_update_components(struct ldb_dn *dn, const struct ldb_dn *ref_dn);
   strcasecmp and toupper here is ok.
   return 0 for match
 */
+#undef strcasecmp
 #define ldb_attr_cmp(a, b) strcasecmp(a, b)
 char *ldb_attr_casefold(TALLOC_CTX *mem_ctx, const char *s);
 int ldb_attr_dn(const char *attr);

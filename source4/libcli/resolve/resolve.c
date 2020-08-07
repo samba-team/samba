@@ -30,6 +30,8 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/util_net.h"
 
+#undef strcasecmp
+
 struct resolve_state {
 	struct resolve_context *ctx;
 	struct resolve_method *method;

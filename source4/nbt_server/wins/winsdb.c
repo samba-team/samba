@@ -33,6 +33,8 @@
 #include "param/param.h"
 #include "lib/util/smb_strtox.h"
 
+#undef strcasecmp
+
 uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 {
 	int ret;

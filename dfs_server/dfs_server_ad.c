@@ -31,6 +31,8 @@
 
 #define MAX_DFS_RESPONSE 56*1024 /* 56 Kb */
 
+#undef strcasecmp
+
 /* A DC set is a group of DC, they might have been grouped together
    because they belong to the same site, or to site with same cost ...
 */

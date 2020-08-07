@@ -27,6 +27,9 @@
 #include "lib/util/tsort.h"
 #include "util/dlinklist.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
 						      const struct dsdb_schema *schema, 
 						      const char **class_list,

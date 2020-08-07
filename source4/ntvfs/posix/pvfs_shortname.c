@@ -24,6 +24,8 @@
 #include "vfs_posix.h"
 #include "param/param.h"
 
+#undef strcasecmp
+
 /*
   this mangling scheme uses the following format
 

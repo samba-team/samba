@@ -29,6 +29,7 @@
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
+#undef strcasecmp
 
 static bool test_bind_sasl(struct torture_context *tctx,
 			   struct ldap_connection *conn, struct cli_credentials *creds)

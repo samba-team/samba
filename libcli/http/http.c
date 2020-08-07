@@ -26,6 +26,7 @@
 #include "util/tevent_werror.h"
 #include "lib/util/dlinklist.h"
 
+#undef strcasecmp
 
 /**
  * Determines if a response should have a body.

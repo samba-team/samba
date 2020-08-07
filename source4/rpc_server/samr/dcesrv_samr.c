@@ -41,6 +41,8 @@
 #include "lib/util/tsort.h"
 #include "libds/common/flag_mapping.h"
 
+#undef strcasecmp
+
 #define DCESRV_INTERFACE_SAMR_BIND(context, iface) \
        dcesrv_interface_samr_bind(context, iface)
 static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_connection_context *context,

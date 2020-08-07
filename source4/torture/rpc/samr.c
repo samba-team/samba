@@ -44,6 +44,8 @@
 #include "source3/rpc_client/init_samr.h"
 #include "lib/crypto/gnutls_helpers.h"
 
+#undef strcasecmp
+
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"
 #define TEST_ALIASNAME "samrtorturetestalias"

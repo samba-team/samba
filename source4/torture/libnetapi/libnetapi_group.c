@@ -22,6 +22,8 @@
 #include <netapi.h>
 #include "torture/libnetapi/proto.h"
 
+#undef strcasecmp
+
 #define TORTURE_TEST_USER "testuser"
 
 #define NETAPI_STATUS(tctx, x,y,fn) \

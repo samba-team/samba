@@ -37,6 +37,8 @@
 #include "dsdb/common/util.h"
 #include "param/param.h"
 
+#undef strcasecmp
+
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
 				   uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,

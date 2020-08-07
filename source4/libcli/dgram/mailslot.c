@@ -37,6 +37,8 @@
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
 
+#undef strcasecmp
+
 /*
   destroy a mailslot handler
 */

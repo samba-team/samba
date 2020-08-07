@@ -36,6 +36,8 @@
 #include "ldb.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
 
+#undef strcasecmp
+
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

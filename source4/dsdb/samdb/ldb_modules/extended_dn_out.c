@@ -42,6 +42,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 struct extended_dn_out_private {
 	bool dereference;
 	bool normalise;

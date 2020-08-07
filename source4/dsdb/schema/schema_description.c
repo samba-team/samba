@@ -22,6 +22,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 
+#undef strcasecmp
+
 #define IF_NULL_FAIL_RET(x) do {     \
 		if (!x) {		\
 			return NULL;	\

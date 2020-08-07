@@ -35,6 +35,8 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+#undef strcasecmp
+
 /* a second stage function converts from the out parameters of the generic
    call onto the out parameters of the specific call made */
 typedef NTSTATUS (*second_stage_t)(struct ntvfs_module_context *,

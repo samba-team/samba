@@ -29,6 +29,8 @@
 #include "param/param.h"
 #include "lib/util/samba_modules.h"
 
+#undef strcasecmp
+
 /* list of registered backends */
 static struct sys_lease_ops *backends;
 static uint32_t num_backends;

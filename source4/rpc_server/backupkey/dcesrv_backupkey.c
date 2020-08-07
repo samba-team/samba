@@ -44,6 +44,8 @@
 
 #include "lib/crypto/gnutls_helpers.h"
 
+#undef strncasecmp
+
 #define DCESRV_INTERFACE_BACKUPKEY_BIND(context, iface) \
 	dcesrv_interface_backupkey_bind(context, iface)
 static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_connection_context *context,

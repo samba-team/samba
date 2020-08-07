@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include "librpc/gen_ndr/ndr_dnsserver.h"
 
+#undef strcasecmp
 
 struct IP4_ARRAY *ip4_array_copy(TALLOC_CTX *mem_ctx, struct IP4_ARRAY *ip4)
 {

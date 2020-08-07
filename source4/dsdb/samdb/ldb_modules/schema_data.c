@@ -30,6 +30,8 @@
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
+
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
 				  const struct dsdb_schema *schema);
 static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *msg,

@@ -24,6 +24,8 @@
 #include "../lib/util/dlinklist.h"
 #include "smbd/process_model.h"
 
+#undef strcasecmp
+
 /*
   a linked list of registered servers
 */

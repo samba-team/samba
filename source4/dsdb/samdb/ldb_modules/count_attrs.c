@@ -38,6 +38,8 @@
 #define NULL_REQ_PSEUDO_N -2LL;
 #define STAR_REQ_PSEUDO_N -4LL;
 
+#undef strcasecmp
+
 struct count_attrs_private {
 	struct tdb_wrap *requested;
 	struct tdb_wrap *duplicates;

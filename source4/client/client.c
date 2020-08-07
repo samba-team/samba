@@ -58,6 +58,8 @@
 #define DEFAULT_PAGER "more"
 #endif
 
+#undef strncasecmp
+
 struct smbclient_context {
 	char *remote_cur_dir;
 	struct smbcli_state *cli;

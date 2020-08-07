@@ -38,6 +38,8 @@
 #include "lib/replace/system/network.h"
 #include "dsdb/samdb/samdb.h"
 
+#undef strcasecmp
+
 #define TEST_MACHINE_NAME "torturetest"
 
 static bool test_netr_broken_binding_handle(struct torture_context *tctx,

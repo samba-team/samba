@@ -50,6 +50,7 @@ static const size_t num_secret_attributes = ARRAY_SIZE(secret_attributes);
 #define NUMBER_OF_KEYS 1
 #define SECRETS_KEY_FILE "encrypted_secrets.key"
 
+#undef strcasecmp
 
 struct es_data {
 	/*

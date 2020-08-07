@@ -32,6 +32,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "../libcli/security/security.h"
 
+#undef strcasecmp
 
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40

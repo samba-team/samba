@@ -53,6 +53,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
 
 struct la_private_transaction {
 	struct la_context *la_list;

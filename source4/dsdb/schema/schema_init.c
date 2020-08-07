@@ -32,6 +32,7 @@
 #include <ldb_module.h>
 #include "../lib/util/asn1.h"
 
+#undef strcasecmp
 
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx)
 {

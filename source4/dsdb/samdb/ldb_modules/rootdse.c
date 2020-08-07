@@ -38,6 +38,8 @@
 #include "cldap_server/cldap_server.h"
 #include "lib/events/events.h"
 
+#undef strcasecmp
+
 struct rootdse_private_data {
 	unsigned int num_controls;
 	char **controls;

@@ -35,6 +35,8 @@
 #include "lib/crypto/md4.h"
 #include "libcli/ldap/ldap_ndr.h"
 
+#undef strcasecmp
+
 NTSTATUS dsdb_trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation *lfti,
 				struct ForestTrustInfo **_fti)

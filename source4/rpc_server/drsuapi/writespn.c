@@ -35,6 +35,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
+#undef strcasecmp
+
 /*
   check that the SPN update should be allowed as an override
   via sam_ctx_system

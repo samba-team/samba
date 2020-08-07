@@ -48,6 +48,8 @@
 #define DCESRV_INTERFACE_NETLOGON_BIND(context, iface) \
        dcesrv_interface_netlogon_bind(context, iface)
 
+#undef strcasecmp
+
 /*
  * This #define allows the netlogon interface to accept invalid
  * association groups, because association groups are to coordinate

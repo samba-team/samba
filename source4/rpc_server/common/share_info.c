@@ -25,6 +25,8 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/share.h"
 
+#undef strcasecmp
+
 /* 
     Here are common server info functions used by some dcerpc server interfaces
 */

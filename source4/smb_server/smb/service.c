@@ -23,6 +23,8 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
+#undef strcasecmp
+
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.

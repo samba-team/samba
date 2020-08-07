@@ -27,6 +27,8 @@
 #include <ldb.h>
 #include "libcli/security/security.h"
 
+#undef strcasecmp
+
 struct DsCrackNamesPrivate {
 	struct DsPrivate base;
 

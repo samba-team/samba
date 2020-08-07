@@ -39,6 +39,8 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#undef strcasecmp
+
 #define DCESRV_INTERFACE_LSARPC_BIND(context, iface) \
        dcesrv_interface_lsarpc_bind(context, iface)
 static NTSTATUS dcesrv_interface_lsarpc_bind(struct dcesrv_connection_context *context,

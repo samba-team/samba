@@ -52,6 +52,8 @@
 #include "lib/util/tsort.h"
 #include "lib/util/binsearch.h"
 
+#undef strcasecmp
+
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 

@@ -30,6 +30,8 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/tsort.h"
 
+#undef strcasecmp
+
 /* change this when we change something in our schema code that
  * requires a re-index of the database
  */

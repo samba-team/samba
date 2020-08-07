@@ -22,6 +22,7 @@
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 
+#undef strcasecmp
 
 /**
  * @file

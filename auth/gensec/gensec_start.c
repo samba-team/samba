@@ -37,6 +37,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+#undef strcasecmp
+
 /* the list of currently registered GENSEC backends */
 static const struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;

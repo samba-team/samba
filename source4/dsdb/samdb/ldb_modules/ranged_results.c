@@ -32,6 +32,8 @@
 #include "includes.h"
 #include "ldb_module.h"
 
+#undef strncasecmp
+
 struct rr_context {
 	struct ldb_module *module;
 	struct ldb_request *req;

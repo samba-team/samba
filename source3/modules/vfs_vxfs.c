@@ -28,6 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "system/filesys.h"
 #include "vfs_vxfs.h"
 
+#undef strcasecmp
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 

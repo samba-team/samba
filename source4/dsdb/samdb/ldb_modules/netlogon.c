@@ -39,6 +39,8 @@
 #include "libds/common/flag_mapping.h"
 #include "lib/util/util_net.h"
 
+#undef strcasecmp
+
 /*
   fill in the cldap netlogon union for a given version
 */

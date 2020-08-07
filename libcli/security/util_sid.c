@@ -28,6 +28,9 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 /*
  * Some useful sids, more well known sids can be found at
  * http://support.microsoft.com/kb/243330/EN-US/

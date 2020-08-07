@@ -27,6 +27,8 @@
 #include "auth/gensec/gensec_internal.h"
 #include "lib/util/base64.h"
 
+#undef strncasecmp
+
 _PUBLIC_ NTSTATUS gensec_http_generic_init(TALLOC_CTX *);
 
 struct gensec_http_generic_state {

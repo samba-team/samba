@@ -32,6 +32,8 @@
 #include "librpc/ndr/libndr.h"
 #include "../lib/util/asn1.h"
 
+#undef strcasecmp
+
 /**
  * Initialize dsdb_syntax_ctx with default values
  * for common cases.

@@ -47,6 +47,8 @@
 #include "librpc/gen_ndr/irpc.h"
 #include "lib/util/smb_strtox.h"
 
+#undef strcasecmp
+
 struct samldb_ctx;
 enum samldb_add_type {
 	SAMLDB_TYPE_USER,

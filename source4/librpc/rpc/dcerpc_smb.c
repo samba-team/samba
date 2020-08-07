@@ -33,6 +33,8 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/composite/composite.h"
 
+#undef strncasecmp
+
 /* transport private information used by SMB pipe transport */
 struct smb_private {
 	DATA_BLOB session_key;

@@ -31,6 +31,9 @@
 #include "rpc_server/srvsvc/proto.h"
 #include "param/param.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 #define SRVSVC_CHECK_ADMIN_ACCESS do { \
 	struct auth_session_info *si = dcesrv_call_session_info(dce_call); \
 	struct security_token *t = si->security_token; \

@@ -28,7 +28,9 @@
 #include "system/locale.h"
 #include "system/filesys.h"
 #include "lib/util/util_net.h"
+
 #undef strcasecmp
+#undef strncasecmp
 
 /*******************************************************************
  Set an address to INADDR_ANY.

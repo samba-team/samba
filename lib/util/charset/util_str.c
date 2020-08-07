@@ -28,6 +28,10 @@
 #ifdef strcasecmp
 #undef strcasecmp
 #endif
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+
 
 /**
  Case insensitive string compararison, handle specified for testing

@@ -23,6 +23,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "system/locale.h"
 
+#undef strcasecmp
+
 #define SEPERATOR "\n  "
 
 struct attr_map {

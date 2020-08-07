@@ -34,6 +34,8 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#undef strcasecmp
+
 #define TEST_DOM "torturedom"
 #define TEST_DOM_DNS "torturedom.samba.example.com"
 #define TEST_DOM_SID "S-1-5-21-97398-379795-10000"

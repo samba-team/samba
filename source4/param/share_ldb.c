@@ -27,6 +27,8 @@
 #include "param/share.h"
 #include "param/param.h"
 
+#undef strcasecmp
+
 NTSTATUS share_ldb_init(TALLOC_CTX *);
 
 static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 

@@ -38,6 +38,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+#undef strncasecmp
+
 static void cli_credentials_invalidate_client_gss_creds(
 					struct cli_credentials *cred,
 					enum credentials_obtained obtained);

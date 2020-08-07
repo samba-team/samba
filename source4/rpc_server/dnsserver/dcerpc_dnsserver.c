@@ -28,6 +28,8 @@
 #include "dns_server/dnsserver_common.h"
 #include "dnsserver.h"
 
+#undef strcasecmp
+
 #define DCESRV_INTERFACE_DNSSERVER_BIND(context, iface) \
 	dcesrv_interface_dnsserver_bind(context, iface)
 static NTSTATUS dcesrv_interface_dnsserver_bind(struct dcesrv_connection_context *context,

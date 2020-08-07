@@ -49,6 +49,8 @@
 #include "libds/common/roles.h"
 #include "lib/util/time.h"
 
+#undef strcasecmp
+
 static void ldapsrv_terminate_connection_done(struct tevent_req *subreq);
 
 /*

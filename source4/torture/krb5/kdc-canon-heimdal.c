@@ -34,6 +34,8 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
+#undef strcasecmp
+
 #define TEST_CANONICALIZE     0x0000001
 #define TEST_ENTERPRISE       0x0000002
 #define TEST_UPPER_REALM      0x0000004

@@ -29,6 +29,8 @@
 #include "libcli/security/security.h"
 #include "dsdb/common/util.h"
 
+#undef strcasecmp
+
 /* There are only 2 fixed partitions for DNS */
 struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ctx,
 							struct dnsserver_serverinfo *serverinfo,

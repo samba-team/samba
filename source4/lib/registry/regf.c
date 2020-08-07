@@ -26,6 +26,7 @@
 #include "lib/registry/registry.h"
 #include "libcli/security/security.h"
 
+#undef strcasecmp
 
 static struct hive_operations reg_backend_regf;
 

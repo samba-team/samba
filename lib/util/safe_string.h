@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Safe string handling routines.
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,10 +20,15 @@
 
 #ifndef _SAFE_STRING_H
 #define _SAFE_STRING_H
-
 #ifndef _SPLINT_ /* http://www.splint.org */
+
 /* Some macros to ensure people don't use buffer overflow vulnerable string
    functions. */
+
+#ifdef bcopy
+#undef bcopy
+#endif /* bcopy */
+#define bcopy(src,dest,size) __ERROR__XX__NEVER_USE_BCOPY___;
 
 #ifdef strcpy
 #undef strcpy
@@ -38,6 +44,20 @@
 #undef sprintf
 #endif /* sprintf */
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
+
+/*
+ * strcasecmp/strncasecmp aren't an error, but it means you're not thinking about
+ * multibyte. Don't use them. JRA.
+ */
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+#define strcasecmp __ERROR__XX__NEVER_USE_STRCASECMP__;
+
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+#define strncasecmp __ERROR__XX__NEVER_USE_STRNCASECMP__;
 
 #endif /* !_SPLINT_ */
 

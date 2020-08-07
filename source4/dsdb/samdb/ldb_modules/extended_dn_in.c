@@ -37,6 +37,8 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/ldb-samba/ldb_matching_rules.h"
 
+#undef strncasecmp
+
 /*
   TODO: if relax is not set then we need to reject the fancy RMD_* and
   DELETED extended DN codes

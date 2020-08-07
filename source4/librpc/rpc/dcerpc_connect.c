@@ -38,6 +38,8 @@
 #include "libcli/http/http.h"
 #include "lib/util/util_net.h"
 
+#undef strcasecmp
+
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
 	struct dcerpc_binding *binding;

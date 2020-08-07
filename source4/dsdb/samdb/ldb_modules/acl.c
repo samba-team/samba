@@ -43,6 +43,9 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 struct extended_access_check_attribute {
 	const char *oa_name;
 	const uint32_t requires_rights;

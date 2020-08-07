@@ -37,6 +37,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
+#undef strcasecmp
+
 /*
   load the partitions list based on replicated NC attributes in our
   NTDSDSA object

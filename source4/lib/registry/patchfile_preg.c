@@ -25,6 +25,9 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "lib/util/sys_rw.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 struct preg_data {
 	int fd;
 	TALLOC_CTX *ctx;

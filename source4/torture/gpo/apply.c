@@ -30,6 +30,8 @@
 #include "lib/util/samba_util.h"
 #include "util/tevent_ntstatus.h"
 
+#undef strncasecmp
+
 struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "apply");

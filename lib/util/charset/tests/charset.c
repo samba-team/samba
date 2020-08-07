@@ -21,6 +21,9 @@
 #include "includes.h"
 #include "torture/torture.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx);
 
 static bool test_toupper_m(struct torture_context *tctx)

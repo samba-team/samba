@@ -30,6 +30,8 @@
 #include "param/param.h"
 #include "lib/util/samba_modules.h"
 
+#undef strcasecmp
+
 /* list of registered backends */
 static struct sys_notify_backend *backends;
 static uint32_t num_backends;

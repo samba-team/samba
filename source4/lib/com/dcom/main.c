@@ -32,6 +32,8 @@
 #include "auth/credentials/credentials.h"
 #include "libcli/composite/composite.h"
 
+#undef strncasecmp
+
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
 static NTSTATUS dcerpc_binding_from_STRINGBINDING(TALLOC_CTX *mem_ctx, struct dcerpc_binding **b_out, struct STRINGBINDING *bd)

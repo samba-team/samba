@@ -26,6 +26,8 @@
 #include "torture/util.h"
 #include "torture/basic/proto.h"
 
+#undef strcasecmp
+
 static TDB_CONTEXT *tdb;
 
 #define NAME_LENGTH 20

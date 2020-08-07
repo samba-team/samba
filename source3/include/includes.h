@@ -297,7 +297,7 @@ typedef char fstring[FSTRING_LEN];
 /* String routines */
 
 #include "srvstr.h"
-#include "safe_string.h"
+#include "lib/util/safe_string.h"
 
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD

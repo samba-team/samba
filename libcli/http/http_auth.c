@@ -29,6 +29,9 @@
 #include "auth/credentials/credentials.h"
 #include "lib/util/data_blob.h"
 
+#undef strcasecmp
+#undef strncasecmp
+
 /**
  * Copy the request headers from src to dst
  */
