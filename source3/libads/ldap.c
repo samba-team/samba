@@ -750,6 +750,25 @@ ADS_STATUS ads_connect_user_creds(ADS_STRUCT *ads)
 }
 
 /**
+ * Zero out the internal ads->ldap struct and initialize the address to zero IP.
+ * @param ads Pointer to an existing ADS_STRUCT
+ *
+ * Sets the ads->ldap.ss to a valid
+ * zero ip address that can be detected by
+ * our is_zero_addr() function. Otherwise
+ * it is left as AF_UNSPEC (0).
+ **/
+void ads_zero_ldap(ADS_STRUCT *ads)
+{
+	ZERO_STRUCT(ads->ldap);
+	/*
+	 * Initialize the sockaddr_storage so we can use
+	 * sockaddr test functions against it.
+	 */
+	zero_sockaddr(&ads->ldap.ss);
+}
+
+/**
  * Disconnect the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
  **/
