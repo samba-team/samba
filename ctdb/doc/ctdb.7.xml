@@ -57,6 +57,12 @@
     high-availablity (HA) environment for services such as clustered
     Samba, NFS and other services.
   </para>
+
+  <para>
+    In addition to the CTDB manual pages there is much more
+    information available at
+    <ulink url="https://wiki.samba.org/index.php/CTDB_and_Clustered_Samba"/>.
+  </para>
 </refsect1>
 
 <refsect1>
@@ -1114,6 +1120,8 @@ correct CIFS semantics to clients.
 
       <citerefentry><refentrytitle>ctdb-tunables</refentrytitle>
       <manvolnum>7</manvolnum></citerefentry>,
+
+      <ulink url="https://wiki.samba.org/index.php/CTDB_and_Clustered_Samba"/>,
 
       <ulink url="http://ctdb.samba.org/"/>
     </para>
