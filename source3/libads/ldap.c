@@ -595,7 +595,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	NTSTATUS ntstatus;
 	char addr[INET6_ADDRSTRLEN];
 
-	ZERO_STRUCT(ads->ldap);
+	ads_zero_ldap(ads);
 	ZERO_STRUCT(ads->ldap_wrap_data);
 	ads->ldap.last_attempt	= time_mono(NULL);
 	ads->ldap_wrap_data.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
@@ -785,7 +785,7 @@ void ads_disconnect(ADS_STRUCT *ads)
 	if (ads->ldap_wrap_data.mem_ctx) {
 		talloc_free(ads->ldap_wrap_data.mem_ctx);
 	}
-	ZERO_STRUCT(ads->ldap);
+	ads_zero_ldap(ads);
 	ZERO_STRUCT(ads->ldap_wrap_data);
 }
 
