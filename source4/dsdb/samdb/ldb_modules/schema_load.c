@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
 
    The module that handles the Schema FSMO Role Owner
    checkings, it also loads the dsdb_schema.

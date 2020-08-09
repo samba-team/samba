@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    Helper functions for applying replicated objects
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007

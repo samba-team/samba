@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    DSDB replication service helper function for outgoing traffic
    
    Copyright (C) Stefan Metzmacher 2007

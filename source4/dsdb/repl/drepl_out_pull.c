@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    DSDB replication service outgoing Pull-Replication
    
    Copyright (C) Stefan Metzmacher 2007

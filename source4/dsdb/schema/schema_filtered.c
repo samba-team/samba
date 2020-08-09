@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    API for determining af an attribute belongs to the filtered set.
    
    Copyright (C) Nadezhda Ivanova <nivanova@samba.org> 2010

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    LDAP protocol helper functions for SAMBA
    
    Copyright (C) Stefan Metzmacher 2004

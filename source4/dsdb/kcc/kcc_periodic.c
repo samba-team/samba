@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    KCC service periodic handling
    
    Copyright (C) Andrew Tridgell 2009

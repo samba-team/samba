@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    Print schema info into string format
    
    Copyright (C) Andrew Bartlett 2006-2008

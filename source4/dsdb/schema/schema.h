@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    DSDB schema header
    
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2006

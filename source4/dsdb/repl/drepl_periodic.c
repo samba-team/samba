@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    DSDB replication service periodic handling
    
    Copyright (C) Stefan Metzmacher 2007

@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    NDS LDAP helper functions for SAMBA
    Copyright (C) Vince Brimhall			2004-2005
     

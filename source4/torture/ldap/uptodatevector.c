@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS Implementation.
    LDAP replUpToDateVector tests
    
    Copyright (C) Stefan Metzmacher 2007
