@@ -22,6 +22,7 @@
 static TALLOC_CTX *cmdline_mem_ctx;
 static struct loadparm_context *cmdline_lp_ctx;
 static struct cli_credentials *cmdline_creds;
+static samba_cmdline_load_config cmdline_load_config_fn;
 
 /* PRIVATE */
 bool samba_cmdline_set_talloc_ctx(TALLOC_CTX *mem_ctx)
@@ -64,6 +65,12 @@ bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx)
 	talloc_set_log_fn(_samba_cmdline_talloc_log);
 	talloc_set_abort_fn(smb_panic);
 
+	return true;
+}
+
+bool samba_cmdline_set_load_config_fn(samba_cmdline_load_config fn)
+{
+	cmdline_load_config_fn = fn;
 	return true;
 }
 

@@ -20,6 +20,8 @@
 
 #include "lib/cmdline/cmdline.h"
 
+typedef bool (*samba_cmdline_load_config)(void);
+
 /**
  * @internal
  *
@@ -39,6 +41,18 @@
  * @return true on success, false if an error occured.
  */
 bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx);
+
+/**
+ * @brief Set the callback for loading the smb.conf file.
+ *
+ * This is needed as sourc3 and source4 have different code for loading the
+ * smb.conf file.
+ *
+ * @param[in]  fn  The callback to load the smb.conf file.
+ *
+ * @return true on success, false if an error occured.
+ */
+bool samba_cmdline_set_load_config_fn(samba_cmdline_load_config fn);
 
 /**
  * @internal

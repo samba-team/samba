@@ -21,9 +21,42 @@
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
 #include "auth/credentials/credentials.h"
+#include "dynconfig/dynconfig.h"
 #include "cmdline_private.h"
 
 static bool _require_smbconf;
+
+static bool _samba_cmdline_load_config_s4(void)
+{
+	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
+	const char *config_file = NULL;
+	bool ok;
+
+	/* Load smb conf */
+	config_file = lpcfg_configfile(lp_ctx);
+	if (config_file == NULL) {
+		if (is_default_dyn_CONFIGFILE()) {
+			const char *env = getenv("SMB_CONF_PATH");
+			if (env != NULL && strlen(env) > 0) {
+				set_dyn_CONFIGFILE(env);
+			}
+		}
+	}
+
+	config_file = get_dyn_CONFIGFILE();
+	ok = lpcfg_load(lp_ctx, config_file);
+	if (!ok) {
+		fprintf(stderr,
+			"Can't load %s - run testparm to debug it\n",
+			config_file);
+
+		if (_require_smbconf) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
 {
@@ -55,6 +88,8 @@ bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
 	if (!ok) {
 		return false;
 	}
+
+	samba_cmdline_set_load_config_fn(_samba_cmdline_load_config_s4);
 
 	return true;
 }
