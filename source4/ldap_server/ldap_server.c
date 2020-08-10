@@ -589,10 +589,7 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!asn1_load(asn1, blob)) {
-		ldapsrv_terminate_connection(conn, "asn1_load failed");
-		return;
-	}
+	asn1_load_nocopy(asn1, blob.data, blob.length);
 
 	limits.max_search_size =
 		lpcfg_ldap_max_search_request_size(conn->lp_ctx);
