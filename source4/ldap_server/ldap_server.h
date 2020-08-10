@@ -66,6 +66,7 @@ struct ldapsrv_connection {
 	} limits;
 
 	struct tevent_req *active_call;
+	struct tevent_req *deferred_expire_disconnect;
 
 	struct ldapsrv_call *pending_calls;
 };
