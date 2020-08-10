@@ -58,6 +58,36 @@ EOF
 	${TESTPARM} ${TEMP_CONFFILE}
 }
 
+test_testparm_deprecated()
+{
+    name=$1
+    old_SAMBA_DEPRECATED_SUPPRESS=$SAMBA_DEPRECATED_SUPPRESS
+    SAMBA_DEPRECATED_SUPPRESS=
+    export SAMBA_DEPRECATED_SUPPRESS
+    testit_grep $name 'WARNING: The "lsaovernetlogon" option is deprecated' $VALGRIND ${TESTPARM} ${TEMP_CONFFILE} --option='lsaovernetlogon=true'
+    SAMBA_DEPRECATED_SUPPRESS=$old_SAMBA_DEPRECATED_SUPPRESS
+    export SAMBA_DEPRECATED_SUPPRESS
+}
+
+test_testparm_deprecated_suppress()
+{
+    name=$1
+    subunit_start_test "$name"
+    output=$(SAMBA_DEPRECATED_SUPPRESS=1 $VALGRIND ${TESTPARM} ${TEMP_CONFFILE} --option='lsa over netlogon = true' 2>&1)
+    status=$?
+    if [ "$status" = "0" ]; then
+       echo "$output" | grep --quiet 'WARNING: The "lsa over netlogon " option is deprecated'
+       status=$?
+       if [ "$status" = "1" ]; then
+           subunit_pass_test "$name"
+       else
+           echo $output | subunit_fail_test "$name"
+       fi
+    else
+       echo $output | subunit_fail_test "$name"
+    fi
+}
+
 testit "name resolve order = lmhosts wins host bcast"\
 	test_one_global_option "name resolve order = lmhosts wins host bcast" || \
 	failed=`expr ${failed} + 1`
@@ -111,6 +141,9 @@ done
 testit "copy" \
 	test_copy || \
 	failed=`expr ${failed} + 1`
+
+test_testparm_deprecated "test_deprecated_warning_printed"
+test_testparm_deprecated_suppress "test_deprecated_warning_suppressed"
 
 rm -f ${TEMP_CONFFILE}
 
