@@ -17,17 +17,6 @@ NEW FEATURES/CHANGES
 ====================
 
 
-The "ldap ssl ads" option no longer depends on "ldap ssl" option:
------------------------------------------------------------------
-With this release, the "ldap ssl ads" can be set to "yes" even if "ldap ssl"
-is off.
-
-The "ldap ssl ads" no longer requires sasl-wrapping to be set to plain:
------------------------------------------------------------------------
-This is now done implicitly when over TLS, so "client ldap sasl wrapping"
-does not need to be set to "plain" in order for it to work.
-
-
 CTDB CHANGES
 ============
 
@@ -44,12 +33,14 @@ CTDB CHANGES
 REMOVED FEATURES
 ================
 
+The deprecated "ldap ssl ads" smb.conf option has been removed.
 
 smb.conf changes
 ================
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
+  ldap ssl ads                       removed
 
 
 

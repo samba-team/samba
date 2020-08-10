@@ -740,7 +740,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	lpcfg_string_set(Globals.ctx, &Globals.ldap_admin_dn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
-	Globals.ldap_ssl_ads = false;
 	Globals.ldap_deref = -1;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = false;
