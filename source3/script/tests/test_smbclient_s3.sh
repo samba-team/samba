@@ -33,6 +33,10 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 
 failed=0
 
+# Do not let deprecated option warnings muck this up
+SAMBA_DEPRECATED_SUPPRESS=1
+export SAMBA_DEPRECATED_SUPPRESS
+
 # Test that a noninteractive smbclient does not prompt
 test_noninteractive_no_prompt()
 {
