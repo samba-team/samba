@@ -55,12 +55,14 @@ The release notes will be updated to note this change when it occurs.
 REMOVED FEATURES
 ================
 
+The deprecated "ldap ssl ads" smb.conf option has been removed.
 
 smb.conf changes
 ================
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
+  ldap ssl ads                       removed
 
   smb2 disable lock sequence checking				No
 

@@ -702,13 +702,6 @@ got_connection:
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	if ( lp_ldap_ssl_ads() ) {
-		status = ADS_ERROR(smbldap_start_tls(ads->ldap.ld, version));
-		if (!ADS_ERR_OK(status)) {
-			goto out;
-		}
-	}
-
 	/* fill in the current time and offsets */
 
 	status = ads_current_time( ads );
