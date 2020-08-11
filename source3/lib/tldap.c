@@ -83,7 +83,6 @@ struct tldap_ctx_attribute {
 struct tldap_context {
 	int ld_version;
 	struct tstream_context *conn;
-	bool server_down;
 	int msgid;
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
@@ -186,10 +185,22 @@ struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd)
 
 bool tldap_connection_ok(struct tldap_context *ld)
 {
+	int ret;
+
 	if (ld == NULL) {
 		return false;
 	}
-	return !ld->server_down;
+
+	if (ld->conn == NULL) {
+		return false;
+	}
+
+	ret = tstream_pending_bytes(ld->conn);
+	if (ret == -1) {
+		return false;
+	}
+
+	return true;
 }
 
 static size_t tldap_pending_reqs(struct tldap_context *ld)
@@ -425,6 +436,43 @@ static bool tldap_push_controls(struct asn1_data *data,
 	return asn1_pop_tag(data); /* ASN1_CONTEXT(0) */
 }
 
+#define tldap_context_disconnect(ld, status) \
+	_tldap_context_disconnect(ld, status, __location__)
+
+static void _tldap_context_disconnect(struct tldap_context *ld,
+				      TLDAPRC status,
+				      const char *location)
+{
+	if (ld->conn == NULL) {
+		/*
+		 * We don't need to tldap_debug() on
+		 * a potential 2nd run.
+		 *
+		 * The rest of the function would just
+		 * be a noop for the 2nd run anyway.
+		 */
+		return;
+	}
+
+	tldap_debug(ld, TLDAP_DEBUG_WARNING,
+		    "tldap_context_disconnect: %s at %s\n",
+		    tldap_rc2string(status),
+		    location);
+	tevent_queue_stop(ld->outgoing);
+	TALLOC_FREE(ld->read_req);
+	TALLOC_FREE(ld->conn);
+
+	while (talloc_array_length(ld->pending) > 0) {
+		struct tevent_req *req = NULL;
+		struct tldap_msg_state *state = NULL;
+
+		req = ld->pending[0];
+		state = tevent_req_data(req, struct tldap_msg_state);
+		tevent_req_defer_callback(req, state->ev);
+		tevent_req_ldap_error(req, status);
+	}
+}
+
 static void tldap_msg_sent(struct tevent_req *subreq);
 static void tldap_msg_received(struct tevent_req *subreq);
 
@@ -438,6 +486,7 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct tldap_msg_state *state;
 	DATA_BLOB blob;
+	bool ok;
 
 	tldap_debug(ld, TLDAP_DEBUG_TRACE, "tldap_msg_send: sending msg %d\n",
 		    id);
@@ -450,7 +499,8 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->id = id;
 
-	if (state->ld->server_down) {
+	ok = tldap_connection_ok(ld);
+	if (!ok) {
 		tevent_req_ldap_error(req, TLDAP_SERVER_DOWN);
 		return tevent_req_post(req, ev);
 	}
@@ -582,7 +632,7 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 	nwritten = tstream_writev_queue_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
-		state->ld->server_down = true;
+		tldap_context_disconnect(state->ld, TLDAP_SERVER_DOWN);
 		tevent_req_ldap_error(req, TLDAP_SERVER_DOWN);
 		return;
 	}
@@ -612,7 +662,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	ssize_t received;
 	size_t num_pending;
 	int i, err;
-	TLDAPRC status;
+	TLDAPRC status = TLDAP_PROTOCOL_ERROR;
 	int id;
 	uint8_t type;
 	bool ok;
@@ -621,13 +671,16 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	ld->read_req = NULL;
 	if (received == -1) {
-		ld->server_down = true;
 		status = TLDAP_SERVER_DOWN;
 		goto fail;
 	}
 
 	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
 	if (data == NULL) {
+		/*
+		 * We have to disconnect all, we can't tell which of
+		 * the requests this reply is for.
+		 */
 		status = TLDAP_NO_MEMORY;
 		goto fail;
 	}
@@ -689,12 +742,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	return;
 
  fail:
-	while (talloc_array_length(ld->pending) > 0) {
-		req = ld->pending[0];
-		state = tevent_req_data(req, struct tldap_msg_state);
-		tevent_req_defer_callback(req, state->ev);
-		tevent_req_ldap_error(req, status);
-	}
+	tldap_context_disconnect(ld, status);
 }
 
 static TLDAPRC tldap_msg_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
