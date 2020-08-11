@@ -704,6 +704,17 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	tldap_debug(ld, TLDAP_DEBUG_TRACE, "tldap_msg_received: got msg %d "
 		    "type %d\n", id, (int)type);
 
+	if (id == 0) {
+		tldap_debug(
+			ld,
+			TLDAP_DEBUG_WARNING,
+			"tldap_msg_received: got msgid 0 of "
+			"type %"PRIu8", disconnecting\n",
+			type);
+		tldap_context_disconnect(ld, TLDAP_SERVER_DOWN);
+		return;
+	}
+
 	num_pending = talloc_array_length(ld->pending);
 
 	for (i=0; i<num_pending; i++) {
