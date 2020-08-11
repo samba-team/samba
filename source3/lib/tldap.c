@@ -677,19 +677,11 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	tldap_msg_unset_pending(req);
 	num_pending = talloc_array_length(ld->pending);
 
+	tevent_req_defer_callback(req, state->ev);
 	tevent_req_done(req);
 
  done:
 	if (num_pending == 0) {
-		return;
-	}
-	if (talloc_array_length(ld->pending) > num_pending) {
-		/*
-		 * The callback functions called from tevent_req_done() above
-		 * have put something on the pending queue. We don't have to
-		 * trigger the read_ldap_send(), tldap_msg_set_pending() has
-		 * done it for us already.
-		 */
 		return;
 	}
 
