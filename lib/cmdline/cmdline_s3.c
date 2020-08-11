@@ -21,18 +21,20 @@
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
 #include "source3/param/loadparm.h"
+#include "dynconfig/dynconfig.h"
 #include "source3/lib/interface.h"
 #include "auth/credentials/credentials.h"
 #include "dynconfig/dynconfig.h"
 #include "cmdline_private.h"
 
 static bool _require_smbconf;
+static enum samba_cmdline_config_type _config_type;
 
 static bool _samba_cmdline_load_config_s3(void)
 {
 	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
 	const char *config_file = NULL;
-	bool ok;
+	bool ok = false;
 
 	/* Load smb conf */
 	config_file = lpcfg_configfile(lp_ctx);
@@ -45,15 +47,21 @@ static bool _samba_cmdline_load_config_s3(void)
 		}
 	}
 
-	/*
-	 * Load load smb.conf from getenv("SMB_CONF_PATH") default
-	 * location.
-	 */
-	ok = lp_load_client(lp_default_path());
+	config_file = get_dyn_CONFIGFILE();
+
+	switch (_config_type) {
+	case SAMBA_CMDLINE_CONFIG_CLIENT:
+		ok = lp_load_client(config_file);
+		break;
+	case SAMBA_CMDLINE_CONFIG_SERVER:
+		ok = lp_load_initial_only(config_file);
+		break;
+	}
+
 	if (!ok) {
 		fprintf(stderr,
 			"Can't load %s - run testparm to debug it\n",
-			lp_default_path());
+			config_file);
 
 		if (_require_smbconf) {
 			return false;
@@ -65,7 +73,9 @@ static bool _samba_cmdline_load_config_s3(void)
 	return true;
 }
 
-bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
+bool samba_cmdline_init(TALLOC_CTX *mem_ctx,
+			enum samba_cmdline_config_type config_type,
+			bool require_smbconf)
 {
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
@@ -86,6 +96,7 @@ bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
 	}
 
 	_require_smbconf = require_smbconf;
+	_config_type = config_type;
 
 	creds = cli_credentials_init(mem_ctx);
 	if (creds == NULL) {

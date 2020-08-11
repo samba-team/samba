@@ -17,7 +17,12 @@
 
 #include "includes.h"
 #include "lib/param/param.h"
+#include "dynconfig/dynconfig.h"
+#include "auth/gensec/gensec.h"
+#include "libcli/smb/smb_util.h"
 #include "cmdline_private.h"
+
+#include <samba/version.h>
 
 static TALLOC_CTX *cmdline_mem_ctx;
 static struct loadparm_context *cmdline_lp_ctx;
@@ -58,9 +63,9 @@ bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx)
 
 	/*
 	 * Log to stdout by default.
-	 * This can be changed to stderr using the option: --debug-stderr
+	 * This can be changed to stderr using the option: --debug-stdout
 	 */
-	setup_logging(getprogname(), DEBUG_DEFAULT_STDOUT);
+	setup_logging(getprogname(), DEBUG_DEFAULT_STDERR);
 
 	talloc_set_log_fn(_samba_cmdline_talloc_log);
 	talloc_set_abort_fn(smb_panic);
@@ -105,4 +110,786 @@ bool samba_cmdline_set_creds(struct cli_credentials *creds)
 struct cli_credentials *samba_cmdline_get_creds(void)
 {
 	return cmdline_creds;
+}
+
+/**********************************************************
+ * COMMON SAMBA POPT
+ **********************************************************/
+
+static bool log_to_file;
+
+static void popt_samba_callback(poptContext popt_ctx,
+				enum poptCallbackReason reason,
+				const struct poptOption *opt,
+				const char *arg, const void *data)
+{
+	TALLOC_CTX *mem_ctx = samba_cmdline_get_talloc_ctx();
+	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
+	const char *pname = NULL;
+	bool ok;
+
+	if (reason == POPT_CALLBACK_REASON_PRE) {
+		if (lp_ctx == NULL) {
+			fprintf(stderr,
+				"Command line parsing not initialized!\n");
+			exit(1);
+		}
+		return;
+	}
+
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		ok = cmdline_load_config_fn();
+		if (!ok) {
+			fprintf(stderr,
+				"%s - Failed to load config file!\n",
+				getprogname());
+			exit(1);
+		}
+
+		if (log_to_file) {
+			const struct loadparm_substitution *lp_sub =
+				lpcfg_noop_substitution();
+			char *logfile = NULL;
+
+			logfile = lpcfg_logfile(lp_ctx, lp_sub, mem_ctx);
+			if (logfile == NULL) {
+				fprintf(stderr,
+					"Failed to setup logging to file!");
+					exit(1);
+			}
+			debug_set_logfile(logfile);
+			setup_logging(logfile, DEBUG_FILE);
+			TALLOC_FREE(logfile);
+		}
+
+		return;
+	}
+
+	/* Find out basename of current program */
+	pname = strrchr_m(poptGetInvocationName(popt_ctx), '/');
+	if (pname == NULL) {
+		pname = poptGetInvocationName(popt_ctx);
+	} else {
+		pname++;
+	}
+
+	switch(opt->val) {
+	case OPT_LEAK_REPORT:
+		talloc_enable_leak_report();
+		break;
+	case OPT_LEAK_REPORT_FULL:
+		talloc_enable_leak_report_full();
+		break;
+	case OPT_OPTION:
+		if (arg != NULL) {
+			ok = lpcfg_set_option(lp_ctx, arg);
+			if (!ok) {
+				fprintf(stderr, "Error setting option '%s'\n", arg);
+				exit(1);
+			}
+		}
+		break;
+	case 'd':
+		if (arg != NULL) {
+			ok = lpcfg_set_cmdline(lp_ctx, "log level", arg);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set debug level to: %s\n",
+					arg);
+				exit(1);
+			}
+		}
+		break;
+	case OPT_DEBUG_STDOUT:
+		setup_logging(pname, DEBUG_STDOUT);
+		break;
+	case OPT_CONFIGFILE:
+		if (arg != NULL) {
+			set_dyn_CONFIGFILE(arg);
+		}
+		break;
+	case 'l':
+		if (arg != NULL) {
+			char *new_logfile = talloc_asprintf(mem_ctx,
+							    "%s/log.%s",
+							    arg,
+							    pname);
+			if (new_logfile == NULL) {
+				fprintf(stderr,
+					"Failed to allocate memory\n");
+				exit(1);
+			}
+
+			ok = lpcfg_set_cmdline(lp_ctx,
+					       "log file",
+					       new_logfile);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set log file: %s\n",
+					new_logfile);
+				TALLOC_FREE(new_logfile);
+				exit(1);
+			}
+			log_to_file = true;
+
+			TALLOC_FREE(new_logfile);
+		}
+		break;
+	}
+}
+
+static struct poptOption popt_common_samba[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "debug-stdout",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_DEBUG_STDOUT,
+		.descrip    = "Send debug output to standard output",
+	},
+	{
+		.longName   = "configfile",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_CONFIGFILE,
+		.descrip    = "Use alternative configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
+	{
+		.longName   = "log-basename",
+		.shortName  = 'l',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'l',
+		.descrip    = "Basename for log/debug files",
+		.argDescrip = "LOGFILEBASE",
+	},
+	{
+		.longName   = "leak-report",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT,
+		.descrip    = "enable talloc leak reporting on exit",
+	},
+	{
+		.longName   = "leak-report-full",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT_FULL,
+		.descrip    = "enable full talloc leak reporting on exit",
+	},
+	POPT_TABLEEND
+};
+
+static struct poptOption popt_common_samba_ldb[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "debug-stdout",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_DEBUG_STDOUT,
+		.descrip    = "Send debug output to standard output",
+	},
+	{
+		.longName   = "configfile",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_CONFIGFILE,
+		.descrip    = "Use alternative configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
+	{
+		.longName   = "log-basename",
+		.shortName  = 'l',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'l',
+		.descrip    = "Basename for log/debug files",
+		.argDescrip = "LOGFILEBASE",
+	},
+	{
+		.longName   = "leak-report",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT,
+		.descrip    = "enable talloc leak reporting on exit",
+	},
+	{
+		.longName   = "leak-report-full",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_LEAK_REPORT_FULL,
+		.descrip    = "enable full talloc leak reporting on exit",
+	},
+	POPT_TABLEEND
+};
+
+/**********************************************************
+ * CONNECTION POPT
+ **********************************************************/
+
+static void popt_connection_callback(poptContext popt_ctx,
+				     enum poptCallbackReason reason,
+				     const struct poptOption *opt,
+				     const char *arg,
+				     const void *data)
+{
+	struct loadparm_context *lp_ctx = cmdline_lp_ctx;
+
+	if (reason == POPT_CALLBACK_REASON_PRE) {
+		if (lp_ctx == NULL) {
+			fprintf(stderr,
+				"Command line parsing not initialized!\n");
+			exit(1);
+		}
+		return;
+	}
+
+	switch(opt->val) {
+	case 'O':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "socket options", arg);
+		}
+		break;
+	case 'R':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "name resolve order", arg);
+		}
+		break;
+	case 'm':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "client max protocol", arg);
+		}
+		break;
+	case OPT_NETBIOS_SCOPE:
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "netbios scope", arg);
+		}
+		break;
+	case 'n':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "netbios name", arg);
+		}
+		break;
+	case 'W':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "workgroup", arg);
+		}
+		break;
+	case 'r':
+		if (arg != NULL) {
+			lpcfg_set_cmdline(lp_ctx, "realm", arg);
+		}
+		break;
+	}
+}
+
+static struct poptOption popt_common_connection[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE,
+		.arg        = (void *)popt_connection_callback,
+	},
+	{
+		.longName   = "name-resolve",
+		.shortName  = 'R',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'R',
+		.descrip    = "Use these name resolution services only",
+		.argDescrip = "NAME-RESOLVE-ORDER",
+	},
+	{
+		.longName   = "socket-options",
+		.shortName  = 'O',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'O',
+		.descrip    = "socket options to use",
+		.argDescrip = "SOCKETOPTIONS",
+	},
+	{
+		.longName   = "maxprotocol",
+		.shortName  = 'm',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'm',
+		.descrip    = "Set max protocol level",
+		.argDescrip = "MAXPROTOCOL",
+	},
+	{
+		.longName   = "netbiosname",
+		.shortName  = 'n',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'n',
+		.descrip    = "Primary netbios name",
+		.argDescrip = "NETBIOSNAME",
+	},
+	{
+		.longName   = "netbios-scope",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_NETBIOS_SCOPE,
+		.descrip    = "Use this Netbios scope",
+		.argDescrip = "SCOPE",
+	},
+	{
+		.longName   = "workgroup",
+		.shortName  = 'W',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'W',
+		.descrip    = "Set the workgroup name",
+		.argDescrip = "WORKGROUP",
+	},
+	{
+		.longName   = "realm",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'r',
+		.descrip    = "Set the realm name",
+		.argDescrip = "REALM",
+	},
+	POPT_TABLEEND
+};
+
+/**********************************************************
+ * CREDENTIALS POPT
+ **********************************************************/
+
+static bool skip_password_callback;
+static bool machine_account_pending;
+
+static void popt_common_credentials_callback(poptContext popt_ctx,
+					     enum poptCallbackReason reason,
+					     const struct poptOption *opt,
+					     const char *arg,
+					     const void *data)
+{
+	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	bool ok;
+
+	if (reason == POPT_CALLBACK_REASON_PRE) {
+		if (creds == NULL) {
+			fprintf(stderr,
+				"Command line parsing not initialized!\n");
+			exit(1);
+		}
+		return;
+	}
+
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		const char *username = NULL;
+		enum credentials_obtained username_obtained =
+			CRED_UNINITIALISED;
+		enum credentials_obtained password_obtained =
+			CRED_UNINITIALISED;
+
+		/*
+		 * This calls cli_credentials_set_conf() to get the defaults
+		 * form smb.conf and set the winbind separator.
+		 */
+		cli_credentials_guess(creds, lp_ctx);
+
+		(void)cli_credentials_get_password_and_obtained(creds,
+								&password_obtained);
+		if (!skip_password_callback &&
+		    password_obtained < CRED_CALLBACK) {
+			ok = cli_credentials_set_cmdline_callbacks(creds);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set cmdline password "
+					"callback\n");
+				exit(1);
+			}
+		}
+
+		if (machine_account_pending) {
+			NTSTATUS status;
+
+			status = cli_credentials_set_machine_account(creds,
+								     lp_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				fprintf(stderr,
+					"Failed to set machine account: %s\n",
+					nt_errstr(status));
+				exit(1);
+			}
+		}
+
+		/*
+		 * When we set the username during the handling of the options
+		 * passed to the binary we haven't loaded the config yet. This
+		 * means that we didn't take the 'winbind separator' into
+		 * account.
+		 *
+		 * The username might contain the domain name and thus it
+		 * hasn't been correctly parsed yet. If we have a username we
+		 * need to set it again to run the string parser for the
+		 * username correctly.
+		 */
+		username =
+			cli_credentials_get_username_and_obtained(
+					creds, &username_obtained);
+		if (username_obtained == CRED_SPECIFIED &&
+		    username != NULL && username[0] != '\0') {
+			cli_credentials_parse_string(creds,
+						     username,
+						     CRED_SPECIFIED);
+		}
+
+		return;
+	}
+
+	switch(opt->val) {
+	case 'U':
+		if (arg != NULL) {
+			cli_credentials_parse_string(creds,
+						     arg,
+						     CRED_SPECIFIED);
+		}
+		break;
+	case OPT_PASSWORD:
+		if (arg != NULL) {
+			ok = cli_credentials_set_password(creds,
+							  arg,
+							  CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set password!\n");
+				exit(1);
+			}
+
+			skip_password_callback = true;
+		}
+		break;
+	case OPT_NT_HASH:
+		cli_credentials_set_password_will_be_nt_hash(creds, true);
+		break;
+	case 'A':
+		if (arg != NULL) {
+			ok = cli_credentials_parse_file(creds,
+							arg,
+							CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set parse authentication file!\n");
+				exit(1);
+			}
+			skip_password_callback = true;
+		}
+		break;
+	case 'N':
+		ok = cli_credentials_set_password(creds,
+						  NULL,
+						  CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+			        "Failed to set password!\n");
+			exit(1);
+		}
+		skip_password_callback = true;
+		break;
+	case 'P':
+		/*
+		 * Later, after this is all over, get the machine account
+		 * details from the secrets.(l|t)db.
+		 */
+		machine_account_pending = true;
+		break;
+	case OPT_SIMPLE_BIND_DN:
+		if (arg != NULL) {
+			ok = cli_credentials_set_bind_dn(creds, arg);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set bind DN!\n");
+				exit(1);
+			}
+		}
+		break;
+	case OPT_USE_KERBEROS:
+		if (arg != NULL) {
+			int32_t use_kerberos =
+				lpcfg_parse_enum_vals("client use kerberos", arg);
+
+			if (use_kerberos == INT_MIN) {
+				fprintf(stderr, "Failed to parse --use-kerberos\n");
+				exit(1);
+			}
+
+			ok = cli_credentials_set_kerberos_state(creds,
+								use_kerberos,
+								CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set Kerberos state to %s!\n", arg);
+				exit(1);
+			}
+		}
+		break;
+	case OPT_USE_KERBEROS_CCACHE:
+		if (arg != NULL) {
+			const char *error_string = NULL;
+			int rc;
+
+			rc = cli_credentials_set_ccache(creds,
+							lp_ctx,
+							arg,
+							CRED_SPECIFIED,
+							&error_string);
+			if (rc != 0) {
+				fprintf(stderr,
+					"Error reading krb5 credentials cache: '%s'"
+					" - %s\n",
+					arg,
+					error_string);
+				exit(1);
+			}
+
+			skip_password_callback = true;
+		}
+		break;
+	case OPT_USE_WINBIND_CCACHE:
+	{
+		uint32_t gensec_features;
+
+		gensec_features = cli_credentials_get_gensec_features(creds);
+		gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
+
+		ok = cli_credentials_set_gensec_features(creds,
+							 gensec_features,
+							 CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set gensec feature!\n");
+			exit(1);
+		}
+
+		skip_password_callback = true;
+		break;
+	}
+	case OPT_CLIENT_PROTECTION:
+		if (arg != NULL) {
+			uint32_t gensec_features;
+			enum smb_signing_setting signing_state =
+				SMB_SIGNING_OFF;
+			enum smb_encryption_setting encryption_state =
+				SMB_ENCRYPTION_OFF;
+
+			gensec_features =
+				cli_credentials_get_gensec_features(
+						creds);
+
+			if (strequal(arg, "off")) {
+				gensec_features &=
+					~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL);
+
+				signing_state = SMB_SIGNING_OFF;
+				encryption_state = SMB_ENCRYPTION_OFF;
+			} else if (strequal(arg, "sign")) {
+				gensec_features |= GENSEC_FEATURE_SIGN;
+
+				signing_state = SMB_SIGNING_REQUIRED;
+				encryption_state = SMB_ENCRYPTION_OFF;
+			} else if (strequal(arg, "encrypt")) {
+				gensec_features |= GENSEC_FEATURE_SEAL;
+
+				signing_state = SMB_SIGNING_REQUIRED;
+				encryption_state = SMB_ENCRYPTION_REQUIRED;
+			} else {
+				fprintf(stderr,
+					"Failed to parse --client-protection\n");
+				exit(1);
+			}
+
+			ok = cli_credentials_set_gensec_features(creds,
+								 gensec_features,
+								 CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set gensec feature!\n");
+				exit(1);
+			}
+
+			ok = cli_credentials_set_smb_signing(creds,
+							     signing_state,
+							     CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set smb signing!\n");
+				exit(1);
+			}
+
+			ok = cli_credentials_set_smb_encryption(creds,
+								encryption_state,
+								CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set smb encryption!\n");
+				exit(1);
+			}
+		}
+		break;
+	} /* switch */
+}
+
+static struct poptOption popt_common_credentials[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_credentials_callback,
+	},
+	{
+		.longName   = "user",
+		.shortName  = 'U',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'U',
+		.descrip    = "Set the network username",
+		.argDescrip = "[DOMAIN/]USERNAME[%PASSWORD]",
+	},
+	{
+		.longName   = "no-pass",
+		.shortName  = 'N',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'N',
+		.descrip    = "Don't ask for a password",
+	},
+	{
+		.longName   = "password",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_PASSWORD,
+		.descrip    = "Password",
+	},
+	{
+		.longName   = "pw-nt-hash",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_NT_HASH,
+		.descrip    = "The supplied password is the NT hash",
+	},
+	{
+		.longName   = "authentication-file",
+		.shortName  = 'A',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'A',
+		.descrip    = "Get the credentials from a file",
+		.argDescrip = "FILE",
+	},
+	{
+		.longName   = "machine-pass",
+		.shortName  = 'P',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'P',
+		.descrip    = "Use stored machine account password",
+	},
+	{
+		.longName   = "simple-bind-dn",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_SIMPLE_BIND_DN,
+		.descrip    = "DN to use for a simple bind",
+		.argDescrip = "DN",
+	},
+	{
+		.longName   = "use-kerberos",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_USE_KERBEROS,
+		.descrip    = "Use Kerberos authentication",
+		.argDescrip = "desired|required|off",
+	},
+	{
+		.longName   = "use-krb5-ccache",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_USE_KERBEROS_CCACHE,
+		.descrip    = "Credentials cache location for Kerberos",
+		.argDescrip = "CCACHE",
+	},
+	{
+		.longName   = "use-winbind-ccache",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_USE_WINBIND_CCACHE,
+		.descrip    = "Use the winbind ccache for authentication",
+	},
+	{
+		.longName   = "client-protection",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_CLIENT_PROTECTION,
+		.descrip    = "Configure used protection for client connections",
+		.argDescrip = "sign|encrypt|off",
+	},
+	POPT_TABLEEND
+};
+
+/**********************************************************
+ * VERSION POPT
+ **********************************************************/
+
+static void popt_version_callback(poptContext ctx,
+				  enum poptCallbackReason reason,
+				  const struct poptOption *opt,
+				  const char *arg,
+				  const void *data)
+{
+	switch(opt->val) {
+	case 'V':
+		printf("Version %s\n", SAMBA_VERSION_STRING);
+		exit(0);
+	}
+}
+
+static struct poptOption popt_common_version[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_version_callback,
+	},
+	{
+		.longName   = "version",
+		.shortName  = 'V',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'V',
+		.descrip    = "Print version",
+	},
+	POPT_TABLEEND
+};
+
+struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
+{
+	switch (opt) {
+	case SAMBA_CMDLINE_POPT_OPT_SAMBA:
+		return popt_common_samba;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_CONNECTION:
+		return popt_common_connection;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_CREDENTIALS:
+		return popt_common_credentials;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_VERSION:
+		return popt_common_version;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB:
+		return popt_common_samba_ldb;
+		break;
+	}
+
+	/* Never reached */
+	return NULL;
 }

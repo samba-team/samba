@@ -19,12 +19,39 @@
 #define _CMDLINE_H
 
 #include "auth/credentials/credentials.h"
+#include <popt.h>
+
+#ifndef POPT_TABLEEND
+#define POPT_TABLEEND { \
+	.longName   = NULL, \
+	.shortName  = 0, \
+	.argInfo    = 0, \
+	.arg        = NULL, \
+	.val        = 0, \
+	.descrip    = NULL, \
+	.argDescrip = NULL }
+#endif
+
+enum samba_cmdline_config_type {
+	SAMBA_CMDLINE_CONFIG_CLIENT = 0,
+	SAMBA_CMDLINE_CONFIG_SERVER,
+};
+
+enum smb_cmdline_popt_options {
+	SAMBA_CMDLINE_POPT_OPT_SAMBA = 1,
+	SAMBA_CMDLINE_POPT_OPT_CONNECTION,
+	SAMBA_CMDLINE_POPT_OPT_CREDENTIALS,
+	SAMBA_CMDLINE_POPT_OPT_VERSION,
+	SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB,
+};
 
 /**
  * @brief Initialize the commandline interface for parsing options.
  *
  * This initialized the interface for parsing options given on the command
  * line. It sets up the loadparm and client credentials contexts.
+ * The function will also setup fault handler, set logging to STDERR by
+ * default, setup talloc logging and the panic handler.
  *
  * @param[in]  mem_ctx  The talloc memory context to use for allocating memory.
  *                      This should be a long living context till the client
@@ -35,7 +62,9 @@
  *
  * @return true on success, false if an error occured.
  */
-bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf);
+bool samba_cmdline_init(TALLOC_CTX *mem_ctx,
+			enum samba_cmdline_config_type config_type,
+			bool require_smbconf);
 
 /**
  * @brief Get a pointer of loadparm context used for the command line interface.
@@ -50,5 +79,74 @@ struct loadparm_context *samba_cmdline_get_lp_ctx(void);
  * @return A pointer to the client credentials.
  */
 struct cli_credentials *samba_cmdline_get_creds(void);
+
+/**
+ * @brief Get a pointer to the poptOption for the given option section.
+ *
+ * @param[in]  opt  The options to retrieve.
+ *
+ * @return A pointer to the poptOption array.
+ */
+struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
+
+/**
+ * @brief A popt structure for common samba options.
+ */
+#define POPT_COMMON_SAMBA { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_SAMBA), \
+	.val        = 0, \
+	.descrip    = "Common Samba options:", \
+	.argDescrip = NULL },
+
+/**
+ * @brief A popt structure for connection options.
+ */
+#define POPT_COMMON_CONNECTION { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_CONNECTION), \
+	.val        = 0, \
+	.descrip    = "Connection options:", \
+	.argDescrip = NULL },
+
+/**
+ * @brief A popt structure for credential options.
+ */
+#define POPT_COMMON_CREDENTIALS { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_CREDENTIALS), \
+	.val        = 0, \
+	.descrip    = "Credential options:", \
+	.argDescrip = NULL },
+
+/**
+ * @brief A popt structure for version options.
+ */
+#define POPT_COMMON_VERSION { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_VERSION), \
+	.val        = 0, \
+	.descrip    = "Version options:", \
+	.argDescrip = NULL },
+
+/**
+ * @brief A popt structure for common samba options.
+ */
+#define POPT_COMMON_SAMBA_LDB { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB), \
+	.val        = 0, \
+	.descrip    = "Common Samba options:", \
+	.argDescrip = NULL },
 
 #endif /* _CMDLINE_H */

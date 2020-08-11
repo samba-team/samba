@@ -58,7 +58,9 @@ static bool _samba_cmdline_load_config_s4(void)
 	return true;
 }
 
-bool samba_cmdline_init(TALLOC_CTX *mem_ctx, bool require_smbconf)
+bool samba_cmdline_init(TALLOC_CTX *mem_ctx,
+			enum samba_cmdline_config_type config_type,
+			bool require_smbconf)
 {
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;

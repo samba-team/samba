@@ -9,8 +9,10 @@ def build(bld):
                       source='cmdline.c',
                       deps='''
                            talloc
+                           cli_smb_common
                            samba-hostconfig
                            samba-credentials
+                           CREDENTIALS_CMDLINE
                            popt
                            ''',
                       private_library=True)

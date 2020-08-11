@@ -20,6 +20,22 @@
 
 #include "lib/cmdline/cmdline.h"
 
+enum {
+	OPT_OPTION = 0x1000000,
+	OPT_NETBIOS_SCOPE,
+	OPT_LEAK_REPORT,
+	OPT_LEAK_REPORT_FULL,
+	OPT_DEBUG_STDOUT,
+	OPT_CONFIGFILE,
+	OPT_SIMPLE_BIND_DN,
+	OPT_PASSWORD,
+	OPT_NT_HASH,
+	OPT_USE_KERBEROS,
+	OPT_USE_KERBEROS_CCACHE,
+	OPT_USE_WINBIND_CCACHE,
+	OPT_CLIENT_PROTECTION,
+};
+
 typedef bool (*samba_cmdline_load_config)(void);
 
 /**
