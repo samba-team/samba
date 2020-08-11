@@ -254,6 +254,41 @@ static TLDAPRC get_posix_schema_names(struct tldap_context *ld,
 	return TLDAP_SUCCESS;
 }
 
+static void idmap_ad_tldap_debug(void *log_private,
+				 enum tldap_debug_level level,
+				 const char *fmt,
+				 va_list ap)
+{
+       int samba_level = -1;
+
+       switch (level) {
+       case TLDAP_DEBUG_FATAL:
+               samba_level = DBGLVL_ERR;
+               break;
+       case TLDAP_DEBUG_ERROR:
+               samba_level = DBGLVL_ERR;
+               break;
+       case TLDAP_DEBUG_WARNING:
+               samba_level = DBGLVL_WARNING;
+               break;
+       case TLDAP_DEBUG_TRACE:
+               samba_level = DBGLVL_DEBUG;
+               break;
+       }
+
+       if (CHECK_DEBUGLVL(samba_level)) {
+               char *s = NULL;
+               int ret;
+
+               ret = vasprintf(&s, fmt, ap);
+               if (ret == -1) {
+                       return;
+               }
+               DEBUG(samba_level, ("idmap_ad_tldap: %s", s));
+               free(s);
+       }
+}
+
 static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 				       const char *domname,
 				       struct tldap_context **pld)
@@ -307,6 +342,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(dcinfo);
 		return NT_STATUS_NO_MEMORY;
 	}
+	tldap_set_debug(ld, idmap_ad_tldap_debug, NULL);
 
 	/*
 	 * Here we use or own machine account as
