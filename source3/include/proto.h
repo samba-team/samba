@@ -84,26 +84,7 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 		       struct connection_struct *conn,
 		       struct files_struct **_fsp);
 
-/* The following definitions come from lib/interface.c  */
-
-bool ismyaddr(const struct sockaddr *ip);
-bool ismyip_v4(struct in_addr ip);
-bool is_local_net(const struct sockaddr *from);
-void setup_linklocal_scope_id(struct sockaddr *pss);
-bool is_local_net_v4(struct in_addr from);
-int iface_count(void);
-int iface_count_v4_nl(void);
-const struct in_addr *first_ipv4_iface(void);
-struct interface *get_interface(int n);
-const struct sockaddr_storage *iface_n_sockaddr_storage(int n);
-const struct in_addr *iface_n_ip_v4(int n);
-const struct in_addr *iface_n_bcast_v4(int n);
-const struct sockaddr_storage *iface_n_bcast(int n);
-const struct sockaddr_storage *iface_ip(const struct sockaddr *ip);
-bool iface_local(const struct sockaddr *ip);
-void load_interfaces(void);
-void gfree_interfaces(void);
-bool interfaces_changed(void);
+#include "source3/lib/interface.h"
 
 /* The following definitions come from lib/ldap_debug_handler.c  */
 
