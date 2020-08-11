@@ -29,6 +29,7 @@
 #include "../lib/util/tevent_unix.h"
 
 static TLDAPRC tldap_simple_recv(struct tevent_req *req);
+static bool tldap_msg_set_pending(struct tevent_req *req);
 
 #define TEVENT_TLDAP_RC_MAGIC (0x87bcd26e)
 
@@ -521,6 +522,11 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (!tldap_msg_set_pending(req)) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);;
+	}
+
 	state->iov.iov_base = (void *)blob.data;
 	state->iov.iov_len = blob.length;
 
@@ -633,12 +639,6 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		tldap_context_disconnect(state->ld, TLDAP_SERVER_DOWN);
-		tevent_req_ldap_error(req, TLDAP_SERVER_DOWN);
-		return;
-	}
-
-	if (!tldap_msg_set_pending(req)) {
-		tevent_req_oom(req);
 		return;
 	}
 }
