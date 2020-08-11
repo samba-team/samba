@@ -492,11 +492,6 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 
 	tevent_req_set_cleanup_fn(req, NULL);
 
-	if (num_pending == 1) {
-		TALLOC_FREE(ld->pending);
-		return;
-	}
-
 	for (i=0; i<num_pending; i++) {
 		if (req == ld->pending[i]) {
 			break;
@@ -508,6 +503,11 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 		 * right thing nevertheless, the point of this routine is to
 		 * remove ourselves from cli->pending.
 		 */
+		return;
+	}
+
+	if (num_pending == 1) {
+		TALLOC_FREE(ld->pending);
 		return;
 	}
 
