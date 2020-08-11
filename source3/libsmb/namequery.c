@@ -2393,7 +2393,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 	state->queries = talloc_zero_array(state,
 					   struct dns_query_state,
 					   queries_size);
-	if (state == NULL) {
+	if (state->queries == NULL) {
 		goto fail;
 	}
 
