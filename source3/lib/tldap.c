@@ -87,6 +87,7 @@ struct tldap_context {
 	int msgid;
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
+	struct tevent_req *read_req;
 
 	/* For the sync wrappers we need something like get_last_error... */
 	struct tldap_message *last_msg;
@@ -539,7 +540,6 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	struct tldap_context *ld;
 	struct tevent_req **pending;
 	int num_pending;
-	struct tevent_req *subreq;
 
 	ld = state->ld;
 	num_pending = tldap_pending_reqs(ld);
@@ -553,7 +553,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	ld->pending = pending;
 	tevent_req_set_cleanup_fn(req, tldap_msg_cleanup);
 
-	if (num_pending > 0) {
+	if (ld->read_req != NULL) {
 		return true;
 	}
 
@@ -561,12 +561,12 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	 * We're the first one, add the read_ldap request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_ldap_send(ld->pending, state->ev, ld->conn);
-	if (subreq == NULL) {
+	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->conn);
+	if (ld->read_req == NULL) {
 		tldap_msg_unset_pending(req);
 		return false;
 	}
-	tevent_req_set_callback(subreq, tldap_msg_received, ld);
+	tevent_req_set_callback(ld->read_req, tldap_msg_received, ld);
 	return true;
 }
 
@@ -619,6 +619,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 
 	received = read_ldap_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
+	ld->read_req = NULL;
 	if (received == -1) {
 		ld->server_down = true;
 		status = TLDAP_SERVER_DOWN;
@@ -679,12 +680,12 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	}
 
 	state = tevent_req_data(ld->pending[0],	struct tldap_msg_state);
-	subreq = read_ldap_send(ld->pending, state->ev, ld->conn);
-	if (subreq == NULL) {
+	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->conn);
+	if (ld->read_req == NULL) {
 		status = TLDAP_NO_MEMORY;
 		goto fail;
 	}
-	tevent_req_set_callback(subreq, tldap_msg_received, ld);
+	tevent_req_set_callback(ld->read_req, tldap_msg_received, ld);
 	return;
 
  fail:
