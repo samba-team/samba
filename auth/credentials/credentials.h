@@ -52,7 +52,7 @@ enum credentials_obtained {
 enum credentials_use_kerberos {
 	CRED_AUTO_USE_KERBEROS = 0, /* Default, we try kerberos if available */
 	CRED_DONT_USE_KERBEROS,     /* Sometimes trying kerberos just does 'bad things', so don't */
-	CRED_MUST_USE_KERBEROS      /* Sometimes administrators are parinoid, so always do kerberos */
+	CRED_MUST_USE_KERBEROS      /* Sometimes administrators are paranoid, so always do kerberos */
 };
 
 enum credentials_krb_forwardable {
