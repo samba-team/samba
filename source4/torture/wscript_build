@@ -263,6 +263,7 @@ bld.SAMBA_MODULE('TORTURE_LDAP',
             ldap/cldapbench.c
             ldap/ldap_sort.c
             ldap/nested_search.c
+            ldap/session_expiry.c
             ''',
 	subsystem='smbtorture',
 	deps='cli-ldap cli_cldap samdb popt POPT_CREDENTIALS torture ldbsamba',
