@@ -1,4 +1,78 @@
                    ==============================
+                   Release Notes for Samba 4.12.6
+                          August 13, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+
+
+Changes since 4.12.5
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14403: s3: libsmb: Fix SMB2 client rename bug to a Windows server.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14424: dsdb: Allow "password hash userPassword schemes = CryptSHA256"
+     to work on RHEL7.
+   * BUG 14450: dbcheck: Allow a dangling forward link outside our known NCs.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14426: lib/debug: Set the correct default backend loglevel to
+     MAX_DEBUG_LEVEL.
+   * BUG 14428: PANIC: Assert failed in get_lease_type().
+
+o  Bjoern Jacke <bjacke@samba.org>
+   * BUG 14422: util: Fix build on AIX by fixing the order of replace.h include.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14355: srvsvc_NetFileEnum asserts with open files.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14354: KDC breaks with DES keys still in the database and
+     msDS-SupportedEncryptionTypes 31 indicating support for it.
+   * BUG 14427: s3:smbd: Make sure vfs_ChDir() always sets
+     conn->cwd_fsp->fh->fd = AT_FDCWD.
+   * BUG 14428: PANIC: Assert failed in get_lease_type().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14358: docs: Fix documentation for require_membership_of of
+     pam_winbind.conf.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14444: ctdb-scripts: Use nfsconf utility for variable values in CTDB
+     NFS scripts.
+
+o  Andrew Walker <awalker@ixsystems.com>
+   * BUG 14425: s3:winbind:idmap_ad: Make failure to get attrnames for schema
+     mode fatal.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.12.5
                             July 02, 2020
 		   ==============================
@@ -58,8 +132,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.12.4
