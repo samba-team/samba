@@ -1068,7 +1068,6 @@ NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
 				       const char **authority_name)
 {
 	size_t di;
-	bool match_domain = false;
 
 	*name = NULL;
 	*type = SID_NAME_UNKNOWN;
@@ -1090,8 +1089,6 @@ NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
 			continue;
 		}
 
-		match_domain = true;
-
 		for (ni = 0; ni < d->num_names; ni++) {
 			const struct predefined_name_mapping *n =
 				&d->names[ni];
@@ -1109,7 +1106,7 @@ NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
 		}
 	}
 
-	if (!match_domain) {
+	if (sid->num_auths == 0) {
 		return NT_STATUS_INVALID_SID;
 	}
 
