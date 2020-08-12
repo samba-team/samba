@@ -133,6 +133,11 @@ void tldap_set_debug(struct tldap_context *ld,
 	ld->log_private = log_private;
 }
 
+static void tldap_debug(
+	struct tldap_context *ld,
+	enum tldap_debug_level level,
+	const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+
 static void tldap_debug(struct tldap_context *ld,
 			 enum tldap_debug_level level,
 			 const char *fmt, ...)
