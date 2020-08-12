@@ -156,6 +156,10 @@ for options in ['-U"$USERNAME%$PASSWORD"']:
 for t in smbtorture4_testsuites("ldap."):
     if t == "ldap.nested-search":
         plansmbtorture4testsuite(t, "ad_dc_default_smb1", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
+    elif t == "ldap.session-expiry":
+        # This requires kerberos and thus the server name
+        plansmbtorture4testsuite(
+            t, "ad_dc_default", '-U"$USERNAME%$PASSWORD" //$DC_SERVER/_none_')
     else:
         plansmbtorture4testsuite(
             t,

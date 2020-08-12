@@ -124,6 +124,8 @@ NTSTATUS torture_ldap_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "schema", torture_ldap_schema);
 	torture_suite_add_simple_test(suite, "uptodatevector", torture_ldap_uptodatevector);
 	torture_suite_add_simple_test(suite, "nested-search", test_ldap_nested_search);
+	torture_suite_add_simple_test(
+		suite, "session-expiry", torture_ldap_session_expiry);
 
 	suite->description = talloc_strdup(suite, "LDAP and CLDAP tests");
 
