@@ -382,13 +382,13 @@ def create_directory_hier(conn, remotedir):
         if not conn.chkpath(path):
             conn.mkdir(path)
 
-def smb_connection(dc_hostname, service, lp, creds, sign=False):
+def smb_connection(dc_hostname, service, lp, creds):
     # SMB connect to DC
     try:
         # the SMB bindings rely on having a s3 loadparm
         s3_lp = s3param.get_context()
         s3_lp.load(lp.configfile)
-        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds, sign=sign)
+        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds, sign=True)
     except Exception:
         raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
     return conn
@@ -998,7 +998,7 @@ class cmd_fetch(GPOCommand):
 
         # SMB connect to DC
         conn = smb_connection(dc_hostname, service, lp=self.lp,
-                              creds=self.creds, sign=True)
+                              creds=self.creds)
 
         # Copy GPT
         tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
@@ -1629,8 +1629,7 @@ class cmd_admxload(Command):
         conn = smb_connection(dc_hostname,
                               'sysvol',
                               lp=self.lp,
-                              creds=self.creds,
-                              sign=True)
+                              creds=self.creds)
 
         smb_dir = '\\'.join([self.lp.get('realm').lower(),
                              'Policies', 'PolicyDefinitions'])
