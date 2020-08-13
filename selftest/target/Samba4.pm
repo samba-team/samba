@@ -1594,7 +1594,11 @@ sub provision_fl2008r2dc($$$)
 	my ($self, $prefix, $dcvars) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...\n";
-        my $extra_conf_options = "ldap server require strong auth = no";
+        my $extra_conf_options = "
+	ldap server require strong auth = no
+        # delay by 10 seconds, 10^7 usecs
+	ldap_server:delay_expire_disconnect = 10000
+";
 	my $extra_provision_options = ["--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",

@@ -789,6 +789,11 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
 
+plantestsuite(
+    "idmap_ad.ticket_expiry",
+    "ad_member_idmap_ad:local",
+    [os.path.join(samba3srcdir, "../nsswitch/tests/test_ticket_expiry.sh"),
+     '$DOMAIN'])
 
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
