@@ -420,15 +420,25 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	struct connect_state *state;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
-	if (c == NULL) goto failed;
-
-	c->event_ctx = event_ctx;
-	if (c->event_ctx == NULL) goto failed;
+	if (c == NULL) {
+		goto nomem;
+	}
 
 	state = talloc_zero(c, struct connect_state);
-	if (state == NULL) goto failed;
+	if (state == NULL) {
+		goto nomem;
+	}
 
-	if (io->in.gensec_settings == NULL) goto failed;
+	c->event_ctx = event_ctx;
+	if (c->event_ctx == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
+
+	if (io->in.gensec_settings == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
+		return c;
+	}
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
@@ -449,12 +459,14 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 						   &io->in.options,
 						   &state->transport);
 		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
+			composite_error(c, status);
+			return c;
 		}
 
 		status = connect_send_session(c, io);
 		if (!NT_STATUS_IS_OK(status)) {
-			goto failed;
+			composite_error(c, status);
+			return c;
 		}
 
 		return c;
@@ -468,15 +480,18 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 					       io->in.socket_options,
 					       &state->calling,
 					       &state->called);
-	if (state->creq == NULL) goto failed;
+	if (state->creq == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return c;
+	}
 
 	state->stage = CONNECT_SOCKET;
 	state->creq->async.private_data = c;
 	state->creq->async.fn = composite_handler;
 
 	return c;
-failed:
-	talloc_free(c);
+nomem:
+	TALLOC_FREE(c);
 	return NULL;
 }
 
@@ -506,5 +521,8 @@ NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem
 			       struct tevent_context *ev)
 {
 	struct composite_context *c = smb_composite_connect_send(io, mem_ctx, resolve_ctx, ev);
+	if (c == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	return smb_composite_connect_recv(c, mem_ctx);
 }
