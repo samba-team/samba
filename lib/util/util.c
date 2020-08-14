@@ -343,6 +343,7 @@ _PUBLIC_ bool directory_exist(const char *dname)
 
 /**
  * Try to create the specified directory if it didn't exist.
+ * A symlink to a directory is also accepted as a valid existing directory.
  *
  * @retval true if the directory already existed
  * or was successfully created.
@@ -376,9 +377,22 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
 			return false;
 		}
 
-		if (!S_ISDIR(sbuf.st_mode)) {
-			return false;
+		if (S_ISDIR(sbuf.st_mode)) {
+			return true;
 		}
+
+		if (S_ISLNK(sbuf.st_mode)) {
+			ret = stat(dname, &sbuf);
+			if (ret != 0) {
+				return false;
+			}
+
+			if (S_ISDIR(sbuf.st_mode)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	return true;
