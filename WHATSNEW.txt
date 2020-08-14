@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release condidate of Samba 4.13.  This is *not*
+This is the second release condidate of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -63,8 +63,32 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
   ldap ssl ads                       removed
-
   smb2 disable lock sequence checking				No
+
+
+CHANGES SINCE 4.13.0rc1
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14450: dbcheck: Allow a dangling forward link outside our known NCs.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14462: Remove deprecated "ldap ssl ads" smb.conf option.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14435: winbind: Fix lookuprids cache problem.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14354: kdc:db-glue: Ignore KRB5_PROG_ETYPE_NOSUPP also for
+     Primary:Kerberos.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14358: docs: Fix documentation for require_membership_of of
+     pam_winbind.conf.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14444: ctdb-scripts: Use nfsconf as a last resort get nfsd thread
+     count.
 
 
 KNOWN ISSUES
