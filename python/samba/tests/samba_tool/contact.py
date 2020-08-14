@@ -266,6 +266,132 @@ class ContactCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err,
                               "Failed to delete ou '%s'" % parentou["name"])
 
+    def test_rename_givenname_initials_surname(self):
+        """rename and remove given name, initials and surname for all contacts"""
+        for contact in self.contacts:
+            name = contact["name"] if "name" in contact else contact["expectedname"]
+
+            new_givenname = "new_given_name_of_" + name
+            new_initials = "A"
+            new_surname = "new_surname_of_" + name
+            new_cn = "new_cn_of_" + name
+            expected_cn = "%s %s. %s" % (new_givenname, new_initials, new_surname)
+
+            # rename given name, initials and surname
+            (result, out, err) = self.runsubcmd("contact", "rename", name,
+                                                "--reset-cn",
+                                                "--surname=%s" % new_surname,
+                                                "--initials=%s" % new_initials,
+                                                "--given-name=%s" % new_givenname)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_contact(expected_cn)
+            self.assertEqual("%s" % found.get("givenName"), new_givenname)
+            self.assertEqual("%s" % found.get("initials"), new_initials)
+            self.assertEqual("%s" % found.get("sn"), new_surname)
+            self.assertEqual("%s" % found.get("name"), expected_cn)
+            self.assertEqual("%s" % found.get("cn"), expected_cn)
+
+            # remove given name, initials and surname
+            # (must forece new cn, because en empty new CN throws an error)
+            (result, out, err) = self.runsubcmd("contact", "rename", expected_cn,
+                                                "--force-new-cn=%s" % expected_cn,
+                                                "--surname=",
+                                                "--initials=",
+                                                "--given-name=")
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_contact(expected_cn)
+            self.assertEqual(found.get("givenName"), None)
+            self.assertEqual(found.get("initials"), None)
+            self.assertEqual(found.get("sn"), None)
+
+            # reset changes (initials are already removed)
+            old_surname = contact["sn"] if "sn" in contact else ""
+            old_initials = contact["initials"] if "initials" in contact else ""
+            old_givenname = contact["givenName"] if "givenName" in contact else ""
+            old_cn = contact["cn"] if "cn" in contact else name
+            (result, out, err) = self.runsubcmd("contact", "rename", expected_cn,
+                                                "--force-new-cn=%s"  % old_cn,
+                                                "--surname=%s" % old_surname,
+                                                "--initials=%s" % old_initials,
+                                                "--given-name=%s" % old_givenname)
+            self.assertCmdSuccess(result, out, err)
+
+    def test_rename_cn(self):
+        """rename and try to remove the cn of all contacts"""
+        for contact in self.contacts:
+            name = contact["name"] if "name" in contact else contact["expectedname"]
+            new_cn = "new_cn_of_" + name
+
+            # rename cn
+            (result, out, err) = self.runsubcmd("contact", "rename", name,
+                                                "--force-new-cn=%s" % new_cn)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_contact(new_cn)
+            self.assertEqual("%s" % found.get("cn"), new_cn)
+
+            # trying to remove cn (throws an error)
+            (result, out, err) = self.runsubcmd("contact", "rename", new_cn,
+                                                "--force-new-cn=")
+            self.assertCmdFail(result)
+            self.assertIn('Failed to rename contact', err)
+            self.assertIn("delete protected attribute", err)
+
+            # reset changes (cn must be the name)
+            (result, out, err) = self.runsubcmd("contact", "rename", new_cn,
+                                                "--force-new-cn=%s" % name)
+            self.assertCmdSuccess(result, out, err)
+
+
+    def test_rename_mailaddress_displayname(self):
+        """rename and remove the mail and the displayname attribute of all contacts"""
+        for contact in self.contacts:
+            name = contact["name"] if "name" in contact else contact["expectedname"]
+            new_mail = "new_mailaddress_of_" + name
+            new_displayname = "new displayname of " + name
+
+            # change mail and displayname
+            (result, out, err) = self.runsubcmd("contact", "rename", name,
+                                                "--mail-address=%s"
+                                                  % new_mail,
+                                                "--display-name=%s"
+                                                  % new_displayname)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_contact(name)
+            self.assertEqual("%s" % found.get("mail"), new_mail)
+            self.assertEqual("%s" % found.get("displayName"), new_displayname)
+
+            # remove mail and displayname
+            (result, out, err) = self.runsubcmd("contact", "rename", name,
+                                                "--mail-address=",
+                                                "--display-name=")
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+            self.assertIn('successfully', out)
+
+            found = self._find_contact(name)
+            self.assertEqual(found.get("mail"), None)
+            self.assertEqual(found.get("displayName"), None)
+
+            # reset changes
+            old_mail = contact["givenName"] if "givenName" in contact else ""
+            old_displayname = contact["cn"] if "cn" in contact else ""
+            (result, out, err) = self.runsubcmd("contact", "rename", name,
+                                                "--mail-address=%s" % old_mail,
+                                                "--display-name=%s" % old_displayname)
+            self.assertCmdSuccess(result, out, err)
+
     def _randomContact(self, base={}):
         """Create a contact with random attribute values, you can specify base
         attributes"""
