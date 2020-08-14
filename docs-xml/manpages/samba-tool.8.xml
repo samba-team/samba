@@ -403,6 +403,73 @@
 	</variablelist>
 </refsect3>
 
+<refsect3>
+	<title>contact rename <replaceable>contactname</replaceable> [options]</title>
+	<para>Rename a contact and related attributes.</para>
+	<para>This command allows to set the contact's name related attributes. The contact's
+	CN will be renamed automatically.
+	The contact's new CN will be made up by combining the given-name, initials
+	and surname. A dot ('.') will be appended to the initials automatically,
+	if required.
+	Use the --force-new-cn option to specify the new CN manually and --reset-cn
+	to reset this change.</para>
+	<para>Use an empty attribute value to remove the specified attribute.</para>
+	<para>The contact name specified on the command is the CN.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--surname=SURNAME</term>
+	<listitem><para>
+	New surname.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--given-name=GIVEN_NAME</term>
+	<listitem><para>
+	New given name.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--initials=INITIALS</term>
+	<listitem><para>
+	New initials.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--force-new-cn=NEW_CN</term>
+	<listitem><para>
+	Specify a new CN (RDN) instead of using a combination
+	of the given name, initials and surname.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--reset-cn</term>
+	<listitem><para>
+	Set the CN to the default combination of given name,
+	initials and surname.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--display-name=DISPLAY_NAME</term>
+	<listitem><para>
+	New display name.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--mail-address=MAIL_ADDRESS</term>
+	<listitem><para>
+	New email address.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
 <refsect2>
 	<title>dbcheck</title>
 	<para>Check the local AD database for errors.</para>
