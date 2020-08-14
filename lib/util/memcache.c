@@ -60,6 +60,8 @@ static bool memcache_is_talloc(enum memcache_number n)
 	case SINGLETON_CACHE_TALLOC:
 	case SHARE_MODE_LOCK_CACHE:
 	case VIRUSFILTER_SCAN_RESULTS_CACHE_TALLOC:
+	case WSP_ENTRYID_UID_TALLOC:
+	case WSP_UID_ENTRYID_TALLOC:
 		result = true;
 		break;
 	default:

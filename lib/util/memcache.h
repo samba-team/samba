@@ -46,6 +46,8 @@ enum memcache_number {
 	SHARE_MODE_LOCK_CACHE,	/* talloc */
 	VIRUSFILTER_SCAN_RESULTS_CACHE_TALLOC, /* talloc */
 	DFREE_CACHE,
+	WSP_ENTRYID_UID_TALLOC, /* talloc */
+	WSP_UID_ENTRYID_TALLOC, /* talloc */
 };
 
 /*
