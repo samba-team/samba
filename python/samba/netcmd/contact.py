@@ -669,6 +669,183 @@ class cmd_move(Command):
         self.outf.write('Moved contact "%s" into "%s"\n' %
                         (contactname, full_new_parent_dn))
 
+class cmd_rename(Command):
+    """Rename a contact and related attributes.
+
+    This command allows to set the contact's name related attributes.
+    The contact's new CN will be made up by combining the given-name, initials
+    and surname. A dot ('.') will be appended to the initials automatically, if
+    required.
+    Use the --force-new-cn option to specify the new CN manually and the
+    --reset-cn option to reset this changes.
+
+    Use an empty attribute value to remove the specified attribute.
+
+    The contactname specified on the command is the CN.
+
+    The command may be run locally from the root userid or another authorized
+    userid.
+
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example1:
+    samba-tool contact rename "John Doe" --surname=Bloggs \\
+        --force-new-cn=John
+
+    Example1 shows how to change the surname ('sn' attribute) of a contact
+    'John Doe' to 'Bloggs' and change the CN to 'John' on the local server.
+
+    Example2:
+    samba-tool contact rename "J Doe" --given-name=John
+        -H ldap://samba.samdom.example.com -U administrator
+
+    Example2 shows how to rename the given name of a contact 'J Doe' to
+    'John'. The contact's cn will be renamed automatically, based on
+    the given name, initials and surname, if the previous CN is the
+    standard combination of the previous name attributes.
+    The -H parameter is used to specify the remote target server.
+    """
+
+    synopsis = "%prog <contactname> [options]"
+
+    takes_options = [
+        Option("-H", "--URL",
+            help="LDB URL for database or target server",
+            type=str, metavar="URL", dest="H"),
+        Option("--surname",
+               help="New surname",
+               type=str),
+        Option("--given-name",
+               help="New given name",
+               type=str),
+        Option("--initials",
+               help="New initials",
+               type=str),
+        Option("--force-new-cn",
+               help="Specify a new CN (RDN) instead of using a combination "
+                    "of the given name, initials and surname.",
+               type=str, metavar="NEW_CN"),
+        Option("--reset-cn",
+               help="Set the CN (RDN) to the combination of the given name, "
+                    "initials and surname. Use this option to reset "
+                    "the changes made with the --force-new-cn option.",
+               action="store_true"),
+        Option("--display-name",
+               help="New display name",
+               type=str),
+        Option("--mail-address",
+               help="New email address",
+               type=str),
+        ]
+
+    takes_args = ["contactname"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+
+    def run(self, contactname, credopts=None, sambaopts=None, versionopts=None,
+            H=None, surname=None, given_name=None, initials=None, force_new_cn=None,
+            display_name=None, mail_address=None, reset_cn=None):
+        # illegal options
+        if force_new_cn and reset_cn:
+            raise CommandError("It is not allowed to specify --force-new-cn "
+                               "together with --reset-cn.")
+        if force_new_cn == "":
+            raise CommandError("Failed to rename contact - delete protected "
+                               "attribute 'CN'")
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
+
+        filter = ("(&(objectClass=contact)(name=%s))" %
+                  ldb.binary_encode(contactname))
+        try:
+            res = samdb.search(base=domain_dn,
+                               scope=ldb.SCOPE_SUBTREE,
+                               expression=filter,
+                               attrs=["name",
+                                      "sn",
+                                      "givenName",
+                                      "cn",
+                                      "initials",
+                                      "displayName",
+                                      "mail"]
+                             )
+            old_contact = res[0]
+            contact_dn = old_contact.dn
+        except IndexError:
+           raise CommandError('Unable to find contact "%s"' % (contactname))
+
+        contact_parent_dn = contact_dn.parent()
+        old_cn = old_contact["cn"][0]
+
+        if force_new_cn is not None:
+            new_cn = force_new_cn
+        else:
+            new_cn = samdb.fullname_from_names(old_attrs=old_contact,
+                                               given_name=given_name,
+                                               initials=initials,
+                                               surname=surname)
+
+        # change CN, if the new CN is different and the old CN is the
+        # standard CN or the change is forced with force-new-cn or reset-cn
+        excepted_cn = samdb.fullname_from_names(old_attrs=old_contact)
+        must_change_cn = str(old_cn) != str(new_cn) and \
+                         (str(old_cn) == str(excepted_cn) or \
+                          reset_cn or bool(force_new_cn))
+
+        new_contact_dn = ldb.Dn(samdb, "CN=%s" % new_cn)
+        new_contact_dn.add_base(contact_parent_dn)
+
+        if new_cn == "" and must_change_cn:
+            raise CommandError("Failed to rename contact '%s' - "
+                               "can not set an empty CN "
+                               "(please use --force-new-cn to specify a "
+                               "different CN or --given-name, --initials or "
+                               "--surname to set name attributes)" % old_cn)
+
+        # format given attributes
+        contact_attrs = ldb.Message()
+        contact_attrs.dn = contact_dn
+        samdb.prepare_attr_replace(contact_attrs, old_contact, "givenName", given_name)
+        samdb.prepare_attr_replace(contact_attrs, old_contact, "sn", surname)
+        samdb.prepare_attr_replace(contact_attrs, old_contact, "initials", initials)
+        samdb.prepare_attr_replace(contact_attrs, old_contact, "displayName", display_name)
+        samdb.prepare_attr_replace(contact_attrs, old_contact, "mail", mail_address)
+
+        contact_attributes_changed = len(contact_attrs) > 0
+
+        # update the contact with formatted attributes
+        samdb.transaction_start()
+        try:
+            if contact_attributes_changed == True:
+                samdb.modify(contact_attrs)
+            if must_change_cn:
+                samdb.rename(contact_dn, new_contact_dn)
+        except Exception as e:
+            samdb.transaction_cancel()
+            raise CommandError('Failed to rename contact "%s"' % contactname, e)
+        samdb.transaction_commit()
+
+        if must_change_cn:
+            self.outf.write('Renamed CN of contact "%s" from "%s" to "%s" '
+                            'successfully\n' % (contactname, old_cn, new_cn))
+
+        if contact_attributes_changed:
+            self.outf.write('Following attributes of contact "%s" have been '
+                            'changed successfully:\n' % (contactname))
+            for attr in contact_attrs.keys():
+                if attr == "dn":
+                    continue
+                self.outf.write('%s: %s\n' % (attr, contact_attrs[attr]
+                            if contact_attrs[attr] else '[removed]'))
 
 class cmd_contact(SuperCommand):
     """Contact management."""
@@ -680,3 +857,4 @@ class cmd_contact(SuperCommand):
     subcommands["list"] = cmd_list()
     subcommands["move"] = cmd_move()
     subcommands["show"] = cmd_show()
+    subcommands["rename"] = cmd_rename()
