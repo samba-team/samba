@@ -2261,6 +2261,7 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb,
 					async_getnodemap_callback,
 					NULL,
 					remote_nodemaps);
+	talloc_free(nodes);
 	return ret;
 }
 
