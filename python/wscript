@@ -2,6 +2,26 @@
 
 import os
 
+# work out what python external libraries we need to be successful
+selftest_pkgs = {
+    'iso8601': 'python3-iso8601',
+}
+
+
+def find_third_party_module(conf, module, package):
+    conf.COMPOUND_START("Checking for system installation of Python module %s" % module)
+    try:
+        __import__(module)
+    except ImportError:
+        conf.COMPOUND_END(False)
+        raise Errors.WafError("""\
+        Unable to find Python module '%s'. Please install the system package: %s'.
+""" % (module, package))
+    else:
+        # Installed on the system
+        conf.COMPOUND_END("system")
+
+
 def configure(conf):
     if conf.env.disable_python:
         return
@@ -40,6 +60,11 @@ def configure(conf):
             f.write(data.format(modulesdir))
     finally:
         f.close()
+
+    if conf.CONFIG_GET('ENABLE_SELFTEST'):
+        for module, package in selftest_pkgs.items():
+            find_third_party_module(conf, module, package)
+
 
 def build(bld):
 
