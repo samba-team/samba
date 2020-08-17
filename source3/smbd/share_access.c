@@ -79,7 +79,23 @@ static bool token_contains_name(TALLOC_CTX *mem_ctx,
 	enum lsa_SidType type;
 
 	if (username != NULL) {
-		name = talloc_sub_basic(mem_ctx, username, domain, name);
+		size_t domain_len = strlen(domain);
+
+		/* Check if username starts with domain name */
+		if (domain_len > 0) {
+			const char *sep = lp_winbind_separator();
+			int cmp = strncasecmp_m(username, domain, domain_len);
+			if (cmp == 0 && sep[0] == username[domain_len]) {
+				/* Move after the winbind separator */
+				domain_len += 1;
+			} else {
+				domain_len = 0;
+			}
+		}
+		name = talloc_sub_basic(mem_ctx,
+					username + domain_len,
+					domain,
+					name);
 	}
 	if (sharename != NULL) {
 		name = talloc_string_sub(mem_ctx, name, "%S", sharename);
