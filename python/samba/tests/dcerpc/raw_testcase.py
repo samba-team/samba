@@ -35,14 +35,18 @@ from samba.ntstatus import (
 from samba import NTSTATUSError
 from samba.samba3 import param as s3param
 from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.credentials import SMB_SIGNING_REQUIRED
 
 class smb_pipe_socket(object):
 
     def __init__(self, target_hostname, pipename, creds, impersonation_level, lp):
         lp3 = s3param.get_context()
         lp3.load(lp.configfile)
+        saved_signing_state = creds.get_smb_ipc_signing()
+        creds.set_smb_ipc_signing(SMB_SIGNING_REQUIRED)
         self.smbconn = libsmb.Conn(target_hostname, 'IPC$', lp3,
                                    creds=creds, ipc=True, sign=True)
+        creds.set_smb_ipc_signing(saved_signing_state)
         self.smbfid = self.smbconn.create(pipename,
                                           DesiredAccess=0x12019f,
                                           ShareAccess=0x7,
