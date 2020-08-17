@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 
 import os
+from waflib import Options, Errors
 
 # work out what python external libraries we need to be successful
 selftest_pkgs = {
     'iso8601': 'python3-iso8601',
+    'cryptography': 'python3-cryptography',
+    'pyasn1': 'python3-asn1'
+}
+
+ad_dc_pkgs = {
+    'markdown': 'python3-markdown',
+    'dns': 'python3-dnspython (python3-dns on some systems)'
 }
 
 
@@ -63,6 +71,10 @@ def configure(conf):
 
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         for module, package in selftest_pkgs.items():
+            find_third_party_module(conf, module, package)
+
+    if not Options.options.without_ad_dc:
+        for module, package in ad_dc_pkgs.items():
             find_third_party_module(conf, module, package)
 
 
