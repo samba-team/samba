@@ -427,6 +427,10 @@ sub setup_ad_member
 	path = $share_dir/D_%D/u_%u/g_%g
 	writeable = yes
 
+[sub_valid_users]
+	path = $share_dir
+	valid users = ADDOMAIN/%U
+
 ";
 
 	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},

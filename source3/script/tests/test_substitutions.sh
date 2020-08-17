@@ -34,4 +34,9 @@ SMB_UNC="//$SERVER/sub_dug2"
 test_smbclient "Test login to share with substitution (Dug)" \
 	"ls" "$SMB_UNC" "-U$USERNAME%$PASSWORD" || failed=$(expr $failed + 1)
 
+SMB_UNC="//$SERVER/sub_valid_users"
+
+test_smbclient "Test login to share with substitution for valid users" \
+	"ls" "$SMB_UNC" "-U$USERNAME%$PASSWORD" || failed=$(expr $failed + 1)
+
 exit $failed
