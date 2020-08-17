@@ -529,14 +529,7 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 static void tldap_msg_cleanup(struct tevent_req *req,
 			      enum tevent_req_state req_state)
 {
-	switch (req_state) {
-	case TEVENT_REQ_USER_ERROR:
-	case TEVENT_REQ_RECEIVED:
-		tldap_msg_unset_pending(req);
-		return;
-	default:
-		return;
-	}
+	tldap_msg_unset_pending(req);
 }
 
 static bool tldap_msg_set_pending(struct tevent_req *req)
