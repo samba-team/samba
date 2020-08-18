@@ -94,8 +94,6 @@ static int group_teardown(void **state)
 	struct test_paths *paths = *state;
 	int ret;
 
-	return 0;
-
 	ret = rmdir(paths->dir);
 	assert_return_code(ret, errno);
 
