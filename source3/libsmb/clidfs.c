@@ -106,7 +106,7 @@ static NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
 static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
-					const struct user_auth_info *auth_info,
+					struct cli_credentials *creds,
 					int max_protocol,
 					const struct sockaddr_storage *dest_ss,
 					int port,
@@ -120,12 +120,12 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	int flags = 0;
 	enum protocol_types protocol = PROTOCOL_NONE;
-	int signing_state = get_cmdline_auth_info_signing_state(auth_info);
-	struct cli_credentials *creds = NULL;
-	bool force_encrypt =
-		get_cmdline_auth_info_smb_encrypt(auth_info);
+	enum smb_signing_setting signing_state =
+		cli_credentials_get_smb_signing(creds);
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(creds);
 
-	if (force_encrypt) {
+	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		signing_state = SMB_SIGNING_REQUIRED;
 	}
 
@@ -192,13 +192,12 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
 
-	creds = get_cmdline_auth_info_creds(auth_info);
-
 	status = cli_session_setup_creds(c, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
-		if (force_encrypt || smbXcli_conn_signing_mandatory(c->conn) ||
+		if (encryption_state == SMB_ENCRYPTION_REQUIRED ||
+			smbXcli_conn_signing_mandatory(c->conn) ||
 			cli_credentials_authentication_requested(creds) ||
 			cli_credentials_is_anonymous(creds) ||
 			!NT_STATUS_IS_OK(status = cli_session_setup_anon(c)))
@@ -233,7 +232,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 				creds)) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
-				newshare, auth_info,
+				newshare, creds,
 				max_protocol,
 				NULL, port, name_type, pcli);
 	}
@@ -247,13 +246,19 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if (force_encrypt) {
+	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		status = cli_cm_force_encryption_creds(c,
 						       creds,
 						       sharename);
 		if (!NT_STATUS_IS_OK(status)) {
-			cli_shutdown(c);
-			return status;
+			switch (encryption_state) {
+			case SMB_ENCRYPTION_DESIRED:
+				break;
+			case SMB_ENCRYPTION_REQUIRED:
+			default:
+				cli_shutdown(c);
+				return status;
+			}
 		}
 	}
 
@@ -295,10 +300,11 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       struct cli_state **pcli)
 {
 	struct cli_state *cli = NULL;
+	struct cli_credentials *creds = get_cmdline_auth_info_creds(auth_info);
 	NTSTATUS status;
 
 	status = do_connect(ctx, server, share,
-				auth_info,
+				creds,
 				max_protocol,
 				dest_ss, port, name_type, &cli);
 
