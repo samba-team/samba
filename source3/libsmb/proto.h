@@ -150,7 +150,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			size_t *consumed);
 NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			  const char *mountpt,
-			  const struct user_auth_info *dfs_auth_info,
+			  struct cli_credentials *creds,
 			  struct cli_state *rootcli,
 			  const char *path,
 			  struct cli_state **targetcli,

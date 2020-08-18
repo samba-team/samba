@@ -861,13 +861,18 @@ cacl_get(SMBCCTX *context,
         if (ipc_cli && (all || some_nt || all_nt_acls)) {
 		char *targetpath = NULL;
 	        struct cli_state *targetcli = NULL;
+		struct cli_credentials *creds = NULL;
 		NTSTATUS status;
 
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
 
+		creds = get_cmdline_auth_info_creds(
+				context->internal->auth_info);
+
 		status = cli_resolve_path(
-			ctx, "", context->internal->auth_info,
+			ctx, "",
+			creds,
 			cli, filename, &targetcli, &targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get Could not resolve %s\n",
@@ -1512,6 +1517,7 @@ cacl_set(SMBCCTX *context,
         bool numeric = True;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
+	struct cli_credentials *creds = NULL;
 	NTSTATUS status;
 
         /* the_acl will be null for REMOVE_ALL operations */
@@ -1541,7 +1547,10 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	status = cli_resolve_path(ctx, "", context->internal->auth_info,
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+
+	status = cli_resolve_path(ctx, "",
+				  creds,
 				  cli, filename, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("cacl_set: Could not resolve %s\n", filename));

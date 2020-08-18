@@ -68,7 +68,7 @@ struct cacl_callback_state {
  */
 static NTSTATUS local_cli_resolve_path(TALLOC_CTX* ctx,
 			const char *mountpt,
-			const struct user_auth_info *dfs_auth_info,
+			struct cli_credentials *creds,
 			struct cli_state *rootcli,
 			const char *path,
 			struct cli_state **targetcli,
@@ -80,7 +80,7 @@ static NTSTATUS local_cli_resolve_path(TALLOC_CTX* ctx,
 
 	status = cli_resolve_path(ctx,
 				mountpt,
-				dfs_auth_info,
+				creds,
 				rootcli,
 				path,
 				targetcli,
@@ -1246,7 +1246,7 @@ static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
 	struct cacl_callback_state *cbstate =
 		(struct cacl_callback_state *)state;
 	struct cli_state *cli = NULL;
-	struct user_auth_info *auth_info = NULL;
+	struct cli_credentials *creds = NULL;
 
 	TALLOC_CTX *dirctx = NULL;
 	NTSTATUS status;
@@ -1265,7 +1265,7 @@ static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
 	}
 
 	cli = cbstate->cli;
-	auth_info = cbstate->auth_info;
+	creds = get_cmdline_auth_info_creds(cbstate->auth_info);
 
 	/* Work out the directory. */
 	dir = talloc_strdup(dirctx, mask);
@@ -1306,7 +1306,7 @@ static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
 		}
 
 		/* check for dfs */
-		status = local_cli_resolve_path(dirctx, "", auth_info, cli,
+		status = local_cli_resolve_path(dirctx, "", creds, cli,
 			mask2, &targetcli, &targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -1567,6 +1567,7 @@ int main(int argc, char *argv[])
 	   than going via LSA calls to resolve them */
 	int numeric = 0;
 	struct cli_state *targetcli = NULL;
+	struct cli_credentials *creds = NULL;
 	char *targetfile = NULL;
 	NTSTATUS status;
 
@@ -1842,9 +1843,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	creds = get_cmdline_auth_info_creds(popt_get_cmdline_auth_info()),
+
 	status = local_cli_resolve_path(frame,
 				  "",
-				  popt_get_cmdline_auth_info(),
+				  creds,
 				  cli,
 				  filename,
 				  &targetcli,

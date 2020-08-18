@@ -254,6 +254,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	SMB_INO_T ino = 0;
 	uint16_t port = 0;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -291,8 +292,11 @@ SMBC_fstat_ctx(SMBCCTX *context,
                 return -1;
         }
 
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
+	status = cli_resolve_path(frame, "",
+				  creds,
 				  file->srv->cli, path,
 				  &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {

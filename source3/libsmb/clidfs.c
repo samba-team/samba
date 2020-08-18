@@ -859,7 +859,7 @@ struct cli_dfs_path_split {
 
 NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			  const char *mountpt,
-			  const struct user_auth_info *dfs_auth_info,
+			  struct cli_credentials *creds,
 			  struct cli_state *rootcli,
 			  const char *path,
 			  struct cli_state **targetcli,
@@ -885,7 +885,6 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *root_tcon = NULL;
 	struct smbXcli_tcon *target_tcon = NULL;
 	struct cli_dfs_path_split *dfs_refs = NULL;
-	struct cli_credentials *creds = get_cmdline_auth_info_creds(dfs_auth_info);
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1130,7 +1129,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	if (!strequal(*pp_targetpath, "\\") && !strequal(*pp_targetpath, "/")) {
 		status = cli_resolve_path(ctx,
 					  newmount,
-					  dfs_auth_info,
+					  creds,
 					  *targetcli,
 					  *pp_targetpath,
 					  &newcli,

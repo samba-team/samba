@@ -915,6 +915,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                          */
 			char *targetpath;
 			struct cli_state *targetcli;
+			struct cli_credentials *creds = NULL;
 			NTSTATUS status;
 
 			/* We connect to the server and list the directory */
@@ -947,8 +948,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				return NULL;
 			}
 
+			creds = get_cmdline_auth_info_creds(
+					context->internal->auth_info);
+
 			status = cli_resolve_path(
-				frame, "", context->internal->auth_info,
+				frame, "",
+				creds,
 				srv->cli, path, &targetcli, &targetpath);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("Could not resolve %s\n", path);
@@ -1547,6 +1552,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -1599,8 +1605,11 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 
 	}
 
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
+	status = cli_resolve_path(frame, "",
+				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
@@ -1658,6 +1667,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
         char *targetpath = NULL;
 	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -1710,8 +1720,11 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 
 	}
 
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info),
+
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
+	status = cli_resolve_path(frame, "",
+				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
@@ -1963,6 +1976,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	char *path = NULL;
 	uint32_t attr;
 	uint16_t port = 0;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
 
@@ -2014,8 +2028,11 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		return -1;  /* errno set by SMBC_server */
 	}
 	
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
+	status = cli_resolve_path(frame, "",
+				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
@@ -2156,6 +2173,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	SMBCSRV *srv = NULL;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
 
@@ -2208,8 +2226,11 @@ SMBC_unlink_ctx(SMBCCTX *context,
 
 	}
 
+	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
+	status = cli_resolve_path(frame, "",
+				  creds,
 				  srv->cli, path, &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
@@ -2286,6 +2307,8 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	SMBCSRV *srv = NULL;
 	uint16_t port1 = 0;
 	uint16_t port2 = 0;
+	struct cli_credentials *ocreds = NULL;
+	struct cli_credentials *ncreds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
 
@@ -2379,7 +2402,10 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 				    	   password1);
 
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
-	status = cli_resolve_path(frame, "", ocontext->internal->auth_info,
+	ocreds = get_cmdline_auth_info_creds(ocontext->internal->auth_info);
+
+	status = cli_resolve_path(frame, "",
+				  ocreds,
 				  srv->cli, path1, &targetcli1, &targetpath1);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path1);
@@ -2396,7 +2422,10 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
-	status = cli_resolve_path(frame, "", ncontext->internal->auth_info,
+	ncreds = get_cmdline_auth_info_creds(ncontext->internal->auth_info);
+
+	status = cli_resolve_path(frame, "",
+				  ncreds,
 				  srv->cli, path2, &targetcli2, &targetpath2);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path2);
