@@ -585,7 +585,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	result = kdc_str;
 out:
-	DEBUG(10, ("get_kdc_ip_string: Returning %s\n", kdc_str));
+	DBG_DEBUG("Returning\n%s\n", kdc_str);
 
 	TALLOC_FREE(ip_sa_site);
 	TALLOC_FREE(ip_sa_nonsite);
