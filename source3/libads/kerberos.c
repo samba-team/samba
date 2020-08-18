@@ -824,9 +824,8 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
-		"file %s with realm %s KDC list = %s\n",
-		fname, realm_upper, kdc_ip_string));
+	DBG_INFO("wrote file %s with realm %s KDC list:\n%s\n",
+		 fname, realm_upper, kdc_ip_string);
 
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
