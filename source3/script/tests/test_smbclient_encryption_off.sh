@@ -42,24 +42,24 @@ testit "smbclient -m smb3_11 //$SERVER/tmp" $SMBCLIENT -m smb3_11 -U $USERNAME%$
 
 # SMB1
 testit_expect_failure "smbclient //$SERVER/tmpenc" $SMBCLIENT -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e //$SERVER/tmpenc" $SMBCLIENT -e -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt //$SERVER/tmpenc" $SMBCLIENT --client-protection=encrypt -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
 # SMB3_02
 testit_expect_failure "smbclient -m smb3_02 //$SERVER/tmpenc" $SMBCLIENT -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e -m smb3_02 //$SERVER/tmpenc" $SMBCLIENT -e -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_02 //$SERVER/tmpenc" $SMBCLIENT --client-protection=encrypt -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
 # SMB3_11
 testit_expect_failure "smbclient -m smb3_11 //$SERVER/tmpenc" $SMBCLIENT -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e -m smb3_11 //$SERVER/tmpenc" $SMBCLIENT -e -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_11 //$SERVER/tmpenc" $SMBCLIENT --client-protection=encrypt -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/tmpenc -c quit && failed=`expr $failed + 1`
 
 # These tests must fail, as the client requires encryption and it's off on the server
 
 # SMB1
-testit_expect_failure "smbclient -e //$SERVER/enc_desired" $SMBCLIENT -e -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e //$SERVER/tmp" $SMBCLIENT -e -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt //$SERVER/enc_desired" $SMBCLIENT --client-protection=encrypt -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt //$SERVER/tmp" $SMBCLIENT --client-protection=encrypt -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
 # SMB3_02
-testit_expect_failure "smbclient -e -m smb3_02 //$SERVER/enc_desired" $SMBCLIENT -e -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e -m smb3_02 //$SERVER/tmp" $SMBCLIENT -e -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_02 //$SERVER/enc_desired" $SMBCLIENT --client-protection=encrypt -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_02 //$SERVER/tmp" $SMBCLIENT --client-protection=encrypt -m smb3_02 -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
 # SMB3_11
-testit_expect_failure "smbclient -e -m smb3_11 //$SERVER/enc_desired" $SMBCLIENT -e -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
-testit_expect_failure "smbclient -e -m smb3_11 //$SERVER/tmp" $SMBCLIENT -e -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_11 //$SERVER/enc_desired" $SMBCLIENT --client-protection=encrypt -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/enc_desired -c quit && failed=`expr $failed + 1`
+testit_expect_failure "smbclient --client-protection=encrypt -m smb3_11 //$SERVER/tmp" $SMBCLIENT --client-protection=encrypt -m smb3_11 -U $USERNAME%$PASSWORD //$SERVER/tmp -c quit && failed=`expr $failed + 1`
 
 testok $0 $failed

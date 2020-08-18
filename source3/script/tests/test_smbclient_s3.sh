@@ -616,7 +616,7 @@ test_ccache_access()
 	return 1
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp --use-winbind-ccache -U "${USERNAME}" $ADDARGS -c quit 2>&1
     ret=$?
 
     if [ $ret != 0 ] ; then
@@ -632,7 +632,7 @@ test_ccache_access()
 	return 1
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp --use-winbind-ccache -U "${USERNAME}" $ADDARGS -c quit 2>&1
     ret=$?
 
     if [ $ret -eq 0 ] ; then
