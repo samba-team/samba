@@ -292,7 +292,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       struct cli_state *referring_cli,
 			       const char *server,
 			       const char *share,
-			       const struct user_auth_info *auth_info,
+			       struct cli_credentials *creds,
 			       int max_protocol,
 			       const struct sockaddr_storage *dest_ss,
 			       int port,
@@ -300,7 +300,6 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       struct cli_state **pcli)
 {
 	struct cli_state *cli = NULL;
-	struct cli_credentials *creds = get_cmdline_auth_info_creds(auth_info);
 	NTSTATUS status;
 
 	status = do_connect(ctx, server, share,
@@ -397,6 +396,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 {
 	/* Try to reuse an existing connection in this list. */
 	struct cli_state *c = cli_cm_find(referring_cli, server, share);
+	struct cli_credentials *creds = get_cmdline_auth_info_creds(auth_info);
 	NTSTATUS status;
 
 	if (c) {
@@ -417,7 +417,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				referring_cli,
 				server,
 				share,
-				auth_info,
+				creds,
 				max_protocol,
 				dest_ss,
 				port,
@@ -886,6 +886,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *root_tcon = NULL;
 	struct smbXcli_tcon *target_tcon = NULL;
 	struct cli_dfs_path_split *dfs_refs = NULL;
+	struct cli_credentials *creds = get_cmdline_auth_info_creds(dfs_auth_info);
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1022,7 +1023,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 		status = cli_cm_connect(ctx, rootcli,
 				dfs_refs[count].server,
 				dfs_refs[count].share,
-				dfs_auth_info,
+				creds,
 				smbXcli_conn_protocol(rootcli->conn),
 				NULL, /* dest_ss */
 				0, /* port */
