@@ -88,6 +88,7 @@ dnf install -y \
     python3-devel \
     python3-dns \
     python3-gpg \
+    python3-iso8601 \
     python3-libsemanage \
     python3-markdown \
     python3-policycoreutils \

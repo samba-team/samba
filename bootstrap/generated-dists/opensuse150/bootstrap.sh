@@ -85,6 +85,7 @@ zypper --non-interactive install \
     python3-devel \
     python3-dnspython \
     python3-gpg \
+    python3-iso8601 \
     python3-pyasn1 \
     readline-devel \
     rng-tools \
