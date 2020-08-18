@@ -322,46 +322,6 @@ def valid_netbios_name(name):
     return True
 
 
-def import_bundled_package(modulename, location, source_tree_container,
-                           namespace):
-    """Import the bundled version of a package.
-
-    :note: This should only be called if the system version of the package
-        is not adequate.
-
-    :param modulename: Module name to import
-    :param location: Location to add to sys.path (can be relative to
-        ${srcdir}/${source_tree_container})
-    :param source_tree_container: Directory under source root that
-        contains the bundled third party modules.
-    :param namespace: Namespace to import module from, when not in source tree
-    """
-    if in_source_tree():
-        extra_path = os.path.join(source_tree_topdir(), source_tree_container,
-                                  location)
-        if extra_path not in sys.path:
-            sys.path.insert(0, extra_path)
-        sys.modules[modulename] = __import__(modulename)
-    else:
-        sys.modules[modulename] = __import__(
-            "%s.%s" % (namespace, modulename), fromlist=[namespace])
-
-
-def ensure_third_party_module(modulename, location):
-    """Add a location to sys.path if a third party dependency can't be found.
-
-    :param modulename: Module name to import
-    :param location: Location to add to sys.path (can be relative to
-        ${srcdir}/third_party)
-    """
-    try:
-        __import__(modulename)
-    except ImportError:
-        import_bundled_package(modulename, location,
-                               source_tree_container="third_party",
-                               namespace="samba.third_party")
-
-
 def dn_from_dns_name(dnsdomain):
     """return a DN from a DNS name domain/forest root"""
     return "DC=" + ",DC=".join(dnsdomain.split("."))
