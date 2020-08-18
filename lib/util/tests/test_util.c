@@ -111,7 +111,7 @@ static int group_teardown(void **state)
 	ret = unlink(paths->symlink_file);
 	assert_return_code(ret, errno);
 
-	ret = unlink(paths->testdir);
+	ret = rmdir(paths->testdir);
 	assert_return_code(ret, errno);
 
 	free(paths);
