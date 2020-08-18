@@ -71,6 +71,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	struct cli_state *cli_ipc = NULL;
 	struct client_ipc_connection *p;
 	NTSTATUS status;
+	struct cli_credentials *creds = NULL;
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAMETER;
@@ -106,10 +107,11 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	if (ctx->use_ccache) {
 		set_cmdline_auth_info_use_ccache(auth_info, true);
 	}
+	creds = get_cmdline_auth_info_creds(auth_info);
 
 	status = cli_cm_open(ctx, NULL,
 			     server_name, "IPC$",
-			     auth_info,
+			     creds,
 			     lp_client_ipc_max_protocol(),
 			     NULL, 0, 0x20, &cli_ipc);
 	if (!NT_STATUS_IS_OK(status)) {

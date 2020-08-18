@@ -384,19 +384,18 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
 ****************************************************************************/
 
 NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
-				struct cli_state *referring_cli,
-				const char *server,
-				const char *share,
-				const struct user_auth_info *auth_info,
-				int max_protocol,
-				const struct sockaddr_storage *dest_ss,
-				int port,
-				int name_type,
-				struct cli_state **pcli)
+		     struct cli_state *referring_cli,
+		     const char *server,
+		     const char *share,
+		     struct cli_credentials *creds,
+		     int max_protocol,
+		     const struct sockaddr_storage *dest_ss,
+		     int port,
+		     int name_type,
+		     struct cli_state **pcli)
 {
 	/* Try to reuse an existing connection in this list. */
 	struct cli_state *c = cli_cm_find(referring_cli, server, share);
-	struct cli_credentials *creds = get_cmdline_auth_info_creds(auth_info);
 	NTSTATUS status;
 
 	if (c) {
@@ -404,11 +403,11 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (auth_info == NULL) {
+	if (creds == NULL) {
 		/* Can't do a new connection
 		 * without auth info. */
 		d_printf("cli_cm_open() Unable to open connection [\\%s\\%s] "
-			"without auth info\n",
+			"without client credentials\n",
 			server, share );
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -966,7 +965,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     rootcli,
 			     smbXcli_conn_remote_name(rootcli->conn),
 			     "IPC$",
-			     dfs_auth_info,
+			     creds,
 			     smbXcli_conn_protocol(rootcli->conn),
 			     NULL, /* dest_ss not needed, we reuse the transport */
 			     0,

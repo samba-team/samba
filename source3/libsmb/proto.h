@@ -124,15 +124,15 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 /* The following definitions come from libsmb/clidfs.c  */
 
 NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
-				struct cli_state *referring_cli,
-				const char *server,
-				const char *share,
-				const struct user_auth_info *auth_info,
-				int max_protocol,
-				const struct sockaddr_storage *dest_ss,
-				int port,
-				int name_type,
-				struct cli_state **pcli);
+		     struct cli_state *referring_cli,
+		     const char *server,
+		     const char *share,
+		     struct cli_credentials *creds,
+		     int max_protocol,
+		     const struct sockaddr_storage *dest_ss,
+		     int port,
+		     int name_type,
+		     struct cli_state **pcli);
 void cli_cm_display(struct cli_state *c);
 struct client_dfs_referral;
 NTSTATUS cli_dfs_get_referral_ex(TALLOC_CTX *ctx,
