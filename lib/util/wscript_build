@@ -315,4 +315,4 @@ else:
                      source='tests/test_util.c',
                      deps='cmocka replace talloc samba-util',
                      local_include=False,
-                     for_selftest=True);
+                     for_selftest=True)
