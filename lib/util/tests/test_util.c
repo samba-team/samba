@@ -130,9 +130,14 @@ static void test_directory_create_or_exists_none(void **state)
 	assert_return_code(ret, errno);
 	assert_int_equal(sbuf.st_mode & 0777, 0775);
 	assert_true(S_ISDIR(sbuf.st_mode));
+}
 
-	ret = rmdir(paths->none);
-	assert_return_code(ret, errno);
+static int teardown_none_directory(void **state)
+{
+	struct test_paths *paths = *state;
+
+	rmdir(paths->none);
+	return 0;
 }
 
 static void test_directory_create_or_exists_dir(void **state)
@@ -218,7 +223,8 @@ static void test_directory_create_or_exists_symlink_file(void **state)
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test(test_directory_create_or_exists_none),
+		cmocka_unit_test_teardown(test_directory_create_or_exists_none,
+					  teardown_none_directory),
 		cmocka_unit_test(test_directory_create_or_exists_dir),
 		cmocka_unit_test(test_directory_create_or_exists_file),
 		cmocka_unit_test(test_directory_create_or_exists_symlink_none),
