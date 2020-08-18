@@ -82,6 +82,59 @@ static void test_dosmode_to_gpfs_winattrs(void **state)
 			 GPFS_WINATTR_SYSTEM);
 }
 
+static void test_gpfs_get_file_id(void **state)
+{
+	struct gpfs_iattr64 iattr;
+	uint64_t fileid1, fileid2;
+	NTSTATUS status;
+
+	/*
+	 * Ensure that the generated fileid only depends on the
+	 * ia_inode, ia_gen and ia_modsnapid fields in struct
+	 * gpfs_iattr64 and any changes to these fields result in a
+	 * different file id.
+	 */
+
+	memset(&iattr, 1, sizeof(iattr));
+	iattr.ia_inode = 0x11;
+	iattr.ia_gen = 0x22;
+	iattr.ia_modsnapid = 0x33;
+	status = vfs_gpfs_get_file_id(&iattr, &fileid1);
+	assert_true(NT_STATUS_IS_OK(status));
+
+	memset(&iattr, 2, sizeof(iattr));
+	iattr.ia_inode = 0x11;
+	iattr.ia_gen = 0x22;
+	iattr.ia_modsnapid = 0x33;
+	status = vfs_gpfs_get_file_id(&iattr, &fileid2);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_int_equal(fileid1, fileid2);
+
+	iattr.ia_inode = 0x44;
+	iattr.ia_gen = 0x22;
+	iattr.ia_modsnapid = 0x33;
+	status = vfs_gpfs_get_file_id(&iattr, &fileid2);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_int_not_equal(fileid1, fileid2);
+
+	iattr.ia_inode = 0x11;
+	iattr.ia_gen = 0x44;
+	iattr.ia_modsnapid = 0x33;
+	status = vfs_gpfs_get_file_id(&iattr, &fileid2);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_int_not_equal(fileid1, fileid2);
+
+	iattr.ia_inode = 0x11;
+	iattr.ia_gen = 0x22;
+	iattr.ia_modsnapid = 0x44;
+	status = vfs_gpfs_get_file_id(&iattr, &fileid2);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_int_not_equal(fileid1, fileid2);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -89,6 +142,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_gpfs_lease_mapping),
 		cmocka_unit_test(test_gpfs_winattrs_to_dosmode),
 		cmocka_unit_test(test_dosmode_to_gpfs_winattrs),
+		cmocka_unit_test(test_gpfs_get_file_id),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
