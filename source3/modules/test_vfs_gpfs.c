@@ -50,11 +50,45 @@ static void test_gpfs_lease_mapping(void **state)
 	assert_int_equal(lease_type_to_gpfs(F_UNLCK), GPFS_LEASE_NONE);
 }
 
+static void test_gpfs_winattrs_to_dosmode(void **state)
+{
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_ARCHIVE),
+			 FILE_ATTRIBUTE_ARCHIVE);
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_READONLY),
+			 FILE_ATTRIBUTE_READONLY);
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_HIDDEN),
+			 FILE_ATTRIBUTE_HIDDEN);
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_OFFLINE),
+			 FILE_ATTRIBUTE_OFFLINE);
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_SPARSE_FILE),
+			 FILE_ATTRIBUTE_SPARSE);
+	assert_int_equal(vfs_gpfs_winattrs_to_dosmode(GPFS_WINATTR_SYSTEM),
+			 FILE_ATTRIBUTE_SYSTEM);
+}
+
+static void test_dosmode_to_gpfs_winattrs(void **state)
+{
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_ARCHIVE),
+			 GPFS_WINATTR_ARCHIVE);
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_HIDDEN),
+			 GPFS_WINATTR_HIDDEN);
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_OFFLINE),
+			 GPFS_WINATTR_OFFLINE);
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_READONLY),
+			 GPFS_WINATTR_READONLY);
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_SPARSE),
+			 GPFS_WINATTR_SPARSE_FILE);
+	assert_int_equal(vfs_gpfs_dosmode_to_winattrs(FILE_ATTRIBUTE_SYSTEM),
+			 GPFS_WINATTR_SYSTEM);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_share_deny_mapping),
 		cmocka_unit_test(test_gpfs_lease_mapping),
+		cmocka_unit_test(test_gpfs_winattrs_to_dosmode),
+		cmocka_unit_test(test_dosmode_to_gpfs_winattrs),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
