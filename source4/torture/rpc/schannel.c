@@ -965,8 +965,12 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	torture_assert(torture, s->join_ctx2 != NULL,
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
-	cli_credentials_set_kerberos_state(s->wks_creds1, CRED_USE_KERBEROS_DISABLED);
-	cli_credentials_set_kerberos_state(s->wks_creds2, CRED_USE_KERBEROS_DISABLED);
+	cli_credentials_set_kerberos_state(s->wks_creds1,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
+	cli_credentials_set_kerberos_state(s->wks_creds2,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
 
 	for (i=0; i < s->nprocs; i++) {
 		struct cli_credentials *wks = s->wks_creds1;

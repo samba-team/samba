@@ -2518,13 +2518,15 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		 * Force kerberos if this is an active directory domain
 		 */
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_REQUIRED);
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
 	} else  {
 		/*
 		 * TODO: we should allow krb5 with the raw nt hash.
 		 */
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DISABLED);
+						   CRED_USE_KERBEROS_DISABLED,
+						   CRED_SPECIFIED);
 	}
 
 	*_creds = talloc_move(mem_ctx, &creds);

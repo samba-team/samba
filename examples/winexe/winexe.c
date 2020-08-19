@@ -284,7 +284,8 @@ static void parse_args(int argc, const char *argv[],
 		cli_credentials_set_kerberos_state(cred,
 		                                   strcmp(opt_kerberos, "yes")
 		                                   ? CRED_USE_KERBEROS_REQUIRED
-		                                   : CRED_USE_KERBEROS_DISABLED);
+		                                   : CRED_USE_KERBEROS_DISABLED,
+						   CRED_SPECIFIED);
 	}
 
 	if (options->runas == NULL && options->runas_file != NULL) {

@@ -342,7 +342,8 @@ NET_API_STATUS libnetapi_set_creds(struct libnetapi_ctx *ctx,
 NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 {
 	cli_credentials_set_kerberos_state(ctx->creds,
-					   CRED_USE_KERBEROS_REQUIRED);
+					   CRED_USE_KERBEROS_REQUIRED,
+					   CRED_SPECIFIED);
 
 	return NET_API_STATUS_SUCCESS;
 }

@@ -132,8 +132,9 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 					 const char **error_string);
 void cli_credentials_set_forced_sasl_mech(struct cli_credentials *creds,
 					  const char *sasl_mech);
-void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
-					enum credentials_use_kerberos use_kerberos);
+bool cli_credentials_set_kerberos_state(struct cli_credentials *creds,
+					enum credentials_use_kerberos kerberos_state,
+					enum credentials_obtained obtained);
 void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
 					 enum credentials_krb_forwardable krb_forwardable);
 bool cli_credentials_set_domain(struct cli_credentials *cred, 

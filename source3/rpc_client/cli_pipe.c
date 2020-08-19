@@ -2569,7 +2569,9 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	cli_credentials_set_kerberos_state(auth_generic_ctx->credentials, use_kerberos);
+	cli_credentials_set_kerberos_state(auth_generic_ctx->credentials,
+					   use_kerberos,
+					   CRED_SPECIFIED);
 	cli_credentials_set_netlogon_creds(auth_generic_ctx->credentials, creds);
 
 	status = auth_generic_client_start_by_authtype(auth_generic_ctx, auth_type, auth_level);

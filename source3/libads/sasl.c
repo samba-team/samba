@@ -163,7 +163,8 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	}
 
 	cli_credentials_set_kerberos_state(auth_generic_state->credentials,
-					   krb5_state);
+					   krb5_state,
+					   CRED_SPECIFIED);
 
 	if (target_service != NULL) {
 		nt_status = gensec_set_target_service(

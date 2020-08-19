@@ -54,8 +54,9 @@ bool torture_ldap_session_expiry(struct torture_context *torture)
 	torture_assert_goto(
 		torture, url!=NULL, ret, fail, "talloc_asprintf failed");
 
-	cli_credentials_set_kerberos_state(
-		credentials, CRED_USE_KERBEROS_REQUIRED);
+	cli_credentials_set_kerberos_state(credentials,
+					   CRED_USE_KERBEROS_REQUIRED,
+					   CRED_SPECIFIED);
 
 	ok = lpcfg_set_option(
 		torture->lp_ctx, "gensec_gssapi:requested_life_time=4");

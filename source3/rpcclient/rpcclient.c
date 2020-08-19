@@ -911,8 +911,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			case DCERPC_AUTH_TYPE_SPNEGO:
 			case DCERPC_AUTH_TYPE_NTLMSSP:
 			case DCERPC_AUTH_TYPE_KRB5:
-				cli_credentials_set_kerberos_state(
-					creds, krb5_state);
+				cli_credentials_set_kerberos_state(creds,
+								   krb5_state,
+								   CRED_SPECIFIED);
 
 				ntresult = cli_rpc_pipe_open_with_creds(
 					cli, cmd_entry->table,

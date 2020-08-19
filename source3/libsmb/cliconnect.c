@@ -123,13 +123,16 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 
 	if (use_kerberos && fallback_after_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DESIRED);
+						   CRED_USE_KERBEROS_DESIRED,
+						   CRED_SPECIFIED);
 	} else if (use_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_REQUIRED);
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
 	} else {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DISABLED);
+						   CRED_USE_KERBEROS_DISABLED,
+						   CRED_SPECIFIED);
 	}
 
 	if (use_ccache) {

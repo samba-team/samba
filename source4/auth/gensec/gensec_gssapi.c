@@ -1557,7 +1557,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 		
 		/* This credential handle isn't useful for password authentication, so ensure nobody tries to do that */
-		cli_credentials_set_kerberos_state(session_info->credentials, CRED_USE_KERBEROS_REQUIRED);
+		cli_credentials_set_kerberos_state(session_info->credentials,
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
 
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;

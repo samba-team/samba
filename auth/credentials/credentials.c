@@ -44,7 +44,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->winbind_separator = '\\';
 
-	cred->use_kerberos = CRED_USE_KERBEROS_DESIRED;
+	cred->kerberos_state = CRED_USE_KERBEROS_DESIRED;
 
 	cred->signing_state = SMB_SIGNING_DEFAULT;
 
@@ -108,10 +108,18 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx)
 	return anon_credentials;
 }
 
-_PUBLIC_ void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
-					enum credentials_use_kerberos use_kerberos)
+_PUBLIC_ bool cli_credentials_set_kerberos_state(struct cli_credentials *creds,
+						 enum credentials_use_kerberos kerberos_state,
+						 enum credentials_obtained obtained)
 {
-	creds->use_kerberos = use_kerberos;
+	if (obtained >= creds->kerberos_state_obtained) {
+		creds->kerberos_state = kerberos_state;
+		creds->kerberos_state_obtained = obtained;
+
+		return true;
+	}
+
+	return false;
 }
 
 _PUBLIC_ void cli_credentials_set_forced_sasl_mech(struct cli_credentials *creds,
@@ -129,7 +137,7 @@ _PUBLIC_ void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
 
 _PUBLIC_ enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds)
 {
-	return creds->use_kerberos;
+	return creds->kerberos_state;
 }
 
 _PUBLIC_ const char *cli_credentials_get_forced_sasl_mech(struct cli_credentials *creds)
@@ -982,6 +990,12 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 		cred->encryption_state = lpcfg_client_smb_encrypt(lp_ctx);
 		cred->encryption_state_obtained = CRED_SMB_CONF;
 	}
+
+	if (cred->kerberos_state_obtained <= CRED_SMB_CONF) {
+		/* Will be set to default for invalid smb.conf values */
+		cred->kerberos_state = lpcfg_client_use_kerberos(lp_ctx);
+		cred->kerberos_state_obtained = CRED_SMB_CONF;
+	}
 }
 
 /**
@@ -1105,7 +1119,9 @@ _PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_principal(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_workstation(cred, "", CRED_UNINITIALISED);
-	cli_credentials_set_kerberos_state(cred, CRED_USE_KERBEROS_DISABLED);
+	cli_credentials_set_kerberos_state(cred,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
 }
 
 /**
@@ -1592,8 +1608,9 @@ _PUBLIC_ void cli_credentials_dump(struct cli_credentials *creds)
 		creds->self_service);
 	DBG_ERR("  Target service: %s\n",
 		creds->target_service);
-	DBG_ERR("  Kerberos state: %s\n",
-		krb5_state_to_str(creds->use_kerberos));
+	DBG_ERR("  Kerberos state: %s - %s\n",
+		krb5_state_to_str(creds->kerberos_state),
+		obtained_to_str(creds->kerberos_state_obtained));
 	DBG_ERR("  Kerberos forwardable ticket: %s\n",
 		krb5_fwd_to_str(creds->krb_forwardable));
 	DBG_ERR("  Signing state: %s - %s\n",

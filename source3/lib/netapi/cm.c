@@ -105,7 +105,9 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	if (username != NULL && username[0] != '\0' &&
 	    password != NULL && password[0] != '\0' &&
 	    krb5_state == CRED_USE_KERBEROS_REQUIRED) {
-		cli_credentials_set_kerberos_state(ctx->creds, CRED_USE_KERBEROS_DESIRED);
+		cli_credentials_set_kerberos_state(ctx->creds,
+						   CRED_USE_KERBEROS_DESIRED,
+						   CRED_SPECIFIED);
 	}
 
 	status = cli_cm_open(ctx, NULL,

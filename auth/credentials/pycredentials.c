@@ -569,7 +569,7 @@ static PyObject *py_creds_set_kerberos_state(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &state))
 		return NULL;
 
-	cli_credentials_set_kerberos_state(creds, state);
+	cli_credentials_set_kerberos_state(creds, state, CRED_SPECIFIED);
 	Py_RETURN_NONE;
 }
 

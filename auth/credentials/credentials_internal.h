@@ -40,6 +40,7 @@ struct cli_credentials {
 	enum credentials_obtained signing_state_obtained;
 	enum credentials_obtained ipc_signing_state_obtained;
 	enum credentials_obtained encryption_state_obtained;
+	enum credentials_obtained kerberos_state_obtained;
 
 	/* Threshold values (essentially a MAX() over a number of the
 	 * above) for the ccache and GSS credentials, to ensure we
@@ -101,7 +102,7 @@ struct cli_credentials {
 	bool machine_account;
 
 	/* Should we be trying to use kerberos? */
-	enum credentials_use_kerberos use_kerberos;
+	enum credentials_use_kerberos kerberos_state;
 
 	/* Should we get a forwardable ticket? */
 	enum credentials_krb_forwardable krb_forwardable;

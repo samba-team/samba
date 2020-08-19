@@ -708,7 +708,9 @@ static NTSTATUS cm_get_ipc_credentials(TALLOC_CTX *mem_ctx,
 	}
 
 	cli_credentials_set_conf(creds, lp_ctx);
-	cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_DISABLED);
+	cli_credentials_set_kerberos_state(creds,
+					   CRED_USE_KERBEROS_DISABLED,
+					   CRED_SPECIFIED);
 
 	ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
 	if (!ok) {

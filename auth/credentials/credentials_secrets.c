@@ -391,7 +391,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 				break;
 			}
 		}
-		cli_credentials_set_kerberos_state(cred, use_kerberos);
+		cli_credentials_set_kerberos_state(cred,
+						   use_kerberos,
+						   CRED_SPECIFIED);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 		cli_credentials_set_password_last_changed_time(cred, secrets_tdb_lct);
 		cli_credentials_set_secure_channel_type(cred, secrets_tdb_secure_channel_type);
