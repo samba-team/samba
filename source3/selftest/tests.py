@@ -70,6 +70,12 @@ have_inotify = ("HAVE_INOTIFY" in config_hash)
 have_ldwrap = ("HAVE_LDWRAP" in config_hash)
 with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 
+def is_module_enabled(module):
+    if module in config_hash["STRING_SHARED_MODULES"]:
+        return True
+    if module in config_hash["STRING_STATIC_MODULES"]:
+        return True
+    return False
 
 plantestsuite("samba3.blackbox.success", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
 plantestsuite("samba3.blackbox.failure", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_failure.sh")])
