@@ -66,3 +66,18 @@ class gp_msgs_ext(gp_pol_ext):
                             w.write(e.data)
                             self.gp_db.store(str(self), e.valuename, old_val)
                         self.gp_db.commit()
+
+    def rsop(self, gpo):
+        output = {}
+        if gpo.file_sys_path:
+            section_name = 'Software\\Policies\\Samba\\Unix Settings\\Messages'
+            pol_file = 'MACHINE/Registry.pol'
+            path = os.path.join(gpo.file_sys_path, pol_file)
+            pol_conf = self.parse(path)
+            if not pol_conf:
+                return output
+            for e in pol_conf.entries:
+                if e.keyname == section_name and e.data.strip():
+                    mfile = os.path.join('/etc', e.valuename)
+                    output[mfile] = e.data
+        return output
