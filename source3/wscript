@@ -2093,6 +2093,7 @@ main() {
     conf.env['shared_modules'] = final_shared_modules
 
     conf.DEFINE('STRING_STATIC_MODULES', ' '.join(final_static_modules), quote=True)
+    conf.DEFINE('STRING_SHARED_MODULES', ' '.join(final_shared_modules), quote=True)
 
     static_list = {}
     shared_list = {}
