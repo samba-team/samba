@@ -92,6 +92,21 @@ struct cli_credentials *samba_cmdline_get_creds(void);
 struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
 
 /**
+ * @brief Burn secrets on the command line.
+ *
+ * This function removes secrets from the command line so we don't leak e.g.
+ * passwords on 'ps aux' output.
+ *
+ * It should be called after processing the options and you should pass down
+ * argv from main().
+ *
+ * @param[in]  argc     The number of arguments.
+ *
+ * @param[in]  argv[]   The argument array we will find the array.
+ */
+void samba_cmdline_burn(int argc, char *argv[]);
+
+/**
  * @brief A popt structure for common samba options.
  */
 #define POPT_COMMON_SAMBA { \

@@ -24,3 +24,9 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('CMDLINE_S4',
                         source='cmdline_s4.c',
                         deps='cmdline')
+
+    bld.SAMBA_BINARY('test_cmdline',
+                     source='tests/test_cmdline.c',
+                     deps='cmocka CMDLINE_S3 LOADPARM_CTX',
+                     local_include=False,
+                     for_selftest=True)

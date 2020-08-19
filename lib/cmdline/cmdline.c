@@ -112,6 +112,55 @@ struct cli_credentials *samba_cmdline_get_creds(void)
 	return cmdline_creds;
 }
 
+void samba_cmdline_burn(int argc, char *argv[])
+{
+	bool found = false;
+	bool is_user = false;
+	char *p = NULL;
+	int i, ulen = 0;
+
+	for (i = 0; i < argc; i++) {
+		p = argv[i];
+		if (p == NULL) {
+			return;
+		}
+
+		if (strncmp(p, "-U", 2) == 0) {
+			ulen = 2;
+			found = true;
+			is_user = true;
+		} else if (strncmp(p, "--user", 6) == 0) {
+			ulen = 6;
+			found = true;
+			is_user = true;
+		} else if (strncmp(p, "--password", 10) == 0) {
+			ulen = 10;
+			found = true;
+		}
+
+		if (found) {
+			char *q = NULL;
+
+			if (strlen(p) == ulen) {
+				continue;
+			}
+
+			if (is_user) {
+				q = strchr_m(p, '%');
+				if (q != NULL) {
+					p = q;
+				}
+			} else {
+				p += ulen;
+			}
+
+			memset_s(p, strlen(p), '\0', strlen(p));
+			found = false;
+			is_user = false;
+		}
+	}
+}
+
 /**********************************************************
  * COMMON SAMBA POPT
  **********************************************************/
