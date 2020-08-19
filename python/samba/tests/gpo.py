@@ -485,6 +485,7 @@ class GPOTests(tests.TestCase):
         gp_extensions.append(gp_krb_ext)
         gp_extensions.append(gp_scripts_ext)
         gp_extensions.append(gp_sudoers_ext)
+        gp_extensions.append(gp_smb_conf_ext)
 
         # Create registry stage data
         reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
@@ -499,8 +500,13 @@ class GPOTests(tests.TestCase):
         e2.valuename = b'Software\\Policies\\Samba\\Unix Settings'
         e2.type = 1
         e2.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
-        reg_stage.num_entries = 2
-        reg_stage.entries = [e, e2]
+        e3 = preg.entry()
+        e3.keyname = 'Software\\Policies\\Samba\\smb_conf\\apply group policies'
+        e3.type = 4
+        e3.data = 1
+        e3.valuename = 'apply group policies'
+        reg_stage.num_entries = 3
+        reg_stage.entries = [e, e2, e3]
 
         # Create krb stage date
         gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
@@ -541,6 +547,14 @@ class GPOTests(tests.TestCase):
                     self.assertIn('fakeu  ALL=(ALL) NOPASSWD: ALL',
                                   ret['Sudo Rights'],
                                   'Sudoers policy not created')
+                # Check the smb.conf Extension
+                elif type(ext) == gp_smb_conf_ext:
+                    self.assertIn('smb.conf', ret.keys(),
+                                  'apply group policies was not applied')
+                    self.assertIn(e3.valuename, ret['smb.conf'],
+                                  'apply group policies was not applied')
+                    self.assertEquals(ret['smb.conf'][e3.valuename], e3.data,
+                                      'apply group policies was not set')
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
 
