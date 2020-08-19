@@ -1,0 +1,49 @@
+<samba:parameter name="client use kerberos"
+                 context="G"
+                 type="enum"
+                 function="_client_use_kerberos"
+                 enumlist="enum_use_kerberos_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This parameter determines whether Samba client tools will try
+		to authenticate using Kerberos. For Kerberos authentication you
+		need to use dns names instead of IP addresses when connnecting
+		to a service.
+	</para>
+
+	<para>Possible option settings are:</para>
+	<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>desired</emphasis> - Kerberos
+				authentication will be tried first and if it fails it
+				automatically fallback to NTLM.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+				<emphasis>required</emphasis> - Kerberos
+				authentication will be required. There will be no
+				falllback to NTLM or a different alternative.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+				<emphasis>off</emphasis> - Don't use
+				Kerberos, use NTLM instead or another
+				alternative.
+			</para>
+		</listitem>
+	</itemizedlist>
+
+	<para>
+		In case that weak cryptography is not allowed (e.g. FIPS mode)
+		the default will be forced to <emphasis>required</emphasis>.
+	</para>
+</description>
+
+<value type="default">desired</value>
+</samba:parameter>

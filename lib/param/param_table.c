@@ -35,6 +35,7 @@
 #include "libcli/smb/smb_constants.h"
 #include "libds/common/roles.h"
 #include "source4/lib/tls/tls.h"
+#include "auth/credentials/credentials.h"
 
 #ifndef N_
 #define N_(x) x
@@ -158,6 +159,17 @@ static const struct enum_list enum_smb_encryption_vals[] = {
 	{SMB_ENCRYPTION_REQUIRED, "force"},
 	{SMB_ENCRYPTION_REQUIRED, "forced"},
 	{SMB_ENCRYPTION_REQUIRED, "enforced"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_use_kerberos_vals[] = {
+	{CRED_USE_KERBEROS_DESIRED, "desired"},
+	{CRED_USE_KERBEROS_DESIRED, "auto"},
+	{CRED_USE_KERBEROS_REQUIRED, "yes"},
+	{CRED_USE_KERBEROS_REQUIRED, "required"},
+	{CRED_USE_KERBEROS_DISABLED, "no"},
+	{CRED_USE_KERBEROS_DISABLED, "disabled"},
+	{CRED_USE_KERBEROS_DISABLED, "off"},
 	{-1, NULL}
 };
 

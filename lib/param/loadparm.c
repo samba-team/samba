@@ -74,6 +74,7 @@
 #include "libcli/auth/ntlm_check.h"
 #include "lib/crypto/gnutls_helpers.h"
 #include "lib/util/smb_strtox.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>
@@ -2947,6 +2948,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "client smb encrypt",
 				  "default");
 
+	lpcfg_do_global_parameter(lp_ctx,
+				  "client use kerberos",
+				  "desired");
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;
@@ -3381,6 +3386,15 @@ int lpcfg_client_ipc_signing(struct loadparm_context *lp_ctx)
 		return SMB_SIGNING_REQUIRED;
 	}
 	return client_ipc_signing;
+}
+
+enum credentials_use_kerberos lpcfg_client_use_kerberos(struct loadparm_context *lp_ctx)
+{
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		return CRED_USE_KERBEROS_REQUIRED;
+	}
+
+	return lpcfg__client_use_kerberos(lp_ctx);
 }
 
 bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)
