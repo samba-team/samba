@@ -83,3 +83,20 @@ class gp_smb_conf_ext(gp_pol_ext):
 
     def __str__(self):
         return "smb.conf"
+
+    def rsop(self, gpo):
+        output = {}
+        if gpo.file_sys_path:
+            section_name = 'Software\\Policies\\Samba\\smb_conf'
+            pol_file = 'MACHINE/Registry.pol'
+            path = os.path.join(gpo.file_sys_path, pol_file)
+            pol_conf = self.parse(path)
+            if not pol_conf:
+                return output
+            for e in pol_conf.entries:
+                if not e.keyname.startswith(section_name):
+                    continue
+                if 'smb.conf' not in output.keys():
+                    output['smb.conf'] = {}
+                output['smb.conf'][e.valuename] = e.data
+        return output
