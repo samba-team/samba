@@ -487,6 +487,7 @@ class GPOTests(tests.TestCase):
         gp_extensions.append(gp_scripts_ext)
         gp_extensions.append(gp_sudoers_ext)
         gp_extensions.append(gp_smb_conf_ext)
+        gp_extensions.append(gp_msgs_ext)
 
         # Create registry stage data
         reg_pol = os.path.join(local_path, policies, '%s/MACHINE/REGISTRY.POL')
@@ -506,8 +507,13 @@ class GPOTests(tests.TestCase):
         e3.type = 4
         e3.data = 1
         e3.valuename = 'apply group policies'
-        reg_stage.num_entries = 3
-        reg_stage.entries = [e, e2, e3]
+        e4 = preg.entry()
+        e4.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Messages'
+        e4.valuename = b'issue'
+        e4.type = 1
+        e4.data = b'Welcome to \\s \\r \\l'
+        reg_stage.num_entries = 4
+        reg_stage.entries = [e, e2, e3, e4]
 
         # Create krb stage date
         gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
@@ -556,6 +562,12 @@ class GPOTests(tests.TestCase):
                                   'apply group policies was not applied')
                     self.assertEquals(ret['smb.conf'][e3.valuename], e3.data,
                                       'apply group policies was not set')
+                # Check the Messages Extension
+                elif type(ext) == gp_msgs_ext:
+                    self.assertIn('/etc/issue', ret,
+                                  'Login Prompt Message not applied')
+                    self.assertEquals(ret['/etc/issue'], e4.data,
+                                      'Login Prompt Message not set')
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
 
