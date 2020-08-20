@@ -233,7 +233,9 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained);
-void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features);
+bool cli_credentials_set_gensec_features(struct cli_credentials *creds,
+					 uint32_t gensec_features,
+					 enum credentials_obtained obtained);
 uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds);
 int cli_credentials_set_ccache(struct cli_credentials *cred, 
 			       struct loadparm_context *lp_ctx,

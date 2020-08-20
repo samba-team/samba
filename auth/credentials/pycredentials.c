@@ -842,7 +842,9 @@ static PyObject *py_creds_set_gensec_features(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "I", &gensec_features))
 		return NULL;
 
-	cli_credentials_set_gensec_features(creds, gensec_features);
+	cli_credentials_set_gensec_features(creds,
+					    gensec_features,
+					    CRED_SPECIFIED);
 
 	Py_RETURN_NONE;
 }

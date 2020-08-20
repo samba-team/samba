@@ -272,7 +272,9 @@ void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info, bool b)
 
 	gensec_features = cli_credentials_get_gensec_features(auth_info->creds);
 	gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-	cli_credentials_set_gensec_features(auth_info->creds, gensec_features);
+	cli_credentials_set_gensec_features(auth_info->creds,
+					    gensec_features,
+					    CRED_SPECIFIED);
 }
 
 bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info)

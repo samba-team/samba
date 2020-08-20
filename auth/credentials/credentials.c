@@ -150,9 +150,18 @@ _PUBLIC_ enum credentials_krb_forwardable cli_credentials_get_krb_forwardable(st
 	return creds->krb_forwardable;
 }
 
-_PUBLIC_ void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features)
+_PUBLIC_ bool cli_credentials_set_gensec_features(struct cli_credentials *creds,
+						  uint32_t gensec_features,
+						  enum credentials_obtained obtained)
 {
-	creds->gensec_features = gensec_features;
+	if (obtained >= creds->gensec_features_obtained) {
+		creds->gensec_features_obtained = obtained;
+		creds->gensec_features = gensec_features;
+
+		return true;
+	}
+
+	return false;
 }
 
 _PUBLIC_ uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds)
@@ -1017,14 +1026,30 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 				break;
 			}
 		}
-
-		cred->encryption_state_obtained = CRED_SMB_CONF;
 	}
 
 	if (cred->kerberos_state_obtained <= CRED_SMB_CONF) {
 		/* Will be set to default for invalid smb.conf values */
 		cred->kerberos_state = lpcfg_client_use_kerberos(lp_ctx);
 		cred->kerberos_state_obtained = CRED_SMB_CONF;
+	}
+
+	if (cred->gensec_features_obtained <= CRED_SMB_CONF) {
+		switch (protection) {
+		case CRED_CLIENT_PROTECTION_DEFAULT:
+			break;
+		case CRED_CLIENT_PROTECTION_PLAIN:
+			cred->gensec_features = 0;
+			break;
+		case CRED_CLIENT_PROTECTION_SIGN:
+			cred->gensec_features = GENSEC_FEATURE_SIGN;
+			break;
+		case CRED_CLIENT_PROTECTION_ENCRYPT:
+			cred->gensec_features =
+				GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL;
+			break;
+		}
+		cred->gensec_features_obtained = CRED_SMB_CONF;
 	}
 }
 

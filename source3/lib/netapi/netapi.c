@@ -357,7 +357,9 @@ NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 
 	gensec_features = cli_credentials_get_gensec_features(ctx->creds);
 	gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-	cli_credentials_set_gensec_features(ctx->creds, gensec_features);
+	cli_credentials_set_gensec_features(ctx->creds,
+					    gensec_features,
+					    CRED_SPECIFIED);
 
 	return NET_API_STATUS_SUCCESS;
 }

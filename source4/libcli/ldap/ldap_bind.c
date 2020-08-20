@@ -319,7 +319,9 @@ try_logon_again:
 
 	old_gensec_features = cli_credentials_get_gensec_features(creds);
 	if (wrap_flags == 0) {
-		cli_credentials_set_gensec_features(creds, old_gensec_features & ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL));
+		cli_credentials_set_gensec_features(creds,
+				old_gensec_features & ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL),
+				CRED_SPECIFIED);
 	}
 
 	/* this call also sets the gensec_want_features */
@@ -332,7 +334,9 @@ try_logon_again:
 
 	/* reset the original gensec_features (on the credentials
 	 * context, so we don't tatoo it ) */
-	cli_credentials_set_gensec_features(creds, old_gensec_features);
+	cli_credentials_set_gensec_features(creds,
+					    old_gensec_features,
+					    CRED_SPECIFIED);
 
 	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
 		gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
