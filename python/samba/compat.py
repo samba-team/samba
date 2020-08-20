@@ -71,11 +71,6 @@ if PY3:
     # compat functions
     from functools import cmp_to_key as cmp_to_key_fn
 
-    # alias
-    def ConfigParser(defaults=None, dict_type=dict, allow_no_value=False):
-        from configparser import ConfigParser
-        return ConfigParser(defaults, dict_type, allow_no_value, interpolation=None)
-
 
 else:
     raise NotImplementedError("Samba versions >= 4.11 do not support Python 2.x")

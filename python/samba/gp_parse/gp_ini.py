@@ -22,7 +22,7 @@ import collections
 import re
 
 from xml.etree.ElementTree import Element, SubElement
-from samba.compat import ConfigParser
+from configparser import ConfigParser
 from io import StringIO
 
 from samba.gp_parse import GPParser, ENTITY_USER_ID
@@ -34,7 +34,8 @@ class GPIniParser(GPParser):
 
     def parse(self, contents):
         # Required dict_type in Python 2.7
-        self.ini_conf = ConfigParser(dict_type=collections.OrderedDict)
+        self.ini_conf = ConfigParser(dict_type=collections.OrderedDict,
+                                     interpolation=None)
         self.ini_conf.optionxform = str
 
         self.ini_conf.readfp(StringIO(contents.decode(self.encoding)))
@@ -88,7 +89,8 @@ class GPIniParser(GPParser):
 
     def load_xml(self, root):
         # Required dict_type in Python 2.7
-        self.ini_conf = ConfigParser(dict_type=collections.OrderedDict)
+        self.ini_conf = ConfigParser(dict_type=collections.OrderedDict,
+                                     interpolation=None)
         self.ini_conf.optionxform = str
 
         for s in root.findall('Section'):
@@ -110,7 +112,8 @@ class GPTIniParser(GPIniParser):
             super(GPTIniParser, self).parse(contents)
         except UnicodeDecodeError:
             # Required dict_type in Python 2.7
-            self.ini_conf = ConfigParser(dict_type=collections.OrderedDict)
+            self.ini_conf = ConfigParser(dict_type=collections.OrderedDict,
+                                         interpolation=None)
             self.ini_conf.optionxform = str
 
             # Fallback to Latin-1 which RSAT appears to use

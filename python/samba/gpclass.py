@@ -21,7 +21,7 @@ import errno
 import tdb
 sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
-from samba.compat import ConfigParser
+from configparser import ConfigParser
 from io import StringIO
 from samba.compat import get_bytes
 from abc import ABCMeta, abstractmethod
@@ -326,7 +326,7 @@ class gp_ext(object):
 class gp_inf_ext(gp_ext):
     def read(self, data_file):
         policy = open(data_file, 'rb').read()
-        inf_conf = ConfigParser()
+        inf_conf = ConfigParser(interpolation=None)
         inf_conf.optionxform = str
         try:
             inf_conf.readfp(StringIO(policy.decode()))
@@ -525,7 +525,7 @@ def parse_gpext_conf(smb_conf):
     else:
         lp.load_default()
     ext_conf = lp.state_path('gpext.conf')
-    parser = ConfigParser()
+    parser = ConfigParser(interpolation=None)
     parser.read(ext_conf)
     return lp, parser
 
