@@ -87,6 +87,7 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 	}
 	for(i=0; i<naces; i++) {
 		SMB_ACE4PROP_T aceprop;
+		uint16_t special = 0;
 
 		aceprop.aceType  = (uint32_t) acebuf[i].a_type;
 		aceprop.aceFlags = (uint32_t) acebuf[i].a_flags;
@@ -109,6 +110,8 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 			aceprop.aceMask |= SMB_ACE4_SYNCHRONIZE;
 		}
 
+		special = acebuf[i].a_flags & (ACE_OWNER|ACE_GROUP|ACE_EVERYONE);
+
 		if (is_dir && (aceprop.aceMask & SMB_ACE4_ADD_FILE)) {
 			aceprop.aceMask |= SMB_ACE4_DELETE_CHILD;
 		}
@@ -118,16 +121,20 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 			inherited_is_present = true;
 		}
 #endif
-		if(aceprop.aceFlags & ACE_OWNER) {
+		switch(special) {
+		case(ACE_OWNER):
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
 			aceprop.who.special_id = SMB_ACE4_WHO_OWNER;
-		} else if(aceprop.aceFlags & ACE_GROUP) {
+			break;
+		case(ACE_GROUP):
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
 			aceprop.who.special_id = SMB_ACE4_WHO_GROUP;
-		} else if(aceprop.aceFlags & ACE_EVERYONE) {
+			break;
+		case(ACE_EVERYONE):
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
 			aceprop.who.special_id = SMB_ACE4_WHO_EVERYONE;
-		} else {
+			break;
+		default:
 			aceprop.flags	= 0;
 		}
 		if (smb_add_ace4(pacl, &aceprop) == NULL) {
