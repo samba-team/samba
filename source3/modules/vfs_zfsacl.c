@@ -130,8 +130,9 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 		} else {
 			aceprop.flags	= 0;
 		}
-		if(smb_add_ace4(pacl, &aceprop) == NULL)
+		if (smb_add_ace4(pacl, &aceprop) == NULL) {
 			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 #ifdef ACE_INHERITED_ACE
