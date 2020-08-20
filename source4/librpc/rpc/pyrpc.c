@@ -293,11 +293,25 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	return ret;
 }
 
+static PyObject *py_iface_transport_encrypted(PyObject *self)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+
+	if (dcerpc_transport_encrypted(iface->pipe)) {
+		Py_RETURN_TRUE;
+	}
+
+	Py_RETURN_FALSE;
+}
+
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_request),
 		METH_VARARGS|METH_KEYWORDS,
 		"S.request(opnum, data, object=None) -> data\n"
 		"Make a raw request" },
+	{ "transport_encrypted", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_transport_encrypted),
+		METH_NOARGS,
+		"Check if the DCE transport is encrypted" },
 	{ NULL, NULL, 0, NULL },
 };
 
