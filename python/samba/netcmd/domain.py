@@ -102,6 +102,7 @@ from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
 from samba.common import get_string
+from samba.trust_utils import CreateTrustedDomainRelax
 
 string_version_to_constant = {
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
@@ -2528,54 +2529,20 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
             return blob
 
-        def generate_AuthInfoInternal(session_key, incoming=None, outgoing=None):
-            confounder = [0] * 512
-            for i in range(len(confounder)):
-                confounder[i] = random.randint(0, 255)
-
-            trustpass = drsblobs.trustDomainPasswords()
-
-            trustpass.confounder = confounder
-            trustpass.outgoing = outgoing
-            trustpass.incoming = incoming
-
-            trustpass_blob = ndr_pack(trustpass)
-
-            encrypted_trustpass = arcfour_encrypt(session_key, trustpass_blob)
-
-            auth_blob = lsa.DATA_BUF2()
-            auth_blob.size = len(encrypted_trustpass)
-            auth_blob.data = string_to_byte_array(encrypted_trustpass)
-
-            auth_info = lsa.TrustDomainInfoAuthInfoInternal()
-            auth_info.auth_blob = auth_blob
-
-            return auth_info
-
         update_time = samba.current_unix_time()
         incoming_blob = generate_AuthInOutBlob(incoming_secret, update_time)
         outgoing_blob = generate_AuthInOutBlob(outgoing_secret, update_time)
-
-        local_tdo_handle = None
-        remote_tdo_handle = None
-
-        local_auth_info = generate_AuthInfoInternal(local_lsa.session_key,
-                                                    incoming=incoming_blob,
-                                                    outgoing=outgoing_blob)
-        if remote_trust_info:
-            remote_auth_info = generate_AuthInfoInternal(remote_lsa.session_key,
-                                                         incoming=outgoing_blob,
-                                                         outgoing=incoming_blob)
 
         try:
             if remote_trust_info:
                 self.outf.write("Creating remote TDO.\n")
                 current_request = {"location": "remote", "name": "CreateTrustedDomainEx2"}
-                remote_tdo_handle = \
-                    remote_lsa.CreateTrustedDomainEx2(remote_policy,
-                                                      remote_trust_info,
-                                                      remote_auth_info,
-                                                      lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
+                remote_tdo_handle = CreateTrustedDomainRelax(remote_lsa,
+                                                             remote_policy,
+                                                             remote_trust_info,
+                                                             lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
+                                                             outgoing_blob,
+                                                             incoming_blob)
                 self.outf.write("Remote TDO created.\n")
                 if enc_types:
                     self.outf.write("Setting supported encryption types on remote TDO.\n")
@@ -2586,10 +2553,12 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
             self.outf.write("Creating local TDO.\n")
             current_request = {"location": "local", "name": "CreateTrustedDomainEx2"}
-            local_tdo_handle = local_lsa.CreateTrustedDomainEx2(local_policy,
-                                                                local_trust_info,
-                                                                local_auth_info,
-                                                                lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS)
+            local_tdo_handle = CreateTrustedDomainRelax(local_lsa,
+                                                        local_policy,
+                                                        local_trust_info,
+                                                        lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
+                                                        incoming_blob,
+                                                        outgoing_blob)
             self.outf.write("Local TDO created\n")
             if enc_types:
                 self.outf.write("Setting supported encryption types on local TDO.\n")
