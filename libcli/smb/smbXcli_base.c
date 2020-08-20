@@ -6436,6 +6436,19 @@ NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 	return NT_STATUS_OK;
 }
 
+uint16_t smb2cli_session_get_encryption_cipher(struct smbXcli_session *session)
+{
+	if (session->conn->protocol < PROTOCOL_SMB2_24) {
+		return 0;
+	}
+
+	if (!session->smb2->should_encrypt) {
+		return 0;
+	}
+
+	return session->conn->smb2.server.cipher;
+}
+
 struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx)
 {
 	struct smbXcli_tcon *tcon;
