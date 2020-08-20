@@ -51,6 +51,8 @@
 #include "../libcli/lsarpc/util_lsarpc.h"
 #include "lsa.h"
 #include "librpc/rpc/dcesrv_core.h"
+#include "librpc/rpc/dcerpc_helper.h"
+#include "lib/param/loadparm.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -1706,6 +1708,14 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 	gnutls_datum_t my_session_key;
 	NTSTATUS status;
 	int rc;
+	bool encrypted;
+
+	encrypted =
+		dcerpc_is_transport_encrypted(p->session_info);
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	status = session_extract_session_key(p->session_info, &lsession_key, KEY_USE_16BYTES);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1717,11 +1727,13 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 		.size = lsession_key.length,
 	};
 
+	GNUTLS_FIPS140_SET_LAX_MODE();
 	rc = gnutls_cipher_init(&cipher_hnd,
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&my_session_key,
 				NULL);
 	if (rc < 0) {
+		GNUTLS_FIPS140_SET_STRICT_MODE();
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
 	}
@@ -1730,6 +1742,7 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 				   auth_blob->data,
 				   auth_blob->length);
 	gnutls_cipher_deinit(cipher_hnd);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	if (rc < 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
