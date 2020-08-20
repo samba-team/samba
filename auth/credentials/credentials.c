@@ -947,6 +947,8 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 {
 	const char *sep = NULL;
 	const char *realm = lpcfg_realm(lp_ctx);
+	enum credentials_client_protection protection =
+		lpcfg_client_protection(lp_ctx);
 
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
 	if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
@@ -976,6 +978,20 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 	if (cred->signing_state_obtained <= CRED_SMB_CONF) {
 		/* Will be set to default for invalid smb.conf values */
 		cred->signing_state = lpcfg_client_signing(lp_ctx);
+		if (cred->signing_state == SMB_SIGNING_DEFAULT) {
+			switch (protection) {
+			case CRED_CLIENT_PROTECTION_DEFAULT:
+				break;
+			case CRED_CLIENT_PROTECTION_PLAIN:
+				cred->signing_state = SMB_SIGNING_OFF;
+				break;
+			case CRED_CLIENT_PROTECTION_SIGN:
+			case CRED_CLIENT_PROTECTION_ENCRYPT:
+				cred->signing_state = SMB_SIGNING_REQUIRED;
+				break;
+			}
+		}
+
 		cred->signing_state_obtained = CRED_SMB_CONF;
 	}
 
@@ -988,6 +1004,20 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 	if (cred->encryption_state_obtained <= CRED_SMB_CONF) {
 		/* Will be set to default for invalid smb.conf values */
 		cred->encryption_state = lpcfg_client_smb_encrypt(lp_ctx);
+		if (cred->encryption_state == SMB_ENCRYPTION_DEFAULT) {
+			switch (protection) {
+			case CRED_CLIENT_PROTECTION_DEFAULT:
+				break;
+			case CRED_CLIENT_PROTECTION_PLAIN:
+			case CRED_CLIENT_PROTECTION_SIGN:
+				cred->encryption_state = SMB_ENCRYPTION_OFF;
+				break;
+			case CRED_CLIENT_PROTECTION_ENCRYPT:
+				cred->encryption_state = SMB_ENCRYPTION_REQUIRED;
+				break;
+			}
+		}
+
 		cred->encryption_state_obtained = CRED_SMB_CONF;
 	}
 
