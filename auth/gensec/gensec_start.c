@@ -119,18 +119,18 @@ static const struct gensec_security_ops **gensec_use_kerberos_mechs(
 		}
 
 		switch (use_kerberos) {
-		case CRED_AUTO_USE_KERBEROS:
+		case CRED_USE_KERBEROS_DESIRED:
 			keep = true;
 			break;
 
-		case CRED_DONT_USE_KERBEROS:
+		case CRED_USE_KERBEROS_DISABLED:
 			if (old_gensec_list[i]->kerberos == false) {
 				keep = true;
 			}
 
 			break;
 
-		case CRED_MUST_USE_KERBEROS:
+		case CRED_USE_KERBEROS_REQUIRED:
 			if (old_gensec_list[i]->kerberos == true) {
 				keep = true;
 			}
@@ -158,7 +158,7 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 				TALLOC_CTX *mem_ctx)
 {
 	const struct gensec_security_ops * const *backends = gensec_security_all();
-	enum credentials_use_kerberos use_kerberos = CRED_AUTO_USE_KERBEROS;
+	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	bool keep_schannel = false;
 
 	if (gensec_security != NULL) {

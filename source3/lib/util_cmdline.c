@@ -307,9 +307,9 @@ void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 	enum credentials_use_kerberos krb5_state;
 
 	if (b) {
-		krb5_state = CRED_MUST_USE_KERBEROS;
+		krb5_state = CRED_USE_KERBEROS_REQUIRED;
 	} else {
-		krb5_state = CRED_DONT_USE_KERBEROS;
+		krb5_state = CRED_USE_KERBEROS_DISABLED;
 	}
 
 	cli_credentials_set_kerberos_state(auth_info->creds, krb5_state);
@@ -321,7 +321,7 @@ bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info)
 
 	krb5_state = cli_credentials_get_kerberos_state(auth_info->creds);
 
-	if (krb5_state == CRED_MUST_USE_KERBEROS) {
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 		return true;
 	}
 
@@ -336,17 +336,17 @@ void set_cmdline_auth_info_fallback_after_kerberos(struct user_auth_info *auth_i
 	krb5_state = cli_credentials_get_kerberos_state(auth_info->creds);
 
 	switch (krb5_state) {
-	case CRED_MUST_USE_KERBEROS:
+	case CRED_USE_KERBEROS_REQUIRED:
 		if (b) {
-			krb5_state = CRED_AUTO_USE_KERBEROS;
+			krb5_state = CRED_USE_KERBEROS_DESIRED;
 		}
 		break;
-	case CRED_AUTO_USE_KERBEROS:
+	case CRED_USE_KERBEROS_DESIRED:
 		if (!b) {
-			krb5_state = CRED_MUST_USE_KERBEROS;
+			krb5_state = CRED_USE_KERBEROS_REQUIRED;
 		}
 		break;
-	case CRED_DONT_USE_KERBEROS:
+	case CRED_USE_KERBEROS_DISABLED:
 		/* nothing to do */
 		break;
 	}
@@ -360,7 +360,7 @@ bool get_cmdline_auth_info_fallback_after_kerberos(const struct user_auth_info *
 
 	krb5_state = cli_credentials_get_kerberos_state(auth_info->creds);
 
-	if (krb5_state == CRED_AUTO_USE_KERBEROS) {
+	if (krb5_state == CRED_USE_KERBEROS_DESIRED) {
 		return true;
 	}
 

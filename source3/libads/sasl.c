@@ -158,7 +158,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		use_spnego_principal = false;
 	}
 
-	if (krb5_state == CRED_DONT_USE_KERBEROS) {
+	if (krb5_state == CRED_USE_KERBEROS_DISABLED) {
 		use_spnego_principal = false;
 	}
 
@@ -565,7 +565,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		{
 
 			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
-							     CRED_MUST_USE_KERBEROS,
+							     CRED_USE_KERBEROS_REQUIRED,
 							     p.service, p.hostname,
 							     blob);
 			if (ADS_ERR_OK(status)) {
@@ -581,7 +581,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
-							CRED_MUST_USE_KERBEROS,
+							CRED_USE_KERBEROS_REQUIRED,
 							p.service, p.hostname,
 							blob);
 			if (!ADS_ERR_OK(status)) {
@@ -616,7 +616,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	   library for HMAC_MD4 encryption */
 	mech = "NTLMSSP";
 	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
-					     CRED_DONT_USE_KERBEROS,
+					     CRED_USE_KERBEROS_DISABLED,
 					     p.service, p.hostname,
 					     data_blob_null);
 done:

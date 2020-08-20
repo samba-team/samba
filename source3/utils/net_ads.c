@@ -2515,7 +2515,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
-	cli_credentials_set_kerberos_state(creds, CRED_MUST_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_REQUIRED);
 
 	nt_status = cli_full_connection_creds(&cli, lp_netbios_name(), servername,
 					&server_ss, 0,

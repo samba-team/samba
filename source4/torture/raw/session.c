@@ -245,12 +245,12 @@ static bool test_session_expire1(struct torture_context *tctx)
 
 	use_kerberos = cli_credentials_get_kerberos_state(
 				popt_get_cmdline_credentials());
-	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
 		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
 		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
 	}
 
-	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+	torture_assert_int_equal(tctx, use_kerberos, CRED_USE_KERBEROS_REQUIRED,
 				 "please use -k yes");
 
 	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");

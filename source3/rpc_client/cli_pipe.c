@@ -2655,7 +2655,7 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 					NAME_NT_AUTHORITY, /* domain */
 					"SYSTEM",
 					NULL, /* password */
-					CRED_DONT_USE_KERBEROS,
+					CRED_USE_KERBEROS_DISABLED,
 					NULL, /* netlogon_creds_CredentialState */
 					presult);
 }

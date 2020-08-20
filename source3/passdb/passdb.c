@@ -2631,7 +2631,7 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 		/*
 		 * It's not possible to use NTLMSSP with a domain trust account.
 		 */
-		cli_credentials_set_kerberos_state(creds, CRED_MUST_USE_KERBEROS);
+		cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_REQUIRED);
 	} else {
 		/*
 		 * We can't use kerberos against an NT4 domain.
@@ -2639,7 +2639,7 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 		 * We should have a mode that also disallows NTLMSSP here,
 		 * as only NETLOGON SCHANNEL is possible.
 		 */
-		cli_credentials_set_kerberos_state(creds, CRED_DONT_USE_KERBEROS);
+		cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_DISABLED);
 	}
 
 	ok = cli_credentials_set_username(creds, account_name, CRED_SPECIFIED);
@@ -2657,7 +2657,7 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 		/*
 		 * We currently can't do kerberos just with an NTHASH.
 		 */
-		cli_credentials_set_kerberos_state(creds, CRED_DONT_USE_KERBEROS);
+		cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_DISABLED);
 		goto done;
 	}
 

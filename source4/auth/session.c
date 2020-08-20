@@ -295,7 +295,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 		/* This credential handle isn't useful for password
 		 * authentication, so ensure nobody tries to do that */
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
+						   CRED_USE_KERBEROS_REQUIRED);
 
 	}
 #endif

@@ -1492,9 +1492,9 @@ MODULE_INIT_FUNC(credentials)
 	PyModule_AddObject(m, "CALLBACK_RESULT", PyLong_FromLong(CRED_CALLBACK_RESULT));
 	PyModule_AddObject(m, "SPECIFIED", PyLong_FromLong(CRED_SPECIFIED));
 
-	PyModule_AddObject(m, "AUTO_USE_KERBEROS", PyLong_FromLong(CRED_AUTO_USE_KERBEROS));
-	PyModule_AddObject(m, "DONT_USE_KERBEROS", PyLong_FromLong(CRED_DONT_USE_KERBEROS));
-	PyModule_AddObject(m, "MUST_USE_KERBEROS", PyLong_FromLong(CRED_MUST_USE_KERBEROS));
+	PyModule_AddObject(m, "AUTO_USE_KERBEROS", PyLong_FromLong(CRED_USE_KERBEROS_DESIRED));
+	PyModule_AddObject(m, "DONT_USE_KERBEROS", PyLong_FromLong(CRED_USE_KERBEROS_DISABLED));
+	PyModule_AddObject(m, "MUST_USE_KERBEROS", PyLong_FromLong(CRED_USE_KERBEROS_REQUIRED));
 
 	PyModule_AddObject(m, "AUTO_KRB_FORWARDABLE",  PyLong_FromLong(CRED_AUTO_KRB_FORWARDABLE));
 	PyModule_AddObject(m, "NO_KRB_FORWARDABLE",    PyLong_FromLong(CRED_NO_KRB_FORWARDABLE));

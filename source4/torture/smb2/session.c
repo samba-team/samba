@@ -956,7 +956,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 
 	krb_state = cli_credentials_get_kerberos_state(
 			popt_get_cmdline_credentials());
-	if (krb_state == CRED_MUST_USE_KERBEROS) {
+	if (krb_state == CRED_USE_KERBEROS_REQUIRED) {
 		torture_skip(tctx,
 			     "Can't test failing session setup with kerberos.");
 	}
@@ -1064,12 +1064,12 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	size_t i;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
-	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
 		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
 		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
 	}
 
-	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+	torture_assert_int_equal(tctx, use_kerberos, CRED_USE_KERBEROS_REQUIRED,
 				 "please use -k yes");
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
@@ -1250,12 +1250,12 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	struct smb2_notify ntf2;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
-	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
 		torture_warning(tctx, "smb2.session.expire2 requires -k yes!");
 		torture_skip(tctx, "smb2.session.expire2 requires -k yes!");
 	}
 
-	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+	torture_assert_int_equal(tctx, use_kerberos, CRED_USE_KERBEROS_REQUIRED,
 				 "please use -k yes");
 
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
@@ -1612,7 +1612,7 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 	bool connected;
 
 	use_kerberos = cli_credentials_get_kerberos_state(credentials);
-	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+	if (use_kerberos != CRED_USE_KERBEROS_REQUIRED) {
 		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
 		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
 	}

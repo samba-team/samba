@@ -493,13 +493,13 @@ struct cli_credentials *net_context_creds(struct net_context *c,
 
 	if (c->opt_kerberos && c->opt_user_specified) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_AUTO_USE_KERBEROS);
+						   CRED_USE_KERBEROS_DESIRED);
 	} else if (c->opt_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
+						   CRED_USE_KERBEROS_REQUIRED);
 	} else {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_DONT_USE_KERBEROS);
+						   CRED_USE_KERBEROS_DISABLED);
 	}
 
 	if (c->opt_ccache) {

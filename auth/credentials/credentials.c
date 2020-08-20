@@ -44,6 +44,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->winbind_separator = '\\';
 
+	cred->use_kerberos = CRED_USE_KERBEROS_DESIRED;
+
 	cred->signing_state = SMB_SIGNING_DEFAULT;
 
 	/*
@@ -360,7 +362,7 @@ _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *c
 		return true;
 	}
 
-	if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+	if (cli_credentials_get_kerberos_state(cred) == CRED_USE_KERBEROS_REQUIRED) {
 		return true;
 	}
 
@@ -1018,7 +1020,7 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 	}
 	
 	if (lp_ctx != NULL &&
-	    cli_credentials_get_kerberos_state(cred) != CRED_DONT_USE_KERBEROS) {
+	    cli_credentials_get_kerberos_state(cred) != CRED_USE_KERBEROS_DISABLED) {
 		cli_credentials_set_ccache(cred, lp_ctx, NULL, CRED_GUESS_FILE,
 					   &error_string);
 	}
@@ -1097,7 +1099,7 @@ _PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_principal(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_workstation(cred, "", CRED_UNINITIALISED);
-	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(cred, CRED_USE_KERBEROS_DISABLED);
 }
 
 /**

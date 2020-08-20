@@ -73,7 +73,7 @@ static bool test_guess(struct torture_context *tctx)
 	const char *passwd_fd = getenv("PASSWD_FD");
 	const char *passwd_file = getenv("PASSWD_FILE");
 
-	cli_credentials_set_kerberos_state(creds, CRED_MUST_USE_KERBEROS);
+	cli_credentials_set_kerberos_state(creds, CRED_USE_KERBEROS_REQUIRED);
 
 	unsetenv("USER");
 	unsetenv("PASSWD_FD");

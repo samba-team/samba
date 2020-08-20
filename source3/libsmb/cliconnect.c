@@ -124,13 +124,13 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 
 	if (use_kerberos && fallback_after_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_AUTO_USE_KERBEROS);
+						   CRED_USE_KERBEROS_DESIRED);
 	} else if (use_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
+						   CRED_USE_KERBEROS_REQUIRED);
 	} else {
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_DONT_USE_KERBEROS);
+						   CRED_USE_KERBEROS_DISABLED);
 	}
 
 	if (use_ccache) {
@@ -255,7 +255,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 
 	krb5_state = cli_credentials_get_kerberos_state(creds);
 
-	if (krb5_state != CRED_DONT_USE_KERBEROS) {
+	if (krb5_state != CRED_USE_KERBEROS_DISABLED) {
 		try_kerberos = true;
 	}
 
@@ -275,7 +275,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		try_kerberos = false;
 	}
 
-	if (krb5_state == CRED_MUST_USE_KERBEROS && !try_kerberos) {
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED && !try_kerberos) {
 		DEBUG(0, ("Kerberos auth with '%s' (%s\\%s) to access "
 			  "'%s' not possible\n",
 			  user_principal, user_domain, user_account,
@@ -286,7 +286,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 
 	if (pass == NULL || strlen(pass) == 0) {
 		need_kinit = false;
-	} else if (krb5_state == CRED_MUST_USE_KERBEROS) {
+	} else if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 		need_kinit = try_kerberos;
 	} else {
 		need_kinit = try_kerberos;
@@ -321,14 +321,14 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	if (ret != 0) {
 		int dbglvl = DBGLVL_NOTICE;
 
-		if (krb5_state == CRED_MUST_USE_KERBEROS) {
+		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 			dbglvl = DBGLVL_ERR;
 		}
 
 		DEBUG(dbglvl, ("Kinit for %s to access %s failed: %s\n",
 			       user_principal, target_hostname,
 			       error_message(ret)));
-		if (krb5_state == CRED_MUST_USE_KERBEROS) {
+		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 			TALLOC_FREE(frame);
 			return krb5_to_nt_status(ret);
 		}

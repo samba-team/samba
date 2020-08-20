@@ -53,7 +53,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	const struct samr_Password *nt_hash = NULL;
 	int rc;
 
-	if (cred->use_kerberos == CRED_MUST_USE_KERBEROS) {
+	if (cred->use_kerberos == CRED_USE_KERBEROS_REQUIRED) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}

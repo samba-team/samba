@@ -1707,7 +1707,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 
 	if (use_kerberos) {
 		cli_credentials_set_kerberos_state(cli_creds,
-				CRED_MUST_USE_KERBEROS);
+				CRED_USE_KERBEROS_REQUIRED);
 	}
 
 	status = cli_full_connection_creds(&cli, NULL,

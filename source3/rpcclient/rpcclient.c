@@ -810,19 +810,19 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		case DCERPC_AUTH_TYPE_SPNEGO:
 			switch (pipe_default_auth_spnego_type) {
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				krb5_state = CRED_DONT_USE_KERBEROS;
+				krb5_state = CRED_USE_KERBEROS_DISABLED;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				krb5_state = CRED_MUST_USE_KERBEROS;
+				krb5_state = CRED_USE_KERBEROS_REQUIRED;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_NONE:
-				krb5_state = CRED_AUTO_USE_KERBEROS;
+				krb5_state = CRED_USE_KERBEROS_DESIRED;
 				break;
 			}
 			FALL_THROUGH;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
-			if (krb5_state != CRED_AUTO_USE_KERBEROS) {
+			if (krb5_state != CRED_USE_KERBEROS_DESIRED) {
 				cli_credentials_set_kerberos_state(creds,
 								   krb5_state);
 			}

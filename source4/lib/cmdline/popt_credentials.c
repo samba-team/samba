@@ -120,8 +120,8 @@ static void popt_common_credentials_callback(poptContext con,
 		cli_credentials_set_kerberos_state(
 			popt_get_cmdline_credentials(),
 						   use_kerberos 
-						   ? CRED_MUST_USE_KERBEROS
-						   : CRED_DONT_USE_KERBEROS);
+						   ? CRED_USE_KERBEROS_REQUIRED
+						   : CRED_USE_KERBEROS_DISABLED);
 		break;
 	}
 		
