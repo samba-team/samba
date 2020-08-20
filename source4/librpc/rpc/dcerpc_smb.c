@@ -147,6 +147,7 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 		struct dcerpc_pipe_open_smb_state);
 	struct composite_context *ctx = state->ctx;
 	struct dcecli_connection *c = state->c;
+	uint16_t enc_cipher;
 
 	ctx->status = tstream_smbXcli_np_open_recv(subreq,
 						   state->smb,
@@ -174,6 +175,16 @@ static void dcerpc_pipe_open_smb_done(struct tevent_req *subreq)
 
 	/* Over-ride the default session key with the SMB session key */
 	c->security_state.session_key = smb_session_key;
+
+	enc_cipher = smb2cli_session_get_encryption_cipher(state->smb->session);
+	switch (enc_cipher) {
+	case SMB2_ENCRYPTION_AES128_CCM:
+	case SMB2_ENCRYPTION_AES128_GCM:
+		c->transport.encrypted = true;
+		break;
+	default:
+		c->transport.encrypted = false;
+	}
 
 	c->transport.private_data = talloc_move(c, &state->smb);
 
