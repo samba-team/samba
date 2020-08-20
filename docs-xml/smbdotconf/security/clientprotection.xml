@@ -1,0 +1,51 @@
+<samba:parameter name="client protection"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_client_protection_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This parameter defines which protection Samba client
+		tools should use by default.
+	</para>
+
+	<para>Possible client settings are:</para>
+	<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>default</emphasis> - Use the individual
+				default values of the options:
+				<itemizedlist>
+					<listitem><para><parameter>client signing</parameter></para></listitem>
+					<listitem><para><parameter>client smb encrypt</parameter></para></listitem>
+				</itemizedlist>
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+				<emphasis>plain</emphasis> - This will send
+				everything just as plaintext, signing or
+				encryption are turned off.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+				<emphasis>sign</emphasis> - This will enable
+				integrity checking.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+				<emphasis>encrypt</emphasis> - This will enable
+				integrity checks and force encryption for
+				privacy.
+			</para>
+		</listitem>
+	</itemizedlist>
+</description>
+
+<value type="default">default</value>
+</samba:parameter>

@@ -959,6 +959,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals._client_use_kerberos = CRED_USE_KERBEROS_DESIRED;
 
+	Globals.client_protection = CRED_CLIENT_PROTECTION_DEFAULT;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }

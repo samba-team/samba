@@ -173,6 +173,14 @@ static const struct enum_list enum_use_kerberos_vals[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_client_protection_vals[] = {
+	{CRED_CLIENT_PROTECTION_DEFAULT,  "default"},
+	{CRED_CLIENT_PROTECTION_PLAIN,    "plain"},
+	{CRED_CLIENT_PROTECTION_SIGN,     "sign"},
+	{CRED_CLIENT_PROTECTION_ENCRYPT,  "encrypt"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_mdns_name_values[] = {
 	{MDNS_NAME_NETBIOS, "netbios"},
 	{MDNS_NAME_MDNS, "mdns"},

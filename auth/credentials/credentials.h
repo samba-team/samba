@@ -61,6 +61,13 @@ enum credentials_use_kerberos {
 	CRED_USE_KERBEROS_REQUIRED,
 };
 
+enum credentials_client_protection {
+	CRED_CLIENT_PROTECTION_DEFAULT = -1,
+	CRED_CLIENT_PROTECTION_PLAIN = 0,
+	CRED_CLIENT_PROTECTION_SIGN,
+	CRED_CLIENT_PROTECTION_ENCRYPT,
+};
+
 enum credentials_krb_forwardable {
 	CRED_AUTO_KRB_FORWARDABLE = 0, /* Default, follow library defaults */
 	CRED_NO_KRB_FORWARDABLE,       /* not forwardable */
