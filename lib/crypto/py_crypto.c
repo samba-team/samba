@@ -24,6 +24,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
+#include "lib/crypto/gnutls_helpers.h"
 
 static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 {
@@ -85,12 +86,27 @@ static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 	return result;
 }
 
+static PyObject *py_crypto_set_relax_mode(PyObject *module)
+{
+	GNUTLS_FIPS140_SET_LAX_MODE();
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_crypto_set_strict_mode(PyObject *module)
+{
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+
+	Py_RETURN_NONE;
+}
 
 static const char py_crypto_arcfour_crypt_blob_doc[] = "arcfour_crypt_blob(data, key)\n"
 					 "Encrypt the data with RC4 algorithm using the key";
 
 static PyMethodDef py_crypto_methods[] = {
 	{ "arcfour_crypt_blob", (PyCFunction)py_crypto_arcfour_crypt_blob, METH_VARARGS, py_crypto_arcfour_crypt_blob_doc },
+	{ "set_relax_mode", (PyCFunction)py_crypto_set_relax_mode, METH_NOARGS, "Set fips to relax mode" },
+	{ "set_strict_mode", (PyCFunction)py_crypto_set_strict_mode, METH_NOARGS, "Set fips to strict mode" },
 	{0},
 };
 
