@@ -1859,8 +1859,8 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 	/* Add any additional records */
 	if (select_flag & DNS_RPC_VIEW_ADDITIONAL_DATA) {
 		for (i=0; i<add_count; i++) {
-			struct dnsserver_zone *z2;
-
+			struct dnsserver_zone *z2 = NULL;
+			struct ldb_message *msg = NULL;
 			/* Search all the available zones for additional name */
 			for (z2 = dsstate->zones; z2; z2 = z2->next) {
 				char *encoded_name;
@@ -1877,6 +1877,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 					continue;
 				}
 				if (res->count == 1) {
+					msg = res->msgs[0];
 					break;
 				} else {
 					TALLOC_FREE(res);
@@ -1892,7 +1893,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 			}
 			status = dns_fill_records_array(tmp_ctx, NULL, DNS_TYPE_A,
 							select_flag, rname,
-							res->msgs[0], 0, recs,
+							msg, 0, recs,
 							NULL, NULL);
 			TALLOC_FREE(rname);
 			TALLOC_FREE(res);
