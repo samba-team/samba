@@ -770,6 +770,7 @@ planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_passwo
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.group")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.ou")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.computer")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.contact")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.forest")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.schema")
 planpythontestsuite("schema_dc:local", "samba.tests.samba_tool.schema")
