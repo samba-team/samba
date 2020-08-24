@@ -2178,8 +2178,10 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 	struct resolve_wins_state *state;
 	char **wins_tags = NULL;
 	struct sockaddr_storage src_ss;
+	struct samba_sockaddr src_sa = {0};
 	struct in_addr src_ip;
 	int i, num_wins_tags;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct resolve_wins_state);
@@ -2200,9 +2202,15 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 		zero_sockaddr(&src_ss);
 	}
 
-	if (src_ss.ss_family != AF_INET) {
+	ok = sockaddr_storage_to_samba_sockaddr(&src_sa, &src_ss);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	if (src_sa.u.ss.ss_family != AF_INET) {
 		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &src_ss);
+		print_sockaddr(addr, sizeof(addr), &src_sa.u.ss);
 		DEBUG(3,("resolve_wins: cannot receive WINS replies "
 			"on IPv6 address %s\n",
 			addr));
@@ -2210,7 +2218,7 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	src_ip = ((const struct sockaddr_in *)(void *)&src_ss)->sin_addr;
+	src_ip = src_sa.u.in.sin_addr;
 
 	wins_tags = wins_srv_tags();
 	if (wins_tags == NULL) {
