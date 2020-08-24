@@ -1484,6 +1484,8 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		uint16_t flags;
 		struct in_addr ip;
 		struct sockaddr_storage addr;
+		struct samba_sockaddr sa = {0};
+		bool ok;
 		int j;
 
 		flags = RSVAL(&nmb->answers->rdata[i*6], 0);
@@ -1492,14 +1494,24 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		putip((char *)&ip,&nmb->answers->rdata[2+i*6]);
 		in_addr_to_sockaddr_storage(&addr, ip);
 
-		if (is_zero_addr(&addr)) {
+		ok = sockaddr_storage_to_samba_sockaddr(&sa, &addr);
+		if (!ok) {
+			continue;
+		}
+
+		if (is_zero_addr(&sa.u.ss)) {
 			continue;
 		}
 
 		for (j=0; j<state->num_addrs; j++) {
-			if (sockaddr_equal(
-				    (struct sockaddr *)(void *)&addr,
-				    (struct sockaddr *)(void *)&state->addrs[j])) {
+			struct samba_sockaddr sa_j = {0};
+
+			ok = sockaddr_storage_to_samba_sockaddr(&sa_j,
+						&state->addrs[j]);
+			if (!ok) {
+				continue;
+			}
+			if (sockaddr_equal(&sa.u.sa, &sa_j.u.sa)) {
 				break;
 			}
 		}
