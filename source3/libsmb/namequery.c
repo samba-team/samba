@@ -442,10 +442,7 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct sock_packet_read_state *state = tevent_req_data(
 		req, struct sock_packet_read_state);
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in sin;
-	} addr;
+	struct samba_sockaddr addr = {0};
 	ssize_t ret;
 	ssize_t received;
 	int err;
@@ -474,8 +471,8 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq)
 		goto retry;
 	}
 	ret = tsocket_address_bsd_sockaddr(state->addr,
-					   &addr.sa,
-					   sizeof(addr.sin));
+					&addr.u.sa,
+					sizeof(addr.u.in));
 	if (ret == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		return;
@@ -483,7 +480,7 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq)
 
 	state->packet = parse_packet_talloc(
 		state, (char *)state->buf, received, state->type,
-		addr.sin.sin_addr, addr.sin.sin_port);
+		addr.u.in.sin_addr, addr.u.in.sin_port);
 	if (state->packet == NULL) {
 		DEBUG(10, ("parse_packet failed\n"));
 		goto retry;
