@@ -247,24 +247,27 @@ char *saf_fetch(TALLOC_CTX *mem_ctx, const char *domain )
 	return server;
 }
 
-static void set_socket_addr_v4(struct sockaddr_storage *addr)
+static void set_socket_addr_v4(struct samba_sockaddr *addr)
 {
-	if (!interpret_string_addr(addr, lp_nbt_client_socket_address(),
+	if (!interpret_string_addr(&addr->u.ss, lp_nbt_client_socket_address(),
 				   AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(addr);
+		zero_sockaddr(&addr->u.ss);
+		/* zero_sockaddr sets family to AF_INET. */
+		addr->sa_socklen = sizeof(struct sockaddr_in);
 	}
-	if (addr->ss_family != AF_INET) {
-		zero_sockaddr(addr);
+	if (addr->u.ss.ss_family != AF_INET) {
+		zero_sockaddr(&addr->u.ss);
+		/* zero_sockaddr sets family to AF_INET. */
+		addr->sa_socklen = sizeof(struct sockaddr_in);
 	}
 }
 
 static struct in_addr my_socket_addr_v4(void)
 {
-	struct sockaddr_storage my_addr;
-	struct sockaddr_in *in_addr = (struct sockaddr_in *)((char *)&my_addr);
+	struct samba_sockaddr my_addr = {0};
 
 	set_socket_addr_v4(&my_addr);
-	return in_addr->sin_addr;
+	return my_addr.u.in.sin_addr;
 }
 
 /****************************************************************************
@@ -737,7 +740,7 @@ static NTSTATUS nb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 **************************************************************************/
 
 struct node_status_query_state {
-	struct sockaddr_storage my_addr;
+	struct samba_sockaddr my_addr;
 	struct sockaddr_storage addr;
 	uint8_t buf[1024];
 	ssize_t buflen;
@@ -803,7 +806,7 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_trans_send(state, ev, &state->my_addr, &state->addr, false,
+	subreq = nb_trans_send(state, ev, &state->my_addr.u.ss, &state->addr, false,
 			       state->buf, state->buflen,
 			       NMB_PACKET, nmb->header.name_trn_id,
 			       node_status_query_validator, NULL);
@@ -1239,7 +1242,7 @@ static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
 ****************************************************************************/
 
 struct name_query_state {
-	struct sockaddr_storage my_addr;
+	struct samba_sockaddr my_addr;
 	struct sockaddr_storage addr;
 	bool bcast;
 	bool bcast_star_query;
@@ -1333,7 +1336,7 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_trans_send(state, ev, &state->my_addr, &state->addr, bcast,
+	subreq = nb_trans_send(state, ev, &state->my_addr.u.ss, &state->addr, bcast,
 			       state->buf, state->buflen,
 			       NMB_PACKET, nmb->header.name_trn_id,
 			       name_query_validator, state);
