@@ -741,7 +741,7 @@ static NTSTATUS nb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 struct node_status_query_state {
 	struct samba_sockaddr my_addr;
-	struct sockaddr_storage addr;
+	struct samba_sockaddr addr;
 	uint8_t buf[1024];
 	ssize_t buflen;
 	struct packet_struct *packet;
@@ -760,7 +760,7 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 	struct node_status_query_state *state;
 	struct packet_struct p;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	struct sockaddr_in *in_addr;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct node_status_query_state);
@@ -774,9 +774,13 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->addr = *addr;
-	in_addr = (struct sockaddr_in *)(void *)&state->addr;
-	in_addr->sin_port = htons(NMB_PORT);
+	ok = sockaddr_storage_to_samba_sockaddr(&state->addr, addr);
+	if (!ok) {
+		/* node status must be IPv4 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_ADDRESS);
+		return tevent_req_post(req, ev);
+	}
+	state->addr.u.in.sin_port = htons(NMB_PORT);
 
 	set_socket_addr_v4(&state->my_addr);
 
@@ -809,7 +813,7 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 	subreq = nb_trans_send(state,
 				ev,
 				&state->my_addr.u.ss,
-				&state->addr,
+				&state->addr.u.ss,
 				false,
 				state->buf,
 				state->buflen,
