@@ -392,6 +392,29 @@ member: %s
         else:
             self.transaction_commit()
 
+    def prepare_attr_replace(self, msg, old, attr_name, value):
+        """Changes the MessageElement with the given attr_name of the
+        given Message. If the value is "" set an empty value and the flag
+        FLAG_MOD_DELETE, otherwise set the new value and FLAG_MOD_REPLACE.
+        If the value is None or the Message contains the attr_name with this
+        value, nothing will changed."""
+        # skip unchanged attribute
+        if value is None:
+            return
+        if attr_name in old and str(value) == str(old[attr_name]):
+            return
+
+        # remove attribute
+        if len(value) == 0:
+            if attr_name in old:
+                el = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, attr_name)
+                msg.add(el)
+            return
+
+        # change attribute
+        el = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, attr_name)
+        msg.add(el)
+
     def newuser(self, username, password,
                 force_password_change_at_next_login_req=False,
                 useusernameascn=False, userou=None, surname=None, givenname=None,
