@@ -806,10 +806,17 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_trans_send(state, ev, &state->my_addr.u.ss, &state->addr, false,
-			       state->buf, state->buflen,
-			       NMB_PACKET, nmb->header.name_trn_id,
-			       node_status_query_validator, NULL);
+	subreq = nb_trans_send(state,
+				ev,
+				&state->my_addr.u.ss,
+				&state->addr,
+				false,
+				state->buf,
+				state->buflen,
+				NMB_PACKET,
+				nmb->header.name_trn_id,
+				node_status_query_validator,
+				NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		DEBUG(10, ("nb_trans_send failed\n"));
 		return tevent_req_post(req, ev);
@@ -1336,10 +1343,17 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_trans_send(state, ev, &state->my_addr.u.ss, &state->addr, bcast,
-			       state->buf, state->buflen,
-			       NMB_PACKET, nmb->header.name_trn_id,
-			       name_query_validator, state);
+	subreq = nb_trans_send(state,
+				ev,
+				&state->my_addr.u.ss,
+				&state->addr,
+				bcast,
+				state->buf,
+				state->buflen,
+				NMB_PACKET,
+				nmb->header.name_trn_id,
+				name_query_validator,
+				state);
 	if (tevent_req_nomem(subreq, req)) {
 		DEBUG(10, ("nb_trans_send failed\n"));
 		return tevent_req_post(req, ev);
