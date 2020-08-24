@@ -928,9 +928,15 @@ static bool name_status_lmhosts(const struct sockaddr_storage *paddr,
 	FILE *f;
 	char *name;
 	int name_type;
-	struct sockaddr_storage addr;
+	struct samba_sockaddr addr_in = {0};
+	struct samba_sockaddr addr = {0};
+	bool ok;
 
-	if (paddr->ss_family != AF_INET) {
+	ok = sockaddr_storage_to_samba_sockaddr(&addr_in, paddr);
+	if (!ok) {
+		return false;
+	}
+	if (addr_in.u.ss.ss_family != AF_INET) {
 		return false;
 	}
 
@@ -939,16 +945,14 @@ static bool name_status_lmhosts(const struct sockaddr_storage *paddr,
 		return false;
 	}
 
-	while (getlmhostsent(talloc_tos(), f, &name, &name_type, &addr)) {
-		if (addr.ss_family != AF_INET) {
+	while (getlmhostsent(talloc_tos(), f, &name, &name_type, &addr.u.ss)) {
+		if (addr.u.ss.ss_family != AF_INET) {
 			continue;
 		}
 		if (name_type != qname_type) {
 			continue;
 		}
-		if (memcmp(&((const struct sockaddr_in *)paddr)->sin_addr,
-			   &((const struct sockaddr_in *)&addr)->sin_addr,
-			   sizeof(struct in_addr)) == 0) {
+		if (sockaddr_equal(&addr_in.u.sa, &addr.u.sa)) {
 			fstrcpy(pname, name);
 			endlmhosts(f);
 			return true;
