@@ -956,7 +956,6 @@ bool name_status_find(const char *q_name,
 			fstring name)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct sockaddr_storage ss;
 	struct node_status *addrs = NULL;
 	struct nmb_name nname;
 	int count = 0, i;
@@ -991,8 +990,6 @@ bool name_status_find(const char *q_name,
 		namecache_status_store(q_name, q_type, type, to_ss, name);
 		return true;
 	}
-
-	set_socket_addr_v4(&ss);
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
