@@ -1203,13 +1203,28 @@ int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 
 	/* One loop to set duplicates to a zero addr. */
 	for ( i=0; i<count; i++ ) {
-		if ( is_zero_addr(&iplist[i].ss)) {
+		bool ok;
+		struct samba_sockaddr sa_i = {0};
+
+		ok = sockaddr_storage_to_samba_sockaddr(&sa_i, &iplist[i].ss);
+		if (!ok) {
+			continue;
+		}
+
+		if (is_zero_addr(&sa_i.u.ss)) {
 			continue;
 		}
 
 		for ( j=i+1; j<count; j++ ) {
-			if (sockaddr_equal((struct sockaddr *)(void *)&iplist[i].ss,
-					   (struct sockaddr *)(void *)&iplist[j].ss) &&
+			struct samba_sockaddr sa_j = {0};
+
+			ok = sockaddr_storage_to_samba_sockaddr(&sa_j,
+							&iplist[j].ss);
+			if (!ok) {
+				continue;
+			}
+
+			if (sockaddr_equal(&sa_i.u.sa, &sa_j.u.sa) &&
 					iplist[i].port == iplist[j].port) {
 				zero_sockaddr(&iplist[j].ss);
 			}
