@@ -31,10 +31,8 @@
 */
 struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 {
-	struct security_token *st;
-
-	st = talloc_zero(mem_ctx, struct security_token);
-
+	struct security_token *st = talloc_zero(
+		mem_ctx, struct security_token);
 	return st;
 }
 
