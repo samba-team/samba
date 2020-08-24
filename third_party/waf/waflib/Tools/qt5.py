@@ -482,8 +482,8 @@ def configure(self):
 		self.fatal('No CXX compiler defined: did you forget to configure compiler_cxx first?')
 
 	# Qt5 may be compiled with '-reduce-relocations' which requires dependent programs to have -fPIE or -fPIC?
-	frag = '#include <QApplication>\nint main(int argc, char **argv) {return 0;}\n'
-	uses = 'QT5CORE QT5WIDGETS QT5GUI'
+	frag = '#include <QMap>\nint main(int argc, char **argv) {QMap<int,int> m;return m.keys().size();}\n'
+	uses = 'QT5CORE'
 	for flag in [[], '-fPIE', '-fPIC', '-std=c++11' , ['-std=c++11', '-fPIE'], ['-std=c++11', '-fPIC']]:
 		msg = 'See if Qt files compile '
 		if flag:
@@ -499,7 +499,7 @@ def configure(self):
 
 	# FreeBSD does not add /usr/local/lib and the pkg-config files do not provide it either :-/
 	if Utils.unversioned_sys_platform() == 'freebsd':
-		frag = '#include <QApplication>\nint main(int argc, char **argv) { QApplication app(argc, argv); return NULL != (void*) (&app);}\n'
+		frag = '#include <QMap>\nint main(int argc, char **argv) {QMap<int,int> m;return m.keys().size();}\n'
 		try:
 			self.check(features='qt5 cxx cxxprogram', use=uses, fragment=frag, msg='Can we link Qt programs on FreeBSD directly?')
 		except self.errors.ConfigurationError:

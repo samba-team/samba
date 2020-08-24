@@ -508,23 +508,27 @@ def find_binary(self, filenames, exts, paths):
 @conf
 def run_build(self, *k, **kw):
 	"""
-	Create a temporary build context to execute a build. A reference to that build
-	context is kept on self.test_bld for debugging purposes, and you should not rely
-	on it too much (read the note on the cache below).
-	The parameters given in the arguments to this function are passed as arguments for
-	a single task generator created in the build. Only three parameters are obligatory:
+	Create a temporary build context to execute a build. A temporary reference to that build
+	context is kept on self.test_bld for debugging purposes.
+	The arguments to this function are passed to a single task generator for that build.
+	Only three parameters are mandatory:
 
 	:param features: features to pass to a task generator created in the build
 	:type features: list of string
 	:param compile_filename: file to create for the compilation (default: *test.c*)
 	:type compile_filename: string
-	:param code: code to write in the filename to compile
+	:param code: input file contents
 	:type code: string
 
-	Though this function returns *0* by default, the build may set an attribute named *retval* on the
+	Though this function returns *0* by default, the build may bind attribute named *retval* on the
 	build context object to return a particular value. See :py:func:`waflib.Tools.c_config.test_exec_fun` for example.
 
-	This function also features a cache which can be enabled by the following option::
+	The temporary builds creates a temporary folder; the name of that folder is calculated
+	by hashing input arguments to this function, with the exception of :py:class:`waflib.ConfigSet.ConfigSet`
+	objects which are used for both reading and writing values.
+
+	This function also features a cache which is disabled by default; that cache relies
+	on the hash value calculated as indicated above::
 
 		def options(opt):
 			opt.add_option('--confcache', dest='confcache', default=0,
@@ -538,7 +542,10 @@ def run_build(self, *k, **kw):
 	buf = []
 	for key in sorted(kw.keys()):
 		v = kw[key]
-		if hasattr(v, '__call__'):
+		if isinstance(v, ConfigSet.ConfigSet):
+			# values are being written to, so they are excluded from contributing to the hash
+			continue
+		elif hasattr(v, '__call__'):
 			buf.append(Utils.h_fun(v))
 		else:
 			buf.append(str(v))

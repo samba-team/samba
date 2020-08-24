@@ -40,6 +40,8 @@ the following environment variables for the `pytest` test runner:
 
    - `pytest_libpath` attribute is used to manually specify additional linker paths.
 
+3. Java class search path (CLASSPATH) of any Java/Javalike dependency
+
 Note: `pytest` cannot automatically determine the correct `PYTHONPATH` for `pyext` taskgens
       because the extension might be part of a Python package or used standalone:
 
@@ -119,6 +121,7 @@ def pytest_process_use(self):
 	self.pytest_use_seen = []
 	self.pytest_paths = [] # strings or Nodes
 	self.pytest_libpaths = [] # strings or Nodes
+	self.pytest_javapaths = [] # strings or Nodes
 	self.pytest_dep_nodes = []
 
 	names = self.to_list(getattr(self, 'use', []))
@@ -156,6 +159,17 @@ def pytest_process_use(self):
 				# If buildcopy is not used, depend on sources instead
 				extend_unique(self.pytest_dep_nodes, tg.source)
 				extend_unique(self.pytest_paths, [pypath.abspath()])
+
+		if 'javac' in tg.features:
+			# If a JAR is generated point to that, otherwise to directory
+			if getattr(tg, 'jar_task', None):
+				extend_unique(self.pytest_javapaths, [tg.jar_task.outputs[0].abspath()])
+			else:
+				extend_unique(self.pytest_javapaths, [tg.path.get_bld()])
+
+			# And add respective dependencies if present
+			if tg.use_lst:
+				extend_unique(self.pytest_javapaths, tg.use_lst)
 
 		if getattr(tg, 'link_task', None):
 			# For tasks with a link_task (C, C++, D et.c.) include their library paths:
@@ -212,8 +226,9 @@ def make_pytest(self):
 			Logs.debug("ut: %s: Adding paths %s=%s", self, var, lst)
 			self.ut_env[var] = os.pathsep.join(lst) + os.pathsep + self.ut_env.get(var, '')
 
-		# Prepend dependency paths to PYTHONPATH and LD_LIBRARY_PATH
+		# Prepend dependency paths to PYTHONPATH, CLASSPATH and LD_LIBRARY_PATH
 		add_paths('PYTHONPATH', self.pytest_paths)
+		add_paths('CLASSPATH', self.pytest_javapaths)
 
 		if Utils.is_win32:
 			add_paths('PATH', self.pytest_libpaths)

@@ -306,7 +306,7 @@ def distclean(ctx):
 
 	# remove a build folder, if any
 	cur = '.'
-	if ctx.options.no_lock_in_top:
+	if os.environ.get('NO_LOCK_IN_TOP') or ctx.options.no_lock_in_top:
 		cur = ctx.options.out
 
 	try:
@@ -333,9 +333,9 @@ def distclean(ctx):
 			remove_and_log(env.out_dir, shutil.rmtree)
 
 		env_dirs = [env.out_dir]
-		if not ctx.options.no_lock_in_top:
+		if not (os.environ.get('NO_LOCK_IN_TOP') or ctx.options.no_lock_in_top):
 			env_dirs.append(env.top_dir)
-		if not ctx.options.no_lock_in_run:
+		if not (os.environ.get('NO_LOCK_IN_RUN') or ctx.options.no_lock_in_run):
 			env_dirs.append(env.run_dir)
 		for k in env_dirs:
 			p = os.path.join(k, Options.lockfile)

@@ -38,7 +38,7 @@ def sniff_features(**kw):
 	:return: the list of features for a task generator processing the source files
 	:rtype: list of string
 	"""
-	exts = get_extensions(kw['source'])
+	exts = get_extensions(kw.get('source', []))
 	typ = kw['typ']
 	feats = []
 
@@ -72,7 +72,7 @@ def sniff_features(**kw):
 				feats.append(x + typ)
 				will_link = True
 		if not will_link and not kw.get('features', []):
-			raise Errors.WafError('Cannot link from %r, try passing eg: features="c cprogram"?' % kw)
+			raise Errors.WafError('Unable to determine how to link %r, try adding eg: features="c cshlib"?' % kw)
 	return feats
 
 def set_features(kw, typ):

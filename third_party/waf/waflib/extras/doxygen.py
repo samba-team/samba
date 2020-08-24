@@ -69,6 +69,7 @@ def parse_doxy(txt):
 class doxygen(Task.Task):
 	vars  = ['DOXYGEN', 'DOXYFLAGS']
 	color = 'BLUE'
+	ext_in = [ '.py', '.c', '.h', '.java', '.pb.cc' ]
 
 	def runnable_status(self):
 		'''

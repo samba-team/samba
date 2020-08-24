@@ -620,7 +620,7 @@ def configure(conf):
 	v.PYO = getattr(Options.options, 'pyo', 1)
 
 	try:
-		v.PYTAG = conf.cmd_and_log(conf.env.PYTHON + ['-c', "import imp;print(imp.get_tag())"]).strip()
+		v.PYTAG = conf.cmd_and_log(conf.env.PYTHON + ['-c', "import sys\ntry:\n print(sys.implementation.cache_tag)\nexcept AttributeError:\n import imp\n print(imp.get_tag())\n"]).strip()
 	except Errors.WafError:
 		pass
 

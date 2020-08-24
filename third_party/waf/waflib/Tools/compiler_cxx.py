@@ -38,7 +38,7 @@ from waflib.Logs import debug
 
 cxx_compiler = {
 'win32':  ['msvc', 'g++', 'clang++'],
-'cygwin': ['g++'],
+'cygwin': ['g++', 'clang++'],
 'darwin': ['clang++', 'g++'],
 'aix':    ['xlc++', 'g++', 'clang++'],
 'linux':  ['g++', 'clang++', 'icpc'],
