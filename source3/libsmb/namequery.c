@@ -3394,9 +3394,19 @@ bool resolve_name(const char *name,
 
 		if (prefer_ipv4) {
 			for (i=0; i<count; i++) {
-				if (!is_zero_addr(&ss_list[i].ss) &&
-				    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss) &&
-						(ss_list[i].ss.ss_family == AF_INET)) {
+				struct samba_sockaddr sa = {0};
+				bool ok;
+
+				ok = sockaddr_storage_to_samba_sockaddr(&sa,
+								&ss_list[i].ss);
+				if (!ok) {
+					SAFE_FREE(ss_list);
+					TALLOC_FREE(frame);
+					return false;
+				}
+				if (!is_zero_addr(&sa.u.ss) &&
+						!is_broadcast_addr(&sa.u.sa) &&
+						(sa.u.ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
 					SAFE_FREE(ss_list);
 					TALLOC_FREE(frame);
@@ -3407,8 +3417,18 @@ bool resolve_name(const char *name,
 
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			if (!is_zero_addr(&ss_list[i].ss) &&
-			    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
+			struct samba_sockaddr sa = {0};
+			bool ok;
+
+			ok = sockaddr_storage_to_samba_sockaddr(&sa,
+								&ss_list[i].ss);
+			if (!ok) {
+				SAFE_FREE(ss_list);
+				TALLOC_FREE(frame);
+				return false;
+			}
+			if (!is_zero_addr(&sa.u.ss) &&
+					!is_broadcast_addr(&sa.u.sa)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
 				TALLOC_FREE(frame);
