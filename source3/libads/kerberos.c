@@ -423,6 +423,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	size_t i;
 	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite = NULL;
+	struct samba_sockaddr sa = {0};
 	int count_site = 0;
 	int count_nonsite;
 	size_t num_dcs;
@@ -432,12 +433,18 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *result = NULL;
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
+	bool ok;
 	char *kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n", "",
 					print_canonical_sockaddr_with_port(mem_ctx, pss));
 
 	if (kdc_str == NULL) {
 		TALLOC_FREE(frame);
 		return NULL;
+	}
+
+	ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
+	if (!ok) {
+		goto out;
 	}
 
 	/*
@@ -465,18 +472,30 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	num_dcs = 0;
 
 	for (i = 0; i < count_site; i++) {
-		if (!sockaddr_equal(
-			(const struct sockaddr *)pss,
-			(const struct sockaddr *)&ip_srv_site[i].ss)) {
+		struct samba_sockaddr ip_sa = {0};
+
+		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
+						&ip_srv_site[i].ss);
+		if (!ok) {
+			goto out;
+		}
+
+		if (!sockaddr_equal(&sa.u.sa, &ip_sa.u.sa)) {
 			add_sockaddr_unique(dc_addrs, &num_dcs,
 					    &ip_srv_site[i].ss);
 		}
 	}
 
 	for (i = 0; i < count_nonsite; i++) {
-		if (!sockaddr_equal(
-			(const struct sockaddr *)pss,
-			(const struct sockaddr *)&ip_srv_nonsite[i].ss)) {
+		struct samba_sockaddr ip_sa = {0};
+
+		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
+						&ip_srv_nonsite[i].ss);
+		if (!ok) {
+			goto out;
+		}
+
+		if (!sockaddr_equal(&sa.u.sa, &ip_sa.u.sa)) {
 			add_sockaddr_unique(dc_addrs, &num_dcs,
 					    &ip_srv_nonsite[i].ss);
 		}
