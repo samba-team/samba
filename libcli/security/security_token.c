@@ -34,9 +34,6 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 	struct security_token *st;
 
 	st = talloc_zero(mem_ctx, struct security_token);
-	if (!st) {
-		return NULL;
-	}
 
 	return st;
 }
