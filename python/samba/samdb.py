@@ -415,6 +415,37 @@ member: %s
         el = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, attr_name)
         msg.add(el)
 
+    def fullname_from_names(self, given_name=None, initials=None, surname=None,
+                            old_attrs={}, fallback_default=""):
+        """Prepares new combined fullname, using the name parts.
+        Used for things like displayName or cn.
+        Use the original name values, if no new one is specified."""
+
+        attrs = {"givenName": given_name,
+                 "initials": initials,
+                 "sn": surname}
+
+        # if the attribute is not specified, try to use the old one
+        for attr_name, attr_value in attrs.items():
+            if attr_value == None and attr_name in old_attrs:
+                attrs[attr_name] = str(old_attrs[attr_name])
+
+        # add '.' to initials if initals are not None and not "" and if the initials
+        # don't have already a '.' at the end
+        if attrs["initials"] and not attrs["initials"].endswith('.'):
+            attrs["initials"] += '.'
+
+        # remove empty values (None and '')
+        attrs_values = list(filter(None, attrs.values()))
+
+        # fullname is the combination of not-empty values as string, separated by ' '
+        fullname = ' '.join(attrs_values)
+
+        if fullname == '':
+            return fallback_default
+
+        return fullname
+
     def newuser(self, username, password,
                 force_password_change_at_next_login_req=False,
                 useusernameascn=False, userou=None, surname=None, givenname=None,
@@ -460,16 +491,9 @@ member: %s
         :param smartcard_required: set the UF_SMARTCARD_REQUIRED bit of the new user
         """
 
-        displayname = ""
-        if givenname is not None:
-            displayname += givenname
-
-        if initials is not None:
-            displayname += ' %s.' % initials
-
-        if surname is not None:
-            displayname += ' %s' % surname
-
+        displayname = self.fullname_from_names(given_name=givenname,
+                                               initials=initials,
+                                               surname=surname)
         cn = username
         if useusernameascn is None and displayname != "":
             cn = displayname
@@ -623,15 +647,9 @@ member: %s
         """
 
         # Prepare the contact name like the RSAT, using the name parts.
-        cn = ""
-        if givenname is not None:
-            cn += givenname
-
-        if initials is not None:
-            cn += ' %s.' % initials
-
-        if surname is not None:
-            cn += ' %s' % surname
+        cn = self.fullname_from_names(given_name=givenname,
+                                      initials=initials,
+                                      surname=surname)
 
         # Use the specified fullcontactname instead of the previously prepared
         # contact name, if it is specified.
