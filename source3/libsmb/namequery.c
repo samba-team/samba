@@ -556,8 +556,8 @@ static void nb_trans_send_next(struct tevent_req *subreq);
 static struct tevent_req *nb_trans_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	const struct sockaddr_storage *_my_addr,
-	const struct sockaddr_storage *_dst_addr,
+	const struct samba_sockaddr *_my_addr,
+	const struct samba_sockaddr *_dst_addr,
 	bool bcast,
 	uint8_t *buf, size_t buflen,
 	enum packet_type type, int trn_id,
@@ -565,12 +565,10 @@ static struct tevent_req *nb_trans_send(
 			  void *private_data),
 	void *private_data)
 {
-	const struct sockaddr *my_addr =
-		discard_const_p(const struct sockaddr, _my_addr);
-	size_t my_addr_len = sizeof(*_my_addr);
-	const struct sockaddr *dst_addr =
-		discard_const_p(const struct sockaddr, _dst_addr);
-	size_t dst_addr_len = sizeof(*_dst_addr);
+	const struct sockaddr *my_addr = &_my_addr->u.sa;
+	size_t my_addr_len = sizeof(_my_addr->u.in); /*We know it's AF_INET.*/
+	const struct sockaddr *dst_addr = &_dst_addr->u.sa;
+	size_t dst_addr_len = sizeof(_dst_addr->u.in); /*We know it's AF_INET.*/
 	struct tevent_req *req, *subreq;
 	struct nb_trans_state *state;
 	int ret;
@@ -809,8 +807,8 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 
 	subreq = nb_trans_send(state,
 				ev,
-				&state->my_addr.u.ss,
-				&state->addr.u.ss,
+				&state->my_addr,
+				&state->addr,
 				false,
 				state->buf,
 				state->buflen,
@@ -1380,8 +1378,8 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 
 	subreq = nb_trans_send(state,
 				ev,
-				&state->my_addr.u.ss,
-				&state->addr.u.ss,
+				&state->my_addr,
+				&state->addr,
 				bcast,
 				state->buf,
 				state->buflen,
