@@ -135,7 +135,11 @@ class DnsHandler(sserver.BaseRequestHandler):
             response.operation |= dns.DNS_FLAG_RECURSION_AVAIL
             response.operation |= dns.DNS_RCODE_NXDOMAIN
         else:
-            response = self.dns_transaction_udp(query, forwarder)
+            try:
+                response = self.dns_transaction_udp(query, forwarder)
+            except OSError as err:
+                print("dns_hub: Error sending dns query to forwarder[%s] for name[%s]: %s" %
+                      (forwarder, name, err))
 
         if response is None:
             response = query
