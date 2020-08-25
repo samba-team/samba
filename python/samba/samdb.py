@@ -228,7 +228,12 @@ lockoutTime: 0
         :param sd: security descriptor of the object
         """
 
-        group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
+        if groupou:
+            group_dn = "CN=%s,%s,%s" % (groupname, groupou, self.domain_dn())
+        else:
+            group_dn = "CN=%s,%s" % (groupname, self.get_wellknown_dn(
+                                        self.get_default_basedn(),
+                                        dsdb.DS_GUID_USERS_CONTAINER))
 
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default information
