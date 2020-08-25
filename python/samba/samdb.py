@@ -530,7 +530,12 @@ member: %s
         if useusernameascn is None and displayname != "":
             cn = displayname
 
-        user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
+        if userou:
+            user_dn = "CN=%s,%s,%s" % (cn, userou, self.domain_dn())
+        else:
+            user_dn = "CN=%s,%s" % (cn, self.get_wellknown_dn(
+                                        self.get_default_basedn(),
+                                        dsdb.DS_GUID_USERS_CONTAINER))
 
         dnsdomain = ldb.Dn(self, self.domain_dn()).canonical_str().replace("/", "")
         user_principal_name = "%s@%s" % (username, dnsdomain)
