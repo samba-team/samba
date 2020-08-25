@@ -1844,7 +1844,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 
 	fp = fopen(resolv_conf, "r");
 	if (fp == NULL) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
+		RWRAP_LOG(RWRAP_LOG_WARN,
 			  "Opening %s failed: %s",
 			  resolv_conf, strerror(errno));
 		return -1;
@@ -1930,7 +1930,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 	fclose(fp);
 
 	if (nserv == 0) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
+		RWRAP_LOG(RWRAP_LOG_WARN,
 			  "No usable nameservers found in %s",
 			  resolv_conf);
 		errno = ESRCH;
