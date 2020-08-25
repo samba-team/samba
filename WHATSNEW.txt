@@ -1,4 +1,73 @@
                    ===============================
+                   Release Notes for Samba 4.11.12
+                           August 25, 2020
+		   ===============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.11
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14403: s3: libsmb: Fix SMB2 client rename bug to a Windows server.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14424: dsdb: Allow "password hash userPassword schemes = CryptSHA256"
+     to work on RHEL7.
+   * BUG 14450: dbcheck: Allow a dangling forward link outside our known NCs.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14426: lib/debug: Set the correct default backend loglevel to
+     MAX_DEBUG_LEVEL.
+   * BUG 14428: s3:smbd: PANIC: assert failed in get_lease_type().
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14370: lib/util: do not install "test_util_paths".
+
+o  Amit Kumar <amitkuma@redhat.com>
+   * BUG 14345: lib:util: Fix smbclient -l basename dir.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14428: s3:smbd: PANIC: assert failed in get_lease_type().
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14166: util: Allow symlinks in directory_create_or_exist.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14358: docs: Fix documentation for require_membership_of of
+     pam_winbind.
+
+o  Andrew <awalker@ixsystems.com>
+   * BUG 14425: s3:winbind:idmap_ad: Make failure to get attrnames for schema
+     mode fatal.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.11.11
                             July 02, 2020
 		   ===============================
@@ -79,8 +148,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ===============================
                    Release Notes for Samba 4.11.10
