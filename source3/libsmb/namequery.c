@@ -3395,7 +3395,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	/* All of the resolve_* functions above have returned false. */
 
 	TALLOC_FREE(frame);
-	SAFE_FREE(*return_iplist);
 	*return_count = 0;
 
 	return status;
@@ -3405,7 +3404,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	ok = convert_ss2service(return_iplist, ss_list, return_count);
 	if (!ok) {
 		TALLOC_FREE(frame);
-		SAFE_FREE(*return_iplist);
 		*return_count = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
