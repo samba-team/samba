@@ -4015,6 +4015,85 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 
 /*********************************************************************
  Talloc version.
+ Small wrapper function to get the DC list and sort it if neccessary.
+*********************************************************************/
+
+NTSTATUS get_sorted_dc_list_talloc(TALLOC_CTX *ctx,
+				const char *domain,
+				const char *sitename,
+				struct ip_service **ip_list_ret,
+				size_t *ret_count,
+				bool ads_only)
+{
+	bool ordered = false;
+	NTSTATUS status;
+	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
+	struct ip_service *ip_list_malloc = NULL;
+	struct ip_service *ip_list = NULL;
+	int count = 0;
+
+	DBG_INFO("attempting lookup for name %s (sitename %s)\n",
+		domain,
+		sitename ? sitename : "NULL");
+
+	if (ads_only) {
+		lookup_type = DC_ADS_ONLY;
+	}
+
+	status = get_dc_list(domain,
+			sitename,
+			&ip_list_malloc,
+			&count,
+			lookup_type,
+			&ordered);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_LOGON_SERVERS)
+			&& sitename) {
+		DBG_NOTICE("no server for name %s available"
+			" in site %s, fallback to all servers\n",
+			domain,
+			sitename);
+		status = get_dc_list(domain,
+				NULL,
+				&ip_list_malloc,
+				&count,
+				lookup_type,
+				&ordered);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/* Paranoia check. */
+	if (count < 0) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if (!ordered) {
+		sort_service_list(ip_list_malloc, count);
+	}
+
+	status = dup_ip_service_array(ctx,
+				&ip_list,
+				ip_list_malloc,
+				(size_t)count);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	*ret_count = (size_t)count;
+	*ip_list_ret = ip_list;
+
+  out:
+
+	SAFE_FREE(ip_list_malloc);
+	return status;
+}
+
+/*********************************************************************
+ Talloc version.
  Get the KDC list - re-use all the logic in get_dc_list.
 *********************************************************************/
 
