@@ -1683,6 +1683,7 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 {
 	size_t i;
 	size_t real_count = 0;
+	struct ip_service *iplist = NULL;
 
 	if (orig_count == 0 || ss_list == NULL) {
 		*count_out = 0;
@@ -1702,8 +1703,8 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 	}
 
 	/* copy the ip address; port will be PORT_NONE */
-	*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count);
-	if (*return_iplist == NULL) {
+	iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count);
+	if (iplist == NULL) {
 		DBG_ERR("malloc failed for %zu enetries!\n", real_count);
 		*count_out = 0;
 		return false;
@@ -1714,11 +1715,12 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 		if (is_zero_addr(&ss_list[i])) {
 			continue;
 		}
-		(*return_iplist)[real_count].ss   = ss_list[i];
-		(*return_iplist)[real_count].port = PORT_NONE;
+		iplist[real_count].ss   = ss_list[i];
+		iplist[real_count].port = PORT_NONE;
 		real_count++;
 	}
 
+	*return_iplist = iplist;
 	*count_out = real_count;
 	return true;
 }
