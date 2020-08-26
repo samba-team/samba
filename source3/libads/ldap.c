@@ -391,8 +391,12 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
 		  domain));
 
-	status = get_sorted_dc_list(domain, NULL, &ip_list, &count,
-				    false);
+	status = get_sorted_dc_list_talloc(talloc_tos(),
+				domain,
+				NULL,
+				&ip_list,
+				&count,
+				false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -418,7 +422,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 
 	status = cldap_ping_list(ads, domain, ip_list, count);
 
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 
 	return status;
 }
@@ -438,16 +442,20 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
 		  realm));
 
-	status = get_sorted_dc_list(realm, sitename, &ip_list, &count,
-				    true);
+	status = get_sorted_dc_list_talloc(talloc_tos(),
+				realm,
+				sitename,
+				&ip_list,
+				&count,
+				true);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(ip_list);
+		TALLOC_FREE(ip_list);
 		return status;
 	}
 
 	status = cldap_ping_list(ads, realm, ip_list, count);
 
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 
 	return status;
 }
