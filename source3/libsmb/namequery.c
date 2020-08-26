@@ -3688,7 +3688,8 @@ enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
  a domain.
 *********************************************************/
 
-static NTSTATUS get_dc_list(const char *domain,
+static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
+			const char *domain,
 			const char *sitename,
 			struct ip_service **ip_list,
 			size_t *ret_count,
@@ -3782,10 +3783,12 @@ static NTSTATUS get_dc_list(const char *domain,
 	p = pserver;
 	while (next_token_talloc(frame, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
+			struct ip_service *auto_ip_list_malloc = NULL;
+
 			done_auto_lookup = true;
 			status = internal_resolve_name(domain, auto_name_type,
 						       sitename,
-						       &auto_ip_list,
+						       &auto_ip_list_malloc,
 						       &auto_count,
 						       resolve_order);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -3793,12 +3796,22 @@ static NTSTATUS get_dc_list(const char *domain,
 			}
 			/* Paranoia. */
 			if (auto_count < 0) {
+				SAFE_FREE(auto_ip_list_malloc);
 				status = NT_STATUS_INVALID_PARAMETER;
 				goto out;
 			}
 			/* Wrap check. */
 			if (num_addresses + auto_count < num_addresses) {
+				SAFE_FREE(auto_ip_list_malloc);
 				status = NT_STATUS_INVALID_PARAMETER;
+				goto out;
+			}
+			status = dup_ip_service_array(ctx,
+						&auto_ip_list,
+						auto_ip_list_malloc,
+						auto_count);
+			SAFE_FREE(auto_ip_list_malloc);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
 			num_addresses += auto_count;
@@ -3819,19 +3832,32 @@ static NTSTATUS get_dc_list(const char *domain,
 
 	if (num_addresses == 0) {
 		int tmp_count = 0;
+		struct ip_service *ip_list_malloc = NULL;
 		if (done_auto_lookup) {
 			DEBUG(4,("get_dc_list: no servers found\n"));
 			status = NT_STATUS_NO_LOGON_SERVERS;
 			goto out;
 		}
-		status = internal_resolve_name(domain, auto_name_type,
-					       sitename, ip_list,
-					     &tmp_count, resolve_order);
+		status = internal_resolve_name(domain,
+					auto_name_type,
+					sitename,
+					&ip_list_malloc,
+					&tmp_count,
+					resolve_order);
 		/* Paranoia. */
 		if (tmp_count < 0) {
+			SAFE_FREE(ip_list_malloc);
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
 		}
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		status = dup_ip_service_array(ctx,
+					ip_list,
+					ip_list_malloc,
+					tmp_count);
+		SAFE_FREE(ip_list_malloc);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -3839,8 +3865,10 @@ static NTSTATUS get_dc_list(const char *domain,
 		goto out;
 	}
 
-	if ((return_iplist = SMB_MALLOC_ARRAY(struct ip_service,
-					num_addresses)) == NULL) {
+	return_iplist = talloc_zero_array(ctx,
+					struct ip_service,
+					num_addresses);
+	if (return_iplist == NULL) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -3978,12 +4006,12 @@ static NTSTATUS get_dc_list(const char *domain,
   out:
 
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(return_iplist);
+		TALLOC_FREE(return_iplist);
 		*ip_list = NULL;
 		*ret_count = 0;
 	}
 
-	SAFE_FREE(auto_ip_list);
+	TALLOC_FREE(auto_ip_list);
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -4003,7 +4031,6 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 	bool ordered = false;
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
-	struct ip_service *ip_list_malloc = NULL;
 	struct ip_service *ip_list = NULL;
 	size_t count = 0;
 
@@ -4015,9 +4042,10 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 		lookup_type = DC_ADS_ONLY;
 	}
 
-	status = get_dc_list(domain,
+	status = get_dc_list(ctx,
+			domain,
 			sitename,
-			&ip_list_malloc,
+			&ip_list,
 			&count,
 			lookup_type,
 			&ordered);
@@ -4027,37 +4055,26 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 			" in site %s, fallback to all servers\n",
 			domain,
 			sitename);
-		status = get_dc_list(domain,
+		status = get_dc_list(ctx,
+				domain,
 				NULL,
-				&ip_list_malloc,
+				&ip_list,
 				&count,
 				lookup_type,
 				&ordered);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+		return status;
 	}
 
 	/* only sort if we don't already have an ordered list */
 	if (!ordered) {
-		sort_service_list(ip_list_malloc, count);
-	}
-
-	status = dup_ip_service_array(ctx,
-				&ip_list,
-				ip_list_malloc,
-				count);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+		sort_service_list(ip_list, count);
 	}
 
 	*ret_count = count;
 	*ip_list_ret = ip_list;
-
-  out:
-
-	SAFE_FREE(ip_list_malloc);
 	return status;
 }
 
@@ -4073,40 +4090,28 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 			size_t *ret_count)
 {
 	size_t count = 0;
-	struct ip_service *ip_list_malloc = NULL;
 	struct ip_service *ip_list = NULL;
 	bool ordered = false;
 	NTSTATUS status;
 
-	status = get_dc_list(realm,
+	status = get_dc_list(ctx,
+			realm,
 			sitename,
-			&ip_list_malloc,
+			&ip_list,
 			&count,
 			DC_KDC_ONLY,
 			&ordered);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+		return status;
 	}
 
 	/* only sort if we don't already have an ordered list */
 	if (!ordered ) {
-		sort_service_list(ip_list_malloc, count);
-	}
-
-	status = dup_ip_service_array(ctx,
-				&ip_list,
-				ip_list_malloc,
-				count);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+		sort_service_list(ip_list, count);
 	}
 
 	*ret_count = count;
 	*ip_list_ret = ip_list;
-
-  out:
-
-	SAFE_FREE(ip_list_malloc);
 	return status;
 }
