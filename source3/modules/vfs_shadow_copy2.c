@@ -1000,7 +1000,7 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 				return);
 
 	if (priv->config->fixinodes) {
-		/* some snapshot systems, like GPFS, return the name
+		/* some snapshot systems, like GPFS, return the same
 		   device:inode for the snapshot files as the current
 		   files. That breaks the 'restore' button in the shadow copy
 		   GUI, as the client gets a sharing violation.
