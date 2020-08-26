@@ -3832,9 +3832,10 @@ static NTSTATUS get_dc_list(const char *domain,
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
 		}
-		if (NT_STATUS_IS_OK(status)) {
-			*ret_count = (size_t)tmp_count;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
 		}
+		*ret_count = (size_t)tmp_count;
 		goto out;
 	}
 
