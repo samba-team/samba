@@ -3664,7 +3664,7 @@ done:
 bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 {
 	struct ip_service *ip_list = NULL;
-	int count = 0;
+	size_t count = 0;
 	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
@@ -3672,23 +3672,35 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 		return false;
 	}
 
-	status = internal_resolve_name(group, 0x1D, NULL, &ip_list, &count,
-				       lp_name_resolve_order());
+	status = internal_resolve_name_talloc(talloc_tos(),
+					group,
+					0x1D,
+					NULL,
+					&ip_list,
+					&count,
+					lp_name_resolve_order());
 	if (NT_STATUS_IS_OK(status)) {
 		*master_ss = ip_list[0].ss;
-		SAFE_FREE(ip_list);
+		TALLOC_FREE(ip_list);
 		return true;
 	}
 
-	status = internal_resolve_name(group, 0x1B, NULL, &ip_list, &count,
-				       lp_name_resolve_order());
+	TALLOC_FREE(ip_list);
+
+	status = internal_resolve_name_talloc(talloc_tos(),
+					group,
+					0x1B,
+					NULL,
+					&ip_list,
+					&count,
+					lp_name_resolve_order());
 	if (NT_STATUS_IS_OK(status)) {
 		*master_ss = ip_list[0].ss;
-		SAFE_FREE(ip_list);
+		TALLOC_FREE(ip_list);
 		return true;
 	}
 
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 	return false;
 }
 
