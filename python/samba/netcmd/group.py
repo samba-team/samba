@@ -53,9 +53,9 @@ distribution_group = dict({"Domain": GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP,
 class cmd_group_add(Command):
     """Creates a new AD group.
 
-This command creates a new Active Directory group.  The groupname specified on the command is a unique sAMAccountName.
+This command adds a new Active Directory group.  The groupname specified on the command is a unique sAMAccountName.
 
-An Active Directory group may contain user and computer accounts as well as other groups.  An administrator creates a group and adds members to that group so they can be managed as a single entity.  This helps to simplify security and system administration.
+An Active Directory group may contain user and computer accounts as well as other groups.  An administrator adds a new group and adds members to that group so they can be managed as a single entity.  This helps to simplify security and system administration.
 
 Groups may also be used to establish email distribution lists, using --group-type=Distribution.
 
@@ -132,7 +132,7 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
                            gidnumber=gid_number, nisdomain=nis_domain)
         except Exception as e:
             # FIXME: catch more specific exception
-            raise CommandError('Failed to create group "%s"' % groupname, e)
+            raise CommandError('Failed to add group "%s"' % groupname, e)
         self.outf.write("Added group %s\n" % groupname)
 
 
@@ -1177,6 +1177,7 @@ class cmd_group(SuperCommand):
 
     subcommands = {}
     subcommands["add"] = cmd_group_add()
+    subcommands["create"] = cmd_group_add()
     subcommands["delete"] = cmd_group_delete()
     subcommands["edit"] = cmd_group_edit()
     subcommands["addmembers"] = cmd_group_add_members()
