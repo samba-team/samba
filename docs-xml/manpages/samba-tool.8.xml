@@ -231,8 +231,8 @@
 </refsect2>
 
 <refsect3>
-	<title>contact create [<replaceable>contactname</replaceable>] [options]</title>
-	<para>Create a new contact in the Active Directory Domain.</para>
+	<title>contact add [<replaceable>contactname</replaceable>] [options]</title>
+	<para>Add a new contact to the Active Directory Domain.</para>
 	<para>The name of the new contact can be specified by the first
 	argument 'contactname' or the --given-name, --initial and --surname
 	arguments. If no 'contactname' is given, contact's name will be made
@@ -343,6 +343,14 @@
 	</varlistentry>
 
 	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>contact create [<replaceable>contactname</replaceable>] [options]</title>
+	<para>Add a new contact. This is a synonym for the
+	<command>samba-tool contact add</command> command and is available
+	for compatibility reasons only. Please use
+	<command>samba-tool contact add</command> instead.</para>
 </refsect3>
 
 <refsect3>
