@@ -3203,7 +3203,8 @@ NTSTATUS internal_resolve_name(const char *name,
 
 	/* Check name cache */
 
-	if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+	ok = namecache_fetch(name, name_type, return_iplist, return_count);
+	if (ok) {
 		*return_count = remove_duplicate_addrs2(*return_iplist,
 					*return_count );
 		/* This could be a negative response */
