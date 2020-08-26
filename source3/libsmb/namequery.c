@@ -3521,8 +3521,17 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	/* only return valid addresses for TCP connections */
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr(&ss_list[i].ss) &&
-		    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
+		struct samba_sockaddr sa = {0};
+		bool ok;
+
+		ok = sockaddr_storage_to_samba_sockaddr(&sa,
+							&ss_list[i].ss);
+		if (!ok) {
+			status = NT_STATUS_INVALID_ADDRESS;
+			goto done;
+		}
+		if (!is_zero_addr(&sa.u.ss) &&
+		    !is_broadcast_addr(&sa.u.sa)) {
 			num_entries++;
 		}
 	}
@@ -3540,8 +3549,17 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	}
 
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr(&ss_list[i].ss) &&
-		    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
+		struct samba_sockaddr sa = {0};
+		bool ok;
+
+		ok = sockaddr_storage_to_samba_sockaddr(&sa,
+							&ss_list[i].ss);
+		if (!ok) {
+			status = NT_STATUS_INVALID_ADDRESS;
+			goto done;
+		}
+		if (!is_zero_addr(&sa.u.ss) &&
+		    !is_broadcast_addr(&sa.u.sa)) {
 			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
 		}
 	}
