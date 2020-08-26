@@ -443,7 +443,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
-	struct ip_service *iplist;
+	struct ip_service *iplist = NULL;
 	int i;
 	struct ip_service_name *dclist = NULL;
 	int count;
@@ -481,11 +481,13 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		ok = sockaddr_storage_to_samba_sockaddr(&r->sa, &iplist[i].ss);
 		if (!ok) {
 			SAFE_FREE(iplist);
+			TALLOC_FREE(dclist);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
 			SAFE_FREE(iplist);
+			TALLOC_FREE(dclist);
 			return NT_STATUS_NO_MEMORY;
 		}
 
