@@ -40,10 +40,10 @@
 
 static char *ipstr_list_make(TALLOC_CTX *ctx,
 			const struct ip_service *ip_list,
-			int ip_count)
+			size_t ip_count)
 {
 	char *ipstr_list = NULL;
-	int i;
+	size_t i;
 
 	/* arguments checking */
 	if (ip_list == NULL) {
@@ -222,13 +222,13 @@ static char *namecache_key(TALLOC_CTX *ctx,
 
 bool namecache_store(const char *name,
 			int name_type,
-			int num_names,
+			size_t num_names,
 			struct ip_service *ip_list)
 {
 	time_t expiry;
 	char *key = NULL;
 	char *value_string = NULL;
-	int i;
+	size_t i;
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -240,7 +240,7 @@ bool namecache_store(const char *name,
 	if ( DEBUGLEVEL >= 5 ) {
 		char *addr = NULL;
 
-		DBG_INFO("storing %d address%s for %s#%02x: ",
+		DBG_INFO("storing %zu address%s for %s#%02x: ",
 			num_names, num_names == 1 ? "": "es", name, name_type);
 
 		for (i = 0; i < num_names; i++) {

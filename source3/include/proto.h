@@ -678,7 +678,7 @@ NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode);
 
 bool namecache_store(const char *name,
 			int name_type,
-			int num_names,
+			size_t num_names,
 			struct ip_service *ip_list);
 bool namecache_fetch(TALLOC_CTX *ctx,
 			const char *name,
