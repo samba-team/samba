@@ -124,7 +124,10 @@ class dbcheck(object):
         self.link_id_cache = {}
         self.name_map = {}
         try:
-            res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % samdb.domain_dn(), scope=ldb.SCOPE_BASE,
+            base_dn = "CN=DnsAdmins,%s" % samdb.get_wellknown_dn(
+                                                samdb.get_default_basedn(),
+                                                dsdb.DS_GUID_USERS_CONTAINER)
+            res = samdb.search(base=base_dn, scope=ldb.SCOPE_BASE,
                                attrs=["objectSid"])
             dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
             self.name_map['DnsAdmins'] = str(dnsadmins_sid)
