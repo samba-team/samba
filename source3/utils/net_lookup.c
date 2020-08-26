@@ -183,7 +183,7 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 {
-	struct ip_service *ip_list;
+	struct ip_service *ip_list = NULL;
 	struct sockaddr_storage ss;
 	char *pdc_str = NULL;
 	const char *domain = NULL;
@@ -192,6 +192,7 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	size_t i;
 	char addr[INET6_ADDRSTRLEN];
 	bool sec_ads = (lp_security() == SEC_ADS);
+	NTSTATUS status;
 
 	if (sec_ads) {
 		domain = lp_realm();
@@ -213,8 +214,13 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(talloc_tos(), domain);
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, sitename,
-					&ip_list, &count, sec_ads))) {
+	status = get_sorted_dc_list_talloc(talloc_tos(),
+				domain,
+				sitename,
+				&ip_list,
+				&count,
+				sec_ads);
+	if (!NT_STATUS_IS_OK(status)) {
 		SAFE_FREE(pdc_str);
 		TALLOC_FREE(sitename);
 		return 0;
@@ -225,6 +231,7 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 		if (!strequal(pdc_str, addr))
 			d_printf("%s\n", addr);
 	}
+	TALLOC_FREE(ip_list);
 	SAFE_FREE(pdc_str);
 	return 0;
 }
