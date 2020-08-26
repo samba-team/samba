@@ -3712,22 +3712,32 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 {
 	struct ip_service *ip_list = NULL;
-	int count = 0;
+	size_t count = 0;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	static const char *ads_order[] = { "ads", NULL };
 	/* Look up #1B name */
 
 	if (lp_security() == SEC_ADS) {
-		status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
-					       &count, ads_order);
+		status = internal_resolve_name_talloc(talloc_tos(),
+						domain,
+						0x1b,
+						NULL,
+						&ip_list,
+						&count,
+						ads_order);
 	}
 
 	if (!NT_STATUS_IS_OK(status) || count == 0) {
-		status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
-					       &count,
-					       lp_name_resolve_order());
+		TALLOC_FREE(ip_list);
+		status = internal_resolve_name_talloc(talloc_tos(),
+						domain,
+						0x1b,
+						NULL,
+						&ip_list,
+						&count,
+						lp_name_resolve_order());
 		if (!NT_STATUS_IS_OK(status)) {
-			SAFE_FREE(ip_list);
+			TALLOC_FREE(ip_list);
 			return false;
 		}
 	}
@@ -3736,12 +3746,12 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 	   multi-homed PDC and not a mess up */
 
 	if ( count > 1 ) {
-		DEBUG(6,("get_pdc_ip: PDC has %d IP addresses!\n", count));
+		DBG_INFO("PDC has %zu IP addresses!\n", count);
 		sort_service_list(ip_list, count);
 	}
 
 	*pss = ip_list[0].ss;
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 	return true;
 }
 
