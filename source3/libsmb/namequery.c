@@ -3192,6 +3192,12 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	size_t i;
 	size_t nc_count = 0;
 	size_t ret_count = 0;
+	/*
+	 * Integer count of addresses returned from resolve_XXX()
+	 * functions. This will go away when all of them return
+	 * size_t.
+	*/
+	int icount = 0;
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
@@ -3319,7 +3325,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 					       name,
 					       name_type,
 					       &ss_list,
-					       return_count);
+					       &icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3332,7 +3338,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 					     KDC_NAME_TYPE,
 					     sitename,
 					     &ss_list,
-					     return_count);
+					     &icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3348,7 +3354,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 					     name_type,
 					     sitename,
 					     &ss_list,
-					     return_count);
+					     &icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3360,7 +3366,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 				name,
 				name_type,
 				&ss_list,
-				return_count);
+				&icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3374,7 +3380,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 					      name,
 					      name_type,
 					      &ss_list,
-					      return_count);
+					      &icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3385,7 +3391,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 						name,
 						name_type,
 						&ss_list,
-						return_count);
+						&icount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -3406,8 +3412,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
   done:
 
 	/* Paranoia. */
-	if (*return_count < 0) {
-		*return_count = 0;
+	if (icount < 0) {
 		SAFE_FREE(*return_iplist);
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -3420,11 +3425,10 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	 */
 	ok = convert_ss2service(return_iplist,
 				ss_list,
-				*return_count,
+				icount,
 				&ret_count);
 	if (!ok) {
 		TALLOC_FREE(frame);
-		*return_count = 0;
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3434,19 +3438,10 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
 	ret_count = remove_duplicate_addrs2(*return_iplist, ret_count);
-	*return_count = (int)ret_count;
-
-	/* Paranoia casting size_t -> int. */
-	if (*return_count < 0) {
-		SAFE_FREE(*return_iplist);
-		*return_count = 0;
-		TALLOC_FREE(frame);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {
-		for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++) {
+		for (i = 0; i < ret_count && DEBUGLEVEL == 100; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
 					&(*return_iplist)[i].ss);
@@ -3458,17 +3453,17 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		}
 	}
 
-	if (*return_count) {
-		namecache_store(name, name_type, *return_count, *return_iplist);
+	if (ret_count) {
+		namecache_store(name, name_type, ret_count, *return_iplist);
 	}
 
 	/* Display some debugging info */
 
 	if ( DEBUGLEVEL >= 10 ) {
-		DBG_DEBUG("returning %d addresses: ",
-				*return_count);
+		DBG_DEBUG("returning %zu addresses: ",
+				ret_count);
 
-		for (i = 0; i < *return_count; i++) {
+		for (i = 0; i < ret_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
 					&(*return_iplist)[i].ss);
@@ -3478,6 +3473,14 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		}
 		DEBUG(10, ("\n"));
 	}
+
+	/*
+	 * The below can't go negative, we checked
+	 * above with icount which must always be greater
+	 * than ret_count, we only subtract addresses,
+	 * not add them.
+	 */
+	*return_count = ret_count;
 
 	TALLOC_FREE(frame);
 	return status;
