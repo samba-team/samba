@@ -4018,7 +4018,7 @@ NTSTATUS get_sorted_dc_list( const char *domain,
  Get the KDC list - re-use all the logic in get_dc_list.
 *********************************************************************/
 
-NTSTATUS get_kdc_list_talloc(TALLOC_CTX *ctx,
+NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 			const char *realm,
 			const char *sitename,
 			struct ip_service **ip_list_ret,

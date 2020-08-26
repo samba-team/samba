@@ -309,13 +309,13 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		realm = (const char *) *get_host_realms;
 	}
 
-	status = get_kdc_list_talloc(talloc_tos(),
+	status = get_kdc_list(talloc_tos(),
 				realm,
 				NULL,
 				&kdcs,
 				&num_kdcs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("get_kdc_list_talloc failed (%s)\n",
+		DBG_WARNING("get_kdc_list failed (%s)\n",
 			nt_errstr(status));
 		krb5_free_host_realm(ctx, get_host_realms);
 		krb5_free_context(ctx);
