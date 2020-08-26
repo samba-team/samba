@@ -88,6 +88,17 @@ do
     # Copy any system libraries needed by this fuzzer to $OUT/lib
     ldd $OUT/$bin | cut -f 2 -d '>' | cut -f 1 -d \( | cut -f 2 -d  ' ' | xargs -i cp \{\} $OUT/lib/
 
+    # Change any RPATH to RUNPATH.
+    #
+    # We use ld.bfd for the coverage builds, rather than the faster ld.gold.
+    #
+    # On Ubuntu 16.04, used for the oss-fuzz build, when linking with
+    # ld.bfd the binaries get a RPATH, but builds in Ubuntu 18.04
+    # ld.bfd and those using ld.gold get a RUNPATH.
+    #
+    # Just convert them all to RUNPATH to make the check_build.sh test
+    # easier.
+    chrpath -c $OUT/$bin
     # Change RUNPATH so that the copied libraries are found on the
     # runner
     chrpath -r '$ORIGIN/lib' $OUT/$bin
