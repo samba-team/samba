@@ -444,9 +444,9 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 	struct ip_service *iplist = NULL;
-	int i;
+	size_t i;
 	struct ip_service_name *dclist = NULL;
-	int count;
+	size_t count;
 	static const char *resolve_order[] = { "lmhosts", "wins", "bcast", NULL };
 
 	*returned_dclist = NULL;
@@ -456,9 +456,13 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		name_type = NBT_NAME_PDC;
 	}
 
-	status = internal_resolve_name(domain_name, name_type, NULL,
-				       &iplist, &count,
-				       resolve_order);
+	status = internal_resolve_name_talloc(mem_ctx,
+					domain_name,
+					name_type,
+					NULL,
+					&iplist,
+					&count,
+					resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("discover_dc_netbios: failed to find DC\n"));
 		return status;
@@ -466,7 +470,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	dclist = talloc_zero_array(mem_ctx, struct ip_service_name, count);
 	if (!dclist) {
-		SAFE_FREE(iplist);
+		TALLOC_FREE(iplist);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -480,13 +484,13 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		ok = sockaddr_storage_to_samba_sockaddr(&r->sa, &iplist[i].ss);
 		if (!ok) {
-			SAFE_FREE(iplist);
+			TALLOC_FREE(iplist);
 			TALLOC_FREE(dclist);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
-			SAFE_FREE(iplist);
+			TALLOC_FREE(iplist);
 			TALLOC_FREE(dclist);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -495,7 +499,15 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	*returned_dclist = dclist;
 	*returned_count = count;
-	SAFE_FREE(iplist);
+	TALLOC_FREE(iplist);
+
+	/* Paranoia in casting size_t -> int. */
+	if (*returned_count < 0) {
+		TALLOC_FREE(dclist);
+		*returned_dclist = NULL;
+		*returned_count = 0;
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return NT_STATUS_OK;
 }
