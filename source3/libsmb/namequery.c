@@ -4014,38 +4014,6 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 }
 
 /*********************************************************************
- Get the KDC list - re-use all the logic in get_dc_list.
-*********************************************************************/
-
-NTSTATUS get_kdc_list( const char *realm,
-			const char *sitename,
-			struct ip_service **ip_list,
-			int *count)
-{
-	bool ordered;
-	NTSTATUS status;
-
-	*count = 0;
-	*ip_list = NULL;
-
-	status = get_dc_list(realm, sitename, ip_list,
-			count, DC_KDC_ONLY, &ordered);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(*ip_list);
-		*count = 0;
-		return status;
-	}
-
-	/* only sort if we don't already have an ordered list */
-	if ( !ordered ) {
-		sort_service_list(*ip_list, *count);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*********************************************************************
  Talloc version.
  Get the KDC list - re-use all the logic in get_dc_list.
 *********************************************************************/
