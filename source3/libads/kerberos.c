@@ -424,8 +424,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite = NULL;
 	struct samba_sockaddr sa = {0};
-	int count_site = 0;
-	int count_nonsite;
+	size_t count_site = 0;
+	size_t count_nonsite;
 	size_t num_dcs;
 	struct sockaddr_storage *dc_addrs = NULL;
 	struct tsocket_address **dc_addrs2 = NULL;
@@ -453,15 +453,41 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	 */
 
 	if (sitename) {
-		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
-		DEBUG(10, ("got %d addresses from site %s search\n", count_site,
-			   sitename));
+		status = get_kdc_list_talloc(talloc_tos(),
+					realm,
+					sitename,
+					&ip_srv_site,
+					&count_site);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("get_kdc_list_talloc fail %s\n",
+				nt_errstr(status));
+			goto out;
+		}
+		DBG_DEBUG("got %zu addresses from site %s search\n",
+			count_site,
+			sitename);
 	}
 
 	/* Get all KDC's. */
 
-	get_kdc_list(realm, NULL, &ip_srv_nonsite, &count_nonsite);
-	DEBUG(10, ("got %d addresses from site-less search\n", count_nonsite));
+	status = get_kdc_list_talloc(talloc_tos(),
+					realm,
+					NULL,
+					&ip_srv_nonsite,
+					&count_nonsite);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("get_kdc_list_talloc (site-less) fail %s\n",
+			nt_errstr(status));
+		goto out;
+	}
+	DBG_DEBUG("got %zu addresses from site-less search\n", count_nonsite);
+
+	if (count_site + count_nonsite < count_site) {
+		/* Wrap check. */
+		DBG_ERR("get_kdc_list_talloc (site-less) fail wrap error\n");
+		goto out;
+	}
+
 
 	dc_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
 				count_site + count_nonsite);
@@ -568,8 +594,8 @@ out:
 	DEBUG(10, ("get_kdc_ip_string: Returning %s\n", kdc_str));
 
 	result = kdc_str;
-	SAFE_FREE(ip_srv_site);
-	SAFE_FREE(ip_srv_nonsite);
+	TALLOC_FREE(ip_srv_site);
+	TALLOC_FREE(ip_srv_nonsite);
 	TALLOC_FREE(frame);
 	return result;
 }
