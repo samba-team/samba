@@ -218,10 +218,10 @@ if len(disabled_virtual_attributes) != 0:
     virtual_attributes_help += "Unsupported virtual attributes: %s" % ", ".join(sorted(disabled_virtual_attributes.keys()))
 
 
-class cmd_user_create(Command):
-    """Create a new user.
+class cmd_user_add(Command):
+    """Add a new user.
 
-This command creates a new user account in the Active Directory domain.  The username specified on the command is the sAMaccountName.
+This command adds a new user account to the Active Directory domain.  The username specified on the command is the sAMaccountName.
 
 User accounts may represent physical entities, such as people or may be used as service accounts for applications.  User accounts are also referred to as security principals and are assigned a security identifier (SID).
 
@@ -232,30 +232,30 @@ Unix (RFC2307) attributes may be added to the user account. Attributes taken fro
 The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
 
 Example1:
-samba-tool user create User1 passw0rd --given-name=John --surname=Smith --must-change-at-next-login -H ldap://samba.samdom.example.com -Uadministrator%passw1rd
+samba-tool user add User1 passw0rd --given-name=John --surname=Smith --must-change-at-next-login -H ldap://samba.samdom.example.com -Uadministrator%passw1rd
 
-Example1 shows how to create a new user in the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The -U option is used to pass the userid and password authorized to issue the command remotely.
+Example1 shows how to add a new user to the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The -U option is used to pass the userid and password authorized to issue the command remotely.
 
 Example2:
-sudo samba-tool user create User2 passw2rd --given-name=Jane --surname=Doe --must-change-at-next-login
+sudo samba-tool user add User2 passw2rd --given-name=Jane --surname=Doe --must-change-at-next-login
 
-Example2 shows how to create a new user in the domain against the local server.   sudo is used so a user may run the command as root.  In this example, after User2 is created, he/she will be forced to change their password when they logon.
+Example2 shows how to add a new user to the domain against the local server.   sudo is used so a user may run the command as root.  In this example, after User2 is created, he/she will be forced to change their password when they logon.
 
 Example3:
-samba-tool user create User3 passw3rd --userou='OU=OrgUnit'
+samba-tool user add User3 passw3rd --userou='OU=OrgUnit'
 
-Example3 shows how to create a new user in the OrgUnit organizational unit.
+Example3 shows how to add a new user in the OrgUnit organizational unit.
 
 Example4:
-samba-tool user create User4 passw4rd --rfc2307-from-nss --gecos 'some text'
+samba-tool user add User4 passw4rd --rfc2307-from-nss --gecos 'some text'
 
-Example4 shows how to create a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
+Example4 shows how to add a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
 
 Example5:
-samba-tool user create User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \\
+samba-tool user add User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \\
     --uid-number=10005 --login-shell=/bin/false --gid-number=10000
 
-Example5 shows how to create an RFC2307/NIS domain enabled user account. If
+Example5 shows how to add a new RFC2307/NIS domain enabled user account. If
 --nis-domain is set, then the other four parameters are mandatory.
 
 """
@@ -395,21 +395,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
         except Exception as e:
             raise CommandError("Failed to add user '%s': " % username, e)
 
-        self.outf.write("User '%s' created successfully\n" % username)
-
-
-class cmd_user_add(cmd_user_create):
-    __doc__ = cmd_user_create.__doc__
-    # take this print out after the add subcommand is removed.
-    # the add subcommand is deprecated but left in for now to allow people to
-    # migrate to create
-
-    def run(self, *args, **kwargs):
-        self.outf.write(
-            "Note: samba-tool user add is deprecated.  "
-            "Please use samba-tool user create for the same function.\n")
-        return super(cmd_user_add, self).run(*args, **kwargs)
-
+        self.outf.write("User '%s' added successfully\n" % username)
 
 class cmd_user_delete(Command):
     """Delete a user.
@@ -3334,7 +3320,7 @@ class cmd_user(SuperCommand):
 
     subcommands = {}
     subcommands["add"] = cmd_user_add()
-    subcommands["create"] = cmd_user_create()
+    subcommands["create"] = cmd_user_add()
     subcommands["delete"] = cmd_user_delete()
     subcommands["disable"] = cmd_user_disable()
     subcommands["enable"] = cmd_user_enable()
