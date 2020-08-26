@@ -64,7 +64,6 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
-#if 0
 /*
  * Utility function to convert a MALLOC'ed struct ip_serivce array
  * to a talloc'ed one. This function will go away once all ip_service
@@ -87,7 +86,6 @@ static NTSTATUS dup_ip_service_array(TALLOC_CTX *ctx,
 	*array_out = array_copy;
 	return NT_STATUS_OK;
 }
-#endif
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -4045,4 +4043,60 @@ NTSTATUS get_kdc_list( const char *realm,
 	}
 
 	return NT_STATUS_OK;
+}
+
+/*********************************************************************
+ Talloc version.
+ Get the KDC list - re-use all the logic in get_dc_list.
+*********************************************************************/
+
+NTSTATUS get_kdc_list_talloc(TALLOC_CTX *ctx,
+			const char *realm,
+			const char *sitename,
+			struct ip_service **ip_list_ret,
+			size_t *ret_count)
+{
+	int count = 0;
+	struct ip_service *ip_list_malloc = NULL;
+	struct ip_service *ip_list = NULL;
+	bool ordered = false;
+	NTSTATUS status;
+
+	status = get_dc_list(realm,
+			sitename,
+			&ip_list_malloc,
+			&count,
+			DC_KDC_ONLY,
+			&ordered);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/* Paranoia check. */
+	if (count < 0) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if (!ordered ) {
+		sort_service_list(ip_list_malloc, count);
+	}
+
+	status = dup_ip_service_array(ctx,
+				&ip_list,
+				ip_list_malloc,
+				(size_t)count);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	*ret_count = (size_t)count;
+	*ip_list_ret = ip_list;
+
+  out:
+
+	SAFE_FREE(ip_list_malloc);
+	return status;
 }

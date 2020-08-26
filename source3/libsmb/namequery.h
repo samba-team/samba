@@ -118,5 +118,9 @@ NTSTATUS get_kdc_list( const char *realm,
 			const char *sitename,
 			struct ip_service **ip_list,
 			int *count);
-
+NTSTATUS get_kdc_list_talloc(TALLOC_CTX *ctx,
+			const char *realm,
+			const char *sitename,
+			struct ip_service **ip_list_ret,
+			size_t *ret_count);
 #endif
