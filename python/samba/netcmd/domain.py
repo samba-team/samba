@@ -107,6 +107,7 @@ from samba.netcmd.domain_backup import cmd_domain_backup
 
 from samba.common import get_string
 from samba.trust_utils import CreateTrustedDomainRelax
+from samba import dsdb
 
 string_version_to_constant = {
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,
@@ -902,7 +903,9 @@ class cmd_domain_demote(Command):
         i = 0
         newrdn = str(rdn)
 
-        computer_dn = ldb.Dn(remote_samdb, "CN=Computers,%s" % str(remote_samdb.domain_dn()))
+        computer_dn = remote_samdb.get_wellknown_dn(
+            remote_samdb.get_default_basedn(),
+            dsdb.DS_GUID_COMPUTERS_CONTAINER)
         res = remote_samdb.search(base=computer_dn, expression=rdn, scope=ldb.SCOPE_ONELEVEL)
 
         if (len(res) != 0):
