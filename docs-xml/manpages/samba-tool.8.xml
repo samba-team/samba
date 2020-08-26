@@ -1088,8 +1088,8 @@
 </refsect2>
 
 <refsect3>
-	<title>ou create <replaceable>ou_dn</replaceable> [options]</title>
-	<para>Create an organizational unit.</para>
+	<title>ou add <replaceable>ou_dn</replaceable> [options]</title>
+	<para>Add a new organizational unit.</para>
 	<para>The name of the organizational unit can be specified as a full DN
 	or without the domainDN component.</para>
 
@@ -1101,6 +1101,14 @@
 	</para></listitem>
 	</varlistentry>
 	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>ou create <replaceable>ou_dn</replaceable> [options]</title>
+	<para>Add a new organizational unit. This is a synonym for the
+	<command>samba-tool ou add</command> command and is available
+	for compatibility reasons only. Please use
+	<command>samba-tool ou add</command> instead.</para>
 </refsect3>
 
 <refsect3>
