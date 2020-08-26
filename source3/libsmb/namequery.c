@@ -3784,7 +3784,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
 	bool done_auto_lookup = false;
-	int auto_count = 0;
+	size_t auto_count = 0;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	int auto_name_type = 0x1C;
@@ -3859,43 +3859,31 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	p = pserver;
 	while (next_token_talloc(frame, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
-			struct ip_service *auto_ip_list_malloc = NULL;
-
 			done_auto_lookup = true;
-			status = internal_resolve_name(domain, auto_name_type,
-						       sitename,
-						       &auto_ip_list_malloc,
-						       &auto_count,
-						       resolve_order);
+
+			status = internal_resolve_name_talloc(frame,
+							domain,
+							auto_name_type,
+							sitename,
+							&auto_ip_list,
+							&auto_count,
+							resolve_order);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/* Paranoia. */
-			if (auto_count < 0) {
-				SAFE_FREE(auto_ip_list_malloc);
-				status = NT_STATUS_INVALID_PARAMETER;
-				goto out;
-			}
 			/* Wrap check. */
 			if (num_addresses + auto_count < num_addresses) {
-				SAFE_FREE(auto_ip_list_malloc);
+				TALLOC_FREE(auto_ip_list);
 				status = NT_STATUS_INVALID_PARAMETER;
-				goto out;
-			}
-			status = dup_ip_service_array(ctx,
-						&auto_ip_list,
-						auto_ip_list_malloc,
-						auto_count);
-			SAFE_FREE(auto_ip_list_malloc);
-			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
 			num_addresses += auto_count;
-			DEBUG(8,("Adding %d DC's from auto lookup\n",
-						auto_count));
+			DBG_DEBUG("Adding %zu DC's from auto lookup\n",
+						auto_count);
 		} else  {
 			/* Wrap check. */
 			if (num_addresses + 1 < num_addresses) {
+				TALLOC_FREE(auto_ip_list);
 				status = NT_STATUS_INVALID_PARAMETER;
 				goto out;
 			}
@@ -3907,37 +3895,27 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	   just return the list of DC's.  Or maybe we just failed. */
 
 	if (num_addresses == 0) {
-		int tmp_count = 0;
-		struct ip_service *ip_list_malloc = NULL;
+		struct ip_service *dc_iplist = NULL;
+		size_t dc_count = 0;
+
 		if (done_auto_lookup) {
 			DEBUG(4,("get_dc_list: no servers found\n"));
 			status = NT_STATUS_NO_LOGON_SERVERS;
 			goto out;
 		}
-		status = internal_resolve_name(domain,
-					auto_name_type,
-					sitename,
-					&ip_list_malloc,
-					&tmp_count,
-					resolve_order);
-		/* Paranoia. */
-		if (tmp_count < 0) {
-			SAFE_FREE(ip_list_malloc);
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto out;
+		/* talloc off frame, only move to ctx on success. */
+		status = internal_resolve_name_talloc(frame,
+						domain,
+						auto_name_type,
+						sitename,
+						&dc_iplist,
+						&dc_count,
+						resolve_order);
+		if (NT_STATUS_IS_OK(status)) {
+			*ip_list = talloc_move(ctx, &dc_iplist);
+			*ret_count = dc_count;
 		}
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-		status = dup_ip_service_array(ctx,
-					ip_list,
-					ip_list_malloc,
-					tmp_count);
-		SAFE_FREE(ip_list_malloc);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-		*ret_count = (size_t)tmp_count;
+		TALLOC_FREE(dc_iplist);
 		goto out;
 	}
 
@@ -3962,7 +3940,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		/* copy any addresses from the auto lookup */
 
 		if (strequal(name, "*")) {
-			int j;
+			size_t j;
 			for (j=0; j<auto_count; j++) {
 				char addr[INET6_ADDRSTRLEN];
 				print_sockaddr(addr,
