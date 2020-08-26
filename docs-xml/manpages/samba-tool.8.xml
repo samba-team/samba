@@ -116,8 +116,8 @@
 </refsect2>
 
 <refsect3>
-	<title>computer create <replaceable>computername</replaceable> [options]</title>
-	<para>Create a new computer in the Active Directory Domain.</para>
+	<title>computer add <replaceable>computername</replaceable> [options]</title>
+	<para>Add a new computer to the Active Directory Domain.</para>
 	<para>The new computer name specified on the command is the
 	sAMAccountName, with or without the trailing dollar sign.</para>
 
@@ -160,6 +160,14 @@
 	</para></listitem>
 	</varlistentry>
 	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>computer create <replaceable>computername</replaceable> [options]</title>
+	<para>Add a new computer. This is a synonym for the
+	<command>samba-tool computer add</command> command and is available
+	for compatibility reasons only. Please use
+	<command>samba-tool computer add</command> instead.</para>
 </refsect3>
 
 <refsect3>
