@@ -40,10 +40,10 @@ from samba.compat import get_bytes
 from . import common
 
 
-class cmd_create(Command):
-    """Create a new contact.
+class cmd_add(Command):
+    """Add a new contact.
 
-    This command creates a new contact in the Active Directory domain.
+    This command adds a new contact to the Active Directory domain.
 
     The name of the new contact can be specified by the first argument
     'contactname' or the --given-name, --initial and --surname arguments.
@@ -52,16 +52,16 @@ class cmd_create(Command):
     is optional. A dot ('.') will be appended to the initials automatically.
 
     Example1:
-    samba-tool contact create "James T. Kirk" --job-title=Captain \\
+    samba-tool contact add "James T. Kirk" --job-title=Captain \\
         -H ldap://samba.samdom.example.com -UAdministrator%Passw1rd
 
-    The example shows how to create a new contact in the domain against a remote
+    The example shows how to add a new contact to the domain against a remote
     LDAP server.
 
     Example2:
-    samba-tool contact create --given-name=James --initials=T --surname=Kirk
+    samba-tool contact add --given-name=James --initials=T --surname=Kirk
 
-    The example shows how to create a new contact in the domain against a local
+    The example shows how to add a new contact to the domain against a local
     server. The resulting name is "James T. Kirk".
     """
 
@@ -149,9 +149,9 @@ class cmd_create(Command):
                 mobilenumber=mobile_number,
                 physicaldeliveryoffice=physical_delivery_office)
         except Exception as e:
-            raise CommandError("Failed to create contact", e)
+            raise CommandError("Failed to add contact", e)
 
-        self.outf.write("Contact '%s' created successfully\n" % ret_name)
+        self.outf.write("Contact '%s' added successfully\n" % ret_name)
 
 
 class cmd_delete(Command):
@@ -851,7 +851,8 @@ class cmd_contact(SuperCommand):
     """Contact management."""
 
     subcommands = {}
-    subcommands["create"] = cmd_create()
+    subcommands["add"] = cmd_add()
+    subcommands["create"] = cmd_add()
     subcommands["delete"] = cmd_delete()
     subcommands["edit"] = cmd_edit()
     subcommands["list"] = cmd_list()
