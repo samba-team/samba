@@ -773,7 +773,8 @@ member: %s
             raise Exception('Illegal computername "%s"' % computername)
         samaccountname = "%s$" % cn
 
-        computercontainer_dn = "CN=Computers,%s" % self.domain_dn()
+        computercontainer_dn = self.get_wellknown_dn(self.get_default_basedn(),
+                                              dsdb.DS_GUID_COMPUTERS_CONTAINER)
         if computerou:
             computercontainer_dn = self.normalize_dn_in_domain(computerou)
 
