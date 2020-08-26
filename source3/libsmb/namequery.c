@@ -3590,9 +3590,13 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	sitename = sitename_fetch(ctx, lp_realm()); /* wild guess */
 
-	status = internal_resolve_name(name, name_type, sitename,
-						  &ss_list, &count,
-						  lp_name_resolve_order());
+	status = internal_resolve_name_talloc(ctx,
+					name,
+					name_type,
+					sitename,
+					&ss_list,
+					&count,
+					lp_name_resolve_order());
 	TALLOC_FREE(sitename);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3652,7 +3656,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	*p_num_entries = num_entries;
 	*return_ss_arr = result_arr;
 done:
-	SAFE_FREE(ss_list);
+	TALLOC_FREE(ss_list);
 	return status;
 }
 
