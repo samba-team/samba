@@ -3777,7 +3777,7 @@ static NTSTATUS get_dc_list(const char *domain,
 
 	while ((local_count<num_addresses) &&
 			next_token_talloc(ctx, &p, &name, LIST_SEP)) {
-		struct sockaddr_storage name_ss;
+		struct samba_sockaddr name_sa = {0};
 
 		/* copy any addresses from the auto lookup */
 
@@ -3828,11 +3828,27 @@ static NTSTATUS get_dc_list(const char *domain,
 
 		/* explicit lookup; resolve_name() will
 		 * handle names & IP addresses */
-		if (resolve_name( name, &name_ss, 0x20, true )) {
+		if (resolve_name(name, &name_sa.u.ss, 0x20, true)) {
 			char addr[INET6_ADDRSTRLEN];
+			bool ok;
+
+			/*
+			 * Ensure we set sa_socklen correctly.
+			 * Doesn't matter now, but eventually we
+			 * will remove ip_service and return samba_sockaddr
+			 * arrays directly.
+			 */
+			ok = sockaddr_storage_to_samba_sockaddr(
+					&name_sa,
+					&name_sa.u.ss);
+			if (!ok) {
+				status = NT_STATUS_INVALID_ADDRESS;
+				goto out;
+			}
+
 			print_sockaddr(addr,
 					sizeof(addr),
-					&name_ss);
+					&name_sa.u.ss);
 
 			/* Check for and don't copy any known bad DC IP's. */
 			if( !NT_STATUS_IS_OK(check_negative_conn_cache(domain,
@@ -3843,7 +3859,7 @@ static NTSTATUS get_dc_list(const char *domain,
 				continue;
 			}
 
-			return_iplist[local_count].ss = name_ss;
+			return_iplist[local_count].ss = name_sa.u.ss;
 			return_iplist[local_count].port = port;
 			local_count++;
 			*ordered = true;
