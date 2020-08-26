@@ -163,17 +163,17 @@ class cmd_move(Command):
                         (full_old_ou_dn, full_new_parent_dn))
 
 
-class cmd_create(Command):
-    """Create an organizational unit.
+class cmd_add(Command):
+    """Add a new organizational unit.
 
     The name of the new ou can be specified as a full DN or without the
     domainDN component.
 
     Examples:
-    samba-tool ou create 'OU=OrgUnit'
-    samba-tool ou create 'OU=SubOU,OU=OrgUnit,DC=samdom,DC=example,DC=com'
+    samba-tool ou add 'OU=OrgUnit'
+    samba-tool ou add 'OU=SubOU,OU=OrgUnit,DC=samdom,DC=example,DC=com'
 
-    The examples show how an administrator would create a new ou 'OrgUnit'
+    The examples show how an administrator would add a new ou 'OrgUnit'
     and a new ou 'SubOU' as a child of the ou 'OrgUnit'.
     """
 
@@ -208,9 +208,9 @@ class cmd_create(Command):
         try:
             samdb.create_ou(full_ou_dn, description=description)
         except Exception as e:
-            raise CommandError('Failed to create ou "%s"' % full_ou_dn, e)
+            raise CommandError('Failed to add ou "%s"' % full_ou_dn, e)
 
-        self.outf.write('Created ou "%s"\n' % full_ou_dn)
+        self.outf.write('Added ou "%s"\n' % full_ou_dn)
 
 
 class cmd_listobjects(Command):
@@ -406,7 +406,8 @@ class cmd_ou(SuperCommand):
     """Organizational Units (OU) management."""
 
     subcommands = {}
-    subcommands["create"] = cmd_create()
+    subcommands["add"] = cmd_add()
+    subcommands["create"] = cmd_add()
     subcommands["delete"] = cmd_delete()
     subcommands["move"] = cmd_move()
     subcommands["rename"] = cmd_rename()
