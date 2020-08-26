@@ -3201,6 +3201,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
+	struct ip_service *iplist = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	*return_iplist = NULL;
@@ -3210,7 +3211,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		name, name_type, sitename ? sitename : "(null)");
 
 	if (is_ipaddress(name)) {
-		struct ip_service *iplist = NULL;
 		struct sockaddr_storage ss;
 
 		/* if it's in the form of an IP address then get the lib to interpret it */
@@ -3255,7 +3255,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		 * returned samba_sockaddrs.
 		 */
 		size_t count = 0;
-		struct ip_service *iplist = NULL;
 
 		iplist = SMB_MALLOC_ARRAY(struct ip_service, nc_count);
 		if (iplist == NULL) {
@@ -3423,11 +3422,12 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	 * count to return after removing zero addresses
 	 * in ret_count.
 	 */
-	ok = convert_ss2service(return_iplist,
+	ok = convert_ss2service(&iplist,
 				ss_list,
 				icount,
 				&ret_count);
 	if (!ok) {
+		SAFE_FREE(iplist);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3437,24 +3437,24 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	ret_count = remove_duplicate_addrs2(*return_iplist, ret_count);
+	ret_count = remove_duplicate_addrs2(iplist, ret_count);
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {
 		for (i = 0; i < ret_count && DEBUGLEVEL == 100; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&(*return_iplist)[i].ss);
+					&iplist[i].ss);
 			DEBUG(100, ("Storing name %s of type %d (%s:%d)\n",
 					name,
 					name_type,
 					addr,
-					(*return_iplist)[i].port));
+					iplist[i].port));
 		}
 	}
 
 	if (ret_count) {
-		namecache_store(name, name_type, ret_count, *return_iplist);
+		namecache_store(name, name_type, ret_count, iplist);
 	}
 
 	/* Display some debugging info */
@@ -3466,10 +3466,10 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		for (i = 0; i < ret_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&(*return_iplist)[i].ss);
+					&iplist[i].ss);
 			DEBUGADD(10, ("%s:%d ",
 					addr,
-					(*return_iplist)[i].port));
+					iplist[i].port));
 		}
 		DEBUG(10, ("\n"));
 	}
@@ -3481,6 +3481,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	 * not add them.
 	 */
 	*return_count = ret_count;
+	*return_iplist = iplist;
 
 	TALLOC_FREE(frame);
 	return status;
