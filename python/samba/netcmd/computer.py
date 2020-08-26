@@ -173,36 +173,36 @@ def add_dns_records(
         )
 
 
-class cmd_computer_create(Command):
-    """Create a new computer.
+class cmd_computer_add(Command):
+    """Add a new computer.
 
-This command creates a new computer account in the Active Directory domain.
+This command adds a new computer account to the Active Directory domain.
 The computername specified on the command is the sAMaccountName without the
 trailing $ (dollar sign).
 
-User accounts may represent physical entities, such as workstations. Computer
+Computer accounts may represent physical entities, such as workstations. Computer
 accounts are also referred to as security principals and are assigned a
 security identifier (SID).
 
 Example1:
-samba-tool computer create Computer1 -H ldap://samba.samdom.example.com \\
+samba-tool computer add Computer1 -H ldap://samba.samdom.example.com \\
     -Uadministrator%passw1rd
 
-Example1 shows how to create a new computer in the domain against a remote LDAP
+Example1 shows how to add a new computer to the domain against a remote LDAP
 server. The -H parameter is used to specify the remote target server. The -U
 option is used to pass the userid and password authorized to issue the command
 remotely.
 
 Example2:
-sudo samba-tool computer create Computer2
+sudo samba-tool computer add Computer2
 
-Example2 shows how to create a new computer in the domain against the local
+Example2 shows how to add a new computer to the domain against the local
 server. sudo is used so a user may run the command as root.
 
 Example3:
-samba-tool computer create Computer3 --computerou='OU=OrgUnit'
+samba-tool computer add Computer3 --computerou='OU=OrgUnit'
 
-Example3 shows how to create a new computer in the OrgUnit organizational unit.
+Example3 shows how to add a new computer in the OrgUnit organizational unit.
 
 """
     synopsis = "%prog <computername> [options]"
@@ -303,10 +303,10 @@ Example3 shows how to create a new computer in the OrgUnit organizational unit.
                     change_owner_sd, samdb.host_dns_name(),
                     ip_address_list, self.get_logger())
         except Exception as e:
-            raise CommandError("Failed to create computer '%s': " %
+            raise CommandError("Failed to add computer '%s': " %
                                computername, e)
 
-        self.outf.write("Computer '%s' created successfully\n" % computername)
+        self.outf.write("Computer '%s' added successfully\n" % computername)
 
 
 class cmd_computer_delete(Command):
@@ -721,7 +721,8 @@ class cmd_computer(SuperCommand):
     """Computer management."""
 
     subcommands = {}
-    subcommands["create"] = cmd_computer_create()
+    subcommands["add"] = cmd_computer_add()
+    subcommands["create"] = cmd_computer_add()
     subcommands["delete"] = cmd_computer_delete()
     subcommands["edit"] = cmd_computer_edit()
     subcommands["list"] = cmd_computer_list()
