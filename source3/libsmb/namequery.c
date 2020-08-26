@@ -1213,9 +1213,9 @@ static void sort_service_list(struct ip_service *servlist, int count)
  Remove any duplicate address/port pairs in the list
  *********************************************************************/
 
-int remove_duplicate_addrs2(struct ip_service *iplist, int count )
+size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count )
 {
-	int i, j;
+	size_t i, j;
 
 	DEBUG(10,("remove_duplicate_addrs2: "
 			"looking for duplicate address/port pairs\n"));
@@ -3234,7 +3234,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	if (ok) {
 		*return_count = remove_duplicate_addrs2(*return_iplist,
 					*return_count );
-		/* This could be a negative response */
 		if (*return_count > 0) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
@@ -3379,7 +3378,15 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	*return_count = remove_duplicate_addrs2(*return_iplist, *return_count );
+	*return_count = (int)remove_duplicate_addrs2(*return_iplist,
+						*return_count );
+	/* Paranoia casting size_t -> int. */
+	if (*return_count < 0) {
+		SAFE_FREE(*return_iplist);
+		*return_count = 0;
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {

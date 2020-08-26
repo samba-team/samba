@@ -14020,7 +14020,7 @@ static const char *remove_duplicate_addrs2_test_strings_result[] = {
 static bool run_local_remove_duplicate_addrs2(int dummy)
 {
 	struct ip_service test_vector[28];
-	int count, i;
+	size_t count, i;
 
 	/* Construct the sockaddr_storage test vector. */
 	for (i = 0; i < 28; i++) {
@@ -14049,7 +14049,7 @@ static bool run_local_remove_duplicate_addrs2(int dummy)
 	count = remove_duplicate_addrs2(test_vector, i);
 
 	if (count != 14) {
-		fprintf(stderr, "count wrong (%d) should be 14\n",
+		fprintf(stderr, "count wrong (%zu) should be 14\n",
 			count);
 		return false;
 	}
@@ -14060,7 +14060,7 @@ static bool run_local_remove_duplicate_addrs2(int dummy)
 		print_sockaddr(addr, sizeof(addr), &test_vector[i].ss);
 
 		if (strcmp(addr, remove_duplicate_addrs2_test_strings_result[i]) != 0) {
-			fprintf(stderr, "mismatch on [%d] [%s] [%s]\n",
+			fprintf(stderr, "mismatch on [%zu] [%s] [%s]\n",
 				i,
 				addr,
 				remove_duplicate_addrs2_test_strings_result[i]);
