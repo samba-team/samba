@@ -1264,14 +1264,15 @@
 
 <refsect3>
 	<title>user add <replaceable>username</replaceable> [<replaceable>password</replaceable>]</title>
-	<para>Create a new user. Please note that this subcommand is deprecated
-	and available for compatibility reasons only. Please use
-	<command>samba-tool user create</command> instead.</para>
+	<para>Add a new user to the Active Directory Domain.</para>
 </refsect3>
 
 <refsect3>
 	<title>user create <replaceable>username</replaceable> [<replaceable>password</replaceable>]</title>
-	<para>Create a new user in the Active Directory Domain.</para>
+	<para>Add a new user. This is a synonym for the
+	<command>samba-tool user add</command> command and is available
+	for compatibility reasons only. Please use
+	<command>samba-tool user add</command> instead.</para>
 </refsect3>
 
 <refsect3>
