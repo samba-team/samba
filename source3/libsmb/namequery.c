@@ -3709,7 +3709,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	bool done_auto_lookup = false;
 	int auto_count = 0;
 	NTSTATUS status;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *frame = talloc_stackframe();
 	int auto_name_type = 0x1C;
 
 	*ip_list = NULL;
@@ -3753,14 +3753,14 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* fetch the server we have affinity for.  Add the
 	   'password server' list to a search for our domain controllers */
 
-	saf_servername = saf_fetch(ctx, domain);
+	saf_servername = saf_fetch(frame, domain);
 
 	if (strequal(domain, lp_workgroup()) || strequal(domain, lp_realm())) {
-		pserver = talloc_asprintf(ctx, "%s, %s",
+		pserver = talloc_asprintf(frame, "%s, %s",
 			saf_servername ? saf_servername : "",
 			lp_password_server());
 	} else {
-		pserver = talloc_asprintf(ctx, "%s, *",
+		pserver = talloc_asprintf(frame, "%s, *",
 			saf_servername ? saf_servername : "");
 	}
 
@@ -3780,7 +3780,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	 */
 
 	p = pserver;
-	while (next_token_talloc(ctx, &p, &name, LIST_SEP)) {
+	while (next_token_talloc(frame, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
 			status = internal_resolve_name(domain, auto_name_type,
 						       sitename,
@@ -3826,7 +3826,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* fill in the return list now with real IP's */
 
 	while ((local_count<num_addresses) &&
-			next_token_talloc(ctx, &p, &name, LIST_SEP)) {
+			next_token_talloc(frame, &p, &name, LIST_SEP)) {
 		struct samba_sockaddr name_sa = {0};
 
 		/* copy any addresses from the auto lookup */
@@ -3958,7 +3958,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	}
 
 	SAFE_FREE(auto_ip_list);
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(frame);
 	return status;
 }
 
