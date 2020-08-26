@@ -280,11 +280,11 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 #ifdef HAVE_KRB5
 	krb5_error_code rc;
 	krb5_context ctx;
-	struct ip_service *kdcs;
+	struct ip_service *kdcs = NULL;
 	const char *realm;
 	char **get_host_realms = NULL;
-	int num_kdcs = 0;
-	int i;
+	size_t num_kdcs = 0;
+	size_t i;
 	NTSTATUS status;
 
 	rc = smb_krb5_init_context_common(&ctx);
@@ -309,9 +309,14 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		realm = (const char *) *get_host_realms;
 	}
 
-	status = get_kdc_list(realm, NULL, &kdcs, &num_kdcs);
+	status = get_kdc_list_talloc(talloc_tos(),
+				realm,
+				NULL,
+				&kdcs,
+				&num_kdcs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("get_kdc_list failed (%s)\n", nt_errstr(status)));
+		DBG_WARNING("get_kdc_list_talloc failed (%s)\n",
+			nt_errstr(status));
 		krb5_free_host_realm(ctx, get_host_realms);
 		krb5_free_context(ctx);
 		return -1;
@@ -327,6 +332,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 
 	krb5_free_host_realm(ctx, get_host_realms);
 	krb5_free_context(ctx);
+	TALLOC_FREE(kdcs);
 	return 0;
 #endif
 	DEBUG(1, ("No kerberos support\n"));
