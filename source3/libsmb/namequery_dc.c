@@ -173,8 +173,13 @@ static bool rpc_dc_name(const char *domain,
 
 	/* get a list of all domain controllers */
 
-	if (!NT_STATUS_IS_OK(get_sorted_dc_list(domain, NULL, &ip_list, &count,
-						False))) {
+	result = get_sorted_dc_list_talloc(talloc_tos(),
+				domain,
+				NULL,
+				&ip_list,
+				&count,
+				false);
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
@@ -194,7 +199,7 @@ static bool rpc_dc_name(const char *domain,
 		}
 	}
 
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 
 	/* No-one to talk to )-: */
 	return False;		/* Boo-hoo */
@@ -210,7 +215,7 @@ static bool rpc_dc_name(const char *domain,
 		  addr, domain));
 
 	*ss_out = dc_ss;
-	SAFE_FREE(ip_list);
+	TALLOC_FREE(ip_list);
 
 	return True;
 }
