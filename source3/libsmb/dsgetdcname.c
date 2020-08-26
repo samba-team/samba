@@ -453,7 +453,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		name_type = NBT_NAME_PDC;
 	}
 
-	status = internal_resolve_name_talloc(mem_ctx,
+	status = internal_resolve_name(mem_ctx,
 					domain_name,
 					name_type,
 					NULL,

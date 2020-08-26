@@ -3417,11 +3417,10 @@ static NTSTATUS _internal_resolve_name(const char *name,
 
 /********************************************************
  Wrapper function for _internal_resolve_name() that returns
- talloc'ed memory. Eventually this will be the only version
- and then we can rename it to internal_resolve_name().
+ talloc'ed memory.
 ********************************************************/
 
-NTSTATUS internal_resolve_name_talloc(TALLOC_CTX *ctx,
+NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				const char *name,
 				int name_type,
 				const char *sitename,
@@ -3490,7 +3489,7 @@ bool resolve_name(const char *name,
 
 	sitename = sitename_fetch(frame, lp_realm()); /* wild guess */
 
-	status = internal_resolve_name_talloc(frame,
+	status = internal_resolve_name(frame,
 					name,
 					name_type,
 					sitename,
@@ -3587,7 +3586,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	sitename = sitename_fetch(ctx, lp_realm()); /* wild guess */
 
-	status = internal_resolve_name_talloc(ctx,
+	status = internal_resolve_name(ctx,
 					name,
 					name_type,
 					sitename,
@@ -3672,7 +3671,7 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 		return false;
 	}
 
-	status = internal_resolve_name_talloc(talloc_tos(),
+	status = internal_resolve_name(talloc_tos(),
 					group,
 					0x1D,
 					NULL,
@@ -3687,7 +3686,7 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 
 	TALLOC_FREE(ip_list);
 
-	status = internal_resolve_name_talloc(talloc_tos(),
+	status = internal_resolve_name(talloc_tos(),
 					group,
 					0x1B,
 					NULL,
@@ -3718,7 +3717,7 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 	/* Look up #1B name */
 
 	if (lp_security() == SEC_ADS) {
-		status = internal_resolve_name_talloc(talloc_tos(),
+		status = internal_resolve_name(talloc_tos(),
 						domain,
 						0x1b,
 						NULL,
@@ -3729,7 +3728,7 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 
 	if (!NT_STATUS_IS_OK(status) || count == 0) {
 		TALLOC_FREE(ip_list);
-		status = internal_resolve_name_talloc(talloc_tos(),
+		status = internal_resolve_name(talloc_tos(),
 						domain,
 						0x1b,
 						NULL,
@@ -3861,7 +3860,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		if (!done_auto_lookup && strequal(name, "*")) {
 			done_auto_lookup = true;
 
-			status = internal_resolve_name_talloc(frame,
+			status = internal_resolve_name(frame,
 							domain,
 							auto_name_type,
 							sitename,
@@ -3904,7 +3903,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			goto out;
 		}
 		/* talloc off frame, only move to ctx on success. */
-		status = internal_resolve_name_talloc(frame,
+		status = internal_resolve_name(frame,
 						domain,
 						auto_name_type,
 						sitename,
