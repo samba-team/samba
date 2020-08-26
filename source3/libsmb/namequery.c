@@ -1671,42 +1671,46 @@ NTSTATUS name_query(const char *name, int name_type,
 /********************************************************
  Convert an array if struct sockaddr_storage to struct ip_service
  return false on failure.  Port is set to PORT_NONE;
- pcount is [in/out] - it is the length of ss_list on input,
- and the length of return_iplist on output as we remove any
+ orig_count is the length of ss_list on input,
+ *count_out is the length of return_iplist on output as we remove any
  zero addresses from ss_list.
 *********************************************************/
 
 static bool convert_ss2service(struct ip_service **return_iplist,
 		const struct sockaddr_storage *ss_list,
-		int *pcount)
+		size_t orig_count,
+		size_t *count_out)
 {
-	int i;
-	int orig_count = *pcount;
-	int real_count = 0;
+	size_t i;
+	size_t real_count = 0;
 
-	if (orig_count==0 || !ss_list )
-		return False;
+	if (orig_count == 0 || ss_list == NULL) {
+		*count_out = 0;
+		return false;
+	}
 
 	/* Filter out zero addrs. */
-	for ( i=0; i<orig_count; i++ ) {
+	for (i = 0; i < orig_count; i++ ) {
 		if (is_zero_addr(&ss_list[i])) {
 			continue;
 		}
 		real_count++;
 	}
-	if (real_count==0) {
+	if (real_count == 0) {
+		*count_out = 0;
 		return false;
 	}
 
 	/* copy the ip address; port will be PORT_NONE */
-	if ((*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count)) ==
-			NULL) {
-		DEBUG(0,("convert_ip2service: malloc failed "
-			"for %d enetries!\n", real_count ));
-		return False;
+	*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count);
+	if (*return_iplist == NULL) {
+		DBG_ERR("malloc failed for %zu enetries!\n", real_count);
+		*count_out = 0;
+		return false;
 	}
 
-	for ( i=0, real_count = 0; i<orig_count; i++ ) {
+	real_count = 0;
+	for (i=0; i < orig_count; i++ ) {
 		if (is_zero_addr(&ss_list[i])) {
 			continue;
 		}
@@ -1715,7 +1719,7 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 		real_count++;
 	}
 
-	*pcount = real_count;
+	*count_out = real_count;
 	return true;
 }
 
@@ -3188,6 +3192,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	size_t i;
 	size_t nc_count = 0;
+	size_t ret_count = 0;
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
@@ -3401,7 +3406,23 @@ static NTSTATUS _internal_resolve_name(const char *name,
 
   done:
 
-	ok = convert_ss2service(return_iplist, ss_list, return_count);
+	/* Paranoia. */
+	if (*return_count < 0) {
+		*return_count = 0;
+		SAFE_FREE(*return_iplist);
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * convert_ss2service() leaves the correct
+	 * count to return after removing zero addresses
+	 * in ret_count.
+	 */
+	ok = convert_ss2service(return_iplist,
+				ss_list,
+				*return_count,
+				&ret_count);
 	if (!ok) {
 		TALLOC_FREE(frame);
 		*return_count = 0;
@@ -3413,8 +3434,9 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	*return_count = (int)remove_duplicate_addrs2(*return_iplist,
-						*return_count );
+	ret_count = remove_duplicate_addrs2(*return_iplist, ret_count);
+	*return_count = (int)ret_count;
+
 	/* Paranoia casting size_t -> int. */
 	if (*return_count < 0) {
 		SAFE_FREE(*return_iplist);
