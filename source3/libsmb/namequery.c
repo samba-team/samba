@@ -3177,7 +3177,7 @@ static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-NTSTATUS internal_resolve_name(const char *name,
+static NTSTATUS _internal_resolve_name(const char *name,
 			        int name_type,
 				const char *sitename,
 				struct ip_service **return_iplist,
@@ -3416,7 +3416,7 @@ NTSTATUS internal_resolve_name(const char *name,
 }
 
 /********************************************************
- Wrapper function for internal_resolve_name() that returns
+ Wrapper function for _internal_resolve_name() that returns
  talloc'ed memory. Eventually this will be the only version
  and then we can rename it to internal_resolve_name().
 ********************************************************/
@@ -3434,7 +3434,7 @@ NTSTATUS internal_resolve_name_talloc(TALLOC_CTX *ctx,
 	int count = 0;
 	NTSTATUS status;
 
-	status = internal_resolve_name(name,
+	status = _internal_resolve_name(name,
 					name_type,
 					sitename,
 					&iplist_malloc,
