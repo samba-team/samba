@@ -680,10 +680,11 @@ bool namecache_store(const char *name,
 			int name_type,
 			int num_names,
 			struct ip_service *ip_list);
-bool namecache_fetch(const char *name,
+bool namecache_fetch(TALLOC_CTX *ctx,
+			const char *name,
 			int name_type,
-			struct ip_service **ip_list,
-			int *num_names);
+			struct samba_sockaddr **sa_list,
+			size_t *num_names);
 bool namecache_delete(const char *name, int name_type);
 void namecache_flush(void);
 bool namecache_status_store(const char *keyname, int keyname_type,

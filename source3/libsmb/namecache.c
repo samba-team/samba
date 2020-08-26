@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "lib/gencache.h"
+#include "libsmb/namequery.h"
 
 #define IPSTR_LIST_SEP	","
 #define IPSTR_LIST_CHAR	','
@@ -114,35 +115,47 @@ static char *ipstr_list_make(TALLOC_CTX *ctx,
  *
  * @param ipstr ip string list to be parsed
  * @param ip_list pointer to array of ip addresses which is
- *        allocated by this function and must be freed by caller
+ *        talloced by this function and must be freed by caller
  * @return number of successfully parsed addresses
  **/
 
-static int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
+static int ipstr_list_parse(TALLOC_CTX *ctx,
+			const char *ipstr_list,
+			struct samba_sockaddr **sa_list_out)
 {
-	TALLOC_CTX *frame;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct samba_sockaddr *sa_list = NULL;
 	char *token_str = NULL;
 	size_t i, count;
+	size_t array_size;
 
-	if (!ipstr_list || !ip_list)
-		return 0;
+	*sa_list_out = NULL;
 
-	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
-	if ( (*ip_list = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
-		DBG_ERR("malloc failed for %lu entries\n",
-					(unsigned long)count);
+	array_size = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
+	sa_list = talloc_zero_array(frame,
+				struct samba_sockaddr,
+				array_size);
+	if (sa_list == NULL) {
+		TALLOC_FREE(frame);
 		return 0;
 	}
 
-	frame = talloc_stackframe();
-	for ( i=0; next_token_talloc(frame, &ipstr_list, &token_str,
-				IPSTR_LIST_SEP) && i<count; i++ ) {
+	count = 0;
+	for (i=0; next_token_talloc(frame, &ipstr_list, &token_str,
+				IPSTR_LIST_SEP); i++ ) {
+		bool ok;
 		char *s = token_str;
 		char *p = strrchr(token_str, ':');
+		struct sockaddr_storage ss;
+
+		/* Ensure we don't overrun. */
+		if (count >= array_size) {
+			break;
+		}
 
 		if (p) {
 			*p = 0;
-			(*ip_list)[i].port = atoi(p+1);
+			/* We now ignore the port. */
 		}
 
 		/* convert single token to ip address */
@@ -155,11 +168,19 @@ static int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 			}
 			*p = '\0';
 		}
-		if (!interpret_string_addr(&(*ip_list)[i].ss,
-					s,
-					AI_NUMERICHOST)) {
+		ok = interpret_string_addr(&ss, s, AI_NUMERICHOST);
+		if (!ok) {
 			continue;
 		}
+		ok = sockaddr_storage_to_samba_sockaddr(&sa_list[count],
+							&ss);
+		if (!ok) {
+			continue;
+		}
+		count++;
+	}
+	if (count > 0) {
+		*sa_list_out = talloc_move(ctx, &sa_list);
 	}
 	TALLOC_FREE(frame);
 	return count;
@@ -266,7 +287,7 @@ bool namecache_store(const char *name,
  *
  * @param name netbios name to look up for
  * @param name_type netbios name type of @param name
- * @param ip_list mallocated list of IP addresses if found in the cache,
+ * @param ip_list talloced list of IP addresses if found in the cache,
  *        NULL otherwise
  * @param num_names number of entries found
  *
@@ -274,18 +295,14 @@ bool namecache_store(const char *name,
  *         false if name isn't found in the cache or has expired
  **/
 
-bool namecache_fetch(const char *name,
-			int name_type,
-			struct ip_service **ip_list,
-			int *num_names)
+bool namecache_fetch(TALLOC_CTX *ctx,
+		const char *name,
+		int name_type,
+		struct samba_sockaddr **sa_list,
+		size_t *num_names)
 {
 	char *key, *value;
 	time_t timeout;
-
-	/* exit now if null pointers were passed as they're required further */
-	if (!ip_list || !num_names) {
-		return false;
-	}
 
 	if (name_type > 255) {
 		return false; /* Don't fetch non-real name types. */
@@ -312,7 +329,7 @@ bool namecache_fetch(const char *name,
 	/*
 	 * Split up the stored value into the list of IP adresses
 	 */
-	*num_names = ipstr_list_parse(value, ip_list);
+	*num_names = ipstr_list_parse(ctx, value, sa_list);
 
 	TALLOC_FREE(key);
 	TALLOC_FREE(value);

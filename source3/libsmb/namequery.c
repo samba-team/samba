@@ -3186,9 +3186,11 @@ static NTSTATUS _internal_resolve_name(const char *name,
 {
 	const char *tok;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int i;
+	size_t i;
+	size_t nc_count = 0;
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	*return_iplist = NULL;
@@ -3232,17 +3234,50 @@ static NTSTATUS _internal_resolve_name(const char *name,
 
 	/* Check name cache */
 
-	ok = namecache_fetch(name, name_type, return_iplist, return_count);
+	ok = namecache_fetch(frame,
+				name,
+				name_type,
+				&sa_list,
+				&nc_count);
 	if (ok) {
-		*return_count = remove_duplicate_addrs2(*return_iplist,
-					*return_count );
-		if (*return_count > 0) {
+		/*
+		 * Create a struct ip_service list from the
+		 * returned samba_sockaddrs.
+		 */
+		size_t count = 0;
+		struct ip_service *iplist = NULL;
+
+		iplist = SMB_MALLOC_ARRAY(struct ip_service, nc_count);
+		if (iplist == NULL) {
 			TALLOC_FREE(frame);
-			return NT_STATUS_OK;
-		} else {
+			return NT_STATUS_NO_MEMORY;
+		}
+		count = 0;
+		for (i = 0; i < nc_count; i++) {
+			if (is_zero_addr(&sa_list[i].u.ss)) {
+				continue;
+			}
+			iplist[count].ss = sa_list[i].u.ss;
+			iplist[count].port = 0;
+			count++;
+		}
+		count = remove_duplicate_addrs2(iplist, count);
+		if (count == 0) {
+			SAFE_FREE(iplist);
 			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
+		/* Paranoia size_t -> int. */
+		if ((int)count < 0) {
+			SAFE_FREE(iplist);
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		*return_count = (int)count;
+		*return_iplist = iplist;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 	}
 
 	/* set the name resolution order */
