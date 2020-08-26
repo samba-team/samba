@@ -3691,7 +3691,7 @@ enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
 static NTSTATUS get_dc_list(const char *domain,
 			const char *sitename,
 			struct ip_service **ip_list,
-			int *count,
+			size_t *ret_count,
 			enum dc_lookup_type lookup_type,
 			bool *ordered)
 {
@@ -3713,7 +3713,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	int auto_name_type = 0x1C;
 
 	*ip_list = NULL;
-	*count = 0;
+	*ret_count = 0;
 
 	*ordered = False;
 
@@ -3791,10 +3791,25 @@ static NTSTATUS get_dc_list(const char *domain,
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/* Paranoia. */
+			if (auto_count < 0) {
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto out;
+			}
+			/* Wrap check. */
+			if (num_addresses + auto_count < num_addresses) {
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto out;
+			}
 			num_addresses += auto_count;
 			DEBUG(8,("Adding %d DC's from auto lookup\n",
 						auto_count));
 		} else  {
+			/* Wrap check. */
+			if (num_addresses + 1 < num_addresses) {
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto out;
+			}
 			num_addresses++;
 		}
 	}
@@ -3803,6 +3818,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	   just return the list of DC's.  Or maybe we just failed. */
 
 	if (num_addresses == 0) {
+		int tmp_count = 0;
 		if (done_auto_lookup) {
 			DEBUG(4,("get_dc_list: no servers found\n"));
 			status = NT_STATUS_NO_LOGON_SERVERS;
@@ -3810,7 +3826,15 @@ static NTSTATUS get_dc_list(const char *domain,
 		}
 		status = internal_resolve_name(domain, auto_name_type,
 					       sitename, ip_list,
-					     count, resolve_order);
+					     &tmp_count, resolve_order);
+		/* Paranoia. */
+		if (tmp_count < 0) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			*ret_count = (size_t)tmp_count;
+		}
 		goto out;
 	}
 
@@ -3946,16 +3970,16 @@ static NTSTATUS get_dc_list(const char *domain,
 	}
 
 	*ip_list = return_iplist;
-	*count = local_count;
+	*ret_count = local_count;
 
-	status = ( *count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS );
+	status = (*ret_count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS);
 
   out:
 
 	if (!NT_STATUS_IS_OK(status)) {
 		SAFE_FREE(return_iplist);
 		*ip_list = NULL;
-		*count = 0;
+		*ret_count = 0;
 	}
 
 	SAFE_FREE(auto_ip_list);
@@ -3980,7 +4004,7 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
 	struct ip_service *ip_list_malloc = NULL;
 	struct ip_service *ip_list = NULL;
-	int count = 0;
+	size_t count = 0;
 
 	DBG_INFO("attempting lookup for name %s (sitename %s)\n",
 		domain,
@@ -4014,12 +4038,6 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	/* Paranoia check. */
-	if (count < 0) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
-	}
-
 	/* only sort if we don't already have an ordered list */
 	if (!ordered) {
 		sort_service_list(ip_list_malloc, count);
@@ -4028,12 +4046,12 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 	status = dup_ip_service_array(ctx,
 				&ip_list,
 				ip_list_malloc,
-				(size_t)count);
+				count);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	*ret_count = (size_t)count;
+	*ret_count = count;
 	*ip_list_ret = ip_list;
 
   out:
@@ -4053,7 +4071,7 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 			struct ip_service **ip_list_ret,
 			size_t *ret_count)
 {
-	int count = 0;
+	size_t count = 0;
 	struct ip_service *ip_list_malloc = NULL;
 	struct ip_service *ip_list = NULL;
 	bool ordered = false;
@@ -4070,12 +4088,6 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	/* Paranoia check. */
-	if (count < 0) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
-	}
-
 	/* only sort if we don't already have an ordered list */
 	if (!ordered ) {
 		sort_service_list(ip_list_malloc, count);
@@ -4084,12 +4096,12 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 	status = dup_ip_service_array(ctx,
 				&ip_list,
 				ip_list_malloc,
-				(size_t)count);
+				count);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	*ret_count = (size_t)count;
+	*ret_count = count;
 	*ip_list_ret = ip_list;
 
   out:
