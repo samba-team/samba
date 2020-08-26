@@ -1574,7 +1574,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
-			(void)get_sorted_dc_list_talloc(mem_ctx,
+			(void)get_sorted_dc_list(mem_ctx,
 					domain->alt_name,
 					sitename,
 					&ip_list,
@@ -1603,7 +1603,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		}
 
 		/* Now we add DCs from the main AD DNS lookup. */
-		(void)get_sorted_dc_list_talloc(mem_ctx,
+		(void)get_sorted_dc_list(mem_ctx,
 				domain->alt_name,
 				NULL,
 				&ip_list,
@@ -1629,7 +1629,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	/* Try standard netbios queries if no ADS and fall back to DNS queries
 	 * if alt_name is available */
 	if (*num_dcs == 0) {
-		(void)get_sorted_dc_list_talloc(mem_ctx,
+		(void)get_sorted_dc_list(mem_ctx,
 					domain->name,
 					NULL,
 					&ip_list,
@@ -1637,7 +1637,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 					false);
 		if (iplist_size == 0) {
 			if (domain->alt_name != NULL) {
-				(void)get_sorted_dc_list_talloc(mem_ctx,
+				(void)get_sorted_dc_list(mem_ctx,
 						domain->alt_name,
 						NULL,
 						&ip_list,

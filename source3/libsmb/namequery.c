@@ -3967,7 +3967,7 @@ static NTSTATUS get_dc_list(const char *domain,
  Small wrapper function to get the DC list and sort it if neccessary.
 *********************************************************************/
 
-NTSTATUS get_sorted_dc_list_talloc(TALLOC_CTX *ctx,
+NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 				const char *domain,
 				const char *sitename,
 				struct ip_service **ip_list_ret,

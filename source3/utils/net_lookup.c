@@ -214,7 +214,7 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(talloc_tos(), domain);
-	status = get_sorted_dc_list_talloc(talloc_tos(),
+	status = get_sorted_dc_list(talloc_tos(),
 				domain,
 				sitename,
 				&ip_list,

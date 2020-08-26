@@ -391,7 +391,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
 		  domain));
 
-	status = get_sorted_dc_list_talloc(talloc_tos(),
+	status = get_sorted_dc_list(talloc_tos(),
 				domain,
 				NULL,
 				&ip_list,
@@ -442,7 +442,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
 		  realm));
 
-	status = get_sorted_dc_list_talloc(talloc_tos(),
+	status = get_sorted_dc_list(talloc_tos(),
 				realm,
 				sitename,
 				&ip_list,
