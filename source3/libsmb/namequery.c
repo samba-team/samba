@@ -3189,7 +3189,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	int i;
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
-	TALLOC_CTX *frame = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -3201,6 +3201,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		*return_iplist = SMB_MALLOC_P(struct ip_service);
 		if (*return_iplist == NULL) {
 			DBG_ERR("malloc fail !\n");
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -3214,13 +3215,16 @@ static NTSTATUS _internal_resolve_name(const char *name,
 			DBG_WARNING("interpret_string_addr failed on %s\n",
 				name);
 			SAFE_FREE(*return_iplist);
+			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		if (is_zero_addr(&(*return_iplist)->ss)) {
 			SAFE_FREE(*return_iplist);
+			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		*return_count = 1;
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
@@ -3232,8 +3236,10 @@ static NTSTATUS _internal_resolve_name(const char *name,
 					*return_count );
 		/* This could be a negative response */
 		if (*return_count > 0) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		} else {
+			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -3242,6 +3248,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 
 	if (resolve_order && strcmp(resolve_order[0], "NULL") == 0) {
 		DBG_DEBUG("all lookups disabled\n");
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -3249,8 +3256,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		static const char *host_order[] = { "host", NULL };
 		resolve_order = host_order;
 	}
-
-	frame = talloc_stackframe();
 
 	if ((strlen(name) > MAX_NETBIOSNAME_LEN - 1) ||
 	    (strchr(name, '.') != NULL)) {
