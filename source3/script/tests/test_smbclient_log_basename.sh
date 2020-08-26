@@ -28,7 +28,7 @@ test_smbclient_log_basename()
 	mkdir $LOG_DIR
 	cmd='$VALGRIND $SMBCLIENT -l $LOG_DIR -d3 //$SERVER/IPC\$ $CONFIGURATION -U%badpassword -c quit $ADDARGS'
 	out=`eval $cmd 2>&1`
-	grep 'lp_load_ex: refreshing parameters' $LOG_DIR/log.smbclient
+	grep 'Client started' $LOG_DIR/log.smbclient
 }
 
 testit "smbclient log-basename" test_smbclient_log_basename || failed=`expr $failed + 1`
