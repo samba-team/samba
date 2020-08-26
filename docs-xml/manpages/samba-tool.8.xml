@@ -887,6 +887,14 @@
 </refsect3>
 
 <refsect3>
+	<title>group create <replaceable>groupname</replaceable> [options]</title>
+	<para>Add a new AD group. This is a synonym for the
+	<command>samba-tool group add</command> command and is available
+	for compatibility reasons only. Please use
+	<command>samba-tool group add</command> instead.</para>
+</refsect3>
+
+<refsect3>
 	<title>group addmembers <replaceable>groupname</replaceable> <replaceable>members</replaceable> [options]</title>
 	<para>Add members to an AD group.</para>
 </refsect3>
