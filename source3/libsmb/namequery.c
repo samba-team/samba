@@ -3416,6 +3416,55 @@ NTSTATUS internal_resolve_name(const char *name,
 }
 
 /********************************************************
+ Wrapper function for internal_resolve_name() that returns
+ talloc'ed memory. Eventually this will be the only version
+ and then we can rename it to internal_resolve_name().
+********************************************************/
+
+NTSTATUS internal_resolve_name_talloc(TALLOC_CTX *ctx,
+				const char *name,
+				int name_type,
+				const char *sitename,
+				struct ip_service **return_iplist,
+				size_t *ret_count,
+				const char **resolve_order)
+{
+	struct ip_service *iplist_malloc = NULL;
+	struct ip_service *iplist = NULL;
+	int count = 0;
+	NTSTATUS status;
+
+	status = internal_resolve_name(name,
+					name_type,
+					sitename,
+					&iplist_malloc,
+					&count,
+					resolve_order);
+	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(iplist_malloc);
+		return status;
+	}
+
+	/* Paranoia. */
+	if (count < 0) {
+		SAFE_FREE(iplist_malloc);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dup_ip_service_array(ctx,
+				&iplist,
+				iplist_malloc,
+				count);
+	SAFE_FREE(iplist_malloc);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*ret_count = (size_t)count;
+	*return_iplist = iplist;
+	return NT_STATUS_OK;
+}
+
+/********************************************************
  Internal interface to resolve a name into one IP address.
  Use this function if the string is either an IP address, DNS
  or host name or NetBIOS name. This uses the name switch in the

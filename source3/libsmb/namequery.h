@@ -98,6 +98,13 @@ NTSTATUS internal_resolve_name(const char *name,
 				struct ip_service **return_iplist,
 				int *return_count,
 				const char **resolve_order);
+NTSTATUS internal_resolve_name_talloc(TALLOC_CTX *ctx,
+				const char *name,
+				int name_type,
+				const char *sitename,
+				struct ip_service **return_iplist,
+				size_t *ret_count,
+				const char **resolve_order);
 bool resolve_name(const char *name,
 		struct sockaddr_storage *return_ss,
 		int name_type,
