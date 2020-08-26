@@ -1,4 +1,4 @@
-#!/bin/sh -eux
+#!/bin/sh
 #
 # This is not a general-purpose build script, but instead one specific to the Google oss-fuzz compile environment.
 #
@@ -14,6 +14,13 @@
 # Additional arguments are passed to configure, to allow this to be
 # tested in autobuild.py
 #
+
+# Ensure we give good trace info, fail right away and fail with unset
+# variables
+set -e
+set -x
+set -u
+
 ADDITIONAL_CFLAGS="$CFLAGS"
 export ADDITIONAL_CFLAGS
 CFLAGS=""
