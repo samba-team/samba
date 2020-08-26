@@ -3184,7 +3184,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 			        int name_type,
 				const char *sitename,
 				struct ip_service **return_iplist,
-				int *return_count,
+				size_t *return_count,
 				const char **resolve_order)
 {
 	const char *tok;
@@ -3276,14 +3276,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		/* Paranoia size_t -> int. */
-		if ((int)count < 0) {
-			SAFE_FREE(iplist);
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		*return_count = (int)count;
+		*return_count = count;
 		*return_iplist = iplist;
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
@@ -3474,12 +3467,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		DEBUG(10, ("\n"));
 	}
 
-	/*
-	 * The below can't go negative, we checked
-	 * above with icount which must always be greater
-	 * than ret_count, we only subtract addresses,
-	 * not add them.
-	 */
 	*return_count = ret_count;
 	*return_iplist = iplist;
 
@@ -3502,7 +3489,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 {
 	struct ip_service *iplist_malloc = NULL;
 	struct ip_service *iplist = NULL;
-	int count = 0;
+	size_t count = 0;
 	NTSTATUS status;
 
 	status = _internal_resolve_name(name,
@@ -3516,12 +3503,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	/* Paranoia. */
-	if (count < 0) {
-		SAFE_FREE(iplist_malloc);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	status = dup_ip_service_array(ctx,
 				&iplist,
 				iplist_malloc,
@@ -3530,7 +3511,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	*ret_count = (size_t)count;
+	*ret_count = count;
 	*return_iplist = iplist;
 	return NT_STATUS_OK;
 }
