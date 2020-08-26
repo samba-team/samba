@@ -38,7 +38,8 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008_R2,
     DS_DOMAIN_FUNCTION_2012_R2,
-    DS_DOMAIN_FUNCTION_2016
+    DS_DOMAIN_FUNCTION_2016,
+    DS_GUID_USERS_CONTAINER
 )
 from samba.descriptor import (
     get_domain_descriptor,
@@ -69,8 +70,9 @@ def get_domainguid(samdb, domaindn):
 
 
 def get_dnsadmins_sid(samdb, domaindn):
-    res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % domaindn, scope=ldb.SCOPE_BASE,
-                       attrs=["objectSid"])
+    base_dn = "CN=DnsAdmins,%s" % samdb.get_wellknown_dn(ldb.Dn(samdb,
+                                            domaindn), DS_GUID_USERS_CONTAINER)
+    res = samdb.search(base=base_dn, scope=ldb.SCOPE_BASE, attrs=["objectSid"])
     dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
     return dnsadmins_sid
 
