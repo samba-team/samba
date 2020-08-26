@@ -3782,15 +3782,16 @@ static NTSTATUS get_dc_list(const char *domain,
 	p = pserver;
 	while (next_token_talloc(frame, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
+			done_auto_lookup = true;
 			status = internal_resolve_name(domain, auto_name_type,
 						       sitename,
 						       &auto_ip_list,
 						       &auto_count,
 						       resolve_order);
-			if (NT_STATUS_IS_OK(status)) {
-				num_addresses += auto_count;
+			if (!NT_STATUS_IS_OK(status)) {
+				continue;
 			}
-			done_auto_lookup = true;
+			num_addresses += auto_count;
 			DEBUG(8,("Adding %d DC's from auto lookup\n",
 						auto_count));
 		} else  {
