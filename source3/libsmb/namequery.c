@@ -3198,31 +3198,33 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		name, name_type, sitename ? sitename : "(null)");
 
 	if (is_ipaddress(name)) {
-		*return_iplist = SMB_MALLOC_P(struct ip_service);
-		if (*return_iplist == NULL) {
-			DBG_ERR("malloc fail !\n");
+		struct ip_service *iplist = NULL;
+		struct sockaddr_storage ss;
+
+		/* if it's in the form of an IP address then get the lib to interpret it */
+		ok = interpret_string_addr(&ss, name, AI_NUMERICHOST);
+		if (!ok) {
+			DBG_WARNING("interpret_string_addr failed on %s\n",
+				name);
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		if (is_zero_addr(&ss)) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		iplist = SMB_MALLOC_P(struct ip_service);
+		if (iplist == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		iplist[0].ss = ss;
 		/* ignore the port here */
-		(*return_iplist)->port = PORT_NONE;
+		iplist[0].port = PORT_NONE;
 
-		/* if it's in the form of an IP address then get the lib to interpret it */
-		ok = interpret_string_addr(&(*return_iplist)->ss,
-					name, AI_NUMERICHOST);
-		if (!ok) {
-			DBG_WARNING("interpret_string_addr failed on %s\n",
-				name);
-			SAFE_FREE(*return_iplist);
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		if (is_zero_addr(&(*return_iplist)->ss)) {
-			SAFE_FREE(*return_iplist);
-			TALLOC_FREE(frame);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		*return_iplist = iplist;
 		*return_count = 1;
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
