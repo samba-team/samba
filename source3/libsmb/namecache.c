@@ -108,7 +108,6 @@ static char *ipstr_list_make(TALLOC_CTX *ctx,
 	return ipstr_list;
 }
 
-#if 0
 /**
  * Allocate and initialise an ipstr list using samba_sockaddr ip adresses
  * passed as arguments.
@@ -188,7 +187,6 @@ static char *ipstr_list_make_sa(TALLOC_CTX *ctx,
 
 	return ipstr_list;
 }
-#endif
 
 /**
  * Parse given ip string list into array of ip addresses
@@ -349,6 +347,78 @@ bool namecache_store(const char *name,
 	 * Generate string representation of ip addresses list
 	 */
 	value_string = ipstr_list_make(frame, ip_list, num_names);
+	if (value_string == NULL) {
+		goto out;
+	}
+
+	/* set the entry */
+	ret = gencache_set(key, value_string, expiry);
+
+  out:
+
+	TALLOC_FREE(key);
+	TALLOC_FREE(value_string);
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+/**
+ * Store a name(s) in the name cache - samba_sockaddr version.
+ *
+ * @param name netbios names array
+ * @param name_type integer netbios name type
+ * @param num_names number of names being stored
+ * @param ip_list array of in_addr structures containing
+ *        ip addresses being stored
+ **/
+
+bool namecache_store_sa(const char *name,
+			int name_type,
+			size_t num_names,
+			struct samba_sockaddr *sa_list)
+{
+	time_t expiry;
+	char *key = NULL;
+	char *value_string = NULL;
+	size_t i;
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (name_type > 255) {
+		/* Don't store non-real name types. */
+		goto out;
+	}
+
+	if ( DEBUGLEVEL >= 5 ) {
+		char *addr = NULL;
+
+		DBG_INFO("storing %zu address%s for %s#%02x: ",
+			num_names, num_names == 1 ? "": "es", name, name_type);
+
+		for (i = 0; i < num_names; i++) {
+			addr = print_canonical_sockaddr(frame,
+					&sa_list[i].u.ss);
+			if (!addr) {
+				continue;
+			}
+			DEBUGADD(5, ("%s%s", addr,
+				(i == (num_names - 1) ? "" : ",")));
+
+		}
+		DEBUGADD(5, ("\n"));
+	}
+
+	key = namecache_key(frame, name, name_type);
+	if (!key) {
+		goto out;
+	}
+
+	expiry = time(NULL) + lp_name_cache_timeout();
+
+	/*
+	 * Generate string representation of ip addresses list
+	 */
+	value_string = ipstr_list_make_sa(frame, sa_list, num_names);
 	if (value_string == NULL) {
 		goto out;
 	}
