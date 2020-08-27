@@ -41,6 +41,12 @@ class UserCmdTestCase(SambaToolCmdTest):
         super(UserCmdTestCase, self).setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+
+        # Modify the default template homedir
+        lp = self.get_loadparm()
+        self.template_homedir = lp.get('template homedir')
+        lp.set('template homedir', '/home/test/%D/%U')
+
         self.users = []
         self.users.append(self._randomUser({"name": "sambatool1", "company": "comp1"}))
         self.users.append(self._randomUser({"name": "sambatool2", "company": "comp1"}))
@@ -83,6 +89,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         cachedb = lp.private_path("user-syncpasswords-cache.ldb")
         if os.path.exists(cachedb):
             os.remove(cachedb)
+        lp.set('template homedir', self.template_homedir)
 
     def test_newuser(self):
         # try to add all the users again, this should fail
@@ -645,6 +652,7 @@ template """
         self.assertEqual("%s" % found.get("gidNumber"), "%s" %
                           user["gidNumber"])
         self.assertEqual("%s" % found.get("uid"), user["uid"])
+        self.assertIn('/home/test/', "%s" % found.get("unixHomeDirectory"))
         self._check_user(user)
 
     def _create_user(self, user):
