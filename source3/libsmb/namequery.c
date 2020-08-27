@@ -3148,7 +3148,7 @@ static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Internal interface to resolve a name into an IP address.
+ Samba interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
  or host name or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
@@ -3158,7 +3158,7 @@ static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
+NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				const char *name,
 			        int name_type,
 				const char *sitename,
@@ -3457,6 +3457,7 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 	return status;
 }
 
+#if 0
 /********************************************************
  Wrapper function for _internal_resolve_name() that returns
  talloc'ed memory.
@@ -3489,6 +3490,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	*return_iplist = iplist;
 	return NT_STATUS_OK;
 }
+#endif
 
 /********************************************************
  Internal interface to resolve a name into one IP address.
