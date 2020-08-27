@@ -60,7 +60,6 @@ static int io_bufsize = 0; /* we use the default size */
 static int io_timeout = (CLIENT_TIMEOUT/1000); /* Per operation timeout (in seconds). */
 
 static int name_type = 0x20;
-static int max_protocol = -1;
 
 static int process_tok(char *tok);
 static int cmd_help(void);
@@ -5645,7 +5644,7 @@ static int process_command_string(const char *cmd_in)
 				     desthost,
 				     service,
 				     creds,
-				     max_protocol,
+				     lp_client_max_protocol(),
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type,
 				     &cli);
@@ -6095,7 +6094,7 @@ static int process(const char *base_directory)
 			     desthost,
 			     service,
 			     creds,
-			     max_protocol,
+			     lp_client_max_protocol(),
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6136,7 +6135,7 @@ static int do_host_query(const char *query_host)
 			     query_host,
 			     "IPC$",
 			     creds,
-			     max_protocol,
+			     lp_client_max_protocol(),
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6171,7 +6170,7 @@ static int do_host_query(const char *query_host)
 	if (port != NBT_SMB_PORT ||
 	    smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1)
 	{
-		int max_proto = MIN(max_protocol, PROTOCOL_NT1);
+		int max_proto = MIN(lp_client_max_protocol(), PROTOCOL_NT1);
 
 		/*
 		 * Workgroups simply don't make sense over anything
@@ -6221,7 +6220,7 @@ static int do_tar_op(const char *base_directory)
 				     desthost,
 				     service,
 				     creds,
-				     max_protocol,
+				     lp_client_max_protocol(),
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6627,8 +6626,6 @@ int main(int argc,char *argv[])
 
 	/* Ensure we have a password (or equivalent). */
 	popt_common_credentials_post();
-
-	max_protocol = lp_client_max_protocol();
 
 	if (tar_to_process(tar_ctx)) {
 		if (cmdstr)
