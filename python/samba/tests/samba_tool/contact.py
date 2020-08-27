@@ -70,7 +70,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err)
             self.assertNotIn(
                 "ERROR", err, "There shouldn't be any error message")
-            self.assertIn("Contact '%s' created successfully" %
+            self.assertIn("Contact '%s' added successfully" %
                           contact["expectedname"], out)
 
             found = self._find_contact(contact["expectedname"])
@@ -101,7 +101,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertCmdFail(result, "Succeeded to create existing contact")
             self.assertIn("already exists", err)
 
-        # try to delete all the contacts we just created
+        # try to delete all the contacts we just added
         for contact in self.contacts:
             (result, out, err) = self.runsubcmd("contact", "delete", "%s" %
                                                 contact["expectedname"])
@@ -123,7 +123,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
-            self.assertIn("Contact '%s' created successfully" %
+            self.assertIn("Contact '%s' added successfully" %
                           contact["expectedname"], out)
 
             found = self._find_contact(contact["expectedname"])
@@ -133,7 +133,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertEqual("%s" % found.get("description"),
                               contact["description"])
 
-        # try to delete all the contacts we just created, by DN
+        # try to delete all the contacts we just added, by DN
         for contact in self.contacts:
             expecteddn = ldb.Dn(self.samdb,
                                 "CN=%s,OU=%s,%s" %
@@ -161,7 +161,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
-            self.assertIn("Contact '%s' created successfully" %
+            self.assertIn("Contact '%s' added successfully" %
                           contact["expectedname"], out)
 
             found = self._find_contact(contact["expectedname"])
