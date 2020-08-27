@@ -1064,7 +1064,6 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   int num_dcs,
 				   struct netr_DsRGetDCNameInfo **info)
 {
-	struct ip_service ip_list;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 	NTSTATUS status;
 	int i;
@@ -1100,15 +1099,15 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		generate_random_buffer((uint8_t *)&val, 2);
 
-		ip_list.ss = dclist[i].sa.u.ss;
-		ip_list.port = 0;
-
 		status = nbt_getdc(msg_ctx, 10, &dclist[i].sa.u.ss, domain_name,
 				   NULL, my_acct_name, ACB_WSTRUST, nt_version,
 				   mem_ctx, &nt_version, &dc_name, &r);
 		if (NT_STATUS_IS_OK(status)) {
 			store_cache = true;
-			namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
+			namecache_store_sa(dc_name,
+					NBT_NAME_SERVER,
+					1,
+					&dclist[i].sa);
 			goto make_reply;
 		}
 
@@ -1137,7 +1136,10 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 			map_netlogon_samlogon_response(r);
 
-			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
+			namecache_store_sa(tmp_dc_name,
+					NBT_NAME_SERVER,
+					1,
+					&dclist[i].sa);
 
 			goto make_reply;
 		}
