@@ -108,6 +108,88 @@ static char *ipstr_list_make(TALLOC_CTX *ctx,
 	return ipstr_list;
 }
 
+#if 0
+/**
+ * Allocate and initialise an ipstr list using samba_sockaddr ip adresses
+ * passed as arguments.
+ *
+ * @param ctx TALLOC_CTX to use
+ * @param ip_list array of ip addresses to place in the list
+ * @param ip_count number of addresses stored in ip_list
+ * @return pointer to allocated ip string
+ **/
+
+static char *ipstr_list_make_sa(TALLOC_CTX *ctx,
+			const struct samba_sockaddr *sa_list,
+			size_t ip_count)
+{
+	char *ipstr_list = NULL;
+	size_t i;
+
+	/* arguments checking */
+	if (sa_list == NULL) {
+		return NULL;
+	}
+
+	/* process ip addresses given as arguments */
+	for (i = 0; i < ip_count; i++) {
+		char addr_buf[INET6_ADDRSTRLEN];
+		char *new_str = NULL;
+
+		print_sockaddr(addr_buf,
+				sizeof(addr_buf),
+				&sa_list[i].u.ss);
+
+		if (sa_list[i].u.ss.ss_family == AF_INET) {
+			/* IPv4 - port no longer used, store 0 */
+			new_str = talloc_asprintf(ctx,
+						"%s:%d",
+						addr_buf,
+						0);
+		} else {
+			/* IPv6 - port no longer used, store 0 */
+			new_str = talloc_asprintf(ctx,
+						"[%s]:%d",
+						addr_buf,
+						0);
+		}
+		if (new_str == NULL) {
+			TALLOC_FREE(ipstr_list);
+			return NULL;
+		}
+
+		if (ipstr_list == NULL) {
+			/* First ip address. */
+			ipstr_list = new_str;
+		} else {
+			/*
+			 * Append the separator "," and then the new
+			 * ip address to the existing list.
+			 *
+			 * The efficiency here is horrible, but
+			 * ip_count should be small enough we can
+			 * live with it.
+			 */
+			char *tmp = talloc_asprintf(ctx,
+						"%s%s%s",
+						ipstr_list,
+						IPSTR_LIST_SEP,
+						new_str);
+			if (tmp == NULL) {
+				TALLOC_FREE(new_str);
+				TALLOC_FREE(ipstr_list);
+				return NULL;
+			}
+			TALLOC_FREE(new_str);
+			TALLOC_FREE(ipstr_list);
+			ipstr_list = tmp;
+		}
+	}
+
+	return ipstr_list;
+}
+#endif
+
 /**
  * Parse given ip string list into array of ip addresses
  * (as ip_service structures)
