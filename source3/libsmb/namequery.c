@@ -3457,41 +3457,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	return status;
 }
 
-#if 0
-/********************************************************
- Wrapper function for _internal_resolve_name() that returns
- talloc'ed memory.
-********************************************************/
-
-NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
-				const char *name,
-				int name_type,
-				const char *sitename,
-				struct ip_service **return_iplist,
-				size_t *ret_count,
-				const char **resolve_order)
-{
-	struct ip_service *iplist = NULL;
-	size_t count = 0;
-	NTSTATUS status;
-
-	status = _internal_resolve_name(ctx,
-					name,
-					name_type,
-					sitename,
-					&iplist,
-					&count,
-					resolve_order);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*ret_count = count;
-	*return_iplist = iplist;
-	return NT_STATUS_OK;
-}
-#endif
-
 /********************************************************
  Internal interface to resolve a name into one IP address.
  Use this function if the string is either an IP address, DNS
