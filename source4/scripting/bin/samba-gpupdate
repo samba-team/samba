@@ -96,7 +96,7 @@ if __name__ == "__main__":
         gp_extensions.extend(user_exts)
 
     if opts.rsop:
-        rsop(lp, creds, gp_extensions, opts.target)
+        rsop(lp, creds, logger, store, gp_extensions, opts.target)
     elif not opts.unapply:
         apply_gp(lp, creds, logger, store, gp_extensions, opts.force)
     else:

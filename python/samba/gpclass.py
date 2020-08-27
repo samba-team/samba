@@ -497,7 +497,7 @@ def __rsop_vals(vals, level=4):
     else:
         return vals
 
-def rsop(lp, creds, gp_extensions, target):
+def rsop(lp, creds, logger, store, gp_extensions, target):
     dc_hostname = get_dc_hostname(creds, lp)
     gpos = get_gpo_list(dc_hostname, creds, lp)
     check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
