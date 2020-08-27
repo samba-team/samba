@@ -161,7 +161,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 			const char *sharename,
 			char **pp_newserver,
 			char **pp_newshare,
-			bool force_encrypt,
 			struct cli_credentials *creds);
 
 /* The following definitions come from libsmb/clientgen.c  */

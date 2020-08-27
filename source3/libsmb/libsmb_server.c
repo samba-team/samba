@@ -587,10 +587,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	if (smbXcli_conn_dfs_supported(c->conn) &&
 			cli_check_msdfs_proxy(ctx, c, share,
 				&newserver, &newshare,
-				/* FIXME: cli_check_msdfs_proxy() does
-				   not support smbc_smb_encrypt_level type */
-				context->internal->smb_encryption_level ?
-					true : false,
 				creds)) {
 		cli_shutdown(c);
 		srv = SMBC_server_internal(ctx, context, connect_if_not_found,
