@@ -3505,8 +3505,7 @@ bool resolve_name(const char *name,
 					TALLOC_FREE(frame);
 					return false;
 				}
-				if (!is_zero_addr(&sa.u.ss) &&
-						!is_broadcast_addr(&sa.u.sa) &&
+				if (!is_broadcast_addr(&sa.u.sa) &&
 						(sa.u.ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
 					TALLOC_FREE(ss_list);
@@ -3528,8 +3527,7 @@ bool resolve_name(const char *name,
 				TALLOC_FREE(frame);
 				return false;
 			}
-			if (!is_zero_addr(&sa.u.ss) &&
-					!is_broadcast_addr(&sa.u.sa)) {
+			if (!is_broadcast_addr(&sa.u.sa)) {
 				*return_ss = ss_list[i].ss;
 				TALLOC_FREE(ss_list);
 				TALLOC_FREE(frame);
