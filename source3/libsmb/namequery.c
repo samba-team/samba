@@ -64,6 +64,7 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
+#if 0
 /*
  * Utility function to convert a MALLOC'ed struct ip_serivce array
  * to a talloc'ed one. This function will go away once all ip_service
@@ -86,6 +87,7 @@ static NTSTATUS dup_ip_service_array(TALLOC_CTX *ctx,
 	*array_out = array_copy;
 	return NT_STATUS_OK;
 }
+#endif
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -1676,7 +1678,8 @@ NTSTATUS name_query(const char *name, int name_type,
  zero addresses from ss_list.
 *********************************************************/
 
-static bool convert_ss2service(struct ip_service **return_iplist,
+static bool convert_ss2service(TALLOC_CTX *ctx,
+		struct ip_service **return_iplist,
 		const struct sockaddr_storage *ss_list,
 		size_t orig_count,
 		size_t *count_out)
@@ -1701,9 +1704,9 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 	}
 
 	/* copy the ip address; port will be PORT_NONE */
-	iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count);
+	iplist = talloc_zero_array(ctx, struct ip_service, real_count);
 	if (iplist == NULL) {
-		DBG_ERR("malloc failed for %zu enetries!\n", real_count);
+		DBG_ERR("talloc failed for %zu enetries!\n", real_count);
 		return false;
 	}
 
@@ -3180,7 +3183,8 @@ static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-static NTSTATUS _internal_resolve_name(const char *name,
+static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
+				const char *name,
 			        int name_type,
 				const char *sitename,
 				struct ip_service **return_iplist,
@@ -3226,7 +3230,9 @@ static NTSTATUS _internal_resolve_name(const char *name,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		iplist = SMB_MALLOC_P(struct ip_service);
+		iplist = talloc_zero_array(frame,
+					struct ip_service,
+					1);
 		if (iplist == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -3236,7 +3242,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		/* ignore the port here */
 		iplist[0].port = PORT_NONE;
 
-		*return_iplist = iplist;
+		*return_iplist = talloc_move(ctx, &iplist);
 		*return_count = 1;
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
@@ -3256,7 +3262,9 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		 */
 		size_t count = 0;
 
-		iplist = SMB_MALLOC_ARRAY(struct ip_service, nc_count);
+		iplist = talloc_zero_array(frame,
+					struct ip_service,
+					nc_count);
 		if (iplist == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -3272,12 +3280,12 @@ static NTSTATUS _internal_resolve_name(const char *name,
 		}
 		count = remove_duplicate_addrs2(iplist, count);
 		if (count == 0) {
-			SAFE_FREE(iplist);
+			TALLOC_FREE(iplist);
 			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		*return_count = count;
-		*return_iplist = iplist;
+		*return_iplist = talloc_move(ctx, &iplist);
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
@@ -3405,7 +3413,6 @@ static NTSTATUS _internal_resolve_name(const char *name,
 
 	/* Paranoia. */
 	if (icount < 0) {
-		SAFE_FREE(*return_iplist);
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -3415,12 +3422,13 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	 * count to return after removing zero addresses
 	 * in ret_count.
 	 */
-	ok = convert_ss2service(&iplist,
+	ok = convert_ss2service(frame,
+				&iplist,
 				ss_list,
 				icount,
 				&ret_count);
 	if (!ok) {
-		SAFE_FREE(iplist);
+		TALLOC_FREE(iplist);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3468,7 +3476,7 @@ static NTSTATUS _internal_resolve_name(const char *name,
 	}
 
 	*return_count = ret_count;
-	*return_iplist = iplist;
+	*return_iplist = talloc_move(ctx, &iplist);
 
 	TALLOC_FREE(frame);
 	return status;
@@ -3487,30 +3495,21 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				size_t *ret_count,
 				const char **resolve_order)
 {
-	struct ip_service *iplist_malloc = NULL;
 	struct ip_service *iplist = NULL;
 	size_t count = 0;
 	NTSTATUS status;
 
-	status = _internal_resolve_name(name,
+	status = _internal_resolve_name(ctx,
+					name,
 					name_type,
 					sitename,
-					&iplist_malloc,
+					&iplist,
 					&count,
 					resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(iplist_malloc);
 		return status;
 	}
 
-	status = dup_ip_service_array(ctx,
-				&iplist,
-				iplist_malloc,
-				count);
-	SAFE_FREE(iplist_malloc);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 	*ret_count = count;
 	*return_iplist = iplist;
 	return NT_STATUS_OK;
