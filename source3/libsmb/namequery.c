@@ -64,31 +64,6 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
-#if 0
-/*
- * Utility function to convert a MALLOC'ed struct ip_serivce array
- * to a talloc'ed one. This function will go away once all ip_service
- * arrays are talloc'ed.
- */
-
-static NTSTATUS dup_ip_service_array(TALLOC_CTX *ctx,
-				struct ip_service **array_out,
-				const struct ip_service *array_in,
-				size_t count)
-{
-	struct ip_service *array_copy = NULL;
-
-	array_copy = talloc_memdup(ctx,
-				array_in,
-				count * sizeof(array_in[0]));
-	if (array_copy == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*array_out = array_copy;
-	return NT_STATUS_OK;
-}
-#endif
-
 /****************************
  * SERVER AFFINITY ROUTINES *
  ****************************/
