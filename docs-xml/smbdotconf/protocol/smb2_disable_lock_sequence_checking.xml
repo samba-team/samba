@@ -22,7 +22,7 @@
     in [MS-SMB2].</para>
 
     <para>By default Samba behaves according to the specification
-    and sends smb2 oplock break notification retries.</para>
+    and implements lock sequence checking when multi-channel is used.</para>
 
     <para>Warning: Only enable this option if existing clients can't
     handle lock sequence checking for handles without Open.IsResilient and Open.IsPersistent.
