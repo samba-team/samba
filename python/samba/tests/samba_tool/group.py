@@ -85,7 +85,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         # try to add all the groups again, this should fail
         for group in self.groups:
             (result, out, err) = self._create_group(group)
-            self.assertCmdFail(result, "Succeeded to create existing group")
+            self.assertCmdFail(result, "Succeeded to add existing group")
             self.assertIn("LDAP error 68 LDAP_ENTRY_ALREADY_EXISTS", err)
 
         # try to delete all the groups we just added
