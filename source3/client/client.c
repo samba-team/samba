@@ -5644,7 +5644,6 @@ static int process_command_string(const char *cmd_in)
 				     desthost,
 				     service,
 				     creds,
-				     lp_client_max_protocol(),
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type,
 				     &cli);
@@ -6094,7 +6093,6 @@ static int process(const char *base_directory)
 			     desthost,
 			     service,
 			     creds,
-			     lp_client_max_protocol(),
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6135,7 +6133,6 @@ static int do_host_query(const char *query_host)
 			     query_host,
 			     "IPC$",
 			     creds,
-			     lp_client_max_protocol(),
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6170,8 +6167,6 @@ static int do_host_query(const char *query_host)
 	if (port != NBT_SMB_PORT ||
 	    smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1)
 	{
-		int max_proto = MIN(lp_client_max_protocol(), PROTOCOL_NT1);
-
 		/*
 		 * Workgroups simply don't make sense over anything
 		 * else but port 139 and SMB1.
@@ -6183,7 +6178,6 @@ static int do_host_query(const char *query_host)
 				     query_host,
 				     "IPC$",
 				     creds,
-				     max_proto,
 				     have_ip ? &dest_ss : NULL, NBT_SMB_PORT,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6220,7 +6214,6 @@ static int do_tar_op(const char *base_directory)
 				     desthost,
 				     service,
 				     creds,
-				     lp_client_max_protocol(),
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {

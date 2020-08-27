@@ -112,7 +112,6 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	status = cli_cm_open(ctx, NULL,
 			     server_name, "IPC$",
 			     creds,
-			     lp_client_ipc_max_protocol(),
 			     NULL, 0, 0x20, &cli_ipc);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_ipc = NULL;
