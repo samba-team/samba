@@ -95,9 +95,6 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
-/* encrypted state. */
-static bool smb_encrypt;
-
 /* root cli_state connection */
 
 struct cli_state *cli;
@@ -2757,7 +2754,7 @@ static int cmd_posix_encrypt(void)
 		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
 	} else {
 		d_printf("encryption on\n");
-		smb_encrypt = true;
+		set_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info());
 	}
 
 	return 0;
@@ -5282,6 +5279,9 @@ int cmd_iosize(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 	int iosize;
+	bool smb_encrypt =
+		get_cmdline_auth_info_smb_encrypt(
+				popt_get_cmdline_auth_info());
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
@@ -5545,6 +5545,9 @@ static int process_command_string(const char *cmd_in)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *cmd = talloc_strdup(ctx, cmd_in);
 	int rc = 0;
+	bool smb_encrypt =
+		get_cmdline_auth_info_smb_encrypt(
+				popt_get_cmdline_auth_info());
 
 	if (!cmd) {
 		return 1;
@@ -5998,6 +6001,9 @@ static int process(const char *base_directory)
 {
 	int rc = 0;
 	NTSTATUS status;
+	bool smb_encrypt =
+		get_cmdline_auth_info_smb_encrypt(
+				popt_get_cmdline_auth_info());
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     desthost,
@@ -6036,6 +6042,9 @@ static int process(const char *base_directory)
 static int do_host_query(const char *query_host)
 {
 	NTSTATUS status;
+	bool smb_encrypt =
+		get_cmdline_auth_info_smb_encrypt(
+				popt_get_cmdline_auth_info());
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     query_host,
@@ -6113,6 +6122,9 @@ static int do_tar_op(const char *base_directory)
 {
 	struct tar *tar_ctx = tar_get_ctx();
 	int ret = 0;
+	bool smb_encrypt =
+		get_cmdline_auth_info_smb_encrypt(
+				popt_get_cmdline_auth_info());
 
 	/* do we already have a connection? */
 	if (!cli) {
@@ -6458,9 +6470,6 @@ int main(int argc,char *argv[])
 		case 'q':
 			quiet=true;
 			break;
-		case 'e':
-			smb_encrypt=true;
-			break;
 		case 'B':
 			return(do_smb_browse());
 
@@ -6530,8 +6539,6 @@ int main(int argc,char *argv[])
 
 	/* Ensure we have a password (or equivalent). */
 	popt_common_credentials_post();
-	smb_encrypt = get_cmdline_auth_info_smb_encrypt(
-			popt_get_cmdline_auth_info());
 
 	max_protocol = lp_client_max_protocol();
 
