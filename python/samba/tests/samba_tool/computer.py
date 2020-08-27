@@ -308,7 +308,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         return self.runsubcmd('computer', 'create', *args)
 
     def _create_ou(self, ou):
-        return self.runsubcmd("ou", "create", "OU=%s" % ou["name"],
+        return self.runsubcmd("ou", "add", "OU=%s" % ou["name"],
                               "--description=%s" % ou["description"])
 
     def _find_computer(self, name):

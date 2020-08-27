@@ -264,10 +264,10 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
     def test_move(self):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
-        (result, out, err) = self.runsubcmd("ou", "create", full_ou_dn)
+        (result, out, err) = self.runsubcmd("ou", "add", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "There shouldn't be any error message")
-        self.assertIn('Created ou "%s"' % full_ou_dn, out)
+        self.assertIn('Added ou "%s"' % full_ou_dn, out)
 
         for group in self.groups:
             (result, out, err) = self.runsubcmd(

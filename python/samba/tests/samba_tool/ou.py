@@ -46,7 +46,7 @@ class OUCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
-            self.assertIn('Created ou "%s"' % full_ou_dn, out)
+            self.assertIn('Added ou "%s"' % full_ou_dn, out)
 
             found = self._find_ou(ou["name"])
 
@@ -71,10 +71,10 @@ class OUCmdTestCase(SambaToolCmdTest):
         # try to create all the ous again, this should fail
         for ou in self.ous:
             (result, out, err) = self._create_ou(ou)
-            self.assertCmdFail(result, "Succeeded to create existing ou")
+            self.assertCmdFail(result, "Succeeded to add existing ou")
             self.assertIn("already exists", err)
 
-        # try to delete all the ous we just created
+        # try to delete all the ous we just added
         for ou in self.ous:
             (result, out, err) = self.runsubcmd("ou", "delete", "OU=%s" %
                                                 ou["name"])
@@ -87,20 +87,20 @@ class OUCmdTestCase(SambaToolCmdTest):
         # test creating ous
         for ou in self.ous:
             (result, out, err) = self.runsubcmd(
-                "ou", "create", "OU=%s" % ou["name"],
+                "ou", "add", "OU=%s" % ou["name"],
                 "--description=%s" % ou["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
-            self.assertIn('Created ou "%s"' % full_ou_dn, out)
+            self.assertIn('Added ou "%s"' % full_ou_dn, out)
 
             found = self._find_ou(ou["name"])
 
             self.assertEqual("%s" % found.get("ou"),
                               "%s" % ou["name"])
 
-        # try to delete all the ous we just created (with full dn)
+        # try to delete all the ous we just added (with full dn)
         for ou in self.ous:
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
             (result, out, err) = self.runsubcmd("ou", "delete", str(full_ou_dn))
@@ -114,13 +114,13 @@ class OUCmdTestCase(SambaToolCmdTest):
         for ou in self.ous:
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
             (result, out, err) = self.runsubcmd(
-                "ou", "create", str(full_ou_dn),
+                "ou", "add", str(full_ou_dn),
                 "--description=%s" % ou["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
             full_ou_dn = self.samdb.normalize_dn_in_domain("OU=%s" % ou["name"])
-            self.assertIn('Created ou "%s"' % full_ou_dn, out)
+            self.assertIn('Added ou "%s"' % full_ou_dn, out)
 
             found = self._find_ou(ou["name"])
 
@@ -273,7 +273,7 @@ class OUCmdTestCase(SambaToolCmdTest):
         return ou
 
     def _create_ou(self, ou):
-        return self.runsubcmd("ou", "create", "OU=%s" % ou["name"],
+        return self.runsubcmd("ou", "add", "OU=%s" % ou["name"],
                               "--description=%s" % ou["description"])
 
     def _find_ou(self, name):
