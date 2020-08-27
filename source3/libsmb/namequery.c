@@ -3486,7 +3486,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 			TALLOC_FREE(frame);
 			return status;
 		}
-		namecache_store_sa(name,
+		namecache_store(name,
 				name_type,
 				ret_count,
 				sa_converted_list);

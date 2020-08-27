@@ -1437,7 +1437,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 			if (*name == NULL) {
 				return false;
 			}
-			namecache_store_sa(*name, 0x20, 1, &sa);
+			namecache_store(*name, 0x20, 1, &sa);
 
 			DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
@@ -1498,14 +1498,14 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 		if (*name == NULL) {
 			return false;
 		}
-		namecache_store_sa(*name, 0x20, 1, &sa);
+		namecache_store(*name, 0x20, 1, &sa);
 		return True;
 	}
 
 	/* try node status request */
 
 	if (name_status_find(domain->name, 0x1c, 0x20, &sa.u.ss, nbtname) ) {
-		namecache_store_sa(nbtname, 0x20, 1, &sa);
+		namecache_store(nbtname, 0x20, 1, &sa);
 
 		if (name != NULL) {
 			*name = talloc_strdup(mem_ctx, nbtname);

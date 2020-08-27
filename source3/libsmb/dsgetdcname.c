@@ -1104,7 +1104,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   mem_ctx, &nt_version, &dc_name, &r);
 		if (NT_STATUS_IS_OK(status)) {
 			store_cache = true;
-			namecache_store_sa(dc_name,
+			namecache_store(dc_name,
 					NBT_NAME_SERVER,
 					1,
 					&dclist[i].sa);
@@ -1136,7 +1136,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 			map_netlogon_samlogon_response(r);
 
-			namecache_store_sa(tmp_dc_name,
+			namecache_store(tmp_dc_name,
 					NBT_NAME_SERVER,
 					1,
 					&dclist[i].sa);

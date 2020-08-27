@@ -220,7 +220,7 @@ static char *namecache_key(TALLOC_CTX *ctx,
  *        ip addresses being stored
  **/
 
-bool namecache_store_sa(const char *name,
+bool namecache_store(const char *name,
 			int name_type,
 			size_t num_names,
 			struct samba_sockaddr *sa_list)

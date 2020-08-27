@@ -676,7 +676,7 @@ NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode);
 
 /* The following definitions come from libsmb/namecache.c  */
 
-bool namecache_store_sa(const char *name,
+bool namecache_store(const char *name,
 			int name_type,
 			size_t num_names,
 			struct samba_sockaddr *sa_list);
