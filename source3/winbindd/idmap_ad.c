@@ -254,10 +254,11 @@ static TLDAPRC get_posix_schema_names(struct tldap_context *ld,
 	return TLDAP_SUCCESS;
 }
 
-static void idmap_ad_tldap_debug(void *log_private,
-				 enum tldap_debug_level level,
-				 const char *fmt,
-				 va_list ap)
+static void PRINTF_ATTRIBUTE(3, 0) idmap_ad_tldap_debug(
+	void *log_private,
+	enum tldap_debug_level level,
+	const char *fmt,
+	va_list ap)
 {
        int samba_level = -1;
 
