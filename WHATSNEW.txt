@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release condidate of Samba 4.13.  This is *not*
+This is the third release condidate of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -85,6 +85,22 @@ smb.conf changes
   client NTLMv2 auth                 Deprecated                 yes
   client lanman auth                 Deprecated                 no
   client use spnego                  Deprecated                 yes
+
+
+CHANGES SINCE 4.13.0rc2
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14460: Deprecate domain logons, SMBv1 things.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14318: docs: Add missing winexe manpage.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14166: util: Allow symlinks in directory_create_or_exist.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14466: ctdb disable/enable can fail due to race condition.
 
 
 CHANGES SINCE 4.13.0rc1
