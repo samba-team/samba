@@ -71,7 +71,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                 self.assertIn("Modified User '%s' successfully" % user["name"],
                               out)
             else:
-                self.assertIn("User '%s' created successfully" % user["name"],
+                self.assertIn("User '%s' added successfully" % user["name"],
                               out)
 
             user["checkUserFn"](user)
@@ -120,7 +120,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "Shouldn't be any error messages")
-            self.assertIn("User '%s' created successfully" % user["name"], out)
+            self.assertIn("User '%s' added successfully" % user["name"], out)
 
             found = self._find_user(user["name"])
 
@@ -766,7 +766,7 @@ sAMAccountName: %s
 
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
-        self.assertIn("User '%s' created successfully" % user["name"], out)
+        self.assertIn("User '%s' added successfully" % user["name"], out)
 
         self._check_posix_user(user)
         self.runsubcmd("user", "delete", user["name"])
@@ -795,7 +795,7 @@ sAMAccountName: %s
 
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
-        self.assertIn("User '%s' created successfully" % user["name"], out)
+        self.assertIn("User '%s' added successfully" % user["name"], out)
 
         self._check_posix_user(user)
         self.runsubcmd("user", "delete", user["name"])
@@ -890,7 +890,7 @@ template """
         self._check_user(user)
 
     def _create_user(self, user):
-        return self.runsubcmd("user", "create", user["name"], user["password"],
+        return self.runsubcmd("user", "add", user["name"], user["password"],
                               "--surname=%s" % user["surname"],
                               "--given-name=%s" % user["given-name"],
                               "--job-title=%s" % user["job-title"],
