@@ -5545,9 +5545,6 @@ static int process_command_string(const char *cmd_in)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *cmd = talloc_strdup(ctx, cmd_in);
 	int rc = 0;
-	bool smb_encrypt =
-		get_cmdline_auth_info_smb_encrypt(
-				popt_get_cmdline_auth_info());
 
 	if (!cmd) {
 		return 1;
@@ -5560,7 +5557,6 @@ static int process_command_string(const char *cmd_in)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     desthost,
 				     service, popt_get_cmdline_auth_info(),
-				     smb_encrypt,
 				     max_protocol,
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type,
@@ -6001,14 +5997,11 @@ static int process(const char *base_directory)
 {
 	int rc = 0;
 	NTSTATUS status;
-	bool smb_encrypt =
-		get_cmdline_auth_info_smb_encrypt(
-				popt_get_cmdline_auth_info());
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     desthost,
 			     service, popt_get_cmdline_auth_info(),
-			     smb_encrypt, max_protocol,
+			     max_protocol,
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6042,14 +6035,11 @@ static int process(const char *base_directory)
 static int do_host_query(const char *query_host)
 {
 	NTSTATUS status;
-	bool smb_encrypt =
-		get_cmdline_auth_info_smb_encrypt(
-				popt_get_cmdline_auth_info());
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     query_host,
 			     "IPC$", popt_get_cmdline_auth_info(),
-			     smb_encrypt, max_protocol,
+			     max_protocol,
 			     have_ip ? &dest_ss : NULL, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6096,7 +6086,7 @@ static int do_host_query(const char *query_host)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     query_host,
 				     "IPC$", popt_get_cmdline_auth_info(),
-				     smb_encrypt, max_proto,
+				     max_proto,
 				     have_ip ? &dest_ss : NULL, NBT_SMB_PORT,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6122,9 +6112,6 @@ static int do_tar_op(const char *base_directory)
 {
 	struct tar *tar_ctx = tar_get_ctx();
 	int ret = 0;
-	bool smb_encrypt =
-		get_cmdline_auth_info_smb_encrypt(
-				popt_get_cmdline_auth_info());
 
 	/* do we already have a connection? */
 	if (!cli) {
@@ -6133,7 +6120,7 @@ static int do_tar_op(const char *base_directory)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     desthost,
 				     service, popt_get_cmdline_auth_info(),
-				     smb_encrypt, max_protocol,
+				     max_protocol,
 				     have_ip ? &dest_ss : NULL, port,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {

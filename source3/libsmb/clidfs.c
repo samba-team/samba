@@ -383,7 +383,6 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				const char *server,
 				const char *share,
 				const struct user_auth_info *auth_info,
-				bool force_encrypt,
 				int max_protocol,
 				const struct sockaddr_storage *dest_ss,
 				int port,
@@ -393,6 +392,8 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 	/* Try to reuse an existing connection in this list. */
 	struct cli_state *c = cli_cm_find(referring_cli, server, share);
 	NTSTATUS status;
+	bool force_encrypt =
+		get_cmdline_auth_info_smb_encrypt(auth_info);
 
 	if (c) {
 		*pcli = c;
@@ -962,7 +963,6 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     smbXcli_conn_remote_name(rootcli->conn),
 			     "IPC$",
 			     dfs_auth_info,
-			     cli_state_is_encryption_on(rootcli),
 			     smbXcli_conn_protocol(rootcli->conn),
 			     NULL, /* dest_ss not needed, we reuse the transport */
 			     0,
