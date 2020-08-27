@@ -67,7 +67,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err)
             self.assertNotIn(
                 "ERROR", err, "There shouldn't be any error message")
-            self.assertIn("Computer '%s' created successfully" %
+            self.assertIn("Computer '%s' added successfully" %
                           computer["name"], out)
 
             found = self._find_computer(computer["name"])
@@ -129,14 +129,14 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                 self.assertFalse(found)
 
     def test_newcomputer(self):
-        """This tests the "computer create" and "computer delete" commands"""
+        """This tests the "computer add" and "computer delete" commands"""
         # try to create all the computers again, this should fail
         for computer in self.computers:
             (result, out, err) = self._create_computer(computer)
-            self.assertCmdFail(result, "Succeeded to create existing computer")
+            self.assertCmdFail(result, "Succeeded to add existing computer")
             self.assertIn("already exists", err)
 
-        # try to delete all the computers we just created
+        # try to delete all the computers we just added
         for computer in self.computers:
             (result, out, err) = self.runsubcmd("computer", "delete", "%s" %
                                                 computer["name"])
@@ -151,12 +151,12 @@ class ComputerCmdTestCase(SambaToolCmdTest):
         # test creating computers
         for computer in self.computers:
             (result, out, err) = self.runsubcmd(
-                "computer", "create", "%s" % computer["name"],
+                "computer", "add", "%s" % computer["name"],
                 "--description=%s" % computer["description"])
 
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "There shouldn't be any error message")
-            self.assertIn("Computer '%s' created successfully" %
+            self.assertIn("Computer '%s' added successfully" %
                           computer["name"], out)
 
             found = self._find_computer(computer["name"])
@@ -305,7 +305,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
 
         args = args.split()
 
-        return self.runsubcmd('computer', 'create', *args)
+        return self.runsubcmd('computer', 'add', *args)
 
     def _create_ou(self, ou):
         return self.runsubcmd("ou", "add", "OU=%s" % ou["name"],
