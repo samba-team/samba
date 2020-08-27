@@ -1391,7 +1391,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 			    struct sockaddr_storage *pss,
 			    char **name, uint32_t request_flags)
 {
-	struct ip_service ip_list;
+	struct samba_sockaddr sa = {0};
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
 	NTSTATUS status;
 	const char *dc_name;
@@ -1399,8 +1399,10 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 #ifdef HAVE_ADS
 	bool is_ad_domain = false;
 #endif
-	ip_list.ss = *pss;
-	ip_list.port = 0;
+	bool ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
+	if (!ok) {
+		return false;
+	}
 
 #ifdef HAVE_ADS
 	/* For active directory servers, try to get the ldap server name.
@@ -1417,7 +1419,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 		ADS_STATUS ads_status;
 		char addr[INET6_ADDRSTRLEN];
 
-		print_sockaddr(addr, sizeof(addr), pss);
+		print_sockaddr(addr, sizeof(addr), &sa.u.ss);
 
 		ads = ads_init(domain->alt_name,
 			       domain->name,
@@ -1435,7 +1437,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 			if (*name == NULL) {
 				return false;
 			}
-			namecache_store(*name, 0x20, 1, &ip_list);
+			namecache_store_sa(*name, 0x20, 1, &sa);
 
 			DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
@@ -1450,7 +1452,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									sitename,
-									pss);
+									&sa.u.ss);
 
 					TALLOC_FREE(sitename);
 				} else {
@@ -1458,7 +1460,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									NULL,
-									pss);
+									&sa.u.ss);
 				}
 				winbindd_set_locator_kdc_envs(domain);
 
@@ -1485,7 +1487,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 			 "%s$",
 			 lp_netbios_name());
 
-		status = nbt_getdc(global_messaging_context(), 10, pss,
+		status = nbt_getdc(global_messaging_context(), 10, &sa.u.ss,
 				   domain->name, &domain->sid,
 				   my_acct_name, ACB_WSTRUST,
 				   nt_version, mem_ctx, &nt_version,
@@ -1496,14 +1498,14 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 		if (*name == NULL) {
 			return false;
 		}
-		namecache_store(*name, 0x20, 1, &ip_list);
+		namecache_store_sa(*name, 0x20, 1, &sa);
 		return True;
 	}
 
 	/* try node status request */
 
-	if (name_status_find(domain->name, 0x1c, 0x20, pss, nbtname) ) {
-		namecache_store(nbtname, 0x20, 1, &ip_list);
+	if (name_status_find(domain->name, 0x1c, 0x20, &sa.u.ss, nbtname) ) {
+		namecache_store_sa(nbtname, 0x20, 1, &sa);
 
 		if (name != NULL) {
 			*name = talloc_strdup(mem_ctx, nbtname);
