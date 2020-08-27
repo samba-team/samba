@@ -64,7 +64,6 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
-#if 0
 /*
  * Utility function to convert from a struct ip_service
  * array to a struct samba_sockaddr array. Will go away
@@ -105,7 +104,6 @@ static NTSTATUS ip_service_to_samba_sockaddr(TALLOC_CTX *ctx,
 	*sa_out = sa;
 	return NT_STATUS_OK;
 }
-#endif
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -3473,7 +3471,26 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	}
 
 	if (ret_count) {
-		namecache_store(name, name_type, ret_count, iplist);
+		/*
+		 * Convert the ip_service list to a samba_sockaddr array
+		 * to store in the namecache. This conversion
+		 * will go away once ip_service is gone.
+		 */
+		struct samba_sockaddr *sa_converted_list = NULL;
+		status = ip_service_to_samba_sockaddr(talloc_tos(),
+					&sa_converted_list,
+					iplist,
+					ret_count);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(iplist);
+			TALLOC_FREE(frame);
+			return status;
+		}
+		namecache_store_sa(name,
+				name_type,
+				ret_count,
+				sa_converted_list);
+		TALLOC_FREE(sa_converted_list);
 	}
 
 	/* Display some debugging info */
