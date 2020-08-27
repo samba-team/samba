@@ -3528,8 +3528,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		ok = sockaddr_storage_to_samba_sockaddr(&sa,
 							&ss_list[i].ss);
 		if (!ok) {
-			status = NT_STATUS_INVALID_ADDRESS;
-			goto done;
+			continue;
 		}
 		if (!is_zero_addr(&sa.u.ss) &&
 		    !is_broadcast_addr(&sa.u.sa)) {
@@ -3556,13 +3555,18 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		ok = sockaddr_storage_to_samba_sockaddr(&sa,
 							&ss_list[i].ss);
 		if (!ok) {
-			status = NT_STATUS_INVALID_ADDRESS;
-			goto done;
+			continue;
 		}
 		if (!is_zero_addr(&sa.u.ss) &&
 		    !is_broadcast_addr(&sa.u.sa)) {
 			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
 		}
+	}
+
+	if (num_entries == 0) {
+		TALLOC_FREE(*return_ss_arr);
+		status = NT_STATUS_BAD_NETWORK_NAME;
+		goto done;
 	}
 
 	status = NT_STATUS_OK;
