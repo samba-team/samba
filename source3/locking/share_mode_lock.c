@@ -1694,6 +1694,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 			  (data->stream_name == NULL)
 			  ? "" : data->stream_name,
 			  open_persistent_id);
+		goto done;
 	}
 
 	ok = brl_cleanup_disconnected(fid, open_persistent_id);
