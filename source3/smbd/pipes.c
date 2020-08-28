@@ -31,6 +31,7 @@
 #include "libcli/security/security.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "auth/auth_util.h"
+#include "librpc/rpc/dcerpc_helper.h"
 
 NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		      struct files_struct **pfsp)
@@ -74,7 +75,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 	if (smb_req->smb2req != NULL && smb_req->smb2req->was_encrypted) {
 		struct security_token *security_token = NULL;
 		uint16_t dialect = xconn->smb2.server.dialect;
-		uint16_t srv_smb_encrypt = 0x0002;
+		uint16_t srv_smb_encrypt = DCERPC_SMB_ENCRYPTION_REQUIRED;
 		uint16_t cipher = xconn->smb2.server.cipher;
 		char smb3_sid_str[SID_MAX_SIZE];
 		struct dom_sid smb3_dom_sid;
