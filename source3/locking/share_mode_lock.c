@@ -2022,6 +2022,18 @@ static bool share_mode_for_one_entry(
 		  (int)modified,
 		  (int)e.stale);
 
+	if (e.stale) {
+		if (*i < *num_share_modes) {
+			memmove(blob.data,
+				blob.data + SHARE_MODE_ENTRY_SIZE,
+				(*num_share_modes - *i - 1) *
+				SHARE_MODE_ENTRY_SIZE);
+		}
+		*num_share_modes -= 1;
+		*writeback = true;
+		return stop;
+	}
+
 	if (modified) {
 		if (DEBUGLEVEL>=10) {
 			DBG_DEBUG("share_mode_entry:\n");
@@ -2048,18 +2060,6 @@ static bool share_mode_for_one_entry(
 			 */
 		}
 		*i += 1;
-		*writeback = true;
-		return stop;
-	}
-
-	if (e.stale) {
-		if (*i < *num_share_modes) {
-			memmove(blob.data,
-				blob.data + SHARE_MODE_ENTRY_SIZE,
-				(*num_share_modes - *i - 1) *
-				SHARE_MODE_ENTRY_SIZE);
-		}
-		*num_share_modes -= 1;
 		*writeback = true;
 		return stop;
 	}
