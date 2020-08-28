@@ -1648,6 +1648,42 @@ static bool share_mode_find_connected_fn(
 	return false;
 }
 
+static bool cleanup_disconnected_share_mode_entry_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct cleanup_disconnected_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
+
+	bool disconnected;
+
+	disconnected = server_id_is_disconnected(&e->pid);
+	if (!disconnected) {
+		struct file_id_buf tmp1;
+		struct server_id_buf tmp2;
+		DBG_ERR("file (file-id='%s', servicepath='%s', "
+			"base_name='%s%s%s') "
+			"is used by server %s ==> internal error\n",
+			file_id_str_buf(d->id, &tmp1),
+			d->servicepath,
+			d->base_name,
+			(d->stream_name == NULL)
+			? "" : "', stream_name='",
+			(d->stream_name == NULL)
+			? "" : d->stream_name,
+			server_id_str_buf(e->pid, &tmp2));
+		smb_panic(__location__);
+	}
+
+	/*
+	 * Setting e->stale = true is
+	 * the indication to delete the entry.
+	 */
+	e->stale = true;
+	return false;
+}
+
 bool share_mode_cleanup_disconnected(struct file_id fid,
 				     uint64_t open_persistent_id)
 {
@@ -1728,8 +1764,24 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		  ? "" : data->stream_name,
 		  open_persistent_id);
 
-	data->have_share_modes = false;
-	data->modified = true;
+	ok = share_mode_forall_entries(
+		state.lck, cleanup_disconnected_share_mode_entry_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("failed to clean up %zu entries associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  state.num_disconnected,
+			  file_id_str_buf(fid, &idbuf),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
+		goto done;
+	}
 
 	/*
 	 * This is a temporary reproducer for the origin of
