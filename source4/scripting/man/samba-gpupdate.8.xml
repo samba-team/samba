@@ -38,12 +38,14 @@
 	<manvolnum>1</manvolnum></citerefentry> suite.</para>
 
 	<para><command>samba-gpupdate</command> a script for
-	applying and unapplying Group Policy. Group Policy
-	application is experimental. Currently this applies
+	applying and unapplying Group Policy. This applies
 	password policies (minimum/maximum password age,
-	minimum password length, and password complexity) and
+	minimum password length, and password complexity),
 	kerberos policies (user/service ticket lifetime and
-	renew lifetime).</para>
+	renew lifetime), smb.conf policies,
+	hourly/daily/weekly/monthly cron scripts, Sudo
+	Privileges, Message of the Day and Logon Prompt
+	messages, etc.</para>
 
 </refsect1>
 
@@ -61,6 +63,12 @@
 
 <para><option>--target</option>
        {Computer | User}</para>
+
+<para><option>--force</option>
+       Reapplies all policy settings</para>
+
+<para><option>--rsop</option>
+       Print the Resultant Set of Policy</para>
 
 <para>Samba Common Options:</para>
 
