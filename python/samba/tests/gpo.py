@@ -66,6 +66,12 @@ def gpupdate_unapply(lp):
 
     return Popen(gpupdate, stdout=PIPE, stderr=PIPE).wait()
 
+def rsop(lp):
+    gpupdate = lp.get('gpo update command')
+    gpupdate.append('--rsop')
+
+    return Popen(gpupdate, stdout=PIPE).wait()
+
 def stage_file(path, data):
     dirname = os.path.dirname(path)
     if not os.path.exists(dirname):
@@ -570,6 +576,10 @@ class GPOTests(tests.TestCase):
                                       'Login Prompt Message not set')
             unstage_file(gpofile % g.name)
             unstage_file(reg_pol % g.name)
+
+        # Check that a call to gpupdate --rsop also succeeds
+        ret = rsop(self.lp)
+        self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
 
     def test_gp_unapply(self):
         logger = logging.getLogger('gpo_tests')

@@ -16,7 +16,7 @@
 
 
 import sys
-import os
+import os, shutil
 import errno
 import tdb
 sys.path.insert(0, "bin/python")
@@ -504,7 +504,7 @@ def rsop(lp, creds, gp_extensions, target):
 
     print('Resultant Set of Policy')
     print('%s Policy\n' % target)
-    term_width = os.get_terminal_size()[0]
+    term_width = shutil.get_terminal_size(fallback=(120, 50))[0]
     for gpo in gpos:
         print('GPO: %s' % gpo.display_name)
         print('='*term_width)
