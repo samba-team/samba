@@ -2023,6 +2023,11 @@ static bool share_mode_for_one_entry(
 		  (int)e.stale);
 
 	if (e.stale) {
+		if (DEBUGLEVEL>=10) {
+			DBG_DEBUG("share_mode_entry:\n");
+			NDR_PRINT_DEBUG(share_mode_entry, &e);
+		}
+
 		if (*i < *num_share_modes) {
 			memmove(blob.data,
 				blob.data + SHARE_MODE_ENTRY_SIZE,
@@ -2240,7 +2245,17 @@ static bool share_mode_entry_do(
 		goto done;
 	}
 
+	if (DEBUGLEVEL>=10) {
+		DBG_DEBUG("entry[%zu]:\n", idx);
+		NDR_PRINT_DEBUG(share_mode_entry, &e);
+	}
+
 	fn(&e, ltdb->num_share_entries, &modified, private_data);
+
+	DBG_DEBUG("entry[%zu]: modified=%d, e.stale=%d\n",
+		  idx,
+		  (int)modified,
+		  (int)e.stale);
 
 	if (!e.stale && !modified) {
 		ret = true;
@@ -2252,9 +2267,8 @@ static bool share_mode_entry_do(
 
 	if (e.stale) {
 		/*
-		 * Move the reset down one entry
+		 * Move the rest down one entry
 		 */
-
 		size_t behind = ltdb->num_share_entries - idx - 1;
 		if (behind != 0) {
 			memmove(e_ptr,
@@ -2262,6 +2276,11 @@ static bool share_mode_entry_do(
 				behind * SHARE_MODE_ENTRY_SIZE);
 		}
 		ltdb->num_share_entries -= 1;
+
+		if (DEBUGLEVEL>=10) {
+			DBG_DEBUG("share_mode_entry:\n");
+			NDR_PRINT_DEBUG(share_mode_entry, &e);
+		}
 	} else {
 		struct share_mode_entry_buf buf;
 		bool ok;
