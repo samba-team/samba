@@ -17,6 +17,12 @@ testit "durable_v2_delay.durable_v2_reconnect_delay" $VALGRIND \
        smb2.durable-v2-delay.durable_v2_reconnect_delay ||
 	failed=$(expr $failed + 1)
 
+testit "durable_v2_delay.durable_v2_reconnect_delay_msec" $VALGRIND \
+       $BINDIR/smbtorture //$SERVER_IP/durable \
+       -U$USERNAME%$PASSWORD \
+       smb2.durable-v2-delay.durable_v2_reconnect_delay_msec ||
+	failed=$(expr $failed + 1)
+
 rm $delay_inject_conf
 
 testok $0 $failed
