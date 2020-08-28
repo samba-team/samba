@@ -1730,6 +1730,20 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 	data->have_share_modes = false;
 	data->modified = true;
 
+	/*
+	 * This is a temporary reproducer for the origin of
+	 * https://bugzilla.samba.org/show_bug.cgi?id=14428
+	 * "PANIC: assert failed in get_lease_type()"
+	 *
+	 * This will be removed again once the bug is demonstrated
+	 * and fixed.
+	 */
+	TALLOC_FREE(state.lck);
+	state.lck = get_existing_share_mode_lock(frame, fid);
+	if (state.lck != NULL) {
+		DBG_ERR("Reproduced BUG#14428\n");
+	}
+
 	ret = true;
 done:
 	talloc_free(frame);
