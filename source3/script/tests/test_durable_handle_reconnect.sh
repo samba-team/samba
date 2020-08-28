@@ -23,18 +23,10 @@ if [ $SMBD_DONT_LOG_STDOUT -eq 1 ]; then
 	SMBD_LOG_FILES="$SMBD_LOG_FILES $_SMBD_LOG_FILE"
 fi
 
-bug_count_0=$(grep 'Reproduced BUG#14428' $SMBD_LOG_FILES | wc -l)
-
 testit "durable_v2_delay.durable_v2_reconnect_delay_msec" $VALGRIND \
        $BINDIR/smbtorture //$SERVER_IP/durable \
        -U$USERNAME%$PASSWORD \
        smb2.durable-v2-delay.durable_v2_reconnect_delay_msec ||
-	failed=$(expr $failed + 1)
-
-bug_count_1=$(grep 'Reproduced BUG#14428' $SMBD_LOG_FILES | wc -l)
-
-testit "bug.14428 bug_count_0[$bug_count_0] bug_count_1[$bug_count_1]" \
-	test $bug_count_0 -eq $bug_count_1 ||
 	failed=$(expr $failed + 1)
 
 rm $delay_inject_conf
