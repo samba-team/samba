@@ -55,6 +55,14 @@ dn: CN=Administrator,CN=Users,$BASE_DN
 changetype: modify
 add: uidNumber
 uidNumber: 2000000
+add: gidNumber
+gidNumber: 2000100
+add: unixHomeDirectory
+unixHomeDirectory: /home/admin
+add: loginShell
+loginShell: /bin/tcsh
+add: gecos
+gecos: Administrator Full Name
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
@@ -123,8 +131,8 @@ testit "Test uid of Domain Users is 2000001" test $ret -eq 0 || failed=$(expr $f
 #
 
 out="$($wbinfo -i $DOMAIN/Administrator)"
-echo "wbinfo returned: \"$out\", expecting \"$DOMAIN/administrator:*:2000000:2000001::/home/$DOMAIN/administrator:/bin/false\""
-test "$out" = "$DOMAIN/administrator:*:2000000:2000001::/home/$DOMAIN/administrator:/bin/false"
+echo "wbinfo returned: \"$out\", expecting \"$DOMAIN/administrator:*:2000000:2000100:Administrator Full Name:/home/admin:/bin/tcsh\""
+test "$out" = "$DOMAIN/administrator:*:2000000:2000100:Administrator Full Name:/home/admin:/bin/tcsh"
 ret=$?
 testit "Test get userinfo for Administrator works" test $ret -eq 0 || failed=$(expr $failed + 1)
 
@@ -186,6 +194,14 @@ dn: CN=Administrator,CN=Users,$BASE_DN
 changetype: modify
 delete: uidNumber
 uidNumber: 2000000
+delete: gidNumber
+gidNumber: 2000100
+delete: unixHomeDirectory
+unixHomeDirectory: /home/admin
+delete: loginShell
+loginShell: /bin/tcsh
+delete: gecos
+gecos: Administrator Full Name
 EOF
 
 cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
