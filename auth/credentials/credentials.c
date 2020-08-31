@@ -197,6 +197,26 @@ _PUBLIC_ const char *cli_credentials_get_username(struct cli_credentials *cred)
 	return cred->username;
 }
 
+/**
+ * @brief Obtain the username for this credentials context.
+ *
+ * @param[in]  cred  The credential context.
+ *
+ * @param[in]  obtained  A pointer to store the obtained information.
+ *
+ * return The user name or NULL if an error occured.
+ */
+_PUBLIC_ const char *
+cli_credentials_get_username_and_obtained(struct cli_credentials *cred,
+					  enum credentials_obtained *obtained)
+{
+	if (obtained != NULL) {
+		*obtained = cred->username_obtained;
+	}
+
+	return cli_credentials_get_username(cred);
+}
+
 _PUBLIC_ bool cli_credentials_set_username(struct cli_credentials *cred, 
 				  const char *val, enum credentials_obtained obtained)
 {

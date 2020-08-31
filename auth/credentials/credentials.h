@@ -103,6 +103,8 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key);
 const char *cli_credentials_get_realm(struct cli_credentials *cred);
 const char *cli_credentials_get_username(struct cli_credentials *cred);
+const char *cli_credentials_get_username_and_obtained(struct cli_credentials *cred,
+						      enum credentials_obtained *obtained);
 int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context);
