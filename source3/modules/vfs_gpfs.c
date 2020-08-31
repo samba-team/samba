@@ -1672,15 +1672,27 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
-				  int idx, int *flags)
+static int timespec_to_gpfs_time(
+	struct timespec ts, gpfs_timestruc_t *gt, int idx, int *flags)
 {
-	if (!is_omit_timespec(&ts)) {
-		*flags |= 1 << idx;
-		gt[idx].tv_sec = ts.tv_sec;
-		gt[idx].tv_nsec = ts.tv_nsec;
-		DEBUG(10, ("Setting GPFS time %d, flags 0x%x\n", idx, *flags));
+	if (is_omit_timespec(&ts)) {
+		return 0;
 	}
+
+	if (ts.tv_sec > UINT32_MAX) {
+		DBG_WARNING("GPFS uses 32-bit unsigned timestamps, "
+			    "%ju is too large\n",
+			    (uintmax_t)ts.tv_sec);
+		errno = ERANGE;
+		return -1;
+	}
+
+	*flags |= 1 << idx;
+	gt[idx].tv_sec = ts.tv_sec;
+	gt[idx].tv_nsec = ts.tv_nsec;
+	DBG_DEBUG("Setting GPFS time %d, flags 0x%x\n", idx, *flags);
+
+	return 0;
 }
 
 static int smbd_gpfs_set_times(struct files_struct *fsp,
@@ -1691,10 +1703,21 @@ static int smbd_gpfs_set_times(struct files_struct *fsp,
 	int rc;
 
 	ZERO_ARRAY(gpfs_times);
-	timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
-	timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
+	rc = timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
+	if (rc != 0) {
+		return rc;
+	}
+
+	rc = timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
+	if (rc != 0) {
+		return rc;
+	}
+
 	/* No good mapping from LastChangeTime to ctime, not storing */
-	timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
+	rc = timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
+	if (rc != 0) {
+		return rc;
+	}
 
 	if (!flags) {
 		DBG_DEBUG("nothing to do, return to avoid EINVAL\n");
