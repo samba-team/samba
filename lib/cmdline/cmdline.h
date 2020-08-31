@@ -43,6 +43,8 @@ enum smb_cmdline_popt_options {
 	SAMBA_CMDLINE_POPT_OPT_CREDENTIALS,
 	SAMBA_CMDLINE_POPT_OPT_VERSION,
 	SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB,
+	SAMBA_CMDLINE_POPT_OPT_LEGACY_S3,
+	SAMBA_CMDLINE_POPT_OPT_LEGACY_S4,
 };
 
 /**
@@ -147,6 +149,26 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
 	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB), \
 	.val        = 0, \
 	.descrip    = "Common Samba options:", \
+	.argDescrip = NULL },
+
+/* TODO Get rid of me! */
+#define POPT_LEGACY_S3 { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_LEGACY_S3), \
+	.val        = 0, \
+	.descrip    = "Deprecated legcacy options:", \
+	.argDescrip = NULL },
+
+/* TODO Get rid of me! */
+#define POPT_LEGACY_S4 { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_LEGACY_S4), \
+	.val        = 0, \
+	.descrip    = "Deprecated legcacy options:", \
 	.argDescrip = NULL },
 
 #endif /* _CMDLINE_H */

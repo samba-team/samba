@@ -870,6 +870,118 @@ static struct poptOption popt_common_version[] = {
 	POPT_TABLEEND
 };
 
+/**********************************************************
+ * LEGACY S3 POPT
+ **********************************************************/
+
+static void popt_legacy_s3_callback(poptContext ctx,
+				    enum poptCallbackReason reason,
+				    const struct poptOption *opt,
+				    const char *arg,
+				    const void *data)
+{
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	bool ok;
+
+	switch(opt->val) {
+	case 'k':
+		fprintf(stderr,
+			"WARNING: The option -k|--kerberos is deprecated!\n");
+
+		ok = cli_credentials_set_kerberos_state(creds,
+							CRED_USE_KERBEROS_REQUIRED,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set Kerberos state to %s!\n", arg);
+			exit(1);
+		}
+
+		skip_password_callback = true;
+		break;
+	}
+}
+
+/* We allow '-k yes' too. */
+static struct poptOption popt_legacy_s3[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_legacy_s3_callback,
+	},
+	{
+		.longName   = "kerberos",
+		.shortName  = 'k',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'k',
+		.descrip    = "DEPRECATED: Migrate to --use-kerberos",
+	},
+	POPT_TABLEEND
+};
+
+/**********************************************************
+ * LEGACY S4 POPT
+ **********************************************************/
+
+static void popt_legacy_s4_callback(poptContext ctx,
+				    enum poptCallbackReason reason,
+				    const struct poptOption *opt,
+				    const char *arg,
+				    const void *data)
+{
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+	bool ok;
+
+	switch(opt->val) {
+	case 'k': {
+		enum credentials_use_kerberos use_kerberos =
+			CRED_USE_KERBEROS_REQUIRED;
+
+		fprintf(stderr,
+			"WARNING: The option -k|--kerberos is deprecated!\n");
+
+		if (arg != NULL) {
+			if (strcasecmp_m(arg, "yes") == 0) {
+				use_kerberos = CRED_USE_KERBEROS_REQUIRED;
+			} else if (strcasecmp_m(arg, "no") == 0) {
+				use_kerberos = CRED_USE_KERBEROS_DISABLED;
+			} else {
+				fprintf(stderr,
+					"Error parsing -k %s. Should be "
+					"-k [yes|no]\n",
+					arg);
+				exit(1);
+			}
+		}
+
+		ok = cli_credentials_set_kerberos_state(creds,
+							use_kerberos,
+							CRED_SPECIFIED);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set Kerberos state to %s!\n", arg);
+			exit(1);
+		}
+
+		break;
+	}
+	}
+}
+
+static struct poptOption popt_legacy_s4[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_legacy_s4_callback,
+	},
+	{
+		.longName   = "kerberos",
+		.shortName  = 'k',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'k',
+		.descrip    = "DEPRECATED: Migrate to --use-kerberos",
+	},
+	POPT_TABLEEND
+};
+
 struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 {
 	switch (opt) {
@@ -887,6 +999,12 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB:
 		return popt_common_samba_ldb;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_LEGACY_S3:
+		return popt_legacy_s3;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_LEGACY_S4:
+		return popt_legacy_s4;
 		break;
 	}
 
