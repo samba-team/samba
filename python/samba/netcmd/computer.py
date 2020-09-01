@@ -666,7 +666,7 @@ attribute.
 class cmd_computer_move(Command):
     """Move a computer to an organizational unit/container."""
 
-    synopsis = "%prog computername <new_ou_dn> [options]"
+    synopsis = "%prog <computername> <new_ou_dn> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
