@@ -70,7 +70,6 @@
 	torture_local_tevent_req,
 	torture_local_torture,
 	torture_local_dbspeed, 
-	torture_local_credentials,
 	torture_ldb,
 	torture_dsdb_dn,
 	torture_dsdb_syntax,

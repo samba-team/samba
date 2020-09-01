@@ -16,7 +16,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../libcli/security/tests/sddl.c ../../../lib/tdr/testsuite.c
 	../../../lib/tevent/testsuite.c ../../param/tests/share.c
         ../../../lib/tevent/test_req.c
-	../../param/tests/loadparm.c ../../../auth/credentials/tests/simple.c local.c
+	../../param/tests/loadparm.c local.c
 	dbspeed.c torture.c ../ldb/ldb.c ../../dsdb/common/tests/dsdb_dn.c
 	../../dsdb/schema/tests/schema_syntax.c
 	../../../lib/util/tests/anonymous_shared.c
