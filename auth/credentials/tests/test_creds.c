@@ -241,6 +241,32 @@ static void torture_creds_krb5_state(void **state)
 
 }
 
+static void torture_creds_gensec_feature(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+	struct cli_credentials *creds = NULL;
+	bool ok;
+
+	creds = cli_credentials_init(mem_ctx);
+	assert_non_null(creds);
+	assert_int_equal(creds->gensec_features_obtained, CRED_UNINITIALISED);
+	assert_int_equal(creds->gensec_features, 0);
+
+	ok = cli_credentials_set_gensec_features(creds,
+						 GENSEC_FEATURE_SIGN,
+						 CRED_SPECIFIED);
+	assert_true(ok);
+	assert_int_equal(creds->gensec_features_obtained, CRED_SPECIFIED);
+	assert_int_equal(creds->gensec_features, GENSEC_FEATURE_SIGN);
+
+	ok = cli_credentials_set_gensec_features(creds,
+						 GENSEC_FEATURE_SEAL,
+						 CRED_SMB_CONF);
+	assert_false(ok);
+	assert_int_equal(creds->gensec_features_obtained, CRED_SPECIFIED);
+	assert_int_equal(creds->gensec_features, GENSEC_FEATURE_SIGN);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -251,6 +277,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_creds_anon_guess),
 		cmocka_unit_test(torture_creds_parse_string),
 		cmocka_unit_test(torture_creds_krb5_state),
+		cmocka_unit_test(torture_creds_gensec_feature),
 	};
 
 	if (argc == 2) {
