@@ -48,6 +48,7 @@ static void torture_creds_init(void **state)
 	const char *username = NULL;
 	const char *domain = NULL;
 	const char *password = NULL;
+	enum credentials_obtained usr_obtained = CRED_UNINITIALISED;
 	bool ok;
 
 	creds = cli_credentials_init(mem_ctx);
@@ -69,6 +70,11 @@ static void torture_creds_init(void **state)
 	assert_true(ok);
 	assert_int_equal(creds->username_obtained, CRED_SPECIFIED);
 	username = cli_credentials_get_username(creds);
+	assert_string_equal(username, "brot");
+
+	username = cli_credentials_get_username_and_obtained(creds,
+							     &usr_obtained);
+	assert_int_equal(usr_obtained, CRED_SPECIFIED);
 	assert_string_equal(username, "brot");
 
 	password = cli_credentials_get_password(creds);
