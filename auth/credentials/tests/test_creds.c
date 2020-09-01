@@ -200,6 +200,47 @@ static void torture_creds_parse_string(void **state)
 	assert_int_equal(creds->password_obtained, CRED_SPECIFIED);
 }
 
+static void torture_creds_krb5_state(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	bool ok;
+
+	lp_ctx = loadparm_init_global(true);
+	assert_non_null(lp_ctx);
+
+	creds = cli_credentials_init(mem_ctx);
+	assert_non_null(creds);
+	assert_int_equal(creds->kerberos_state_obtained, CRED_UNINITIALISED);
+	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
+
+	cli_credentials_set_conf(creds, lp_ctx);
+	assert_int_equal(creds->kerberos_state_obtained, CRED_SMB_CONF);
+	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
+
+	cli_credentials_guess(creds, lp_ctx);
+	assert_int_equal(creds->kerberos_state_obtained, CRED_SMB_CONF);
+	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
+	assert_int_equal(creds->ccache_obtained, CRED_GUESS_FILE);
+	assert_non_null(creds->ccache);
+
+	ok = cli_credentials_set_kerberos_state(creds,
+						CRED_USE_KERBEROS_REQUIRED,
+						CRED_SPECIFIED);
+	assert_true(ok);
+	assert_int_equal(creds->kerberos_state_obtained, CRED_SPECIFIED);
+	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_REQUIRED);
+
+	ok = cli_credentials_set_kerberos_state(creds,
+						CRED_USE_KERBEROS_DISABLED,
+						CRED_SMB_CONF);
+	assert_false(ok);
+	assert_int_equal(creds->kerberos_state_obtained, CRED_SPECIFIED);
+	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_REQUIRED);
+
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -209,6 +250,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_creds_guess),
 		cmocka_unit_test(torture_creds_anon_guess),
 		cmocka_unit_test(torture_creds_parse_string),
+		cmocka_unit_test(torture_creds_krb5_state),
 	};
 
 	if (argc == 2) {
