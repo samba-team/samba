@@ -446,6 +446,26 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 	return cred->password;
 }
 
+/**
+ * @brief Obtain the password for this credentials context.
+ *
+ * @param[in]  cred  The credential context.
+ *
+ * @param[in]  obtained  A pointer to store the obtained information.
+ *
+ * return The user name or NULL if an error occured.
+ */
+_PUBLIC_ const char *
+cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
+					  enum credentials_obtained *obtained)
+{
+	if (obtained != NULL) {
+		*obtained = cred->password_obtained;
+	}
+
+	return cli_credentials_get_password(cred);
+}
+
 /* Set a password on the credentials context, including an indication
  * of 'how' the password was obtained */
 

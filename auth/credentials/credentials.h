@@ -91,6 +91,8 @@ struct cli_credentials *cli_credentials_init_server(TALLOC_CTX *mem_ctx,
 void cli_credentials_set_anonymous(struct cli_credentials *cred);
 bool cli_credentials_wrong_password(struct cli_credentials *cred);
 const char *cli_credentials_get_password(struct cli_credentials *cred);
+const char *cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
+						      enum credentials_obtained *obtained);
 void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					      const char **username, 
 					      const char **domain);
