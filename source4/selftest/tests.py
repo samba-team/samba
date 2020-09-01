@@ -713,6 +713,10 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite_loadlist(name, env, args)
 
+if have_gnutls_crypto_policies:
+    planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
+    planoldpythontestsuite("ad_dc_fips", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
+
 # Run complex search expressions test once for each database backend.
 # Right now ad_dc has mdb and ad_dc_ntvfs has tdb
 mdb_testenv = "ad_dc"
