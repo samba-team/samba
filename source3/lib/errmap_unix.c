@@ -119,6 +119,9 @@ static const struct {
 	{ EOVERFLOW,      NT_STATUS_ALLOTTED_SPACE_EXCEEDED },
 #endif
 	{ EINPROGRESS,	NT_STATUS_MORE_PROCESSING_REQUIRED },
+#ifdef ERANGE
+	{ ERANGE, NT_STATUS_INTEGER_OVERFLOW },
+#endif
 };
 
 /*********************************************************************
