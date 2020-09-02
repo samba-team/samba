@@ -59,7 +59,7 @@ test_rpc_getusername_legacy() {
     return 0
 }
 
-test_smbclient_legacy() {
+test_smbclient() {
     eval echo "$cmd"
     out=$(eval $cmd)
     ret=$?
@@ -70,6 +70,31 @@ test_smbclient_legacy() {
 
     return $ret
 }
+
+test_smbclient_kerberos() {
+    eval echo "$cmd -d5"
+    out=$(eval $cmd)
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+        echo "Failed to connect! Error: $ret"
+        echo "$out"
+        return 1
+    fi
+
+    echo "$out" | grep "Doing init for" >/dev/null 2>&1
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+        echo "Kinit failed for smbclient"
+        echo "$out"
+        return 1
+    fi
+
+    return 0
+}
+
+KRB5CCNAME_PATH="$PREFIX/ccache_client_kerberos"
+KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+export KRB5CCNAME
 
 ### CHECK -k flag
 
@@ -137,32 +162,67 @@ testit_expect_failure "test smbtorture legacy kerberos=no ccache (negative test)
     failed=$(expr $failed + 1)
 $samba_kdestroy
 
-### SMBCLIENT
+### SMBCLIENT (legacy)
 cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient legacy ntlm" \
-    test_smbclient_legacy || \
+    test_smbclient || \
     failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | USER=$USERNAME $samba_smbclient //${SERVER}/tmp -W ${DOMAIN} --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient legacy ntlm interactive" \
-    test_smbclient_legacy || \
+    test_smbclient || \
     failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | $samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME} --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient legacy ntlm interactive with -U" \
-    test_smbclient_legacy || \
+    test_smbclient || \
     failed=$(expr $failed + 1)
 
 cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME}%${PASSWORD} -k --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient legacy kerberos" \
-    test_smbclient_legacy || \
+    test_smbclient || \
     failed=$(expr $failed + 1)
 
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -k --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient legacy kerberos ccache" \
-    test_smbclient_legacy || \
+    test_smbclient || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
+
+### SMBCLIENT tests for --use-kerberos=desired|required|disabled
+cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME}%${PASSWORD} --use-kerberos=disabled --configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient ntlm" \
+    test_smbclient || \
+    failed=$(expr $failed + 1)
+
+cmd='echo ${PASSWORD} | USER=$USERNAME $samba_smbclient //${SERVER}/tmp -W ${DOMAIN} --use-kerberos=disabled --configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient ntlm interactive" \
+    test_smbclient || \
+    failed=$(expr $failed + 1)
+
+cmd='echo ${PASSWORD} | $samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME} --use-kerberos=disabled --configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient ntlm interactive with -U" \
+    test_smbclient || \
+    failed=$(expr $failed + 1)
+
+cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME}%${PASSWORD} --use-kerberos=desired --configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient kerberos=desired" \
+    test_smbclient_kerberos || \
+    failed=$(expr $failed + 1)
+
+cmd='$samba_smbclient //${SERVER}/tmp -W ${DOMAIN} -U${USERNAME}%${PASSWORD} --use-kerberos=required --configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient kerberos=required" \
+    test_smbclient_kerberos || \
+    failed=$(expr $failed + 1)
+
+kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
+cmd='$samba_smbclient //${SERVER}/tmp --use-krb5-ccache=$KRB5CCNAME ---configfile=${CONFIGURATION} -c "ls; quit"'
+testit "test smbclient kerberos=required ccache" \
+    test_smbclient || \
+    failed=$(expr $failed + 1)
+$samba_kdestroy
+
+rm -rf $KRB5CCNAME_PATH
 
 exit $failed
