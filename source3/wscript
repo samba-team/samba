@@ -120,7 +120,7 @@ def configure(conf):
     # We crash without vfs_default
     # and vfs_not_implemented provides helper function
     # for other modules
-    required_static_modules.extend(TO_LIST('vfs_default vfs_not_implemented'))
+    required_static_modules.extend(['vfs_default', 'vfs_not_implemented'])
 
     conf.CHECK_HEADERS('netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
@@ -527,11 +527,11 @@ vsyslog
                 Logs.info('Using HPUX ACLs')
                 conf.DEFINE('HAVE_HPUX_ACLS',1)
                 conf.DEFINE('POSIX_ACL_NEEDS_MASK',1)
-                default_static_modules.extend(TO_LIST('vfs_hpuxacl'))
+                default_static_modules.extend(['vfs_hpuxacl'])
         elif (host_os.rfind('aix') > -1):
                 Logs.info('Using AIX ACLs')
                 conf.DEFINE('HAVE_AIX_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_aixacl vfs_aixacl2'))
+                default_static_modules.extend(['vfs_aixacl', 'vfs_aixacl2'])
         elif (host_os.rfind('darwin') > -1):
             Logs.warn('ACLs on Darwin currently not supported')
             conf.fatal("ACL support not available on Darwin/MacOS. "
@@ -559,16 +559,16 @@ return acl_get_perm_np(permset_d, perm);
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
                 # source3/lib/sysacls.c calls posixacl_sys_acl_get_file()
-                required_static_modules.extend(TO_LIST('vfs_posixacl'))
+                required_static_modules.extend(['vfs_posixacl'])
                 conf.CHECK_VARIABLE('ACL_EVERYONE', headers='sys/acl.h')
             elif conf.CHECK_FUNCS_IN(['facl'], 'sec'):
                 Logs.info('Using solaris or UnixWare ACLs')
                 conf.DEFINE('HAVE_SOLARIS_UNIXWARE_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
+                default_static_modules.extend(['vfs_solarisacl'])
             elif conf.CHECK_FUNCS_IN(['acl_get_fd'], 'pacl'):
                 Logs.info('Using Tru64 ACLs')
                 conf.DEFINE('HAVE_TRU64_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_tru64acl'))
+                default_static_modules.extend(['vfs_tru64acl'])
             else:
                 conf.fatal("ACL support not found. Try installing libacl1-dev "
                            "or libacl-devel.  "
@@ -828,7 +828,7 @@ msg.msg_accrightslen = sizeof(fd);
         conf.env['HAVE_ADS'] = '1'
         Logs.info("Building with Active Directory support.")
         # these have broken dependencies
-        forced_shared_modules.extend(TO_LIST('idmap_ad idmap_rfc2307'))
+        forced_shared_modules.extend(['idmap_ad', 'idmap_rfc2307'])
     elif Options.options.with_ads == False:
         Logs.info("Building without Active Directory support (--without-ads).")
         if not Options.options.without_ad_dc:
@@ -1915,7 +1915,7 @@ main() {
             conf.fatal("Unmet dependencies for Spotlight backends")
 
         Logs.info("Building with Spotlight support, available backends: %s" % ', '.join(backends))
-        default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
+        default_static_modules.extend(['rpc_mdssvc_module'])
         conf.DEFINE('WITH_SPOTLIGHT', '1')
         conf.env.with_spotlight = True
 
@@ -1925,94 +1925,92 @@ main() {
     if conf.CHECK_FUNCS_IN('nscd_flush_cache', 'nscd', headers='libnscd.h'):
         conf.DEFINE('HAVE_NSCD_FLUSH_CACHE', '1')
 
-    forced_static_modules.extend(TO_LIST('auth_builtin auth_sam auth_winbind'))
-    default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam
-                                      auth_unix
-                                      nss_info_template idmap_tdb idmap_passdb
-                                      idmap_nss'''))
+    forced_static_modules.extend(['auth_builtin', 'auth_sam', 'auth_winbind'])
+    default_static_modules.extend(['pdb_smbpasswd', 'pdb_tdbsam',
+                                      'auth_unix',
+                                      'nss_info_template', 'idmap_tdb', 'idmap_passdb',
+                                      'idmap_nss'])
 
-    default_shared_modules.extend(TO_LIST('''
-                                      vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit
-                                      vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
-                                      vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2
-                                      vfs_readahead vfs_xattr_tdb
-                                      vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
-                                      vfs_preopen vfs_catia
-                                      vfs_media_harmony vfs_unityed_media vfs_fruit vfs_shell_snap
-                                      vfs_commit vfs_worm vfs_crossrename vfs_linux_xfs_sgid
-                                      vfs_time_audit vfs_offline vfs_virusfilter vfs_widelinks
-                                  '''))
+    default_shared_modules.extend(['vfs_recycle', 'vfs_audit', 'vfs_extd_audit', 'vfs_full_audit',
+                                      'vfs_fake_perms', 'vfs_default_quota', 'vfs_readonly', 'vfs_cap',
+                                      'vfs_expand_msdfs', 'vfs_shadow_copy', 'vfs_shadow_copy2',
+                                      'vfs_readahead', 'vfs_xattr_tdb',
+                                      'vfs_streams_xattr', 'vfs_streams_depot', 'vfs_acl_xattr', 'vfs_acl_tdb',
+                                      'vfs_preopen', 'vfs_catia',
+                                      'vfs_media_harmony', 'vfs_unityed_media', 'vfs_fruit', 'vfs_shell_snap',
+                                      'vfs_commit', 'vfs_worm', 'vfs_crossrename', 'vfs_linux_xfs_sgid',
+                                      'vfs_time_audit', 'vfs_offline', 'vfs_virusfilter', 'vfs_widelinks'])
     if host_os.rfind('linux') > -1:
         default_shared_modules.extend(['vfs_snapper'])
 
-    default_shared_modules.extend(TO_LIST('idmap_tdb2 idmap_script'))
+    default_shared_modules.extend(['idmap_tdb2', 'idmap_script'])
     # these have broken dependencies
-    forced_shared_modules.extend(TO_LIST('idmap_autorid idmap_rid idmap_hash'))
+    forced_shared_modules.extend(['idmap_autorid', 'idmap_rid', 'idmap_hash'])
 
     if Options.options.developer:
-        default_static_modules.extend(TO_LIST('charset_weird'))
-        default_shared_modules.extend(TO_LIST('perfcount_test'))
-        default_shared_modules.extend(TO_LIST('vfs_skel_opaque vfs_skel_transparent vfs_shadow_copy_test'))
-        default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))
-        default_shared_modules.extend(TO_LIST('vfs_fake_dfq'))
-        default_shared_modules.extend(TO_LIST('gpext_security gpext_registry gpext_scripts'))
+        default_static_modules.extend(['charset_weird'])
+        default_shared_modules.extend(['perfcount_test'])
+        default_shared_modules.extend(['vfs_skel_opaque', 'vfs_skel_transparent', 'vfs_shadow_copy_test'])
+        default_shared_modules.extend(['auth_skel', 'pdb_test'])
+        default_shared_modules.extend(['vfs_fake_dfq'])
+        default_shared_modules.extend(['gpext_security', 'gpext_registry', 'gpext_scripts'])
 
     if Options.options.enable_selftest or Options.options.developer:
-        default_shared_modules.extend(TO_LIST('vfs_fake_acls vfs_nfs4acl_xattr'))
-        default_shared_modules.extend(TO_LIST('vfs_error_inject'))
-        default_shared_modules.extend(TO_LIST('vfs_delay_inject'))
+        default_shared_modules.extend(['vfs_fake_acls', 'vfs_nfs4acl_xattr'])
+        default_shared_modules.extend(['vfs_error_inject'])
+        default_shared_modules.extend(['vfs_delay_inject'])
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-        default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
-        default_shared_modules.extend(TO_LIST('vfs_posix_eadb'))
+        default_static_modules.extend(['pdb_samba_dsdb', 'auth_samba4', 'vfs_dfs_samba4'])
+        default_shared_modules.extend(['vfs_posix_eadb'])
 
     if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
-        default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
+        default_shared_modules.extend(['vfs_zfsacl'])
 
     if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
-        default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
+        default_shared_modules.extend(['vfs_syncops', 'vfs_dirsort'])
 
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
-        default_shared_modules.extend(TO_LIST('vfs_fileid'))
+        default_shared_modules.extend(['vfs_fileid'])
 
     if (conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS')):
-        default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
+        default_shared_modules.extend(['vfs_aio_fork'])
 
     if conf.CONFIG_SET('HAVE_LIBURING'):
-        default_shared_modules.extend(TO_LIST('vfs_io_uring'))
+        default_shared_modules.extend(['vfs_io_uring'])
 
     if Options.options.with_pthreadpool:
-        default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
+        default_shared_modules.extend(['vfs_aio_pthread'])
 
     if conf.CONFIG_SET('HAVE_LDAP'):
-        default_static_modules.extend(TO_LIST('pdb_ldapsam idmap_ldap'))
+        default_static_modules.extend(['pdb_ldapsam', 'idmap_ldap'])
 
     if conf.CONFIG_SET('DARWINOS'):
-        default_static_modules.extend(TO_LIST('charset_macosxfs'))
+        default_static_modules.extend(['charset_macosxfs'])
 
     if conf.CONFIG_SET('HAVE_GPFS') and conf.CONFIG_SET('HAVE_KERNEL_OPLOCKS_LINUX'):
-        default_shared_modules.extend(TO_LIST('vfs_gpfs'))
+        default_shared_modules.extend(['vfs_gpfs'])
 
     if (conf.CONFIG_SET('HAVE_LINUX_IOCTL')
       and conf.CONFIG_SET('HAVE_BASENAME') and conf.CONFIG_SET('HAVE_DIRNAME')):
-        default_shared_modules.extend(TO_LIST('vfs_btrfs'))
+        default_shared_modules.extend(['vfs_btrfs'])
 
     if conf.CONFIG_SET("HAVE_CEPH"):
-        default_shared_modules.extend(TO_LIST('vfs_ceph'))
+        default_shared_modules.extend(['vfs_ceph'])
         # Unlike vfs_ceph, vfs_ceph_snapshots doesn't depend on libcephfs, so
         # can be enabled atop a kernel CephFS share (with vfs_default) in
         # addition to vfs_ceph. Still, only enable vfs_ceph_snapshots builds
         # if we're building with libcephfs for now.
-        default_shared_modules.extend(TO_LIST('vfs_ceph_snapshots'))
+        default_shared_modules.extend(['vfs_ceph_snapshots'])
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
-        default_shared_modules.extend(TO_LIST('vfs_glusterfs'))
+        default_shared_modules.extend(['vfs_glusterfs'])
 
     if conf.CONFIG_SET('HAVE_SETMNTENT'):
-        default_shared_modules.extend(TO_LIST('vfs_glusterfs_fuse'))
+        default_shared_modules.extend(['vfs_glusterfs_fuse'])
 
     if conf.CONFIG_SET('HAVE_VXFS'):
-        default_shared_modules.extend(TO_LIST('vfs_vxfs'))
+        default_shared_modules.extend(['vfs_vxfs'])
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
