@@ -3488,24 +3488,26 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 {
 	struct ip_service *ss_list = NULL;
 	char *sitename = NULL;
-	int count = 0;
-	int i;
-	unsigned int num_entries;
+	size_t count = 0;
+	size_t i;
+	unsigned int num_entries = 0;
+	struct sockaddr_storage *result_arr = NULL;
 	NTSTATUS status;
 
 	*p_num_entries = 0;
 	*return_ss_arr = NULL;
 
 	if (is_ipaddress(name)) {
-		*return_ss_arr = talloc(ctx, struct sockaddr_storage);
-		if (!*return_ss_arr) {
+		result_arr = talloc(ctx, struct sockaddr_storage);
+		if (result_arr == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (!interpret_string_addr(*return_ss_arr, name, AI_NUMERICHOST)) {
-			TALLOC_FREE(*return_ss_arr);
+		if (!interpret_string_addr(result_arr, name, AI_NUMERICHOST)) {
+			TALLOC_FREE(result_arr);
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
 		*p_num_entries = 1;
+		*return_ss_arr = result_arr;
 		return NT_STATUS_OK;
 	}
 
@@ -3540,10 +3542,10 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	*return_ss_arr = talloc_array(ctx,
+	result_arr = talloc_array(ctx,
 				struct sockaddr_storage,
 				num_entries);
-	if (!(*return_ss_arr)) {
+	if (result_arr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -3559,18 +3561,19 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		}
 		if (!is_zero_addr(&sa.u.ss) &&
 		    !is_broadcast_addr(&sa.u.sa)) {
-			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
+			result_arr[num_entries++] = ss_list[i].ss;
 		}
 	}
 
 	if (num_entries == 0) {
-		TALLOC_FREE(*return_ss_arr);
+		TALLOC_FREE(result_arr);
 		status = NT_STATUS_BAD_NETWORK_NAME;
 		goto done;
 	}
 
 	status = NT_STATUS_OK;
 	*p_num_entries = num_entries;
+	*return_ss_arr = result_arr;
 done:
 	SAFE_FREE(ss_list);
 	return status;
