@@ -107,6 +107,39 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
 void samba_cmdline_burn(int argc, char *argv[]);
 
 /**
+ * @brief Sanity check the commadline options.
+ *
+ * This checks for duplicates in short and long options.
+ *
+ * @param[in]  opts    The options array to check.
+ *
+ * @return true if valid, false otherwise.
+ */
+bool samba_cmdline_sanity_check(const struct poptOption *opts);
+
+/**
+ * @brief This is a wrapper for the poptGetContext() which initializes the popt
+ *        context.
+ *
+ * If Samba is build in developer mode, this will call
+ * samba_cmdline_sanity_check() before poptGetContext().
+ *
+ * @param name     The context name (usually argv[0] program name)
+ *
+ * @param argc     Number of arguments
+ *
+ * @param argv     The argument array
+ * @param options  The address of popt option table
+ * @param flags    The OR'd POPT_CONTEXT_* bits
+ *
+ * @return The initialized popt context or NULL on error.
+ */
+poptContext samba_popt_get_context(const char * name,
+				   int argc, const char ** argv,
+				   const struct poptOption * options,
+				   unsigned int flags);
+
+/**
  * @brief A popt structure for common samba options.
  */
 #define POPT_COMMON_SAMBA { \

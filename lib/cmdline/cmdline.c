@@ -161,6 +161,120 @@ void samba_cmdline_burn(int argc, char *argv[])
 	}
 }
 
+static bool is_popt_table_end(const struct poptOption *o)
+{
+	if (o->longName == NULL &&
+	    o->shortName == 0 &&
+	    o->argInfo == 0 &&
+	    o->arg == NULL &&
+	    o->val == 0 &&
+	    o->descrip == NULL &&
+	    o->argDescrip == NULL) {
+		return true;
+	}
+
+	return false;
+}
+
+static void find_duplicates(const struct poptOption *needle,
+			    const struct poptOption *haystack,
+			    size_t *count)
+{
+	for(;
+	    !is_popt_table_end(haystack);
+	    haystack++) {
+		switch (haystack->argInfo) {
+		case POPT_ARG_INCLUDE_TABLE:
+			if (haystack->arg != NULL) {
+				find_duplicates(needle, haystack->arg, count);
+			}
+
+			break;
+		default:
+			if (needle->shortName != 0 &&
+			    needle->shortName == haystack->shortName) {
+				(*count)++;
+				break;
+			}
+
+			if (needle->longName != NULL &&
+			    haystack->longName != NULL &&
+			    strequal(needle->longName, haystack->longName)) {
+				(*count)++;
+				break;
+			}
+			break;
+		}
+
+		if (*count > 1) {
+			return;
+		}
+	}
+}
+
+static bool opt_sanity_check(const struct poptOption *current_opts,
+			     const struct poptOption *full_opts)
+{
+	const struct poptOption *o = current_opts;
+
+	for(;
+	    !is_popt_table_end(o);
+	    o++) {
+		bool ok;
+
+		switch (o->argInfo) {
+		case POPT_ARG_INCLUDE_TABLE:
+			if (o->arg != NULL) {
+				ok = opt_sanity_check(o->arg, full_opts);
+				if (!ok) {
+					return false;
+				}
+			}
+
+			break;
+		default:
+			if (o->longName != NULL || o->shortName != 0) {
+				size_t count = 0;
+
+				find_duplicates(o, full_opts, &count);
+				if (count > 1) {
+					DBG_ERR("Duplicate %s (%c) detected!\n",
+						o->longName,
+						o->shortName != 0 ?
+							o->shortName :
+							'-');
+					return false;
+				}
+			}
+
+			break;
+		}
+	}
+
+	return true;
+}
+
+bool samba_cmdline_sanity_check(const struct poptOption *opts)
+{
+	return opt_sanity_check(opts, opts);
+}
+
+poptContext samba_popt_get_context(const char * name,
+				   int argc, const char ** argv,
+				   const struct poptOption * options,
+				   unsigned int flags)
+{
+#ifdef DEVELOPER
+	bool ok;
+
+	ok = samba_cmdline_sanity_check(options);
+	if (!ok) {
+		return NULL;
+	}
+#endif
+	return poptGetContext(name, argc, argv, options, flags);
+}
+
 /**********************************************************
  * COMMON SAMBA POPT
  **********************************************************/

@@ -25,6 +25,38 @@
 
 #include "lib/cmdline/cmdline.h"
 
+static void torture_cmdline_sanity_check_good(void **state)
+{
+	bool ok;
+	struct poptOption long_options_good[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		POPT_LEGACY_S3
+		POPT_TABLEEND
+	};
+
+	ok = samba_cmdline_sanity_check(long_options_good);
+	assert_true(ok);
+}
+
+static void torture_cmdline_sanity_check_bad(void **state)
+{
+	bool ok;
+
+	struct poptOption long_options_bad[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
+	};
+
+	ok = samba_cmdline_sanity_check(long_options_bad);
+	assert_false(ok);
+}
+
 static void torture_cmdline_burn(void **state)
 {
 	char arg1[] = "-U Administrator%secret";
@@ -47,6 +79,8 @@ int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
+		cmocka_unit_test(torture_cmdline_sanity_check_good),
+		cmocka_unit_test(torture_cmdline_sanity_check_bad),
 		cmocka_unit_test(torture_cmdline_burn),
 	};
 
