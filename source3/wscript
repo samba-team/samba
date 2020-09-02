@@ -95,7 +95,6 @@ def options(opt):
 
     opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
     opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=True)
-    opt.samba_add_onoff_option('snapper', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
@@ -1774,17 +1773,6 @@ main() {
     if Options.options.enable_vxfs:
         conf.DEFINE('HAVE_VXFS', '1')
 
-    if Options.options.with_snapper:
-        if conf.CHECK_CFG(package='dbus-1', args='--cflags --libs',
-                      msg='Checking for dbus', uselib_store="DBUS-1"):
-            if (conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
-                                      and conf.CHECK_LIB('dbus-1', shlib=True)):
-                conf.DEFINE('HAVE_DBUS', '1')
-        else:
-            conf.fatal("vfs_snapper is enabled but prerequisite DBUS libraries "
-                       "or headers not found. Use --disable-snapper to disable "
-                       "vfs_snapper support.");
-
     if conf.CHECK_CFG(package='liburing', args='--cflags --libs',
                       msg='Checking for liburing package', uselib_store="URING"):
         if (conf.CHECK_HEADERS('liburing.h', lib='uring')
@@ -1954,6 +1942,9 @@ main() {
                                       vfs_commit vfs_worm vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit vfs_offline vfs_virusfilter vfs_widelinks
                                   '''))
+    if host_os.rfind('linux') > -1:
+        default_shared_modules.extend(['vfs_snapper'])
+
     default_shared_modules.extend(TO_LIST('idmap_tdb2 idmap_script'))
     # these have broken dependencies
     forced_shared_modules.extend(TO_LIST('idmap_autorid idmap_rid idmap_hash'))
@@ -2022,9 +2013,6 @@ main() {
 
     if conf.CONFIG_SET('HAVE_VXFS'):
         default_shared_modules.extend(TO_LIST('vfs_vxfs'))
-
-    if conf.CONFIG_SET('HAVE_DBUS'):
-        default_shared_modules.extend(TO_LIST('vfs_snapper'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
@@ -2145,5 +2133,14 @@ main() {
                 conf.env[shared_env].append('%s' % entry)
         Logs.info("%s: %s" % (static_env, ','.join(conf.env[static_env])))
         Logs.info("%s: %s" % (shared_env, ','.join(conf.env[shared_env])))
+
+    if (('vfs_snapper' in shared_list.get('vfs', []) or 'vfs_snapper' in static_list.get('vfs', []))
+        and not (conf.CHECK_CFG(package='dbus-1', args='--cflags --libs',
+                                msg='Checking for dbus', uselib_store="DBUS-1")
+                 and conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
+                 and conf.CHECK_LIB('dbus-1', shlib=True))):
+        conf.fatal("vfs_snapper is enabled but prerequisite dbus-1 package not "
+                   "found. Use --with-shared-modules=!vfs_snapper to disable "
+                   "vfs_snapper support.")
 
     conf.SAMBA_CONFIG_H('include/config.h')
