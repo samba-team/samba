@@ -427,7 +427,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	int count_site = 0;
 	int count_nonsite;
 	size_t num_dcs;
-	struct sockaddr_storage *dc_addrs;
+	struct sockaddr_storage *dc_addrs = NULL;
 	struct tsocket_address **dc_addrs2 = NULL;
 	const struct tsocket_address * const *dc_addrs3 = NULL;
 	char *result = NULL;
