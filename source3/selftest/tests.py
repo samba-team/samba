@@ -968,7 +968,8 @@ plantestsuite("samba3.blackbox.force-close-share", "simpleserver:local",
                os.path.join(bindir(), "smbclient"),
                os.path.join(bindir(), "smbcontrol"),
                '$SERVER_IP',
-               "aio_delay_inject"])
+               "aio_delay_inject",
+               '$PREFIX/force-close-share'])
 
 plantestsuite("samba3.blackbox.open-eintr", "simpleserver:local",
               [os.path.join(samba3srcdir,
