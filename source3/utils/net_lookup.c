@@ -188,7 +188,8 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	char *pdc_str = NULL;
 	const char *domain = NULL;
 	char *sitename = NULL;
-	int count, i;
+	size_t count = 0;
+	size_t i;
 	char addr[INET6_ADDRSTRLEN];
 	bool sec_ads = (lp_security() == SEC_ADS);
 

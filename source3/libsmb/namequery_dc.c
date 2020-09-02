@@ -165,8 +165,9 @@ static bool rpc_dc_name(const char *domain,
 			struct sockaddr_storage *ss_out)
 {
 	struct ip_service *ip_list = NULL;
+	size_t count = 0;
 	struct sockaddr_storage dc_ss;
-	int count, i;
+	size_t i;
 	NTSTATUS result;
 	char addr[INET6_ADDRSTRLEN];
 

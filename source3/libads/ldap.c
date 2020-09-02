@@ -383,8 +383,9 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,const char *domain,
 static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 					 const char *domain, const char *realm)
 {
-	int count, i;
-	struct ip_service *ip_list;
+	size_t i;
+	size_t count = 0;
+	struct ip_service *ip_list = NULL;
 	NTSTATUS status;
 
 	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
@@ -430,7 +431,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 				     const char *realm)
 {
-	int count;
+	size_t count = 0;
 	struct ip_service *ip_list = NULL;
 	NTSTATUS status;
 
