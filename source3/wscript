@@ -1949,16 +1949,16 @@ main() {
 
     if Options.options.developer:
         default_static_modules.extend(['charset_weird'])
-        default_shared_modules.extend(['perfcount_test'])
-        default_shared_modules.extend(['vfs_skel_opaque', 'vfs_skel_transparent', 'vfs_shadow_copy_test'])
-        default_shared_modules.extend(['auth_skel', 'pdb_test'])
-        default_shared_modules.extend(['vfs_fake_dfq'])
-        default_shared_modules.extend(['gpext_security', 'gpext_registry', 'gpext_scripts'])
+        default_shared_modules.extend(['perfcount_test',
+                                       'vfs_skel_opaque', 'vfs_skel_transparent', 'vfs_shadow_copy_test',
+                                       'auth_skel', 'pdb_test',
+                                       'vfs_fake_dfq',
+                                       'gpext_security', 'gpext_registry', 'gpext_scripts'])
 
     if Options.options.enable_selftest or Options.options.developer:
-        default_shared_modules.extend(['vfs_fake_acls', 'vfs_nfs4acl_xattr'])
-        default_shared_modules.extend(['vfs_error_inject'])
-        default_shared_modules.extend(['vfs_delay_inject'])
+        default_shared_modules.extend(['vfs_fake_acls', 'vfs_nfs4acl_xattr',
+                                       'vfs_error_inject',
+                                       'vfs_delay_inject'])
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(['pdb_samba_dsdb', 'auth_samba4', 'vfs_dfs_samba4'])
