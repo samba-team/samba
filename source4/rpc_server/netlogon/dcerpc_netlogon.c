@@ -44,6 +44,7 @@
 #include "lib/socket/netif.h"
 #include "rpc_server/common/sid_helper.h"
 #include "lib/util/util_str_escape.h"
+#include "lib/param/loadparm.h"
 
 #define DCESRV_INTERFACE_NETLOGON_BIND(context, iface) \
        dcesrv_interface_netlogon_bind(context, iface)
@@ -222,6 +223,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		       NETLOGON_NEG_SUPPORTS_AES |
 		       NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
 		       NETLOGON_NEG_AUTHENTICATED_RPC;
+
+	/*
+	 * If weak cryto is disabled, do not announce that we support RC4.
+	 */
+	if (lpcfg_weak_crypto(dce_call->conn->dce_ctx->lp_ctx) ==
+	    SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		server_flags &= ~NETLOGON_NEG_ARCFOUR;
+	}
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 

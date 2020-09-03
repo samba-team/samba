@@ -31,6 +31,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "param/param.h"
+#include "lib/param/loadparm.h"
 
 struct schannel_key_state {
 	struct dcerpc_pipe *pipe;
@@ -344,6 +345,10 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	/* type of authentication depends on schannel type */
 	if (schannel_type == SEC_CHAN_RODC) {
 		s->local_negotiate_flags |= NETLOGON_NEG_RODC_PASSTHROUGH;
+	}
+
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		s->local_negotiate_flags &= ~NETLOGON_NEG_ARCFOUR;
 	}
 
 	epm_creds = cli_credentials_init_anon(s);

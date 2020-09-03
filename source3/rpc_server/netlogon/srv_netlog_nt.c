@@ -910,6 +910,13 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 			    NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION;
 	}
 
+	/*
+	 * If weak cryto is disabled, do not announce that we support RC4.
+	 */
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		srv_flgs &= ~NETLOGON_NEG_ARCFOUR;
+	}
+
 	switch (p->opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE:
 			fn = "_netr_ServerAuthenticate";
