@@ -592,8 +592,9 @@ static char *get_enctypes(TALLOC_CTX *mem_ctx)
 #endif
 	}
 
-	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
-	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_ALLOWED &&
+	    (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
+	     lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY)) {
 		legacy_enctypes = "RC4-HMAC";
 	}
 
