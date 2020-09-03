@@ -745,10 +745,14 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			    "\tdns_lookup_kdc = true\n\n"
 			    "[realms]\n\t%s = {\n"
 			    "%s\t}\n"
+			    "\t%s = {\n"
+			    "%s\t}\n"
 			    "%s\n",
 			    realm_upper,
 			    enctypes,
 			    realm_upper,
+			    kdc_ip_string,
+			    domain,
 			    kdc_ip_string,
 			    include_system_krb5);
 
