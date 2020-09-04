@@ -88,19 +88,11 @@ bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct g
 static const struct gensec_security_ops **gensec_use_kerberos_mechs(
 		TALLOC_CTX *mem_ctx,
 		const struct gensec_security_ops * const *old_gensec_list,
-		struct cli_credentials *creds)
+		enum credentials_use_kerberos use_kerberos,
+		bool keep_schannel)
 {
 	const struct gensec_security_ops **new_gensec_list;
 	int i, j, num_mechs_in;
-	enum credentials_use_kerberos use_kerberos = CRED_AUTO_USE_KERBEROS;
-	bool keep_schannel = false;
-
-	if (creds) {
-		use_kerberos = cli_credentials_get_kerberos_state(creds);
-		if (cli_credentials_get_netlogon_creds(creds) != NULL) {
-			keep_schannel = true;
-		}
-	}
 
 	for (num_mechs_in=0; old_gensec_list && old_gensec_list[num_mechs_in]; num_mechs_in++) {
 		/* noop */
@@ -165,18 +157,28 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 				struct gensec_security *gensec_security,
 				TALLOC_CTX *mem_ctx)
 {
-	struct cli_credentials *creds = NULL;
 	const struct gensec_security_ops * const *backends = gensec_security_all();
+	enum credentials_use_kerberos use_kerberos = CRED_AUTO_USE_KERBEROS;
+	bool keep_schannel = false;
 
 	if (gensec_security != NULL) {
+		struct cli_credentials *creds = NULL;
+
 		creds = gensec_get_credentials(gensec_security);
+		if (creds != NULL) {
+			use_kerberos = cli_credentials_get_kerberos_state(creds);
+			if (cli_credentials_get_netlogon_creds(creds) != NULL) {
+				keep_schannel = true;
+			}
+		}
 
 		if (gensec_security->settings->backends) {
 			backends = gensec_security->settings->backends;
 		}
 	}
 
-	return gensec_use_kerberos_mechs(mem_ctx, backends, creds);
+	return gensec_use_kerberos_mechs(mem_ctx, backends,
+					 use_kerberos, keep_schannel);
 
 }
 
