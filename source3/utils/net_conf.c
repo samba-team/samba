@@ -648,10 +648,18 @@ static int net_conf_addshare(struct net_context *c,
 	/* validate path */
 
 	if (path[0] != '/') {
-		d_fprintf(stderr,
-			  _("Error: path '%s' is not an absolute path.\n"),
-			  path);
-		goto done;
+		bool ok = false;
+
+		if (strequal(sharename, HOMES_NAME) && path[0] == '\0') {
+			/* The homes share can be an empty path. */
+			ok = true;
+		}
+		if (!ok) {
+			d_fprintf(stderr,
+				  _("Error: path '%s' is not an absolute path.\n"),
+				 path);
+			goto done;
+		}
 	}
 
 	/*
