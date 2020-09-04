@@ -170,6 +170,15 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 			if (cli_credentials_get_netlogon_creds(creds) != NULL) {
 				keep_schannel = true;
 			}
+
+			/*
+			 * Even if Kerberos is set to REQUIRED, keep the
+			 * schannel auth mechanism that machine accounts are
+			 * able to authenticate via netlogon.
+			 */
+			if (gensec_security->gensec_role == GENSEC_SERVER) {
+				keep_schannel = true;
+			}
 		}
 
 		if (gensec_security->settings->backends) {
