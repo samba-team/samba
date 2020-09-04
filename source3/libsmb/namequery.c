@@ -3831,7 +3831,8 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	int port;
 	char *name;
 	size_t num_addresses = 0;
-	size_t local_count, i;
+	size_t local_count = 0;
+	size_t i;
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
 	bool done_auto_lookup = false;
@@ -3839,9 +3840,6 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	int auto_name_type = 0x1C;
-
-	*ip_list = NULL;
-	*ret_count = 0;
 
 	*ordered = False;
 
@@ -4103,17 +4101,15 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		DEBUGADD(4,("\n"));
 	}
 
-	*ip_list = return_iplist;
-	*ret_count = local_count;
-
-	status = (*ret_count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS);
+	status = (local_count != 0 ? NT_STATUS_OK : NT_STATUS_NO_LOGON_SERVERS);
 
   out:
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status)) {
+		*ip_list = return_iplist;
+		*ret_count = local_count;
+	} else {
 		TALLOC_FREE(return_iplist);
-		*ip_list = NULL;
-		*ret_count = 0;
 	}
 
 	TALLOC_FREE(auto_ip_list);
