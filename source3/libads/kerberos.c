@@ -444,6 +444,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
 	if (!ok) {
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -461,6 +462,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("get_kdc_list_talloc fail %s\n",
 				nt_errstr(status));
+			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 		DBG_DEBUG("got %zu addresses from site %s search\n",
@@ -478,6 +480,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("get_kdc_list_talloc (site-less) fail %s\n",
 			nt_errstr(status));
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 	DBG_DEBUG("got %zu addresses from site-less search\n", count_nonsite);
@@ -485,6 +488,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (count_site + count_nonsite < count_site) {
 		/* Wrap check. */
 		DBG_ERR("get_kdc_list_talloc (site-less) fail wrap error\n");
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -492,6 +496,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	dc_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
 				count_site + count_nonsite);
 	if (dc_addrs == NULL) {
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -503,6 +508,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
 						&ip_srv_site[i].ss);
 		if (!ok) {
+			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 
@@ -518,6 +524,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
 						&ip_srv_nonsite[i].ss);
 		if (!ok) {
+			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 
@@ -533,9 +540,11 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 	if (dc_addrs2 == NULL) {
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -552,6 +561,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 			status = map_nt_error_from_unix(errno);
 			DEBUG(2,("Failed to create tsocket_address for %s - %s\n",
 				 addr, nt_errstr(status)));
+			TALLOC_FREE(kdc_str);
 			goto out;
 		}
 	}
@@ -569,6 +579,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
 			  "%s\n", nt_errstr(status)));
+		TALLOC_FREE(kdc_str);
 		goto out;
 	}
 
@@ -583,10 +594,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		new_kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n",
 					      kdc_str,
 					      print_canonical_sockaddr_with_port(mem_ctx, &dc_addrs[i]));
+		TALLOC_FREE(kdc_str);
 		if (new_kdc_str == NULL) {
 			goto out;
 		}
-		TALLOC_FREE(kdc_str);
 		kdc_str = new_kdc_str;
 	}
 
