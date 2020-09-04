@@ -449,9 +449,6 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	size_t count;
 	static const char *resolve_order[] = { "lmhosts", "wins", "bcast", NULL };
 
-	*returned_dclist = NULL;
-	*returned_count = 0;
-
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
 	}
@@ -497,17 +494,16 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	}
 
-	*returned_dclist = dclist;
-	*returned_count = count;
 	TALLOC_FREE(iplist);
 
 	/* Paranoia in casting size_t -> int. */
-	if (*returned_count < 0) {
+	if ((int)count < 0) {
 		TALLOC_FREE(dclist);
-		*returned_dclist = NULL;
-		*returned_count = 0;
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	*returned_dclist = dclist;
+	*returned_count = count;
 
 	return NT_STATUS_OK;
 }
