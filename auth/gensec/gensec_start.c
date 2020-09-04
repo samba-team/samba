@@ -85,9 +85,10 @@ bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct g
  * more compplex.
  */
 
-_PUBLIC_ const struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
-			const struct gensec_security_ops * const *old_gensec_list,
-			struct cli_credentials *creds)
+static const struct gensec_security_ops **gensec_use_kerberos_mechs(
+		TALLOC_CTX *mem_ctx,
+		const struct gensec_security_ops * const *old_gensec_list,
+		struct cli_credentials *creds)
 {
 	const struct gensec_security_ops **new_gensec_list;
 	int i, j, num_mechs_in;

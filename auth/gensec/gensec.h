@@ -302,9 +302,6 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 
 const struct gensec_security_ops * const *gensec_security_all(void);
 bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security);
-const struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
-			const struct gensec_security_ops * const *old_gensec_list,
-			struct cli_credentials *creds);
 
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 					const char *sasl_name);
