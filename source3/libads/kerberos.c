@@ -590,10 +590,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		kdc_str = new_kdc_str;
 	}
 
+	result = kdc_str;
 out:
 	DEBUG(10, ("get_kdc_ip_string: Returning %s\n", kdc_str));
 
-	result = kdc_str;
 	TALLOC_FREE(ip_srv_site);
 	TALLOC_FREE(ip_srv_nonsite);
 	TALLOC_FREE(frame);
