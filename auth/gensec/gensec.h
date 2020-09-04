@@ -308,6 +308,8 @@ const struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx
 
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 					const char *sasl_name);
+const char **gensec_security_sasl_names(struct gensec_security *gensec_security,
+					TALLOC_CTX *mem_ctx);
 
 int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value);
 bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value);

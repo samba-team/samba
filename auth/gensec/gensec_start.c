@@ -301,6 +301,93 @@ const struct gensec_security_ops *gensec_security_by_name(struct gensec_security
 	return NULL;
 }
 
+static const char **gensec_security_sasl_names_from_ops(
+	struct gensec_security *gensec_security,
+	TALLOC_CTX *mem_ctx,
+	const struct gensec_security_ops * const *ops)
+{
+	const char **sasl_names = NULL;
+	size_t i, sasl_names_count = 0;
+
+	if (ops == NULL) {
+		return NULL;
+	}
+
+	sasl_names = talloc_array(mem_ctx, const char *, 1);
+	if (sasl_names == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; ops[i] != NULL; i++) {
+		enum gensec_role role = GENSEC_SERVER;
+		const char **tmp = NULL;
+
+		if (ops[i]->sasl_name == NULL) {
+			continue;
+		}
+
+		if (gensec_security != NULL) {
+			if (!gensec_security_ops_enabled(ops[i],
+							 gensec_security)) {
+				continue;
+			}
+
+			role = gensec_security->gensec_role;
+		}
+
+		switch (role) {
+		case GENSEC_CLIENT:
+			if (ops[i]->client_start == NULL) {
+				continue;
+			}
+			break;
+		case GENSEC_SERVER:
+			if (ops[i]->server_start == NULL) {
+				continue;
+			}
+			break;
+		}
+
+		tmp = talloc_realloc(mem_ctx,
+				     sasl_names,
+				     const char *,
+				     sasl_names_count + 2);
+		if (tmp == NULL) {
+			TALLOC_FREE(sasl_names);
+			return NULL;
+		}
+		sasl_names = tmp;
+
+		sasl_names[sasl_names_count] = ops[i]->sasl_name;
+		sasl_names_count++;
+	}
+	sasl_names[sasl_names_count] = NULL;
+
+	return sasl_names;
+}
+
+/**
+ * @brief Get the sasl names from the gensec security context.
+ *
+ * @param[in]  gensec_security The gensec security context.
+ *
+ * @param[in]  mem_ctx The memory context to allocate memory on.
+ *
+ * @return An allocated array with sasl names, NULL on error.
+ */
+_PUBLIC_
+const char **gensec_security_sasl_names(struct gensec_security *gensec_security,
+					TALLOC_CTX *mem_ctx)
+{
+	const struct gensec_security_ops **ops = NULL;
+
+	ops = gensec_security_mechs(gensec_security, mem_ctx);
+
+	return gensec_security_sasl_names_from_ops(gensec_security,
+						   mem_ctx,
+						   ops);
+}
+
 /**
  * Return a unique list of security subsystems from those specified in
  * the list of SASL names.
