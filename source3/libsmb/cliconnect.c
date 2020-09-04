@@ -2535,8 +2535,9 @@ static struct tevent_req *cli_connect_sock_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_sock_state *state;
-	struct sockaddr_storage *addrs;
-	unsigned i, num_addrs;
+	struct sockaddr_storage *addrs = NULL;
+	unsigned i;
+	unsigned num_addrs = 0;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
