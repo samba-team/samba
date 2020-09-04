@@ -1686,7 +1686,6 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 	struct ip_service *iplist = NULL;
 
 	if (orig_count == 0 || ss_list == NULL) {
-		*count_out = 0;
 		return false;
 	}
 
@@ -1698,7 +1697,6 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 		real_count++;
 	}
 	if (real_count == 0) {
-		*count_out = 0;
 		return false;
 	}
 
@@ -1706,7 +1704,6 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 	iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count);
 	if (iplist == NULL) {
 		DBG_ERR("malloc failed for %zu enetries!\n", real_count);
-		*count_out = 0;
 		return false;
 	}
 
