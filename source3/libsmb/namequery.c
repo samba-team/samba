@@ -3571,9 +3571,6 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	struct sockaddr_storage *result_arr = NULL;
 	NTSTATUS status;
 
-	*p_num_entries = 0;
-	*return_ss_arr = NULL;
-
 	if (is_ipaddress(name)) {
 		result_arr = talloc(ctx, struct sockaddr_storage);
 		if (result_arr == NULL) {
