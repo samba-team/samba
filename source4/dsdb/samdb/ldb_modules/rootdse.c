@@ -232,7 +232,7 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	struct ldb_context *ldb;
 	struct rootdse_private_data *priv = talloc_get_type(ldb_module_get_private(ac->module), struct rootdse_private_data);
 	const char * const *attrs = ac->req->op.search.attrs;
-	char **server_sasl;
+	const char **server_sasl = NULL;
 	const struct dsdb_schema *schema;
 	int *val;
 	struct ldb_control *edn_control;
@@ -343,7 +343,7 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	}
 
 	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanisms"),
-				       char *);
+				       const char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
 		for (i = 0; server_sasl && server_sasl[i]; i++) {
 			char *sasl_name = talloc_strdup(msg, server_sasl[i]);

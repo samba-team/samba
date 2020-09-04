@@ -33,6 +33,7 @@
 #include "ldb_wrap.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/ldap/ldap_proto.h"
+#include "source4/auth/auth.h"
 
 static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	const char *add_err_string, const char **errstring)
@@ -199,37 +200,33 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 	}
 
 	if (conn->server_credentials) {
-		char **sasl_mechs = NULL;
-		const struct gensec_security_ops * const *backends = gensec_security_all();
-		const struct gensec_security_ops **ops
-			= gensec_use_kerberos_mechs(conn, backends, conn->server_credentials);
-		unsigned int i, j = 0;
-		for (i = 0; ops && ops[i]; i++) {
-			if (!lpcfg_parm_bool(conn->lp_ctx,  NULL, "gensec", ops[i]->name, ops[i]->enabled))
-				continue;
+		struct gensec_security *gensec_security = NULL;
+		const char **sasl_mechs = NULL;
+		NTSTATUS status;
 
-			if (ops[i]->sasl_name && ops[i]->server_start) {
-				char *sasl_name = talloc_strdup(conn, ops[i]->sasl_name);
-
-				if (!sasl_name) {
-					return LDB_ERR_OPERATIONS_ERROR;
-				}
-				sasl_mechs = talloc_realloc(conn, sasl_mechs, char *, j + 2);
-				if (!sasl_mechs) {
-					return LDB_ERR_OPERATIONS_ERROR;
-				}
-				sasl_mechs[j] = sasl_name;
-				talloc_steal(sasl_mechs, sasl_name);
-				sasl_mechs[j+1] = NULL;
-				j++;
-			}
+		status = samba_server_gensec_start(conn,
+						   conn->connection->event.ctx,
+						   conn->connection->msg_ctx,
+						   conn->lp_ctx,
+						   conn->server_credentials,
+						   "ldap",
+						   &gensec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("samba_server_gensec_start failed: %s\n",
+				nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_unlink(conn, ops);
 
 		/* ldb can have a different lifetime to conn, so we
 		   need to ensure that sasl_mechs lives as long as the
 		   ldb does */
-		talloc_steal(conn->ldb, sasl_mechs);
+		sasl_mechs = gensec_security_sasl_names(gensec_security,
+							conn->ldb);
+		TALLOC_FREE(gensec_security);
+		if (sasl_mechs == NULL) {
+			DBG_ERR("Failed to get sasl mechs!\n");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanisms", sasl_mechs);
 	}
