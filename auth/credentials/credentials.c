@@ -56,6 +56,31 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	return cred;
 }
 
+_PUBLIC_
+struct cli_credentials *cli_credentials_init_server(TALLOC_CTX *mem_ctx,
+						    struct loadparm_context *lp_ctx)
+{
+	struct cli_credentials *server_creds = NULL;
+	NTSTATUS status;
+
+	server_creds = cli_credentials_init(mem_ctx);
+	if (server_creds == NULL) {
+		return NULL;
+	}
+
+	cli_credentials_set_conf(server_creds, lp_ctx);
+
+	status = cli_credentials_set_machine_account(server_creds, lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to obtain server credentials: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(server_creds);
+		return NULL;
+	}
+
+	return server_creds;
+}
+
 _PUBLIC_ void cli_credentials_set_callback_data(struct cli_credentials *cred,
 						void *callback_data)
 {

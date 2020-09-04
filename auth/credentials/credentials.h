@@ -76,6 +76,8 @@ bool cli_credentials_set_workstation(struct cli_credentials *cred,
 				     enum credentials_obtained obtained);
 bool cli_credentials_is_anonymous(struct cli_credentials *cred);
 struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx);
+struct cli_credentials *cli_credentials_init_server(TALLOC_CTX *mem_ctx,
+						    struct loadparm_context *lp_ctx);
 void cli_credentials_set_anonymous(struct cli_credentials *cred);
 bool cli_credentials_wrong_password(struct cli_credentials *cred);
 const char *cli_credentials_get_password(struct cli_credentials *cred);
