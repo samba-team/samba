@@ -1071,7 +1071,11 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 			data->has_error = true;
 			return false;
 		}
-		*v = (*v << 8) + b;
+		/*
+		 * To please/fool the Undefined Behaviour Sanitizer we cast to
+		 * unsigned for the left shift.
+		 */
+		*v = ((unsigned int)*v << 8) + b;
 		if (*v < 0) {
 			/* ASN1_ENUMERATED can't be -ve. */
 			data->has_error = true;
