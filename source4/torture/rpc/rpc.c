@@ -414,7 +414,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 	test->data = NULL;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tcase.tests, test);
+	DLIST_ADD_END(tcase->tcase.tests, test);
 
 	return test;
 }
@@ -435,7 +435,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_creds(
 	test->data = NULL;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tcase.tests, test);
+	DLIST_ADD_END(tcase->tcase.tests, test);
 
 	return test;
 }
@@ -457,7 +457,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_join(
 	test->data = NULL;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tcase.tests, test);
+	DLIST_ADD_END(tcase->tcase.tests, test);
 
 	return test;
 }
@@ -480,7 +480,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 	test->data = userdata;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tcase.tests, test);
+	DLIST_ADD_END(tcase->tcase.tests, test);
 
 	return test;
 }
@@ -536,7 +536,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_setup(
 	test->data = userdata;
 	test->fn = fn;
 
-	DLIST_ADD(tcase->tcase.tests, test);
+	DLIST_ADD_END(tcase->tcase.tests, test);
 
 	return test;
 }
