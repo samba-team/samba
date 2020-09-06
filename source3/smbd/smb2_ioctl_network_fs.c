@@ -346,7 +346,9 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 					ifsa, sizeof(struct sockaddr_storage),
 					&a);
 		if (ret != 0) {
-			return map_nt_error_from_unix_common(errno);
+			NTSTATUS status = map_nt_error_from_unix_common(errno);
+			TALLOC_FREE(array);
+			return status;
 		}
 
 		ok = tsocket_address_is_inet(a, "ip");
