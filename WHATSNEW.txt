@@ -16,16 +16,22 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-Python 3.6 Required
--------------------
+Python 3.6 or later required
+----------------------------
 
 Samba's minimum runtime requirement for python was raised to Python
 3.5 with samba 4.12.  Samba 4.13 raises this minimum version to Python
 3.6 both to access new features and because this is the oldest version
 we test with in our CI infrastructure.
 
-(Build time support for the file server with Python 2.6 has not
-changed)
+This is also the last release where it will be possible to build Samba
+(just the file server) with Python versions 2.6 and 2.7.
+
+As Python 2.7 has been End Of Life upstream since April 2020, Samba
+is dropping ALL Python 2.x support in the NEXT release.
+
+Samba 4.14 to be released in March 2021 will require Python 3.6 or
+later to build.
 
 wide links functionality
 ------------------------
