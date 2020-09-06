@@ -361,7 +361,7 @@ struct smbXsrv_connection {
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 	const char *remote_hostname;
-	bool has_ctdb_public_ip;
+	bool has_cluster_movable_ip;
 
 	enum protocol_types protocol;
 

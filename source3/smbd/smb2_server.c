@@ -1635,9 +1635,9 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		  smbXsrv_connection_dbg(xconn), num_ok,
 		  reason, location);
 
-	if (xconn->has_ctdb_public_ip) {
+	if (xconn->has_cluster_movable_ip) {
 		/*
-		 * If the connection has a ctdb public address
+		 * If the connection has a movable cluster public address
 		 * we disconnect all client connections,
 		 * as the public address might be moved to
 		 * a different node.

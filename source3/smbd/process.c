@@ -2813,10 +2813,10 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		xconn->has_ctdb_public_ip = ctdbd_find_in_public_ips(ips, srv);
+		xconn->has_cluster_movable_ip = ctdbd_find_in_public_ips(ips, srv);
 		TALLOC_FREE(ips);
-		if (xconn->has_ctdb_public_ip) {
-			DBG_DEBUG("CTDB public ip on %s\n",
+		if (xconn->has_cluster_movable_ip) {
+			DBG_DEBUG("cluster movable IP on %s\n",
 				  smbXsrv_connection_dbg(xconn));
 		}
 	}
