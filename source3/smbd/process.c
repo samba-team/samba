@@ -2776,6 +2776,30 @@ static int release_ip(struct tevent_context *ev,
 	return 0;
 }
 
+static int match_cluster_movable_ip(uint32_t total_ip_count,
+				    const struct sockaddr_storage *ip,
+				    bool is_movable_ip,
+				    void *private_data)
+{
+	const struct sockaddr_storage *srv = private_data;
+	struct samba_sockaddr pub_ip = {
+		.u = {
+			.ss = *ip,
+		},
+	};
+	struct samba_sockaddr srv_ip = {
+		.u = {
+			.ss = *srv,
+		},
+	};
+
+	if (is_movable_ip && sockaddr_equal(&pub_ip.u.sa, &srv_ip.u.sa)) {
+		return EREMOTEIO;
+	}
+
+	return 0;
+}
+
 static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 				  struct sockaddr_storage *srv,
 				  struct sockaddr_storage *clnt)
@@ -2803,21 +2827,17 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 	}
 
 	if (xconn->client->server_multi_channel_enabled) {
-		struct ctdb_public_ip_list_old *ips = NULL;
-
-		ret = ctdbd_control_get_public_ips(cconn,
-						   0, /* flags */
-						   state,
-						   &ips);
-		if (ret != 0) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		xconn->has_cluster_movable_ip = ctdbd_find_in_public_ips(ips, srv);
-		TALLOC_FREE(ips);
-		if (xconn->has_cluster_movable_ip) {
+		ret = ctdbd_public_ip_foreach(cconn,
+					      match_cluster_movable_ip,
+					      srv);
+		if (ret == EREMOTEIO) {
+			xconn->has_cluster_movable_ip = true;
 			DBG_DEBUG("cluster movable IP on %s\n",
 				  smbXsrv_connection_dbg(xconn));
+		} else if (ret != 0) {
+			DBG_ERR("failed to iterate cluster IPs: %s\n",
+				strerror(ret));
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 	}
 

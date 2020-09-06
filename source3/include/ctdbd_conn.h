@@ -85,13 +85,20 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 				 void *private_data),
 		       void *private_data);
 
-struct ctdb_public_ip_list_old;
-int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
-				 uint32_t flags,
-				 TALLOC_CTX *mem_ctx,
-				 struct ctdb_public_ip_list_old **_ips);
-bool ctdbd_find_in_public_ips(const struct ctdb_public_ip_list_old *ips,
-			      const struct sockaddr_storage *ip);
+/*
+ * call @cb for each public IP. If @cb returns non-zero, then break the loop
+ * and propagate the return value upwards.
+ * @returns: 0 on success, where all @cb invocations also returned zero
+ *	     ENOMEM on memory allocation failure
+ *	     EIO on ctdbd connection failure
+ *	     @cb() return value if non-zero
+ */
+int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
+			    int (*cb)(uint32_t total_ip_count,
+				      const struct sockaddr_storage *ip,
+				      bool is_movable_ip,
+				      void *private_data),
+			    void *private_data);
 
 int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,

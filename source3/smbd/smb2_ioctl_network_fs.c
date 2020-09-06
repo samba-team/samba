@@ -291,6 +291,70 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 	return status;
 }
 
+struct cluster_movable_ips {
+	uint32_t array_len;
+	uint32_t array_index;
+	struct sockaddr_storage *ips;
+};
+
+static int stash_cluster_movable_ips(uint32_t total_ip_count,
+				     const struct sockaddr_storage *ip,
+				     bool is_movable_ip,
+				     void *private_data)
+{
+	struct cluster_movable_ips *cluster_movable_ips
+		= talloc_get_type_abort(private_data,
+					struct cluster_movable_ips);
+
+	if (!is_movable_ip) {
+		return 0;
+	}
+
+	if (cluster_movable_ips->array_len == 0) {
+		SMB_ASSERT(total_ip_count < INT_MAX);
+		cluster_movable_ips->ips
+			= talloc_zero_array(cluster_movable_ips,
+					    struct sockaddr_storage,
+					    total_ip_count);
+		if (cluster_movable_ips->ips == NULL) {
+			return ENOMEM;
+		}
+		cluster_movable_ips->array_len = total_ip_count;
+	}
+
+	SMB_ASSERT(cluster_movable_ips->array_index
+					< cluster_movable_ips->array_len);
+
+	cluster_movable_ips->ips[cluster_movable_ips->array_index] = *ip;
+	cluster_movable_ips->array_index++;
+
+	return 0;
+}
+
+static bool find_in_cluster_movable_ips(
+		struct cluster_movable_ips *cluster_movable_ips,
+		const struct sockaddr_storage *ifss)
+{
+	struct samba_sockaddr srv_ip = {
+		.u = {
+			.ss = *ifss,
+		},
+	};
+	int i;
+
+	for (i = 0; i < cluster_movable_ips->array_index; i++) {
+		struct samba_sockaddr pub_ip = {
+			.u = {
+				.ss = cluster_movable_ips->ips[i],
+			},
+		};
+		if (sockaddr_equal(&pub_ip.u.sa, &srv_ip.u.sa)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct smbXsrv_connection *xconn,
@@ -304,7 +368,8 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 	size_t i;
 	size_t num_ifaces = iface_count();
 	enum ndr_err_code ndr_err;
-	struct ctdb_public_ip_list_old *ips = NULL;
+	struct cluster_movable_ips *cluster_movable_ips = NULL;
+	int ret;
 
 	if (in_input->length != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -312,23 +377,27 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 
 	*out_output = data_blob_null;
 
-	if (lp_clustering()) {
-		int ret;
-
-		ret = ctdbd_control_get_public_ips(messaging_ctdb_connection(),
-						   0, /* flags */
-						   mem_ctx,
-						   &ips);
-		if (ret != 0) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-
 	array = talloc_zero_array(mem_ctx,
 				  struct fsctl_net_iface_info,
 				  num_ifaces);
 	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (lp_clustering()) {
+		cluster_movable_ips = talloc_zero(array,
+						  struct cluster_movable_ips);
+		if (cluster_movable_ips == NULL) {
+			TALLOC_FREE(array);
+			return NT_STATUS_NO_MEMORY;
+		}
+		ret = ctdbd_public_ip_foreach(messaging_ctdb_connection(),
+					      stash_cluster_movable_ips,
+					      cluster_movable_ips);
+		if (ret != 0) {
+			TALLOC_FREE(array);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	for (i=0; i < num_ifaces; i++) {
@@ -340,7 +409,6 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 		struct tsocket_address *a = NULL;
 		char *addr;
 		bool ok;
-		int ret;
 
 		ret = tsocket_address_bsd_from_sockaddr(array,
 					ifsa, sizeof(struct sockaddr_storage),
@@ -362,13 +430,13 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (ips != NULL) {
-			bool is_public_ip;
-
-			is_public_ip = ctdbd_find_in_public_ips(ips, ifss);
-			if (is_public_ip) {
+		if (cluster_movable_ips != NULL) {
+			bool is_movable_ip = find_in_cluster_movable_ips(
+						cluster_movable_ips,
+						ifss);
+			if (is_movable_ip) {
 				DBG_DEBUG("Interface [%s] - "
-					  "has public ip - "
+					  "has movable public ip - "
 					  "skipping address [%s].\n",
 					  iface->name, addr);
 				continue;

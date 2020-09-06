@@ -1179,10 +1179,10 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	return 0;
 }
 
-int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
-				 uint32_t flags,
-				 TALLOC_CTX *mem_ctx,
-				 struct ctdb_public_ip_list_old **_ips)
+static int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
+					uint32_t flags,
+					TALLOC_CTX *mem_ctx,
+					struct ctdb_public_ip_list_old **_ips)
 {
 	struct ctdb_public_ip_list_old *ips = NULL;
 	TDB_DATA outdata;
@@ -1225,27 +1225,44 @@ int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
 	return 0;
 }
 
-bool ctdbd_find_in_public_ips(const struct ctdb_public_ip_list_old *ips,
-			      const struct sockaddr_storage *ip)
+int ctdbd_public_ip_foreach(struct ctdbd_connection *conn,
+			    int (*cb)(uint32_t total_ip_count,
+				      const struct sockaddr_storage *ip,
+				      bool is_movable_ip,
+				      void *private_data),
+			    void *private_data)
 {
 	uint32_t i;
+	struct ctdb_public_ip_list_old *ips = NULL;
+	int ret = ENOMEM;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	ret = ctdbd_control_get_public_ips(conn, 0, frame, &ips);
+	if (ret < 0) {
+		ret = EIO;
+		goto out_free;
+	}
 
 	for (i=0; i < ips->num; i++) {
 		struct samba_sockaddr tmp = {
 			.u = {
-				.ss = *ip,
+				.sa = ips->ips[i].addr.sa,
 			},
 		};
-		bool match;
 
-		match = sockaddr_equal(&ips->ips[i].addr.sa,
-				       &tmp.u.sa);
-		if (match) {
-			return true;
+		ret = cb(ips->num,
+			 &tmp.u.ss,
+			 true, /* all ctdb public ips are movable */
+			 private_data);
+		if (ret != 0) {
+			goto out_free;
 		}
 	}
 
-	return false;
+	ret = 0;
+out_free:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 /*
