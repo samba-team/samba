@@ -4926,51 +4926,51 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 
-	torture_rpc_tcase_add_test(tcase, "Broken RPC binding handle",
-				   test_netr_broken_binding_handle);
+	torture_rpc_tcase_add_test_creds(tcase, "SetupCredentialsDowngrade", test_SetupCredentialsDowngrade);
+	torture_rpc_tcase_add_test(tcase, "lsa_over_netlogon", test_lsa_over_netlogon);
 
-	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
-	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
-	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
-	torture_rpc_tcase_add_test_creds(tcase, "invalidAuthenticate2", test_invalidAuthenticate2);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeGlobal", test_ServerReqChallengeGlobal);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal", test_ServerReqChallengeReuseGlobal);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal2", test_ServerReqChallengeReuseGlobal2);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal3", test_ServerReqChallengeReuseGlobal3);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal4", test_ServerReqChallengeReuseGlobal4);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuse", test_ServerReqChallengeReuse);
-	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
-	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
-	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2_AES", test_SetPassword2_AES);
-	torture_rpc_tcase_add_test_creds(tcase, "GetPassword", test_GetPassword);
-	torture_rpc_tcase_add_test_creds(tcase, "GetTrustPasswords", test_GetTrustPasswords);
-	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
-	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync", test_DatabaseSync);
-	torture_rpc_tcase_add_test_creds(tcase, "DatabaseDeltas", test_DatabaseDeltas);
-	torture_rpc_tcase_add_test_creds(tcase, "DatabaseRedo", test_DatabaseRedo);
-	torture_rpc_tcase_add_test_creds(tcase, "AccountDeltas", test_AccountDeltas);
-	torture_rpc_tcase_add_test_creds(tcase, "AccountSync", test_AccountSync);
-	torture_rpc_tcase_add_test(tcase, "GetDcName", test_GetDcName);
-	torture_rpc_tcase_add_test(tcase, "ManyGetDCName", test_ManyGetDCName);
-	torture_rpc_tcase_add_test(tcase, "GetAnyDCName", test_GetAnyDCName);
-	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync2", test_DatabaseSync2);
-	torture_rpc_tcase_add_test(tcase, "DsrEnumerateDomainTrusts", test_DsrEnumerateDomainTrusts);
-	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
-	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomainsEx", test_netr_NetrEnumerateTrustedDomainsEx);
+	torture_rpc_tcase_add_test_creds(tcase, "GetForestTrustInformation", test_netr_GetForestTrustInformation);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo_AES", test_netr_ServerGetTrustInfo_AES);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
+	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
+	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
+	torture_rpc_tcase_add_test(tcase, "DsrGetDcSiteCoverageW", test_netr_DsrGetDcSiteCoverageW);
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx2", test_netr_DsRGetDCNameEx2);
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx", test_netr_DsRGetDCNameEx);
+	torture_rpc_tcase_add_test(tcase, "DsRGetDCName", test_netr_DsRGetDCName);
 	test = torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo_async", test_GetDomainInfo_async);
 	test->dangerous = true;
-	torture_rpc_tcase_add_test(tcase, "DsRGetDCName", test_netr_DsRGetDCName);
-	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx", test_netr_DsRGetDCNameEx);
-	torture_rpc_tcase_add_test(tcase, "DsRGetDCNameEx2", test_netr_DsRGetDCNameEx2);
-	torture_rpc_tcase_add_test(tcase, "DsrGetDcSiteCoverageW", test_netr_DsrGetDcSiteCoverageW);
-	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
-	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
-	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo_AES", test_netr_ServerGetTrustInfo_AES);
-	torture_rpc_tcase_add_test_creds(tcase, "GetForestTrustInformation", test_netr_GetForestTrustInformation);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomainsEx", test_netr_NetrEnumerateTrustedDomainsEx);
+	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
+	torture_rpc_tcase_add_test(tcase, "DsrEnumerateDomainTrusts", test_DsrEnumerateDomainTrusts);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync2", test_DatabaseSync2);
+	torture_rpc_tcase_add_test(tcase, "GetAnyDCName", test_GetAnyDCName);
+	torture_rpc_tcase_add_test(tcase, "ManyGetDCName", test_ManyGetDCName);
+	torture_rpc_tcase_add_test(tcase, "GetDcName", test_GetDcName);
+	torture_rpc_tcase_add_test_creds(tcase, "AccountSync", test_AccountSync);
+	torture_rpc_tcase_add_test_creds(tcase, "AccountDeltas", test_AccountDeltas);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseRedo", test_DatabaseRedo);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseDeltas", test_DatabaseDeltas);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync", test_DatabaseSync);
+	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
+	torture_rpc_tcase_add_test_creds(tcase, "GetTrustPasswords", test_GetTrustPasswords);
+	torture_rpc_tcase_add_test_creds(tcase, "GetPassword", test_GetPassword);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2_AES", test_SetPassword2_AES);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuse", test_ServerReqChallengeReuse);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal4", test_ServerReqChallengeReuseGlobal4);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal3", test_ServerReqChallengeReuseGlobal3);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal2", test_ServerReqChallengeReuseGlobal2);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeReuseGlobal", test_ServerReqChallengeReuseGlobal);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerReqChallengeGlobal", test_ServerReqChallengeGlobal);
+	torture_rpc_tcase_add_test_creds(tcase, "invalidAuthenticate2", test_invalidAuthenticate2);
+	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
+	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
+	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
 
-	torture_rpc_tcase_add_test(tcase, "lsa_over_netlogon", test_lsa_over_netlogon);
-	torture_rpc_tcase_add_test_creds(tcase, "SetupCredentialsDowngrade", test_SetupCredentialsDowngrade);
+	torture_rpc_tcase_add_test(tcase, "Broken RPC binding handle",
+				   test_netr_broken_binding_handle);
 
 	return suite;
 }
