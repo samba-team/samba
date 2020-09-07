@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release condidate of Samba 4.13.  This is *not*
+This is the fourth release condidate of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -85,6 +85,22 @@ smb.conf changes
   client NTLMv2 auth                 Deprecated                 yes
   client lanman auth                 Deprecated                 no
   client use spnego                  Deprecated                 yes
+
+
+CHANGES SINCE 4.13.0rc3
+=======================
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 14437: build: Toggle vfs_snapper using "--with-shared-modules".
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14465: idmap_ad does not deal properly with a RFC4511 section 4.4.1
+     response.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14428: PANIC: Assert failed in get_lease_type().
+   * BUG 14465: idmap_ad does not deal properly with a RFC4511 section 4.4.1
+     response.
 
 
 CHANGES SINCE 4.13.0rc2
