@@ -6680,7 +6680,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 					  buffer.data,
 					  buffer.length);
 		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTSHARENAME));
+			DBG_ERR("Failed to set %s\n", SPOOL_REG_PRINTERNAME);
 			goto done;
 		}
 
