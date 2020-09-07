@@ -860,6 +860,19 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			status = dcerpc_winreg_set_sz(tmp_ctx,
 						      winreg_handle,
 						      &key_hnd,
+						      SPOOL_REG_PRINTSHARENAME,
+						      sharename,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			status = dcerpc_winreg_set_sz(tmp_ctx,
+						      winreg_handle,
+						      &key_hnd,
 						      SPOOL_REG_SHORTSERVERNAME,
 						      lp_netbios_name(),
 						      &result);
