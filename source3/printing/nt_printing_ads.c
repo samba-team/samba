@@ -345,6 +345,7 @@ static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 	char *info_str;
 
 	ads_mod_str(ctx, mods, SPOOL_REG_PRINTERNAME, info2->sharename);
+	ads_mod_str(ctx, mods, SPOOL_REG_PRINTSHARENAME, info2->sharename);
 	ads_mod_str(ctx, mods, SPOOL_REG_SHORTSERVERNAME, lp_netbios_name());
 	ads_mod_str(ctx, mods, SPOOL_REG_SERVERNAME, get_mydnsfullname());
 
