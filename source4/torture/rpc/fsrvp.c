@@ -945,8 +945,6 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "share_sd",
 				   test_fsrvp_share_sd);
-	torture_rpc_tcase_add_test(tcase, "seq_timeout",
-				   test_fsrvp_seq_timeout);
 	torture_rpc_tcase_add_test(tcase, "enum_created",
 				   test_fsrvp_enum_created);
 	torture_rpc_tcase_add_test(tcase, "sc_share_io",
@@ -963,6 +961,8 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 				   test_fsrvp_get_version);
 	torture_rpc_tcase_add_test(tcase, "is_path_supported",
 				   test_fsrvp_is_path_supported);
+	torture_rpc_tcase_add_test(tcase, "seq_timeout",
+				   test_fsrvp_seq_timeout);
 
 	return suite;
 }
