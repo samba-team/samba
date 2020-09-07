@@ -39,20 +39,21 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	NTSTATUS nt_status;
 	struct cli_credentials *server_credentials;
 
-	server_credentials = cli_credentials_init(req);
-	if (!server_credentials) {
-		smbsrv_terminate_connection(req->smb_conn, "Failed to init server credentials\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	cli_credentials_set_conf(server_credentials, req->smb_conn->lp_ctx);
-	nt_status = cli_credentials_set_machine_account(server_credentials, req->smb_conn->lp_ctx);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));
+	server_credentials =
+		cli_credentials_init_server(req, req->smb_conn->lp_ctx);
+	if (server_credentials == NULL) {
+		DBG_DEBUG("Failed to obtain server credentials, "
+			  "perhaps a standalone server?\n");
 		/*
-		 * We keep the server_credentials as anonymous
-		 * this is required for the spoolss.notify test
+		 * Create anon server credentials for for the
+		 * spoolss.notify test.
 		 */
+		server_credentials = cli_credentials_init_anon(req);
+		if (server_credentials == NULL) {
+			smbsrv_terminate_connection(req->smb_conn,
+				"Failed to init server credentials\n");
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
