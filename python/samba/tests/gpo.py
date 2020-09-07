@@ -54,23 +54,22 @@ def days2rel_nttime(val):
     sam_add = 10000000
     return -(val * seconds * minutes * hours * sam_add)
 
-def gpupdate_force(lp):
+def gpupdate(lp, arg):
     gpupdate = lp.get('gpo update command')
-    gpupdate.append('--force')
+    gpupdate.append(arg)
 
-    return Popen(gpupdate, stdout=PIPE, stderr=PIPE).wait()
+    p = Popen(gpupdate, stdout=PIPE, stderr=PIPE)
+    stdoutdata, stderrdata = p.communicate()
+    return p.returncode
+
+def gpupdate_force(lp):
+    return gpupdate(lp, '--force')
 
 def gpupdate_unapply(lp):
-    gpupdate = lp.get('gpo update command')
-    gpupdate.append('--unapply')
-
-    return Popen(gpupdate, stdout=PIPE, stderr=PIPE).wait()
+    return gpupdate(lp, '--unapply')
 
 def rsop(lp):
-    gpupdate = lp.get('gpo update command')
-    gpupdate.append('--rsop')
-
-    return Popen(gpupdate, stdout=PIPE).wait()
+    return gpupdate(lp, '--rsop')
 
 def stage_file(path, data):
     dirname = os.path.dirname(path)
