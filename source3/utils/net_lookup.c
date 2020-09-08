@@ -183,7 +183,7 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 {
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	struct sockaddr_storage ss;
 	char *pdc_str = NULL;
 	const char *domain = NULL;
@@ -214,10 +214,10 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(talloc_tos(), domain);
-	status = get_sorted_dc_list(talloc_tos(),
+	status = get_sorted_dc_list_sa(talloc_tos(),
 				domain,
 				sitename,
-				&ip_list,
+				&sa_list,
 				&count,
 				sec_ads);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -227,11 +227,11 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 	}
 	TALLOC_FREE(sitename);
 	for (i=0;i<count;i++) {
-		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
+		print_sockaddr(addr, sizeof(addr), &sa_list[i].u.ss);
 		if (!strequal(pdc_str, addr))
 			d_printf("%s\n", addr);
 	}
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 	SAFE_FREE(pdc_str);
 	return 0;
 }
