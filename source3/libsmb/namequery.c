@@ -1211,7 +1211,7 @@ static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
   that is not reachable from our subnet as the first match
 */
 
-static void sort_addr_list(struct sockaddr_storage *sslist, int count)
+static void sort_addr_list(struct sockaddr_storage *sslist, size_t count)
 {
 	if (count <= 1) {
 		return;
@@ -1220,7 +1220,7 @@ static void sort_addr_list(struct sockaddr_storage *sslist, int count)
 	TYPESAFE_QSORT(sslist, count, addr_compare);
 }
 
-static void sort_service_list(struct ip_service *servlist, int count)
+static void sort_service_list(struct ip_service *servlist, size_t count)
 {
 	if (count <= 1) {
 		return;
