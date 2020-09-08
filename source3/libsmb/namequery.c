@@ -2854,7 +2854,9 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 	struct addrinfo *ailist = NULL;
 	struct addrinfo *res = NULL;
 	int ret = -1;
-	int i = 0;
+	size_t i = 0;
+	size_t ret_count = 0;
+	struct sockaddr_storage *iplist = NULL;
 
 	if ( name_type != 0x20 && name_type != 0x0) {
 		DEBUG(5, ("resolve_hosts: not appropriate "
@@ -2862,9 +2864,6 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 			name_type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	*return_iplist = NULL;
-	*return_count = 0;
 
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x%x>\n",
 				name, name_type));
@@ -2903,26 +2902,36 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		*return_count += 1;
+		/* wrap check. */
+		if (ret_count + 1 < ret_count) {
+			freeaddrinfo(ailist);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ret_count += 1;
 
-		*return_iplist = talloc_realloc(
-			mem_ctx, *return_iplist, struct sockaddr_storage,
-			*return_count);
-		if (!*return_iplist) {
+		iplist = talloc_realloc(
+			mem_ctx, iplist, struct sockaddr_storage,
+			ret_count);
+		if (iplist == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			freeaddrinfo(ailist);
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*return_iplist)[i] = ss;
+		iplist[i] = ss;
 		i++;
 	}
 	if (ailist) {
 		freeaddrinfo(ailist);
 	}
-	if (*return_count) {
-		return NT_STATUS_OK;
+	if (ret_count == 0) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	return NT_STATUS_UNSUCCESSFUL;
+	if ((int)ret_count < 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*return_count = (int)ret_count;
+	*return_iplist = iplist;
+	return NT_STATUS_OK;
 }
 
 /********************************************************
