@@ -378,6 +378,46 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
 
+#if 0
+/**********************************************************************
+ send a cldap ping to list of servers, one at a time, until one of
+ them answers it's an ldap server. Record success in the ADS_STRUCT.
+ Take note of and update negative connection cache.
+**********************************************************************/
+
+static NTSTATUS cldap_ping_list_sa(ADS_STRUCT *ads,
+			const char *domain,
+			struct samba_sockaddr *sa_list,
+			size_t count)
+{
+	size_t i;
+	bool ok;
+
+	for (i = 0; i < count; i++) {
+		char server[INET6_ADDRSTRLEN];
+
+		print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
+
+		if (!NT_STATUS_IS_OK(
+			check_negative_conn_cache(domain, server)))
+			continue;
+
+		/* Returns ok only if it matches the correct server type */
+		ok = ads_try_connect(ads, false, &sa_list[i].u.ss);
+
+		if (ok) {
+			return NT_STATUS_OK;
+		}
+
+		/* keep track of failures */
+		add_failed_connection_entry(domain, server,
+					    NT_STATUS_UNSUCCESSFUL);
+	}
+
+	return NT_STATUS_NO_LOGON_SERVERS;
+}
+#endif
+
 /***************************************************************************
  resolve a name and perform an "ldap ping" using NetBIOS and related methods
 ****************************************************************************/
