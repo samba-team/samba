@@ -35,12 +35,12 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 					  const struct sockaddr_storage *addr);
 NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				struct node_status **pnode_status,
-				int *pnum_names,
+				size_t *pnum_names,
 				struct node_status_extra *extra);
 NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
 			   const struct sockaddr_storage *addr,
 			   struct node_status **pnode_status,
-			   int *pnum_names,
+			   size_t *pnum_names,
 			   struct node_status_extra *extra);
 bool name_status_find(const char *q_name,
 			int q_type,

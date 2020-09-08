@@ -114,7 +114,8 @@ static bool do_node_status(const char *name,
 		struct sockaddr_storage *pss)
 {
 	struct nmb_name nname;
-	int count, i, j;
+	size_t count = 0;
+	size_t i, j;
 	struct node_status *addrs;
 	struct node_status_extra extra;
 	fstring cleanname;

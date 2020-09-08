@@ -330,11 +330,11 @@ static int generate_trn_id(void)
 ****************************************************************************/
 
 static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
-				int *num_names,
+				size_t *num_names,
 				struct node_status_extra *extra)
 {
 	struct node_status *ret;
-	int i;
+	size_t i;
 
 	*num_names = CVAL(p,0);
 
@@ -907,13 +907,13 @@ static void node_status_query_done(struct tevent_req *subreq)
 
 NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				struct node_status **pnode_status,
-				int *pnum_names,
+				size_t *pnum_names,
 				struct node_status_extra *extra)
 {
 	struct node_status_query_state *state = tevent_req_data(
 		req, struct node_status_query_state);
 	struct node_status *node_status;
-	int num_names;
+	size_t num_names = 0;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -933,7 +933,7 @@ NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
 			   const struct sockaddr_storage *addr,
 			   struct node_status **pnode_status,
-			   int *pnum_names,
+			   size_t *pnum_names,
 			   struct node_status_extra *extra)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1013,7 +1013,7 @@ bool name_status_find(const char *q_name,
 	char addr[INET6_ADDRSTRLEN];
 	struct node_status *addrs = NULL;
 	struct nmb_name nname;
-	int count = 0, i;
+	size_t count = 0, i;
 	bool result = false;
 	NTSTATUS status;
 
