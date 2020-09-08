@@ -1244,11 +1244,6 @@ sub setup_simpleserver
 	hide files = /hidefile/
 	hide dot files = yes
 
-[enc_desired]
-	path = $prefix_abs/share
-	vfs objects =
-	server smb encrypt = desired
-
 [hidenewfiles]
 	path = $prefix_abs/share
 	hide new files timeout = 5
@@ -2835,7 +2830,13 @@ sub provision($$)
 [delete_readonly]
 	path = $prefix_abs/share
 	delete readonly = yes
+
+[enc_desired]
+	path = $prefix_abs/share
+	vfs objects =
+	server smb encrypt = desired
 	";
+
 	close(CONF);
 
 	my $net = Samba::bindir_path($self, "net");
