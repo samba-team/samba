@@ -346,8 +346,10 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
  Take note of and update negative connection cache.
 **********************************************************************/
 
-static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,const char *domain,
-				struct ip_service *ip_list, int count)
+static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
+			const char *domain,
+			struct ip_service *ip_list,
+			int count)
 {
 	int i;
 	bool ok;
