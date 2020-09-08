@@ -2943,13 +2943,13 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 			    int name_type,
 			    const char *sitename,
 			    struct sockaddr_storage **return_addrs,
-			    int *return_count)
+			    size_t *return_count)
 {
 	int 			i;
 	NTSTATUS  		status;
 	struct dns_rr_srv	*dcs = NULL;
 	int			numdcs = 0;
-	int			numaddrs = 0;
+	size_t			numaddrs = 0;
 	size_t num_srv_addrs = 0;
 	struct sockaddr_storage *srv_addrs = NULL;
 	size_t num_dns_addrs = 0;
@@ -3143,9 +3143,8 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
          */
 
 	numaddrs = num_srv_addrs + num_dns_addrs;
-	/* Wrap check + bloody int conversion check :-(. */
-	if (numaddrs < num_srv_addrs ||
-				numaddrs < 0) {
+	/* Wrap check */
+	if (numaddrs < num_srv_addrs) {
 		TALLOC_FREE(dcs);
 		TALLOC_FREE(srv_addrs);
 		TALLOC_FREE(dns_addrs);
@@ -3392,31 +3391,45 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
+			size_t acount = 0;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     KDC_NAME_TYPE,
 					     sitename,
 					     &ss_list,
-					     &icount);
+					     &acount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
 			/* Ensure we don't namecache
 			 * this with the KDC port. */
 			name_type = KDC_NAME_TYPE;
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)acount;
 			goto done;
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
+			size_t acount = 0;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     name_type,
 					     sitename,
 					     &ss_list,
-					     &icount);
+					     &acount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)acount;
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
 			size_t lmcount = 0;
