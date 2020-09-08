@@ -4212,6 +4212,80 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 }
 
 /*********************************************************************
+ Small wrapper function to get the DC list and sort it if neccessary.
+ Returns a samba_sockaddr array.
+*********************************************************************/
+
+NTSTATUS get_sorted_dc_list_sa(TALLOC_CTX *ctx,
+				const char *domain,
+				const char *sitename,
+				struct samba_sockaddr **sa_list_ret,
+				size_t *ret_count,
+				bool ads_only)
+{
+	bool ordered = false;
+	NTSTATUS status;
+	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
+	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
+	size_t count = 0;
+
+	DBG_INFO("attempting lookup for name %s (sitename %s)\n",
+		domain,
+		sitename ? sitename : "NULL");
+
+	if (ads_only) {
+		lookup_type = DC_ADS_ONLY;
+	}
+
+	status = get_dc_list(ctx,
+			domain,
+			sitename,
+			&ip_list,
+			&count,
+			lookup_type,
+			&ordered);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_LOGON_SERVERS)
+			&& sitename) {
+		DBG_NOTICE("no server for name %s available"
+			" in site %s, fallback to all servers\n",
+			domain,
+			sitename);
+		status = get_dc_list(ctx,
+				domain,
+				NULL,
+				&ip_list,
+				&count,
+				lookup_type,
+				&ordered);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = ip_service_to_samba_sockaddr(ctx,
+					&sa_list,
+					ip_list,
+					count);
+
+	TALLOC_FREE(ip_list);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if (!ordered) {
+		sort_sa_list(sa_list, count);
+	}
+
+	*ret_count = count;
+	*sa_list_ret = sa_list;
+	return status;
+}
+
+/*********************************************************************
  Get the KDC list - re-use all the logic in get_dc_list.
  Returns a samba_sockaddr array.
 *********************************************************************/
