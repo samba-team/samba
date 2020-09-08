@@ -439,14 +439,14 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 				    const char *domain_name,
 				    uint32_t flags,
 				    struct ip_service_name **returned_dclist,
-				    int *returned_count)
+				    size_t *returned_count)
 {
 	NTSTATUS status;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 	struct ip_service *iplist = NULL;
 	size_t i;
 	struct ip_service_name *dclist = NULL;
-	size_t count;
+	size_t count = 0;
 	static const char *resolve_order[] = { "lmhosts", "wins", "bcast", NULL };
 
 	if (flags & DS_PDC_REQUIRED) {
@@ -496,12 +496,6 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(iplist);
 
-	/* Paranoia in casting size_t -> int. */
-	if ((int)count < 0) {
-		TALLOC_FREE(dclist);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	*returned_dclist = dclist;
 	*returned_count = count;
 
@@ -517,7 +511,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 				uint32_t flags,
 				const char *site_name,
 				struct ip_service_name **returned_dclist,
-				int *return_count)
+				size_t *return_count)
 {
 	size_t i;
 	NTSTATUS status;
@@ -769,20 +763,11 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-
-	if ((int)ret_count < 0) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(dclist);
-		TALLOC_FREE(dns_lookups);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-
 	if (ret_count > 0) {
 		TALLOC_FREE(dcs);
 		TALLOC_FREE(dns_lookups);
 		*returned_dclist = dclist;
-		*return_count = (int)ret_count;
+		*return_count = ret_count;
 		return NT_STATUS_OK;
 	}
 
@@ -999,10 +984,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       const char *domain_name,
 			       uint32_t flags,
 			       struct ip_service_name *dclist,
-			       int num_dcs,
+			       size_t num_dcs,
 			       struct netr_DsRGetDCNameInfo **info)
 {
-	int i = 0;
+	size_t i = 0;
 	bool valid_dc = false;
 	struct netlogon_samlogon_response *r = NULL;
 	uint32_t nt_version = NETLOGON_NT_VERSION_5 |
@@ -1061,12 +1046,12 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   const char *domain_name,
 				   uint32_t flags,
 				   struct ip_service_name *dclist,
-				   int num_dcs,
+				   size_t num_dcs,
 				   struct netr_DsRGetDCNameInfo **info)
 {
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
 	NTSTATUS status;
-	int i;
+	size_t i;
 	const char *dc_name = NULL;
 	fstring tmp_dc_name;
 	struct netlogon_samlogon_response *r = NULL;
@@ -1172,7 +1157,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct ip_service_name *dclist = NULL;
-	int num_dcs;
+	size_t num_dcs = 0;
 
 	DEBUG(10,("dsgetdcname_rediscover\n"));
 
