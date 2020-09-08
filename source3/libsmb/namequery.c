@@ -2845,7 +2845,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 			      const char *name,
 			      int name_type,
 			      struct sockaddr_storage **return_iplist,
-			      int *return_count)
+			      size_t *return_count)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
@@ -2926,10 +2926,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 	if (ret_count == 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	if ((int)ret_count < 0) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	*return_count = (int)ret_count;
+	*return_count = ret_count;
 	*return_iplist = iplist;
 	return NT_STATUS_OK;
 }
@@ -3376,14 +3373,21 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 		tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
+			size_t hcount = 0;
 			status = resolve_hosts(talloc_tos(),
 					       name,
 					       name_type,
 					       &ss_list,
-					       &icount);
+					       &hcount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)hcount;
 			goto done;
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
