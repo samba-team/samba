@@ -3247,12 +3247,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	size_t i;
 	size_t nc_count = 0;
 	size_t ret_count = 0;
-	/*
-	 * Integer count of addresses returned from resolve_XXX()
-	 * functions. This will go away when all of them return
-	 * size_t.
-	*/
-	int icount = 0;
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
@@ -3372,86 +3366,57 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 		tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-			size_t hcount = 0;
 			status = resolve_hosts(talloc_tos(),
 					       name,
 					       name_type,
 					       &ss_list,
-					       &hcount);
+					       &ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)hcount;
 			goto done;
 		} else if(strequal( tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
-			size_t acount = 0;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     KDC_NAME_TYPE,
 					     sitename,
 					     &ss_list,
-					     &acount);
+					     &ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
 			/* Ensure we don't namecache
 			 * this with the KDC port. */
 			name_type = KDC_NAME_TYPE;
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)acount;
 			goto done;
 		} else if(strequal( tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
-			size_t acount = 0;
 			status = resolve_ads(talloc_tos(),
 					     name,
 					     name_type,
 					     sitename,
 					     &ss_list,
-					     &acount);
+					     &ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)acount;
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
-			size_t lmcount = 0;
 			status = resolve_lmhosts_file_as_sockaddr(
 				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
 				name,
 				name_type,
 				&ss_list,
-				&lmcount);
+				&ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)lmcount;
 			goto done;
 		} else if (strequal(tok, "wins")) {
-			size_t wcount = 0;
 			/* don't resolve 1D via WINS */
 			if (name_type == 0x1D) {
 				continue;
@@ -3460,34 +3425,21 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 					      name,
 					      name_type,
 					      &ss_list,
-					      &wcount);
+					      &ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)wcount;
 			goto done;
 		} else if (strequal(tok, "bcast")) {
-			size_t bcount = 0;
 			status = name_resolve_bcast(
 						talloc_tos(),
 						name,
 						name_type,
 						&ss_list,
-						&bcount);
+						&ret_count);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
-			/*
-			 * This uglyness will go away once
-			 * all resolve_XXX() return size_t *
-			 * number of addresses.
-			 */
-			icount = (int)bcount;
 			goto done;
 		} else {
 			DBG_ERR("unknown name switch type %s\n",
@@ -3504,12 +3456,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 
   done:
 
-	/* Paranoia. */
-	if (icount < 0) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	/*
 	 * convert_ss2service() leaves the correct
 	 * count to return after removing zero addresses
@@ -3518,7 +3464,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	ok = convert_ss2service(frame,
 				&iplist,
 				ss_list,
-				icount,
+				ret_count,
 				&ret_count);
 	if (!ok) {
 		TALLOC_FREE(iplist);
