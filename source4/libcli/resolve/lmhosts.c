@@ -53,7 +53,7 @@ static struct composite_context *resolve_name_lmhosts_send(
 	struct composite_context *c;
 	struct resolve_lmhosts_state *state;
 	struct sockaddr_storage *resolved_iplist;
-	int resolved_count, i;
+	size_t resolved_count = 0, i;
 
 	if (event_ctx == NULL) {
 		return NULL;

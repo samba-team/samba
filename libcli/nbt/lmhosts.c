@@ -164,7 +164,7 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 					  const char *name,
 					  int name_type,
 					  struct sockaddr_storage **return_iplist,
-					  int *return_count)
+					  size_t *return_count)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
@@ -234,11 +234,6 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 			break;
 	}
 
-	if ((int)ret_count < 0) {
-		TALLOC_FREE(ctx);
-		endlmhosts(fp);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 	*return_count = ret_count;
 	*return_iplist = talloc_move(mem_ctx, &iplist);
 	TALLOC_FREE(ctx);

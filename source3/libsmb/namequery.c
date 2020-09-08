@@ -3406,16 +3406,23 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 			}
 			goto done;
 		} else if (strequal(tok, "lmhosts")) {
+			size_t lmcount = 0;
 			status = resolve_lmhosts_file_as_sockaddr(
 				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
 				name,
 				name_type,
 				&ss_list,
-				&icount);
+				&lmcount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)lmcount;
 			goto done;
 		} else if (strequal(tok, "wins")) {
 			size_t wcount = 0;

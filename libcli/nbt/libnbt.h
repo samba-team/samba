@@ -372,6 +372,6 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 					  const char *name,
 					  int name_type,
 					  struct sockaddr_storage **return_iplist,
-					  int *return_count);
+					  size_t *return_count);
 
 #endif /* __LIBNBT_H__ */
