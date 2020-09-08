@@ -116,11 +116,6 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 			struct ip_service **ip_list_ret,
 			size_t *ret_count,
 			bool ads_only);
-NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
-			const char *realm,
-			const char *sitename,
-			struct ip_service **ip_list_ret,
-			size_t *ret_count);
 NTSTATUS get_kdc_list_sa(TALLOC_CTX *ctx,
 			const char *realm,
 			const char *sitename,

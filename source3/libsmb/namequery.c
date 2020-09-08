@@ -4212,44 +4212,6 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 }
 
 /*********************************************************************
- Talloc version.
- Get the KDC list - re-use all the logic in get_dc_list.
-*********************************************************************/
-
-NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
-			const char *realm,
-			const char *sitename,
-			struct ip_service **ip_list_ret,
-			size_t *ret_count)
-{
-	size_t count = 0;
-	struct ip_service *ip_list = NULL;
-	bool ordered = false;
-	NTSTATUS status;
-
-	status = get_dc_list(ctx,
-			realm,
-			sitename,
-			&ip_list,
-			&count,
-			DC_KDC_ONLY,
-			&ordered);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* only sort if we don't already have an ordered list */
-	if (!ordered ) {
-		sort_service_list(ip_list, count);
-	}
-
-	*ret_count = count;
-	*ip_list_ret = ip_list;
-	return status;
-}
-
-/*********************************************************************
  Get the KDC list - re-use all the logic in get_dc_list.
  Returns a samba_sockaddr array.
 *********************************************************************/
