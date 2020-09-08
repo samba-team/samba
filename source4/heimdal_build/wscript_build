@@ -382,12 +382,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         ../heimdal_build/replace.c
     '''
 
-    if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
-        ROKEN_HOSTCC_SOURCE = ROKEN_COMMON_SOURCE + '''
-            ../../lib/replace/closefrom.c
-        '''
-    else:
-        ROKEN_HOSTCC_SOURCE = ROKEN_COMMON_SOURCE
+    ROKEN_HOSTCC_SOURCE = ROKEN_COMMON_SOURCE
 
     ROKEN_SOURCE = ROKEN_COMMON_SOURCE + '''
         lib/roken/resolve.c
