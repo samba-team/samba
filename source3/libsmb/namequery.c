@@ -1229,7 +1229,6 @@ static void sort_service_list(struct ip_service *servlist, size_t count)
 	TYPESAFE_QSORT(servlist, count, ip_service_compare);
 }
 
-#if 0
 static int samba_sockaddr_compare(struct samba_sockaddr *sa1,
 				struct samba_sockaddr *sa2)
 {
@@ -1244,7 +1243,6 @@ static void sort_sa_list(struct samba_sockaddr *salist, size_t count)
 
 	TYPESAFE_QSORT(salist, count, samba_sockaddr_compare);
 }
-#endif
 
 /**********************************************************************
  Remove any duplicate address/port pairs in the list
@@ -4248,5 +4246,55 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 
 	*ret_count = count;
 	*ip_list_ret = ip_list;
+	return status;
+}
+
+/*********************************************************************
+ Get the KDC list - re-use all the logic in get_dc_list.
+ Returns a samba_sockaddr array.
+*********************************************************************/
+
+NTSTATUS get_kdc_list_sa(TALLOC_CTX *ctx,
+			const char *realm,
+			const char *sitename,
+			struct samba_sockaddr **sa_list_ret,
+			size_t *ret_count)
+{
+	size_t count = 0;
+	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
+	bool ordered = false;
+	NTSTATUS status;
+
+	status = get_dc_list(ctx,
+			realm,
+			sitename,
+			&ip_list,
+			&count,
+			DC_KDC_ONLY,
+			&ordered);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = ip_service_to_samba_sockaddr(ctx,
+					&sa_list,
+					ip_list,
+					count);
+
+	TALLOC_FREE(ip_list);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* only sort if we don't already have an ordered list */
+	if (!ordered ) {
+		sort_sa_list(sa_list, count);
+	}
+
+	*ret_count = count;
+	*sa_list_ret = sa_list;
 	return status;
 }
