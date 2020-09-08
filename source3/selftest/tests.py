@@ -1056,6 +1056,12 @@ plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                smbclient3])
 
+for env in ['fileserver', 'simpleserver']:
+    plantestsuite("samba3.blackbox.smbclient.encryption", env,
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_encryption.sh"),
+                   "$USERNAME", "$PASSWORD", "$SERVER",
+                   smbclient3, env])
+
 plantestsuite("samba3.blackbox.rpcclient_netsessenum", "ad_member",
               [os.path.join(samba3srcdir,
                             "script/tests/test_rpcclient_netsessenum.sh"),
