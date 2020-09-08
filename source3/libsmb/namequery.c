@@ -4216,7 +4216,7 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
  Returns a samba_sockaddr array.
 *********************************************************************/
 
-NTSTATUS get_kdc_list_sa(TALLOC_CTX *ctx,
+NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 			const char *realm,
 			const char *sitename,
 			struct samba_sockaddr **sa_list_ret,

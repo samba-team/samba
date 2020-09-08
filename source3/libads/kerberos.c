@@ -454,13 +454,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	 */
 
 	if (sitename) {
-		status = get_kdc_list_sa(talloc_tos(),
+		status = get_kdc_list(talloc_tos(),
 					realm,
 					sitename,
 					&ip_sa_site,
 					&count_site);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("get_kdc_list_sa fail %s\n",
+			DBG_ERR("get_kdc_list fail %s\n",
 				nt_errstr(status));
 			TALLOC_FREE(kdc_str);
 			goto out;
@@ -472,13 +472,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	/* Get all KDC's. */
 
-	status = get_kdc_list_sa(talloc_tos(),
+	status = get_kdc_list(talloc_tos(),
 					realm,
 					NULL,
 					&ip_sa_nonsite,
 					&count_nonsite);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("get_kdc_list_sa (site-less) fail %s\n",
+		DBG_ERR("get_kdc_list (site-less) fail %s\n",
 			nt_errstr(status));
 		TALLOC_FREE(kdc_str);
 		goto out;
