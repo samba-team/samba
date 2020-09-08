@@ -349,9 +349,9 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 			const char *domain,
 			struct ip_service *ip_list,
-			int count)
+			size_t count)
 {
-	int i;
+	size_t i;
 	bool ok;
 
 	for (i = 0; i < count; i++) {
