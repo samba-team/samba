@@ -1282,11 +1282,11 @@ size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count )
 	return count;
 }
 
-static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
+static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ip_service *iplist_new = talloc_array(frame, struct ip_service, count);
-	int i, j;
+	size_t i, j;
 
 	if (iplist_new == NULL) {
 		TALLOC_FREE(frame);
