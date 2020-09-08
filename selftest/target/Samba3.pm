@@ -1180,7 +1180,7 @@ sub setup_simpleserver
 	ntlm auth = yes
 	vfs objects = xattr_tdb streams_depot
 	change notify = no
-	smb encrypt = off
+	server smb encrypt = off
 
 [vfs_aio_pthread]
 	path = $prefix_abs/share
@@ -1247,7 +1247,7 @@ sub setup_simpleserver
 [enc_desired]
 	path = $prefix_abs/share
 	vfs objects =
-	smb encrypt = desired
+	server smb encrypt = desired
 
 [hidenewfiles]
 	path = $prefix_abs/share
@@ -2353,7 +2353,7 @@ sub provision($$)
 [tmpenc]
 	path = $shrdir
 	comment = encrypt smb username is [%U]
-	smb encrypt = required
+	server smb encrypt = required
 	vfs objects = dirsort
 [tmpguest]
 	path = $shrdir
