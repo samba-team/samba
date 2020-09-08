@@ -378,7 +378,6 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
 
-#if 0
 /**********************************************************************
  send a cldap ping to list of servers, one at a time, until one of
  them answers it's an ldap server. Record success in the ADS_STRUCT.
@@ -416,7 +415,6 @@ static NTSTATUS cldap_ping_list_sa(ADS_STRUCT *ads,
 
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
-#endif
 
 /***************************************************************************
  resolve a name and perform an "ldap ping" using NetBIOS and related methods
@@ -427,16 +425,16 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 {
 	size_t i;
 	size_t count = 0;
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	NTSTATUS status;
 
 	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
 		  domain));
 
-	status = get_sorted_dc_list(talloc_tos(),
+	status = get_sorted_dc_list_sa(talloc_tos(),
 				domain,
 				NULL,
-				&ip_list,
+				&sa_list,
 				&count,
 				false);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -449,7 +447,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 		for (i = 0; i < count; ++i) {
 			char server[INET6_ADDRSTRLEN];
 
-			print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+			print_sockaddr(server, sizeof(server), &sa_list[i].u.ss);
 
 			if(!NT_STATUS_IS_OK(
 				check_negative_conn_cache(realm, server))) {
@@ -462,9 +460,9 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 		}
 	}
 
-	status = cldap_ping_list(ads, domain, ip_list, count);
+	status = cldap_ping_list_sa(ads, domain, sa_list, count);
 
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 
 	return status;
 }
