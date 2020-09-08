@@ -340,6 +340,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	return ret;
 }
 
+#if 0
 /**********************************************************************
  send a cldap ping to list of servers, one at a time, until one of
  them answers it's an ldap server. Record success in the ADS_STRUCT.
@@ -377,6 +378,7 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 
 	return NT_STATUS_NO_LOGON_SERVERS;
 }
+#endif
 
 /**********************************************************************
  send a cldap ping to list of servers, one at a time, until one of
@@ -476,26 +478,26 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 				     const char *realm)
 {
 	size_t count = 0;
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	NTSTATUS status;
 
 	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
 		  realm));
 
-	status = get_sorted_dc_list(talloc_tos(),
+	status = get_sorted_dc_list_sa(talloc_tos(),
 				realm,
 				sitename,
-				&ip_list,
+				&sa_list,
 				&count,
 				true);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(ip_list);
+		TALLOC_FREE(sa_list);
 		return status;
 	}
 
-	status = cldap_ping_list(ads, realm, ip_list, count);
+	status = cldap_ping_list_sa(ads, realm, sa_list, count);
 
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 
 	return status;
 }
