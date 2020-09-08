@@ -421,8 +421,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	size_t i;
-	struct ip_service *ip_srv_site = NULL;
-	struct ip_service *ip_srv_nonsite = NULL;
+	struct samba_sockaddr *ip_sa_site = NULL;
+	struct samba_sockaddr *ip_sa_nonsite = NULL;
 	struct samba_sockaddr sa = {0};
 	size_t count_site = 0;
 	size_t count_nonsite;
@@ -454,13 +454,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	 */
 
 	if (sitename) {
-		status = get_kdc_list(talloc_tos(),
+		status = get_kdc_list_sa(talloc_tos(),
 					realm,
 					sitename,
-					&ip_srv_site,
+					&ip_sa_site,
 					&count_site);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("get_kdc_list fail %s\n",
+			DBG_ERR("get_kdc_list_sa fail %s\n",
 				nt_errstr(status));
 			TALLOC_FREE(kdc_str);
 			goto out;
@@ -472,13 +472,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	/* Get all KDC's. */
 
-	status = get_kdc_list(talloc_tos(),
+	status = get_kdc_list_sa(talloc_tos(),
 					realm,
 					NULL,
-					&ip_srv_nonsite,
+					&ip_sa_nonsite,
 					&count_nonsite);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("get_kdc_list (site-less) fail %s\n",
+		DBG_ERR("get_kdc_list_sa (site-less) fail %s\n",
 			nt_errstr(status));
 		TALLOC_FREE(kdc_str);
 		goto out;
@@ -503,34 +503,16 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	num_dcs = 0;
 
 	for (i = 0; i < count_site; i++) {
-		struct samba_sockaddr ip_sa = {0};
-
-		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
-						&ip_srv_site[i].ss);
-		if (!ok) {
-			TALLOC_FREE(kdc_str);
-			goto out;
-		}
-
-		if (!sockaddr_equal(&sa.u.sa, &ip_sa.u.sa)) {
+		if (!sockaddr_equal(&sa.u.sa, &ip_sa_site[i].u.sa)) {
 			add_sockaddr_unique(dc_addrs, &num_dcs,
-					    &ip_srv_site[i].ss);
+					    &ip_sa_site[i].u.ss);
 		}
 	}
 
 	for (i = 0; i < count_nonsite; i++) {
-		struct samba_sockaddr ip_sa = {0};
-
-		ok = sockaddr_storage_to_samba_sockaddr(&ip_sa,
-						&ip_srv_nonsite[i].ss);
-		if (!ok) {
-			TALLOC_FREE(kdc_str);
-			goto out;
-		}
-
-		if (!sockaddr_equal(&sa.u.sa, &ip_sa.u.sa)) {
+		if (!sockaddr_equal(&sa.u.sa, &ip_sa_nonsite[i].u.sa)) {
 			add_sockaddr_unique(dc_addrs, &num_dcs,
-					    &ip_srv_nonsite[i].ss);
+					    &ip_sa_nonsite[i].u.ss);
 		}
 	}
 
@@ -605,8 +587,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 out:
 	DEBUG(10, ("get_kdc_ip_string: Returning %s\n", kdc_str));
 
-	TALLOC_FREE(ip_srv_site);
-	TALLOC_FREE(ip_srv_nonsite);
+	TALLOC_FREE(ip_sa_site);
+	TALLOC_FREE(ip_sa_nonsite);
 	TALLOC_FREE(frame);
 	return result;
 }
