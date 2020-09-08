@@ -1229,6 +1229,23 @@ static void sort_service_list(struct ip_service *servlist, size_t count)
 	TYPESAFE_QSORT(servlist, count, ip_service_compare);
 }
 
+#if 0
+static int samba_sockaddr_compare(struct samba_sockaddr *sa1,
+				struct samba_sockaddr *sa2)
+{
+	return addr_compare(&sa1->u.ss, &sa2->u.ss);
+}
+
+static void sort_sa_list(struct samba_sockaddr *salist, size_t count)
+{
+	if (count <= 1) {
+		return;
+	}
+
+	TYPESAFE_QSORT(salist, count, samba_sockaddr_compare);
+}
+#endif
+
 /**********************************************************************
  Remove any duplicate address/port pairs in the list
  *********************************************************************/
