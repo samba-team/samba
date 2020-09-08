@@ -287,7 +287,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 #ifdef HAVE_KRB5
 	krb5_error_code rc;
 	krb5_context ctx;
-	struct ip_service *kdcs = NULL;
+	struct samba_sockaddr *kdcs = NULL;
 	const char *realm;
 	char **get_host_realms = NULL;
 	size_t num_kdcs = 0;
@@ -316,13 +316,13 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		realm = (const char *) *get_host_realms;
 	}
 
-	status = get_kdc_list(talloc_tos(),
+	status = get_kdc_list_sa(talloc_tos(),
 				realm,
 				NULL,
 				&kdcs,
 				&num_kdcs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("get_kdc_list failed (%s)\n",
+		DBG_WARNING("get_kdc_list_sa failed (%s)\n",
 			nt_errstr(status));
 		krb5_free_host_realm(ctx, get_host_realms);
 		krb5_free_context(ctx);
@@ -332,9 +332,9 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	for (i = 0; i < num_kdcs; i++) {
 		char addr[INET6_ADDRSTRLEN];
 
-		print_sockaddr(addr, sizeof(addr), &kdcs[i].ss);
+		print_sockaddr(addr, sizeof(addr), &kdcs[i].u.ss);
 
-		d_printf("%s:%u\n", addr, kdcs[i].port);
+		d_printf("%s:88\n", addr);
 	}
 
 	krb5_free_host_realm(ctx, get_host_realms);
