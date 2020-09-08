@@ -105,6 +105,7 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 
 	for (i=0; i<reply->ancount; i++) {
 		if (reply->answers[i].rr_type == DNS_QTYPE_SRV) {
+			/* uint16_t can't wrap here. */
 			state->num_srvs += 1;
 		}
 	}
@@ -153,7 +154,7 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 			if (strcmp(srv->hostname, ar->name) != 0) {
 				continue;
 			}
-
+			/* uint16_t can't wrap here. */
 			tmp = talloc_realloc(
 				state->srvs,
 				srv->ss_s,
@@ -200,7 +201,7 @@ NTSTATUS ads_dns_lookup_srv_recv(struct tevent_req *req,
 NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				const char *name,
 				struct dns_rr_srv **dclist,
-				int *numdcs)
+				size_t *numdcs)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -220,7 +221,7 @@ NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 	}
 	status = ads_dns_lookup_srv_recv(req, ctx, dclist, &num_srvs);
 	if (NT_STATUS_IS_OK(status)) {
-		*numdcs = num_srvs;	/* size_t->int */
+		*numdcs = num_srvs;
 	}
 fail:
 	TALLOC_FREE(ev);
@@ -794,7 +795,7 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 {
 	char *name;
 	NTSTATUS status;
-	int num_srvs = 0;
+	size_t num_srvs = 0;
 
 	if ((sitename != NULL) && (strlen(sitename) != 0)) {
 		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.%s._msdcs.%s",
@@ -826,7 +827,11 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 	status = ads_dns_lookup_srv(ctx, name, dclist, &num_srvs);
 
 done:
-	*numdcs = num_srvs; /* automatic conversion size_t->int */
+	/* check overflow size_t -> int */
+	if ((int)num_srvs < 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*numdcs = num_srvs;
 	return status;
 }
 

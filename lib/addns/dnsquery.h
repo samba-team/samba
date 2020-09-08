@@ -36,7 +36,7 @@ NTSTATUS ads_dns_lookup_srv_recv(struct tevent_req *req,
 NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				const char *name,
 				struct dns_rr_srv **dclist,
-				int *numdcs);
+				size_t *numdcs);
 struct tevent_req *ads_dns_lookup_ns_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  const char *name);
