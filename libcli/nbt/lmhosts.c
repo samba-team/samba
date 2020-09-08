@@ -176,9 +176,8 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 	struct sockaddr_storage return_ss;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	TALLOC_CTX *ctx = NULL;
-
-	*return_iplist = NULL;
-	*return_count = 0;
+	size_t ret_count = 0;
+	struct sockaddr_storage *iplist = NULL;
 
 	DEBUG(3,("resolve_lmhosts: "
 		"Attempting lmhosts lookup for name %s<0x%x>\n",
@@ -207,19 +206,25 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		*return_iplist = talloc_realloc(ctx, (*return_iplist),
-						struct sockaddr_storage,
-						(*return_count)+1);
+		/* wrap check. */
+		if (ret_count + 1 < ret_count) {
+			TALLOC_FREE(ctx);
+			endlmhosts(fp);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		iplist = talloc_realloc(ctx, iplist,
+				struct sockaddr_storage,
+				ret_count+1);
 
-		if ((*return_iplist) == NULL) {
+		if (iplist == NULL) {
 			TALLOC_FREE(ctx);
 			endlmhosts(fp);
 			DEBUG(3,("resolve_lmhosts: talloc_realloc fail !\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		(*return_iplist)[*return_count] = return_ss;
-		*return_count += 1;
+		iplist[ret_count] = return_ss;
+		ret_count += 1;
 
 		/* we found something */
 		status = NT_STATUS_OK;
@@ -229,7 +234,13 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(TALLOC_CTX *mem_ctx,
 			break;
 	}
 
-	talloc_steal(mem_ctx, *return_iplist);
+	if ((int)ret_count < 0) {
+		TALLOC_FREE(ctx);
+		endlmhosts(fp);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*return_count = ret_count;
+	*return_iplist = talloc_move(mem_ctx, &iplist);
 	TALLOC_FREE(ctx);
 	endlmhosts(fp);
 	return status;
