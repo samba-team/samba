@@ -560,9 +560,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 	if (server[0] == (char)0) {
 
-                int i;
-                int count;
-                int max_lmb_count;
+                size_t i;
+                size_t count = 0;
+                size_t max_lmb_count;
                 struct sockaddr_storage *ip_list;
                 struct sockaddr_storage server_addr;
                 struct user_auth_info *u_info;
@@ -649,7 +649,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                 	struct cli_state *cli = NULL;
 
 			print_sockaddr(addr, sizeof(addr), &ip_list[i]);
-                        DEBUG(99, ("Found master browser %d of %d: %s\n",
+                        DEBUG(99, ("Found master browser %zu of %zu: %s\n",
                                    i+1, MAX(count, max_lmb_count),
                                    addr));
 

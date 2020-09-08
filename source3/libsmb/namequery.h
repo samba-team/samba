@@ -54,38 +54,38 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 				   bool bcast, bool recurse,
 				   const struct sockaddr_storage *addr);
 NTSTATUS name_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 struct sockaddr_storage **addrs, int *num_addrs,
+			 struct sockaddr_storage **addrs, size_t *num_addrs,
 			 uint8_t *flags);
 NTSTATUS name_query(const char *name, int name_type,
 		    bool bcast, bool recurse,
 		    const struct sockaddr_storage *to_ss,
 		    TALLOC_CTX *mem_ctx,
 		    struct sockaddr_storage **addrs,
-		    int *num_addrs, uint8_t *flags);
+		    size_t *num_addrs, uint8_t *flags);
 struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   const char *name,
 					   int name_type);
 NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				 struct sockaddr_storage **addrs,
-				 int *num_addrs);
+				 size_t *num_addrs);
 NTSTATUS name_resolve_bcast(TALLOC_CTX *mem_ctx,
 			const char *name,
 			int name_type,
 			struct sockaddr_storage **return_iplist,
-			int *return_count);
+			size_t *return_count);
 struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     const char *name,
 				     int name_type);
 NTSTATUS resolve_wins_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct sockaddr_storage **addrs,
-			   int *num_addrs, uint8_t *flags);
+			   size_t *num_addrs, uint8_t *flags);
 NTSTATUS resolve_wins(TALLOC_CTX *mem_ctx,
 		const char *name,
 		int name_type,
 		struct sockaddr_storage **return_iplist,
-		int *return_count);
+		size_t *return_count);
 NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 			       size_t num_dns_names,
 			       const char **dns_lookup_names,

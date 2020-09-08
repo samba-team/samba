@@ -1335,7 +1335,7 @@ struct name_query_state {
 	uint8_t flags;
 
 	struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 };
 
 static bool name_query_validator(struct packet_struct *p, void *private_data);
@@ -1562,6 +1562,10 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		DEBUGADD(2,("%s ",inet_ntoa(ip)));
 
 		state->addrs[state->num_addrs] = addr;
+		/* wrap check. */
+		if (state->num_addrs + 1 < state->num_addrs) {
+			return false;
+		}
 		state->num_addrs += 1;
 	}
 	DEBUGADD(2,(")\n"));
@@ -1618,7 +1622,7 @@ static void name_query_done(struct tevent_req *subreq)
 }
 
 NTSTATUS name_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 struct sockaddr_storage **addrs, int *num_addrs,
+			 struct sockaddr_storage **addrs, size_t *num_addrs,
 			 uint8_t *flags)
 {
 	struct name_query_state *state = tevent_req_data(
@@ -1655,7 +1659,7 @@ NTSTATUS name_query(const char *name, int name_type,
 		    const struct sockaddr_storage *to_ss,
 		    TALLOC_CTX *mem_ctx,
 		    struct sockaddr_storage **addrs,
-		    int *num_addrs, uint8_t *flags)
+		    size_t *num_addrs, uint8_t *flags)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1750,17 +1754,17 @@ struct name_queries_state {
 	bool bcast;
 	bool recurse;
 	const struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 	int wait_msec;
 	int timeout_msec;
 
 	struct tevent_req **subreqs;
-	int num_received;
-	int num_sent;
+	size_t num_received;
+	size_t num_sent;
 
-	int received_index;
+	size_t received_index;
 	struct sockaddr_storage *result_addrs;
-	int num_result_addrs;
+	size_t num_result_addrs;
 	uint8_t flags;
 };
 
@@ -1776,7 +1780,7 @@ static struct tevent_req *name_queries_send(
 	const char *name, int name_type,
 	bool bcast, bool recurse,
 	const struct sockaddr_storage *addrs,
-	int num_addrs, int wait_msec, int timeout_msec)
+	size_t num_addrs, int wait_msec, int timeout_msec)
 {
 	struct tevent_req *req, *subreq;
 	struct name_queries_state *state;
@@ -1837,7 +1841,7 @@ static void name_queries_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct name_queries_state *state = tevent_req_data(
 		req, struct name_queries_state);
-	int i;
+	size_t i;
 	NTSTATUS status;
 
 	status = name_query_recv(subreq, state, &state->result_addrs,
@@ -1854,6 +1858,11 @@ static void name_queries_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(state->subreqs[i]);
 
+	/* wrap check. */
+	if (state->num_received + 1 < state->num_received) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 	state->num_received += 1;
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1912,8 +1921,8 @@ static void name_queries_next(struct tevent_req *subreq)
 
 static NTSTATUS name_queries_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				  struct sockaddr_storage **result_addrs,
-				  int *num_result_addrs, uint8_t *flags,
-				  int *received_index)
+				  size_t *num_result_addrs, uint8_t *flags,
+				  size_t *received_index)
 {
 	struct name_queries_state *state = tevent_req_data(
 		req, struct name_queries_state);
@@ -1944,7 +1953,7 @@ static NTSTATUS name_queries_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 struct name_resolve_bcast_state {
 	struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 };
 
 static void name_resolve_bcast_done(struct tevent_req *subreq);
@@ -1957,7 +1966,7 @@ struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct name_resolve_bcast_state *state;
 	struct sockaddr_storage *bcast_addrs;
-	int i, num_addrs, num_bcast_addrs;
+	size_t i, num_addrs, num_bcast_addrs;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct name_resolve_bcast_state);
@@ -2030,7 +2039,7 @@ static void name_resolve_bcast_done(struct tevent_req *subreq)
 
 NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				 struct sockaddr_storage **addrs,
-				 int *num_addrs)
+				 size_t *num_addrs)
 {
 	struct name_resolve_bcast_state *state = tevent_req_data(
 		req, struct name_resolve_bcast_state);
@@ -2048,7 +2057,7 @@ NTSTATUS name_resolve_bcast(TALLOC_CTX *mem_ctx,
 			const char *name,
 			int name_type,
 			struct sockaddr_storage **return_iplist,
-			int *return_count)
+			size_t *return_count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -2078,12 +2087,12 @@ struct query_wins_list_state {
 	const char *name;
 	uint8_t name_type;
 	struct in_addr *servers;
-	uint32_t num_servers;
+	size_t num_servers;
 	struct sockaddr_storage server;
-	uint32_t num_sent;
+	size_t num_sent;
 
 	struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 	uint8_t flags;
 };
 
@@ -2097,7 +2106,7 @@ static void query_wins_list_done(struct tevent_req *subreq);
 static struct tevent_req *query_wins_list_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct in_addr src_ip, const char *name, uint8_t name_type,
-	struct in_addr *servers, int num_servers)
+	struct in_addr *servers, size_t num_servers)
 {
 	struct tevent_req *req, *subreq;
 	struct query_wins_list_state *state;
@@ -2124,10 +2133,18 @@ static struct tevent_req *query_wins_list_send(
 	subreq = name_query_send(state, state->ev,
 				 state->name, state->name_type,
 				 false, true, &state->server);
-	state->num_sent += 1;
+
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	/* wrap check */
+	if (state->num_sent + 1 < state->num_sent) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	state->num_sent += 1;
 	if (!tevent_req_set_endtime(subreq, state->ev,
 				    timeval_current_ofs(2, 0))) {
 		return tevent_req_post(req, ev);
@@ -2184,7 +2201,7 @@ static void query_wins_list_done(struct tevent_req *subreq)
 static NTSTATUS query_wins_list_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
 				     struct sockaddr_storage **addrs,
-				     int *num_addrs,
+				     size_t *num_addrs,
 				     uint8_t *flags)
 {
 	struct query_wins_list_state *state = tevent_req_data(
@@ -2207,11 +2224,11 @@ static NTSTATUS query_wins_list_recv(struct tevent_req *req,
 }
 
 struct resolve_wins_state {
-	int num_sent;
-	int num_received;
+	size_t num_sent;
+	size_t num_received;
 
 	struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 	uint8_t flags;
 };
 
@@ -2228,7 +2245,7 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 	struct sockaddr_storage src_ss;
 	struct samba_sockaddr src_sa = {0};
 	struct in_addr src_ip;
-	int i, num_wins_tags;
+	size_t i, num_wins_tags;
 	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -2276,13 +2293,18 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 
 	num_wins_tags = 0;
 	while (wins_tags[num_wins_tags] != NULL) {
+		/* wrap check. */
+		if (num_wins_tags + 1 < num_wins_tags) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			goto fail;
+		}
 		num_wins_tags += 1;
 	}
 
 	for (i=0; i<num_wins_tags; i++) {
-		int num_servers, num_alive;
+		size_t num_servers, num_alive;
 		struct in_addr *servers, *alive;
-		int j;
+		size_t j;
 
 		if (!wins_server_tag_ips(wins_tags[i], talloc_tos(),
 					 &servers, &num_servers)) {
@@ -2357,6 +2379,12 @@ static void resolve_wins_done(struct tevent_req *subreq)
 		return;
 	}
 
+	/* wrap check. */
+	if (state->num_received + 1 < state->num_received) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
 	state->num_received += 1;
 
 	if (state->num_received < state->num_sent) {
@@ -2370,7 +2398,7 @@ static void resolve_wins_done(struct tevent_req *subreq)
 
 NTSTATUS resolve_wins_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct sockaddr_storage **addrs,
-			   int *num_addrs, uint8_t *flags)
+			   size_t *num_addrs, uint8_t *flags)
 {
 	struct resolve_wins_state *state = tevent_req_data(
 		req, struct resolve_wins_state);
@@ -2399,7 +2427,7 @@ NTSTATUS resolve_wins(TALLOC_CTX *mem_ctx,
 		const char *name,
 		int name_type,
 		struct sockaddr_storage **return_iplist,
-		int *return_count)
+		size_t *return_count)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -3390,6 +3418,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 			}
 			goto done;
 		} else if (strequal(tok, "wins")) {
+			size_t wcount = 0;
 			/* don't resolve 1D via WINS */
 			if (name_type == 0x1D) {
 				continue;
@@ -3398,21 +3427,34 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 					      name,
 					      name_type,
 					      &ss_list,
-					      &icount);
+					      &wcount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)wcount;
 			goto done;
 		} else if (strequal(tok, "bcast")) {
+			size_t bcount = 0;
 			status = name_resolve_bcast(
 						talloc_tos(),
 						name,
 						name_type,
 						&ss_list,
-						&icount);
+						&bcount);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
+			/*
+			 * This uglyness will go away once
+			 * all resolve_XXX() return size_t *
+			 * number of addresses.
+			 */
+			icount = (int)bcount;
 			goto done;
 		} else {
 			DBG_ERR("unknown name switch type %s\n",

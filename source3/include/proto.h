@@ -650,7 +650,7 @@ char **wins_srv_tags(void);
 void wins_srv_tags_free(char **list);
 struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip);
 bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
-			 struct in_addr **pservers, int *pnum_servers);
+			 struct in_addr **pservers, size_t *pnum_servers);
 unsigned wins_srv_count_tag(const char *tag);
 
 #ifndef ASN1_MAX_OIDS

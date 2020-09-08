@@ -331,10 +331,10 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 }
 
 bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
-			 struct in_addr **pservers, int *pnum_servers)
+			 struct in_addr **pservers, size_t *pnum_servers)
 {
 	const char **list;
-	int i, num_servers;
+	size_t i, num_servers;
 	struct in_addr *servers;
 
 	list = lp_wins_server_list();
@@ -348,6 +348,10 @@ bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
 		struct tagged_ip t_ip;
 		parse_ip(&t_ip, list[i]);
 		if (strcmp(tag, t_ip.tag) == 0) {
+			/* Wrap check. */
+			if (num_servers + 1 < num_servers) {
+				return false;
+			}
 			num_servers += 1;
 		}
 	}

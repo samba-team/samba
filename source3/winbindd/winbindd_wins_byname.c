@@ -28,7 +28,7 @@ struct winbindd_wins_byname_state {
 	struct tevent_context *ev;
 	struct winbindd_request *request;
 	struct sockaddr_storage *addrs;
-	int num_addrs;
+	size_t num_addrs;
 };
 
 static void winbindd_wins_byname_wins_done(struct tevent_req *subreq);
@@ -112,7 +112,7 @@ NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 		req, struct winbindd_wins_byname_state);
 	char *response;
 	NTSTATUS status;
-	int i;
+	size_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;

@@ -159,7 +159,7 @@ static bool do_node_status(const char *name,
 
 static bool query_one(const char *lookup, unsigned int lookup_type)
 {
-	int j, count;
+	size_t j, count = 0;
 	uint8_t flags;
 	struct sockaddr_storage *ip_list=NULL;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
