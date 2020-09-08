@@ -346,7 +346,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
  Take note of and update negative connection cache.
 **********************************************************************/
 
-static NTSTATUS cldap_ping_list_sa(ADS_STRUCT *ads,
+static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 			const char *domain,
 			struct samba_sockaddr *sa_list,
 			size_t count)
@@ -422,7 +422,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 		}
 	}
 
-	status = cldap_ping_list_sa(ads, domain, sa_list, count);
+	status = cldap_ping_list(ads, domain, sa_list, count);
 
 	TALLOC_FREE(sa_list);
 
@@ -455,7 +455,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 		return status;
 	}
 
-	status = cldap_ping_list_sa(ads, realm, sa_list, count);
+	status = cldap_ping_list(ads, realm, sa_list, count);
 
 	TALLOC_FREE(sa_list);
 
