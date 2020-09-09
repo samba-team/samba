@@ -1297,6 +1297,41 @@ size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count )
 	return count;
 }
 
+/**********************************************************************
+ Remove any duplicate address/port pairs in the samba_sockaddr array.
+ *********************************************************************/
+
+size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count )
+{
+	size_t i, j;
+
+	DBG_DEBUG("looking for duplicate address/port pairs\n");
+
+	/* One loop to set duplicates to a zero addr. */
+	for (i=0; i < count; i++) {
+		if (is_zero_addr(&salist[i].u.ss)) {
+			continue;
+		}
+
+		for (j=i+1; j<count; j++) {
+			if (sockaddr_equal(&salist[i].u.sa, &salist[j].u.sa)) {
+				zero_sockaddr(&salist[j].u.ss);
+			}
+		}
+	}
+
+	/* Now remove any addresses set to zero above. */
+	for (i = 0; i < count; i++) {
+		while (i < count &&
+				is_zero_addr(&salist[i].u.ss)) {
+			ARRAY_DEL_ELEMENT(salist, i, count);
+			count--;
+		}
+	}
+
+	return count;
+}
+
 static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();

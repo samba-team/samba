@@ -48,6 +48,7 @@ bool name_status_find(const char *q_name,
 			const struct sockaddr_storage *to_ss,
 			fstring name);
 size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count );
+size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count);
 struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   const char *name, int name_type,
