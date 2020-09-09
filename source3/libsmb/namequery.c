@@ -1182,31 +1182,6 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 	return max_bits2 - max_bits1;
 }
 
-/*******************************************************************
- compare 2 ldap IPs by nearness to our interfaces - used in qsort
-*******************************************************************/
-
-#if 0
-static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
-{
-	int result;
-
-	if ((result = addr_compare(&ss1->ss, &ss2->ss)) != 0) {
-		return result;
-	}
-
-	if (ss1->port > ss2->port) {
-		return 1;
-	}
-
-	if (ss1->port < ss2->port) {
-		return -1;
-	}
-
-	return 0;
-}
-#endif
-
 /*
   sort an IP list so that names that are close to one of our interfaces
   are at the top. This prevents the problem where a WINS server returns an IP
@@ -1221,17 +1196,6 @@ static void sort_addr_list(struct sockaddr_storage *sslist, size_t count)
 
 	TYPESAFE_QSORT(sslist, count, addr_compare);
 }
-
-#if 0
-static void sort_service_list(struct ip_service *servlist, size_t count)
-{
-	if (count <= 1) {
-		return;
-	}
-
-	TYPESAFE_QSORT(servlist, count, ip_service_compare);
-}
-#endif
 
 static int samba_sockaddr_compare(struct samba_sockaddr *sa1,
 				struct samba_sockaddr *sa2)
