@@ -105,6 +105,66 @@ static NTSTATUS ip_service_to_samba_sockaddr(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+#if 0
+/*
+ * Utility function to convert from a sockaddr_storage
+ * array to a struct samba_sockaddr array.
+ */
+
+static NTSTATUS sockaddr_array_to_samba_sockaddr_array(
+				TALLOC_CTX *ctx,
+				struct samba_sockaddr **sa_out,
+				size_t *count_out,
+				const struct sockaddr_storage *ss_in,
+				size_t count_in)
+{
+	struct samba_sockaddr *sa = NULL;
+	size_t i;
+	size_t count = 0;
+
+	if (count_in == 0) {
+		/*
+		 * Zero length arrays are returned as NULL.
+		 * in the name resolution code.
+		 */
+		*count_out = 0;
+		*sa_out = NULL;
+		return NT_STATUS_OK;
+	}
+	sa = talloc_zero_array(ctx,
+				struct samba_sockaddr,
+				count_in);
+	if (sa == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	count = 0;
+	for (i = 0; i < count_in; i++) {
+		bool ok;
+
+		/* Filter out zero addresses. */
+		if (is_zero_addr(&ss_in[i])) {
+			continue;
+		}
+		ok = sockaddr_storage_to_samba_sockaddr(&sa[count],
+							&ss_in[i]);
+		if (!ok) {
+			continue;
+		}
+		count++;
+	}
+	if (count == 0) {
+		/*
+		 * Zero length arrays are returned as NULL.
+		 * in the name resolution code.
+		 */
+		TALLOC_FREE(sa);
+	}
+	*count_out = count;
+	*sa_out = sa;
+	return NT_STATUS_OK;
+}
+#endif
+
 /****************************
  * SERVER AFFINITY ROUTINES *
  ****************************/
