@@ -1186,6 +1186,7 @@ static int addr_compare(const struct sockaddr_storage *ss1,
  compare 2 ldap IPs by nearness to our interfaces - used in qsort
 *******************************************************************/
 
+#if 0
 static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 {
 	int result;
@@ -1204,6 +1205,7 @@ static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 
 	return 0;
 }
+#endif
 
 /*
   sort an IP list so that names that are close to one of our interfaces
@@ -1220,6 +1222,7 @@ static void sort_addr_list(struct sockaddr_storage *sslist, size_t count)
 	TYPESAFE_QSORT(sslist, count, addr_compare);
 }
 
+#if 0
 static void sort_service_list(struct ip_service *servlist, size_t count)
 {
 	if (count <= 1) {
@@ -1228,6 +1231,7 @@ static void sort_service_list(struct ip_service *servlist, size_t count)
 
 	TYPESAFE_QSORT(servlist, count, ip_service_compare);
 }
+#endif
 
 static int samba_sockaddr_compare(struct samba_sockaddr *sa1,
 				struct samba_sockaddr *sa2)
@@ -3874,33 +3878,33 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 
 bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 {
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	size_t count = 0;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	static const char *ads_order[] = { "ads", NULL };
 	/* Look up #1B name */
 
 	if (lp_security() == SEC_ADS) {
-		status = _internal_resolve_name(talloc_tos(),
+		status = internal_resolve_name(talloc_tos(),
 						domain,
 						0x1b,
 						NULL,
-						&ip_list,
+						&sa_list,
 						&count,
 						ads_order);
 	}
 
 	if (!NT_STATUS_IS_OK(status) || count == 0) {
-		TALLOC_FREE(ip_list);
-		status = _internal_resolve_name(talloc_tos(),
+		TALLOC_FREE(sa_list);
+		status = internal_resolve_name(talloc_tos(),
 						domain,
 						0x1b,
 						NULL,
-						&ip_list,
+						&sa_list,
 						&count,
 						lp_name_resolve_order());
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(ip_list);
+			TALLOC_FREE(sa_list);
 			return false;
 		}
 	}
@@ -3910,11 +3914,11 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 
 	if ( count > 1 ) {
 		DBG_INFO("PDC has %zu IP addresses!\n", count);
-		sort_service_list(ip_list, count);
+		sort_sa_list(sa_list, count);
 	}
 
-	*pss = ip_list[0].ss;
-	TALLOC_FREE(ip_list);
+	*pss = sa_list[0].u.ss;
+	TALLOC_FREE(sa_list);
 	return true;
 }
 
