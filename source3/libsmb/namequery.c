@@ -1229,61 +1229,6 @@ static void sort_sa_list(struct samba_sockaddr *salist, size_t count)
 	TYPESAFE_QSORT(salist, count, samba_sockaddr_compare);
 }
 
-#if 0
-/**********************************************************************
- Remove any duplicate address/port pairs in the list
- *********************************************************************/
-
-size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count )
-{
-	size_t i, j;
-
-	DEBUG(10,("remove_duplicate_addrs2: "
-			"looking for duplicate address/port pairs\n"));
-
-	/* One loop to set duplicates to a zero addr. */
-	for ( i=0; i<count; i++ ) {
-		bool ok;
-		struct samba_sockaddr sa_i = {0};
-
-		ok = sockaddr_storage_to_samba_sockaddr(&sa_i, &iplist[i].ss);
-		if (!ok) {
-			continue;
-		}
-
-		if (is_zero_addr(&sa_i.u.ss)) {
-			continue;
-		}
-
-		for ( j=i+1; j<count; j++ ) {
-			struct samba_sockaddr sa_j = {0};
-
-			ok = sockaddr_storage_to_samba_sockaddr(&sa_j,
-							&iplist[j].ss);
-			if (!ok) {
-				continue;
-			}
-
-			if (sockaddr_equal(&sa_i.u.sa, &sa_j.u.sa) &&
-					iplist[i].port == iplist[j].port) {
-				zero_sockaddr(&iplist[j].ss);
-			}
-		}
-	}
-
-	/* Now remove any addresses set to zero above. */
-	for (i = 0; i < count; i++) {
-		while (i < count &&
-				is_zero_addr(&iplist[i].ss)) {
-			ARRAY_DEL_ELEMENT(iplist, i, count);
-			count--;
-		}
-	}
-
-	return count;
-}
-#endif
-
 /**********************************************************************
  Remove any duplicate address/port pairs in the samba_sockaddr array.
  *********************************************************************/
