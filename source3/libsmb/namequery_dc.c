@@ -173,7 +173,7 @@ static bool rpc_dc_name(const char *domain,
 
 	/* get a list of all domain controllers */
 
-	result = get_sorted_dc_list_sa(talloc_tos(),
+	result = get_sorted_dc_list(talloc_tos(),
 				domain,
 				NULL,
 				&sa_list,
