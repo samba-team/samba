@@ -3473,53 +3473,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	return status;
 }
 
-#if 0
-/********************************************************
- Temporary wrapper function for _internal_resolve_name().
- Converts to samba_sockaddr array. Will go away once
- all callers are converted.
-********************************************************/
-
-NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
-				const char *name,
-				int name_type,
-				const char *sitename,
-				struct samba_sockaddr **return_salist,
-				size_t *return_count,
-				const char **resolve_order)
-{
-	struct ip_service *ss_list = NULL;
-	struct samba_sockaddr *sa_list = NULL;
-	size_t count;
-	NTSTATUS tmp_status;
-	NTSTATUS status = _internal_resolve_name(ctx,
-						name,
-						name_type,
-						sitename,
-						&ss_list,
-						&count,
-						resolve_order);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	tmp_status = ip_service_to_samba_sockaddr(ctx,
-						&sa_list,
-						ss_list,
-						count);
-	if (!NT_STATUS_IS_OK(tmp_status)) {
-		TALLOC_FREE(ss_list);
-		return status;
-	}
-
-	TALLOC_FREE(ss_list);
-	*return_count = count;
-	*return_salist = sa_list;
-	return status;
-}
-#endif
-
 /********************************************************
  Internal interface to resolve a name into one IP address.
  Use this function if the string is either an IP address, DNS
