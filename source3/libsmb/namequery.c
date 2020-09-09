@@ -3175,9 +3175,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	struct samba_sockaddr *sa_list = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	*return_salist = NULL;
-	*return_count = 0;
-
 	DBG_DEBUG("looking up %s#%x (sitename %s)\n",
 		name, name_type, sitename ? sitename : "(null)");
 
