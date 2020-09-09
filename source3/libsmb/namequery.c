@@ -3621,12 +3621,12 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 }
 
 /********************************************************
- Temporary wrapper function for internal_resolve_name().
+ Temporary wrapper function for _internal_resolve_name().
  Converts to samba_sockaddr array. Will go away once
  all callers are converted.
 ********************************************************/
 
-NTSTATUS internal_resolve_name_sa(TALLOC_CTX *ctx,
+NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				const char *name,
 				int name_type,
 				const char *sitename,
