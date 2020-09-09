@@ -1300,40 +1300,6 @@ size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count )
 	return count;
 }
 
-#if 0
-static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct ip_service *iplist_new = talloc_array(frame, struct ip_service, count);
-	size_t i, j;
-
-	if (iplist_new == NULL) {
-		TALLOC_FREE(frame);
-		return false;
-	}
-
-	j = 0;
-
-	/* Copy IPv4 first. */
-	for (i = 0; i < count; i++) {
-		if (iplist[i].ss.ss_family == AF_INET) {
-			iplist_new[j++] = iplist[i];
-		}
-	}
-
-	/* Copy IPv6. */
-	for (i = 0; i < count; i++) {
-		if (iplist[i].ss.ss_family != AF_INET) {
-			iplist_new[j++] = iplist[i];
-		}
-	}
-
-	memcpy(iplist, iplist_new, sizeof(struct ip_service)*count);
-	TALLOC_FREE(frame);
-	return true;
-}
-#endif
-
 static bool prioritize_ipv4_list_sa(struct samba_sockaddr *salist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
