@@ -3826,7 +3826,7 @@ done:
 
 bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 {
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	size_t count = 0;
 	NTSTATUS status;
 
@@ -3835,35 +3835,35 @@ bool find_master_ip(const char *group, struct sockaddr_storage *master_ss)
 		return false;
 	}
 
-	status = _internal_resolve_name(talloc_tos(),
+	status = internal_resolve_name(talloc_tos(),
 					group,
 					0x1D,
 					NULL,
-					&ip_list,
+					&sa_list,
 					&count,
 					lp_name_resolve_order());
 	if (NT_STATUS_IS_OK(status)) {
-		*master_ss = ip_list[0].ss;
-		TALLOC_FREE(ip_list);
+		*master_ss = sa_list[0].u.ss;
+		TALLOC_FREE(sa_list);
 		return true;
 	}
 
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 
-	status = _internal_resolve_name(talloc_tos(),
+	status = internal_resolve_name(talloc_tos(),
 					group,
 					0x1B,
 					NULL,
-					&ip_list,
+					&sa_list,
 					&count,
 					lp_name_resolve_order());
 	if (NT_STATUS_IS_OK(status)) {
-		*master_ss = ip_list[0].ss;
-		TALLOC_FREE(ip_list);
+		*master_ss = sa_list[0].u.ss;
+		TALLOC_FREE(sa_list);
 		return true;
 	}
 
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 	return false;
 }
 
