@@ -1300,6 +1300,7 @@ size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count )
 	return count;
 }
 
+#if 0
 static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1331,8 +1332,8 @@ static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
 	TALLOC_FREE(frame);
 	return true;
 }
+#endif
 
-#if 0
 static bool prioritize_ipv4_list_sa(struct samba_sockaddr *salist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1366,7 +1367,6 @@ static bool prioritize_ipv4_list_sa(struct samba_sockaddr *salist, size_t count)
 	TALLOC_FREE(frame);
 	return true;
 }
-#endif
 
 /****************************************************************************
  Do a netbios name query to find someones IP.
@@ -3907,15 +3907,12 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	char *saf_servername = NULL;
 	char *pserver = NULL;
 	const char *p;
-	char *port_str = NULL;
-	int port;
 	char *name;
 	size_t num_addresses = 0;
 	size_t local_count = 0;
 	size_t i;
-	struct ip_service *return_iplist = NULL;
-	struct ip_service *auto_ip_list = NULL;
-	struct samba_sockaddr *sa_list = NULL;
+	struct samba_sockaddr *auto_sa_list = NULL;
+	struct samba_sockaddr *return_salist = NULL;
 	bool done_auto_lookup = false;
 	size_t auto_count = 0;
 	NTSTATUS status;
@@ -3991,11 +3988,11 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		if (!done_auto_lookup && strequal(name, "*")) {
 			done_auto_lookup = true;
 
-			status = _internal_resolve_name(frame,
+			status = internal_resolve_name(frame,
 							domain,
 							auto_name_type,
 							sitename,
-							&auto_ip_list,
+							&auto_sa_list,
 							&auto_count,
 							resolve_order);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -4003,7 +4000,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			}
 			/* Wrap check. */
 			if (num_addresses + auto_count < num_addresses) {
-				TALLOC_FREE(auto_ip_list);
+				TALLOC_FREE(auto_sa_list);
 				status = NT_STATUS_INVALID_PARAMETER;
 				goto out;
 			}
@@ -4013,7 +4010,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		} else  {
 			/* Wrap check. */
 			if (num_addresses + 1 < num_addresses) {
-				TALLOC_FREE(auto_ip_list);
+				TALLOC_FREE(auto_sa_list);
 				status = NT_STATUS_INVALID_PARAMETER;
 				goto out;
 			}
@@ -4025,7 +4022,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	   just return the list of DC's.  Or maybe we just failed. */
 
 	if (num_addresses == 0) {
-		struct ip_service *dc_iplist = NULL;
+		struct samba_sockaddr *dc_salist = NULL;
 		size_t dc_count = 0;
 
 		if (done_auto_lookup) {
@@ -4034,25 +4031,25 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			goto out;
 		}
 		/* talloc off frame, only move to ctx on success. */
-		status = _internal_resolve_name(frame,
+		status = internal_resolve_name(frame,
 						domain,
 						auto_name_type,
 						sitename,
-						&dc_iplist,
+						&dc_salist,
 						&dc_count,
 						resolve_order);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
-		return_iplist = talloc_move(ctx, &dc_iplist);
+		return_salist = talloc_move(ctx, &dc_salist);
 		local_count = dc_count;
 		goto out;
 	}
 
-	return_iplist = talloc_zero_array(ctx,
-					struct ip_service,
+	return_salist = talloc_zero_array(ctx,
+					struct samba_sockaddr,
 					num_addresses);
-	if (return_iplist == NULL) {
+	if (return_salist == NULL) {
 		DEBUG(3,("get_dc_list: malloc fail !\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -4075,7 +4072,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 				char addr[INET6_ADDRSTRLEN];
 				print_sockaddr(addr,
 						sizeof(addr),
-						&auto_ip_list[j].ss);
+						&auto_sa_list[j].u.ss);
 				/* Check for and don't copy any
 				 * known bad DC IP's. */
 				if(!NT_STATUS_IS_OK(check_negative_conn_cache(
@@ -4087,31 +4084,10 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 						addr));
 					continue;
 				}
-				return_iplist[local_count].ss =
-					auto_ip_list[j].ss;
-				return_iplist[local_count].port =
-					auto_ip_list[j].port;
+				return_salist[local_count] = auto_sa_list[j];
 				local_count++;
 			}
 			continue;
-		}
-
-		/* added support for address:port syntax for ads
-		 * (not that I think anyone will ever run the LDAP
-		 * server in an AD domain on something other than
-		 * port 389
-		 * However, the port should not be used for kerberos
-		 */
-
-		port = (lookup_type == DC_ADS_ONLY) ? LDAP_PORT :
-			((lookup_type == DC_KDC_ONLY) ? DEFAULT_KRB5_PORT :
-			 PORT_NONE);
-		if ((port_str=strchr(name, ':')) != NULL) {
-			*port_str = '\0';
-			if (lookup_type != DC_KDC_ONLY) {
-				port_str++;
-				port = atoi(port_str);
-			}
 		}
 
 		/* explicit lookup; resolve_name() will
@@ -4147,8 +4123,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 				continue;
 			}
 
-			return_iplist[local_count].ss = name_sa.u.ss;
-			return_iplist[local_count].port = port;
+			return_salist[local_count] = name_sa;
 			local_count++;
 			*ordered = true;
 		}
@@ -4157,13 +4132,13 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	/* need to remove duplicates in the list if we have any
 	   explicit password servers */
 
-	local_count = remove_duplicate_addrs2(return_iplist, local_count );
+	local_count = remove_duplicate_addrs2_sa(return_salist, local_count );
 
 	/* For DC's we always prioritize IPv4 due to W2K3 not
 	 * supporting LDAP, KRB5 or CLDAP over IPv6. */
 
-	if (local_count && return_iplist) {
-		prioritize_ipv4_list(return_iplist, local_count);
+	if (local_count && return_salist != NULL) {
+		prioritize_ipv4_list_sa(return_salist, local_count);
 	}
 
 	if ( DEBUGLEVEL >= 4 ) {
@@ -4176,8 +4151,8 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr,
 					sizeof(addr),
-					&return_iplist[i].ss);
-			DEBUGADD(4,("%s:%d ", addr, return_iplist[i].port ));
+					&return_salist[i].u.ss);
+			DEBUGADD(4,("%s ", addr));
 		}
 		DEBUGADD(4,("\n"));
 	}
@@ -4186,29 +4161,13 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 
   out:
 
-	/*
-	 * This uglyness will go away
-	 * once internal_resolve_name() is changed
-	 * to return a samba_sockaddr array.
-	 */
-	if (!(NT_STATUS_IS_OK(status))) {
-		TALLOC_FREE(return_iplist);
-		TALLOC_FREE(auto_ip_list);
-		TALLOC_FREE(frame);
-		return status;
-	}
-	status = ip_service_to_samba_sockaddr(ctx,
-				&sa_list,
-				return_iplist,
-				local_count);
-
-	TALLOC_FREE(return_iplist);
-
 	if (NT_STATUS_IS_OK(status)) {
-		*sa_list_ret = sa_list;
+		*sa_list_ret = return_salist;
 		*ret_count = local_count;
+	} else {
+		TALLOC_FREE(return_salist);
 	}
-	TALLOC_FREE(auto_ip_list);
+	TALLOC_FREE(auto_sa_list);
 	TALLOC_FREE(frame);
 	return status;
 }
