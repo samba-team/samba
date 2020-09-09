@@ -1300,7 +1300,7 @@ size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count )
 	return count;
 }
 
-static bool prioritize_ipv4_list_sa(struct samba_sockaddr *salist, size_t count)
+static bool prioritize_ipv4_list(struct samba_sockaddr *salist, size_t count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samba_sockaddr *salist_new = talloc_array(frame,
@@ -4104,7 +4104,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	 * supporting LDAP, KRB5 or CLDAP over IPv6. */
 
 	if (local_count && return_salist != NULL) {
-		prioritize_ipv4_list_sa(return_salist, local_count);
+		prioritize_ipv4_list(return_salist, local_count);
 	}
 
 	if ( DEBUGLEVEL >= 4 ) {
