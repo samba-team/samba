@@ -1731,63 +1731,6 @@ NTSTATUS name_query(const char *name, int name_type,
 	return status;
 }
 
-#if 0
-/********************************************************
- Convert an array if struct sockaddr_storage to struct ip_service
- return false on failure.  Port is set to PORT_NONE;
- orig_count is the length of ss_list on input,
- *count_out is the length of return_iplist on output as we remove any
- zero addresses from ss_list.
-*********************************************************/
-
-static bool convert_ss2service(TALLOC_CTX *ctx,
-		struct ip_service **return_iplist,
-		const struct sockaddr_storage *ss_list,
-		size_t orig_count,
-		size_t *count_out)
-{
-	size_t i;
-	size_t real_count = 0;
-	struct ip_service *iplist = NULL;
-
-	if (orig_count == 0 || ss_list == NULL) {
-		return false;
-	}
-
-	/* Filter out zero addrs. */
-	for (i = 0; i < orig_count; i++ ) {
-		if (is_zero_addr(&ss_list[i])) {
-			continue;
-		}
-		real_count++;
-	}
-	if (real_count == 0) {
-		return false;
-	}
-
-	/* copy the ip address; port will be PORT_NONE */
-	iplist = talloc_zero_array(ctx, struct ip_service, real_count);
-	if (iplist == NULL) {
-		DBG_ERR("talloc failed for %zu enetries!\n", real_count);
-		return false;
-	}
-
-	real_count = 0;
-	for (i=0; i < orig_count; i++ ) {
-		if (is_zero_addr(&ss_list[i])) {
-			continue;
-		}
-		iplist[real_count].ss   = ss_list[i];
-		iplist[real_count].port = PORT_NONE;
-		real_count++;
-	}
-
-	*return_iplist = iplist;
-	*count_out = real_count;
-	return true;
-}
-#endif
-
 struct name_queries_state {
 	struct tevent_context *ev;
 	const char *name;
