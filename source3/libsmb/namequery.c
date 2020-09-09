@@ -3677,7 +3677,7 @@ bool resolve_name(const char *name,
 		int name_type,
 		bool prefer_ipv4)
 {
-	struct ip_service *ss_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	char *sitename = NULL;
 	size_t count = 0;
 	NTSTATUS status;
@@ -3691,11 +3691,11 @@ bool resolve_name(const char *name,
 
 	sitename = sitename_fetch(frame, lp_realm()); /* wild guess */
 
-	status = _internal_resolve_name(frame,
+	status = internal_resolve_name(frame,
 					name,
 					name_type,
 					sitename,
-					&ss_list,
+					&sa_list,
 					&count,
 					lp_name_resolve_order());
 	if (NT_STATUS_IS_OK(status)) {
@@ -3703,20 +3703,10 @@ bool resolve_name(const char *name,
 
 		if (prefer_ipv4) {
 			for (i=0; i<count; i++) {
-				struct samba_sockaddr sa = {0};
-				bool ok;
-
-				ok = sockaddr_storage_to_samba_sockaddr(&sa,
-								&ss_list[i].ss);
-				if (!ok) {
-					TALLOC_FREE(ss_list);
-					TALLOC_FREE(frame);
-					return false;
-				}
-				if (!is_broadcast_addr(&sa.u.sa) &&
-						(sa.u.ss.ss_family == AF_INET)) {
-					*return_ss = ss_list[i].ss;
-					TALLOC_FREE(ss_list);
+				if (!is_broadcast_addr(&sa_list[i].u.sa) &&
+						(sa_list[i].u.ss.ss_family == AF_INET)) {
+					*return_ss = sa_list[i].u.ss;
+					TALLOC_FREE(sa_list);
 					TALLOC_FREE(frame);
 					return True;
 				}
@@ -3725,26 +3715,16 @@ bool resolve_name(const char *name,
 
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			struct samba_sockaddr sa = {0};
-			bool ok;
-
-			ok = sockaddr_storage_to_samba_sockaddr(&sa,
-								&ss_list[i].ss);
-			if (!ok) {
-				TALLOC_FREE(ss_list);
-				TALLOC_FREE(frame);
-				return false;
-			}
-			if (!is_broadcast_addr(&sa.u.sa)) {
-				*return_ss = ss_list[i].ss;
-				TALLOC_FREE(ss_list);
+			if (!is_broadcast_addr(&sa_list[i].u.sa)) {
+				*return_ss = sa_list[i].u.ss;
+				TALLOC_FREE(sa_list);
 				TALLOC_FREE(frame);
 				return True;
 			}
 		}
 	}
 
-	TALLOC_FREE(ss_list);
+	TALLOC_FREE(sa_list);
 	TALLOC_FREE(frame);
 	return False;
 }
