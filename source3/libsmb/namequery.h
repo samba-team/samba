@@ -100,6 +100,13 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				struct ip_service **return_iplist,
 				size_t *ret_count,
 				const char **resolve_order);
+NTSTATUS internal_resolve_name_sa(TALLOC_CTX *ctx,
+				const char *name,
+				int name_type,
+				const char *sitename,
+				struct samba_sockaddr **return_salist,
+				size_t *ret_count,
+				const char **resolve_order);
 bool resolve_name(const char *name,
 		struct sockaddr_storage *return_ss,
 		int name_type,
