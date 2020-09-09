@@ -3742,7 +3742,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		struct sockaddr_storage **return_ss_arr,
 		unsigned int *p_num_entries)
 {
-	struct ip_service *ss_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	char *sitename = NULL;
 	size_t count = 0;
 	size_t i;
@@ -3766,11 +3766,11 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	sitename = sitename_fetch(ctx, lp_realm()); /* wild guess */
 
-	status = _internal_resolve_name(ctx,
+	status = internal_resolve_name(ctx,
 					name,
 					name_type,
 					sitename,
-					&ss_list,
+					&sa_list,
 					&count,
 					lp_name_resolve_order());
 	TALLOC_FREE(sitename);
@@ -3781,16 +3781,8 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	/* only return valid addresses for TCP connections */
 	for (i=0, num_entries = 0; i<count; i++) {
-		struct samba_sockaddr sa = {0};
-		bool ok;
-
-		ok = sockaddr_storage_to_samba_sockaddr(&sa,
-							&ss_list[i].ss);
-		if (!ok) {
-			continue;
-		}
-		if (!is_zero_addr(&sa.u.ss) &&
-		    !is_broadcast_addr(&sa.u.sa)) {
+		if (!is_zero_addr(&sa_list[i].u.ss) &&
+		    !is_broadcast_addr(&sa_list[i].u.sa)) {
 			num_entries++;
 		}
 	}
@@ -3808,17 +3800,9 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	}
 
 	for (i=0, num_entries = 0; i<count; i++) {
-		struct samba_sockaddr sa = {0};
-		bool ok;
-
-		ok = sockaddr_storage_to_samba_sockaddr(&sa,
-							&ss_list[i].ss);
-		if (!ok) {
-			continue;
-		}
-		if (!is_zero_addr(&sa.u.ss) &&
-		    !is_broadcast_addr(&sa.u.sa)) {
-			result_arr[num_entries++] = ss_list[i].ss;
+		if (!is_zero_addr(&sa_list[i].u.ss) &&
+		    !is_broadcast_addr(&sa_list[i].u.sa)) {
+			result_arr[num_entries++] = sa_list[i].u.ss;
 		}
 	}
 
@@ -3832,7 +3816,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	*p_num_entries = num_entries;
 	*return_ss_arr = result_arr;
 done:
-	TALLOC_FREE(ss_list);
+	TALLOC_FREE(sa_list);
 	return status;
 }
 
