@@ -3960,11 +3960,11 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 						&dc_iplist,
 						&dc_count,
 						resolve_order);
-		if (NT_STATUS_IS_OK(status)) {
-			*ip_list = talloc_move(ctx, &dc_iplist);
-			*ret_count = dc_count;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
 		}
-		TALLOC_FREE(dc_iplist);
+		return_iplist = talloc_move(ctx, &dc_iplist);
+		local_count = dc_count;
 		goto out;
 	}
 
