@@ -110,12 +110,6 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		unsigned int *p_num_entries);
 bool find_master_ip(const char *group, struct sockaddr_storage *master_ss);
 bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss);
-NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
-			const char *domain,
-			const char *sitename,
-			struct ip_service **ip_list_ret,
-			size_t *ret_count,
-			bool ads_only);
 NTSTATUS get_sorted_dc_list_sa(TALLOC_CTX *ctx,
 			const char *domain,
 			const char *sitename,
