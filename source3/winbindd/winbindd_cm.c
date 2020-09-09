@@ -1537,8 +1537,8 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 {
 	fstring dcname;
 	struct  sockaddr_storage ss;
-	struct  ip_service *ip_list = NULL;
-	size_t     iplist_size = 0;
+	struct  samba_sockaddr *sa_list = NULL;
+	size_t     salist_size = 0;
 	size_t     i;
 	bool    is_our_domain;
 	enum security_types sec = (enum security_types)lp_security();
@@ -1563,7 +1563,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 		/* We need to make sure we know the local site before
 		   doing any DNS queries, as this will restrict the
-		   get_sorted_dc_list() call below to only fetching
+		   get_sorted_dc_list_sa() call below to only fetching
 		   DNS records for the correct site. */
 
 		/* Find any DC to get the site record.
@@ -1576,92 +1576,92 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		if (sitename) {
 
 			/* Do the site-specific AD dns lookup first. */
-			(void)get_sorted_dc_list(mem_ctx,
+			(void)get_sorted_dc_list_sa(mem_ctx,
 					domain->alt_name,
 					sitename,
-					&ip_list,
-					&iplist_size,
+					&sa_list,
+					&salist_size,
 					true);
 
 			/* Add ips to the DC array.  We don't look up the name
 			   of the DC in this function, but we fill in the char*
 			   of the ip now to make the failed connection cache
 			   work */
-			for ( i=0; i<iplist_size; i++ ) {
+			for ( i=0; i<salist_size; i++ ) {
 				char addr[INET6_ADDRSTRLEN];
 				print_sockaddr(addr, sizeof(addr),
-						&ip_list[i].ss);
+						&sa_list[i].u.ss);
 				add_one_dc_unique(mem_ctx,
 						domain->name,
 						addr,
-						&ip_list[i].ss,
+						&sa_list[i].u.ss,
 						dcs,
 						num_dcs);
 			}
 
-			TALLOC_FREE(ip_list);
+			TALLOC_FREE(sa_list);
 			TALLOC_FREE(sitename);
-			iplist_size = 0;
+			salist_size = 0;
 		}
 
 		/* Now we add DCs from the main AD DNS lookup. */
-		(void)get_sorted_dc_list(mem_ctx,
+		(void)get_sorted_dc_list_sa(mem_ctx,
 				domain->alt_name,
 				NULL,
-				&ip_list,
-				&iplist_size,
+				&sa_list,
+				&salist_size,
 				true);
 
-		for ( i=0; i<iplist_size; i++ ) {
+		for ( i=0; i<salist_size; i++ ) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&ip_list[i].ss);
+					&sa_list[i].u.ss);
 			add_one_dc_unique(mem_ctx,
 					domain->name,
 					addr,
-					&ip_list[i].ss,
+					&sa_list[i].u.ss,
 					dcs,
 					num_dcs);
 		}
 
-		TALLOC_FREE(ip_list);
-		iplist_size = 0;
+		TALLOC_FREE(sa_list);
+		salist_size = 0;
         }
 
 	/* Try standard netbios queries if no ADS and fall back to DNS queries
 	 * if alt_name is available */
 	if (*num_dcs == 0) {
-		(void)get_sorted_dc_list(mem_ctx,
+		(void)get_sorted_dc_list_sa(mem_ctx,
 					domain->name,
 					NULL,
-					&ip_list,
-					&iplist_size,
+					&sa_list,
+					&salist_size,
 					false);
-		if (iplist_size == 0) {
+		if (salist_size == 0) {
 			if (domain->alt_name != NULL) {
-				(void)get_sorted_dc_list(mem_ctx,
+				(void)get_sorted_dc_list_sa(mem_ctx,
 						domain->alt_name,
 						NULL,
-						&ip_list,
-						&iplist_size,
+						&sa_list,
+						&salist_size,
 						true);
 			}
 		}
 
-		for ( i=0; i<iplist_size; i++ ) {
+		for ( i=0; i<salist_size; i++ ) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&ip_list[i].ss);
+					&sa_list[i].u.ss);
 			add_one_dc_unique(mem_ctx,
 					domain->name,
 					addr,
-					&ip_list[i].ss,
+					&sa_list[i].u.ss,
 					dcs,
 					num_dcs);
 		}
 
-		TALLOC_FREE(ip_list);
-		iplist_size = 0;
+		TALLOC_FREE(sa_list);
+		salist_size = 0;
 	}
 
 	return True;
