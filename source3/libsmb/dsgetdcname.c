@@ -443,7 +443,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	enum nbt_name_type name_type = NBT_NAME_LOGON;
-	struct ip_service *iplist = NULL;
+	struct samba_sockaddr *salist = NULL;
 	size_t i;
 	struct ip_service_name *dclist = NULL;
 	size_t count = 0;
@@ -453,11 +453,11 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		name_type = NBT_NAME_PDC;
 	}
 
-	status = internal_resolve_name(mem_ctx,
+	status = internal_resolve_name_sa(mem_ctx,
 					domain_name,
 					name_type,
 					NULL,
-					&iplist,
+					&salist,
 					&count,
 					resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -467,34 +467,28 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	dclist = talloc_zero_array(mem_ctx, struct ip_service_name, count);
 	if (!dclist) {
-		TALLOC_FREE(iplist);
+		TALLOC_FREE(salist);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<count; i++) {
-		bool ok;
 		char addr[INET6_ADDRSTRLEN];
 		struct ip_service_name *r = &dclist[i];
 
 		print_sockaddr(addr, sizeof(addr),
-			       &iplist[i].ss);
+			       &salist[i].u.ss);
 
-		ok = sockaddr_storage_to_samba_sockaddr(&r->sa, &iplist[i].ss);
-		if (!ok) {
-			TALLOC_FREE(iplist);
-			TALLOC_FREE(dclist);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+		r->sa = salist[i];
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
-			TALLOC_FREE(iplist);
+			TALLOC_FREE(salist);
 			TALLOC_FREE(dclist);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 	}
 
-	TALLOC_FREE(iplist);
+	TALLOC_FREE(salist);
 
 	*returned_dclist = dclist;
 	*returned_count = count;
