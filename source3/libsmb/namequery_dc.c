@@ -164,7 +164,7 @@ static bool rpc_dc_name(const char *domain,
 			fstring srv_name,
 			struct sockaddr_storage *ss_out)
 {
-	struct ip_service *ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	size_t count = 0;
 	struct sockaddr_storage dc_ss;
 	size_t i;
@@ -173,10 +173,10 @@ static bool rpc_dc_name(const char *domain,
 
 	/* get a list of all domain controllers */
 
-	result = get_sorted_dc_list(talloc_tos(),
+	result = get_sorted_dc_list_sa(talloc_tos(),
 				domain,
 				NULL,
-				&ip_list,
+				&sa_list,
 				&count,
 				false);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -187,19 +187,19 @@ static bool rpc_dc_name(const char *domain,
 	/* Remove the entry we've already failed with (should be the PDC). */
 
 	for (i = 0; i < count; i++) {
-		if (is_zero_addr(&ip_list[i].ss))
+		if (is_zero_addr(&sa_list[i].u.ss))
 			continue;
 
-		if (name_status_find(domain, 0x1c, 0x20, &ip_list[i].ss, srv_name)) {
+		if (name_status_find(domain, 0x1c, 0x20, &sa_list[i].u.ss, srv_name)) {
 			result = check_negative_conn_cache( domain, srv_name );
 			if ( NT_STATUS_IS_OK(result) ) {
-				dc_ss = ip_list[i].ss;
+				dc_ss = sa_list[i].u.ss;
 				goto done;
 			}
 		}
 	}
 
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 
 	/* No-one to talk to )-: */
 	return False;		/* Boo-hoo */
@@ -215,7 +215,7 @@ static bool rpc_dc_name(const char *domain,
 		  addr, domain));
 
 	*ss_out = dc_ss;
-	TALLOC_FREE(ip_list);
+	TALLOC_FREE(sa_list);
 
 	return True;
 }
