@@ -4041,12 +4041,12 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
-		return_salist = talloc_move(ctx, &dc_salist);
+		return_salist = dc_salist;
 		local_count = dc_count;
 		goto out;
 	}
 
-	return_salist = talloc_zero_array(ctx,
+	return_salist = talloc_zero_array(frame,
 					struct samba_sockaddr,
 					num_addresses);
 	if (return_salist == NULL) {
@@ -4162,11 +4162,10 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
   out:
 
 	if (NT_STATUS_IS_OK(status)) {
-		*sa_list_ret = return_salist;
+		*sa_list_ret = talloc_move(ctx, &return_salist);
 		*ret_count = local_count;
-	} else {
-		TALLOC_FREE(return_salist);
 	}
+	TALLOC_FREE(return_salist);
 	TALLOC_FREE(auto_sa_list);
 	TALLOC_FREE(frame);
 	return status;
