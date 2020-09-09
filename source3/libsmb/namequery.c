@@ -1364,6 +1364,42 @@ static bool prioritize_ipv4_list(struct ip_service *iplist, size_t count)
 	return true;
 }
 
+#if 0
+static bool prioritize_ipv4_list_sa(struct samba_sockaddr *salist, size_t count)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct samba_sockaddr *salist_new = talloc_array(frame,
+						struct samba_sockaddr,
+						count);
+	size_t i, j;
+
+	if (salist_new == NULL) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	j = 0;
+
+	/* Copy IPv4 first. */
+	for (i = 0; i < count; i++) {
+		if (salist[i].u.ss.ss_family == AF_INET) {
+			salist_new[j++] = salist[i];
+		}
+	}
+
+	/* Copy IPv6. */
+	for (i = 0; i < count; i++) {
+		if (salist[i].u.ss.ss_family != AF_INET) {
+			salist_new[j++] = salist[i];
+		}
+	}
+
+	memcpy(salist, salist_new, sizeof(struct samba_sockaddr)*count);
+	TALLOC_FREE(frame);
+	return true;
+}
+#endif
+
 /****************************************************************************
  Do a netbios name query to find someones IP.
  Returns an array of IP addresses or NULL if none.
