@@ -64,6 +64,7 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
+#if 0
 /*
  * Utility function to convert from a struct ip_service
  * array to a struct samba_sockaddr array. Will go away
@@ -104,8 +105,8 @@ static NTSTATUS ip_service_to_samba_sockaddr(TALLOC_CTX *ctx,
 	*sa_out = sa;
 	return NT_STATUS_OK;
 }
+#endif
 
-#if 0
 /*
  * Utility function to convert from a sockaddr_storage
  * array to a struct samba_sockaddr array.
@@ -163,7 +164,6 @@ static NTSTATUS sockaddr_array_to_samba_sockaddr_array(
 	*sa_out = sa;
 	return NT_STATUS_OK;
 }
-#endif
 
 /****************************
  * SERVER AFFINITY ROUTINES *
@@ -1272,6 +1272,7 @@ static void sort_sa_list(struct samba_sockaddr *salist, size_t count)
 	TYPESAFE_QSORT(salist, count, samba_sockaddr_compare);
 }
 
+#if 0
 /**********************************************************************
  Remove any duplicate address/port pairs in the list
  *********************************************************************/
@@ -1324,6 +1325,7 @@ size_t remove_duplicate_addrs2(struct ip_service *iplist, size_t count )
 
 	return count;
 }
+#endif
 
 /**********************************************************************
  Remove any duplicate address/port pairs in the samba_sockaddr array.
@@ -1772,6 +1774,7 @@ NTSTATUS name_query(const char *name, int name_type,
 	return status;
 }
 
+#if 0
 /********************************************************
  Convert an array if struct sockaddr_storage to struct ip_service
  return false on failure.  Port is set to PORT_NONE;
@@ -1826,6 +1829,7 @@ static bool convert_ss2service(TALLOC_CTX *ctx,
 	*count_out = real_count;
 	return true;
 }
+#endif
 
 struct name_queries_state {
 	struct tevent_context *ev;
@@ -3308,11 +3312,11 @@ static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
+NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				const char *name,
 			        int name_type,
 				const char *sitename,
-				struct ip_service **return_iplist,
+				struct samba_sockaddr **return_salist,
 				size_t *return_count,
 				const char **resolve_order)
 {
@@ -3324,10 +3328,9 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 	bool ok;
 	struct sockaddr_storage *ss_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
-	struct ip_service *iplist = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	*return_iplist = NULL;
+	*return_salist = NULL;
 	*return_count = 0;
 
 	DBG_DEBUG("looking up %s#%x (sitename %s)\n",
@@ -3349,19 +3352,17 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		iplist = talloc_zero_array(frame,
-					struct ip_service,
-					1);
-		if (iplist == NULL) {
+		status = sockaddr_array_to_samba_sockaddr_array(frame,
+							&sa_list,
+							&ret_count,
+							&ss,
+							1);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 
-		iplist[0].ss = ss;
-		/* ignore the port here */
-		iplist[0].port = PORT_NONE;
-
-		*return_iplist = talloc_move(ctx, &iplist);
+		*return_salist = talloc_move(ctx, &sa_list);
 		*return_count = 1;
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
@@ -3376,35 +3377,18 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 				&nc_count);
 	if (ok) {
 		/*
-		 * Create a struct ip_service list from the
-		 * returned samba_sockaddrs.
+		 * remove_duplicate_addrs2_sa() has the
+		 * side effect of removing zero addresses,
+		 * so use it here.
 		 */
-		size_t count = 0;
-
-		iplist = talloc_zero_array(frame,
-					struct ip_service,
-					nc_count);
-		if (iplist == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-		count = 0;
-		for (i = 0; i < nc_count; i++) {
-			if (is_zero_addr(&sa_list[i].u.ss)) {
-				continue;
-			}
-			iplist[count].ss = sa_list[i].u.ss;
-			iplist[count].port = 0;
-			count++;
-		}
-		count = remove_duplicate_addrs2(iplist, count);
-		if (count == 0) {
-			TALLOC_FREE(iplist);
+		nc_count = remove_duplicate_addrs2_sa(sa_list, nc_count);
+		if (nc_count == 0) {
+			TALLOC_FREE(sa_list);
 			TALLOC_FREE(frame);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		*return_count = count;
-		*return_iplist = talloc_move(ctx, &iplist);
+		*return_count = nc_count;
+		*return_salist = talloc_move(ctx, &sa_list);
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
@@ -3530,18 +3514,12 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 
   done:
 
-	/*
-	 * convert_ss2service() leaves the correct
-	 * count to return after removing zero addresses
-	 * in ret_count.
-	 */
-	ok = convert_ss2service(frame,
-				&iplist,
-				ss_list,
-				ret_count,
-				&ret_count);
-	if (!ok) {
-		TALLOC_FREE(iplist);
+	status = sockaddr_array_to_samba_sockaddr_array(frame,
+							&sa_list,
+							&ret_count,
+							ss_list,
+							ret_count);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3551,43 +3529,26 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	ret_count = remove_duplicate_addrs2(iplist, ret_count);
+	ret_count = remove_duplicate_addrs2_sa(sa_list, ret_count);
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {
 		for (i = 0; i < ret_count && DEBUGLEVEL == 100; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&iplist[i].ss);
-			DEBUG(100, ("Storing name %s of type %d (%s:%d)\n",
+					&sa_list[i].u.ss);
+			DEBUG(100, ("Storing name %s of type %d (%s:0)\n",
 					name,
 					name_type,
-					addr,
-					iplist[i].port));
+					addr));
 		}
 	}
 
 	if (ret_count) {
-		/*
-		 * Convert the ip_service list to a samba_sockaddr array
-		 * to store in the namecache. This conversion
-		 * will go away once ip_service is gone.
-		 */
-		struct samba_sockaddr *sa_converted_list = NULL;
-		status = ip_service_to_samba_sockaddr(talloc_tos(),
-					&sa_converted_list,
-					iplist,
-					ret_count);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(iplist);
-			TALLOC_FREE(frame);
-			return status;
-		}
 		namecache_store(name,
 				name_type,
 				ret_count,
-				sa_converted_list);
-		TALLOC_FREE(sa_converted_list);
+				sa_list);
 	}
 
 	/* Display some debugging info */
@@ -3599,21 +3560,20 @@ static NTSTATUS _internal_resolve_name(TALLOC_CTX *ctx,
 		for (i = 0; i < ret_count; i++) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr),
-					&iplist[i].ss);
-			DEBUGADD(10, ("%s:%d ",
-					addr,
-					iplist[i].port));
+					&sa_list[i].u.ss);
+			DEBUGADD(10, ("%s ", addr));
 		}
 		DEBUG(10, ("\n"));
 	}
 
 	*return_count = ret_count;
-	*return_iplist = talloc_move(ctx, &iplist);
+	*return_salist = talloc_move(ctx, &sa_list);
 
 	TALLOC_FREE(frame);
 	return status;
 }
 
+#if 0
 /********************************************************
  Temporary wrapper function for _internal_resolve_name().
  Converts to samba_sockaddr array. Will go away once
@@ -3658,6 +3618,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	*return_salist = sa_list;
 	return status;
 }
+#endif
 
 /********************************************************
  Internal interface to resolve a name into one IP address.
