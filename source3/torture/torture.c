@@ -14046,7 +14046,7 @@ static bool run_local_remove_duplicate_addrs2(int dummy)
 		freeaddrinfo(res);
 	}
 
-	count = remove_duplicate_addrs2_sa(test_vector, i);
+	count = remove_duplicate_addrs2(test_vector, i);
 
 	if (count != 14) {
 		fprintf(stderr, "count wrong (%zu) should be 14\n",

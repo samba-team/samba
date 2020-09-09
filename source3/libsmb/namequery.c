@@ -1233,7 +1233,7 @@ static void sort_sa_list(struct samba_sockaddr *salist, size_t count)
  Remove any duplicate address/port pairs in the samba_sockaddr array.
  *********************************************************************/
 
-size_t remove_duplicate_addrs2_sa(struct samba_sockaddr *salist, size_t count )
+size_t remove_duplicate_addrs2(struct samba_sockaddr *salist, size_t count )
 {
 	size_t i, j;
 
@@ -3222,11 +3222,11 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				&nc_count);
 	if (ok) {
 		/*
-		 * remove_duplicate_addrs2_sa() has the
+		 * remove_duplicate_addrs2() has the
 		 * side effect of removing zero addresses,
 		 * so use it here.
 		 */
-		nc_count = remove_duplicate_addrs2_sa(sa_list, nc_count);
+		nc_count = remove_duplicate_addrs2(sa_list, nc_count);
 		if (nc_count == 0) {
 			TALLOC_FREE(sa_list);
 			TALLOC_FREE(frame);
@@ -3374,7 +3374,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	ret_count = remove_duplicate_addrs2_sa(sa_list, ret_count);
+	ret_count = remove_duplicate_addrs2(sa_list, ret_count);
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {
@@ -3917,7 +3917,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	/* need to remove duplicates in the list if we have any
 	   explicit password servers */
 
-	local_count = remove_duplicate_addrs2_sa(return_salist, local_count );
+	local_count = remove_duplicate_addrs2(return_salist, local_count );
 
 	/* For DC's we always prioritize IPv4 due to W2K3 not
 	 * supporting LDAP, KRB5 or CLDAP over IPv6. */
