@@ -93,13 +93,6 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 			       size_t *p_num_addrs,
 			       struct samba_sockaddr **pp_addrs,
 			       char ***pp_dns_names);
-NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
-				const char *name,
-				int name_type,
-				const char *sitename,
-				struct ip_service **return_iplist,
-				size_t *ret_count,
-				const char **resolve_order);
 NTSTATUS internal_resolve_name_sa(TALLOC_CTX *ctx,
 				const char *name,
 				int name_type,
