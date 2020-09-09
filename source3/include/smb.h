@@ -688,12 +688,6 @@ struct node_status_extra {
 #endif
 #define LDAP_GC_PORT    3268
 
-/* used by the IP comparison function */
-struct ip_service {
-	struct sockaddr_storage ss;
-	unsigned port;
-};
-
 struct ea_struct {
 	uint8_t flags;
 	char *name;
