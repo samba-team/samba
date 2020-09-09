@@ -3850,7 +3850,7 @@ enum dc_lookup_type { DC_NORMAL_LOOKUP, DC_ADS_ONLY, DC_KDC_ONLY };
 static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 			const char *domain,
 			const char *sitename,
-			struct ip_service **ip_list,
+			struct samba_sockaddr **sa_list_ret,
 			size_t *ret_count,
 			enum dc_lookup_type lookup_type,
 			bool *ordered)
@@ -3867,6 +3867,7 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 	size_t i;
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
+	struct samba_sockaddr *sa_list = NULL;
 	bool done_auto_lookup = false;
 	size_t auto_count = 0;
 	NTSTATUS status;
@@ -4137,13 +4138,28 @@ static NTSTATUS get_dc_list(TALLOC_CTX *ctx,
 
   out:
 
-	if (NT_STATUS_IS_OK(status)) {
-		*ip_list = return_iplist;
-		*ret_count = local_count;
-	} else {
+	/*
+	 * This uglyness will go away
+	 * once internal_resolve_name() is changed
+	 * to return a samba_sockaddr array.
+	 */
+	if (!(NT_STATUS_IS_OK(status))) {
 		TALLOC_FREE(return_iplist);
+		TALLOC_FREE(auto_ip_list);
+		TALLOC_FREE(frame);
+		return status;
 	}
+	status = ip_service_to_samba_sockaddr(ctx,
+				&sa_list,
+				return_iplist,
+				local_count);
 
+	TALLOC_FREE(return_iplist);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*sa_list_ret = sa_list;
+		*ret_count = local_count;
+	}
 	TALLOC_FREE(auto_ip_list);
 	TALLOC_FREE(frame);
 	return status;
@@ -4164,7 +4180,6 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 	bool ordered = false;
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
-	struct ip_service *ip_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
 	size_t count = 0;
 
@@ -4179,7 +4194,7 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 	status = get_dc_list(ctx,
 			domain,
 			sitename,
-			&ip_list,
+			&sa_list,
 			&count,
 			lookup_type,
 			&ordered);
@@ -4192,22 +4207,11 @@ NTSTATUS get_sorted_dc_list(TALLOC_CTX *ctx,
 		status = get_dc_list(ctx,
 				domain,
 				NULL,
-				&ip_list,
+				&sa_list,
 				&count,
 				lookup_type,
 				&ordered);
 	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = ip_service_to_samba_sockaddr(ctx,
-					&sa_list,
-					ip_list,
-					count);
-
-	TALLOC_FREE(ip_list);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -4235,7 +4239,6 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 			size_t *ret_count)
 {
 	size_t count = 0;
-	struct ip_service *ip_list = NULL;
 	struct samba_sockaddr *sa_list = NULL;
 	bool ordered = false;
 	NTSTATUS status;
@@ -4243,21 +4246,10 @@ NTSTATUS get_kdc_list(TALLOC_CTX *ctx,
 	status = get_dc_list(ctx,
 			realm,
 			sitename,
-			&ip_list,
+			&sa_list,
 			&count,
 			DC_KDC_ONLY,
 			&ordered);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = ip_service_to_samba_sockaddr(ctx,
-					&sa_list,
-					ip_list,
-					count);
-
-	TALLOC_FREE(ip_list);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
