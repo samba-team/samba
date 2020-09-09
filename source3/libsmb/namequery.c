@@ -64,49 +64,6 @@ bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
 	return true;
 }
 
-#if 0
-/*
- * Utility function to convert from a struct ip_service
- * array to a struct samba_sockaddr array. Will go away
- * once ip_service is gone.
- */
-
-static NTSTATUS ip_service_to_samba_sockaddr(TALLOC_CTX *ctx,
-				struct samba_sockaddr **sa_out,
-				const struct ip_service *iplist_in,
-				size_t count)
-{
-	struct samba_sockaddr *sa = NULL;
-	size_t i;
-	bool ok;
-
-	if (count == 0) {
-		/*
-		 * Zero length arrays are returned as NULL.
-		 * in the name resolution code.
-		 */
-		*sa_out = NULL;
-		return NT_STATUS_OK;
-	}
-	sa = talloc_zero_array(ctx,
-				struct samba_sockaddr,
-				count);
-	if (sa == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i = 0; i < count; i++) {
-		ok = sockaddr_storage_to_samba_sockaddr(&sa[i],
-						&iplist_in[i].ss);
-		if (!ok) {
-			TALLOC_FREE(sa);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-	*sa_out = sa;
-	return NT_STATUS_OK;
-}
-#endif
-
 /*
  * Utility function to convert from a sockaddr_storage
  * array to a struct samba_sockaddr array.
