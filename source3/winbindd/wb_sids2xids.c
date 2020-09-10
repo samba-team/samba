@@ -238,8 +238,6 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	TALLOC_FREE(names);
 	TALLOC_FREE(domains);
 
-	child_binding_handle = idmap_child_handle();
-
 	state->dom_ids = wb_sids2xids_extract_for_domain_index(
 		state, &state->ids, state->dom_index);
 	if (tevent_req_nomem(state->dom_ids, req)) {
@@ -252,6 +250,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		.max_size = 1
 	};
 
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
 		state, state->ev, child_binding_handle, &state->idmap_dom,
 		state->dom_ids);
@@ -290,8 +289,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status, result;
-	struct winbindd_child *child;
-
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct wbint_TransIDArray *src, *dst;
 	uint32_t i, src_idx;
 
@@ -352,8 +350,6 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	child = idmap_child();
-
 	state->dom_ids = wb_sids2xids_extract_for_domain_index(
 		state, &state->ids, state->dom_index);
 	if (tevent_req_nomem(state->dom_ids, req)) {
@@ -366,8 +362,9 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		.max_size = 1
 	};
 
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state, state->ev, child_binding_handle, &state->idmap_dom,
 		state->dom_ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -381,7 +378,7 @@ static void wb_sids2xids_gotdc(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
-	struct winbindd_child *child = idmap_child();
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct netr_DsRGetDCNameInfo *dcinfo;
 	NTSTATUS status;
 
@@ -404,8 +401,9 @@ static void wb_sids2xids_gotdc(struct tevent_req *subreq)
 		}
 	}
 
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state, state->ev, child_binding_handle, &state->idmap_dom,
 		state->dom_ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
