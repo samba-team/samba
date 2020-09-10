@@ -58,11 +58,8 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf):
 def _check_python_headers(conf):
     conf.check_python_headers()
 
-    if conf.env['PYTHON_VERSION'] > '3':
-        abi_pattern = os.path.splitext(conf.env['pyext_PATTERN'])[0]
-        conf.env['PYTHON_SO_ABI_FLAG'] = abi_pattern % ''
-    else:
-        conf.env['PYTHON_SO_ABI_FLAG'] = ''
+    abi_pattern = os.path.splitext(conf.env['pyext_PATTERN'])[0]
+    conf.env['PYTHON_SO_ABI_FLAG'] = abi_pattern % ''
     conf.env['PYTHON_LIBNAME_SO_ABI_FLAG'] = (
         conf.env['PYTHON_SO_ABI_FLAG'].replace('_', '-'))
 
