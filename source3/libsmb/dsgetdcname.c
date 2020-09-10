@@ -786,6 +786,9 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
+	TALLOC_FREE(dcs);
+	TALLOC_FREE(dclist);
+	TALLOC_FREE(dns_lookups);
 	return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 }
 
