@@ -36,8 +36,8 @@ struct wb_sids2xids_state {
 
 	struct wbint_TransIDArray all_ids;
 
-	struct dom_sid *non_cached;
-	uint32_t num_non_cached;
+	uint32_t lookup_count;
+	struct dom_sid *lookup_sids;
 
 	/*
 	 * Domain array to use for the idmap call. The output from
@@ -102,8 +102,8 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->non_cached = talloc_array(state, struct dom_sid, num_sids);
-	if (tevent_req_nomem(state->non_cached, req)) {
+	state->lookup_sids = talloc_zero_array(state, struct dom_sid, num_sids);
+	if (tevent_req_nomem(state->lookup_sids, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -154,9 +154,9 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		sid_copy(&state->non_cached[state->num_non_cached],
+		sid_copy(&state->lookup_sids[state->lookup_count],
 			 &state->sids[i]);
-		state->num_non_cached += 1;
+		state->lookup_count += 1;
 	}
 
 	if (num_valid == num_sids) {
@@ -189,8 +189,8 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 
 	subreq = wb_lookupsids_send(state,
 				    state->ev,
-				    state->non_cached,
-				    state->num_non_cached);
+				    state->lookup_sids,
+				    state->lookup_count);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -239,15 +239,15 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->ids.num_ids = state->num_non_cached;
+	state->ids.num_ids = state->lookup_count;
 	state->ids.ids = talloc_array(state, struct wbint_TransID,
-				      state->num_non_cached);
+				      state->ids.num_ids);
 	if (tevent_req_nomem(state->ids.ids, req)) {
 		return;
 	}
 
-	for (i=0; i<state->num_non_cached; i++) {
-		const struct dom_sid *sid = &state->non_cached[i];
+	for (i=0; i<state->lookup_count; i++) {
+		const struct dom_sid *sid = &state->lookup_sids[i];
 		struct dom_sid dom_sid;
 		struct lsa_TranslatedName *n = &names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
@@ -468,7 +468,7 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status;
-	uint32_t i, num_non_cached;
+	uint32_t i, lookup_count = 0;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
@@ -481,8 +481,6 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	num_non_cached = 0;
-
 	for (i=0; i<state->num_sids; i++) {
 		struct unixid xid;
 
@@ -491,13 +489,13 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 		if (state->all_ids.ids[i].domain_index == UINT32_MAX) {
 			xid = state->all_ids.ids[i].xid;
 		} else {
-			xid = state->ids.ids[num_non_cached].xid;
+			xid = state->ids.ids[lookup_count].xid;
 
 			idmap_cache_set_sid2unixid(
-				&state->non_cached[num_non_cached],
+				&state->lookup_sids[lookup_count],
 				&xid);
 
-			num_non_cached += 1;
+			lookup_count += 1;
 		}
 
 		xids[i] = xid;
