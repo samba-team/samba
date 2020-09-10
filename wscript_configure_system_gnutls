@@ -29,7 +29,10 @@ conf.CHECK_FUNCS_IN('gnutls_set_default_priority_append', 'gnutls')
 # in 3.6.11, see:
 #
 #     https://gitlab.com/gnutls/gnutls/-/merge_requests/1085
-if (parse_version('3.6.10') != parse_version(gnutls_version)):
+#
+# 3.6.10 - 3.6.14 have a severe memory leak with AES-CCM
+#     https://gitlab.com/gnutls/gnutls/-/merge_requests/1278
+if (parse_version(gnutls_version) > parse_version('3.6.14')):
     conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
 
 # Check if we have support for crypto policies
