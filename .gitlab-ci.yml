@@ -133,7 +133,7 @@ samba:
 samba-mitkrb5:
   extends: .shared_template
 
-samba-nopython:
+samba-minimal-smbd:
   extends: .shared_template
 
 samba-nopython-py2:
@@ -158,9 +158,6 @@ samba-ad-dc-6:
   extends: .shared_template
 
 samba-libs:
-  extends: .shared_template
-
-samba-static:
   extends: .shared_template
 
 samba-fuzz:
@@ -228,7 +225,6 @@ pages:
     - others
     - samba
     - samba-mitkrb5
-    - samba-nopython
     - samba-nopython-py2
     - samba-admem
     - samba-ad-dc-2
@@ -237,7 +233,7 @@ pages:
     - samba-ad-dc-5
     - samba-ad-dc-6
     - samba-libs
-    - samba-static
+    - samba-minimal-smbd
     - samba-fuzz
     # - ctdb  # TODO
     - samba-ctdb

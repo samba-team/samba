@@ -644,8 +644,26 @@ tasks = {
         ("allshared-make", "make -j"),
         ],
 
-    "samba-static": [
-        ("random-sleep", random_sleep(1, 1)),
+    "samba-fuzz": [
+        # build the fuzzers (static) via the oss-fuzz script
+        ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
+        ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl"),
+        ("fuzzers-check", "./lib/fuzzing/oss-fuzz/check_build.sh ${PREFIX_DIR}")
+        ],
+
+    # * Test smbd and smbtorture can build semi-static
+    #
+    # * Test Samba without python still builds.
+    #
+    # When this test fails due to more use of Python, the expectations
+    # is that the newly failing part of the code should be disabled
+    # when --disable-python is set (rather than major work being done
+    # to support this environment).
+    #
+    # The target here is for vendors shipping a minimal smbd.
+    "samba-minimal-smbd": [
+        ("random-sleep", random_sleep(300, 900)),
+
         # build with all modules static
         ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL"),
         ("allstatic-make", "make -j"),
@@ -660,24 +678,8 @@ tasks = {
         # retry with nonshared smbd and smbtorture
         ("nonshared-distclean", "make distclean"),
         ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
-        ("nonshared-make", "make -j")
-        ],
+        ("nonshared-make", "make -j"),
 
-    "samba-fuzz": [
-        # build the fuzzers (static) via the oss-fuzz script
-        ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
-        ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl"),
-        ("fuzzers-check", "./lib/fuzzing/oss-fuzz/check_build.sh ${PREFIX_DIR}")
-        ],
-
-    # Test Samba without python still builds.  When this test fails
-    # due to more use of Python, the expectations is that the newly
-    # failing part of the code should be disabled when
-    # --disable-python is set (rather than major work being done to
-    # support this environment).  The target here is for vendors
-    # shipping a minimal smbd.
-    "samba-nopython": [
-        ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
         ("make", "make -j"),
         ("install", "make install"),
