@@ -335,18 +335,19 @@ static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 {
 	struct node_status *ret;
 	size_t i;
+	size_t result_count = 0;
 
-	*num_names = CVAL(p,0);
+	result_count = CVAL(p,0);
 
-	if (*num_names == 0)
+	if (result_count == 0)
 		return NULL;
 
-	ret = talloc_array(mem_ctx, struct node_status,*num_names);
+	ret = talloc_array(mem_ctx, struct node_status,result_count);
 	if (!ret)
 		return NULL;
 
 	p++;
-	for (i=0;i< *num_names;i++) {
+	for (i=0;i< result_count;i++) {
 		strlcpy(ret[i].name,p,16);
 		trim_char(ret[i].name,'\0',' ');
 		ret[i].type = CVAL(p,15);
@@ -361,6 +362,7 @@ static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 	if (extra) {
 		memcpy(&extra->mac_addr, p, 6); /* Fill in the mac addr */
 	}
+	*num_names = result_count;
 	return ret;
 }
 
