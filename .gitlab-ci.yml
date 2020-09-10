@@ -52,6 +52,10 @@ include:
   - 'bootstrap/.gitlab-ci.yml'
 
 .shared_template:
+  # All Samba jobs are interruptible, this avoids burning CPU when a
+  # newer branch is pushed.
+  interruptible: true
+
   variables:
     AUTOBUILD_JOB_NAME: $CI_JOB_NAME
   image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
