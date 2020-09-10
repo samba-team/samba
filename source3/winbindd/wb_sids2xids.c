@@ -34,7 +34,7 @@ struct wb_sids2xids_state {
 	struct dom_sid *sids;
 	uint32_t num_sids;
 
-	struct id_map *cached;
+	struct wbint_TransIDArray all_ids;
 
 	struct dom_sid *non_cached;
 	uint32_t num_non_cached;
@@ -75,6 +75,7 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct wb_sids2xids_state *state;
 	uint32_t i;
+	uint32_t num_valid = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_sids2xids_state);
@@ -95,8 +96,9 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 		sid_copy(&state->sids[i], &sids[i]);
 	}
 
-	state->cached = talloc_zero_array(state, struct id_map, num_sids);
-	if (tevent_req_nomem(state->cached, req)) {
+	state->all_ids.num_ids = num_sids;
+	state->all_ids.ids = talloc_zero_array(state, struct wbint_TransID, num_sids);
+	if (tevent_req_nomem(state->all_ids.ids, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -111,20 +113,53 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	 * the same index.
 	 */
 	for (i=0; i<state->num_sids; i++) {
+		struct wbint_TransID *cur_id = &state->all_ids.ids[i];
+		struct dom_sid domain_sid;
 		struct dom_sid_buf buf;
+		struct id_map map = { .status = ID_UNMAPPED, };
+		uint32_t rid = 0;
+		bool in_cache;
+
+		sid_copy(&domain_sid, &state->sids[i]);
+		sid_split_rid(&domain_sid, &rid);
+
+		/*
+		 * Start with an invalid entry.
+		 */
+		*cur_id = (struct wbint_TransID) {
+			.type_hint = ID_TYPE_NOT_SPECIFIED,
+			.domain_index = UINT32_MAX - 1, /* invalid */
+			.rid = rid,
+			.xid = {
+				.id = UINT32_MAX,
+				.type = ID_TYPE_NOT_SPECIFIED,
+			},
+		};
 
 		DEBUG(10, ("SID %d: %s\n", (int)i,
 			   dom_sid_str_buf(&state->sids[i], &buf)));
 
-		if (wb_sids2xids_in_cache(&state->sids[i], &state->cached[i])) {
+		in_cache = wb_sids2xids_in_cache(&state->sids[i], &map);
+		if (in_cache) {
+			/*
+			 * We used to ignore map.status and just rely
+			 * on map.xid.type.
+			 *
+			 * Lets keep this logic for now...
+			 */
+
+			cur_id->xid = map.xid;
+			cur_id->domain_index = UINT32_MAX; /* this marks it as filled entry */
+			num_valid += 1;
 			continue;
 		}
+
 		sid_copy(&state->non_cached[state->num_non_cached],
 			 &state->sids[i]);
 		state->num_non_cached += 1;
 	}
 
-	if (state->num_non_cached == 0) {
+	if (num_valid == num_sids) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -453,8 +488,8 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 
 		xid.id = UINT32_MAX;
 
-		if (state->cached[i].sid != NULL) {
-			xid = state->cached[i].xid;
+		if (state->all_ids.ids[i].domain_index == UINT32_MAX) {
+			xid = state->all_ids.ids[i].xid;
 		} else {
 			xid = state->ids.ids[num_non_cached].xid;
 
