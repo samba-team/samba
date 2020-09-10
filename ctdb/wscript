@@ -705,7 +705,7 @@ def build(bld):
                        (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
                         sed_expr6, sed_expr7, sed_expr8)
 
-    manpages_extra = manpages_misc
+    manpages_extra = list(manpages_misc)
     if bld.env.etcd_reclock:
         manpages_extra += manpages_etcd
     if bld.env.HAVE_LIBRADOS:
