@@ -56,6 +56,8 @@ parser.add_option("--keeplogs", help="keep logs", default=False, action="store_t
 parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
 parser.add_option("--testbase", help="base directory to run tests in (default %s)" % def_testbase,
                   default=def_testbase)
+parser.add_option("--full-testbase", help="full base directory to run tests in (default %s/b$PID)" % def_testbase,
+                  default=None)
 parser.add_option("--passcmd", help="command to run on success", default=None)
 parser.add_option("--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
@@ -97,7 +99,10 @@ if options.retry:
     if options.rebase is None:
         raise Exception('You can only use --retry if you also rebase')
 
-testbase = "%s/b%u" % (options.testbase, os.getpid())
+if options.full_testbase is not None:
+    testbase = options.full_testbase
+else:
+    testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
 test_prefix = "%s/prefix" % testbase
 test_tmpdir = "%s/tmp" % testbase
