@@ -2945,10 +2945,10 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 			    struct sockaddr_storage **return_addrs,
 			    size_t *return_count)
 {
-	int 			i;
+	size_t 			i;
 	NTSTATUS  		status;
 	struct dns_rr_srv	*dcs = NULL;
-	int			numdcs = 0;
+	size_t			numdcs = 0;
 	size_t			numaddrs = 0;
 	size_t num_srv_addrs = 0;
 	struct sockaddr_storage *srv_addrs = NULL;
@@ -3006,12 +3006,6 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		*return_count = 0;
 		TALLOC_FREE(dcs);
 		return NT_STATUS_OK;
-	}
-
-	/* Paranoia. */
-	if (numdcs < 0) {
-		TALLOC_FREE(dcs);
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/*

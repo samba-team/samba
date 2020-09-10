@@ -347,7 +347,7 @@ NTSTATUS ads_dns_lookup_ns_recv(struct tevent_req *req,
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
-				int *numns)
+				size_t *numns)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -791,7 +791,7 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 				       const char *realm,
 				       const char *sitename,
 				       struct dns_rr_srv **dclist,
-				       int *numdcs )
+				       size_t *numdcs )
 {
 	char *name;
 	NTSTATUS status;
@@ -827,10 +827,6 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 	status = ads_dns_lookup_srv(ctx, name, dclist, &num_srvs);
 
 done:
-	/* check overflow size_t -> int */
-	if ((int)num_srvs < 0) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 	*numdcs = num_srvs;
 	return status;
 }
@@ -843,7 +839,7 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs )
+			   size_t *numdcs )
 {
 	NTSTATUS status;
 
@@ -865,7 +861,7 @@ NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs )
+			   size_t *numdcs )
 {
 	NTSTATUS status;
 
@@ -889,7 +885,7 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 			    const char *dns_forest_name,
 			    const char *sitename,
 			    struct dns_rr_srv **dclist,
-			    int *numdcs )
+			    size_t *numdcs )
 {
 	NTSTATUS status;
 
@@ -910,7 +906,7 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
 			   const char *dns_domain_name,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs )
+			   size_t *numdcs )
 {
 	return ads_dns_query_internal(ctx,
 				      "_ldap",
@@ -929,7 +925,7 @@ NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 				const char *dns_forest_name,
 				const char *domain_guid,
 				struct dns_rr_srv **dclist,
-				int *numdcs )
+				size_t *numdcs )
 {
 	/*_ldap._tcp.DomainGuid.domains._msdcs.DnsForestName */
 

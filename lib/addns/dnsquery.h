@@ -47,7 +47,7 @@ NTSTATUS ads_dns_lookup_ns_recv(struct tevent_req *req,
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
-				int *numns);
+				size_t *numns);
 struct tevent_req *ads_dns_lookup_a_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				const char *name);
@@ -83,24 +83,24 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs );
+			   size_t *numdcs );
 NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs );
+			   size_t *numdcs );
 NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 			    const char *dns_forest_name,
 			    const char *sitename,
 			    struct dns_rr_srv **dclist,
-			    int *numdcs );
+			    size_t *numdcs );
 NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
 			   const char *dns_domain_name,
 			   struct dns_rr_srv **dclist,
-			   int *numdcs );
+			   size_t *numdcs );
 NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 				const char *dns_forest_name,
 				const char *domain_guid,
 				struct dns_rr_srv **dclist,
-				int *numdcs );
+				size_t *numdcs );
 #endif	/* _ADS_DNS_H */

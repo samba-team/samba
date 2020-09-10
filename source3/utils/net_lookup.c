@@ -102,7 +102,7 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	const char *domain;
 	struct sockaddr_storage ss;
 	struct dns_rr_srv *dcs = NULL;
-	int numdcs = 0;
+	size_t numdcs = 0;
 	char *sitename;
 	TALLOC_CTX *ctx;
 	NTSTATUS status;

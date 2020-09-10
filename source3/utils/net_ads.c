@@ -1516,7 +1516,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 					int num_addrs, bool remove_host)
 {
 	struct dns_rr_ns *nameservers = NULL;
-	int ns_count = 0, i;
+	size_t ns_count = 0, i;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
 	fstring dns_server;

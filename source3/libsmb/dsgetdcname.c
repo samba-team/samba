@@ -522,7 +522,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	size_t i;
 	NTSTATUS status;
 	struct dns_rr_srv *dcs = NULL;
-	int numdcs = 0;
+	size_t numdcs = 0;
 	struct ip_service_name *dclist = NULL;
 	size_t ret_count = 0;
 	size_t num_dns_lookups = 0;
@@ -574,12 +574,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(dcs);
 		return status;
-	}
-
-	/* Wrap protect. */
-	if (numdcs < 0) {
-		TALLOC_FREE(dcs);
-		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
 	if (numdcs == 0) {
