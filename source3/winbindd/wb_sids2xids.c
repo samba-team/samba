@@ -193,6 +193,7 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status;
+	uint32_t i;
 
 	status = wb_parent_idmap_setup_recv(subreq, &state->cfg);
 	TALLOC_FREE(subreq);
@@ -200,6 +201,66 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		return;
 	}
 	SMB_ASSERT(state->cfg->num_doms > 0);
+
+	/*
+	 * Now we build a list with all domain
+	 * with non cached entries
+	 */
+	for (i=0; i<state->num_sids; i++) {
+		struct wbint_TransID *t = &state->all_ids.ids[i];
+		struct dom_sid domain_sid;
+		const char *domain_name = NULL;
+		int domain_index;
+		uint32_t rid = 0;
+		uint32_t di;
+
+		if (t->domain_index == UINT32_MAX) {
+			/* ignore already filled entries */
+			continue;
+		}
+
+		sid_copy(&domain_sid, &state->sids[i]);
+		sid_split_rid(&domain_sid, &rid);
+
+		for (di = 0; di < state->cfg->num_doms; di++) {
+			struct wb_parent_idmap_config_dom *dom =
+				&state->cfg->doms[di];
+			bool match;
+
+			match = dom_sid_equal(&domain_sid,
+					      &dom->sid);
+			if (!match) {
+				continue;
+			}
+
+			domain_name = dom->name;
+			break;
+		}
+		if (domain_name == NULL) {
+			struct winbindd_domain *wb_domain = NULL;
+
+			/*
+			 * Try to fill the name if we already know it
+			 */
+			wb_domain = find_domain_from_sid_noinit(&state->sids[i]);
+			if (wb_domain != NULL) {
+				domain_name = wb_domain->name;
+			}
+		}
+		if (domain_name == NULL) {
+			domain_name = "";
+		}
+
+		domain_index = init_lsa_ref_domain_list(state,
+							&state->idmap_doms,
+							domain_name,
+							&domain_sid);
+		if (domain_index == -1) {
+			tevent_req_oom(req);
+			return;
+		}
+		t->domain_index = domain_index;
+	}
 
 	subreq = wb_lookupsids_send(state,
 				    state->ev,
@@ -251,51 +312,11 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	}
 
 	for (li = 0; li < state->lookup_count; li++) {
-		const struct dom_sid *sid = &state->lookup_sids[li];
-		struct dom_sid dom_sid;
 		struct lsa_TranslatedName *n = &names->names[li];
 		uint32_t ai = state->tmp_idx[li];
 		struct wbint_TransID *t = &state->all_ids.ids[ai];
-		int domain_index;
-		const char *domain_name = NULL;
 
-		if (n->sid_index != UINT32_MAX) {
-			const struct lsa_DomainInfo *info;
-			bool match;
-
-			info = &domains->domains[n->sid_index];
-			match = dom_sid_in_domain(info->sid, sid);
-			if (match) {
-				domain_name = info->name.string;
-			}
-		}
-		if (domain_name == NULL) {
-			struct winbindd_domain *wb_domain = NULL;
-
-			/*
-			 * This is needed to handle Samba DCs
-			 * which always return sid_index == UINT32_MAX for
-			 * unknown sids.
-			 */
-			wb_domain = find_domain_from_sid_noinit(sid);
-			if (wb_domain != NULL) {
-				domain_name = wb_domain->name;
-			}
-		}
-		if (domain_name == NULL) {
-			domain_name = "";
-		}
-
-		sid_copy(&dom_sid, sid);
-		sid_split_rid(&dom_sid, &t->rid);
 		t->type_hint = lsa_SidType_to_id_type(n->sid_type);
-		domain_index = init_lsa_ref_domain_list(
-			state, &state->idmap_doms, domain_name, &dom_sid);
-		if (domain_index == -1) {
-			tevent_req_oom(req);
-			return;
-		}
-		t->domain_index = domain_index;
 	}
 
 	TALLOC_FREE(names);
