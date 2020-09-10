@@ -11,3 +11,13 @@
 ^samba4.blackbox.schemaupgrade
 ^samba4.blackbox.group.py
 ^samba4.blackbox.provision.py
+^samba4.blackbox.upgradeprovision.current
+^samba.tests.usage
+^samba4.blackbox.dbcheck.release-4-0-0
+^samba4.blackbox.dbcheck.release-4-0-0.quick
+^samba4.blackbox.dbcheck-links.release-4-5-0-pre1
+^samba4.blackbox.dbcheck.release-4-1-0rc3
+^samba4.blackbox.dbcheck.release-4-1-0rc3.quick
+^samba.tests.samba_tool.visualize
+^samba4.blackbox.functionalprep
+^samba4.blackbox.dbcheck.alpha13.quick
