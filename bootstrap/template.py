@@ -32,7 +32,7 @@ from config import DISTS, VAGRANTFILE, OUT
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 SHA1SUM_FILE_PATH = os.path.join(HERE, 'sha1sum.txt')
-README_FILE_PATH = os.path.join(HERE, 'READMD.md')
+README_FILE_PATH = os.path.join(HERE, 'README.md')
 
 logging.basicConfig(level='INFO')
 log = logging.getLogger(__file__)
