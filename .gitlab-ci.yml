@@ -136,9 +136,6 @@ samba-mitkrb5:
 samba-minimal-smbd:
   extends: .shared_template
 
-samba-nopython-py2:
-  extends: .shared_template
-
 samba-admem:
   extends: .shared_template
 
@@ -225,7 +222,6 @@ pages:
     - others
     - samba
     - samba-mitkrb5
-    - samba-nopython-py2
     - samba-admem
     - samba-ad-dc-2
     - samba-ad-dc-3

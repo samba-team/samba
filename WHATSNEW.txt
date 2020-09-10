@@ -55,6 +55,17 @@ CTDB CHANGES
   scripts and can be checked by users with "ctdb pnn" and "ctdb
   recmaster".
 
+Python 3.6 or later required
+----------------------------
+
+Samba's minimum runtime requirement for python was raised to Python
+3.6 with samba 4.13.  Samba 4.14 raises this minimum version to Python
+3.6 also to build Samba. It is no longer possible to build Samba
+(even just the file server) with Python versions 2.6 and 2.7.
+
+As Python 2.7 has been End Of Life upstream since April 2020, Samba
+is dropping ALL Python 2.x support in this release.
+
 
 NT4-like 'classic' Samba domain controllers
 -------------------------------------------

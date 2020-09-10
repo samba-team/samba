@@ -711,42 +711,7 @@ tasks = {
         ("libs-install", "make install"),
         ("libs-check-clean-tree", "script/clean-source-tree.sh"),
         ("libs-clean", "make clean"),
-        ],
 
-    # check we can do the same thing using python2
-    "samba-nopython-py2": [
-        ("random-sleep", random_sleep(300, 900)),
-        ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
-        ("make", "PYTHON=python2 make -j"),
-        ("install", "PYTHON=python2 make install"),
-        ("find-python", "script/find_python.sh ${PREFIX}"),
-        ("test", "make test-nopython"),
-        ("lcov", LCOV_CMD),
-        ("check-clean-tree", "script/clean-source-tree.sh"),
-        ("clean", "PYTHON=python2 make clean"),
-
-        ("talloc-configure", "cd lib/talloc && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python"),
-        ("talloc-make", "cd lib/talloc && PYTHON=python2 make"),
-        ("talloc-install", "cd lib/talloc && PYTHON=python2 make install"),
-
-        ("tdb-configure", "cd lib/tdb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python"),
-        ("tdb-make", "cd lib/tdb && PYTHON=python2 make"),
-        ("tdb-install", "cd lib/tdb && PYTHON=python2 make install"),
-
-        ("tevent-configure", "cd lib/tevent && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python"),
-        ("tevent-make", "cd lib/tevent && PYTHON=python2 make"),
-        ("tevent-install", "cd lib/tevent && PYTHON=python2 make install"),
-
-        ("ldb-configure", "cd lib/ldb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python"),
-        ("ldb-make", "cd lib/ldb && PYTHON=python2 make"),
-        ("ldb-install", "cd lib/ldb && PYTHON=python2 make install"),
-
-        # retry against installed library packages
-        ("libs-configure", "PYTHON=python2 " + samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc"),
-        ("libs-make", "PYTHON=python2 make -j"),
-        ("libs-install", "PYTHON=python2 make install"),
-        ("libs-check-clean-tree", "script/clean-source-tree.sh"),
-        ("libs-clean", "PYTHON=python2 make clean"),
         ],
 
     "ldb": [
