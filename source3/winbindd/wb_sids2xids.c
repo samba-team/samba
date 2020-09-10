@@ -455,6 +455,8 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		if (src->ids[si].xid.type != ID_TYPE_NOT_SPECIFIED) {
 			dst->ids[di].xid  = src->ids[si].xid;
 		}
+		dst->ids[di].domain_index = UINT32_MAX; /* mark as valid */
+		idmap_cache_set_sid2unixid(&state->sids[di], &dst->ids[di].xid);
 	}
 
 	state->map_ids_in.num_ids = 0;
@@ -547,9 +549,6 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 
 	for (i=0; i<state->num_sids; i++) {
 		xids[i] = state->all_ids.ids[i].xid;
-		if (state->all_ids.ids[i].domain_index != UINT32_MAX) {
-			idmap_cache_set_sid2unixid(&state->sids[i], &xids[i]);
-		}
 	}
 
 	return NT_STATUS_OK;
