@@ -769,17 +769,20 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*returned_dclist = dclist;
-	*return_count = (int)ret_count;
 
-	if (*return_count < 0) {
+	if ((int)ret_count < 0) {
 		TALLOC_FREE(dcs);
 		TALLOC_FREE(dclist);
 		TALLOC_FREE(dns_lookups);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+
 	if (ret_count > 0) {
+		TALLOC_FREE(dcs);
+		TALLOC_FREE(dns_lookups);
+		*returned_dclist = dclist;
+		*return_count = (int)ret_count;
 		return NT_STATUS_OK;
 	}
 
