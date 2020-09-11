@@ -59,6 +59,11 @@ pid_t idmap_child_pid(void)
 
 struct dcerpc_binding_handle *idmap_child_handle(void)
 {
+	/*
+	 * The caller needs to use wb_parent_idmap_setup_send/recv
+	 * before talking to the idmap child!
+	 */
+	SMB_ASSERT(static_parent_idmap_config.num_doms > 0);
 	return static_idmap_child.binding_handle;
 }
 
