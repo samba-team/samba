@@ -48,8 +48,6 @@
 
 extern int do_smb_browse(void); /* mDNS browsing */
 
-extern bool override_logfile;
-
 static int port = 0;
 static char *service;
 static char *desthost;
