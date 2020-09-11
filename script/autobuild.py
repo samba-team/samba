@@ -341,7 +341,6 @@ tasks = {
             "simpleserver",
             ])),
         ("lcov", LCOV_CMD),
-        ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ("clean", "make clean"),
         ],
@@ -687,7 +686,6 @@ tasks = {
 
         ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
         ("make", "make -j"),
-        ("install", "make install"),
         ("find-python", "script/find_python.sh ${PREFIX}"),
         ("test", "make test-nopython"),
         ("lcov", LCOV_CMD),
