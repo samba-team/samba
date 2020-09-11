@@ -44,6 +44,9 @@
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 2
 # define ISC_BOOLEAN_AS_BOOL 0
+#elif defined (BIND_VERSION_9_14)
+# define DLZ_DLOPEN_VERSION 3
+# define DNS_CLIENTINFO_VERSION 2
 #else
 # error Unsupported BIND version
 #endif
