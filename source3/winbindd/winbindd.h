@@ -189,6 +189,19 @@ struct winbindd_domain {
 	struct winbindd_domain *prev, *next;
 };
 
+struct wb_parent_idmap_config_dom {
+	unsigned low_id;
+	unsigned high_id;
+	const char *name;
+	struct dom_sid sid;
+};
+
+struct wb_parent_idmap_config {
+	struct tevent_queue *queue;
+	uint32_t num_doms;
+	struct wb_parent_idmap_config_dom *doms;
+};
+
 struct wb_acct_info {
 	const char *acct_name; /* account name */
 	const char *acct_desc; /* account name */

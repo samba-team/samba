@@ -364,6 +364,11 @@ NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 
 /* The following definitions come from winbindd/winbindd_idmap.c  */
 
+struct tevent_req *wb_parent_idmap_setup_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev);
+NTSTATUS wb_parent_idmap_setup_recv(struct tevent_req *req,
+				    const struct wb_parent_idmap_config **_cfg);
+
 void init_idmap_child(void);
 struct winbindd_child *idmap_child(void);
 bool is_idmap_child(const struct winbindd_child *child);
