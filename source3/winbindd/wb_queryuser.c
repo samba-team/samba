@@ -77,7 +77,7 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	struct wbint_userinfo *info = state->info;
 	struct netr_SamInfo3 *info3;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct unixid xid;
 	NTSTATUS status;
 
@@ -138,10 +138,9 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 		return;
 	}
 
-	child = idmap_child();
-
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
-		state, state->ev, child->binding_handle, info);
+		state, state->ev, child_binding_handle, info);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -156,7 +155,7 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	struct wbint_userinfo *info = state->info;
 	enum lsa_SidType type;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	NTSTATUS status;
 
 	status = wb_lookupsid_recv(subreq, state, &type,
@@ -186,10 +185,9 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 		return;
 	}
 
-	child = idmap_child();
-
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
-		state, state->ev, child->binding_handle, info);
+		state, state->ev, child_binding_handle, info);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -270,7 +268,7 @@ static void wb_queryuser_got_dc(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	struct wbint_userinfo *info = state->info;
 	struct netr_DsRGetDCNameInfo *dcinfo;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	NTSTATUS status;
 
 	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
@@ -286,10 +284,9 @@ static void wb_queryuser_got_dc(struct tevent_req *subreq)
 		return;
 	}
 
-	child = idmap_child();
-
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
-		state, state->ev, child->binding_handle, info);
+		state, state->ev, child_binding_handle, info);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
