@@ -1,7 +1,17 @@
 # see https://docs.gitlab.com/ce/ci/yaml/README.html for all available options
 
+# Stages explained
+#
+# images: Build the images with the bootstrap script
+# build_first: Build one thing first to find silly errors (fast job)
+#              (don't pay for 35 machines until something compiles)
+# build: The main parallel job
+#              (keep these to 1hour as we are billed per hour)
+# report: Code coverage reporting
+
 stages:
   - images
+  - build_first
   - build
   - report
 
@@ -178,7 +188,10 @@ samba-admem-mit:
 samba-ad-dc-4-mitkrb5:
   extends: .shared_template
 
+# This task is run first to ensure we compile before we start the
+# main run as it is the fastest full compile of Samba.
 samba-fips:
+  stage: build_first
   extends: .shared_template
   image: $SAMBA_CI_CONTAINER_IMAGE_fedora32
 
