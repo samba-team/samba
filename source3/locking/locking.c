@@ -704,17 +704,20 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	}
 
 	{
-		int level = DBGLVL_DEBUG;
 		NTSTATUS status;
 
 		status = leases_db_del(&e->client_guid,
 				       &e->lease_key,
 				       &d->id);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-			level = DBGLVL_ERR;
+		if (!NT_STATUS_IS_OK(status)) {
+			int level = DBGLVL_DEBUG;
+
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+				level = DBGLVL_ERR;
+			}
+			DBG_PREFIX(level, ("leases_db_del failed: %s\n",
+				   nt_errstr(status)));
 		}
-		DBG_PREFIX(level, ("leases_db_del failed: %s\n",
-			   nt_errstr(status)));
 	}
 }
 
