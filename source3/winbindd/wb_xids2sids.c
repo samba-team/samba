@@ -270,7 +270,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 {
 	struct tevent_req *req, *subreq;
 	struct wb_xids2sids_dom_state *state;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	size_t i;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -317,9 +317,9 @@ static struct tevent_req *wb_xids2sids_dom_send(
 		return tevent_req_post(req, ev);
 	}
 
-	child = idmap_child();
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_UnixIDs2Sids_send(
-		state, ev, child->binding_handle, dom_map->name, dom_map->sid,
+		state, ev, child_binding_handle, dom_map->name, dom_map->sid,
 		state->num_dom_xids, state->dom_xids, state->dom_sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -396,7 +396,7 @@ static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_xids2sids_dom_state *state = tevent_req_data(
 		req, struct wb_xids2sids_dom_state);
-	struct winbindd_child *child = idmap_child();
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct netr_DsRGetDCNameInfo *dcinfo;
 	NTSTATUS status;
 
@@ -413,9 +413,9 @@ static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq)
 		return;
 	}
 
-	child = idmap_child();
+	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_UnixIDs2Sids_send(
-		state, state->ev, child->binding_handle, state->dom_map->name,
+		state, state->ev, child_binding_handle, state->dom_map->name,
 		state->dom_map->sid, state->num_dom_xids,
 		state->dom_xids, state->dom_sids);
 	if (tevent_req_nomem(subreq, req)) {
