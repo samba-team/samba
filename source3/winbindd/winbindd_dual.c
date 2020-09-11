@@ -1071,11 +1071,11 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 		   primary domain comes back online */
 
 		if ( domain->primary ) {
-			struct winbindd_child *idmap = idmap_child();
+			pid_t idmap_pid = idmap_child_pid();
 
-			if ( idmap->pid != 0 ) {
+			if (idmap_pid != 0) {
 				messaging_send_buf(msg_ctx,
-						   pid_to_procid(idmap->pid), 
+						   pid_to_procid(idmap_pid),
 						   MSG_WINBIND_ONLINE,
 						   (const uint8_t *)domain->name,
 						   strlen(domain->name)+1);

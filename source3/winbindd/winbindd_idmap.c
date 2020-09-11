@@ -34,6 +34,11 @@ struct winbindd_child *idmap_child(void)
 	return &static_idmap_child;
 }
 
+pid_t idmap_child_pid(void)
+{
+	return static_idmap_child.pid;
+}
+
 struct dcerpc_binding_handle *idmap_child_handle(void)
 {
 	return static_idmap_child.binding_handle;
