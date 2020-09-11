@@ -25,7 +25,7 @@ import time
 
 from samba.auth import system_session
 from samba.credentials import Credentials
-from samba.compat import get_string, get_bytes
+from samba.common import get_string, get_bytes
 from samba.dcerpc.messaging import AUTH_EVENT_NAME, MSG_AUTH_LOG
 from samba.dsdb import UF_NORMAL_ACCOUNT
 from samba.messaging import Messaging

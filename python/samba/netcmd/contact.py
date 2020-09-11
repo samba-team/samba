@@ -36,7 +36,7 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-from samba.compat import get_bytes
+from samba.common import get_bytes
 from . import common
 
 

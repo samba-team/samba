@@ -37,7 +37,7 @@ from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dcerpc.netlogon import NETLOGON_NEG_STRONG_KEYS
-from samba.compat import get_string
+from samba.common import get_string
 from samba.dcerpc.windows_event_ids import (
     EVT_ID_UNSUCCESSFUL_LOGON,
     EVT_LOGON_NETWORK

@@ -21,7 +21,7 @@ import re
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests import BlackboxProcessError
 from samba.tests import check_help_consistency
-from samba.compat import get_string
+from samba.common import get_string
 
 
 class HelpTestCase(SambaToolCmdTest):

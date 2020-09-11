@@ -33,7 +33,7 @@ from samba.dcerpc import echo, netlogon
 from samba.messaging import Messaging
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
-from samba.compat import get_string
+from samba.common import get_string
 from samba.dsdb import (
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_PASSWD_NOTREQD)

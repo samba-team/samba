@@ -34,7 +34,7 @@ from samba.ndr import ndr_unpack, ndr_pack, ndr_print
 from samba.remove_dc import remove_dns_references
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.compat import get_bytes
+from samba.common import get_bytes
 from subprocess import check_call, CalledProcessError
 from . import common
 

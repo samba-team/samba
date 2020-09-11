@@ -39,8 +39,8 @@ from ldb import (
     Message,
     FLAG_MOD_REPLACE,
 )
-from samba.compat import cmp_fn
-from samba.compat import get_string
+from samba.common import cmp
+from samba.common import get_string
 
 
 class DrsBaseTestCase(SambaToolCmdTest):
@@ -529,7 +529,7 @@ class AbstractLink:
                 print("AbstractLink.__internal_cmp__(%r, %r) => wrong type" % (self, other))
             return NotImplemented
 
-        c = cmp_fn(self.selfGUID_blob, other.selfGUID_blob)
+        c = cmp(self.selfGUID_blob, other.selfGUID_blob)
         if c != 0:
             if verbose:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different identifier" % (self, other, c))
@@ -550,7 +550,7 @@ class AbstractLink:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different FLAG_ACTIVE" % (self, other, c))
             return c
 
-        c = cmp_fn(self.targetGUID_blob, other.targetGUID_blob)
+        c = cmp(self.targetGUID_blob, other.targetGUID_blob)
         if c != 0:
             if verbose:
                 print("AbstractLink.__internal_cmp__(%r, %r) => %d different target" % (self, other, c))

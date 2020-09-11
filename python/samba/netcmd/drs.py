@@ -46,7 +46,7 @@ from samba.uptodateness import (
     get_utdv_summary,
     get_kcc_and_dsas,
 )
-from samba.compat import get_string
+from samba.common import get_string
 from samba.samdb import get_default_backend_store
 
 def drsuapi_connect(ctx):

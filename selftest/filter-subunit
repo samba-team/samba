@@ -102,12 +102,8 @@ else:
                                       flapping=flapping)
 
 try:
-    from samba.compat import PY3
     from io import TextIOWrapper as TextIOWrapper
-    if PY3:
-        forgiving_stdin = TextIOWrapper(sys.stdin.buffer, errors='ignore',  encoding='utf-8')
-    else:
-        forgiving_stdin = sys.stdin
+    forgiving_stdin = TextIOWrapper(sys.stdin.buffer, errors='ignore',  encoding='utf-8')
     ret = subunithelper.parse_results(msg_ops, statistics, forgiving_stdin)
 except subunithelper.ImmediateFail:
     sys.stdout.flush()

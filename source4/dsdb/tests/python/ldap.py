@@ -52,7 +52,7 @@ from samba.dsdb import (UF_NORMAL_ACCOUNT,
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security, lsa
 from samba.tests import delete_force
-from samba.compat import get_string
+from samba.common import get_string
 
 parser = optparse.OptionParser("ldap.py [options] <host>")
 sambaopts = options.SambaOptions(parser)

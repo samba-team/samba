@@ -21,7 +21,7 @@ from xml.dom import minidom
 from io import BytesIO
 from xml.etree.ElementTree import ElementTree, fromstring, tostring
 from hashlib import md5
-from samba.compat import get_bytes
+from samba.common import get_bytes
 
 
 ENTITY_USER_ID = 0

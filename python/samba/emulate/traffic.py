@@ -53,7 +53,7 @@ from samba.dsdb import (
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba import gensec
 from samba import sd_utils
-from samba.compat import get_string
+from samba.common import get_string
 from samba.logger import get_samba_logger
 import bisect
 

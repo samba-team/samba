@@ -18,7 +18,7 @@
 import os.path
 from samba.gpclass import gp_inf_ext
 from samba.auth import system_session
-from samba.compat import get_string
+from samba.common import get_string
 try:
     from ldb import LdbError
     from samba.samdb import SamDB

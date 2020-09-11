@@ -62,7 +62,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from samba.tests import TestCase
 from samba.credentials import Credentials
 from samba import generate_random_bytes as get_random_bytes
-from samba.compat import get_string, get_bytes
+from samba.common import get_string, get_bytes
 
 class Enctype(object):
     DES_CRC = 1

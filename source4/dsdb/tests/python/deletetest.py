@@ -20,7 +20,7 @@ from ldb import ERR_UNWILLING_TO_PERFORM, ERR_OPERATIONS_ERROR
 from samba.samdb import SamDB
 from samba.tests import delete_force
 from samba import dsdb
-from samba.compat import get_string
+from samba.common import get_string
 
 parser = optparse.OptionParser("deletetest.py [options] <host|file>")
 sambaopts = options.SambaOptions(parser)

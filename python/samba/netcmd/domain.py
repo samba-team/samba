@@ -101,7 +101,7 @@ from samba.provision.common import (
 from samba.netcmd.pso import cmd_domain_passwordsettings_pso
 from samba.netcmd.domain_backup import cmd_domain_backup
 
-from samba.compat import get_string
+from samba.common import get_string
 
 string_version_to_constant = {
     "2008_R2": DS_DOMAIN_FUNCTION_2008_R2,

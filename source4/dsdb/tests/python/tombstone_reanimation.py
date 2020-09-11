@@ -31,7 +31,7 @@ from samba.dcerpc import security
 from samba.dcerpc import drsblobs
 from samba.dcerpc.drsuapi import *
 from samba.tests.password_test import PasswordCommon
-from samba.compat import get_string
+from samba.common import get_string
 
 import samba.tests
 from ldb import (SCOPE_BASE, FLAG_MOD_ADD, FLAG_MOD_DELETE, FLAG_MOD_REPLACE, Dn, Message,

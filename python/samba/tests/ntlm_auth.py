@@ -19,7 +19,7 @@
 import os
 from subprocess import Popen, PIPE
 from samba.tests.ntlm_auth_base import NTLMAuthTestCase
-from samba.compat import get_string
+from samba.common import get_string
 
 class NTLMAuthHelpersTests(NTLMAuthTestCase):
 

@@ -27,8 +27,8 @@ from samba import (
         )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
-from samba.compat import get_bytes
-from samba.compat import get_string
+from samba.common import get_bytes
+from samba.common import get_string
 from samba.tests import env_loadparm
 
 

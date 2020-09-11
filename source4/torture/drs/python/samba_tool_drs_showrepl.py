@@ -26,7 +26,7 @@ import re
 import json
 import ldb
 import random
-from samba.compat import get_string
+from samba.common import get_string
 
 GUID_RE = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
 HEX8_RE = r'0x[\da-f]{8}'

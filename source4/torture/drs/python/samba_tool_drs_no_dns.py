@@ -30,7 +30,7 @@ import ldb
 import drs_base
 
 from samba.tests import BlackboxProcessError
-from samba.compat import get_string
+from samba.common import get_string
 
 
 class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):

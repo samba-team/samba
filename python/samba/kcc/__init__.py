@@ -44,7 +44,7 @@ from samba.kcc.graph import Vertex
 
 from samba.kcc.debug import DEBUG, DEBUG_FN, logger
 from samba.kcc import debug
-from samba.compat import cmp_fn
+from samba.common import cmp
 
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
@@ -61,7 +61,7 @@ def sort_dsa_by_gc_and_guid(dsa1, dsa2):
         return -1
     if not dsa1.is_gc() and dsa2.is_gc():
         return +1
-    return cmp_fn(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
+    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
 
 def is_smtp_replication_available():

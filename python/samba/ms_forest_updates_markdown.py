@@ -27,7 +27,7 @@ import re
 import os
 import markdown
 import xml.etree.ElementTree as ET
-from samba.compat import get_string
+from samba.common import get_string
 
 
 # Display specifier updates or otherwise (ignored in forest_update.py)

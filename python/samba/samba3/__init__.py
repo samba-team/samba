@@ -28,7 +28,7 @@ import tdb
 
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
-from samba.compat import get_bytes
+from samba.common import get_bytes
 
 def fetch_uint32(db, key):
     try:

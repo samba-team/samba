@@ -23,7 +23,7 @@ sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
 from configparser import ConfigParser
 from io import StringIO
-from samba.compat import get_bytes
+from samba.common import get_bytes
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
 import re

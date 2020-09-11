@@ -49,7 +49,7 @@ import re
 import os
 import tempfile
 from collections import OrderedDict
-from samba.compat import get_string
+from samba.common import get_string
 from samba.netcmd import CommandError
 
 

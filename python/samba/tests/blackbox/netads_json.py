@@ -19,7 +19,7 @@ import json
 import re
 
 import samba.tests
-from samba.compat import get_string
+from samba.common import get_string
 
 COMMAND         = "bin/net ads"
 # extract keys from non-json version

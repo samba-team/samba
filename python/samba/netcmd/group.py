@@ -36,7 +36,7 @@ from samba.dsdb import (
 )
 from collections import defaultdict
 from subprocess import check_call, CalledProcessError
-from samba.compat import get_bytes
+from samba.common import get_bytes
 import os
 import tempfile
 from . import common

@@ -16,7 +16,7 @@ import samba.getopt as options
 
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.auth import system_session
-from samba.compat import get_string
+from samba.common import get_string
 
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS

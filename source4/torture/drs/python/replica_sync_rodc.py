@@ -32,7 +32,7 @@ import drs_base
 import samba.tests
 import time
 import ldb
-from samba.compat import get_string
+from samba.common import get_string
 
 from ldb import (
     SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT)

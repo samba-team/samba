@@ -18,8 +18,8 @@ import samba.getopt as options
 from samba.auth import system_session
 import ldb
 from samba.samdb import SamDB
-from samba.compat import get_bytes
-from samba.compat import get_string
+from samba.common import get_bytes
+from samba.common import get_string
 
 import time
 

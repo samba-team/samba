@@ -53,8 +53,8 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-from samba.compat import get_bytes
-from samba.compat import get_string
+from samba.common import get_bytes
+from samba.common import get_string
 from . import common
 
 # python[3]-gpgme is abandoned since ubuntu 1804 and debian 9

@@ -70,7 +70,7 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  increment_calculated_keyversion_number,
                                  print_provision_ranges)
 from samba.xattr import copytree_with_xattrs
-from samba.compat import cmp_to_key_fn
+from functools import cmp_to_key
 
 # make sure the script dies immediately when hitting control-C,
 # rather than raising KeyboardInterrupt. As we do all database
@@ -1130,8 +1130,8 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
 
     # Sort the missing object in order to have object of the lowest level
     # first (which can be containers for higher level objects)
-    listMissing.sort(key=cmp_to_key_fn(dn_sort))
-    listPresent.sort(key=cmp_to_key_fn(dn_sort))
+    listMissing.sort(key=cmp_to_key(dn_sort))
+    listPresent.sort(key=cmp_to_key(dn_sort))
 
     # The following lines is to load the up to
     # date schema into our current LDB

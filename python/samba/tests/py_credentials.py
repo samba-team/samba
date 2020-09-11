@@ -39,7 +39,7 @@ from samba.dsdb import (
 from samba.ndr import ndr_pack
 from samba.samdb import SamDB
 from samba import NTSTATUSError, ntstatus
-from samba.compat import get_string
+from samba.common import get_string
 
 import ctypes
 

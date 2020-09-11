@@ -60,7 +60,7 @@ from samba.provision.common import (
 )
 
 from samba.samdb import get_default_backend_store
-from samba.compat import get_string
+from samba.common import get_string
 
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])

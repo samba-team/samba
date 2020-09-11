@@ -32,7 +32,7 @@ from samba.gp_smb_conf_ext import gp_smb_conf_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
-from samba.compat import get_bytes
+from samba.common import get_bytes
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack
 import codecs

@@ -32,7 +32,7 @@ from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
-from samba.compat import get_bytes, cmp
+from samba.common import get_bytes, cmp
 from samba.dcerpc import security
 import binascii
 
