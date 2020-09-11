@@ -143,7 +143,6 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 /* The following definitions come from lib/sharesec.c  */
 
 NTSTATUS share_info_db_init(void);
-struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32_t def_access);
 struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 			      size_t *psize);
 NTSTATUS set_share_security(const char *share_name,

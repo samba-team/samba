@@ -267,7 +267,9 @@ NTSTATUS share_info_db_init(void)
  def_access is a GENERIC_XXX access mode.
  ********************************************************************/
 
-struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32_t def_access)
+static struct security_descriptor *get_share_security_default(TALLOC_CTX *ctx,
+							size_t *psize,
+							uint32_t def_access)
 {
 	uint32_t sa;
 	struct security_ace ace;
