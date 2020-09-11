@@ -25,231 +25,13 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "passdb/lookup_sid.h"
 
-struct wb_xids2sids_dom_map {
-	unsigned low_id;
-	unsigned high_id;
-	const char *name;
-	struct dom_sid sid;
-};
-
-/*
- * Map idmap ranges to domain names, taken from smb.conf. This is
- * stored in the parent winbind and used to assemble xid2sid calls
- * into per-idmap-domain chunks.
- */
-static struct wb_xids2sids_dom_map *dom_maps;
-
-static bool wb_xids2sids_add_dom(const char *domname,
-				 void *private_data)
-{
-	struct wb_xids2sids_dom_map *map = NULL;
-	size_t num_maps = talloc_array_length(dom_maps);
-	size_t i;
-	const char *range;
-	unsigned low_id, high_id;
-	int ret;
-
-	range = idmap_config_const_string(domname, "range", NULL);
-	if (range == NULL) {
-		DBG_DEBUG("No range for domain %s found\n", domname);
-		return false;
-	}
-
-	ret = sscanf(range, "%u - %u", &low_id, &high_id);
-	if (ret != 2) {
-		DBG_DEBUG("Invalid range spec \"%s\" for domain %s\n",
-			  range, domname);
-		return false;
-	}
-
-	if (low_id > high_id) {
-		DBG_DEBUG("Invalid range %u - %u for domain %s\n",
-			  low_id, high_id, domname);
-		return false;
-	}
-
-	for (i=0; i<num_maps; i++) {
-		if (strequal(domname, dom_maps[i].name)) {
-			map = &dom_maps[i];
-			break;
-		}
-	}
-
-	if (map == NULL) {
-		struct wb_xids2sids_dom_map *tmp;
-		char *name;
-
-		name = talloc_strdup(talloc_tos(), domname);
-		if (name == NULL) {
-			DBG_DEBUG("talloc failed\n");
-			return false;
-		}
-
-		tmp = talloc_realloc(
-			NULL, dom_maps, struct wb_xids2sids_dom_map,
-			num_maps+1);
-		if (tmp == NULL) {
-			TALLOC_FREE(name);
-			return false;
-		}
-		dom_maps = tmp;
-
-		map = &dom_maps[num_maps];
-		ZERO_STRUCTP(map);
-		map->name = talloc_move(dom_maps, &name);
-	}
-
-	map->low_id = low_id;
-	map->high_id = high_id;
-
-	return false;
-}
-
-struct wb_xids2sids_init_dom_maps_state {
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	size_t dom_idx;
-};
-
-static void wb_xids2sids_init_dom_maps_lookupname_next(
-	struct wb_xids2sids_init_dom_maps_state *state);
-
-static void wb_xids2sids_init_dom_maps_lookupname_done(
-	struct tevent_req *subreq);
-
-static struct tevent_req *wb_xids2sids_init_dom_maps_send(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
-{
-	struct tevent_req *req = NULL;
-	struct wb_xids2sids_init_dom_maps_state *state = NULL;
-
-	req = tevent_req_create(mem_ctx, &state,
-				struct wb_xids2sids_init_dom_maps_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	*state = (struct wb_xids2sids_init_dom_maps_state) {
-		.ev = ev,
-		.req = req,
-		.dom_idx = 0,
-	};
-
-	if (dom_maps != NULL) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-	/*
-	 * Put the passdb idmap domain first. We always need to try
-	 * there first.
-	 */
-
-	dom_maps = talloc_zero_array(NULL, struct wb_xids2sids_dom_map, 1);
-	if (tevent_req_nomem(dom_maps, req)) {
-		return tevent_req_post(req, ev);
-	}
-	dom_maps[0].low_id = 0;
-	dom_maps[0].high_id = UINT_MAX;
-	dom_maps[0].name = talloc_strdup(dom_maps, get_global_sam_name());
-	if (tevent_req_nomem(dom_maps[0].name, req)) {
-		TALLOC_FREE(dom_maps);
-		return tevent_req_post(req, ev);
-	}
-
-	lp_scan_idmap_domains(wb_xids2sids_add_dom, NULL);
-
-	wb_xids2sids_init_dom_maps_lookupname_next(state);
-	if (!tevent_req_is_in_progress(req)) {
-		tevent_req_post(req, ev);
-	}
-	return req;
-}
-
-static void wb_xids2sids_init_dom_maps_lookupname_next(
-	struct wb_xids2sids_init_dom_maps_state *state)
-{
-	struct tevent_req *subreq = NULL;
-
-	if (state->dom_idx == talloc_array_length(dom_maps)) {
-		tevent_req_done(state->req);
-		return;
-	}
-
-	if (strequal(dom_maps[state->dom_idx].name, "*")) {
-		state->dom_idx++;
-		if (state->dom_idx == talloc_array_length(dom_maps)) {
-			tevent_req_done(state->req);
-			return;
-		}
-	}
-
-	subreq = wb_lookupname_send(state,
-				    state->ev,
-				    dom_maps[state->dom_idx].name,
-				    dom_maps[state->dom_idx].name,
-				    "",
-				    LOOKUP_NAME_NO_NSS);
-	if (tevent_req_nomem(subreq, state->req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq,
-				wb_xids2sids_init_dom_maps_lookupname_done,
-				state->req);
-}
-
-static void wb_xids2sids_init_dom_maps_lookupname_done(
-	struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct wb_xids2sids_init_dom_maps_state *state = tevent_req_data(
-		req, struct wb_xids2sids_init_dom_maps_state);
-	enum lsa_SidType type;
-	NTSTATUS status;
-
-	status = wb_lookupname_recv(subreq,
-				    &dom_maps[state->dom_idx].sid,
-				    &type);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("Lookup domain name '%s' failed '%s'\n",
-			    dom_maps[state->dom_idx].name,
-			    nt_errstr(status));
-
-		state->dom_idx++;
-		wb_xids2sids_init_dom_maps_lookupname_next(state);
-		return;
-	}
-
-	if (type != SID_NAME_DOMAIN) {
-		struct dom_sid_buf buf;
-
-		DBG_WARNING("SID %s for idmap domain name '%s' "
-			    "not a domain SID\n",
-			    dom_sid_str_buf(&dom_maps[state->dom_idx].sid,
-					    &buf),
-			    dom_maps[state->dom_idx].name);
-
-		ZERO_STRUCT(dom_maps[state->dom_idx].sid);
-	}
-
-	state->dom_idx++;
-	wb_xids2sids_init_dom_maps_lookupname_next(state);
-
-	return;
-}
-
-static NTSTATUS wb_xids2sids_init_dom_maps_recv(struct tevent_req *req)
-{
-	return tevent_req_simple_recv_ntstatus(req);
-}
-
 struct wb_xids2sids_dom_state {
 	struct tevent_context *ev;
 	struct unixid *all_xids;
 	const bool *cached;
 	size_t num_all_xids;
 	struct dom_sid *all_sids;
-	struct wb_xids2sids_dom_map *dom_map;
+	const struct wb_parent_idmap_config_dom *dom_map;
 	bool tried_dclookup;
 
 	size_t num_dom_xids;
@@ -262,7 +44,7 @@ static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq);
 
 static struct tevent_req *wb_xids2sids_dom_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct wb_xids2sids_dom_map *dom_map,
+	const struct wb_parent_idmap_config_dom *dom_map,
 	struct unixid *xids,
 	const bool *cached,
 	size_t num_xids,
@@ -334,7 +116,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_xids2sids_dom_state *state = tevent_req_data(
 		req, struct wb_xids2sids_dom_state);
-	struct wb_xids2sids_dom_map *dom_map = state->dom_map;
+	const struct wb_parent_idmap_config_dom *dom_map = state->dom_map;
 	NTSTATUS status, result;
 	size_t i;
 	size_t dom_sid_idx;
@@ -437,10 +219,11 @@ struct wb_xids2sids_state {
 	bool *cached;
 
 	size_t dom_idx;
+	const struct wb_parent_idmap_config *cfg;
 };
 
+static void wb_xids2sids_idmap_setup_done(struct tevent_req *subreq);
 static void wb_xids2sids_done(struct tevent_req *subreq);
-static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -495,38 +278,32 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	subreq = wb_xids2sids_init_dom_maps_send(
-		state, state->ev);
+	subreq = wb_parent_idmap_setup_send(state, state->ev);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_xids2sids_init_dom_maps_done, req);
+	tevent_req_set_callback(subreq, wb_xids2sids_idmap_setup_done, req);
 	return req;
 }
 
-static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq)
+static void wb_xids2sids_idmap_setup_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct wb_xids2sids_state *state = tevent_req_data(
 		req, struct wb_xids2sids_state);
-	size_t num_domains;
 	NTSTATUS status;
 
-	status = wb_xids2sids_init_dom_maps_recv(subreq);
+	status = wb_parent_idmap_setup_recv(subreq, &state->cfg);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-
-	num_domains = talloc_array_length(dom_maps);
-	if (num_domains == 0) {
-		tevent_req_done(req);
-		return;
-	}
+	SMB_ASSERT(state->cfg->num_doms > 0);
 
 	subreq = wb_xids2sids_dom_send(
-		state, state->ev, &dom_maps[state->dom_idx],
+		state, state->ev,
+		&state->cfg->doms[state->dom_idx],
 		state->xids, state->cached, state->num_xids, state->sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -541,7 +318,6 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_xids2sids_state *state = tevent_req_data(
 		req, struct wb_xids2sids_state);
-	size_t num_domains = talloc_array_length(dom_maps);
 	size_t i;
 	NTSTATUS status;
 
@@ -553,10 +329,13 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 
 	state->dom_idx += 1;
 
-	if (state->dom_idx < num_domains) {
+	if (state->dom_idx < state->cfg->num_doms) {
+		const struct wb_parent_idmap_config_dom *dom_map =
+			&state->cfg->doms[state->dom_idx];
+
 		subreq = wb_xids2sids_dom_send(state,
 					       state->ev,
-					       &dom_maps[state->dom_idx],
+					       dom_map,
 					       state->xids,
 					       state->cached,
 					       state->num_xids,
