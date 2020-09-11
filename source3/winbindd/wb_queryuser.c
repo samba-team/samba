@@ -138,6 +138,11 @@ static void wb_queryuser_got_uid(struct tevent_req *subreq)
 		return;
 	}
 
+	/*
+	 * Note wb_sids2xids_send/recv was called before,
+	 * so we're sure that wb_parent_idmap_setup_send/recv
+	 * was already called.
+	 */
 	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
 		state, state->ev, child_binding_handle, info);
@@ -185,6 +190,11 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 		return;
 	}
 
+	/*
+	 * Note wb_sids2xids_send/recv was called before,
+	 * so we're sure that wb_parent_idmap_setup_send/recv
+	 * was already called.
+	 */
 	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
 		state, state->ev, child_binding_handle, info);
@@ -284,6 +294,11 @@ static void wb_queryuser_got_dc(struct tevent_req *subreq)
 		return;
 	}
 
+	/*
+	 * Note wb_sids2xids_send/recv was called before,
+	 * so we're sure that wb_parent_idmap_setup_send/recv
+	 * was already called.
+	 */
 	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_GetNssInfo_send(
 		state, state->ev, child_binding_handle, info);
