@@ -34,6 +34,15 @@ struct winbindd_child *idmap_child(void)
 	return &static_idmap_child;
 }
 
+bool is_idmap_child(const struct winbindd_child *child)
+{
+	if (child == &static_idmap_child) {
+		return true;
+	}
+
+	return false;
+}
+
 pid_t idmap_child_pid(void)
 {
 	return static_idmap_child.pid;

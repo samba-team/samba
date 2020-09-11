@@ -1776,7 +1776,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	if (child_domain != NULL) {
 		setproctitle("domain child [%s]", child_domain->name);
-	} else if (child == idmap_child()) {
+	} else if (is_idmap_child(child)) {
 		setproctitle("idmap child");
 	}
 
@@ -1826,7 +1826,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	 * We are in idmap child, make sure that we set the
 	 * check_online_event to bring primary domain online.
 	 */
-	if (child == idmap_child()) {
+	if (is_idmap_child(child)) {
 		set_domain_online_request(primary_domain);
 	}
 
