@@ -69,6 +69,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq);
 static void wb_sids2xids_done(struct tevent_req *subreq);
 static void wb_sids2xids_gotdc(struct tevent_req *subreq);
 static void wb_sids2xids_next_sids2unix(struct tevent_req *req);
+static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type);
 
 struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -166,11 +167,6 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 			num_valid += 1;
 			continue;
 		}
-
-		state->tmp_idx[state->lookup_count] = i;
-		sid_copy(&state->lookup_sids[state->lookup_count],
-			 &state->sids[i]);
-		state->lookup_count += 1;
 	}
 
 	if (num_valid == num_sids) {
@@ -222,6 +218,25 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		sid_copy(&domain_sid, &state->sids[i]);
 		sid_split_rid(&domain_sid, &rid);
 
+		if (t->type_hint == ID_TYPE_NOT_SPECIFIED) {
+			const char *tmp_name = NULL;
+			enum lsa_SidType sid_type = SID_NAME_USE_NONE;
+			const struct dom_sid *tmp_authority_sid = NULL;
+			const char *tmp_authority_name = NULL;
+
+			/*
+			 * Try to get a type hint from for predefined sids
+			 */
+			status = dom_sid_lookup_predefined_sid(&state->sids[i],
+							       &tmp_name,
+							       &sid_type,
+							       &tmp_authority_sid,
+							       &tmp_authority_name);
+			if (NT_STATUS_IS_OK(status)) {
+				t->type_hint = lsa_SidType_to_id_type(sid_type);
+			}
+		}
+
 		for (di = 0; di < state->cfg->num_doms; di++) {
 			struct wb_parent_idmap_config_dom *dom =
 				&state->cfg->doms[di];
@@ -251,6 +266,18 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 			domain_name = "";
 		}
 
+		if (t->type_hint == ID_TYPE_NOT_SPECIFIED) {
+			if (domain_name[0] != '\0') {
+				/*
+				 * We know the domain, we indicate this
+				 * by passing ID_TYPE_BOTH as a hint
+				 *
+				 * Maybe that's already enough for the backend
+				 */
+				t->type_hint = ID_TYPE_BOTH;
+			}
+		}
+
 		domain_index = init_lsa_ref_domain_list(state,
 							&state->idmap_doms,
 							domain_name,
@@ -262,14 +289,15 @@ static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
 		t->domain_index = domain_index;
 	}
 
-	subreq = wb_lookupsids_send(state,
-				    state->ev,
-				    state->lookup_sids,
-				    state->lookup_count);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_sids2xids_lookupsids_done, req);
+	/*
+	 * We defer lookupsids because it requires domain controller
+	 * interaction.
+	 *
+	 * First we ask the idmap child without explicit type hints.
+	 * In most cases mappings already exist in the backend and
+	 * a type_hint is not needed.
+	 */
+	wb_sids2xids_next_sids2unix(req);
 }
 
 static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map)
@@ -292,8 +320,6 @@ static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map)
 	return false;
 }
 
-static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type);
-
 static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -311,17 +337,83 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (domains == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	if (names == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
 	for (li = 0; li < state->lookup_count; li++) {
 		struct lsa_TranslatedName *n = &names->names[li];
 		uint32_t ai = state->tmp_idx[li];
 		struct wbint_TransID *t = &state->all_ids.ids[ai];
+		enum id_type type_hint;
 
-		t->type_hint = lsa_SidType_to_id_type(n->sid_type);
+		type_hint = lsa_SidType_to_id_type(n->sid_type);
+		if (type_hint != ID_TYPE_NOT_SPECIFIED) {
+			/*
+			 * We know it's a valid user or group.
+			 */
+			t->type_hint = type_hint;
+			continue;
+		}
+
+		if (n->sid_index == UINT32_MAX) {
+			/*
+			 * The domain is not known, there's
+			 * no point to try mapping again.
+			 * mark is done and add a negative cache
+			 * entry.
+			 */
+			t->domain_index = UINT32_MAX; /* mark as valid */
+			idmap_cache_set_sid2unixid(&state->sids[ai], &t->xid);
+			continue;
+		}
+
+		if (n->sid_index >= domains->count) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+
+		if (domains->domains[n->sid_index].name.string == NULL) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+		if (domains->domains[n->sid_index].sid == NULL) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+
+		if (t->type_hint != ID_TYPE_NOT_SPECIFIED) {
+			/*
+			 * We already tried with a type hint there's
+			 * no point to try mapping again with ID_TYPE_BOTH.
+			 *
+			 * Mark is done and add a negative cache entry.
+			 */
+			t->domain_index = UINT32_MAX; /* mark as valid */
+			idmap_cache_set_sid2unixid(&state->sids[ai], &t->xid);
+			continue;
+		}
+
+		/*
+		 * We only know the domain exists, but the user doesn't
+		 */
+		t->type_hint = ID_TYPE_BOTH;
 	}
 
 	TALLOC_FREE(names);
 	TALLOC_FREE(domains);
 
+	/*
+	 * Now that we have type_hints for the remaining sids,
+	 * we need to restart with the first domain.
+	 */
+	state->dom_index = 0;
 	wb_sids2xids_next_sids2unix(req);
 }
 
@@ -339,7 +431,45 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 	state->tried_dclookup = false;
 
 	if (state->dom_index == state->idmap_doms.count) {
-		tevent_req_done(req);
+		if (state->lookup_count != 0) {
+			/*
+			 * We already called wb_lookupsids_send()
+			 * before, so we're done.
+			 */
+			tevent_req_done(req);
+			return;
+		}
+
+		for (si=0; si < state->num_sids; si++) {
+			struct wbint_TransID *t = &state->all_ids.ids[si];
+
+			if (t->domain_index == UINT32_MAX) {
+				/* ignore already filled entries */
+				continue;
+			}
+
+			state->tmp_idx[state->lookup_count] = si;
+			sid_copy(&state->lookup_sids[state->lookup_count],
+				 &state->sids[si]);
+			state->lookup_count += 1;
+		}
+
+		if (state->lookup_count == 0) {
+			/*
+			 * no wb_lookupsids_send() needed...
+			 */
+			tevent_req_done(req);
+			return;
+		}
+
+		subreq = wb_lookupsids_send(state,
+					    state->ev,
+					    state->lookup_sids,
+					    state->lookup_count);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_sids2xids_lookupsids_done, req);
 		return;
 	}
 
@@ -474,9 +604,18 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		uint32_t di = state->tmp_idx[si];
 
 		if (src->ids[si].xid.type == ID_TYPE_WB_REQUIRE_TYPE) {
+			if (state->lookup_count == 0) {
+				/*
+				 * The backend asks for more information
+				 * (a type_hint), we'll do a lookupsids
+				 * later.
+				 */
+				continue;
+			}
+
 			/*
-			 * This should not happen yet, as we always
-			 * do a lookupsids and fill type_hint.
+			 * lookupsids was not able to provide a type_hint that
+			 * satisfied the backend.
 			 *
 			 * Make sure we don't expose ID_TYPE_WB_REQUIRE_TYPE
 			 * outside of winbindd!
