@@ -29,6 +29,8 @@
 struct wb_sids2xids_state {
 	struct tevent_context *ev;
 
+	const struct wb_parent_idmap_config *cfg;
+
 	struct dom_sid *sids;
 	uint32_t num_sids;
 
@@ -58,7 +60,7 @@ struct wb_sids2xids_state {
 	struct wbint_TransIDArray ids;
 };
 
-
+static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq);
 static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map);
 static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq);
 static void wb_sids2xids_done(struct tevent_req *subreq);
@@ -126,13 +128,37 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_lookupsids_send(state, ev, state->non_cached,
-				    state->num_non_cached);
+	subreq = wb_parent_idmap_setup_send(state, state->ev);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_sids2xids_lookupsids_done, req);
+	tevent_req_set_callback(subreq, wb_sids2xids_idmap_setup_done, req);
 	return req;
+}
+
+static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_sids2xids_state *state = tevent_req_data(
+		req, struct wb_sids2xids_state);
+	NTSTATUS status;
+
+	status = wb_parent_idmap_setup_recv(subreq, &state->cfg);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	SMB_ASSERT(state->cfg->num_doms > 0);
+
+	subreq = wb_lookupsids_send(state,
+				    state->ev,
+				    state->non_cached,
+				    state->num_non_cached);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_sids2xids_lookupsids_done, req);
 }
 
 static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map)
