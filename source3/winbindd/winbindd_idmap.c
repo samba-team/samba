@@ -81,11 +81,44 @@ static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 	}
 };
 
+static void init_idmap_child_done(struct tevent_req *subreq);
+
 void init_idmap_child(void)
 {
-	setup_child(NULL, &static_idmap_child,
-		    idmap_dispatch_table,
-		    "log.winbindd", "idmap");
+	struct tevent_req *subreq = NULL;
+
+	subreq = wb_parent_idmap_setup_send(global_event_context(),
+					    global_event_context());
+	if (subreq == NULL) {
+		/*
+		 * This is only an optimization, so we're free to
+		 * to ignore errors
+		 */
+		DBG_ERR("wb_parent_idmap_setup_send() failed\n");
+		return;
+	}
+	tevent_req_set_callback(subreq, init_idmap_child_done, NULL);
+	DBG_DEBUG("wb_parent_idmap_setup_send() started\n");
+}
+
+static void init_idmap_child_done(struct tevent_req *subreq)
+{
+	const struct wb_parent_idmap_config *cfg = NULL;
+	NTSTATUS status;
+
+	status = wb_parent_idmap_setup_recv(subreq, &cfg);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * This is only an optimization, so we're free to
+		 * to ignore errors
+		 */
+		DBG_ERR("wb_parent_idmap_setup_recv() failed %s\n",
+			nt_errstr(status));
+		return;
+	}
+
+	DBG_DEBUG("wb_parent_idmap_setup_recv() finished\n");
 }
 
 struct wb_parent_idmap_setup_state {
@@ -306,6 +339,12 @@ static void wb_parent_idmap_setup_lookupname_next(struct tevent_req *req)
 
  next_domain:
 	if (state->dom_idx == state->cfg->num_doms) {
+		/*
+		 * We're done, so start the idmap child
+		 */
+		setup_child(NULL, &static_idmap_child,
+			    idmap_dispatch_table,
+			    "log.winbindd", "idmap");
 		tevent_req_done(req);
 		return;
 	}
