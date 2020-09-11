@@ -674,11 +674,6 @@ tasks = {
         ("allstatic-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
         ("lcov", LCOV_CMD),
 
-        # retry without any required modules
-        ("none-distclean", "make distclean"),
-        ("none-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT"),
-        ("none-make", "make -j"),
-
         # retry with nonshared smbd and smbtorture
         ("nonshared-distclean", "make distclean"),
         ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
@@ -708,8 +703,8 @@ tasks = {
         ("ldb-make", "cd lib/ldb && make"),
         ("ldb-install", "cd lib/ldb && make install"),
 
-        # retry against installed library packages
-        ("libs-configure", samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc"),
+        # retry against installed library packages, but no required modules
+        ("libs-configure", samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc  --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT"),
         ("libs-make", "make -j"),
         ("libs-install", "make install"),
         ("libs-check-clean-tree", "script/clean-source-tree.sh"),
