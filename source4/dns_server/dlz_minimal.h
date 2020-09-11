@@ -23,22 +23,33 @@
 #ifndef DLZ_MINIMAL_H
 #define DLZ_MINIMAL_H 1
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #if defined (BIND_VERSION_9_8)
 # define DLZ_DLOPEN_VERSION 1
 #elif defined (BIND_VERSION_9_9)
 # define DLZ_DLOPEN_VERSION 2
 # define DNS_CLIENTINFO_VERSION 1
+# define ISC_BOOLEAN_AS_BOOL 0
 #elif defined (BIND_VERSION_9_10)
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 1
+# define ISC_BOOLEAN_AS_BOOL 0
 #elif defined (BIND_VERSION_9_11)
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 2
+# define ISC_BOOLEAN_AS_BOOL 0
 #elif defined (BIND_VERSION_9_12)
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 2
+# define ISC_BOOLEAN_AS_BOOL 0
 #else
 # error Unsupported BIND version
+#endif
+
+#ifndef ISC_BOOLEAN_AS_BOOL
+#define ISC_BOOLEAN_AS_BOOL 1
 #endif
 
 #if DLZ_DLOPEN_VERSION > 1
@@ -46,7 +57,7 @@
 #endif
 
 typedef unsigned int isc_result_t;
-#if DLZ_DLOPEN_VERSION == 1
+#if ISC_BOOLEAN_AS_BOOL == 1
 typedef bool isc_boolean_t;
 #else
 typedef int isc_boolean_t;
@@ -72,8 +83,13 @@ typedef uint32_t dns_ttl_t;
 #define ISC_R_FILENOTFOUND		38
 
 /* boolean values */
+#if ISC_BOOLEAN_AS_BOOL == 1
+#define ISC_TRUE	true
+#define ISC_FALSE	false
+#else
 #define ISC_TRUE	1
 #define ISC_FALSE	0
+#endif
 
 /* log levels */
 #define ISC_LOG_INFO		(-1)
