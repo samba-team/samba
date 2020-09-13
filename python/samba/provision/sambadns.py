@@ -979,6 +979,8 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
             raise ProvisioningError("DLZ option incompatible with BIND 9.7.")
         elif bind_info.upper().find('BIND_9.13') != -1:
             raise ProvisioningError("Only stable/esv releases of BIND are supported.")
+        elif bind_info.upper().find('BIND_9.15') != -1:
+            raise ProvisioningError("Only stable/esv releases of BIND are supported.")
         else:
             logger.warning("BIND version unknown, please modify %s manually." % paths.namedconf)
         setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
