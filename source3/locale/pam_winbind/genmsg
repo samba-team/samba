@@ -8,6 +8,8 @@ MSGMERGE=msgmerge
 
 WIDTH=256
 
+[ -f pam_winbind.po ] || touch pam_winbind.po
+
 $XGETTEXT --default-domain="pam_winbind" \
 	--add-comments \
 	--keyword=_ --keyword=N_ \
