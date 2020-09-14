@@ -8,117 +8,118 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pam_winbind\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-06 01:55+0800\n"
+"POT-Creation-Date: 2020-09-15 02:10+0300\n"
 "PO-Revision-Date: 2008-11-22 22:33+0100\n"
 "Last-Translator: Olav P. <olav.pet@gmail.com>\n"
 "Language-Team: Norwegian Bokmål <>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Lokalize 0.2\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../../../nsswitch/pam_winbind.c:583 ../../libsmb/nterr.c:558
+#: ../../../nsswitch/pam_winbind.c:630
 msgid "Success"
 msgstr "Vellykket"
 
-#: ../../../nsswitch/pam_winbind.c:585
+#: ../../../nsswitch/pam_winbind.c:632
 msgid "No primary Domain Controller available"
 msgstr "Ingen primær domenekontroller tilgjengelig"
 
-#: ../../../nsswitch/pam_winbind.c:587
+#: ../../../nsswitch/pam_winbind.c:634
 msgid "No domain controllers found"
 msgstr "Ingen domenekontrollere funnet"
 
-#: ../../../nsswitch/pam_winbind.c:589 ../../libsmb/nterr.c:566
+#: ../../../nsswitch/pam_winbind.c:636
 msgid "No logon servers"
 msgstr "Ingen innloggingsservere"
 
-#: ../../../nsswitch/pam_winbind.c:591
+#: ../../../nsswitch/pam_winbind.c:638
 msgid "Password too short"
 msgstr "Passordet er for kort"
 
-#: ../../../nsswitch/pam_winbind.c:593
+#: ../../../nsswitch/pam_winbind.c:640
 msgid "The password of this user is too recent to change"
 msgstr "Passordet for denne brukeren er for nytt til å endre"
 
-#: ../../../nsswitch/pam_winbind.c:595
+#: ../../../nsswitch/pam_winbind.c:642
 msgid "Password is already in password history"
 msgstr "Passordet finnes allerede i passordloggen"
 
-#: ../../../nsswitch/pam_winbind.c:597
+#: ../../../nsswitch/pam_winbind.c:644
 msgid "Your password has expired"
 msgstr "Passordet er utløpt"
 
-#: ../../../nsswitch/pam_winbind.c:599
+#: ../../../nsswitch/pam_winbind.c:646
 msgid "You need to change your password now"
 msgstr "Du må endre passordet nå"
 
-#: ../../../nsswitch/pam_winbind.c:601
+#: ../../../nsswitch/pam_winbind.c:648
 msgid "You are not allowed to logon from this workstation"
 msgstr "Du er ikke autorisert for å logge inn fra denne arbeidsstasjonen"
 
-#: ../../../nsswitch/pam_winbind.c:603
+#: ../../../nsswitch/pam_winbind.c:650
 msgid "You are not allowed to logon at this time"
 msgstr "Du er ikke autorisert for å logge inn på dette tidspunktet"
 
-#: ../../../nsswitch/pam_winbind.c:605
+#: ../../../nsswitch/pam_winbind.c:652
 msgid "Your account has expired. Please contact your System administrator"
 msgstr "Din konto er utløpt. Kontakt systemadministratoren"
 
-#: ../../../nsswitch/pam_winbind.c:608
+#: ../../../nsswitch/pam_winbind.c:655
 msgid "Your account is disabled. Please contact your System administrator"
 msgstr "Din konto er deaktivert. Kontakt systemadministratoren"
 
-#: ../../../nsswitch/pam_winbind.c:611
+#: ../../../nsswitch/pam_winbind.c:658
 msgid "Your account has been locked. Please contact your System administrator"
 msgstr "Din konto er låst. Kontakt systemadministratoren"
 
-#: ../../../nsswitch/pam_winbind.c:614 ../../../nsswitch/pam_winbind.c:616 ../../../nsswitch/pam_winbind.c:618
+#: ../../../nsswitch/pam_winbind.c:661 ../../../nsswitch/pam_winbind.c:663 ../../../nsswitch/pam_winbind.c:665
 msgid "Invalid Trust Account"
 msgstr "Ugyldig pålitelig konto"
 
-#: ../../../nsswitch/pam_winbind.c:620
+#: ../../../nsswitch/pam_winbind.c:667
 msgid "Access is denied"
 msgstr "Tilgang avvist"
 
-#: ../../../nsswitch/pam_winbind.c:818
+#: ../../../nsswitch/pam_winbind.c:882
 #, fuzzy
 msgid "Do you want to change your password now?"
 msgstr "Du må endre passordet nå"
 
-#: ../../../nsswitch/pam_winbind.c:902
+#: ../../../nsswitch/pam_winbind.c:963
 #, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Passordet utløper i dag.\n"
+msgstr "Passordet er utløpt"
 
-#: ../../../nsswitch/pam_winbind.c:932
+#: ../../../nsswitch/pam_winbind.c:993
 #, fuzzy, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Passordet vil utløpe om %d %s.\n"
+msgstr "Passordet er utløpt"
 
-#: ../../../nsswitch/pam_winbind.c:933
+#: ../../../nsswitch/pam_winbind.c:994
 msgid "days"
 msgstr "dager"
 
-#: ../../../nsswitch/pam_winbind.c:933
+#: ../../../nsswitch/pam_winbind.c:994
 msgid "day"
 msgstr "dag"
 
-#: ../../../nsswitch/pam_winbind.c:1169 ../../../nsswitch/pam_winbind.c:1193
+#: ../../../nsswitch/pam_winbind.c:1201 ../../../nsswitch/pam_winbind.c:1225
 #, c-format
 msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
 msgstr ""
 
-#: ../../../nsswitch/pam_winbind.c:1387
+#: ../../../nsswitch/pam_winbind.c:1428
 msgid "Grace login. Please change your password as soon you're online again"
 msgstr "Midlertidig innlogging. Du må endre passordet straks du er tilkoblet igjen"
 
-#: ../../../nsswitch/pam_winbind.c:1397
+#: ../../../nsswitch/pam_winbind.c:1438
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
 msgstr "Domenekontrolleren er utilgjengelig, bruker mellomlagrede rettigheter i stedet. Nettverksressurser Kan være utilgjengelige"
 
-#: ../../../nsswitch/pam_winbind.c:1422
+#: ../../../nsswitch/pam_winbind.c:1463
 msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
@@ -126,62 +127,62 @@ msgstr ""
 "Kunne ikke opprette mellomlager for  Kerberos-billetter på grunn av tidsdifferanse\n"
 "i forhold til domenekontroller. Kontroller systemtiden.\n"
 
-#: ../../../nsswitch/pam_winbind.c:1490
+#: ../../../nsswitch/pam_winbind.c:1531
 msgid "Your password "
 msgstr "Passordet "
 
-#: ../../../nsswitch/pam_winbind.c:1497
+#: ../../../nsswitch/pam_winbind.c:1538
 #, c-format
 msgid "must be at least %d characters; "
 msgstr "må inneholde minst %d tegn; "
 
-#: ../../../nsswitch/pam_winbind.c:1506
+#: ../../../nsswitch/pam_winbind.c:1547
 #, c-format
 msgid "cannot repeat any of your previous %d passwords; "
 msgstr "kan ikke være likt noen av dine %d tidligere passord; "
 
-#: ../../../nsswitch/pam_winbind.c:1516
+#: ../../../nsswitch/pam_winbind.c:1557
 msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
 msgstr "må inneholde store bokstaver, tall eller skilletegn; og kan ikke inneholde ditt kontonavn eller fulle navn; "
 
-#: ../../../nsswitch/pam_winbind.c:1526
+#: ../../../nsswitch/pam_winbind.c:1567
 msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
 msgstr "Angi et annet passord. Skriv inn et passord som oppfyller kriteriene i begge tekstboksene."
 
-#: ../../../nsswitch/pam_winbind.c:1553
+#: ../../../nsswitch/pam_winbind.c:1603
 #, c-format
 msgid "Creating directory: %s failed: %s"
 msgstr ""
 
-#: ../../../nsswitch/pam_winbind.c:2018
+#: ../../../nsswitch/pam_winbind.c:2066
 msgid "Password does not meet complexity requirements"
 msgstr "Passordet er for enkelt"
 
 #.
 #. * First get the name of a user
 #.
-#: ../../../nsswitch/pam_winbind.c:2489 ../../../nsswitch/pam_winbind.c:3035
+#: ../../../nsswitch/pam_winbind.c:2552 ../../../nsswitch/pam_winbind.c:3177
 msgid "Username: "
 msgstr "Brukernavn: "
 
-#: ../../../nsswitch/pam_winbind.c:2665
+#: ../../../nsswitch/pam_winbind.c:2803
 msgid "Password: "
 msgstr "Passord: "
 
 #. instruct user what is happening
-#: ../../../nsswitch/pam_winbind.c:3073
+#: ../../../nsswitch/pam_winbind.c:3215
 msgid "Changing password for"
 msgstr "Endrer passord for"
 
-#: ../../../nsswitch/pam_winbind.c:3086
+#: ../../../nsswitch/pam_winbind.c:3228
 msgid "(current) NT password: "
 msgstr "(gjeldende) NT-passord: "
 
-#: ../../../nsswitch/pam_winbind.c:3156
+#: ../../../nsswitch/pam_winbind.c:3301
 msgid "Enter new NT password: "
 msgstr "Angi nytt NT-passord: "
 
-#: ../../../nsswitch/pam_winbind.c:3157
+#: ../../../nsswitch/pam_winbind.c:3302
 msgid "Retype new NT password: "
 msgstr "Bekreft det nye NT-passordet: "
 
