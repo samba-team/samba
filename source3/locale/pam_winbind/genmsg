@@ -1,7 +1,7 @@
 #!/bin/sh
 
 FILES="../../../nsswitch/pam_winbind.c ../../../nsswitch/pam_winbind.h ../../../libcli/util/nterr.c"
-LANGS="af ar bg bn bs ca cs cy da de el en_GB en_US es et fi fr gl gu he hi hr hu id it ja ka km ko lo lt mk mr nb nl pa pl pt_BR pt ro ru si sk sl sr sv ta th tr uk vi wa xh zh_CN zh_TW zu"
+LANGS="ar cs da de es fi fr hu it ja ko nb nl pl pt_BR ru sv tr zh_CN zh_TW"
 
 XGETTEXT=xgettext
 MSGMERGE=msgmerge
