@@ -26,12 +26,11 @@
 #define GRFN_PREFIX_LEN (sizeof(GRFN_PREFIX)-1)
 
 static int vfs_ring_get_real_filename(struct vfs_handle_struct *handle,
-				      const struct smb_filename *dirpath,
+				      const char *path,
 				      const char *name,
 				      TALLOC_CTX *mem_ctx,
 				      char **found_name)
 {
-	const char *path = dirpath->base_name;
 	bool mangled;
 	char attr_name [NAME_MAX+1];
 	char attr_value[NAME_MAX+1];
@@ -45,7 +44,6 @@ static int vfs_ring_get_real_filename(struct vfs_handle_struct *handle,
 		path,
 		NULL,
 		NULL,
-		dirpath->twrp,
 		0);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
@@ -58,7 +56,7 @@ static int vfs_ring_get_real_filename(struct vfs_handle_struct *handle,
 	mangled = mangle_is_mangled(name, handle->conn->params);
 	if (mangled) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(
-			handle, dirpath, name, mem_ctx, found_name);
+			handle, path, name, mem_ctx, found_name);
 	}
 
 	if (strlen(name) > NAME_MAX - GRFN_PREFIX_LEN) {
@@ -77,7 +75,7 @@ static int vfs_ring_get_real_filename(struct vfs_handle_struct *handle,
 			    path, name, strerror(errno)));
 		if (errno == EOPNOTSUPP)
 			return SMB_VFS_NEXT_GET_REAL_FILENAME(
-				handle, dirpath, name, mem_ctx, found_name);
+				handle, path, name, mem_ctx, found_name);
 		if (errno == ENOATTR)
 			errno = ENOENT;
 		return -1;
