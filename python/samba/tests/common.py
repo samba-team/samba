@@ -20,8 +20,8 @@
 import samba
 import os
 import samba.tests
-from samba.common import normalise_int32, dsdb_Dn
-from samba.samdb import SamDB
+from samba.common import normalise_int32
+from samba.samdb import SamDB, dsdb_Dn
 
 
 class CommonTests(samba.tests.TestCaseInTempDir):

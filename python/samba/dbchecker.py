@@ -28,7 +28,7 @@ from samba.dcerpc import misc
 from samba.dcerpc import drsuapi
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
-from samba.common import dsdb_Dn
+from samba.samdb import dsdb_Dn
 from samba.dcerpc import security
 from samba.descriptor import get_wellknown_sds, get_diff_sds
 from samba.auth import system_session, admin_session
