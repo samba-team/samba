@@ -598,14 +598,6 @@ bld.SAMBA3_MODULE('vfs_vxfs',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_vxfs'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_vxfs'))
 
-bld.SAMBA3_MODULE('vfs_ring',
-                   subsystem='vfs',
-                   source='vfs_ring.c',
-                   deps='talloc',
-                   init_function='',
-                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_ring'),
- 	           enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_ring'))
-
 bld.SAMBA3_MODULE('vfs_offline',
                  subsystem='vfs',
                  source='vfs_offline.c',
