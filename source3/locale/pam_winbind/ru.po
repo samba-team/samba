@@ -5,9 +5,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pam_winbind\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-09-15 02:10+0300\n"
+"POT-Creation-Date: 2020-09-15 02:26+0300\n"
 "PO-Revision-Date: 2009-02-05 08:14\n"
-"Last-Translator: Novell Language <language@novell.com>\n"
+"Last-Translator: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>\n"
 "Language-Team: Novell Language <language@novell.com>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -79,19 +79,17 @@ msgid "Access is denied"
 msgstr "Доступ запрещён"
 
 #: ../../../nsswitch/pam_winbind.c:882
-#, fuzzy
 msgid "Do you want to change your password now?"
-msgstr "Вам необходимо изменить Ваш пароль сейчас"
+msgstr "Хотите изменить свой пароль сейчас?"
 
 #: ../../../nsswitch/pam_winbind.c:963
-#, fuzzy
 msgid "Your password expires today.\n"
-msgstr "Срок действия Вашего пароля истёк"
+msgstr "Срок действия Вашего пароля истекает сегодня.\n"
 
 #: ../../../nsswitch/pam_winbind.c:993
-#, fuzzy, c-format
+#, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Срок действия Вашего пароля истёк"
+msgstr "Срок действия Вашего пароля истечет через %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:994
 msgid "days"
@@ -104,7 +102,7 @@ msgstr "День"
 #: ../../../nsswitch/pam_winbind.c:1201 ../../../nsswitch/pam_winbind.c:1225
 #, c-format
 msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
-msgstr ""
+msgstr "Невозможно конвертировать группу %s в sid, пожалуйста, свяжитесь со своим администратором, чтобы проверить, верна ли группа %s."
 
 #: ../../../nsswitch/pam_winbind.c:1428
 msgid "Grace login. Please change your password as soon you're online again"
@@ -119,6 +117,8 @@ msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
+"Не удалось создать кеш билетов Kerberos из-за разницы во времени\n"
+"с контроллером домена.  Пожалуйста, проверьте системное время.\n"
 
 #: ../../../nsswitch/pam_winbind.c:1531
 msgid "Your password "
@@ -145,7 +145,7 @@ msgstr "Пожалуйста, введите другой пароль. Введ
 #: ../../../nsswitch/pam_winbind.c:1603
 #, c-format
 msgid "Creating directory: %s failed: %s"
-msgstr ""
+msgstr "Ошибка создания директории %s: %s"
 
 #: ../../../nsswitch/pam_winbind.c:2066
 msgid "Password does not meet complexity requirements"
@@ -156,7 +156,7 @@ msgstr "Пароль не соответствует требованиям сл
 #.
 #: ../../../nsswitch/pam_winbind.c:2552 ../../../nsswitch/pam_winbind.c:3177
 msgid "Username: "
-msgstr ""
+msgstr "Имя пользователя: "
 
 #: ../../../nsswitch/pam_winbind.c:2803
 msgid "Password: "
@@ -185,7 +185,7 @@ msgstr "Повторите новый пароль NT: "
 #.
 #: ../../../nsswitch/pam_winbind.h:128
 msgid "Sorry, passwords do not match"
-msgstr ""
+msgstr "Извините, пароли не совпадают"
 
 #: ../../libsmb/nterr.c:559
 msgid "Undetermined error"
@@ -557,3 +557,6 @@ msgstr ""
 #: ../../libsmb/nterr.c:649
 msgid "No more files"
 msgstr ""
+=======
+msgstr "Извините, пароли не совпадают"
+>>>>>>> s3: update Russian translation of pam_winbind
