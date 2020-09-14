@@ -23,8 +23,7 @@ import os
 
 from samba import Ldb, ldb, read_and_sub_file
 from samba.auth import system_session
-from samba.samdb import SamDB
-from samba.common import dsdb_Dn
+from samba.samdb import SamDB, dsdb_Dn
 
 
 class LdifError(Exception):
