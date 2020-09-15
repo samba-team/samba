@@ -222,7 +222,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 
 		sid_copy(&dom_sid, sid);
 		sid_split_rid(&dom_sid, &t->rid);
-		t->type = lsa_SidType_to_id_type(n->sid_type);
+		t->type_hint = lsa_SidType_to_id_type(n->sid_type);
 		domain_index = init_lsa_ref_domain_list(
 			state, &state->idmap_doms, domain_name, &dom_sid);
 		if (domain_index == -1) {
@@ -232,7 +232,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		t->domain_index = domain_index;
 
 		t->xid.id = UINT32_MAX;
-		t->xid.type = t->type;
+		t->xid.type = ID_TYPE_NOT_SPECIFIED;
 	}
 
 	TALLOC_FREE(names);
@@ -337,7 +337,6 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 	for (i=0; i<dst->num_ids; i++) {
 		if (dst->ids[i].domain_index == state->dom_index) {
-			dst->ids[i].type = src->ids[src_idx].type;
 			dst->ids[i].xid  = src->ids[src_idx].xid;
 			src_idx += 1;
 		}

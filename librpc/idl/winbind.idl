@@ -40,7 +40,7 @@ interface winbind
 	);
 
     typedef struct {
-	id_type type;
+	id_type type_hint;
 	uint32 domain_index;
 	uint32 rid;
 	unixid xid;
