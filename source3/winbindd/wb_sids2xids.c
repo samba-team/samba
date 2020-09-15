@@ -235,7 +235,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransNameArray *names = NULL;
 	NTSTATUS status;
-	uint32_t i;
+	uint32_t li;
 
 	status = wb_lookupsids_recv(subreq, state, &domains, &names);
 	TALLOC_FREE(subreq);
@@ -250,11 +250,11 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	for (i=0; i<state->lookup_count; i++) {
-		const struct dom_sid *sid = &state->lookup_sids[i];
+	for (li = 0; li < state->lookup_count; li++) {
+		const struct dom_sid *sid = &state->lookup_sids[li];
 		struct dom_sid dom_sid;
-		struct lsa_TranslatedName *n = &names->names[i];
-		struct wbint_TransID *t = &state->ids.ids[i];
+		struct lsa_TranslatedName *n = &names->names[li];
+		struct wbint_TransID *t = &state->ids.ids[li];
 		int domain_index;
 		const char *domain_name = NULL;
 
