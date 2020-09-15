@@ -2884,7 +2884,7 @@ bool run_smb2_quota1(int dummy)
 	uint16_t fnum = (uint16_t)-1;
 	SMB_NTQUOTA_STRUCT qt = {0};
 
-	printf("Starting SMB2-SACL\n");
+	printf("Starting SMB2-QUOTA1\n");
 
 	if (!torture_init_connection(&cli)) {
 		return false;
