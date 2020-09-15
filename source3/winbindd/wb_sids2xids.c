@@ -309,6 +309,13 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	struct dcerpc_binding_handle *child_binding_handle = NULL;
 
+	state->tried_dclookup = false;
+
+	if (state->dom_index == state->idmap_doms.count) {
+		tevent_req_done(req);
+		return;
+	}
+
 	state->dom_ids = wb_sids2xids_extract_for_domain_index(
 		state, &state->ids, state->dom_index);
 	if (tevent_req_nomem(state->dom_ids, req)) {
@@ -413,12 +420,6 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	TALLOC_FREE(state->dom_ids);
 
 	state->dom_index += 1;
-	state->tried_dclookup = false;
-
-	if (state->dom_index == state->idmap_doms.count) {
-		tevent_req_done(req);
-		return;
-	}
 
 	wb_sids2xids_next_sids2unix(req);
 }
