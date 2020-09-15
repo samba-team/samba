@@ -200,7 +200,7 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 
 		sid_compose(m->sid, d->sid, ids[i].rid);
 		m->status = ID_UNKNOWN;
-		m->xid = (struct unixid) { .type = ids[i].type };
+		m->xid = (struct unixid) { .type = ids[i].type_hint };
 	}
 
 	status = dom->methods->sids_to_unixids(dom, id_map_ptrs);
