@@ -509,6 +509,7 @@ sub write_clientconf($$$)
 		{ name => "statedir", mask => 0777 },
 		{ name => "cachedir", mask => 0777 },
 		{ name => "pkinit", mask => 0700 },
+		{ name => "pid", mask => 0777 },
 		# the ncalrpcdir needs exactly 0755 otherwise tests fail.
 		{ name => "ncalrpcdir", mask => 0755, umask => 0022 },
 	);
@@ -573,6 +574,7 @@ sub write_clientconf($$$)
 	state directory = $clientdir/statedir
 	cache directory = $clientdir/cachedir
 	ncalrpc dir = $clientdir/ncalrpcdir
+	pid directory = $clientdir/pid
 	panic action = $RealBin/gdb_backtrace \%d
 	max xmit = 32K
 	notify:inotify = false
