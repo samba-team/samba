@@ -401,8 +401,10 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status, result;
-	struct wbint_TransIDArray *src, *dst;
-	uint32_t i, src_idx;
+	const struct wbint_TransIDArray *src = NULL;
+	struct wbint_TransIDArray *dst = NULL;
+	uint32_t si;
+	uint32_t di;
 
 	status = dcerpc_wbint_Sids2UnixIDs_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
@@ -429,7 +431,6 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	}
 
 	src = &state->map_ids_out;
-	src_idx = 0;
 	dst = &state->ids;
 
 	if (any_nt_status_not_ok(status, result, &status)) {
@@ -440,8 +441,8 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		 * All we can do here is to report "not mapped"
 		 */
 		src = &state->map_ids_in;
-		for (i=0; i<src->num_ids; i++) {
-			src->ids[i].xid.type = ID_TYPE_NOT_SPECIFIED;
+		for (si=0; si < src->num_ids; si++) {
+			src->ids[si].xid.type = ID_TYPE_NOT_SPECIFIED;
 		}
 	}
 
@@ -450,11 +451,19 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	for (i=0; i<dst->num_ids; i++) {
-		if (dst->ids[i].domain_index == state->dom_index) {
-			dst->ids[i].xid  = src->ids[src_idx].xid;
-			src_idx += 1;
+	si = 0;
+	for (di=0; di < dst->num_ids; di++) {
+		if (dst->ids[di].domain_index != state->dom_index) {
+			continue;
 		}
+
+		if (si >= src->num_ids) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+
+		dst->ids[di].xid  = src->ids[si].xid;
+		si += 1;
 	}
 
 	state->map_ids_in.num_ids = 0;
