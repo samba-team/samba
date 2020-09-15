@@ -36,6 +36,9 @@ struct wb_sids2xids_state {
 
 	struct wbint_TransIDArray all_ids;
 
+	/* Used to translated the idx back into all_ids.ids[idx] */
+	uint32_t *tmp_idx;
+
 	uint32_t lookup_count;
 	struct dom_sid *lookup_sids;
 
@@ -58,8 +61,6 @@ struct wb_sids2xids_state {
 	uint32_t dom_index;
 	struct lsa_RefDomainList idmap_dom;
 	bool tried_dclookup;
-
-	struct wbint_TransIDArray ids;
 };
 
 static void wb_sids2xids_idmap_setup_done(struct tevent_req *subreq);
@@ -101,6 +102,11 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	state->all_ids.num_ids = num_sids;
 	state->all_ids.ids = talloc_zero_array(state, struct wbint_TransID, num_sids);
 	if (tevent_req_nomem(state->all_ids.ids, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->tmp_idx = talloc_zero_array(state, uint32_t, num_sids);
+	if (tevent_req_nomem(state->tmp_idx, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -161,6 +167,7 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
+		state->tmp_idx[state->lookup_count] = i;
 		sid_copy(&state->lookup_sids[state->lookup_count],
 			 &state->sids[i]);
 		state->lookup_count += 1;
@@ -243,18 +250,12 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->ids.num_ids = state->lookup_count;
-	state->ids.ids = talloc_array(state, struct wbint_TransID,
-				      state->ids.num_ids);
-	if (tevent_req_nomem(state->ids.ids, req)) {
-		return;
-	}
-
 	for (li = 0; li < state->lookup_count; li++) {
 		const struct dom_sid *sid = &state->lookup_sids[li];
 		struct dom_sid dom_sid;
 		struct lsa_TranslatedName *n = &names->names[li];
-		struct wbint_TransID *t = &state->ids.ids[li];
+		uint32_t ai = state->tmp_idx[li];
+		struct wbint_TransID *t = &state->all_ids.ids[ai];
 		int domain_index;
 		const char *domain_name = NULL;
 
@@ -295,9 +296,6 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 			return;
 		}
 		t->domain_index = domain_index;
-
-		t->xid.id = UINT32_MAX;
-		t->xid.type = ID_TYPE_NOT_SPECIFIED;
 	}
 
 	TALLOC_FREE(names);
@@ -324,7 +322,7 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 		return;
 	}
 
-	src = &state->ids;
+	src = &state->all_ids;
 	dst = &state->map_ids_in;
 	dst->num_ids = 0;
 
@@ -333,6 +331,7 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 			continue;
 		}
 
+		state->tmp_idx[dst->num_ids] = si;
 		dst->ids[dst->num_ids] = src->ids[si];
 		dst->ids[dst->num_ids].domain_index = 0;
 		dst->num_ids += 1;
@@ -404,7 +403,6 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	const struct wbint_TransIDArray *src = NULL;
 	struct wbint_TransIDArray *dst = NULL;
 	uint32_t si;
-	uint32_t di;
 
 	status = dcerpc_wbint_Sids2UnixIDs_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
@@ -431,7 +429,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	}
 
 	src = &state->map_ids_out;
-	dst = &state->ids;
+	dst = &state->all_ids;
 
 	if (any_nt_status_not_ok(status, result, &status)) {
 		DBG_DEBUG("status=%s, result=%s\n", nt_errstr(status),
@@ -451,19 +449,12 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	si = 0;
-	for (di=0; di < dst->num_ids; di++) {
-		if (dst->ids[di].domain_index != state->dom_index) {
-			continue;
-		}
+	for (si=0; si < src->num_ids; si++) {
+		uint32_t di = state->tmp_idx[si];
 
-		if (si >= src->num_ids) {
-			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
-			return;
+		if (src->ids[si].xid.type != ID_TYPE_NOT_SPECIFIED) {
+			dst->ids[di].xid  = src->ids[si].xid;
 		}
-
-		dst->ids[di].xid  = src->ids[si].xid;
-		si += 1;
 	}
 
 	state->map_ids_in.num_ids = 0;
@@ -541,7 +532,7 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status;
-	uint32_t i, lookup_count = 0;
+	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
@@ -555,23 +546,10 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	}
 
 	for (i=0; i<state->num_sids; i++) {
-		struct unixid xid;
-
-		xid.id = UINT32_MAX;
-
-		if (state->all_ids.ids[i].domain_index == UINT32_MAX) {
-			xid = state->all_ids.ids[i].xid;
-		} else {
-			xid = state->ids.ids[lookup_count].xid;
-
-			idmap_cache_set_sid2unixid(
-				&state->lookup_sids[lookup_count],
-				&xid);
-
-			lookup_count += 1;
+		xids[i] = state->all_ids.ids[i].xid;
+		if (state->all_ids.ids[i].domain_index != UINT32_MAX) {
+			idmap_cache_set_sid2unixid(&state->sids[i], &xids[i]);
 		}
-
-		xids[i] = xid;
 	}
 
 	return NT_STATUS_OK;
