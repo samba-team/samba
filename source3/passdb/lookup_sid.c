@@ -1427,6 +1427,13 @@ done:
 			break;
 		case ID_TYPE_NOT_SPECIFIED:
 			break;
+		case ID_TYPE_WB_REQUIRE_TYPE:
+			/*
+			 * these are internal between winbindd
+			 * parent and child.
+			 */
+			smb_panic(__location__);
+			break;
 		}
 	}
 

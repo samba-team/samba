@@ -202,6 +202,13 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		case ID_TYPE_BOTH:
 			include_gid = true;
 			break;
+		case ID_TYPE_WB_REQUIRE_TYPE:
+			/*
+			 * these are internal between winbindd
+			 * parent and child.
+			 */
+			smb_panic(__location__);
+			break;
 		}
 
 		if (!include_gid) {

@@ -118,6 +118,17 @@ static NTSTATUS idmap_tdb_common_allocate_id(struct idmap_domain *dom,
 		hwmtype = "GID";
 		break;
 
+	case ID_TYPE_BOTH:
+		/*
+		 * This is not supported here yet and
+		 * already handled in idmap_rw_new_mapping()
+		 */
+		FALL_THROUGH;
+	case ID_TYPE_NOT_SPECIFIED:
+		/*
+		 * This is handled in idmap_rw_new_mapping()
+		 */
+		FALL_THROUGH;
 	default:
 		DEBUG(2, ("Invalid ID type (0x%x)\n", xid->type));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -529,7 +540,7 @@ static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 							void *private_data)
 {
 	struct idmap_tdb_common_sids_to_unixids_context *state = private_data;
-	size_t i, num_mapped = 0;
+	size_t i, num_mapped = 0, num_required = 0;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	DEBUG(10, ("idmap_tdb_common_sids_to_unixids: "
@@ -579,6 +590,12 @@ static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 							 state->ids[i]);
 			DBG_DEBUG("idmap_tdb_common_new_mapping returned %s\n",
 				  nt_errstr(ret));
+			if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED)) {
+				if (state->ids[i]->status == ID_REQUIRE_TYPE) {
+					num_required += 1;
+					continue;
+				}
+			}
 			if (!NT_STATUS_IS_OK(ret)) {
 				ret = STATUS_SOME_UNMAPPED;
 				continue;
@@ -597,6 +614,9 @@ done:
 			ret = STATUS_SOME_UNMAPPED;
 		} else {
 			ret = NT_STATUS_OK;
+		}
+		if (num_required > 0) {
+			ret = STATUS_SOME_UNMAPPED;
 		}
 	}
 

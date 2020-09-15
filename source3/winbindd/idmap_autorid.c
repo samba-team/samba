@@ -670,9 +670,9 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	 * range.
 	 */
 
-	DBG_NOTICE("Allocating range for domain %s refused\n", range.domsid);
-	map->status = ID_UNMAPPED;
-	return NT_STATUS_NONE_MAPPED;
+	DBG_NOTICE("Allocating range for domain %s required type_hint\n", range.domsid);
+	map->status = ID_REQUIRE_TYPE;
+	return NT_STATUS_SOME_NOT_MAPPED;
 
 allocate:
 	ret = idmap_autorid_acquire_range(autorid_db, &range);

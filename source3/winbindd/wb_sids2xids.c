@@ -473,6 +473,17 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	for (si=0; si < src->num_ids; si++) {
 		uint32_t di = state->tmp_idx[si];
 
+		if (src->ids[si].xid.type == ID_TYPE_WB_REQUIRE_TYPE) {
+			/*
+			 * This should not happen yet, as we always
+			 * do a lookupsids and fill type_hint.
+			 *
+			 * Make sure we don't expose ID_TYPE_WB_REQUIRE_TYPE
+			 * outside of winbindd!
+			 */
+			src->ids[si].xid.type = ID_TYPE_NOT_SPECIFIED;
+		}
+
 		if (src->ids[si].xid.type != ID_TYPE_NOT_SPECIFIED) {
 			dst->ids[di].xid  = src->ids[si].xid;
 		}

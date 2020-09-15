@@ -39,11 +39,39 @@ NTSTATUS idmap_rw_new_mapping(struct idmap_domain *dom,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((map->xid.type != ID_TYPE_UID) && (map->xid.type != ID_TYPE_GID)) {
+	if (map->sid == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (map->sid == NULL) {
+	switch (map->xid.type) {
+	case ID_TYPE_NOT_SPECIFIED:
+		/*
+		 * We need to know if we need a user or group mapping.
+		 * Ask the winbindd parent to provide a valid type hint.
+		 */
+		DBG_INFO("%s ID_TYPE_NOT_SPECIFIED => ID_REQUIRE_TYPE\n",
+			 dom_sid_str_buf(map->sid, &buf));
+		map->status = ID_REQUIRE_TYPE;
+		return NT_STATUS_SOME_NOT_MAPPED;
+
+	case ID_TYPE_BOTH:
+		/*
+		 * For now we still require
+		 * an explicit type as hint
+		 * and don't support ID_TYPE_BOTH
+		 */
+		DBG_INFO("%s ID_TYPE_BOTH => ID_REQUIRE_TYPE\n",
+			 dom_sid_str_buf(map->sid, &buf));
+		map->status = ID_REQUIRE_TYPE;
+		return NT_STATUS_SOME_NOT_MAPPED;
+
+	case ID_TYPE_UID:
+		break;
+
+	case ID_TYPE_GID:
+		break;
+
+	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
