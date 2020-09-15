@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release condidate of Samba 4.13.  This is *not*
+This is the fifth release condidate of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -91,6 +91,20 @@ smb.conf changes
   client NTLMv2 auth                 Deprecated                 yes
   client lanman auth                 Deprecated                 no
   client use spnego                  Deprecated                 yes
+
+
+CHANGES SINCE 4.13.0rc4
+=======================
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14399: waf: Only use gnutls_aead_cipher_encryptv2() for GnuTLS >
+     3.6.14.
+   * BUG 14467: s3:smbd: Fix %U substitutions if it contains a domain name.
+   * BUG 14479: The created krb5.conf for 'net ads join' doesn't have a domain
+     entry.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14482: Fix build problem if libbsd-dev is not installed.
 
 
 CHANGES SINCE 4.13.0rc3
