@@ -41,8 +41,6 @@
 #include <procinfo.h>
 #endif
 
-#include "lib/util/mkdir_p.h"
-
 /*
   if possible, make this task real time
  */
