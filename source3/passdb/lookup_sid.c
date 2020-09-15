@@ -1418,14 +1418,14 @@ done:
 	 */
 	for (i=0; i<num_sids; i++) {
 		switch(ids[i].type) {
-		case WBC_ID_TYPE_GID:
-		case WBC_ID_TYPE_UID:
-		case WBC_ID_TYPE_BOTH:
+		case ID_TYPE_GID:
+		case ID_TYPE_UID:
+		case ID_TYPE_BOTH:
 			if (ids[i].id == (uint32_t)-1) {
 				ids[i].type = ID_TYPE_NOT_SPECIFIED;
 			}
 			break;
-		case WBC_ID_TYPE_NOT_SPECIFIED:
+		case ID_TYPE_NOT_SPECIFIED:
 			break;
 		}
 	}
