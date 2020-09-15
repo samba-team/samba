@@ -27,6 +27,16 @@ samba_bindir="$BINDIR"
 samba_testparm="$BINDIR/testparm"
 samba_rpcclient="$samba_bindir/rpcclient"
 
+opt="--option=gensec:gse_krb5=no -U${USERNAME}%${PASSWORD}"
+
+unset GNUTLS_FORCE_FIPS_MODE
+
+# Checks that testparm reports: Weak crypto is allowed
+testit_grep "testparm" "Weak crypto is allowed" $samba_testparm -s $SMB_CONF_PATH 2>&1 || failed=`expr $failed + 1`
+
+# We should be allowed to use NTLM for connecting
+testit "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=`expr $failed + 1`
+
 GNUTLS_FORCE_FIPS_MODE=1
 export GNUTLS_FORCE_FIPS_MODE
 
@@ -34,7 +44,7 @@ export GNUTLS_FORCE_FIPS_MODE
 testit_grep "testparm" "Weak crypto is disallowed" $samba_testparm -s $SMB_CONF_PATH 2>&1 || failed=`expr $failed + 1`
 
 # We should not be allowed to use NTLM for connecting
-testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER -U$USERNAME%$PASSWORD -c "getusername" || failed=`expr $failed + 1`
+testit_expect_failure "rpclient.ntlm" $samba_rpcclient ncacn_np:$SERVER $opt -c "getusername" || failed=`expr $failed + 1`
 
 unset GNUTLS_FORCE_FIPS_MODE
 
