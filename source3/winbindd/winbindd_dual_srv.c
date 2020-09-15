@@ -227,6 +227,12 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 	for (i=0; i<num_ids; i++) {
 		struct id_map *m = id_map_ptrs[i];
 
+		if (m->status == ID_REQUIRE_TYPE) {
+			ids[i].xid.id = UINT32_MAX;
+			ids[i].xid.type = ID_TYPE_WB_REQUIRE_TYPE;
+			continue;
+		}
+
 		if (!idmap_unix_id_is_in_range(m->xid.id, dom)) {
 			DBG_DEBUG("id %"PRIu32" is out of range "
 				  "%"PRIu32"-%"PRIu32" for domain %s\n",

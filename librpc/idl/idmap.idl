@@ -11,7 +11,18 @@ interface idmap
 		ID_TYPE_NOT_SPECIFIED,
 		ID_TYPE_UID,
 		ID_TYPE_GID,
-		ID_TYPE_BOTH
+		ID_TYPE_BOTH,
+		/*
+		 * This are internal between winbindd
+		 * parent and child.
+		 *
+		 * It means the idmap backend/child requires a valid type_hint
+		 * for wbint_Sids2UnixIDs():
+		 *
+		 * - ID_TYPE_UID or ID_TYPE_GID means the user/group exists
+		 * - ID_TYPE_BOTH means that only the domain exist
+		 */
+		ID_TYPE_WB_REQUIRE_TYPE
 	} id_type;
 
 	typedef [public] struct {
@@ -23,7 +34,15 @@ interface idmap
 		ID_UNKNOWN,
 		ID_MAPPED,
 		ID_UNMAPPED,
-		ID_EXPIRED
+		ID_EXPIRED,
+		/*
+		 * This means the idmap backend requires a valid type_hint
+		 * in order to map a sid to a unix id.
+		 *
+		 * - ID_TYPE_UID or ID_TYPE_GID means the user/group exists
+		 * - ID_TYPE_BOTH means that only the domain exist
+		 */
+		ID_REQUIRE_TYPE
 	} id_mapping;
 
 	typedef [public] struct {
