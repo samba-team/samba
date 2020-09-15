@@ -39,6 +39,9 @@ struct wb_sids2xids_state {
 	uint32_t lookup_count;
 	struct dom_sid *lookup_sids;
 
+	struct wbint_TransIDArray map_ids_in;
+	struct wbint_TransIDArray map_ids_out;
+
 	/*
 	 * Domain array to use for the idmap call. The output from
 	 * lookupsids cannot be used directly since for migrated
@@ -53,7 +56,6 @@ struct wb_sids2xids_state {
 	struct lsa_RefDomainList idmap_doms;
 
 	uint32_t dom_index;
-	struct wbint_TransIDArray *dom_ids;
 	struct lsa_RefDomainList idmap_dom;
 	bool tried_dclookup;
 
@@ -104,6 +106,11 @@ struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 
 	state->lookup_sids = talloc_zero_array(state, struct dom_sid, num_sids);
 	if (tevent_req_nomem(state->lookup_sids, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->map_ids_in.ids = talloc_zero_array(state, struct wbint_TransID, num_sids);
+	if (tevent_req_nomem(state->map_ids_in.ids, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -218,9 +225,6 @@ static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map)
 }
 
 static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type);
-static struct wbint_TransIDArray *wb_sids2xids_extract_for_domain_index(
-	TALLOC_CTX *mem_ctx, const struct wbint_TransIDArray *src,
-	uint32_t domain_index);
 
 static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 {
@@ -308,7 +312,11 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 		req, struct wb_sids2xids_state);
 	struct tevent_req *subreq = NULL;
 	struct dcerpc_binding_handle *child_binding_handle = NULL;
+	const struct wbint_TransIDArray *src = NULL;
+	struct wbint_TransIDArray *dst = NULL;
+	uint32_t si;
 
+ next_domain:
 	state->tried_dclookup = false;
 
 	if (state->dom_index == state->idmap_doms.count) {
@@ -316,10 +324,23 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 		return;
 	}
 
-	state->dom_ids = wb_sids2xids_extract_for_domain_index(
-		state, &state->ids, state->dom_index);
-	if (tevent_req_nomem(state->dom_ids, req)) {
-		return;
+	src = &state->ids;
+	dst = &state->map_ids_in;
+	dst->num_ids = 0;
+
+	for (si=0; si < src->num_ids; si++) {
+		if (src->ids[si].domain_index != state->dom_index) {
+			continue;
+		}
+
+		dst->ids[dst->num_ids] = src->ids[si];
+		dst->ids[dst->num_ids].domain_index = 0;
+		dst->num_ids += 1;
+	}
+
+	if (dst->num_ids == 0) {
+		state->dom_index += 1;
+		goto next_domain;
 	}
 
 	state->idmap_dom = (struct lsa_RefDomainList) {
@@ -328,10 +349,23 @@ static void wb_sids2xids_next_sids2unix(struct tevent_req *req)
 		.max_size = 1
 	};
 
+	/*
+	 * dcerpc_wbint_Sids2UnixIDs_send/recv will
+	 * allocate a new array for the response
+	 * and overwrite _ids->ids pointer.
+	 *
+	 * So we better make a temporary copy
+	 * of state->map_ids_in (which contains the request array)
+	 * into state->map_ids_out.
+	 *
+	 * That makes it possible to reuse the pre-allocated
+	 * state->map_ids_in.ids array.
+	 */
+	state->map_ids_out = state->map_ids_in;
 	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
 		state, state->ev, child_binding_handle, &state->idmap_dom,
-		state->dom_ids);
+		&state->map_ids_out);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -394,7 +428,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	src = state->dom_ids;
+	src = &state->map_ids_out;
 	src_idx = 0;
 	dst = &state->ids;
 
@@ -405,9 +439,15 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		/*
 		 * All we can do here is to report "not mapped"
 		 */
+		src = &state->map_ids_in;
 		for (i=0; i<src->num_ids; i++) {
 			src->ids[i].xid.type = ID_TYPE_NOT_SPECIFIED;
 		}
+	}
+
+	if (src->num_ids != state->map_ids_in.num_ids) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
 	}
 
 	for (i=0; i<dst->num_ids; i++) {
@@ -417,7 +457,17 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		}
 	}
 
-	TALLOC_FREE(state->dom_ids);
+	state->map_ids_in.num_ids = 0;
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * If we got a valid response, we expect
+		 * state->map_ids_out.ids to be a new allocated
+		 * array, which we want to free early.
+		 */
+		SMB_ASSERT(state->map_ids_out.ids != state->map_ids_in.ids);
+		TALLOC_FREE(state->map_ids_out.ids);
+	}
+	state->map_ids_out = (struct wbint_TransIDArray) { .num_ids = 0, };
 
 	state->dom_index += 1;
 
@@ -453,10 +503,23 @@ static void wb_sids2xids_gotdc(struct tevent_req *subreq)
 		}
 	}
 
+	/*
+	 * dcerpc_wbint_Sids2UnixIDs_send/recv will
+	 * allocate a new array for the response
+	 * and overwrite _ids->ids pointer.
+	 *
+	 * So we better make a temporary copy
+	 * of state->map_ids_in (which contains the request array)
+	 * into state->map_ids_out.
+	 *
+	 * That makes it possible to reuse the pre-allocated
+	 * state->map_ids_in.ids array.
+	 */
+	state->map_ids_out = state->map_ids_in;
 	child_binding_handle = idmap_child_handle();
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
 		state, state->ev, child_binding_handle, &state->idmap_dom,
-		state->dom_ids);
+		&state->map_ids_out);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -503,32 +566,4 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	}
 
 	return NT_STATUS_OK;
-}
-
-static struct wbint_TransIDArray *wb_sids2xids_extract_for_domain_index(
-	TALLOC_CTX *mem_ctx, const struct wbint_TransIDArray *src,
-	uint32_t domain_index)
-{
-	struct wbint_TransIDArray *ret;
-	uint32_t i;
-
-	ret = talloc_zero(mem_ctx, struct wbint_TransIDArray);
-	if (ret == NULL) {
-		return NULL;
-	}
-	ret->ids = talloc_array(ret, struct wbint_TransID, src->num_ids);
-	if (ret->ids == NULL) {
-		TALLOC_FREE(ret);
-		return NULL;
-	}
-
-	for (i=0; i<src->num_ids; i++) {
-		if (src->ids[i].domain_index == domain_index) {
-			ret->ids[ret->num_ids] = src->ids[i];
-			ret->ids[ret->num_ids].domain_index = 0;
-			ret->num_ids += 1;
-		}
-	}
-
-	return ret;
 }
