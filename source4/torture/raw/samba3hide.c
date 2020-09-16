@@ -156,7 +156,7 @@ static NTSTATUS smbcli_chmod(struct smbcli_tree *tree, const char *fname,
 
 bool torture_samba3_hide(struct torture_context *torture, struct smbcli_state *cli)
 {
-	const char *fname = "test.txt";
+	const char *fname = "torture_samba3_hide.txt";
 	int fnum;
 	NTSTATUS status;
 	struct smbcli_tree *hideunread;
