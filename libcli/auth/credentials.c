@@ -33,6 +33,12 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+void netlogon_creds_random_challenge(struct netr_Credential *challenge)
+{
+	ZERO_STRUCTP(challenge);
+	generate_random_buffer(challenge->data, sizeof(challenge->data));
+}
+
 static NTSTATUS netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
 					  const struct netr_Credential *in,
 					  struct netr_Credential *out)
