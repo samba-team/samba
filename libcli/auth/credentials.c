@@ -25,6 +25,7 @@
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/security/dom_sid.h"
+#include "lib/util/util_str_escape.h"
 
 
 bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge)
@@ -451,6 +452,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 {
 
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	bool ok;
 
 	if (!creds) {
 		return NULL;
@@ -462,6 +464,20 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
 	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
+
+	ok = netlogon_creds_is_random_challenge(client_challenge);
+	if (!ok) {
+		DBG_WARNING("CVE-2020-1472(ZeroLogon): "
+			    "non-random client challenge rejected for "
+			    "client_account[%s] client_computer_name[%s]\n",
+			    log_escape(mem_ctx, client_account),
+			    log_escape(mem_ctx, client_computer_name));
+		dump_data(DBGLVL_WARNING,
+			  client_challenge->data,
+			  sizeof(client_challenge->data));
+		talloc_free(creds);
+		return NULL;
+	}
 
 	creds->computer_name = talloc_strdup(creds, client_computer_name);
 	if (!creds->computer_name) {
