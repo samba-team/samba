@@ -622,26 +622,47 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	NTSTATUS nt_status;
 	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	const char *opname = "<unknown>";
 
-	if (schannel_global_required) {
-		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-
-		dcesrv_call_auth_info(dce_call, &auth_type, NULL);
-
-		if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-			DBG_ERR("[%s] is not using schannel\n",
-				computer_name);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	if (opnum < ndr_table_netlogon.num_calls) {
+		opname = ndr_table_netlogon.calls[opnum].name;
 	}
+
+	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
 
 	nt_status = schannel_check_creds_state(mem_ctx,
 					       dce_call->conn->dce_ctx->lp_ctx,
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
-					       creds_out);
-	return nt_status;
+					       &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ZERO_STRUCTP(return_authenticator);
+		return nt_status;
+	}
+
+	if (schannel_global_required) {
+		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+			*creds_out = creds;
+			return NT_STATUS_OK;
+		}
+
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"%s request (opnum[%u]) without schannel from "
+			"client_account[%s] client_computer_name[%s]\n",
+			opname, opnum,
+			log_escape(mem_ctx, creds->account_name),
+			log_escape(mem_ctx, creds->computer_name));
+		TALLOC_FREE(creds);
+		ZERO_STRUCTP(return_authenticator);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*creds_out = creds;
+	return NT_STATUS_OK;
 }
 
 /*
