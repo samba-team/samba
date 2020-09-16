@@ -2872,7 +2872,7 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
