@@ -1385,6 +1385,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 						      516);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(creds);
 		return status;
 	}
 
