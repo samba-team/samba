@@ -1343,9 +1343,14 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
-	DATA_BLOB plaintext;
+	DATA_BLOB plaintext = data_blob_null;
+	DATA_BLOB new_password = data_blob_null;
+	size_t confounder_len;
+	DATA_BLOB dec_blob = data_blob_null;
+	DATA_BLOB enc_blob = data_blob_null;
 	struct samr_CryptPassword password_buf;
 	struct _samr_Credentials_t cr = { CRED_TYPE_PLAIN_TEXT, {0}};
+	bool ok;
 
 	become_root();
 	status = netr_creds_server_step_check(p, p->mem_ctx,
@@ -1389,18 +1394,99 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!decode_pw_buffer(p->mem_ctx,
-			      password_buf.data,
-			      (char**) &plaintext.data,
-			      &plaintext.length,
-			      CH_UTF16)) {
+	if (!extract_pw_from_buffer(p->mem_ctx, password_buf.data, &new_password)) {
 		DEBUG(2,("_netr_ServerPasswordSet2: unable to extract password "
 			 "from a buffer. Rejecting auth request as a wrong password\n"));
 		TALLOC_FREE(creds);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	/*
+	 * Make sure the length field was encrypted,
+	 * otherwise we are under attack.
+	 */
+	if (new_password.length == r->in.new_password->length) {
+		DBG_WARNING("Length[%zu] field not encrypted\n",
+			new_password.length);
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * We don't allow empty passwords for machine accounts.
+	 */
+	if (new_password.length < 2) {
+		DBG_WARNING("Empty password Length[%zu]\n",
+			new_password.length);
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Make sure the confounder part of CryptPassword
+	 * buffer was encrypted, otherwise we are under attack.
+	 */
+	confounder_len = 512 - new_password.length;
+	enc_blob = data_blob_const(r->in.new_password->data, confounder_len);
+	dec_blob = data_blob_const(password_buf.data, confounder_len);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Confounder buffer not encrypted Length[%zu]\n",
+			    confounder_len);
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Check that the password part was actually encrypted,
+	 * otherwise we are under attack.
+	 */
+	enc_blob = data_blob_const(r->in.new_password->data + confounder_len,
+				   new_password.length);
+	dec_blob = data_blob_const(password_buf.data + confounder_len,
+				   new_password.length);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Password buffer not encrypted Length[%zu]\n",
+			    new_password.length);
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * don't allow zero buffers
+	 */
+	if (all_zero(new_password.data, new_password.length)) {
+		DBG_WARNING("Password zero buffer Length[%zu]\n",
+			    new_password.length);
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* Convert from UTF16 -> plaintext. */
+	ok = convert_string_talloc(p->mem_ctx,
+				CH_UTF16,
+				CH_UNIX,
+				new_password.data,
+				new_password.length,
+				(void *)&plaintext.data,
+				&plaintext.length);
+	if (!ok) {
+		DBG_WARNING("unable to extract password from a buffer. "
+			    "Rejecting auth request as a wrong password\n");
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * We don't allow empty passwords for machine accounts.
+	 */
+
 	cr.creds.password = (const char*) plaintext.data;
+	if (strlen(cr.creds.password) == 0) {
+		DBG_WARNING("Empty plaintext password\n");
+		TALLOC_FREE(creds);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   p->session_info,
 						   p->msg_ctx,
