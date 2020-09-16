@@ -160,7 +160,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
@@ -229,7 +229,7 @@ bool test_SetupCredentials2ex(struct dcerpc_pipe *p, struct torture_context *tct
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
@@ -324,7 +324,7 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
@@ -396,7 +396,7 @@ bool test_SetupCredentialsDowngrade(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
@@ -1283,7 +1283,7 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1372,7 +1372,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1461,7 +1461,7 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1551,7 +1551,7 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1643,8 +1643,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	r.in.credentials = &credentials1_random;
 	r.out.return_credentials = &credentials_discard;
 
-	generate_random_buffer(credentials1_random.data,
-			       sizeof(credentials1_random.data));
+	netlogon_creds_random_challenge(&credentials1_random);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1656,7 +1655,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1667,16 +1666,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	r.in.credentials = &credentials1_random;
 	r.out.return_credentials = &credentials_discard;
 
-	generate_random_buffer(credentials1_random.data,
-			       sizeof(credentials1_random.data));
-
-	r.in.server_name = NULL;
-	r.in.computer_name = "CHALTEST3";
-	r.in.credentials = &credentials1_random;
-	r.out.return_credentials = &credentials_discard;
-
-	generate_random_buffer(credentials1_random.data,
-			       sizeof(credentials1_random.data));
+	netlogon_creds_random_challenge(&credentials1_random);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b1, tctx, &r),
 		"ServerReqChallenge failed on b1");
@@ -1752,7 +1742,7 @@ static bool test_ServerReqChallengeReuse(struct torture_context *tctx,
 	r.in.credentials = &credentials1;
 	r.out.return_credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+	netlogon_creds_random_challenge(&credentials1);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge");
