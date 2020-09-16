@@ -721,7 +721,10 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct NL_PASSWORD_VERSION version = {};
 	const uint32_t *new_version = NULL;
 	NTSTATUS nt_status;
-	DATA_BLOB new_password;
+	DATA_BLOB new_password = data_blob_null;
+	size_t confounder_len;
+	DATA_BLOB dec_blob = data_blob_null;
+	DATA_BLOB enc_blob = data_blob_null;
 	int ret;
 	struct samr_CryptPassword password_buf;
 
@@ -781,6 +784,61 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Make sure the length field was encrypted,
+	 * otherwise we are under attack.
+	 */
+	if (new_password.length == r->in.new_password->length) {
+		DBG_WARNING("Length[%zu] field not encrypted\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * We don't allow empty passwords for machine accounts.
+	 */
+	if (new_password.length < 2) {
+		DBG_WARNING("Empty password Length[%zu]\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Make sure the confounder part of CryptPassword
+	 * buffer was encrypted, otherwise we are under attack.
+	 */
+	confounder_len = 512 - new_password.length;
+	enc_blob = data_blob_const(r->in.new_password->data, confounder_len);
+	dec_blob = data_blob_const(password_buf.data, confounder_len);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Confounder buffer not encrypted Length[%zu]\n",
+			    confounder_len);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Check that the password part was actually encrypted,
+	 * otherwise we are under attack.
+	 */
+	enc_blob = data_blob_const(r->in.new_password->data + confounder_len,
+				   new_password.length);
+	dec_blob = data_blob_const(password_buf.data + confounder_len,
+				   new_password.length);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Password buffer not encrypted Length[%zu]\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * don't allow zero buffers
+	 */
+	if (all_zero(new_password.data, new_password.length)) {
+		DBG_WARNING("Password zero buffer Length[%zu]\n",
+			    new_password.length);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
