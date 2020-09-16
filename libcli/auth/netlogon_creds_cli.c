@@ -1177,8 +1177,7 @@ static void netlogon_creds_cli_auth_challenge_start(struct tevent_req *req)
 
 	TALLOC_FREE(state->creds);
 
-	generate_random_buffer(state->client_challenge.data,
-			       sizeof(state->client_challenge.data));
+	netlogon_creds_random_challenge(&state->client_challenge);
 
 	subreq = dcerpc_netr_ServerReqChallenge_send(state, state->ev,
 						state->binding_handle,
