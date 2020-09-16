@@ -626,6 +626,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	NTSTATUS nt_status;
 	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	bool schannel_required = schannel_global_required;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
@@ -648,7 +649,13 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 		return nt_status;
 	}
 
-	if (schannel_global_required) {
+	schannel_required = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx,
+					    NULL,
+					    "server require schannel",
+					    creds->account_name,
+					    schannel_global_required);
+
+	if (schannel_required) {
 		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 			*creds_out = creds;
 			return NT_STATUS_OK;
