@@ -30,10 +30,31 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge)
+{
+	/*
+	 * If none of the first 5 bytes of the client challenge is unique, the
+	 * server MUST fail session-key negotiation without further processing
+	 * of the following steps.
+	 */
+
+	if (challenge->data[1] == challenge->data[0] &&
+	    challenge->data[2] == challenge->data[0] &&
+	    challenge->data[3] == challenge->data[0] &&
+	    challenge->data[4] == challenge->data[0])
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void netlogon_creds_random_challenge(struct netr_Credential *challenge)
 {
 	ZERO_STRUCTP(challenge);
-	generate_random_buffer(challenge->data, sizeof(challenge->data));
+	while (!netlogon_creds_is_random_challenge(challenge)) {
+		generate_random_buffer(challenge->data, sizeof(challenge->data));
+	}
 }
 
 static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
