@@ -839,8 +839,7 @@ NTSTATUS _netr_ServerReqChallenge(struct pipes_struct *p,
 
 	pipe_state->client_challenge = *r->in.credentials;
 
-	generate_random_buffer(pipe_state->server_challenge.data,
-			       sizeof(pipe_state->server_challenge.data));
+	netlogon_creds_random_challenge(&pipe_state->server_challenge);
 
 	*r->out.return_credentials = pipe_state->server_challenge;
 
