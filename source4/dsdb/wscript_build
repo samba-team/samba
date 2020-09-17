@@ -79,6 +79,5 @@ bld.SAMBA_PYTHON('python_dsdb',
                  # removes it so we end up with unresolved symbols.
                  deps='samdb %s dcerpc com_err %s %s dsdb_garbage_collect_tombstones scavenge_dns_records' %\
                  (pyldb_util, pyrpc_util, pyparam_util),
-                 realname='samba/dsdb.so',
-                 enabled=bld.AD_DC_BUILD_IS_ENABLED()
+                 realname='samba/dsdb.so'
                  )
