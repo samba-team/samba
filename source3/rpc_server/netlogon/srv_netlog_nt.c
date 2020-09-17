@@ -48,6 +48,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "lib/param/param.h"
 #include "libsmb/dsgetdcname.h"
+#include "lib/util/util_str_escape.h"
 
 extern userdom_struct current_user_info;
 
@@ -1074,18 +1075,20 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	NTSTATUS status;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 	struct loadparm_context *lp_ctx;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	uint16_t opnum = p->opnum;
+	const char *opname = "<unknown>";
 
 	if (creds_out != NULL) {
 		*creds_out = NULL;
 	}
 
-	if (schannel_global_required) {
-		if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-			DBG_ERR("[%s] is not using schannel\n",
-				computer_name);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	if (opnum < ndr_table_netlogon.num_calls) {
+		opname = ndr_table_netlogon.calls[opnum].name;
 	}
+
+	auth_type = p->auth.auth_type;
 
 	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -1095,9 +1098,33 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 
 	status = schannel_check_creds_state(mem_ctx, lp_ctx,
 					    computer_name, received_authenticator,
-					    return_authenticator, creds_out);
+					    return_authenticator, &creds);
 	talloc_unlink(mem_ctx, lp_ctx);
-	return status;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ZERO_STRUCTP(return_authenticator);
+		return status;
+	}
+
+	if (schannel_global_required) {
+		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+			*creds_out = creds;
+			return NT_STATUS_OK;
+		}
+
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"%s request (opnum[%u]) without schannel from "
+			"client_account[%s] client_computer_name[%s]\n",
+			opname, opnum,
+			log_escape(mem_ctx, creds->account_name),
+			log_escape(mem_ctx, creds->computer_name));
+		TALLOC_FREE(creds);
+		ZERO_STRUCTP(return_authenticator);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*creds_out = creds;
+	return NT_STATUS_OK;
 }
 
 
