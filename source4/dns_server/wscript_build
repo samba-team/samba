@@ -103,5 +103,4 @@ bld.SAMBA_PYTHON('python_dsdb_dns',
                  source='pydns.c',
                  deps='samdb %s %s dnsserver_common %s' % (
                      pyldb_util, pyrpc_util, pytalloc_util),
-                 realname='samba/dsdb_dns.so',
-                 enabled=bld.AD_DC_BUILD_IS_ENABLED())
+                 realname='samba/dsdb_dns.so')
