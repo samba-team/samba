@@ -153,7 +153,6 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	for (i=0; i<lp_winbind_max_domain_connections(); i++) {
 		ndr_print_winbindd_child(ndr, "children", &r->children[i]);
 	}
-	ndr_print_uint32(ndr, "check_online_timeout", r->check_online_timeout);
 	ndr_print_ptr(ndr, "check_online_event", r->check_online_event);
 	ndr->depth--;
 }

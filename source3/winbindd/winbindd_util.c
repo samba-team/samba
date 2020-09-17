@@ -36,6 +36,7 @@
 #include "lib/util/smb_strtox.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -251,8 +252,6 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	domain->last_seq_check = 0;
 	domain->initialized = false;
 	domain->online = is_internal_domain(sid);
-	domain->check_online_timeout = 0;
-	domain->dc_probe_pid = (pid_t)-1;
 	domain->domain_flags = trust_flags;
 	domain->domain_type = trust_type;
 	domain->domain_trust_attribs = trust_attribs;
@@ -798,6 +797,93 @@ void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 	return;
 }
 
+static void wbd_ping_dc_done(struct tevent_req *subreq);
+
+void winbindd_ping_offline_domains(struct tevent_context *ev,
+				   struct tevent_timer *te,
+				   struct timeval now,
+				   void *private_data)
+{
+	struct winbindd_domain *domain = NULL;
+
+	TALLOC_FREE(te);
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		DBG_DEBUG("Domain %s is %s\n",
+			  domain->name,
+			  domain->online ? "online" : "offline");
+
+		if (get_global_winbindd_state_offline()) {
+			DBG_DEBUG("We are globally offline, do nothing.\n");
+			break;
+		}
+
+		if (domain->online ||
+		    domain->check_online_event != NULL ||
+		    domain->secure_channel_type == SEC_CHAN_NULL) {
+			continue;
+		}
+
+		winbindd_flush_negative_conn_cache(domain);
+
+		domain->check_online_event =
+			dcerpc_wbint_PingDc_send(domain,
+						 ev,
+						 dom_child_handle(domain),
+						 &domain->ping_dcname);
+		if (domain->check_online_event == NULL) {
+			DBG_WARNING("Failed to schedule ping, no-memory\n");
+			continue;
+		}
+
+		tevent_req_set_callback(domain->check_online_event,
+					wbd_ping_dc_done, domain);
+	}
+
+	te = tevent_add_timer(ev,
+			      NULL,
+			      timeval_current_ofs(lp_winbind_reconnect_delay(),
+			                          0),
+			      winbindd_ping_offline_domains,
+			      NULL);
+	if (te == NULL) {
+		DBG_ERR("Failed to schedule winbindd_ping_offline_domains()\n");
+	}
+
+	return;
+}
+
+static void wbd_ping_dc_done(struct tevent_req *subreq)
+{
+	struct winbindd_domain *domain =
+		tevent_req_callback_data(subreq,
+		struct winbindd_domain);
+	NTSTATUS status, result;
+
+	SMB_ASSERT(subreq == domain->check_online_event);
+	domain->check_online_event = NULL;
+
+	status = dcerpc_wbint_PingDc_recv(subreq, domain, &result);
+	TALLOC_FREE(subreq);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_WARNING("dcerpc_wbint_PingDc_recv failed for domain: "
+			    "%s - %s\n",
+			    domain->name,
+			    nt_errstr(status));
+		return;
+	}
+
+	DBG_DEBUG("dcerpc_wbint_PingDc_recv() succeeded, "
+		  "domain: %s, dc-name: %s\n",
+                  domain->name,
+		  domain->ping_dcname);
+
+	talloc_free(discard_const(domain->ping_dcname));
+	domain->ping_dcname = NULL;
+
+	return;
+}
+
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state)
 {
@@ -941,14 +1027,6 @@ static bool add_trusted_domains_dc(void)
 					   nt_errstr(status));
 				return false;
 			}
-
-			/* Even in the parent winbindd we'll need to
-			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't necessary
-			   as the init_dc_connection() in init_child_recv()
-			   will do this, but we can start detecting the DC
-			   early here. */
-			set_domain_online_request(domain);
 		}
 
 		return true;
@@ -1014,16 +1092,6 @@ static bool add_trusted_domains_dc(void)
 		}
 		domain->domain_type = domains[i]->trust_type;
 		domain->domain_trust_attribs = domains[i]->trust_attributes;
-
-		if (sec_chan_type != SEC_CHAN_NULL) {
-			/* Even in the parent winbindd we'll need to
-			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't necessary
-			   as the init_dc_connection() in init_child_recv()
-			   will do this, but we can start detecting the DC
-			   early here. */
-			set_domain_online_request(domain);
-		}
 	}
 
 	for (i = 0; i < num_domains; i++) {
@@ -1308,14 +1376,6 @@ bool init_domain_list(void)
 				"domain to winbindd's internal list\n");
 			return false;
 		}
-		/* Even in the parent winbindd we'll need to
-		   talk to the DC, so try and see if we can
-		   contact it. Theoretically this isn't necessary
-		   as the init_dc_connection() in init_child_recv()
-		   will do this, but we can start detecting the DC
-		   early here. */
-		set_domain_online_request(domain);
-
 	}
 
 	status = imessaging_register(winbind_imessaging_context(), NULL,

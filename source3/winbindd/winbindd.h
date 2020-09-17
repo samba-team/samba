@@ -158,8 +158,8 @@ struct winbindd_domain {
 	void *private_data;
 
 	/* A working DC */
-	pid_t dc_probe_pid; /* Child we're using to detect the DC. */
 	char *dcname;
+	const char *ping_dcname;
 	struct sockaddr_storage dcaddr;
 
 	/* Sequence number stuff */
@@ -179,10 +179,7 @@ struct winbindd_domain {
 	struct tevent_queue *queue;
 	struct dcerpc_binding_handle *binding_handle;
 
-	/* Callback we use to try put us back online. */
-
-	uint32_t check_online_timeout;
-	struct tevent_timer *check_online_event;
+	struct tevent_req *check_online_event;
 
 	/* Linked list info */
 

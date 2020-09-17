@@ -1383,6 +1383,8 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 {
 	bool scan_trusts = true;
 	NTSTATUS status;
+	struct tevent_timer *te = NULL;
+
 	/* Setup signal handlers */
 
 	if (!winbindd_setup_sig_term_handler(true))
@@ -1484,6 +1486,16 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 			DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
 			exit(1);
 		}
+	}
+
+	te = tevent_add_timer(global_event_context(),
+			      NULL,
+			      timeval_zero(),
+			      winbindd_ping_offline_domains,
+			      NULL);
+	if (te == NULL) {
+		DBG_ERR("Failed to schedule winbindd_ping_offline_domains()\n");
+		exit(1);
 	}
 
 	status = wb_irpc_register();
