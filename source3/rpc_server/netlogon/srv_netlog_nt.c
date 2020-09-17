@@ -1073,6 +1073,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
+	bool schannel_required = schannel_global_required;
 	struct loadparm_context *lp_ctx;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
@@ -1105,7 +1106,11 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 		return status;
 	}
 
-	if (schannel_global_required) {
+	schannel_required = lp_parm_bool(GLOBAL_SECTION_SNUM,
+					 "server require schannel",
+					 creds->account_name,
+					 schannel_global_required);
+	if (schannel_required) {
 		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 			*creds_out = creds;
 			return NT_STATUS_OK;
