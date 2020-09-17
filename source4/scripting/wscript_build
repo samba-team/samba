@@ -16,7 +16,7 @@ if sbin_files:
     if 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
         bld.MANPAGES(man_files, True)
 
-if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+if bld.CONFIG_SET('WITH_ADS'):
     bld.INSTALL_FILES('${BINDIR}',
                   'bin/samba-tool',
                   chmod=MODE_755, python_fixup=True, flat=True)

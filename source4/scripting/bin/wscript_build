@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-    for script in ['samba-tool',
-                   'samba_dnsupdate',
+    for script in ['samba_dnsupdate',
                    'samba_spnupdate',
                    'samba_kcc',
                    'samba_upgradeprovision',
@@ -10,4 +9,6 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                    'gen_output.py',
                    'samba_downgrade_db']:
         bld.SAMBA_SCRIPT(script, pattern=script, installdir='.')
+if bld.CONFIG_SET('WITH_ADS'):
+    bld.SAMBA_SCRIPT('samba-tool', pattern='samba-tool', installdir='.')
 bld.SAMBA_SCRIPT('samba-gpupdate', pattern='samba-gpupdate', installdir='.')
