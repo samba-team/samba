@@ -1,4 +1,107 @@
                    ===============================
+                   Release Notes for Samba 4.11.13
+                          September 18, 2020
+                   ===============================
+
+
+This is a security release in order to address the following defect:
+
+o CVE-2020-1472: Unauthenticated domain takeover via netlogon ("ZeroLogon").
+
+The following applies to Samba used as domain controller only (most
+seriously the Active Directory DC, but also the classic/NT4-style DC).
+
+Installations running Samba as a file server only are not directly
+affected by this flaw, though they may need configuration changes to
+continue to talk to domain controllers (see "file servers and domain
+members" below).
+
+The netlogon protocol contains a flaw that allows an authentication
+bypass. This was reported and patched by Microsoft as CVE-2020-1472.
+Since the bug is a protocol level flaw, and Samba implements the
+protocol, Samba is also vulnerable.
+
+However, since version 4.8 (released in March 2018), the default
+behaviour of Samba has been to insist on a secure netlogon channel,
+which is a sufficient fix against the known exploits. This default is
+equivalent to having 'server schannel = yes' in the smb.conf.
+
+Therefore versions 4.8 and above are not vulnerable unless they have
+the smb.conf lines 'server schannel = no' or 'server schannel = auto'.
+
+Samba versions 4.7 and below are vulnerable unless they have 'server
+schannel = yes' in the smb.conf.
+
+Note each domain controller needs the correct settings in its smb.conf.
+
+Vendors supporting Samba 4.7 and below are advised to patch their
+installations and packages to add this line to the [global] section if
+their smb.conf file.
+
+The 'server schannel = yes' smb.conf line is equivalent to Microsoft's
+'FullSecureChannelProtection=1' registry key, the introduction of
+which we understand forms the core of Microsoft's fix.
+
+Some domains employ third-party software that will not work with a
+'server schannel = yes'. For these cases patches are available that
+allow specific machines to use insecure netlogon. For example, the
+following smb.conf:
+
+   server schannel = yes
+   server require schannel:triceratops$ = no
+   server require schannel:greywacke$ = no
+
+will allow only "triceratops$" and "greywacke$" to avoid schannel.
+
+More details can be found here:
+https://www.samba.org/samba/security/CVE-2020-1472.html
+
+
+Changes since 4.11.12
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14497: CVE-2020-1472(ZeroLogon): s3:rpc_server/netlogon: Protect
+     netr_ServerPasswordSet2 against unencrypted passwords.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14497: CVE-2020-1472(ZeroLogon): s3:rpc_server/netlogon: Support
+     "server require schannel:WORKSTATION$ = no" about unsecure configurations.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14497: CVE-2020-1472(ZeroLogon): s4 torture rpc: repeated bytes in
+     client challenge.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14497: CVE-2020-1472(ZeroLogon): libcli/auth: Reject weak client
+     challenges in netlogon_creds_server_init()
+     "server require schannel:WORKSTATION$ = no".
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.11.12
                            August 25, 2020
 		   ===============================
@@ -64,8 +167,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ===============================
                    Release Notes for Samba 4.11.11

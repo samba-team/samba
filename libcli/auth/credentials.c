@@ -25,14 +25,43 @@
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/security/dom_sid.h"
+#include "lib/util/util_str_escape.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge)
+{
+	/*
+	 * If none of the first 5 bytes of the client challenge is unique, the
+	 * server MUST fail session-key negotiation without further processing
+	 * of the following steps.
+	 */
+
+	if (challenge->data[1] == challenge->data[0] &&
+	    challenge->data[2] == challenge->data[0] &&
+	    challenge->data[3] == challenge->data[0] &&
+	    challenge->data[4] == challenge->data[0])
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void netlogon_creds_random_challenge(struct netr_Credential *challenge)
+{
+	ZERO_STRUCTP(challenge);
+	while (!netlogon_creds_is_random_challenge(challenge)) {
+		generate_random_buffer(challenge->data, sizeof(challenge->data));
+	}
+}
+
 static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
 				      const struct netr_Credential *in,
 				      struct netr_Credential *out)
+
 {
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		AES_KEY key;
@@ -506,6 +535,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 {
 
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	bool ok;
 
 	if (!creds) {
 		return NULL;
@@ -517,6 +547,20 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
 	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
+
+	ok = netlogon_creds_is_random_challenge(client_challenge);
+	if (!ok) {
+		DBG_WARNING("CVE-2020-1472(ZeroLogon): "
+			    "non-random client challenge rejected for "
+			    "client_account[%s] client_computer_name[%s]\n",
+			    log_escape(mem_ctx, client_account),
+			    log_escape(mem_ctx, client_computer_name));
+		dump_data(DBGLVL_WARNING,
+			  client_challenge->data,
+			  sizeof(client_challenge->data));
+		talloc_free(creds);
+		return NULL;
+	}
 
 	creds->computer_name = talloc_strdup(creds, client_computer_name);
 	if (!creds->computer_name) {

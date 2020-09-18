@@ -7,26 +7,65 @@
 <description>
 
     <para>
-	This option is deprecated with Samba 4.8 and will be removed in future.
-	At the same time the default changed to yes, which will be the
-	hardcoded behavior in future. If you have the need for the behavior of "auto"
-	to be kept, please file a bug at https://bugzilla.samba.org.
+	This option is deprecated and will be removed in future,
+	as it is a security problem if not set to "yes" (which will be
+	the hardcoded behavior in future).
     </para>
 
     <para>
-	This controls whether the server offers or even demands the use of the netlogon schannel.
-	<smbconfoption name="server schannel">no</smbconfoption> does not offer the schannel, <smbconfoption
-	name="server schannel">auto</smbconfoption> offers the schannel but does not enforce it, and <smbconfoption
-	name="server schannel">yes</smbconfoption> denies access if the client is not able to speak netlogon schannel.
-	This is only the case for Windows NT4 before SP4.
-	</para>
-
+	Samba will complain in the log files at log level 0,
+	about the security problem if the option is not set to "yes".
+    </para>
     <para>
-	Please note that with this set to <literal>no</literal>, you will have to apply the WindowsXP
-	<filename>WinXP_SignOrSeal.reg</filename> registry patch found in the docs/registry subdirectory of the Samba distribution tarball.
-	</para>
+	See CVE-2020-1472(ZeroLogon) https://bugzilla.samba.org/show_bug.cgi?id=14497
+    </para>
+
+    <para>If you still have legacy domain members use the <smbconfoption name="server require schannel:COMPUTERACCOUNT"/> option.
+    </para>
+
+    <para>This option yields precedence to the <smbconfoption name="server require schannel:COMPUTERACCOUNT"/> option.</para>
+
 </description>
 
 <value type="default">yes</value>
-<value type="example">auto</value>
+</samba:parameter>
+
+<samba:parameter name="server require schannel:COMPUTERACCOUNT"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+    <para>If you still have legacy domain members, which required "server schannel = auto" before,
+	it is possible to specify explicit expection per computer account
+	by using 'server require schannel:COMPUTERACCOUNT = no' as option.
+	Note that COMPUTERACCOUNT has to be the sAMAccountName value of
+	the computer account (including the trailing '$' sign).
+    </para>
+
+    <para>
+	Samba will complain in the log files at log level 0,
+	about the security problem if the option is not set to "no",
+	but the related computer is actually using the netlogon
+	secure channel (schannel) feature.
+    </para>
+
+    <para>
+	Samba will warn in the log files at log level 5,
+	if a setting is still needed for the specified computer account.
+    </para>
+
+    <para>
+	See CVE-2020-1472(ZeroLogon) https://bugzilla.samba.org/show_bug.cgi?id=14497
+    </para>
+
+    <para>This option takes precedence to the <smbconfoption name="server schannel"/> option.</para>
+
+    <programlisting>
+	server require schannel:LEGACYCOMPUTER1$ = no
+	server require schannel:NASBOX$ = no
+	server require schannel:LEGACYCOMPUTER2$ = no
+    </programlisting>
+</description>
+
 </samba:parameter>

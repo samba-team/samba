@@ -90,8 +90,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	pipe_state->client_challenge = *r->in.credentials;
 
-	generate_random_buffer(pipe_state->server_challenge.data,
-			       sizeof(pipe_state->server_challenge.data));
+	netlogon_creds_random_challenge(&pipe_state->server_challenge);
 
 	*r->out.return_credentials = pipe_state->server_challenge;
 
@@ -623,26 +622,114 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	NTSTATUS nt_status;
 	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
 	bool schannel_global_required = (schannel == true);
+	bool schannel_required = schannel_global_required;
+	const char *explicit_opt = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	const char *opname = "<unknown>";
+	static bool warned_global_once = false;
 
-	if (schannel_global_required) {
-		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-
-		dcesrv_call_auth_info(dce_call, &auth_type, NULL);
-
-		if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-			DBG_ERR("[%s] is not using schannel\n",
-				computer_name);
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	if (opnum < ndr_table_netlogon.num_calls) {
+		opname = ndr_table_netlogon.calls[opnum].name;
 	}
+
+	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
 
 	nt_status = schannel_check_creds_state(mem_ctx,
 					       dce_call->conn->dce_ctx->lp_ctx,
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
-					       creds_out);
-	return nt_status;
+					       &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ZERO_STRUCTP(return_authenticator);
+		return nt_status;
+	}
+
+	/*
+	 * We don't use lpcfg_parm_bool(), as we
+	 * need the explicit_opt pointer in order to
+	 * adjust the debug messages.
+	 */
+	explicit_opt = lpcfg_get_parametric(dce_call->conn->dce_ctx->lp_ctx,
+					    NULL,
+					    "server require schannel",
+					    creds->account_name);
+	if (explicit_opt != NULL) {
+		schannel_required = lp_bool(explicit_opt);
+	}
+
+	if (schannel_required) {
+		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+			*creds_out = creds;
+			return NT_STATUS_OK;
+		}
+
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"%s request (opnum[%u]) without schannel from "
+			"client_account[%s] client_computer_name[%s]\n",
+			opname, opnum,
+			log_escape(mem_ctx, creds->account_name),
+			log_escape(mem_ctx, creds->computer_name));
+		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
+			"'server require schannel:%s = no' is needed! \n",
+			log_escape(mem_ctx, creds->account_name));
+		TALLOC_FREE(creds);
+		ZERO_STRUCTP(return_authenticator);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!schannel_global_required && !warned_global_once) {
+		/*
+		 * We want admins to notice their misconfiguration!
+		 */
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"Please configure 'server schannel = yes', "
+			"See https://bugzilla.samba.org/show_bug.cgi?id=14497\n");
+		warned_global_once = true;
+	}
+
+	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"%s request (opnum[%u]) WITH schannel from "
+			"client_account[%s] client_computer_name[%s]\n",
+			opname, opnum,
+			log_escape(mem_ctx, creds->account_name),
+			log_escape(mem_ctx, creds->computer_name));
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"Option 'server require schannel:%s = no' not needed!?\n",
+			log_escape(mem_ctx, creds->account_name));
+
+		*creds_out = creds;
+		return NT_STATUS_OK;
+	}
+
+
+	if (explicit_opt != NULL) {
+		DBG_INFO("CVE-2020-1472(ZeroLogon): "
+			 "%s request (opnum[%u]) without schannel from "
+			 "client_account[%s] client_computer_name[%s]\n",
+			 opname, opnum,
+			 log_escape(mem_ctx, creds->account_name),
+			 log_escape(mem_ctx, creds->computer_name));
+		DBG_INFO("CVE-2020-1472(ZeroLogon): "
+			 "Option 'server require schannel:%s = no' still needed!\n",
+			 log_escape(mem_ctx, creds->account_name));
+	} else {
+		DBG_ERR("CVE-2020-1472(ZeroLogon): "
+			"%s request (opnum[%u]) without schannel from "
+			"client_account[%s] client_computer_name[%s]\n",
+			opname, opnum,
+			log_escape(mem_ctx, creds->account_name),
+			log_escape(mem_ctx, creds->computer_name));
+		DBG_ERR("CVE-2020-1472(ZeroLogon): Check if option "
+			"'server require schannel:%s = no' might be needed!\n",
+			log_escape(mem_ctx, creds->account_name));
+	}
+
+	*creds_out = creds;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -722,7 +809,10 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct NL_PASSWORD_VERSION version = {};
 	const uint32_t *new_version = NULL;
 	NTSTATUS nt_status;
-	DATA_BLOB new_password;
+	DATA_BLOB new_password = data_blob_null;
+	size_t confounder_len;
+	DATA_BLOB dec_blob = data_blob_null;
+	DATA_BLOB enc_blob = data_blob_null;
 	int ret;
 	struct samr_CryptPassword password_buf;
 
@@ -782,6 +872,61 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Make sure the length field was encrypted,
+	 * otherwise we are under attack.
+	 */
+	if (new_password.length == r->in.new_password->length) {
+		DBG_WARNING("Length[%zu] field not encrypted\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * We don't allow empty passwords for machine accounts.
+	 */
+	if (new_password.length < 2) {
+		DBG_WARNING("Empty password Length[%zu]\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Make sure the confounder part of CryptPassword
+	 * buffer was encrypted, otherwise we are under attack.
+	 */
+	confounder_len = 512 - new_password.length;
+	enc_blob = data_blob_const(r->in.new_password->data, confounder_len);
+	dec_blob = data_blob_const(password_buf.data, confounder_len);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Confounder buffer not encrypted Length[%zu]\n",
+			    confounder_len);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * Check that the password part was actually encrypted,
+	 * otherwise we are under attack.
+	 */
+	enc_blob = data_blob_const(r->in.new_password->data + confounder_len,
+				   new_password.length);
+	dec_blob = data_blob_const(password_buf.data + confounder_len,
+				   new_password.length);
+	if (data_blob_cmp(&dec_blob, &enc_blob) == 0) {
+		DBG_WARNING("Password buffer not encrypted Length[%zu]\n",
+			    new_password.length);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/*
+	 * don't allow zero buffers
+	 */
+	if (all_zero(new_password.data, new_password.length)) {
+		DBG_WARNING("Password zero buffer Length[%zu]\n",
+			    new_password.length);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
