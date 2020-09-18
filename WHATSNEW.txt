@@ -78,6 +78,10 @@ REMOVED FEATURES
 
 The deprecated "ldap ssl ads" smb.conf option has been removed.
 
+The deprecated "server schannel" smb.conf option will very likely
+removed in the final 4.13.0 release.
+
+
 smb.conf changes
 ================
 
@@ -92,6 +96,8 @@ smb.conf changes
   client NTLMv2 auth                  Deprecated                 yes
   client lanman auth                  Deprecated                 no
   client use spnego                   Deprecated                 yes
+  server schannel                     To be removed in 4.13.0
+  server require schannel:COMPUTER    Added
 
 
 CHANGES SINCE 4.13.0rc4
