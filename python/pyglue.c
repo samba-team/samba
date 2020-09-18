@@ -203,6 +203,16 @@ static PyObject *py_is_heimdal_built(PyObject *self,
 #endif
 }
 
+static PyObject *py_is_ad_dc_built(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
+{
+#ifdef AD_DC_BUILD_IS_ENABLED
+        Py_RETURN_TRUE;
+#else
+        Py_RETURN_FALSE;
+#endif
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -389,6 +399,8 @@ static PyMethodDef py_misc_methods[] = {
 		METH_VARARGS,
 		"generate_random_bytes(len) -> bytes\n"
 		"Generate random bytes with specified length." },
+	{ "is_ad_dc_built", (PyCFunction)py_is_ad_dc_built, METH_NOARGS,
+		"is Samba built with AD DC?" },
 	{0}
 };
 

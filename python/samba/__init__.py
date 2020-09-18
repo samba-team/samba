@@ -379,6 +379,7 @@ strcasecmp_m = _glue.strcasecmp_m
 strstr_m = _glue.strstr_m
 is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built
 is_heimdal_built = _glue.is_heimdal_built
+is_ad_dc_built = _glue.is_ad_dc_built
 
 NTSTATUSError = _glue.NTSTATUSError
 HRESULTError = _glue.HRESULTError
