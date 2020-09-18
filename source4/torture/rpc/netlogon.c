@@ -727,45 +727,39 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 
 	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_comment(tctx,
-			"Not testing ability to set password to '', enable dangerous tests to perform this test\n");
+	/*
+	 * As a consequence of CVE-2020-1472(ZeroLogon)
+	 * Samba explicitly disallows the setting of an empty machine account
+	 * password.
+	 *
+	 * Note that this may fail against Windows, and leave a machine account
+	 * with an empty password.
+	 */
+	password = "";
+	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
 	} else {
-		/* by changing the machine password to ""
-		 * we check if the server uses password restrictions
-		 * for ServerPasswordSet2
-		 * (win2k3 accepts "")
-		 */
-		password = "";
-		encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-		} else {
-			netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-		}
-		memcpy(new_password.data, password_buf.data, 512);
-		new_password.length = IVAL(password_buf.data, 512);
-
-		torture_comment(tctx,
-			"Testing ServerPasswordSet2 on machine account\n");
-		torture_comment(tctx,
-			"Changing machine account password to '%s'\n", password);
-
-		netlogon_creds_client_authenticator(creds, &credential);
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
-			"ServerPasswordSet2 failed");
-		torture_assert_ntstatus_ok(tctx, r.out.result, "ServerPasswordSet2 failed");
-
-		if (!netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
-			torture_comment(tctx, "Credential chaining failed\n");
-		}
-
-		cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
 	}
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
 
-	torture_assert(tctx, test_SetupCredentials(p, tctx, machine_credentials, &creds),
-		"ServerPasswordSet failed to actually change the password");
+	torture_comment(tctx,
+		"Testing ServerPasswordSet2 on machine account\n");
+	torture_comment(tctx,
+		"Changing machine account password to '%s'\n", password);
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	torture_assert_ntstatus_ok(
+		tctx, dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
+		"ServerPasswordSet2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		r.out.result,
+		NT_STATUS_WRONG_PASSWORD,
+		"ServerPasswordSet2 did not return NT_STATUS_WRONG_PASSWORD");
 
 	/* now try a random password */
 	password = generate_random_password(tctx, 8, 255);
