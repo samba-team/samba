@@ -486,6 +486,325 @@ bool test_SetupCredentialsPipe(const struct dcerpc_pipe *p1,
 	return true;
 }
 
+static bool test_ServerReqChallenge(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p,
+	struct cli_credentials *credentials)
+{
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	const char *machine_name;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct netr_ServerAuthenticate2 a;
+	uint32_t in_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t out_negotiate_flags = 0;
+	const struct samr_Password *mach_password = NULL;
+	enum netr_SchannelType sec_chan_type = 0;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	const char *account_name = NULL;
+
+	machine_name = cli_credentials_get_workstation(credentials);
+	mach_password = cli_credentials_get_nt_hash(credentials, tctx);
+	account_name = cli_credentials_get_username(credentials);
+	sec_chan_type = cli_credentials_get_secure_channel_type(credentials);
+
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = machine_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+	netlogon_creds_random_challenge(&credentials1);
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(
+		tctx,
+		r.out.result,
+		"ServerReqChallenge failed");
+	a.in.server_name = NULL;
+	a.in.account_name = account_name;
+	a.in.secure_channel_type = sec_chan_type;
+	a.in.computer_name = machine_name;
+	a.in.negotiate_flags = &in_negotiate_flags;
+	a.out.negotiate_flags = &out_negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
+
+	creds = netlogon_creds_client_init(tctx, a.in.account_name,
+					   a.in.computer_name,
+					   a.in.secure_channel_type,
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
+					   in_negotiate_flags);
+
+	torture_assert(tctx, creds != NULL, "memory allocation");
+
+	torture_comment(tctx, "Testing ServerAuthenticate2\n");
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
+		"ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		a.out.result,
+		NT_STATUS_OK,
+		"ServerAuthenticate2 unexpected");
+
+	return true;
+}
+
+static bool test_ServerReqChallenge_zero_challenge(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p,
+	struct cli_credentials *credentials)
+{
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	const char *machine_name;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct netr_ServerAuthenticate2 a;
+	uint32_t in_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t out_negotiate_flags = 0;
+	const struct samr_Password *mach_password = NULL;
+	enum netr_SchannelType sec_chan_type = 0;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	const char *account_name = NULL;
+
+	machine_name = cli_credentials_get_workstation(credentials);
+	mach_password = cli_credentials_get_nt_hash(credentials, tctx);
+	account_name = cli_credentials_get_username(credentials);
+	sec_chan_type = cli_credentials_get_secure_channel_type(credentials);
+
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = machine_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+	/*
+	 * Set the client challenge to zero, this should fail
+	 * CVE-2020-1472(ZeroLogon)
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14497
+	 */
+	ZERO_STRUCT(credentials1);
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(
+		tctx,
+		r.out.result,
+		"ServerReqChallenge failed");
+	a.in.server_name = NULL;
+	a.in.account_name = account_name;
+	a.in.secure_channel_type = sec_chan_type;
+	a.in.computer_name = machine_name;
+	a.in.negotiate_flags = &in_negotiate_flags;
+	a.out.negotiate_flags = &out_negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
+
+	creds = netlogon_creds_client_init(tctx, a.in.account_name,
+					   a.in.computer_name,
+					   a.in.secure_channel_type,
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
+					   in_negotiate_flags);
+
+	torture_assert(tctx, creds != NULL, "memory allocation");
+
+	torture_comment(tctx, "Testing ServerAuthenticate2\n");
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
+		"ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		a.out.result,
+		NT_STATUS_ACCESS_DENIED,
+		"ServerAuthenticate2 unexpected");
+
+	return true;
+}
+
+static bool test_ServerReqChallenge_5_repeats(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p,
+	struct cli_credentials *credentials)
+{
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	const char *machine_name;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct netr_ServerAuthenticate2 a;
+	uint32_t in_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t out_negotiate_flags = 0;
+	const struct samr_Password *mach_password = NULL;
+	enum netr_SchannelType sec_chan_type = 0;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	const char *account_name = NULL;
+
+	machine_name = cli_credentials_get_workstation(credentials);
+	mach_password = cli_credentials_get_nt_hash(credentials, tctx);
+	account_name = cli_credentials_get_username(credentials);
+	sec_chan_type = cli_credentials_get_secure_channel_type(credentials);
+
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = machine_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+	/*
+	 * Set the first 5 bytes of the client challenge to the same value,
+	 * this should fail CVE-2020-1472(ZeroLogon)
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14497
+	 */
+	credentials1.data[0] = 'A';
+	credentials1.data[1] = 'A';
+	credentials1.data[2] = 'A';
+	credentials1.data[3] = 'A';
+	credentials1.data[4] = 'A';
+	credentials1.data[5] = 'B';
+	credentials1.data[6] = 'C';
+	credentials1.data[7] = 'D';
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(
+		tctx,
+		r.out.result,
+		"ServerReqChallenge failed");
+	a.in.server_name = NULL;
+	a.in.account_name = account_name;
+	a.in.secure_channel_type = sec_chan_type;
+	a.in.computer_name = machine_name;
+	a.in.negotiate_flags = &in_negotiate_flags;
+	a.out.negotiate_flags = &out_negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
+
+	creds = netlogon_creds_client_init(tctx, a.in.account_name,
+					   a.in.computer_name,
+					   a.in.secure_channel_type,
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
+					   in_negotiate_flags);
+
+	torture_assert(tctx, creds != NULL, "memory allocation");
+
+	torture_comment(tctx, "Testing ServerAuthenticate2\n");
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
+		"ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		a.out.result,
+		NT_STATUS_ACCESS_DENIED,
+		"ServerAuthenticate2 unexpected");
+
+	return true;
+}
+
+static bool test_ServerReqChallenge_4_repeats(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p,
+	struct cli_credentials *credentials)
+{
+	struct netr_ServerReqChallenge r;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	const char *machine_name;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct netr_ServerAuthenticate2 a;
+	uint32_t in_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t out_negotiate_flags = 0;
+	const struct samr_Password *mach_password = NULL;
+	enum netr_SchannelType sec_chan_type = 0;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	const char *account_name = NULL;
+
+	machine_name = cli_credentials_get_workstation(credentials);
+	mach_password = cli_credentials_get_nt_hash(credentials, tctx);
+	account_name = cli_credentials_get_username(credentials);
+	sec_chan_type = cli_credentials_get_secure_channel_type(credentials);
+
+	torture_comment(tctx, "Testing ServerReqChallenge\n");
+
+	r.in.server_name = NULL;
+	r.in.computer_name = machine_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+        /*
+         * Set the first 4 bytes of the client challenge to the same
+         * value, this should pass as 5 bytes identical are needed to
+         * fail for CVE-2020-1472(ZeroLogon)
+         *
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14497
+	 */
+	credentials1.data[0] = 'A';
+	credentials1.data[1] = 'A';
+	credentials1.data[2] = 'A';
+	credentials1.data[3] = 'A';
+	credentials1.data[4] = 'B';
+	credentials1.data[5] = 'C';
+	credentials1.data[6] = 'D';
+	credentials1.data[7] = 'E';
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(
+		tctx,
+		r.out.result,
+		"ServerReqChallenge failed");
+	a.in.server_name = NULL;
+	a.in.account_name = account_name;
+	a.in.secure_channel_type = sec_chan_type;
+	a.in.computer_name = machine_name;
+	a.in.negotiate_flags = &in_negotiate_flags;
+	a.out.negotiate_flags = &out_negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
+
+	creds = netlogon_creds_client_init(tctx, a.in.account_name,
+					   a.in.computer_name,
+					   a.in.secure_channel_type,
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
+					   in_negotiate_flags);
+
+	torture_assert(tctx, creds != NULL, "memory allocation");
+
+	torture_comment(tctx, "Testing ServerAuthenticate2\n");
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
+		"ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		a.out.result,
+		NT_STATUS_OK,
+		"ServerAuthenticate2 unexpected");
+
+	return true;
+}
+
 /*
   try a change password for our machine account
 */
@@ -4954,6 +5273,22 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "lsa_over_netlogon", test_lsa_over_netlogon);
 	torture_rpc_tcase_add_test_creds(tcase, "SetupCredentialsDowngrade", test_SetupCredentialsDowngrade);
 
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge",
+		test_ServerReqChallenge);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_zero_challenge",
+		test_ServerReqChallenge_zero_challenge);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_5_repeats",
+		test_ServerReqChallenge_5_repeats);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_4_repeats",
+		test_ServerReqChallenge_4_repeats);
 	return suite;
 }
 
