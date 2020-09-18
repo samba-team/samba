@@ -71,6 +71,7 @@ from samba import remove_dc, arcfour_encrypt, string_to_byte_array
 from samba.auth_util import system_session_unix
 from samba.net_s3 import Net as s3_Net
 from samba.param import default_path
+from samba import is_ad_dc_built
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -694,7 +695,7 @@ class cmd_domain_join(Command):
                                                         debug=verbose)
 
             self.errf.write("Joined domain %s (%s)\n" % (domain_name, sid))
-        elif role == "DC":
+        elif role == "DC" and is_ad_dc_built():
             join_DC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
@@ -703,7 +704,7 @@ class cmd_domain_join(Command):
                     plaintext_secrets=plaintext_secrets,
                     backend_store=backend_store,
                     backend_store_size=backend_store_size)
-        elif role == "RODC":
+        elif role == "RODC" and is_ad_dc_built():
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
@@ -4338,19 +4339,20 @@ class cmd_domain(SuperCommand):
     """Domain management."""
 
     subcommands = {}
-    subcommands["demote"] = cmd_domain_demote()
     if cmd_domain_export_keytab is not None:
         subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
-    subcommands["provision"] = cmd_domain_provision()
     subcommands["join"] = cmd_domain_join()
-    subcommands["dcpromo"] = cmd_domain_dcpromo()
-    subcommands["level"] = cmd_domain_level()
-    subcommands["passwordsettings"] = cmd_domain_passwordsettings()
-    subcommands["classicupgrade"] = cmd_domain_classicupgrade()
-    subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
-    subcommands["trust"] = cmd_domain_trust()
-    subcommands["tombstones"] = cmd_domain_tombstones()
-    subcommands["schemaupgrade"] = cmd_domain_schema_upgrade()
-    subcommands["functionalprep"] = cmd_domain_functional_prep()
-    subcommands["backup"] = cmd_domain_backup()
+    if is_ad_dc_built():
+        subcommands["demote"] = cmd_domain_demote()
+        subcommands["provision"] = cmd_domain_provision()
+        subcommands["dcpromo"] = cmd_domain_dcpromo()
+        subcommands["level"] = cmd_domain_level()
+        subcommands["passwordsettings"] = cmd_domain_passwordsettings()
+        subcommands["classicupgrade"] = cmd_domain_classicupgrade()
+        subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
+        subcommands["trust"] = cmd_domain_trust()
+        subcommands["tombstones"] = cmd_domain_tombstones()
+        subcommands["schemaupgrade"] = cmd_domain_schema_upgrade()
+        subcommands["functionalprep"] = cmd_domain_functional_prep()
+        subcommands["backup"] = cmd_domain_backup()
