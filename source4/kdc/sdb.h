@@ -116,6 +116,7 @@ struct sdb_entry_ex {
 #define SDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
 #define SDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
 #define SDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
+#define SDB_F_FORCE_CANON	16384	/* force canonicalition */
 
 void sdb_free_entry(struct sdb_entry_ex *e);
 void free_sdb_entry(struct sdb_entry *s);

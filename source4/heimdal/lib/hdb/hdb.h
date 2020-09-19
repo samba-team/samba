@@ -63,6 +63,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_ALL_KVNOS		2048	/* we want all the keys, live or not */
 #define HDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
 #define HDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
+#define HDB_F_FORCE_CANON	16384	/* force canonicalition */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
