@@ -195,6 +195,14 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
+#if KRB5_KDB_API_VERSION >= 10
+	/*
+	 * The MIT KDC code that wants the canonical name in all lookups, and
+	 * takes care to canonicalize only when appropriate.
+	 */
+	sflags |= SDB_F_FORCE_CANON;
+#endif
+
 	if (kflags & KRB5_KDB_FLAG_CANONICALIZE) {
 		sflags |= SDB_F_CANON;
 	}
