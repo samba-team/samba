@@ -1244,7 +1244,7 @@ err:
 
 int main(void)
 {
-        uint64_t *hint, get_hint;
+        uint64_t hint, get_hint;
         int fd;
 
         fd = open(DATA, O_RDONLY | O_CREAT | O_EXCL);
@@ -1252,8 +1252,8 @@ int main(void)
             goto err;
         }
 
-        *hint = RWH_WRITE_LIFE_SHORT;
-        int ret = fcntl(fd, F_SET_RW_HINT, hint);
+        hint = RWH_WRITE_LIFE_SHORT;
+        int ret = fcntl(fd, F_SET_RW_HINT, &hint);
         if (ret == -1) {
             goto err;
         }
@@ -1267,8 +1267,8 @@ int main(void)
             goto err;
         }
 
-        *hint = RWH_WRITE_LIFE_EXTREME;
-        ret = fcntl(fd, F_SET_FILE_RW_HINT, hint);
+        hint = RWH_WRITE_LIFE_EXTREME;
+        ret = fcntl(fd, F_SET_FILE_RW_HINT, &hint);
         if (ret == -1) {
             goto err;
         }
