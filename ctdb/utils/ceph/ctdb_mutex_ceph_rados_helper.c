@@ -1,7 +1,7 @@
 /*
    CTDB mutex helper using Ceph librados locks
 
-   Copyright (C) David Disseldorp 2016-2018
+   Copyright (C) David Disseldorp 2016-2020
 
    Based on ctdb_mutex_fcntl_helper.c, which is:
    Copyright (C) Martin Schwenke 2015
@@ -267,6 +267,31 @@ static int ctdb_mutex_rados_state_destroy(struct ctdb_mutex_rados_state *cmr_sta
 	return 0;
 }
 
+/* register this host+service with ceph-mgr for visibility */
+static int ctdb_mutex_rados_mgr_reg(rados_t ceph_cluster)
+{
+	int ret;
+	uint64_t instance_guid;
+	char id_buf[128];
+
+	instance_guid = rados_get_instance_id(ceph_cluster);
+	ret = snprintf(id_buf, sizeof(id_buf), "%s:0x%016llx",
+			"ctdb_mutex_ceph_rados_helper",
+			(unsigned long long)instance_guid);
+	if (ret < 0 || ret >= sizeof(id_buf)) {
+		fprintf(stderr, "Ceph instance name too long\n");
+		return -ENAMETOOLONG;
+	}
+
+	ret = rados_service_register(ceph_cluster, "ctdb", id_buf, "");
+	if (ret < 0) {
+		fprintf(stderr, "failed to register service with ceph-mgr\n");
+		return ret;
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int ret;
@@ -378,6 +403,12 @@ int main(int argc, char *argv[])
 	if (ret < 0) {
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		goto err_ctx_cleanup;
+	}
+
+	ret = ctdb_mutex_rados_mgr_reg(cmr_state->ceph_cluster);
+	if (ret < 0) {
+		fprintf(stderr, "Failed to register with ceph-mgr\n");
+		/* ignore: ceph-mgr service registration is informational */
 	}
 
 	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object,
