@@ -42,6 +42,10 @@ Object: Ceph RADOS object name
       located in a librados default search path (e.g. /etc/ceph/).
       <parameter>Pool</parameter> must already exist.
     </para>
+    <para>
+      For informational purposes, ctdb_mutex_ceph_rados_helper will also
+      register the recovery lock holder in Ceph Manager's service map.
+    </para>
   </refsect1>
 
   <refsect1>
