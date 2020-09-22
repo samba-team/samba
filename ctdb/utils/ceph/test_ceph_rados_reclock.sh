@@ -1,7 +1,7 @@
 #!/bin/bash
 # standalone test for ctdb_mutex_ceph_rados_helper
 #
-# Copyright (C) David Disseldorp 2016
+# Copyright (C) David Disseldorp 2016-2020
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ OBJECT="ctdb_reclock"			# RADOS object: target for lock requests
 # - using ctdb_mutex_ceph_rados_helper, take a lock on the Ceph RADOS object at
 #   CLUSTER/$POOL/$OBJECT using the Ceph keyring for $USER
 #   + confirm that lock is obtained, via ctdb_mutex_ceph_rados_helper "0" output
+# - check for ceph-mgr service registration
 # - check RADOS object lock state, using the "rados lock info" command
 # - attempt to obtain the lock again, using ctdb_mutex_ceph_rados_helper
 #   + confirm that the lock is not successfully taken ("1" output=contention)
@@ -41,6 +42,7 @@ function _fail() {
 # this test requires the Ceph "rados" binary, and "jq" json parser
 which jq > /dev/null || exit 1
 which rados > /dev/null || exit 1
+which ceph > /dev/null || exit 1
 which ctdb_mutex_ceph_rados_helper || exit 1
 
 TMP_DIR="$(mktemp --directory)" || exit 1
@@ -59,6 +61,10 @@ sleep 1
 first_out=$(cat ${TMP_DIR}/first)
 [ "$first_out" == "0" ] \
 	|| _fail "expected lock acquisition (0), but got $first_out"
+
+ceph service dump > ${TMP_DIR}/service_dump
+SERVICE_COUNT=$(jq -r '.services.ctdb.daemons | length' ${TMP_DIR}/service_dump)
+[ $SERVICE_COUNT -gt 0 ] || _fail "lock holder missing from ceph service dump"
 
 rados -p "$POOL" lock info "$OBJECT" ctdb_reclock_mutex \
 						> ${TMP_DIR}/lock_state_first
