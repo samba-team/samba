@@ -2819,6 +2819,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 
 	for (res = ailist; res; res = res->ai_next) {
 		struct sockaddr_storage ss = {0};
+		struct sockaddr_storage *tmp = NULL;
 
 		if ((res->ai_addr == NULL) ||
 		    (res->ai_addrlen == 0) ||
@@ -2839,14 +2840,15 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 		}
 		ret_count += 1;
 
-		iplist = talloc_realloc(
+		tmp = talloc_realloc(
 			mem_ctx, iplist, struct sockaddr_storage,
 			ret_count);
-		if (iplist == NULL) {
+		if (tmp == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			freeaddrinfo(ailist);
 			return NT_STATUS_NO_MEMORY;
 		}
+		iplist = tmp;
 		iplist[i] = ss;
 		i++;
 	}
