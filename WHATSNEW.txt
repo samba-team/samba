@@ -1,69 +1,21 @@
-Release Announcements
-=====================
-
-This is the sixth release condidate of Samba 4.13.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.13 will be the next version of the Samba suite.
-
-SECURITY
-========
-
-o CVE-2020-1472: Unauthenticated domain takeover via netlogon ("ZeroLogon").
-
-The following applies to Samba used as domain controller only (most
-seriously the Active Directory DC, but also the classic/NT4-style DC).
-
-Installations running Samba as a file server only are not directly
-affected by this flaw, though they may need configuration changes to
-continue to talk to domain controllers (see "file servers and domain
-members" below).
-
-The netlogon protocol contains a flaw that allows an authentication
-bypass. This was reported and patched by Microsoft as CVE-2020-1472.
-Since the bug is a protocol level flaw, and Samba implements the
-protocol, Samba is also vulnerable.
-
-However, since version 4.8 (released in March 2018), the default
-behaviour of Samba has been to insist on a secure netlogon channel,
-which is a sufficient fix against the known exploits. This default is
-equivalent to having 'server schannel = yes' in the smb.conf.
-
-Therefore versions 4.8 and above are not vulnerable unless they have
-the smb.conf lines 'server schannel = no' or 'server schannel = auto'.
-
-Samba versions 4.7 and below are vulnerable unless they have 'server
-schannel = yes' in the smb.conf.
-
-Note each domain controller needs the correct settings in its smb.conf.
-
-Vendors supporting Samba 4.7 and below are advised to patch their
-installations and packages to add this line to the [global] section if
-their smb.conf file.
-
-The 'server schannel = yes' smb.conf line is equivalent to Microsoft's
-'FullSecureChannelProtection=1' registry key, the introduction of
-which we understand forms the core of Microsoft's fix.
-
-Some domains employ third-party software that will not work with a
-'server schannel = yes'. For these cases patches are available that
-allow specific machines to use insecure netlogon. For example, the
-following smb.conf:
-
-   server schannel = yes
-   server require schannel:triceratops$ = no
-   server require schannel:greywacke$ = no
-
-will allow only "triceratops$" and "greywacke$" to avoid schannel.
-
-More details can be found here:
-https://www.samba.org/samba/security/CVE-2020-1472.html
+                   ==============================
+                   Release Notes for Samba 4.13.0
+                          September 22, 2020
+                   ==============================
 
 
-UPGRADING
+This is the first stable release of the Samba 4.13 release series.
+Please read the release notes carefully before upgrading.
+
+
+ZeroLogon
 =========
+
+Please avoid to set "server schannel = no" and "server schannel= auto" on all
+Samba domain controllers due to the wellknown ZeroLogon issue.
+
+For details please see
+https://www.samba.org/samba/security/CVE-2020-1472.html.
 
 
 NEW FEATURES/CHANGES
@@ -125,6 +77,7 @@ SMBv1 only protocol options deprecated
 
 A number of smb.conf parameters for less-secure authentication methods
 which are only possible over SMBv1 are deprecated in this release.
+
 
 REMOVED FEATURES
 ================
