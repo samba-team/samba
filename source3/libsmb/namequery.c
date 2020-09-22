@@ -2820,7 +2820,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 	for (res = ailist; res; res = res->ai_next) {
 		struct sockaddr_storage ss = {0};
 
-		if (!res->ai_addr || res->ai_addrlen == 0) {
+		if ((res->ai_addr == NULL) || (res->ai_addrlen == 0)) {
 			continue;
 		}
 
