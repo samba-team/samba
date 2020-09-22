@@ -2818,13 +2818,12 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 	}
 
 	for (res = ailist; res; res = res->ai_next) {
-		struct sockaddr_storage ss;
+		struct sockaddr_storage ss = {0};
 
 		if (!res->ai_addr || res->ai_addrlen == 0) {
 			continue;
 		}
 
-		ZERO_STRUCT(ss);
 		memcpy(&ss, res->ai_addr, res->ai_addrlen);
 
 		if (is_zero_addr(&ss)) {
