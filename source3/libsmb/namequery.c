@@ -2836,6 +2836,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 		/* wrap check. */
 		if (ret_count + 1 < ret_count) {
 			freeaddrinfo(ailist);
+			TALLOC_FREE(iplist);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		ret_count += 1;
@@ -2846,6 +2847,7 @@ static NTSTATUS resolve_hosts(TALLOC_CTX *mem_ctx,
 		if (tmp == NULL) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			freeaddrinfo(ailist);
+			TALLOC_FREE(iplist);
 			return NT_STATUS_NO_MEMORY;
 		}
 		iplist = tmp;
