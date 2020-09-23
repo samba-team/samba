@@ -3745,14 +3745,21 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
 {
 	const char *ret;
-
+	char *addr;
 	/*
 	 * TODO: this can be improved later
 	 * maybe including the client guid or more
 	 */
-	ret = tsocket_address_string(xconn->remote_address, talloc_tos());
-	if (ret == NULL) {
+	addr = tsocket_address_string(xconn->remote_address, talloc_tos());
+	if (addr == NULL) {
 		return "<tsocket_address_string() failed>";
+	}
+
+	ret = talloc_asprintf(talloc_tos(), "ptr=%p,id=%llu,addr=%s",
+			      xconn, (unsigned long long)xconn->channel_id, addr);
+	TALLOC_FREE(addr);
+	if (ret == NULL) {
+		return "<talloc_asprintf() failed>";
 	}
 
 	return ret;
