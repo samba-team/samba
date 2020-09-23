@@ -1500,6 +1500,7 @@ size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
 
 struct smbXsrv_connection_shutdown_state {
 	struct tevent_queue *wait_queue;
+	struct smbXsrv_connection *xconn;
 };
 
 static void smbXsrv_connection_shutdown_wait_done(struct tevent_req *subreq);
@@ -1520,12 +1521,16 @@ static struct tevent_req *smbXsrv_connection_shutdown_send(TALLOC_CTX *mem_ctx,
 	 * smbXsrv_connection_disconnect_transport() before.
 	 */
 	SMB_ASSERT(!NT_STATUS_IS_OK(xconn->transport.status));
+	SMB_ASSERT(xconn->transport.terminating);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXsrv_connection_shutdown_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	state->xconn = xconn;
+	tevent_req_defer_callback(req, ev);
 
 	status = smbXsrv_session_disconnect_xconn(xconn);
 	if (tevent_req_nterror(req, status)) {
@@ -1590,15 +1595,33 @@ static void smbXsrv_connection_shutdown_wait_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
+	struct smbXsrv_connection_shutdown_state *state =
+		tevent_req_data(req,
+		struct smbXsrv_connection_shutdown_state);
+	struct smbXsrv_connection *xconn = state->xconn;
 
 	tevent_queue_wait_recv(subreq);
 	TALLOC_FREE(subreq);
 
 	tevent_req_done(req);
+	/*
+	 * make sure the xconn pointer is still valid,
+	 * it should as we used tevent_req_defer_callback()
+	 */
+	SMB_ASSERT(xconn->transport.terminating);
 }
 
 static NTSTATUS smbXsrv_connection_shutdown_recv(struct tevent_req *req)
 {
+	struct smbXsrv_connection_shutdown_state *state =
+		tevent_req_data(req,
+		struct smbXsrv_connection_shutdown_state);
+	struct smbXsrv_connection *xconn = state->xconn;
+	/*
+	 * make sure the xconn pointer is still valid,
+	 * it should as we used tevent_req_defer_callback()
+	 */
+	SMB_ASSERT(xconn->transport.terminating);
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
@@ -1636,6 +1659,14 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					NT_STATUS_CONNECTION_DISCONNECTED);
 
 	num_ok = smbXsrv_client_valid_connections(client);
+
+	if (xconn->transport.terminating) {
+		DBG_DEBUG("skip recursion conn[%s] num_ok[%zu] reason[%s] at %s\n",
+			  smbXsrv_connection_dbg(xconn), num_ok,
+			  reason, location);
+		return;
+	}
+	xconn->transport.terminating = true;
 
 	DBG_DEBUG("conn[%s] num_ok[%zu] reason[%s] at %s\n",
 		  smbXsrv_connection_dbg(xconn), num_ok,

@@ -367,6 +367,7 @@ struct smbXsrv_connection {
 
 	struct {
 		NTSTATUS status;
+		bool terminating;
 		int sock;
 		struct tevent_fd *fde;
 
