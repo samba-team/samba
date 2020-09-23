@@ -3765,6 +3765,12 @@ const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
 	return ret;
 }
 
+static int smbXsrv_connection_destructor(struct smbXsrv_connection *xconn)
+{
+	DBG_DEBUG("xconn[%s]\n", smbXsrv_connection_dbg(xconn));
+	return 0;
+}
+
 NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 			     NTTIME now, struct smbXsrv_connection **_xconn)
 {
@@ -3795,6 +3801,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_set_destructor(xconn, smbXsrv_connection_destructor);
 	talloc_steal(frame, xconn);
 	xconn->client = client;
 	xconn->connect_time = now;
