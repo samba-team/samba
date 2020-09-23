@@ -1850,6 +1850,48 @@ done:
 	return ret;
 }
 
+static bool test_session_two_logoff(struct torture_context *tctx,
+				    struct smb2_tree *tree1)
+{
+	NTSTATUS status;
+	bool ret = true;
+	struct smbcli_options transport2_options;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_session *session2 = NULL;
+	struct smb2_session *session1 = tree1->session;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2;
+	bool ok;
+
+	/* Connect 2nd connection */
+	torture_comment(tctx, "connect tree2 with the same client_guid\n");
+	transport2_options = transport1->options;
+	ok = torture_smb2_connection_ext(tctx, 0, &transport2_options, &tree2);
+	torture_assert(tctx, ok, "couldn't connect tree2\n");
+	transport2 = tree2->session->transport;
+	session2 = tree2->session;
+
+	torture_comment(tctx, "session2: logoff\n");
+	status = smb2_logoff(session2);
+	torture_assert_ntstatus_ok(tctx, status, "session2: logoff");
+	torture_comment(tctx, "transport2: keepalive\n");
+	status = smb2_keepalive(transport2);
+	torture_assert_ntstatus_ok(tctx, status, "transport2: keepalive");
+	torture_comment(tctx, "transport2: disconnect\n");
+	TALLOC_FREE(tree2);
+
+	torture_comment(tctx, "session1: logoff\n");
+	status = smb2_logoff(session1);
+	torture_assert_ntstatus_ok(tctx, status, "session1: logoff");
+	torture_comment(tctx, "transport1: keepalive\n");
+	status = smb2_keepalive(transport1);
+	torture_assert_ntstatus_ok(tctx, status, "transport1: keepalive");
+	torture_comment(tctx, "transport1: disconnect\n");
+	TALLOC_FREE(tree1);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -1871,6 +1913,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "expire_disconnect",
 				      test_session_expire_disconnect);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
+	torture_suite_add_1smb2_test(suite, "two_logoff", test_session_two_logoff);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
