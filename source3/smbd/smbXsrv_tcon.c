@@ -1061,6 +1061,7 @@ static int smbXsrv_tcon_disconnect_all_callback(struct db_record *local_rec,
 
 	tcon->db_rec = local_rec;
 	status = smbXsrv_tcon_disconnect(tcon, vuid);
+	tcon->db_rec = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_IS_OK(state->first_status)) {
 			state->first_status = status;
