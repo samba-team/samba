@@ -1831,8 +1831,8 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 	session = talloc_get_type_abort(ptr, struct smbXsrv_session);
 
 	session->db_rec = local_rec;
-
 	status = smbXsrv_session_clear_and_logoff(session);
+	session->db_rec = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_IS_OK(state->first_status)) {
 			state->first_status = status;
@@ -1901,6 +1901,7 @@ static int smbXsrv_session_local_traverse_cb(struct db_record *local_rec,
 	TDB_DATA val;
 	void *ptr = NULL;
 	struct smbXsrv_session *session = NULL;
+	int ret;
 
 	val = dbwrap_record_get_value(local_rec);
 	if (val.dsize != sizeof(ptr)) {
@@ -1910,9 +1911,12 @@ static int smbXsrv_session_local_traverse_cb(struct db_record *local_rec,
 
 	memcpy(&ptr, val.dptr, val.dsize);
 	session = talloc_get_type_abort(ptr, struct smbXsrv_session);
-	session->db_rec = local_rec;
 
-	return state->caller_cb(session, state->caller_data);
+	session->db_rec = local_rec;
+	ret = state->caller_cb(session, state->caller_data);
+	session->db_rec = NULL;
+
+	return ret;
 }
 
 struct smbXsrv_session_disconnect_xconn_state {
@@ -2019,6 +2023,7 @@ static int smbXsrv_session_disconnect_xconn_callback(struct db_record *local_rec
 				state->first_status = status;
 			}
 			state->errors++;
+			session->db_rec = NULL;
 			return 0;
 		}
 		ARRAY_DEL_ELEMENT(global->channels, n, global->num_channels);
@@ -2034,6 +2039,7 @@ static int smbXsrv_session_disconnect_xconn_callback(struct db_record *local_rec
 		state->errors++;
 	}
 
+	session->db_rec = NULL;
 	return 0;
 }
 
