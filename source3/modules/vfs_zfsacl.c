@@ -112,7 +112,10 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 
 		special = acebuf[i].a_flags & (ACE_OWNER|ACE_GROUP|ACE_EVERYONE);
 
-		if (is_dir && (aceprop.aceMask & SMB_ACE4_ADD_FILE)) {
+		if (is_dir &&
+		    (aceprop.aceMask & SMB_ACE4_ADD_FILE) &&
+		    (special != 0))
+		{
 			aceprop.aceMask |= SMB_ACE4_DELETE_CHILD;
 		}
 
