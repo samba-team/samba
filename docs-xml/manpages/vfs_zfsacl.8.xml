@@ -56,6 +56,16 @@
 	with NFSv4 compatible ACLs.
 	</para>
 
+	<para>ZFS has mutiple dataset configuration parameters that determine ACL behavior.
+	Although the nuances of these parameters are outside the scope of this manpage, the
+	"aclmode" and "aclinherit" are of particular importance for samba shares.
+	For datasets that are intended solely as Samba shares, "aclmode = restricted"
+	and "aclinherit = passthrough" provide inheritance behavior most consistent with NTFS ACLs.
+	A "restricted" aclmode prevents chmod() on files that have a non-trivial ACL (one that
+	cannot be expressed as a POSIX mode without loss of information). Consult the relevant ZFS
+	manpages for further information.
+	</para>
+
 	<para>This module is stackable.</para>
 
 	<para>Since Samba 4.0 all options are per share options.</para>
