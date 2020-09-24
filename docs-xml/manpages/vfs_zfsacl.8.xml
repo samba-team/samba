@@ -141,6 +141,26 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>zfsacl:block_special = [yes|no]</term>
+		<listitem>
+		<para>Prevent ZFS from automatically adding NFSv4 special
+		entries (owner@, group@, everyone@).  ZFS will automatically
+		generate these these entries when calculating the inherited ACL
+		of new files if the ACL of the parent directory lacks an
+		inheriting special entry. This may result in user confusion and
+		unexpected change in permissions of files and directories as the
+		inherited ACL is generated. Blocking this behavior is achieved
+		by setting an inheriting everyone@ that grants no permissions
+		and not adding the entry to the file's Security
+		Descriptor</para>
+		<itemizedlist>
+		<listitem><para><command>yes (default)</command></para></listitem>
+		<listitem><para><command>no</command></para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>zfsacl:map_dacl_protected = [yes|no]</term>
 		<listitem>
 		<para>If enabled and the ZFS ACL on the underlying filesystem does not contain

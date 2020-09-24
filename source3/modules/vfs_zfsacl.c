@@ -40,6 +40,7 @@ struct zfsacl_config_data {
 	struct smbacl4_vfs_params nfs4_params;
 	bool zfsacl_map_dacl_protected;
 	bool zfsacl_denymissingspecial;
+	bool zfsacl_block_special;
 };
 
 /* zfs_get_nt_acl()
@@ -57,6 +58,7 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 	int i;
 	struct SMB4ACL_T *pacl;
 	SMB_STRUCT_STAT sbuf;
+	SMB_ACE4PROP_T blocking_ace;
 	const SMB_STRUCT_STAT *psbuf = NULL;
 	int ret;
 	bool inherited_is_present = false;
@@ -91,6 +93,13 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 		aceprop.aceMask  = (uint32_t) acebuf[i].a_access_mask;
 		aceprop.who.id   = (uint32_t) acebuf[i].a_who;
 
+		if (config->zfsacl_block_special &&
+		    (aceprop.aceMask == 0) &&
+		    (aceprop.aceFlags & ACE_EVERYONE) &&
+		    (aceprop.aceFlags & ACE_INHERITED_ACE))
+		{
+			continue;
+		}
 		/*
 		 * Windows clients expect SYNC on acls to correctly allow
 		 * rename, cf bug #7909. But not on DENY ace entries, cf bug
@@ -147,12 +156,17 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	struct SMB4ACE_T *smbace;
 	TALLOC_CTX	*mem_ctx;
 	bool have_special_id = false;
+	bool must_add_empty_ace = false;
 	struct zfsacl_config_data *config = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct zfsacl_config_data,
 				return False);
 
+	if (config->zfsacl_block_special && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		naces++;
+		must_add_empty_ace = true;
+	}
 	/* allocate the field of ZFS aces */
 	mem_ctx = talloc_tos();
 	acebuf = (ace_t *) talloc_size(mem_ctx, sizeof(ace_t)*naces);
@@ -191,6 +205,13 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 			}
 			have_special_id = true;
 		}
+	}
+	if (must_add_empty_ace) {
+		acebuf[i].a_type = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
+		acebuf[i].a_flags = SMB_ACE4_DIRECTORY_INHERIT_ACE| \
+				    SMB_ACE4_FILE_INHERIT_ACE|ACE_EVERYONE;
+		acebuf[i].a_access_mask = 0;
+		i++;
 	}
 
 	if (!have_special_id && config->zfsacl_denymissingspecial) {
@@ -554,6 +575,9 @@ static int zfsacl_connect(struct vfs_handle_struct *handle,
 
 	config->zfsacl_denymissingspecial = lp_parm_bool(SNUM(handle->conn),
 				"zfsacl", "denymissingspecial", false);
+
+	config->zfsacl_block_special = lp_parm_bool(SNUM(handle->conn),
+				"zfsacl", "block_special", true);
 
 	ret = smbacl4_get_vfs_params(handle->conn, &config->nfs4_params);
 	if (ret < 0) {
