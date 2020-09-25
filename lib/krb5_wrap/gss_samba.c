@@ -80,7 +80,15 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 		.count = 1,
 	};
 
-	gss_OID_set mech_set = GSS_C_NO_OID_SET;
+	/* we are interested exclusively in krb5 credentials,
+	 * indicate to GSSAPI that we are not interested in any other
+	 * mechanism here */
+	gss_OID_set_desc mech_set = {
+		.count = 1,
+		.elements = discard_const_p(struct gss_OID_desc_struct,
+					    gss_mech_krb5),
+	};
+
 	gss_cred_usage_t cred_usage = GSS_C_INITIATE;
 	gss_name_t name = NULL;
 	gss_buffer_desc pr_name = {
@@ -144,7 +152,7 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 	major_status = gss_acquire_cred_from(minor_status,
 					     name,
 					     0,
-					     mech_set,
+					     &mech_set,
 					     cred_usage,
 					     &cred_store,
 					     cred,
