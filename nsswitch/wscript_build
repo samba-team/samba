@@ -112,6 +112,23 @@ if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
                       realname='winbind_krb5_locator.so',
                       install_path='${MODULESDIR}/krb5')
 
+if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
+    bld.SAMBA_LIBRARY('async_dns_krb5_locator',
+                      source='krb5_plugin/async_dns_krb5_locator.c',
+                      deps='''
+                      talloc
+                      addns
+                      samba_intl
+                      libsmb
+                      smbconf
+                      KRBCLIENT
+                      smbd_base
+                      krb5
+                      com_err
+                      ''',
+                      realname='async_dns_krb5_locator.so',
+                      install_path='${MODULESDIR}/krb5')
+
 if bld.CONFIG_SET('HAVE_KRB5_LOCALAUTH_PLUGIN_H'):
     bld.SAMBA_LIBRARY('winbind_krb5_localauth',
                       source='krb5_plugin/winbind_krb5_localauth.c',
