@@ -396,7 +396,7 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 
 		restored_mode = existing_mode | expected_mode;
 
-		if (fsp->fh->fd != -1) {
+		if (fsp_get_io_fd(fsp) != -1) {
 			ret = SMB_VFS_NEXT_FCHMOD(handle,
 						  fsp,
 						  restored_mode);

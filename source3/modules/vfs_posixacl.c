@@ -69,7 +69,7 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
-	acl_t acl = acl_get_fd(fsp->fh->fd);
+	acl_t acl = acl_get_fd(fsp_get_io_fd(fsp));
 
 	if (acl == NULL) {
 		return NULL;
@@ -125,7 +125,7 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	if (acl == NULL) {
 		return -1;
 	}
-	res =  acl_set_fd(fsp->fh->fd, acl);
+	res =  acl_set_fd(fsp_get_io_fd(fsp), acl);
 	acl_free(acl);
 	return res;
 }

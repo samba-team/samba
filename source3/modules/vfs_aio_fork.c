@@ -585,7 +585,7 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	cmd.cmd = READ_CMD;
 	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
-	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
+	DEBUG(10, ("sending fd %d to child %d\n", fsp_get_io_fd(fsp),
 		   (int)state->child->pid));
 
 	/*
@@ -593,7 +593,7 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	 * domain socket. This should never block.
 	 */
 	written = write_fd(state->child->sockfd, &cmd, sizeof(cmd),
-			   fsp->fh->fd);
+			   fsp_get_io_fd(fsp));
 	if (written == -1) {
 		err = errno;
 
@@ -711,7 +711,7 @@ static struct tevent_req *aio_fork_pwrite_send(
 	cmd.cmd = WRITE_CMD;
 	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
-	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
+	DEBUG(10, ("sending fd %d to child %d\n", fsp_get_io_fd(fsp),
 		   (int)state->child->pid));
 
 	/*
@@ -719,7 +719,7 @@ static struct tevent_req *aio_fork_pwrite_send(
 	 * domain socket. This should never block.
 	 */
 	written = write_fd(state->child->sockfd, &cmd, sizeof(cmd),
-			   fsp->fh->fd);
+			   fsp_get_io_fd(fsp));
 	if (written == -1) {
 		err = errno;
 
@@ -819,7 +819,7 @@ static struct tevent_req *aio_fork_fsync_send(
 	cmd.cmd = FSYNC_CMD;
 	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
-	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
+	DEBUG(10, ("sending fd %d to child %d\n", fsp_get_io_fd(fsp),
 		   (int)state->child->pid));
 
 	/*
@@ -827,7 +827,7 @@ static struct tevent_req *aio_fork_fsync_send(
 	 * domain socket. This should never block.
 	 */
 	written = write_fd(state->child->sockfd, &cmd, sizeof(cmd),
-			   fsp->fh->fd);
+			   fsp_get_io_fd(fsp));
 	if (written == -1) {
 		err = errno;
 

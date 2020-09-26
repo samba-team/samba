@@ -462,7 +462,7 @@ static struct tevent_req *vfs_io_uring_pread_send(struct vfs_handle_struct *hand
 static void vfs_io_uring_pread_submit(struct vfs_io_uring_pread_state *state)
 {
 	io_uring_prep_readv(&state->ur.sqe,
-			    state->fsp->fh->fd,
+			    fsp_get_io_fd(state->fsp),
 			    &state->iov, 1,
 			    state->offset);
 	vfs_io_uring_request_submit(&state->ur);
@@ -610,7 +610,7 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 static void vfs_io_uring_pwrite_submit(struct vfs_io_uring_pwrite_state *state)
 {
 	io_uring_prep_writev(&state->ur.sqe,
-			     state->fsp->fh->fd,
+			     fsp_get_io_fd(state->fsp),
 			     &state->iov, 1,
 			     state->offset);
 	vfs_io_uring_request_submit(&state->ur);
@@ -728,7 +728,7 @@ static struct tevent_req *vfs_io_uring_fsync_send(struct vfs_handle_struct *hand
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ur.profile_bytes);
 
 	io_uring_prep_fsync(&state->ur.sqe,
-			    fsp->fh->fd,
+			    fsp_get_io_fd(fsp),
 			    0); /* fsync_flags */
 	vfs_io_uring_request_submit(&state->ur);
 

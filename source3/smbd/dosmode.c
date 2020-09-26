@@ -1380,7 +1380,7 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 	for(fsp = file_find_di_first(conn->sconn, file_id);
 			fsp;
 			fsp = file_find_di_next(fsp)) {
-		if (fsp->fh->fd != -1) {
+		if (fsp_get_io_fd(fsp) != -1) {
 			*ret_fsp = fsp;
 			return NT_STATUS_OK;
 		}

@@ -1347,7 +1347,7 @@ static int vfs_gluster_fstat(struct vfs_handle_struct *handle,
 	}
 	if (ret < 0) {
 		DEBUG(0, ("glfs_fstat(%d) failed: %s\n",
-			  fsp->fh->fd, strerror(errno)));
+			  fsp_get_io_fd(fsp), strerror(errno)));
 	}
 	END_PROFILE(syscall_fstat);
 

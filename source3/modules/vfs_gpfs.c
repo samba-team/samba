@@ -130,7 +130,7 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 	DBG_DEBUG("access_mask=0x%x, allow=0x%x, share_access=0x%x, "
 		  "deny=0x%x\n", access_mask, allow, share_access, deny);
 
-	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
+	result = gpfswrap_set_share(fsp_get_io_fd(fsp), allow, deny);
 	if (result == 0) {
 		return 0;
 	}
@@ -182,7 +182,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 		return 0;
 	}
 
-	kernel_flock(fsp->fh->fd, share_access, access_mask);
+	kernel_flock(fsp_get_io_fd(fsp), share_access, access_mask);
 
 	ret = set_gpfs_sharemode(fsp, access_mask, share_access);
 
@@ -208,7 +208,7 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 		 * close gets deferred due to outstanding POSIX locks
 		 * (see fd_close_posix)
 		 */
-		int ret = gpfswrap_set_share(fsp->fh->fd, 0, 0);
+		int ret = gpfswrap_set_share(fsp_get_io_fd(fsp), 0, 0);
 		if (ret != 0) {
 			DBG_ERR("Clearing GPFS sharemode on close failed for "
 				" %s/%s: %s\n",
@@ -247,7 +247,7 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 				struct gpfs_config_data,
 				return -1);
 
-	ret = linux_set_lease_sighandler(fsp->fh->fd);
+	ret = linux_set_lease_sighandler(fsp_get_io_fd(fsp));
 	if (ret == -1) {
 		goto failure;
 	}
@@ -261,7 +261,7 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 		 * correct delivery of lease-break signals.
 		 */
 		become_root();
-		ret = gpfswrap_set_lease(fsp->fh->fd, gpfs_lease_type);
+		ret = gpfswrap_set_lease(fsp_get_io_fd(fsp), gpfs_lease_type);
 		if (ret < 0) {
 			saved_errno = errno;
 		}
@@ -1885,7 +1885,7 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	}
 
 	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
-	ret = gpfswrap_set_winattrs(fsp->fh->fd,
+	ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
 				    GPFS_WINATTR_SET_ATTRS, &attrs);
 
 	if (ret == -1 && errno == ENOSYS) {
@@ -2118,7 +2118,7 @@ static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
 	}
 
-	result = gpfswrap_ftruncate(fsp->fh->fd, len);
+	result = gpfswrap_ftruncate(fsp_get_io_fd(fsp), len);
 	if ((result == -1) && (errno == ENOSYS)) {
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
 	}

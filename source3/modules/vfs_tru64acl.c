@@ -76,7 +76,7 @@ SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
-	acl_t tru64_acl = acl_get_fd(fsp->fh->fd, ACL_TYPE_ACCESS);
+	acl_t tru64_acl = acl_get_fd(fsp_get_io_fd(fsp), ACL_TYPE_ACCESS);
 
 	if (tru64_acl == NULL) {
 		return NULL;
@@ -142,7 +142,7 @@ int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
         if (tru64_acl == NULL) {
                 return -1;
         }
-        res =  acl_set_fd(fsp->fh->fd, ACL_TYPE_ACCESS, tru64_acl);
+        res =  acl_set_fd(fsp_get_io_fd(fsp), ACL_TYPE_ACCESS, tru64_acl);
         acl_free(tru64_acl);
         return res;
 

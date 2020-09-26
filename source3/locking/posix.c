@@ -28,6 +28,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "util_tdb.h"
+#include "smbd/fd_handle.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -196,7 +197,7 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t coun
 	bool ret;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %jd %jd %d\n",
-		 fsp->fh->fd,op,(intmax_t)offset,(intmax_t)count,type));
+		 fsp_get_io_fd(fsp),op,(intmax_t)offset,(intmax_t)count,type));
 
 	ret = SMB_VFS_LOCK(fsp, op, offset, count, type);
 
@@ -262,7 +263,7 @@ static bool posix_fcntl_getlock(files_struct *fsp, off_t *poffset, off_t *pcount
 	bool ret;
 
 	DEBUG(8, ("posix_fcntl_getlock %d %ju %ju %d\n",
-		  fsp->fh->fd, (uintmax_t)*poffset, (uintmax_t)*pcount,
+		  fsp_get_io_fd(fsp), (uintmax_t)*poffset, (uintmax_t)*pcount,
 		  *ptype));
 
 	ret = SMB_VFS_GETLOCK(fsp, poffset, pcount, ptype, &pid);
@@ -600,7 +601,7 @@ int fd_close_posix(const struct files_struct *fsp)
 		/*
 		 * There are outstanding locks on this dev/inode pair on
 		 * other fds. Add our fd to the pending close db. We also
-		 * set fsp->fh->fd to -1 inside fd_close() after returning
+		 * set fsp_get_io_fd(fsp) to -1 inside fd_close() after returning
 		 * from VFS layer.
 		 */
 

@@ -262,7 +262,7 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
+	if (fsp && !fsp->fsp_flags.is_pathref && fsp_get_io_fd(fsp) != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
@@ -328,7 +328,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
+	if (fsp && !fsp->fsp_flags.is_pathref && fsp_get_io_fd(fsp) != -1) {
 		sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
 					     ea_namelist_size);
 	} else {
@@ -346,7 +346,10 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		}
 		to_free = ea_namelist;
 
-		if (fsp && fsp->fh->fd != -1) {
+		if (fsp &&
+		    !fsp->fsp_flags.is_pathref &&
+		    fsp_get_io_fd(fsp) != -1)
+		{
 			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
 						     ea_namelist_size);
 		} else {
@@ -847,7 +850,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
-			if (fsp && (fsp->fh->fd != -1)) {
+			if (fsp &&
+			    !fsp->fsp_flags.is_pathref &&
+			    fsp_get_io_fd(fsp) != -1)
+			{
 				DEBUG(10,("set_ea: deleting ea name %s on "
 					  "file %s by file descriptor.\n",
 					  unix_ea_name, fsp_str_dbg(fsp)));
@@ -868,7 +874,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 			}
 #endif
 		} else {
-			if (fsp && (fsp->fh->fd != -1)) {
+			if (fsp &&
+			    !fsp->fsp_flags.is_pathref &&
+			    fsp_get_io_fd(fsp) != -1)
+			{
 				DEBUG(10,("set_ea: setting ea name %s on file "
 					  "%s by file descriptor.\n",
 					  unix_ea_name, fsp_str_dbg(fsp)));
@@ -5914,7 +5923,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			enum brl_type lock_type;
 
 			/* We need an open file with a real fd for this. */
-			if (!fsp || fsp->fh->fd == -1) {
+			if (fsp == NULL ||
+			    fsp->fsp_flags.is_pathref ||
+			    fsp_get_io_fd(fsp) == -1)
+			{
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -6320,7 +6332,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_POSIX_LOCK:
 		{
-			if (fsp == NULL || fsp->fh->fd == -1) {
+			if (fsp == NULL ||
+			    fsp->fsp_flags.is_pathref ||
+			    fsp_get_io_fd(fsp) == -1)
+			{
 				reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 				return;
 			}
@@ -6687,7 +6702,10 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 	DEBUG(10,("smb_set_file_size: file %s : setting new size to %.0f\n",
 		  smb_fname_str_dbg(smb_fname), (double)size));
 
-	if (fsp && fsp->fh->fd != -1) {
+	if (fsp &&
+	    !fsp->fsp_flags.is_pathref &&
+	    fsp_get_io_fd(fsp) != -1)
+	{
 		/* Handle based call. */
 		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -7654,7 +7672,10 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (fsp == NULL || fsp->fh->fd == -1) {
+	if (fsp == NULL ||
+	    fsp->fsp_flags.is_pathref ||
+	    fsp_get_io_fd(fsp) == -1)
+	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -7952,7 +7973,10 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		  "allocation size to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)allocation_size));
 
-	if (fsp && fsp->fh->fd != -1) {
+	if (fsp &&
+	    !fsp->fsp_flags.is_pathref &&
+	    fsp_get_io_fd(fsp) != -1)
+	{
 		/* Open file handle. */
 		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -8261,7 +8285,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			  "setting mode 0%o for file %s\n",
 			  (unsigned int)unixmode,
 			  smb_fname_str_dbg(smb_fname)));
-		if (fsp && fsp->fh->fd != -1) {
+		if (fsp &&
+		    !fsp->fsp_flags.is_pathref &&
+		    fsp_get_io_fd(fsp) != -1)
+		{
 			ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		} else {
 			ret = SMB_VFS_CHMOD(conn, smb_fname, unixmode);
@@ -8284,7 +8311,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			  (unsigned int)set_owner,
 			  smb_fname_str_dbg(smb_fname)));
 
-		if (fsp && fsp->fh->fd != -1) {
+		if (fsp &&
+		    !fsp->fsp_flags.is_pathref &&
+		    fsp_get_io_fd(fsp) != -1)
+		{
 			ret = SMB_VFS_FCHOWN(fsp, set_owner, (gid_t)-1);
 		} else {
 			/*
@@ -8313,7 +8343,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			  "changing group %u for file %s\n",
 			  (unsigned int)set_grp,
 			  smb_fname_str_dbg(smb_fname)));
-		if (fsp && fsp->fh->fd != -1) {
+		if (fsp &&
+		    !fsp->fsp_flags.is_pathref &&
+		    fsp_get_io_fd(fsp) != -1)
+		{
 			ret = SMB_VFS_FCHOWN(fsp, (uid_t)-1, set_grp);
 		} else {
 			/*
@@ -8425,7 +8458,10 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (fsp && fsp->fh->fd != -1) {
+		if (fsp &&
+		    !fsp->fsp_flags.is_pathref &&
+		    fsp_get_io_fd(fsp) != -1)
+		{
 			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
 			return NT_STATUS_NOT_SUPPORTED;
 		} else {

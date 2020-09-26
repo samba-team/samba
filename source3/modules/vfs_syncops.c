@@ -285,7 +285,7 @@ static int syncops_close(vfs_handle_struct *handle, files_struct *fsp)
 	if (fsp->fsp_flags.can_write && config->onclose) {
 		/* ideally we'd only do this if we have written some
 		 data, but there is no flag for that in fsp yet. */
-		fsync(fsp->fh->fd);
+		fsync(fsp_get_io_fd(fsp));
 	}
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }

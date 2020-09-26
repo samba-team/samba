@@ -2892,7 +2892,7 @@ void reply_mknew(struct smb_request *req)
 
 	DEBUG(2, ("reply_mknew: file %s\n", smb_fname_str_dbg(smb_fname)));
 	DEBUG(3, ("reply_mknew %s fd=%d dmode=0x%x\n",
-		  smb_fname_str_dbg(smb_fname), fsp->fh->fd,
+		  smb_fname_str_dbg(smb_fname), fsp_get_io_fd(fsp),
 		  (unsigned int)fattr));
 
  out:
@@ -3055,7 +3055,7 @@ void reply_ctemp(struct smb_request *req)
 
 	DEBUG(2, ("reply_ctemp: created temp file %s\n", fsp_str_dbg(fsp)));
 	DEBUG(3, ("reply_ctemp %s fd=%d umode=0%o\n", fsp_str_dbg(fsp),
-		    fsp->fh->fd, (unsigned int)smb_fname->st.st_ex_mode));
+		    fsp_get_io_fd(fsp), (unsigned int)smb_fname->st.st_ex_mode));
  out:
 	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(wire_name);
@@ -3961,7 +3961,7 @@ void reply_readbraw(struct smb_request *req)
 	    conn != fsp->conn ||
 	    req->vuid != fsp->vuid ||
 	    fsp->fsp_flags.is_directory ||
-	    fsp->fh->fd == -1)
+	    fsp_get_io_fd(fsp) == -1)
 	{
 		/*
 		 * fsp could be NULL here so use the value from the packet. JRA.
@@ -5669,7 +5669,7 @@ static struct files_struct *file_sync_one_fn(struct files_struct *fsp,
 	if (conn != fsp->conn) {
 		return NULL;
 	}
-	if (fsp->fh->fd == -1) {
+	if (fsp_get_io_fd(fsp) == -1) {
 		return NULL;
 	}
 	sync_file(conn, fsp, True /* write through */);
@@ -6317,7 +6317,7 @@ void reply_lock(struct smb_request *req)
 	};
 
 	DBG_NOTICE("lock fd=%d %s offset=%"PRIu64" count=%"PRIu64"\n",
-		   fsp->fh->fd,
+		   fsp_get_io_fd(fsp),
 		   fsp_fnum_dbg(fsp),
 		   lck->offset,
 		   lck->count);
@@ -6417,7 +6417,7 @@ void reply_unlock(struct smb_request *req)
 	}
 
 	DBG_NOTICE("unlock fd=%d %s offset=%"PRIu64" count=%"PRIu64"\n",
-		   fsp->fh->fd,
+		   fsp_get_io_fd(fsp),
 		   fsp_fnum_dbg(fsp),
 		   lck.offset,
 		   lck.count);
@@ -6754,7 +6754,7 @@ void reply_printopen(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	DEBUG(3,("openprint fd=%d %s\n",
-		 fsp->fh->fd, fsp_fnum_dbg(fsp)));
+		 fsp_get_io_fd(fsp), fsp_fnum_dbg(fsp)));
 
 	END_PROFILE(SMBsplopen);
 	return;
@@ -6792,7 +6792,7 @@ void reply_printclose(struct smb_request *req)
 	}
 
 	DEBUG(3,("printclose fd=%d %s\n",
-		 fsp->fh->fd, fsp_fnum_dbg(fsp)));
+		 fsp_get_io_fd(fsp), fsp_fnum_dbg(fsp)));
 
 	status = close_file(req, fsp, NORMAL_CLOSE);
 

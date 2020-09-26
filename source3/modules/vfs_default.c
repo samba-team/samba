@@ -396,7 +396,7 @@ static NTSTATUS vfswrap_create_dfs_pathat(struct vfs_handle_struct *handle,
 	}
 
 	ret = symlinkat(msdfs_link,
-			dirfsp->fh->fd,
+			fsp_get_io_fd(dirfsp),
 			smb_fname->base_name);
 	if (ret == 0) {
 		status = NT_STATUS_OK;
@@ -460,7 +460,7 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		}
 	}
 
-	referral_len = readlinkat(dirfsp->fh->fd,
+	referral_len = readlinkat(fsp_get_io_fd(dirfsp),
 				smb_fname->base_name,
 				link_target,
 				bufsize - 1);
@@ -563,7 +563,7 @@ static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 	DIR *result;
 
 	START_PROFILE(syscall_fdopendir);
-	result = sys_fdopendir(fsp->fh->fd);
+	result = sys_fdopendir(fsp_get_io_fd(fsp));
 	END_PROFILE(syscall_fdopendir);
 	return result;
 }
@@ -753,12 +753,12 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 
 #if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
 	START_PROFILE_BYTES(syscall_pread, n);
-	result = sys_pread_full(fsp->fh->fd, data, n, offset);
+	result = sys_pread_full(fsp_get_io_fd(fsp), data, n, offset);
 	END_PROFILE_BYTES(syscall_pread);
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = sys_read(fsp->fh->fd, data, n);
+		result = sys_read(fsp_get_io_fd(fsp), data, n);
 		fsp->fh->pos = 0;
 	}
 
@@ -777,12 +777,12 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
 	START_PROFILE_BYTES(syscall_pwrite, n);
-	result = sys_pwrite_full(fsp->fh->fd, data, n, offset);
+	result = sys_pwrite_full(fsp_get_io_fd(fsp), data, n, offset);
 	END_PROFILE_BYTES(syscall_pwrite);
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be sought on. */
-		result = sys_write(fsp->fh->fd, data, n);
+		result = sys_write(fsp_get_io_fd(fsp), data, n);
 	}
 
 #else /* HAVE_PWRITE */
@@ -824,7 +824,7 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 	}
 
 	state->ret = -1;
-	state->fd = fsp->fh->fd;
+	state->fd = fsp_get_io_fd(fsp);
 	state->buf = data;
 	state->count = n;
 	state->offset = offset;
@@ -952,7 +952,7 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 	}
 
 	state->ret = -1;
-	state->fd = fsp->fh->fd;
+	state->fd = fsp_get_io_fd(fsp);
 	state->buf = data;
 	state->count = n;
 	state->offset = offset;
@@ -1075,7 +1075,7 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 	}
 
 	state->ret = -1;
-	state->fd = fsp->fh->fd;
+	state->fd = fsp_get_io_fd(fsp);
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_fsync, profile_p,
 				     state->profile_bytes, 0);
@@ -1173,7 +1173,7 @@ static off_t vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t o
 
 	START_PROFILE(syscall_lseek);
 
-	result = lseek(fsp->fh->fd, offset, whence);
+	result = lseek(fsp_get_io_fd(fsp), offset, whence);
 	/*
 	 * We want to maintain the fiction that we can seek
 	 * on a fifo for file system purposes. This allows
@@ -1196,7 +1196,7 @@ static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struc
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_sendfile, n);
-	result = sys_sendfile(tofd, fromfsp->fh->fd, hdr, offset, n);
+	result = sys_sendfile(tofd, fsp_get_io_fd(fromfsp), hdr, offset, n);
 	END_PROFILE_BYTES(syscall_sendfile);
 	return result;
 }
@@ -1210,7 +1210,7 @@ static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_recvfile, n);
-	result = sys_recvfile(fromfd, tofsp->fh->fd, offset, n);
+	result = sys_recvfile(fromfd, fsp_get_io_fd(tofsp), offset, n);
 	END_PROFILE_BYTES(syscall_recvfile);
 	return result;
 }
@@ -2423,7 +2423,7 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t m
 
 	START_PROFILE(syscall_fchmod);
 #if defined(HAVE_FCHMOD)
-	result = fchmod(fsp->fh->fd, mode);
+	result = fchmod(fsp_get_io_fd(fsp), mode);
 #else
 	result = -1;
 	errno = ENOSYS;
@@ -2439,7 +2439,7 @@ static int vfswrap_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t ui
 	int result;
 
 	START_PROFILE(syscall_fchown);
-	result = fchown(fsp->fh->fd, uid, gid);
+	result = fchown(fsp_get_io_fd(fsp), uid, gid);
 	END_PROFILE(syscall_fchown);
 	return result;
 #else
@@ -2625,7 +2625,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 
 	/* Shrink - just ftruncate. */
 	if (pst->st_ex_size > len)
-		return ftruncate(fsp->fh->fd, len);
+		return ftruncate(fsp_get_io_fd(fsp), len);
 
 	space_to_write = len - pst->st_ex_size;
 
@@ -2684,7 +2684,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t
 	   expansion and some that don't! On Linux fat can't do
 	   ftruncate extend but ext2 can. */
 
-	result = ftruncate(fsp->fh->fd, len);
+	result = ftruncate(fsp_get_io_fd(fsp), len);
 
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
@@ -2745,7 +2745,7 @@ static int vfswrap_fallocate(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_fallocate);
 	if (mode == 0) {
-		result = sys_posix_fallocate(fsp->fh->fd, offset, len);
+		result = sys_posix_fallocate(fsp_get_io_fd(fsp), offset, len);
 		/*
 		 * posix_fallocate returns 0 on success, errno on error
 		 * and doesn't set errno. Make it behave like fallocate()
@@ -2757,7 +2757,7 @@ static int vfswrap_fallocate(vfs_handle_struct *handle,
 		}
 	} else {
 		/* sys_fallocate handles filtering of unsupported mode flags */
-		result = sys_fallocate(fsp->fh->fd, mode, offset, len);
+		result = sys_fallocate(fsp_get_io_fd(fsp), mode, offset, len);
 	}
 	END_PROFILE(syscall_fallocate);
 	return result;
@@ -2773,7 +2773,7 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 		op = map_process_lock_to_ofd_lock(op);
 	}
 
-	result =  fcntl_lock(fsp->fh->fd, op, offset, count, type);
+	result =  fcntl_lock(fsp_get_io_fd(fsp), op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
 	return result;
 }
@@ -2782,7 +2782,7 @@ static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 				uint32_t share_access, uint32_t access_mask)
 {
 	START_PROFILE(syscall_kernel_flock);
-	kernel_flock(fsp->fh->fd, share_access, access_mask);
+	kernel_flock(fsp_get_io_fd(fsp), share_access, access_mask);
 	END_PROFILE(syscall_kernel_flock);
 	return 0;
 }
@@ -2819,11 +2819,11 @@ static int vfswrap_fcntl(vfs_handle_struct *handle, files_struct *fsp, int cmd,
 	case F_SET_FILE_RW_HINT:
 #endif
 		argp = va_arg(dup_cmd_arg, void *);
-		result = sys_fcntl_ptr(fsp->fh->fd, cmd, argp);
+		result = sys_fcntl_ptr(fsp_get_io_fd(fsp), cmd, argp);
 		break;
 	default:
 		val = va_arg(dup_cmd_arg, int);
-		result = sys_fcntl_int(fsp->fh->fd, cmd, val);
+		result = sys_fcntl_int(fsp_get_io_fd(fsp), cmd, val);
 	}
 
 	va_end(dup_cmd_arg);
@@ -2843,7 +2843,7 @@ static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t 
 		op = map_process_lock_to_ofd_lock(op);
 	}
 
-	result = fcntl_getlock(fsp->fh->fd, op, poffset, pcount, ptype, ppid);
+	result = fcntl_getlock(fsp_get_io_fd(fsp), op, poffset, pcount, ptype, ppid);
 	END_PROFILE(syscall_fcntl_getlock);
 	return result;
 }
@@ -2856,7 +2856,7 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	START_PROFILE(syscall_linux_setlease);
 
 #ifdef HAVE_KERNEL_OPLOCKS_LINUX
-	result = linux_setlease(fsp->fh->fd, leasetype);
+	result = linux_setlease(fsp_get_io_fd(fsp), leasetype);
 #else
 	errno = ENOSYS;
 #endif
@@ -3552,7 +3552,7 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 				 void *value,
 				 size_t size)
 {
-	return fgetxattr(fsp->fh->fd, name, value, size);
+	return fgetxattr(fsp_get_io_fd(fsp), name, value, size);
 }
 
 static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
@@ -3565,7 +3565,7 @@ static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
 
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
-	return flistxattr(fsp->fh->fd, list, size);
+	return flistxattr(fsp_get_io_fd(fsp), list, size);
 }
 
 static int vfswrap_removexattr(struct vfs_handle_struct *handle,
@@ -3577,7 +3577,7 @@ static int vfswrap_removexattr(struct vfs_handle_struct *handle,
 
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
-	return fremovexattr(fsp->fh->fd, name);
+	return fremovexattr(fsp_get_io_fd(fsp), name);
 }
 
 static int vfswrap_setxattr(struct vfs_handle_struct *handle,
@@ -3592,7 +3592,7 @@ static int vfswrap_setxattr(struct vfs_handle_struct *handle,
 
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
-	return fsetxattr(fsp->fh->fd, name, value, size, flags);
+	return fsetxattr(fsp_get_io_fd(fsp), name, value, size, flags);
 }
 
 static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)

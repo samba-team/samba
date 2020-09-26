@@ -432,7 +432,7 @@ static int cephwrap_close(struct vfs_handle_struct *handle, files_struct *fsp)
 	int result;
 
 	DBG_DEBUG("[CEPH] close(%p, %p)\n", handle, fsp);
-	result = ceph_close(handle->data, fsp->fh->fd);
+	result = ceph_close(handle->data, fsp_get_io_fd(fsp));
 	DBG_DEBUG("[CEPH] close(...) = %d\n", result);
 
 	WRAP_RETURN(result);
@@ -445,7 +445,7 @@ static ssize_t cephwrap_pread(struct vfs_handle_struct *handle, files_struct *fs
 
 	DBG_DEBUG("[CEPH] pread(%p, %p, %p, %llu, %llu)\n", handle, fsp, data, llu(n), llu(offset));
 
-	result = ceph_read(handle->data, fsp->fh->fd, data, n, offset);
+	result = ceph_read(handle->data, fsp_get_io_fd(fsp), data, n, offset);
 	DBG_DEBUG("[CEPH] pread(...) = %llu\n", llu(result));
 	WRAP_RETURN(result);
 }
@@ -475,7 +475,7 @@ static struct tevent_req *cephwrap_pread_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_read(handle->data, fsp->fh->fd, data, n, offset);
+	ret = ceph_read(handle->data, fsp_get_io_fd(fsp), data, n, offset);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -508,7 +508,7 @@ static ssize_t cephwrap_pwrite(struct vfs_handle_struct *handle, files_struct *f
 	ssize_t result;
 
 	DBG_DEBUG("[CEPH] pwrite(%p, %p, %p, %llu, %llu)\n", handle, fsp, data, llu(n), llu(offset));
-	result = ceph_write(handle->data, fsp->fh->fd, data, n, offset);
+	result = ceph_write(handle->data, fsp_get_io_fd(fsp), data, n, offset);
 	DBG_DEBUG("[CEPH] pwrite(...) = %llu\n", llu(result));
 	WRAP_RETURN(result);
 }
@@ -538,7 +538,7 @@ static struct tevent_req *cephwrap_pwrite_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_write(handle->data, fsp->fh->fd, data, n, offset);
+	ret = ceph_write(handle->data, fsp_get_io_fd(fsp), data, n, offset);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -570,7 +570,7 @@ static off_t cephwrap_lseek(struct vfs_handle_struct *handle, files_struct *fsp,
 	off_t result = 0;
 
 	DBG_DEBUG("[CEPH] cephwrap_lseek\n");
-	result = ceph_lseek(handle->data, fsp->fh->fd, offset, whence);
+	result = ceph_lseek(handle->data, fsp_get_io_fd(fsp), offset, whence);
 	WRAP_RETURN(result);
 }
 
@@ -640,7 +640,7 @@ static struct tevent_req *cephwrap_fsync_send(struct vfs_handle_struct *handle,
 	}
 
 	/* Make sync call. */
-	ret = ceph_fsync(handle->data, fsp->fh->fd, false);
+	ret = ceph_fsync(handle->data, fsp_get_io_fd(fsp), false);
 
 	if (ret != 0) {
 		/* ceph_fsync returns -errno on error. */
@@ -739,8 +739,8 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 	int result = -1;
 	struct ceph_statx stx;
 
-	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fsp->fh->fd);
-	result = ceph_fstatx(handle->data, fsp->fh->fd, &stx,
+	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fsp_get_io_fd(fsp));
+	result = ceph_fstatx(handle->data, fsp_get_io_fd(fsp), &stx,
 				SAMBA_STATX_ATTR_MASK, 0);
 	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
 	if (result < 0) {
@@ -849,7 +849,7 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 	int result;
 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
-	result = ceph_fchmod(handle->data, fsp->fh->fd, mode);
+	result = ceph_fchmod(handle->data, fsp_get_io_fd(fsp), mode);
 	DBG_DEBUG("[CEPH] fchmod(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
@@ -859,7 +859,7 @@ static int cephwrap_fchown(struct vfs_handle_struct *handle, files_struct *fsp, 
 	int result;
 
 	DBG_DEBUG("[CEPH] fchown(%p, %p, %d, %d)\n", handle, fsp, uid, gid);
-	result = ceph_fchown(handle->data, fsp->fh->fd, uid, gid);
+	result = ceph_fchown(handle->data, fsp_get_io_fd(fsp), uid, gid);
 	DBG_DEBUG("[CEPH] fchown(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
@@ -922,12 +922,12 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 
 	/* Shrink - just ftruncate. */
 	if (pst->st_ex_size > len) {
-		result = ceph_ftruncate(handle->data, fsp->fh->fd, len);
+		result = ceph_ftruncate(handle->data, fsp_get_io_fd(fsp), len);
 		WRAP_RETURN(result);
 	}
 
 	space_to_write = len - pst->st_ex_size;
-	result = ceph_fallocate(handle->data, fsp->fh->fd, 0, pst->st_ex_size,
+	result = ceph_fallocate(handle->data, fsp_get_io_fd(fsp), 0, pst->st_ex_size,
 				space_to_write);
 	WRAP_RETURN(result);
 }
@@ -942,7 +942,7 @@ static int cephwrap_ftruncate(struct vfs_handle_struct *handle, files_struct *fs
 		return strict_allocate_ftruncate(handle, fsp, len);
 	}
 
-	result = ceph_ftruncate(handle->data, fsp->fh->fd, len);
+	result = ceph_ftruncate(handle->data, fsp_get_io_fd(fsp), len);
 	WRAP_RETURN(result);
 }
 
@@ -957,7 +957,7 @@ static int cephwrap_fallocate(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %llu, %llu\n",
 		  handle, fsp, mode, llu(offset), llu(len));
 	/* unsupported mode flags are rejected by libcephfs */
-	result = ceph_fallocate(handle->data, fsp->fh->fd, mode, offset, len);
+	result = ceph_fallocate(handle->data, fsp_get_io_fd(fsp), mode, offset, len);
 	DBG_DEBUG("[CEPH] fallocate(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
@@ -1201,7 +1201,7 @@ static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n", handle, fsp, name, value, llu(size));
-	ret = ceph_fgetxattr(handle->data, fsp->fh->fd, name, value, size);
+	ret = ceph_fgetxattr(handle->data, fsp_get_io_fd(fsp), name, value, size);
 	DBG_DEBUG("[CEPH] fgetxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1230,7 +1230,7 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	int ret;
 	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %llu)\n",
 		  handle, fsp, list, llu(size));
-	ret = ceph_flistxattr(handle->data, fsp->fh->fd, list, size);
+	ret = ceph_flistxattr(handle->data, fsp_get_io_fd(fsp), list, size);
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1254,7 +1254,7 @@ static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fremovexattr(%p, %p, %s)\n", handle, fsp, name);
-	ret = ceph_fremovexattr(handle->data, fsp->fh->fd, name);
+	ret = ceph_fremovexattr(handle->data, fsp_get_io_fd(fsp), name);
 	DBG_DEBUG("[CEPH] fremovexattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
@@ -1279,7 +1279,7 @@ static int cephwrap_fsetxattr(struct vfs_handle_struct *handle, struct files_str
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n", handle, fsp, name, value, llu(size), flags);
-	ret = ceph_fsetxattr(handle->data, fsp->fh->fd,
+	ret = ceph_fsetxattr(handle->data, fsp_get_io_fd(fsp),
 			     name, value, size, flags);
 	DBG_DEBUG("[CEPH] fsetxattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);

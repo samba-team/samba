@@ -50,16 +50,16 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 
 	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fromfsp->fh->fd, offset, (size_t)rhd->len);
+		int err = readahead(fsp_get_io_fd(fromfsp), offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_sendfile: readahead on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fromfsp->fh->fd,
+			(unsigned int)fsp_get_io_fd(fromfsp),
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 		        err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fromfsp->fh->fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fsp_get_io_fd(fromfsp), offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_sendfile: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fromfsp->fh->fd,
+			(unsigned int)fsp_get_io_fd(fromfsp),
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));
@@ -92,16 +92,16 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 
 	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fsp->fh->fd, offset, (size_t)rhd->len);
+		int err = readahead(fsp_get_io_fd(fsp), offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_pread: readahead on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fsp->fh->fd,
+			(unsigned int)fsp_get_io_fd(fsp),
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fsp->fh->fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fsp_get_io_fd(fsp), offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_pread: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fsp->fh->fd,
+			(unsigned int)fsp_get_io_fd(fsp),
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));

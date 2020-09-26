@@ -3021,7 +3021,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 	 * Finally apply it to the file or directory.
 	 */
 
-	if (default_ace || fsp->fsp_flags.is_directory || fsp->fh->fd == -1) {
+	if (default_ace || fsp->fsp_flags.is_directory || fsp_get_io_fd(fsp) == -1) {
 		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name,
 					     the_acl_type, the_acl) == -1) {
 			/*
@@ -4697,7 +4697,7 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	int ret;
 
 	/* This ensures that we also consider the default ACL */
-	if (fsp->fsp_flags.is_directory ||  fsp->fh->fd == -1) {
+	if (fsp->fsp_flags.is_directory ||  fsp_get_io_fd(fsp) == -1) {
 		return posix_sys_acl_blob_get_file(handle,
 						fsp->fsp_name,
 						mem_ctx,

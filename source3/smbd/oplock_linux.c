@@ -122,7 +122,7 @@ static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 		DBG_NOTICE("Refused oplock on file %s, "
 			   "fd = %d, file_id = %s. (%s)\n",
 			   fsp_str_dbg(fsp),
-			   fsp->fh->fd,
+			   fsp_get_io_fd(fsp),
 			   file_id_str_buf(fsp->file_id, &idbuf),
 			   strerror(errno));
 		return False;
@@ -151,7 +151,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 		 * Check and print out the current kernel
 		 * oplock state of this file.
 		 */
-		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
+		int state = fcntl(fsp_get_io_fd(fsp), F_GETLEASE, 0);
 		dbgtext("linux_release_kernel_oplock: file %s, file_id = %s "
 			"gen_id = %"PRIu64" has kernel oplock state "
 			"of %x.\n",

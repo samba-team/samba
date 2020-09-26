@@ -113,7 +113,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 	DEBUG(10, ("entering solarisacl_sys_acl_get_fd.\n"));
 
-	if (!solaris_acl_get_fd(fsp->fh->fd, &solaris_acl, &count)) {
+	if (!solaris_acl_get_fd(fsp_get_io_fd(fsp), &solaris_acl, &count)) {
 		goto done;
 	}
 	/* 
@@ -260,7 +260,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			   strerror(errno)));
 		goto done;
 	}
-	if (!solaris_acl_get_fd(fsp->fh->fd, &default_acl, &default_count)) {
+	if (!solaris_acl_get_fd(fsp_get_io_fd(fsp), &default_acl, &default_count)) {
 		DEBUG(10, ("error getting (default) acl from fd\n"));
 		goto done;
 	}
@@ -276,7 +276,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = facl(fsp->fh->fd, SETACL, count, solaris_acl);
+	ret = facl(fsp_get_io_fd(fsp), SETACL, count, solaris_acl);
 	if (ret != 0) {
 		DEBUG(10, ("call of facl failed (%s).\n", strerror(errno)));
 	}

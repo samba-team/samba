@@ -113,7 +113,7 @@ static int commit_all(
                                 ("%s: flushing %lu dirty bytes\n",
                                  MODULE, (unsigned long)c->dbytes));
 
-                        return commit_do(c, fsp->fh->fd);
+                        return commit_do(c, fsp_get_io_fd(fsp));
                 }
         }
         return 0;
@@ -135,7 +135,7 @@ static int commit(
 	c->dbytes += last_write;	/* dirty bytes always counted */
 
 	if (c->dthresh && (c->dbytes > c->dthresh)) {
-		return commit_do(c, fsp->fh->fd);
+		return commit_do(c, fsp_get_io_fd(fsp));
 	}
 
 	/* Return if we are not in EOF mode or if we have temporarily opted
@@ -147,7 +147,7 @@ static int commit(
 
 	/* This write hit or went past our cache the file size. */
 	if ((offset + last_write) >= c->eof) {
-		if (commit_do(c, fsp->fh->fd) == -1) {
+		if (commit_do(c, fsp_get_io_fd(fsp)) == -1) {
 			return -1;
 		}
 

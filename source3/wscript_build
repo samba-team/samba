@@ -754,6 +754,7 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                          LEASES_UTIL
                          NDR_OPEN_FILES
                          FNAME_UTIL
+                         fd_handle
                          ''')
 
 bld.SAMBA3_SUBSYSTEM('LEASES_DB',

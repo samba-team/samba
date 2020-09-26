@@ -361,12 +361,12 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	}
 
 	ZERO_STRUCT(cr_args);
-	cr_args.src_fd = src_fsp->fh->fd;
+	cr_args.src_fd = fsp_get_io_fd(src_fsp);
 	cr_args.src_offset = (uint64_t)src_off;
 	cr_args.dest_offset = (uint64_t)dest_off;
 	cr_args.src_length = (uint64_t)num;
 
-	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
+	ret = ioctl(fsp_get_io_fd(dest_fsp), BTRFS_IOC_CLONE_RANGE, &cr_args);
 	if (ret < 0) {
 		/*
 		 * BTRFS_IOC_CLONE_RANGE only supports 'sectorsize' aligned
@@ -379,7 +379,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 			  (unsigned long long)cr_args.src_length,
 			  (long long)cr_args.src_fd,
 			  (unsigned long long)cr_args.src_offset,
-			  dest_fsp->fh->fd,
+			  fsp_get_io_fd(dest_fsp),
 			  (unsigned long long)cr_args.dest_offset));
 		subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 							 state,
@@ -468,8 +468,8 @@ static NTSTATUS btrfs_get_compression(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	DIR *dir = NULL;
 
-	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		fd = fsp->fh->fd;
+	if ((fsp != NULL) && (fsp_get_io_fd(fsp) != -1)) {
+		fd = fsp_get_io_fd(fsp);
 	} else if (smb_fname != NULL) {
 		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 			dir = opendir(smb_fname->base_name);
@@ -528,11 +528,11 @@ static NTSTATUS btrfs_set_compression(struct vfs_handle_struct *handle,
 	int fd;
 	NTSTATUS status;
 
-	if ((fsp == NULL) || (fsp->fh->fd == -1)) {
+	if ((fsp == NULL) || (fsp_get_io_fd(fsp) == -1)) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto err_out;
 	}
-	fd = fsp->fh->fd;
+	fd = fsp_get_io_fd(fsp);
 
 	ret = ioctl(fd, FS_IOC_GETFLAGS, &flags);
 	if (ret < 0) {

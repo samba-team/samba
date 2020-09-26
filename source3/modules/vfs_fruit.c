@@ -588,7 +588,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 		  access_mask & FILE_WRITE_DATA ? "WRITE" : "-",
 		  share_mode);
 
-	if (fsp->fh->fd == -1) {
+	if (fsp_get_io_fd(fsp) == -1) {
 		return NT_STATUS_OK;
 	}
 

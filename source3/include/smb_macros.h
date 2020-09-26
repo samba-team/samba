@@ -45,7 +45,8 @@
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
 
 #define CHECK_READ(fsp,req) \
-	(((fsp)->fh->fd != -1) && \
+	((!(fsp)->fsp_flags.is_pathref) &&  \
+	 (fsp_get_io_fd(fsp) != -1) && \
 	 (((fsp)->fsp_flags.can_read) || \
 	  ((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
 	   (fsp->access_mask & FILE_EXECUTE))))
@@ -63,7 +64,8 @@
  * test).
  */
 #define CHECK_READ_SMB2(fsp) \
-	(((fsp)->fh->fd != -1) && \
+	((!(fsp)->fsp_flags.is_pathref) &&  \
+	 (fsp_get_io_fd(fsp) != -1) && \
 	 (((fsp)->fsp_flags.can_read) || \
 	  (fsp->access_mask & FILE_EXECUTE)))
 
@@ -74,12 +76,14 @@
  * the "if execute is granted then also grant read" arrangement.
  */
 #define CHECK_READ_IOCTL(fsp) \
-	(((fsp)->fh->fd != -1) && \
+	((!(fsp)->fsp_flags.is_pathref) &&  \
+	 (fsp_get_io_fd(fsp) != -1) && \
 	 (((fsp)->fsp_flags.can_read)))
 
 #define CHECK_WRITE(fsp) \
 	((fsp)->fsp_flags.can_write && \
-	 ((fsp)->fh->fd != -1))
+	(!(fsp)->fsp_flags.is_pathref) && \
+	 (fsp_get_io_fd(fsp) != -1))
 
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )

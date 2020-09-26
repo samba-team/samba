@@ -2521,7 +2521,7 @@ int ad_fset(struct vfs_handle_struct *handle,
 
 	if ((fsp == NULL)
 	    || (fsp->fh == NULL)
-	    || (fsp->fh->fd == -1))
+	    || (fsp_get_io_fd(fsp) == -1))
 	{
 		smb_panic("bad fsp");
 	}

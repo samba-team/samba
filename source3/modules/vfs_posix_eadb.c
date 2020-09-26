@@ -98,7 +98,7 @@ static ssize_t posix_eadb_fgetxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_getattr(db, fsp->fsp_name->base_name, fsp->fh->fd, name, value, size);
+	return posix_eadb_getattr(db, fsp->fsp_name->base_name, fsp_get_io_fd(fsp), name, value, size);
 }
 
 /*
@@ -150,7 +150,7 @@ static int posix_eadb_fsetxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_setattr(db, fsp->fsp_name->base_name, fsp->fh->fd, name, value, size, flags);
+	return posix_eadb_setattr(db, fsp->fsp_name->base_name, fsp_get_io_fd(fsp), name, value, size, flags);
 }
 
 /*
@@ -205,7 +205,7 @@ static ssize_t posix_eadb_flistxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_listattr(db, fsp->fsp_name->base_name, fsp->fh->fd, list, size);
+	return posix_eadb_listattr(db, fsp->fsp_name->base_name, fsp_get_io_fd(fsp), list, size);
 }
 
 /*
@@ -245,7 +245,7 @@ static int posix_eadb_fremovexattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_removeattr(db, fsp->fsp_name->base_name, fsp->fh->fd, name);
+	return posix_eadb_removeattr(db, fsp->fsp_name->base_name, fsp_get_io_fd(fsp), name);
 }
 
 /*

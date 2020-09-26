@@ -3895,7 +3895,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	if (fsp->fh->fd != -1 && lp_kernel_share_modes(SNUM(conn))) {
+	if (!fsp->fsp_flags.is_pathref &&
+	    fsp_get_io_fd(fsp) != -1 &&
+	    lp_kernel_share_modes(SNUM(conn)))
+	{
 		int ret_flock;
 		/*
 		 * Beware: streams implementing VFS modules may

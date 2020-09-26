@@ -533,7 +533,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 
 	rc = aclx_fput(
-		fsp->fh->fd,
+		fsp_get_io_fd(fsp),
 		SET_ACL, /* set only the ACL, not mode bits */
 		acl_type_info,
 		acl_aixc,

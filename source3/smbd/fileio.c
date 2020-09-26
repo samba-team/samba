@@ -303,7 +303,7 @@ sync a file
 
 NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_through)
 {
-       	if (fsp->fh->fd == -1)
+	if (fsp_get_io_fd(fsp) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (lp_strict_sync(SNUM(conn)) &&

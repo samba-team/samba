@@ -201,7 +201,7 @@ static int prealloc_ftruncate(vfs_handle_struct * handle,
 
 	/* Maintain the allocated space even in the face of truncates. */
 	if ((psize = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
-		preallocate_space(fsp->fh->fd, *psize);
+		preallocate_space(fsp_get_io_fd(fsp), *psize);
 	}
 
 	return ret;

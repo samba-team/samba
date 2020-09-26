@@ -76,7 +76,7 @@ static bool prime_cache(
             MODULE, (long long)g_readsz, (long long)*last,
 	    fsp_str_dbg(fsp)));
 
-        nread = sys_pread(fsp->fh->fd, g_readbuf, g_readsz, *last);
+        nread = sys_pread(fsp_get_io_fd(fsp), g_readbuf, g_readsz, *last);
         if (nread < 0) {
             *last = -1;
             return False;
