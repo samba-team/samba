@@ -240,7 +240,7 @@ static int commit_openat(struct vfs_handle_struct *handle,
 		 * but also practiced elsewhere -
 		 * needed for calling the VFS.
 		 */
-		fsp->fh->fd = fd;
+		fsp_set_fd(fsp, fd);
 		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			int saved_errno = errno;
 			SMB_VFS_CLOSE(fsp);

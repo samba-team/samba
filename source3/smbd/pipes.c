@@ -50,7 +50,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 	}
 
 	fsp->conn = conn;
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 	fsp->vuid = smb_req->vuid;
 	fsp->fsp_flags.can_lock = false;
 	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;

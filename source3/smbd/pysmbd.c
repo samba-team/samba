@@ -155,6 +155,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 				  struct files_struct **_fsp)
 {
 	struct smb_filename *smb_fname = NULL;
+	int fd;
 	int ret;
 	mode_t saved_umask;
 	struct files_struct *fsp;
@@ -191,22 +192,23 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	 */
 	saved_umask = umask(0);
 
-	fsp->fh->fd = SMB_VFS_OPENAT(conn,
-				     fspcwd,
-				     smb_fname,
-				     fsp,
-				     flags,
-				     00644);
+	fd = SMB_VFS_OPENAT(conn,
+			    fspcwd,
+			    smb_fname,
+			    fsp,
+			    flags,
+			    00644);
 
 	umask(saved_umask);
 
-	if (fsp->fh->fd == -1) {
+	if (fd == -1) {
 		int err = errno;
 		if (err == ENOENT) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	fsp_set_fd(fsp, fd);
 
 	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
 	if (ret == -1) {

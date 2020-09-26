@@ -1952,6 +1952,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	bool get_snaplist = false;
 	bool access_granted = false;
 	int open_flags = O_RDONLY;
+	int fd;
 	int ret = -1;
 	NTSTATUS status;
 
@@ -2001,18 +2002,19 @@ static int shadow_copy2_get_shadow_copy_data(
 	open_flags |= O_DIRECTORY;
 #endif
 
-	dirfsp->fh->fd = SMB_VFS_NEXT_OPENAT(handle,
-					     fspcwd,
-					     snapdir_smb_fname,
-					     dirfsp,
-					     open_flags,
-					     0);
-	if (dirfsp->fh->fd == -1) {
+	fd = SMB_VFS_NEXT_OPENAT(handle,
+				 fspcwd,
+				 snapdir_smb_fname,
+				 dirfsp,
+				 open_flags,
+				 0);
+	if (fd == -1) {
 		DBG_WARNING("SMB_VFS_NEXT_OPEN failed for '%s'"
 			    " - %s\n", snapdir, strerror(errno));
 		errno = ENOSYS;
 		goto done;
 	}
+	fsp_set_fd(dirfsp, fd);
 
 	p = SMB_VFS_NEXT_FDOPENDIR(handle, dirfsp, NULL, 0);
 	if (!p) {
@@ -2121,7 +2123,7 @@ done:
 			 * VFS_CLOSEDIR implicitly
 			 * closed the associated fd.
 			 */
-			dirfsp->fh->fd = -1;
+			fsp_set_fd(dirfsp, -1);
 		}
 	}
 	if (dirfsp != NULL) {

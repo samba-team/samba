@@ -515,7 +515,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	}
 
 	ret = close(fd);
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 
 	return ret;
 }

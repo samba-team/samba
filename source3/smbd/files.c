@@ -57,7 +57,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 #endif
 
 	fsp->fh->ref_count = 1;
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 
 	fsp->fnum = FNUM_FIELD_INVALID;
 	fsp->conn = conn;

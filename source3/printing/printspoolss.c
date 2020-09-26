@@ -25,6 +25,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "smbd/globals.h"
 #include "../libcli/security/security.h"
+#include "smbd/fd_handle.h"
 
 struct print_file_data {
 	char *svcname;
@@ -230,7 +231,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	}
 
 	fsp->file_id = vfs_file_id_from_sbuf(fsp->conn, &fsp->fsp_name->st);
-	fsp->fh->fd = fd;
+	fsp_set_fd(fsp, fd);
 
 	fsp->vuid = current_vuid;
 	fsp->fsp_flags.can_lock = false;

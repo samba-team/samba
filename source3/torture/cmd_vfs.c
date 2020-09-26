@@ -298,6 +298,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 	int ret;
+	int fd;
 
 	mode = 00400;
 
@@ -399,18 +400,19 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return status;
 	}
 
-	fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
-				     fspcwd,
-				     smb_fname,
-				     fsp,
-				     flags,
-				     mode);
-	if (fsp->fh->fd == -1) {
+	fd = SMB_VFS_OPENAT(vfs->conn,
+			    fspcwd,
+			    smb_fname,
+			    fsp,
+			    flags,
+			    mode);
+	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	fsp_set_fd(fsp, fd);
 
 	status = NT_STATUS_OK;
 	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
@@ -1626,6 +1628,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
+	int fd;
 
 	if (argc != 3) {
 		printf("Usage: set_nt_acl <file> <sddl>\n");
@@ -1667,26 +1670,27 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 		return status;
 	}
 
-	fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
-				     fspcwd,
-				     smb_fname,
-				     fsp,
-				     O_RDWR,
-				     mode);
-	if (fsp->fh->fd == -1 && errno == EISDIR) {
-		fsp->fh->fd = SMB_VFS_OPENAT(vfs->conn,
-					     fspcwd,
-					     smb_fname,
-					     fsp,
-					     flags,
-					     mode);
+	fd = SMB_VFS_OPENAT(vfs->conn,
+			    fspcwd,
+			    smb_fname,
+			    fsp,
+			    O_RDWR,
+			    mode);
+	if (fd == -1 && errno == EISDIR) {
+		fd = SMB_VFS_OPENAT(vfs->conn,
+				    fspcwd,
+				    smb_fname,
+				    fsp,
+				    flags,
+				    mode);
 	}
-	if (fsp->fh->fd == -1) {
+	if (fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	fsp_set_fd(fsp, fd);
 
 	status = NT_STATUS_OK;
 	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);

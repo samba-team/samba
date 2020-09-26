@@ -108,7 +108,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	}
 	conn->sconn = sconn;
 	conn->force_group_gid = (gid_t)-1;
-	conn->cwd_fsp->fh->fd = -1;
+	fsp_set_fd(conn->cwd_fsp, -1);
 	conn->cwd_fsp->fnum = FNUM_FIELD_INVALID;
 	conn->cwd_fsp->conn = conn;
 

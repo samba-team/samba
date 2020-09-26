@@ -1339,7 +1339,7 @@ static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 	files_struct *fsp = dir_hnd->fsp;
 
 	SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 	if (fsp->dptr != NULL) {
 		SMB_ASSERT(fsp->dptr->dir_hnd == dir_hnd);
 		fsp->dptr->dir_hnd = NULL;
@@ -1412,7 +1412,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (fsp->fh->fd == -1) {
+	if (fsp_get_io_fd(fsp) == -1) {
 		errno = EBADF;
 		goto fail;
 	}

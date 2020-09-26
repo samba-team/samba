@@ -167,7 +167,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 		 (unsigned int)access_mask));
 
 	fsp->conn = conn;
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 	fsp->vuid = current_vuid;
 	fsp->fh->pos = -1;
 	fsp->fsp_flags.can_lock = false; /* Should this be true ? - No, JRA */

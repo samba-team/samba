@@ -165,7 +165,7 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
 		TALLOC_FREE(data);
 		/* fd is now closed. */
-		fsp->fh->fd = -1;
+		fsp_set_fd(fsp, -1);
 		return NULL;
 	}
 

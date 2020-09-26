@@ -824,7 +824,7 @@ NTSTATUS fd_open(files_struct *fsp,
 		return status;
 	}
 
-	fsp->fh->fd = fd;
+	fsp_set_fd(fsp, fd);
 
 	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
 		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fd);
@@ -859,7 +859,7 @@ NTSTATUS fd_close(files_struct *fsp)
 	}
 
 	ret = SMB_VFS_CLOSE(fsp);
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}

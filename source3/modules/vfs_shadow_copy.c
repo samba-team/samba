@@ -89,7 +89,7 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 		DEBUG(0,("shadow_copy_fdopendir: Out of memory\n"));
 		SMB_VFS_NEXT_CLOSEDIR(handle,p);
 		/* We have now closed the fd in fsp. */
-		fsp->fh->fd = -1;
+		fsp_set_fd(fsp, -1);
 		return NULL;
 	}
 
@@ -121,7 +121,7 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 
 	SMB_VFS_NEXT_CLOSEDIR(handle,p);
 	/* We have now closed the fd in fsp. */
-	fsp->fh->fd = -1;
+	fsp_set_fd(fsp, -1);
 	return((DIR *)dirp);
 }
 

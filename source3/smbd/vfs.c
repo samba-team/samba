@@ -921,7 +921,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		 * tree connect to a share with the same underlying
 		 * path (may or may not the same share).
 		 */
-		conn->cwd_fsp->fh->fd = AT_FDCWD;
+		fsp_set_fd(conn->cwd_fsp, AT_FDCWD);
 		return 0;
 	}
 
@@ -985,7 +985,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	talloc_move(talloc_tos(), &conn->cwd_fsp->fsp_name);
 
 	conn->cwd_fsp->fsp_name = talloc_move(conn->cwd_fsp, &cwd);
-	conn->cwd_fsp->fh->fd = AT_FDCWD;
+	fsp_set_fd(conn->cwd_fsp, AT_FDCWD);
 
 	DBG_INFO("vfs_ChDir got %s\n", fsp_str_dbg(conn->cwd_fsp));
 
@@ -1620,7 +1620,7 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fsp->fh->fd = AT_FDCWD;
+	fsp_set_fd(fsp, AT_FDCWD);
 	fsp->fnum = FNUM_FIELD_INVALID;
 	fsp->conn = conn;
 

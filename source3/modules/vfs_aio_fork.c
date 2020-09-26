@@ -421,7 +421,7 @@ static struct files_struct *close_fsp_fd(struct files_struct *fsp,
 {
 	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
 		close(fsp->fh->fd);
-		fsp->fh->fd = -1;
+		fsp_set_fd(fsp, -1);
 	}
 	return NULL;
 }

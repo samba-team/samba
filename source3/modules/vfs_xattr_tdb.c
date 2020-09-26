@@ -502,21 +502,23 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 	struct db_context *db = NULL;
 	TALLOC_CTX *frame = NULL;
 	SMB_STRUCT_STAT sbuf;
+	int fd;
 	int ret;
 
-	fsp->fh->fd = SMB_VFS_NEXT_OPENAT(handle,
-					  dirfsp,
-					  smb_fname,
-					  fsp,
-					  flags,
-					  mode);
+	fd = SMB_VFS_NEXT_OPENAT(handle,
+				 dirfsp,
+				 smb_fname,
+				 fsp,
+				 flags,
+				 mode);
 
-	if (fsp->fh->fd < 0) {
-		return fsp->fh->fd;
+	if (fd == -1) {
+		return -1;
 	}
+	fsp_set_fd(fsp, fd);
 
 	if ((flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
-		return fsp->fh->fd;
+		return fd;
 	}
 
 	/*
@@ -546,7 +548,7 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 	xattr_tdb_remove_all_attrs(db, &fsp->file_id);
 
 	TALLOC_FREE(frame);
-	return fsp->fh->fd;
+	return fd;
 }
 
 static int xattr_tdb_mkdirat(vfs_handle_struct *handle,
