@@ -3503,7 +3503,7 @@ static bool uid_in_use(struct auth_session_info *session_info,
 static bool gid_in_use(struct auth_session_info *session_info,
 		       gid_t gid)
 {
-	int i;
+	uint32_t i;
 	struct security_unix_token *utok = NULL;
 
 	utok = session_info->unix_token;
