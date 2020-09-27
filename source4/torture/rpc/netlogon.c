@@ -808,6 +808,108 @@ static bool test_ServerReqChallenge_4_repeats(
 }
 
 /*
+ * Establish a NetLogon session, using a session key that encrypts the
+ * target character to zero
+ */
+static bool test_ServerAuthenticate2_encrypts_to_zero(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p,
+	struct cli_credentials *machine_credentials,
+	const char target,
+	struct netlogon_creds_CredentialState **creds_out)
+{
+	const char *computer_name =
+		cli_credentials_get_workstation(machine_credentials);
+	struct netr_ServerReqChallenge r;
+	struct netr_ServerAuthenticate2 a;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	struct netlogon_creds_CredentialState *creds  = NULL;
+	const struct samr_Password *mach_password;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *account_name = cli_credentials_get_username(
+		machine_credentials);
+	uint32_t flags =
+		NETLOGON_NEG_AUTH2_ADS_FLAGS |
+		NETLOGON_NEG_SUPPORTS_AES;
+	enum netr_SchannelType sec_chan_type =
+		cli_credentials_get_secure_channel_type(machine_credentials);
+	/*
+	 * Limit the number of attempts to generate a suitable session key.
+	 */
+	const unsigned MAX_ITER = 4096;
+	unsigned i = 0;
+
+	mach_password = cli_credentials_get_nt_hash(machine_credentials, tctx);
+
+	r.in.server_name = NULL;
+	r.in.computer_name = computer_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+	netlogon_creds_random_challenge(&credentials1);
+	credentials1.data[0] = target;
+	i = 0;
+	torture_comment(tctx, "Generating candidate session keys\n");
+	do {
+		TALLOC_FREE(creds);
+		i++;
+
+		torture_assert_ntstatus_ok(
+			tctx,
+			dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+			"ServerReqChallenge failed");
+		torture_assert_ntstatus_ok(
+			tctx,
+			r.out.result,
+			"ServerReqChallenge failed");
+
+		a.in.server_name = NULL;
+		a.in.account_name = account_name;
+		a.in.secure_channel_type = sec_chan_type;
+		a.in.computer_name = computer_name;
+		a.in.negotiate_flags = &flags;
+		a.out.negotiate_flags = &flags;
+		a.in.credentials = &credentials3;
+		a.out.return_credentials = &credentials3;
+
+		creds = netlogon_creds_client_init(
+			tctx,
+			a.in.account_name,
+			a.in.computer_name,
+			a.in.secure_channel_type,
+			&credentials1,
+			&credentials2,
+			mach_password,
+			&credentials3,
+			flags);
+
+		torture_assert(tctx, creds != NULL, "memory allocation");
+	} while (credentials3.data[0] != 0 && i < MAX_ITER);
+
+	if (i >= MAX_ITER) {
+		torture_comment(
+			tctx,
+			"Unable to obtain a suitable session key, "
+			"after [%u] attempts\n",
+			i);
+		torture_fail(tctx, "Unable obtain suitable session key");
+	}
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerAuthenticate2_r(b, tctx, &a),
+		"ServerAuthenticate2 failed");
+	torture_assert_ntstatus_equal(
+		tctx,
+		a.out.result,
+		NT_STATUS_OK,
+		"ServerAuthenticate2 unexpected result code");
+
+	*creds_out = creds;
+	return true;
+}
+
+/*
   try a change password for our machine account
 */
 static bool test_SetPassword(struct torture_context *tctx,
@@ -1164,6 +1266,89 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	torture_assert (tctx,
 		test_SetupCredentials(p, tctx, machine_credentials, &creds),
 		"ServerPasswordSet failed to actually change the password");
+
+	return true;
+}
+
+/*
+  try to change the password of our machine account using a buffer of all zeros,
+  and a session key that encrypts that to all zeros.
+
+Note: The test does use sign and seal, it's purpose is to exercise
+      the detection code in dcesrv_netr_ServerPasswordSet2
+*/
+static bool test_SetPassword2_encrypted_to_all_zeros(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p1,
+	struct cli_credentials *machine_credentials)
+{
+	struct netr_ServerPasswordSet2 r;
+	struct netlogon_creds_CredentialState *creds;
+	struct samr_CryptPassword password_buf;
+	struct netr_Authenticator credential, return_authenticator;
+	struct netr_CryptPassword new_password;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+
+	if (!test_ServerAuthenticate2_encrypts_to_zero(
+		tctx,
+		p1,
+		machine_credentials,
+		'\0',
+		&creds)) {
+
+		return false;
+	}
+
+	if (!test_SetupCredentialsPipe(
+		p1,
+		tctx,
+		machine_credentials,
+		creds,
+		DCERPC_SIGN | DCERPC_SEAL,
+		&p))
+	{
+		return false;
+	}
+	b = p->binding_handle;
+
+	r.in.server_name = talloc_asprintf(
+		tctx,
+		"\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(machine_credentials);
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
+
+	ZERO_STRUCT(password_buf);
+
+	if (!(creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
+		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES not set");
+	}
+	netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	if(!all_zero(password_buf.data, 516)) {
+		torture_fail(tctx, "Password did not encrypt to all zeros\n");
+	}
+
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
+	torture_assert_int_equal(
+		tctx,
+		new_password.length,
+		0,
+		"Length should have encrypted to 0");
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
+		"ServerPasswordSet2 zero length check failed");
+	torture_assert_ntstatus_equal(
+		tctx, r.out.result, NT_STATUS_WRONG_PASSWORD, "");
 
 	return true;
 }
@@ -5326,6 +5511,11 @@ struct torture_suite *torture_rpc_netlogon_zerologon(TALLOC_CTX *mem_ctx)
 		tcase,
 		"ServerReqChallenge_4_repeats",
 		test_ServerReqChallenge_4_repeats);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"test_SetPassword2_encrypted_to_all_zeros",
+		test_SetPassword2_encrypted_to_all_zeros);
+
 	return suite;
 }
 
