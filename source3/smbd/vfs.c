@@ -1614,7 +1614,7 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fsp->fh = talloc_zero(fsp, struct fd_handle);
+	fsp->fh = fd_handle_create(fsp);
 	if (fsp->fh == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;

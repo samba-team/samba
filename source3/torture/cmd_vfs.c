@@ -378,7 +378,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fh = talloc_zero(fsp, struct fd_handle);
+	fsp->fh = fd_handle_create(fsp);
 	if (fsp->fh == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
@@ -1641,7 +1641,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fh = talloc_zero(fsp, struct fd_handle);
+	fsp->fh = fd_handle_create(fsp);
 	if (fsp->fh == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;

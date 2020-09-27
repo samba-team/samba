@@ -46,7 +46,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 	 * when doing a dos/fcb open, which will then share the file_handle
 	 * across multiple fsps.
 	 */
-	fsp->fh = talloc_zero(mem_ctx, struct fd_handle);
+	fsp->fh = fd_handle_create(mem_ctx);
 	if (fsp->fh == NULL) {
 		goto fail;
 	}

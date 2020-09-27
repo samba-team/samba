@@ -166,7 +166,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fh = talloc(fsp, struct fd_handle);
+	fsp->fh = fd_handle_create(fsp);
 	if (fsp->fh == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

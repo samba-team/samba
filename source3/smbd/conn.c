@@ -100,7 +100,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 		TALLOC_FREE(conn);
 		return NULL;
 	}
-	conn->cwd_fsp->fh = talloc_zero(conn->cwd_fsp, struct fd_handle);
+	conn->cwd_fsp->fh = fd_handle_create(conn->cwd_fsp);
 	if (conn->cwd_fsp->fh == NULL) {
 		DBG_ERR("talloc_zero failed\n");
 		TALLOC_FREE(conn);
