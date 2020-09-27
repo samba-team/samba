@@ -25,6 +25,7 @@ struct dptr_struct;
 #include "vfs.h"
 #include "smbd/proto.h"
 #include "locking/proto.h"
+#include "smbd/fd_handle.h"
 
 struct trans_state {
 	struct trans_state *next, *prev;

@@ -1087,6 +1087,9 @@ bld.SAMBA3_SUBSYSTEM('ADOUBLE',
 bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
                     source='lib/string_replace.c')
 
+bld.SAMBA3_SUBSYSTEM('fd_handle',
+                    source='smbd/fd_handle.c')
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',
