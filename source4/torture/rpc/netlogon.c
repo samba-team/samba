@@ -1431,6 +1431,83 @@ static bool test_SetPassword2_password_encrypts_to_zero(
 
 	return true;
 }
+/*
+ * Check that an all zero confounder, that encrypts to all zeros is
+ * rejected.
+ *
+ * Note: The test does use sign and seal, it's purpose is to exercise
+ *       the detection code in dcesrv_netr_ServerPasswordSet2
+ */
+static bool test_SetPassword2_confounder(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p1,
+	struct cli_credentials *machine_credentials)
+{
+	struct netr_ServerPasswordSet2 r;
+	struct netlogon_creds_CredentialState *creds;
+	struct samr_CryptPassword password_buf;
+	struct netr_Authenticator credential, return_authenticator;
+	struct netr_CryptPassword new_password;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+
+	if (!test_ServerAuthenticate2_encrypts_to_zero(
+		tctx,
+		p1,
+		machine_credentials,
+		'\0',
+		&creds)) {
+
+		return false;
+	}
+
+	if (!test_SetupCredentialsPipe(
+		p1,
+		tctx,
+		machine_credentials,
+		creds,
+		DCERPC_SIGN | DCERPC_SEAL,
+		&p))
+	{
+		return false;
+	}
+	b = p->binding_handle;
+
+	r.in.server_name = talloc_asprintf(
+		tctx,
+		"\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(machine_credentials);
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
+
+	ZERO_STRUCT(password_buf);
+	password_buf.data[511] = 'A';
+	SIVAL(password_buf.data, 512, 2);
+
+	if (!(creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
+		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES not set");
+	}
+	netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
+		"ServerPasswordSet2 confounder check failed");
+	torture_assert_ntstatus_equal(
+		tctx, r.out.result, NT_STATUS_WRONG_PASSWORD, "");
+
+	return true;
+}
+
 
 static bool test_SetPassword2(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
@@ -5598,6 +5675,10 @@ struct torture_suite *torture_rpc_netlogon_zerologon(TALLOC_CTX *mem_ctx)
 		tcase,
 		"test_SetPassword2_password_encrypts_to_zero",
 		test_SetPassword2_password_encrypts_to_zero);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"test_SetPassword2_confounder",
+		test_SetPassword2_confounder);
 
 	return suite;
 }
