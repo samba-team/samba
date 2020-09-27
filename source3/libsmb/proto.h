@@ -760,9 +760,14 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 uint16_t info_level);
 NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		       struct file_info **finfo, size_t *num_finfo);
-NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint32_t attribute,
-		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
-			     void *), void *state);
+NTSTATUS cli_list(struct cli_state *cli,
+		  const char *mask,
+		  uint32_t attribute,
+		  NTSTATUS (*fn)(const char *mointpoint,
+				 struct file_info *finfo,
+				 const char *mask,
+				 void *private_data),
+		  void *private_data);
 
 /* The following definitions come from libsmb/climessage.c  */
 

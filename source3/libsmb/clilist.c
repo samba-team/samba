@@ -1037,9 +1037,14 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint32_t attribute,
-		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
-			     void *), void *state)
+NTSTATUS cli_list(struct cli_state *cli,
+		  const char *mask,
+		  uint32_t attribute,
+		  NTSTATUS (*fn)(const char *mointpoint,
+				 struct file_info *finfo,
+				 const char *mask,
+				 void *private_data),
+		  void *private_data)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
@@ -1050,7 +1055,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint32_t attribute,
 	uint16_t info_level;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_list(cli, mask, attribute, fn, state);
+		return cli_smb2_list(cli, mask, attribute, fn, private_data);
 	}
 
 	frame = talloc_stackframe();
@@ -1084,7 +1089,8 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint32_t attribute,
 	}
 
 	for (i=0; i<num_finfo; i++) {
-		status = fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		status = fn(
+			cli->dfs_mountpoint, &finfo[i], mask, private_data);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
