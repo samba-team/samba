@@ -5274,22 +5274,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "Broken RPC binding handle",
 				   test_netr_broken_binding_handle);
-	torture_rpc_tcase_add_test_creds(
-		tcase,
-		"ServerReqChallenge",
-		test_ServerReqChallenge);
-	torture_rpc_tcase_add_test_creds(
-		tcase,
-		"ServerReqChallenge_zero_challenge",
-		test_ServerReqChallenge_zero_challenge);
-	torture_rpc_tcase_add_test_creds(
-		tcase,
-		"ServerReqChallenge_5_repeats",
-		test_ServerReqChallenge_5_repeats);
-	torture_rpc_tcase_add_test_creds(
-		tcase,
-		"ServerReqChallenge_4_repeats",
-		test_ServerReqChallenge_4_repeats);
+
 	return suite;
 }
 
@@ -5317,7 +5302,30 @@ struct torture_suite *torture_rpc_netlogon_zerologon(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(
 		mem_ctx,
 		"netlogon.zerologon");
+	struct torture_rpc_tcase *tcase;
 
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(
+		suite,
+		"netlogon",
+		&ndr_table_netlogon,
+		TEST_MACHINE_NAME);
+
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge",
+		test_ServerReqChallenge);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_zero_challenge",
+		test_ServerReqChallenge_zero_challenge);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_5_repeats",
+		test_ServerReqChallenge_5_repeats);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"ServerReqChallenge_4_repeats",
+		test_ServerReqChallenge_4_repeats);
 	return suite;
 }
 
