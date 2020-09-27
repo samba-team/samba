@@ -18,6 +18,7 @@
 */
 
 #include "fd_handle.h"
+#include "fd_handle_private.h"
 
 struct fd_handle *fd_handle_create(TALLOC_CTX *mem_ctx)
 {

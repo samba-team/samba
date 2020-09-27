@@ -363,21 +363,7 @@ typedef union unid_t {
 	gid_t gid;
 } unid_t;
 
-struct fd_handle {
-	size_t ref_count;
-	int fd;
-	uint64_t position_information;
-	off_t pos;
-	uint32_t private_options;	/* NT Create options, but we only look at
-				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
-				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
-				 * NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE
-				 * for print files *only*, where
-				 * DELETE_ON_CLOSE is not stored in the share
-				 * mode database.
-				 */
-	uint64_t gen_id;
-};
+struct fd_handle;
 
 struct fsp_lease {
 	size_t ref_count;
