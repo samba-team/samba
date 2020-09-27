@@ -666,7 +666,19 @@ static void assert_no_pending_aio(struct files_struct *fsp,
 		 * fsp->aio_requests[x], causing a crash.
 		 */
 		while (fsp->num_aio_requests != 0) {
-			TALLOC_FREE(fsp->aio_requests[0]);
+			/*
+			 * NB. We *MUST* use
+			 * talloc_free(fsp->aio_requests[0]),
+			 * and *NOT* TALLOC_FREE() here, as
+			 * TALLOC_FREE(fsp->aio_requests[0])
+			 * will overwrite any new contents of
+			 * fsp->aio_requests[0] that were
+			 * copied into it via the destructor
+			 * aio_del_req_from_fsp().
+			 *
+			 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14515
+			 */
+			talloc_free(fsp->aio_requests[0]);
 		}
 		return;
 	}
