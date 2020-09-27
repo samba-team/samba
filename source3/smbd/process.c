@@ -35,7 +35,6 @@
 #include "lib/messages_ctdb.h"
 #include "smbprofile.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
-#include "libsmb/libsmb.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security_token.h"
