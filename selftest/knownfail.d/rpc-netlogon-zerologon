@@ -1,0 +1,4 @@
+#
+# Due to differences in the way UTF-16 strings are handled by the source4 and
+# source3 rpc servers, this test fails on the source3 rpc server
+^samba3.rpc.netlogon.zerologon.netlogon.test_SetPassword2_maximum_length_password\(nt4_dc\)

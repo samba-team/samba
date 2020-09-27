@@ -1586,6 +1586,86 @@ static bool test_SetPassword2_all_zeros(
 	return true;
 }
 
+/*
+  try a change password for our machine account, using a maximum length
+  password
+*/
+static bool test_SetPassword2_maximum_length_password(
+	struct torture_context *tctx,
+	struct dcerpc_pipe *p1,
+	struct cli_credentials *machine_credentials)
+{
+	struct netr_ServerPasswordSet2 r;
+	struct netlogon_creds_CredentialState *creds;
+	struct samr_CryptPassword password_buf;
+	struct netr_Authenticator credential, return_authenticator;
+	struct netr_CryptPassword new_password;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+	uint32_t flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	DATA_BLOB new_random_pass = data_blob_null;
+
+	if (!test_SetupCredentials2(
+		p1,
+		tctx,
+		flags,
+		machine_credentials,
+		cli_credentials_get_secure_channel_type(machine_credentials),
+		&creds))
+	{
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(
+		p1,
+		tctx,
+		machine_credentials,
+		creds,
+		DCERPC_SIGN | DCERPC_SEAL,
+		&p))
+	{
+		return false;
+	}
+	b = p->binding_handle;
+
+	r.in.server_name = talloc_asprintf(
+		tctx,
+		"\\\\%s", dcerpc_server_name(p));
+	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(machine_credentials);
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.credential = &credential;
+	r.in.new_password = &new_password;
+	r.out.return_authenticator = &return_authenticator;
+
+	new_random_pass = netlogon_very_rand_pass(tctx, 256);
+	set_pw_in_buffer(password_buf.data, &new_random_pass);
+	SIVAL(password_buf.data, 512, 512);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
+
+	memcpy(new_password.data, password_buf.data, 512);
+	new_password.length = IVAL(password_buf.data, 512);
+
+	torture_comment(
+		tctx,
+		"Testing ServerPasswordSet2 on machine account\n");
+
+	netlogon_creds_client_authenticator(creds, &credential);
+
+	torture_assert_ntstatus_ok(
+		tctx,
+		dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
+		"ServerPasswordSet2 zero length check failed");
+	torture_assert_ntstatus_equal(
+		tctx, r.out.result, NT_STATUS_OK, "");
+
+	return true;
+}
+
 
 static bool test_SetPassword2(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
@@ -5761,6 +5841,10 @@ struct torture_suite *torture_rpc_netlogon_zerologon(TALLOC_CTX *mem_ctx)
 		tcase,
 		"test_SetPassword2_all_zeros",
 		test_SetPassword2_all_zeros);
+	torture_rpc_tcase_add_test_creds(
+		tcase,
+		"test_SetPassword2_maximum_length_password",
+		test_SetPassword2_maximum_length_password);
 
 	return suite;
 }
