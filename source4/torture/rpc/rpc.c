@@ -605,6 +605,7 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_rpc_netlogon(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_s3(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_admin(suite));
+	torture_suite_add_suite(suite, torture_rpc_netlogon_zerologon(suite));
 	torture_suite_add_suite(suite, torture_rpc_remote_pac(suite));
 	torture_suite_add_simple_test(suite, "samlogon", torture_rpc_samlogon);
 	torture_suite_add_simple_test(suite, "samsync", torture_rpc_samsync);

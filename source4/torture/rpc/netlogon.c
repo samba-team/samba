@@ -5312,6 +5312,15 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 	return suite;
 }
 
+struct torture_suite *torture_rpc_netlogon_zerologon(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(
+		mem_ctx,
+		"netlogon.zerologon");
+
+	return suite;
+}
+
 struct torture_suite *torture_rpc_netlogon_admin(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon.admin");
