@@ -799,7 +799,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	   the same handle we only have one share mode. Ensure we only remove
 	   the share mode on the last close. */
 
-	if (fsp->fh->ref_count == 1) {
+	if (fh_get_refcount(fsp->fh) == 1) {
 		/* Should we return on error here... ? */
 		tmp = close_remove_share_mode(fsp, close_type);
 		status = ntstatus_keeperror(status, tmp);

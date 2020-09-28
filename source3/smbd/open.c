@@ -854,7 +854,7 @@ NTSTATUS fd_close(files_struct *fsp)
 		 */
 		return NT_STATUS_OK;
 	}
-	if (fsp->fh->ref_count > 1) {
+	if (fh_get_refcount(fsp->fh) > 1) {
 		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
 	}
 

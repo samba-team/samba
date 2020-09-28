@@ -56,7 +56,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 	fsp->fsp_flags.use_ofd_locks = false;
 #endif
 
-	fsp->fh->ref_count = 1;
+	fh_set_refcount(fsp->fh, 1);
 	fsp_set_fd(fsp, -1);
 
 	fsp->fnum = FNUM_FIELD_INVALID;
@@ -573,10 +573,11 @@ void fsp_free(files_struct *fsp)
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
-	if (fsp->fh->ref_count == 1) {
+	if (fh_get_refcount(fsp->fh) == 1) {
 		TALLOC_FREE(fsp->fh);
 	} else {
-		fsp->fh->ref_count--;
+		size_t new_refcount = fh_get_refcount(fsp->fh) - 1;
+		fh_set_refcount(fsp->fh, new_refcount);
 	}
 
 	if (fsp->lease != NULL) {
@@ -787,13 +788,16 @@ NTSTATUS dup_file_fsp(
 	uint32_t create_options,
 	files_struct *to)
 {
+	size_t new_refcount;
+
 	/* this can never happen for print files */
 	SMB_ASSERT(from->print_file == NULL);
 
 	TALLOC_FREE(to->fh);
 
 	to->fh = from->fh;
-	to->fh->ref_count++;
+	new_refcount = fh_get_refcount(to->fh) + 1;
+	fh_set_refcount(to->fh, new_refcount);
 
 	to->file_id = from->file_id;
 	to->initial_allocation_size = from->initial_allocation_size;
