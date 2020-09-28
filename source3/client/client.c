@@ -1202,7 +1202,6 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	char *rname = NULL;
-	char *quest = NULL;
 	char *saved_curdir = NULL;
 	char *mget_mask = NULL;
 	char *new_cd = NULL;
@@ -1214,23 +1213,24 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
 		return NT_STATUS_OK;
 
-	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
-		if (asprintf(&quest,
-			 "Get directory %s? ",finfo->name) < 0) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		if (asprintf(&quest,
-			 "Get file %s? ",finfo->name) < 0) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
+	if (prompt) {
+		const char *object = (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) ?
+			"directory" : "file";
+		char *quest = NULL;
+		bool ok;
 
-	if (prompt && !yesno(quest)) {
-		SAFE_FREE(quest);
-		return NT_STATUS_OK;
+		quest = talloc_asprintf(
+			ctx, "Get %s %s? ", object, finfo->name);
+		if (quest == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ok = yesno(quest);
+		TALLOC_FREE(quest);
+		if (!ok) {
+			return NT_STATUS_OK;
+		}
 	}
-	SAFE_FREE(quest);
 
 	if (!(finfo->attr & FILE_ATTRIBUTE_DIRECTORY)) {
 		rname = talloc_asprintf(ctx,
