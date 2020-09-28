@@ -1037,7 +1037,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	SPOOLSS_NOTIFY_MSG_GROUP	*groups = NULL;
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_grp = NULL;
 	SPOOLSS_NOTIFY_MSG		*msg_list = NULL;
-	int				i, new_slot;
+	uint32_t			i, new_slot;
 
 	if ( !ctr || !msg )
 		return 0;
