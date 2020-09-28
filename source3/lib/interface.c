@@ -617,7 +617,7 @@ static void interpret_interface(char *token)
 	ifs.netmask = ss_mask;
 	ifs.bcast = ss_bcast;
 	if (if_index_set) {
-		probed_ifaces[i].if_index = if_index;
+		ifs.if_index = if_index;
 	}
 	if (speed_set) {
 		ifs.linkspeed = speed;
