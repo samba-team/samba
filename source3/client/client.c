@@ -87,8 +87,6 @@ static char dest_ss_str[INET6_ADDRSTRLEN];
 
 #define SEPARATORS " \t\n\r"
 
-static bool abort_mget = true;
-
 /* timing globals */
 uint64_t get_total_size = 0;
 unsigned int get_total_time_ms = 0;
@@ -1217,11 +1215,6 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
 		return NT_STATUS_OK;
 
-	if (abort_mget)	{
-		d_printf("mget aborted\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
 		if (asprintf(&quest,
 			 "Get directory %s? ",finfo->name) < 0) {
@@ -1418,8 +1411,6 @@ static int cmd_mget(void)
 	if (recurse) {
 		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	}
-
-	abort_mget = false;
 
 	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 
