@@ -1098,6 +1098,16 @@ for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
 
 plantestsuite("samba3.blackbox.itime", "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_itime.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3, 'xattr'])
 
+plantestsuite("samba3.blackbox.smbclient-mget",
+              "fileserver",
+              [os.path.join(samba3srcdir, "script/tests/test_smbclient_mget.sh"),
+               smbclient3,
+               "$SERVER",
+               "tmp",
+               "$USERNAME",
+               "$PASSWORD",
+               "valid_users"])
+
 t = "readdir-timestamp"
 plantestsuite(
     "samba3.smbtorture_s3.plain.%s" % t,
