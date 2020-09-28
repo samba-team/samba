@@ -1200,11 +1200,10 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		    const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	NTSTATUS status = NT_STATUS_OK;
-	char *rname = NULL;
-	char *saved_curdir = NULL;
-	char *mget_mask = NULL;
-	char *new_cd = NULL;
+	const char *client_cwd = NULL;
+	size_t client_cwd_len;
+	char *path = NULL;
+	char *local_path = NULL;
 
 	if (!finfo->name) {
 		return NT_STATUS_OK;
@@ -1212,6 +1211,10 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 
 	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
 		return NT_STATUS_OK;
+
+	if ((finfo->attr & FILE_ATTRIBUTE_DIRECTORY) && !recurse) {
+		return NT_STATUS_OK;
+	}
 
 	if (prompt) {
 		const char *object = (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) ?
@@ -1232,98 +1235,40 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		}
 	}
 
-	if (!(finfo->attr & FILE_ATTRIBUTE_DIRECTORY)) {
-		rname = talloc_asprintf(ctx,
-				"%s%s",
-				client_get_cur_dir(),
-				finfo->name);
-		if (!rname) {
-			return NT_STATUS_NO_MEMORY;
+	path = talloc_asprintf(
+		ctx, "%s%c%s", dir, CLI_DIRSEP_CHAR, finfo->name);
+	if (path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	path = client_clean_name(ctx, path);
+	if (path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Skip the path prefix if we've done a remote "cd" when
+	 * creating the local path
+	 */
+	client_cwd = client_get_cur_dir();
+	client_cwd_len = strlen(client_cwd);
+
+	local_path = talloc_strdup(ctx, path + client_cwd_len);
+	if (local_path == NULL) {
+		TALLOC_FREE(path);
+		return NT_STATUS_NO_MEMORY;
+	}
+	string_replace(local_path, CLI_DIRSEP_CHAR, '/');
+
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		int ret = mkdir(local_path, 0777);
+
+		if ((ret == -1) && (errno != EEXIST)) {
+			return map_nt_error_from_unix(errno);
 		}
-		rname = client_clean_name(ctx, rname);
-		if (rname == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		do_get(rname, finfo->name, false);
-		TALLOC_FREE(rname);
-		return NT_STATUS_OK;
+	} else {
+		do_get(path, local_path, false);
 	}
 
-	/* handle directories */
-	saved_curdir = talloc_strdup(ctx, client_get_cur_dir());
-	if (!saved_curdir) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	new_cd = talloc_asprintf(ctx,
-				"%s%s%s",
-				client_get_cur_dir(),
-				finfo->name,
-				CLI_DIRSEP_STR);
-	if (!new_cd) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	new_cd = client_clean_name(ctx, new_cd);
-	if (new_cd == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	client_set_cur_dir(new_cd);
-
-	string_replace(finfo->name,'\\','/');
-	if (lowercase) {
-		if (!strlower_m(finfo->name)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	if (!directory_exist(finfo->name) &&
-	    mkdir(finfo->name,0777) != 0) {
-		d_printf("failed to create directory %s\n",finfo->name);
-		client_set_cur_dir(saved_curdir);
-		return map_nt_error_from_unix(errno);
-	}
-
-	if (chdir(finfo->name) != 0) {
-		d_printf("failed to chdir to directory %s\n",finfo->name);
-		client_set_cur_dir(saved_curdir);
-		return map_nt_error_from_unix(errno);
-	}
-
-	mget_mask = talloc_asprintf(ctx,
-			"%s*",
-			client_get_cur_dir());
-
-	if (!mget_mask) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	mget_mask = client_clean_name(ctx, mget_mask);
-	if (mget_mask == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = do_list(mget_mask,
-			 (FILE_ATTRIBUTE_SYSTEM
-			  | FILE_ATTRIBUTE_HIDDEN
-			  | FILE_ATTRIBUTE_DIRECTORY),
-			 do_mget, false, true);
-	if (!NT_STATUS_IS_OK(status)
-	 && !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		/*
-		 * Ignore access denied errors to ensure all permitted files are
-		 * pulled down.
-		 */
-		return status;
-	}
-
-	if (chdir("..") == -1) {
-		d_printf("do_mget: failed to chdir to .. (error %s)\n",
-			strerror(errno) );
-		return map_nt_error_from_unix(errno);
-	}
-	client_set_cur_dir(saved_curdir);
-	TALLOC_FREE(mget_mask);
-	TALLOC_FREE(saved_curdir);
-	TALLOC_FREE(new_cd);
 	return NT_STATUS_OK;
 }
 
@@ -1430,7 +1375,7 @@ static int cmd_mget(void)
 		if (mget_mask == NULL) {
 			return 1;
 		}
-		status = do_list(mget_mask, attribute, do_mget, false, true);
+		status = do_list(mget_mask, attribute, do_mget, recurse, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
 		}
@@ -1452,7 +1397,7 @@ static int cmd_mget(void)
 		if (mget_mask == NULL) {
 			return 1;
 		}
-		status = do_list(mget_mask, attribute, do_mget, false, true);
+		status = do_list(mget_mask, attribute, do_mget, recurse, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
 		}
