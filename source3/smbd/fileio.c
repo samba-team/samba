@@ -31,6 +31,7 @@
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 {
+	off_t new_pos;
 	ssize_t ret = 0;
 	bool ok;
 
@@ -46,7 +47,7 @@ ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 		return -1;
 	}
 
-	fsp->fh->pos = pos;
+	fh_set_pos(fsp->fh, pos);
 
 	if (n > 0) {
 		ret = SMB_VFS_PREAD(fsp,data,n,pos);
@@ -59,8 +60,9 @@ ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 	DEBUG(10,("read_file (%s): pos = %.0f, size = %lu, returned %lu\n",
 		  fsp_str_dbg(fsp), (double)pos, (unsigned long)n, (long)ret));
 
-	fsp->fh->pos += ret;
-	fsp->fh->position_information = fsp->fh->pos;
+	new_pos = fh_get_pos(fsp->fh) + ret;
+	fh_set_pos(fsp->fh, new_pos);
+	fh_set_position_information(fsp->fh, new_pos);
 
 	return(ret);
 }
@@ -88,7 +90,7 @@ static ssize_t real_write_file(struct smb_request *req,
 		return 0;
 	}
 
-	fsp->fh->pos = pos;
+	fh_set_pos(fsp->fh, pos);
 	if (pos &&
 	    lp_strict_allocate(SNUM(fsp->conn)) &&
 	    !fsp->fsp_flags.is_sparse)
@@ -103,7 +105,8 @@ static ssize_t real_write_file(struct smb_request *req,
 		  fsp_str_dbg(fsp), (double)pos, (unsigned long)n, (long)ret));
 
 	if (ret != -1) {
-		fsp->fh->pos += ret;
+		off_t new_pos = fh_get_pos(fsp->fh) + ret;
+		fh_set_pos(fsp->fh, new_pos);
 
 /* Yes - this is correct - writes don't update this. JRA. */
 /* Found by Samba4 tests. */

@@ -5612,7 +5612,7 @@ void reply_lseek(struct smb_request *req)
 			break;
 		case 1:
 			umode = SEEK_CUR;
-			res = fsp->fh->pos + startpos;
+			res = fh_get_pos(fsp->fh) + startpos;
 			break;
 		case 2:
 			umode = SEEK_END;
@@ -5648,7 +5648,7 @@ void reply_lseek(struct smb_request *req)
 		}
 	}
 
-	fsp->fh->pos = res;
+	fh_set_pos(fsp->fh, res);
 
 	reply_outbuf(req, 2, 0);
 	SIVAL(req->outbuf,smb_vwv0,res);

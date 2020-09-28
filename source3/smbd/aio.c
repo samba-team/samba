@@ -282,8 +282,9 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	} else {
 		outsize = setup_readX_header(outbuf, nread);
 
-		aio_ex->fsp->fh->pos = aio_ex->offset + nread;
-		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
+		fh_set_pos(aio_ex->fsp->fh, aio_ex->offset + nread);
+		fh_set_position_information(aio_ex->fsp->fh,
+					    fh_get_pos(aio_ex->fsp->fh));
 
 		DEBUG( 3, ("handle_aio_read_complete file %s max=%d "
 			   "nread=%d\n", fsp_str_dbg(fsp),
@@ -609,7 +610,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 		DEBUG(3,("handle_aio_write: %s, num=%d wrote=%d\n",
 			 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
-		aio_ex->fsp->fh->pos = aio_ex->offset + nwritten;
+		fh_set_pos(aio_ex->fsp->fh, aio_ex->offset + nwritten);
 	}
 
 	show_msg(outbuf);
@@ -783,8 +784,9 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	status = smb2_read_complete(subreq, nread, vfs_aio_state.error);
 
 	if (nread > 0) {
-		fsp->fh->pos = aio_ex->offset + nread;
-		fsp->fh->position_information = fsp->fh->pos;
+		fh_set_pos(fsp->fh, aio_ex->offset + nread);
+		fh_set_position_information(fsp->fh,
+						fh_get_pos(fsp->fh));
 	}
 
 	DEBUG(10, ("smb2: scheduled aio_read completed "

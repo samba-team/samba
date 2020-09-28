@@ -327,7 +327,9 @@ static void commit_pwrite_written(struct tevent_req *subreq)
 	 * Ok, this is a sync fake. We should make the sync async as well, but
 	 * I'm too lazy for that right now -- vl
 	 */
-	commit_ret = commit(state->handle, state->fsp, state->fsp->fh->pos,
+	commit_ret = commit(state->handle,
+			    state->fsp,
+			    fh_get_pos(state->fsp->fh),
 			    state->ret);
 
 	if (commit_ret == -1) {

@@ -762,7 +762,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = sys_read(fsp_get_io_fd(fsp), data, n);
-		fsp->fh->pos = 0;
+		fh_set_pos(fsp->fh, 0);
 	}
 
 #else /* HAVE_PREAD */

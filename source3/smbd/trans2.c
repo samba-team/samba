@@ -5312,7 +5312,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	}
 
 	if (fsp) {
-		pos = fsp->fh->position_information;
+		pos = fh_get_position_information(fsp->fh);
 	}
 
 	if (fsp) {
@@ -6934,7 +6934,7 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 	DEBUG(10,("smb_file_position_information: Set file position "
 		  "information for file %s to %.0f\n", fsp_str_dbg(fsp),
 		  (double)position_information));
-	fsp->fh->position_information = position_information;
+	fh_set_position_information(fsp->fh, position_information);
 	return NT_STATUS_OK;
 }
 

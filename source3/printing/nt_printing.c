@@ -706,7 +706,7 @@ static int get_file_version(files_struct *fsp,
 {
 	char    *buf = NULL;
 	ssize_t byte_count;
-	off_t in_pos = fsp->fh->pos;
+	off_t in_pos = fh_get_pos(fsp->fh);
 
 	buf=(char *)SMB_MALLOC(DOS_HEADER_SIZE);
 	if (buf == NULL) {
