@@ -1020,7 +1020,7 @@ static SPOOLSS_NOTIFY_MSG_GROUP* notify_ctr_getgroup( SPOOLSS_NOTIFY_MSG_CTR *ct
  How many groups of change messages do we have ?
  **********************************************************************/
 
-static int notify_msg_ctr_numgroups( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+static uint32_t notify_msg_ctr_numgroups( SPOOLSS_NOTIFY_MSG_CTR *ctr )
 {
 	if ( !ctr )
 		return 0;
@@ -1364,13 +1364,12 @@ static void receive_notify2_message_list(struct messaging_context *msg,
 					 struct server_id server_id,
 					 DATA_BLOB *data)
 {
-	size_t 			msg_count, i;
+	size_t 			msg_count, i, num_groups;
 	char 			*buf = (char *)data->data;
 	char 			*msg_ptr;
 	size_t 			msg_len;
 	SPOOLSS_NOTIFY_MSG	notify;
 	SPOOLSS_NOTIFY_MSG_CTR	messages;
-	int			num_groups;
 
 	if (data->length < 4) {
 		DEBUG(0,("receive_notify2_message_list: bad message format (len < 4)!\n"));
