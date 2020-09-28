@@ -243,7 +243,7 @@ static bool has_other_nonposix_opens_fn(
 	    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 		return false;
 	}
-	if (e->share_file_id == fsp->fh->gen_id) {
+	if (e->share_file_id == fh_get_gen_id(fsp->fh)) {
 		struct server_id self = messaging_server_id(
 			fsp->conn->sconn->msg_ctx);
 		if (server_id_equal(&self, &e->pid)) {

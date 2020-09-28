@@ -781,7 +781,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		e.share_file_id,
 		messaging_server_id(conn->sconn->msg_ctx),
 		smb1req->mid,
-		fsp->fh->gen_id);
+		fh_get_gen_id(fsp->fh));
 	if (!ok) {
 		DBG_DEBUG("Could not set new share_mode_entry values\n");
 		TALLOC_FREE(lck);

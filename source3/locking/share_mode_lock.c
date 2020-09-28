@@ -55,6 +55,7 @@
 #include "../lib/util/memcache.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "g_lock.h"
+#include "smbd/fd_handle.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -1790,7 +1791,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		ltdb->share_entries,
 		ltdb->num_share_entries,
 		my_pid,
-		fsp->fh->gen_id,
+		fh_get_gen_id(fsp->fh),
 		&e,
 		&found);
 	if (found) {
@@ -1808,7 +1809,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		.op_type = op_type,
 		.time.tv_sec = fsp->open_time.tv_sec,
 		.time.tv_usec = fsp->open_time.tv_usec,
-		.share_file_id = fsp->fh->gen_id,
+		.share_file_id = fh_get_gen_id(fsp->fh),
 		.uid = (uint32_t)uid,
 		.flags = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
 			SHARE_MODE_FLAG_POSIX_OPEN : 0,
@@ -2279,7 +2280,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	ok = share_mode_entry_do(
 		lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fsp->fh->gen_id,
+		fh_get_gen_id(fsp->fh),
 		del_share_mode_fn,
 		&state);
 	if (!ok) {
@@ -2318,7 +2319,7 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	ok = share_mode_entry_do(
 		lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fsp->fh->gen_id,
+		fh_get_gen_id(fsp->fh),
 		remove_share_oplock_fn,
 		&state);
 	if (!ok) {
@@ -2367,7 +2368,7 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	ok = share_mode_entry_do(
 		lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fsp->fh->gen_id,
+		fh_get_gen_id(fsp->fh),
 		downgrade_share_oplock_fn,
 		&state);
 	if (!ok) {
@@ -2429,7 +2430,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 	ok = share_mode_entry_do(
 		lck,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fsp->fh->gen_id,
+		fh_get_gen_id(fsp->fh),
 		mark_share_mode_disconnected_fn,
 		&state);
 	if (!ok) {

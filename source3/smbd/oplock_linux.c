@@ -132,7 +132,7 @@ static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 		   "file_id = %s gen_id = %"PRIu64"\n",
 		   fsp_str_dbg(fsp),
 		   file_id_str_buf(fsp->file_id, &idbuf),
-		   fsp->fh->gen_id);
+		   fh_get_gen_id(fsp->fh));
 
 	return True;
 }
@@ -157,7 +157,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 			"of %x.\n",
 			fsp_str_dbg(fsp),
 		        file_id_str_buf(fsp->file_id, &idbuf),
-			fsp->fh->gen_id,
+			fh_get_gen_id(fsp->fh),
 			state);
 	}
 
@@ -172,7 +172,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 				"Error was %s\n",
 				fsp_str_dbg(fsp),
 				file_id_str_buf(fsp->file_id, &idbuf),
-				fsp->fh->gen_id,
+				fh_get_gen_id(fsp->fh),
 				strerror(errno));
 		}
 	}

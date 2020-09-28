@@ -38,7 +38,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 
 	/* Put the kernel break info into the message. */
 	push_file_id_24((char *)msg, &fsp->file_id);
-	SIVAL(msg,24,fsp->fh->gen_id);
+	SIVAL(msg, 24, fh_get_gen_id(fsp->fh));
 
 	/* Don't need to be root here as we're only ever
 	   sending to ourselves. */
@@ -85,7 +85,7 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 		 "tv_sec = %x, tv_usec = %x\n",
 		 fsp_str_dbg(fsp),
 		 file_id_str_buf(fsp->file_id, &buf),
-		 fsp->fh->gen_id,
+		 fh_get_gen_id(fsp->fh),
 		 (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec);
 
@@ -789,7 +789,7 @@ static files_struct *initial_break_processing(
 			   "Allowing break to succeed regardless.\n",
 			   fsp_str_dbg(fsp),
 			   file_id_str_buf(id, &idbuf),
-			   fsp->fh->gen_id);
+			   fh_get_gen_id(fsp->fh));
 		return NULL;
 	}
 

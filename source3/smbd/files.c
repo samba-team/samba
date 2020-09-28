@@ -88,7 +88,8 @@ void fsp_set_gen_id(files_struct *fsp)
 	 * A billion of 64-bit increments per second gives us
 	 * more than 500 years of runtime without wrap.
 	 */
-	fsp->fh->gen_id = gen_id++;
+	gen_id++;
+	fh_set_gen_id(fsp->fh, gen_id);
 }
 
 /****************************************************************************
@@ -414,7 +415,7 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 	for (fsp=sconn->files; fsp; fsp=fsp->next,count++) {
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
 		if (file_id_equal(&fsp->file_id, &id) &&
-		    fsp->fh->gen_id == gen_id ) {
+		    fh_get_gen_id(fsp->fh) == gen_id ) {
 			if (count > 10) {
 				DLIST_PROMOTE(sconn->files, fsp);
 			}
@@ -428,7 +429,7 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 					 "stat open with oplock type !\n",
 					 fsp_str_dbg(fsp),
 					 file_id_str_buf(fsp->file_id, &idbuf),
-					 (unsigned int)fsp->fh->gen_id,
+					 (unsigned int)fh_get_gen_id(fsp->fh),
 					 (unsigned int)fsp->oplock_type ));
 				smb_panic("file_find_dif");
 			}
