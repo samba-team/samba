@@ -3659,7 +3659,28 @@ static int vfswrap_setxattr(struct vfs_handle_struct *handle,
 
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
-	return fsetxattr(fsp_get_io_fd(fsp), name, value, size, flags);
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return fsetxattr(fd, name, value, size, flags);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return setxattr(p, name, value, size, flags);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return setxattr(fsp->fsp_name->base_name, name, value, size, flags);
 }
 
 static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
