@@ -3613,7 +3613,6 @@ void reply_unlink(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	uint32_t dirtype;
 	NTSTATUS status;
-	bool path_contains_wcard = False;
 	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
@@ -3627,9 +3626,8 @@ void reply_unlink(struct smb_request *req)
 
 	dirtype = SVAL(req->vwv+0, 0);
 
-	srvstr_get_path_req_wcard(ctx, req, &name, (const char *)req->buf + 1,
-				  STR_TERMINATE, &status,
-				  &path_contains_wcard);
+	srvstr_get_path_req(ctx, req, &name, (const char *)req->buf + 1,
+				  STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -3639,7 +3637,7 @@ void reply_unlink(struct smb_request *req)
 				  name,
 				  ucf_flags,
 				  0,
-				  &path_contains_wcard,
+				  NULL,
 				  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
