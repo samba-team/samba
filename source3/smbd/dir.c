@@ -1235,7 +1235,7 @@ bool is_visible_file(connection_struct *conn,
 	struct smb_filename *smb_fname_base = NULL;
 	bool ret = false;
 
-	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
+	if (ISDOT(name) || ISDOTDOT(name)) {
 		return True; /* . and .. are always visible. */
 	}
 
