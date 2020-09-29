@@ -8725,14 +8725,14 @@ void reply_copy(struct smb_request *req)
 	flags = SVAL(req->vwv+2, 0);
 
 	p = (const char *)req->buf;
-	p += srvstr_get_path_req_wcard(ctx, req, &fname_src, p, STR_TERMINATE,
-				       &status, &source_has_wild);
+	p += srvstr_get_path_req(ctx, req, &fname_src, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
-	p += srvstr_get_path_req_wcard(ctx, req, &fname_dst, p, STR_TERMINATE,
-				       &status, &dest_has_wild);
+	p += srvstr_get_path_req(ctx, req, &fname_dst, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -8751,7 +8751,7 @@ void reply_copy(struct smb_request *req)
 				  fname_src,
 				  ucf_flags_src,
 				  0,
-				  &source_has_wild,
+				  NULL,
 				  &smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -8767,7 +8767,7 @@ void reply_copy(struct smb_request *req)
 				  fname_dst,
 				  ucf_flags_dst,
 				  0,
-				  &dest_has_wild,
+				  NULL,
 				  &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
