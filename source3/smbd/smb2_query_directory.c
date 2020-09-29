@@ -459,7 +459,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 				     false, /* expect_close */
 				     0, /* spid */
 				     state->in_file_name, /* wcard */
-				     wcard_has_wild,
 				     state->dirtype,
 				     &fsp->dptr);
 		if (!NT_STATUS_IS_OK(status)) {

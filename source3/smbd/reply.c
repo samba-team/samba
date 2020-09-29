@@ -1965,7 +1965,6 @@ void reply_search(struct smb_request *req)
 					expect_close,
 					req->smbpid,
 					mask,
-					mask_contains_wcard,
 					dirtype,
 					&fsp->dptr);
 

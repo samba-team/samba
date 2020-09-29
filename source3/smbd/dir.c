@@ -204,7 +204,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		bool expect_close,
 		uint16_t spid,
 		const char *wcard,
-		bool wcard_has_wild,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret)
 {
@@ -261,7 +260,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 			(wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
 	} else {
-		dptr->has_wild = wcard_has_wild;
+		dptr->has_wild = ms_has_wild(dptr->wcard);
 	}
 
 	dptr->attr = attr;

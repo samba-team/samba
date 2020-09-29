@@ -198,7 +198,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		bool expect_close,
 		uint16_t spid,
 		const char *wcard,
-		bool wcard_has_wild,
 		uint32_t attr,
 		struct dptr_struct **dptr_ret);
 void dptr_CloseDir(files_struct *fsp);

@@ -3017,7 +3017,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				True,
 				req->smbpid,
 				mask,
-				mask_contains_wcard,
 				dirtype,
 				&fsp->dptr);
 
