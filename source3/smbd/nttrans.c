@@ -2029,7 +2029,6 @@ static void call_nt_transact_rename(connection_struct *conn,
 	char *params = *ppparams;
 	char *new_name = NULL;
 	files_struct *fsp = NULL;
-	bool dest_has_wcard = False;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -2043,25 +2042,23 @@ static void call_nt_transact_rename(connection_struct *conn,
 		return;
 	}
 	if (req->posix_pathnames) {
-		srvstr_get_path_wcard_posix(ctx,
+		srvstr_get_path_posix(ctx,
 				params,
 				req->flags2,
 				&new_name,
 				params+4,
 				parameter_count - 4,
 				STR_TERMINATE,
-				&status,
-				&dest_has_wcard);
+				&status);
 	} else {
-		srvstr_get_path_wcard(ctx,
+		srvstr_get_path(ctx,
 				params,
 				req->flags2,
 				&new_name,
 				params+4,
 				parameter_count - 4,
 				STR_TERMINATE,
-				&status,
-				&dest_has_wcard);
+				&status);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
