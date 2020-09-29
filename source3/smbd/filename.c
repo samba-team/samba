@@ -1916,7 +1916,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				const char *name_in,
 				uint32_t ucf_flags,
 				NTTIME twrp,
-				bool *ppath_contains_wcard,
 				struct smb_filename **_smb_fname)
 {
 	struct smb_filename *smb_fname = NULL;
@@ -1941,9 +1940,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			return status;
 		}
 		name_in = fname;
-		if (ppath_contains_wcard != NULL && path_contains_wcard) {
-			*ppath_contains_wcard = path_contains_wcard;
-		}
 		ucf_flags &= ~UCF_DFS_PATHNAME;
 	}
 
@@ -2011,14 +2007,12 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				NTTIME twrp,
 				struct smb_filename **pp_smb_fname)
 {
-	bool ignore = false;
 	return filename_convert_internal(ctx,
 					conn,
 					NULL,
 					name_in,
 					ucf_flags,
 					twrp,
-					&ignore,
 					pp_smb_fname);
 }
 
@@ -2034,13 +2028,11 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
                                 uint32_t ucf_flags,
                                 struct smb_filename **pp_smb_fname)
 {
-	bool ignore = false;
 	return filename_convert_internal(ctx,
 					conn,
 					smbreq,
 					name_in,
 					ucf_flags,
 					0,
-					&ignore,
 					pp_smb_fname);
 }
