@@ -1740,8 +1740,8 @@ void reply_ntrename(struct smb_request *req)
 	}
 
 	p++;
-	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
-				       &status, &dest_has_wcard);
+	p += srvstr_get_path_req(ctx, req, &newname, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
