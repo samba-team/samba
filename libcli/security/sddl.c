@@ -124,7 +124,7 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 				       const struct dom_sid *domain_sid)
 {
 	const char *sddl = (*sddlp);
-	int i;
+	size_t i;
 
 	/* see if its in the numeric format */
 	if (strncmp(sddl, "S-", 2) == 0) {
@@ -456,7 +456,7 @@ failed:
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			     const struct dom_sid *domain_sid)
 {
-	int i;
+	size_t i;
 	char *sidstr;
 
 	sidstr = dom_sid_string(mem_ctx, sid);
