@@ -703,9 +703,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* XX_ALLOW_WCARD_XXX is called from search functions. */
-		if (ucf_flags &
-				(UCF_COND_ALLOW_WCARD_LCOMP|
-				 UCF_ALWAYS_ALLOW_WCARD_LCOMP)) {
+		if (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP) {
 			DEBUG(6,("dfs_path_lookup (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
 			status = NT_STATUS_OK;
@@ -829,8 +827,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	NTSTATUS status;
-	bool search_wcard_flag = (ucf_flags &
-		(UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
+	bool search_wcard_flag = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
