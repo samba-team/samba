@@ -7315,7 +7315,6 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
-	bool dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -7333,25 +7332,23 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	}
 
 	if (req->posix_pathnames) {
-		srvstr_get_path_wcard_posix(ctx,
+		srvstr_get_path_posix(ctx,
 				pdata,
 				req->flags2,
 				&newname,
 				&pdata[12],
 				len,
 				0,
-				&status,
-				&dest_has_wcard);
+				&status);
 	} else {
-		srvstr_get_path_wcard(ctx,
+		srvstr_get_path(ctx,
 				pdata,
 				req->flags2,
 				&newname,
 				&pdata[12],
 				len,
 				0,
-				&status,
-				&dest_has_wcard);
+				&status);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -7403,11 +7400,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * the newname instead.
 		 */
 		char *base_name = NULL;
-		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-
-		if (dest_has_wcard) {
-			ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
-		}
+		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP|
+				ucf_flags_from_smb_request(req);
 
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
