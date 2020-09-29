@@ -3590,7 +3590,28 @@ static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
 
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
-	return flistxattr(fsp_get_io_fd(fsp), list, size);
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return flistxattr(fd, list, size);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return listxattr(p, list, size);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return listxattr(fsp->fsp_name->base_name, list, size);
 }
 
 static int vfswrap_removexattr(struct vfs_handle_struct *handle,
