@@ -8806,6 +8806,18 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
+	if (!req->posix_pathnames) {
+		/*
+		 * Check the wildcard mask *before*
+		 * unmangling. As mangling is done
+		 * for names that can't be returned
+		 * to Windows the unmangled name may
+		 * contain Windows wildcard characters.
+		 */
+		source_has_wild = ms_has_wild(fname_src_mask);
+		dest_has_wild = ms_has_wild(smb_fname_dst->base_name);
+	}
+
 	/*
 	 * We should only check the mangled cache
 	 * here if unix_convert failed. This means
