@@ -398,43 +398,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 
 	/* Ensure we've canonicalized any search path if not a wildcard. */
 	if (!wcard_has_wild) {
-		struct smb_filename *smb_fname = NULL;
-		const char *fullpath;
-		char tmpbuf[PATH_MAX];
-		char *to_free = NULL;
-		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-				     (state->smbreq->posix_pathnames ?
-					UCF_POSIX_PATHNAMES : 0);
-
-		if (ISDOT(fsp->fsp_name->base_name)) {
-			fullpath = state->in_file_name;
-		} else {
-			size_t len;
-			char *tmp;
-
-			len = full_path_tos(
-				fsp->fsp_name->base_name, state->in_file_name,
-				tmpbuf, sizeof(tmpbuf), &tmp, &to_free);
-			if (len == -1) {
-				tevent_req_oom(req);
-				return tevent_req_post(req, ev);
-			}
-			fullpath = tmp;
-		}
-		status = filename_convert(state,
-				conn,
-				fullpath,
-				ucf_flags,
-				0,
-				&wcard_has_wild,
-				&smb_fname);
-
-		TALLOC_FREE(to_free);
-
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-
 		/*
 		 * We still need to do the case processing
 		 * to save off the client-supplied last component.
