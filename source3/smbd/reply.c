@@ -3609,7 +3609,7 @@ void reply_unlink(struct smb_request *req)
 	uint32_t dirtype;
 	NTSTATUS status;
 	bool path_contains_wcard = False;
-	uint32_t ucf_flags = UCF_COND_ALLOW_WCARD_LCOMP |
+	uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
