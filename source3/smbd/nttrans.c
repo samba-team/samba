@@ -1786,6 +1786,16 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
+	/* Get the last component of the destination for rename_internals(). */
+	dst_original_lcomp = get_original_lcomp(ctx,
+					conn,
+					newname,
+					ucf_flags_dst);
+	if (dst_original_lcomp == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	status = filename_convert(ctx, conn,
 				  newname,
 				  ucf_flags_dst,
@@ -1801,16 +1811,6 @@ void reply_ntrename(struct smb_request *req)
 			goto out;
 		}
 		reply_nterror(req, status);
-		goto out;
-	}
-
-	/* Get the last component of the destination for rename_internals(). */
-	dst_original_lcomp = get_original_lcomp(ctx,
-					conn,
-					newname,
-					ucf_flags_dst);
-	if (dst_original_lcomp == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
 	}
 
