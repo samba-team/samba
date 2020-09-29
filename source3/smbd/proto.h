@@ -938,15 +938,6 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 NTSTATUS check_path_syntax(char *path);
 NTSTATUS check_path_syntax_wcard(char *path, bool *p_contains_wcard);
 NTSTATUS check_path_syntax_posix(char *path);
-size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
-			const char *inbuf,
-			uint16_t smb_flags2,
-			char **pp_dest,
-			const char *src,
-			size_t src_len,
-			int flags,
-			NTSTATUS *err,
-			bool *contains_wcard);
 size_t srvstr_get_path(TALLOC_CTX *ctx,
 			const char *inbuf,
 			uint16_t smb_flags2,

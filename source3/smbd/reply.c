@@ -304,32 +304,6 @@ static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Pull a string and check the path allowing a wildcard - provide for error return.
-****************************************************************************/
-
-size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
-			const char *base_ptr,
-			uint16_t smb_flags2,
-			char **pp_dest,
-			const char *src,
-			size_t src_len,
-			int flags,
-			NTSTATUS *err,
-			bool *contains_wcard)
-{
-	return srvstr_get_path_wcard_internal(ctx,
-			base_ptr,
-			smb_flags2,
-			pp_dest,
-			src,
-			src_len,
-			flags,
-			false,
-			err,
-			contains_wcard);
-}
-
-/****************************************************************************
  Pull a string and check the path - provide for error return.
 ****************************************************************************/
 
