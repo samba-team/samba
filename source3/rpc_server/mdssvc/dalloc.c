@@ -79,11 +79,6 @@ size_t dalloc_size(const DALLOC_CTX *d)
 	if (d == NULL) {
 		return 0;
 	}
-
-	if (d->dd_talloc_array == NULL) {
-		return 0;
-	}
-
 	return talloc_array_length(d->dd_talloc_array);
 }
 
