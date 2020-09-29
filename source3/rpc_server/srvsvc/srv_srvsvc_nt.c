@@ -2420,7 +2420,6 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 					r->in.file,
 					ucf_flags,
 					0,
-					NULL,
 					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
@@ -2556,7 +2555,6 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 					r->in.file,
 					ucf_flags,
 					0,
-					NULL,
 					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);

@@ -2009,16 +2009,16 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				const char *name_in,
 				uint32_t ucf_flags,
 				NTTIME twrp,
-				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
+	bool ignore = false;
 	return filename_convert_internal(ctx,
 					conn,
 					NULL,
 					name_in,
 					ucf_flags,
 					twrp,
-					ppath_contains_wcard,
+					&ignore,
 					pp_smb_fname);
 }
 
