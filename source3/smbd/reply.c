@@ -1866,7 +1866,7 @@ void reply_search(struct smb_request *req)
 					     path,
 					     ucf_flags,
 					     0,
-					     &mask_contains_wcard,
+					     NULL,
 					     &smb_fname);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
