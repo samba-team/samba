@@ -2014,15 +2014,10 @@ void reply_search(struct smb_request *req)
 		if (!mask) {
 			goto SearchEmpty;
 		}
-		/*
-		 * For a 'continue' search we have no string. So
-		 * check from the initial saved string.
-		 */
-		if (!req->posix_pathnames) {
-			mask_contains_wcard = ms_has_wild(mask);
-		}
 		dirtype = dptr_attr(sconn, dptr_num);
 	}
+
+	mask_contains_wcard = dptr_has_wild(fsp->dptr);
 
 	DEBUG(4,("dptr_num is %d\n",dptr_num));
 
