@@ -8362,8 +8362,6 @@ void reply_mv(struct smb_request *req)
 	const char *p;
 	uint32_t attrs;
 	NTSTATUS status;
-	bool src_has_wcard = False;
-	bool dest_has_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
@@ -8388,15 +8386,15 @@ void reply_mv(struct smb_request *req)
 	attrs = SVAL(req->vwv+0, 0);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
-				       &status, &src_has_wcard);
+	p += srvstr_get_path_req(ctx, req, &name, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 	p++;
-	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
-				       &status, &dest_has_wcard);
+	p += srvstr_get_path_req(ctx, req, &newname, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -8419,7 +8417,7 @@ void reply_mv(struct smb_request *req)
 				  name,
 				  src_ucf_flags,
 				  0,
-				  &src_has_wcard,
+				  NULL,
 				  &smb_fname_src);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -8437,7 +8435,7 @@ void reply_mv(struct smb_request *req)
 				  newname,
 				  dst_ucf_flags,
 				  0,
-				  &dest_has_wcard,
+				  NULL,
 				  &smb_fname_dst);
 
 	if (!NT_STATUS_IS_OK(status)) {
