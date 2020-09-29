@@ -576,7 +576,7 @@ static int xattr_tdb_mkdirat(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	/* Always use LSTAT here - we just creaded the directory. */
+	/* Always use LSTAT here - we just created the directory. */
 	ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
 	if (ret == -1) {
 		/* Rename race. Let upper level take care of it. */
