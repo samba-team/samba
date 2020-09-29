@@ -554,8 +554,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool allow_broken_path,
-				char **pp_name_out,
-				bool *ppath_contains_wcard);
+				char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
 struct conn_struct_tos {

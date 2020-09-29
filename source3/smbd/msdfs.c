@@ -1805,9 +1805,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 }
 
 /******************************************************************************
- Core function to resolve a dfs pathname possibly containing a wildcard.  If
- ppath_contains_wcard != NULL, it will be set to true if a wildcard is
- detected during dfs resolution.
+ Core function to resolve a dfs pathname.
 ******************************************************************************/
 
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
@@ -1815,10 +1813,9 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool allow_broken_path,
-				char **pp_name_out,
-				bool *ppath_contains_wcard)
+				char **pp_name_out)
 {
-	bool path_contains_wcard = false;
+	bool ignore = false;
 	NTSTATUS status = NT_STATUS_OK;
 
 	status = dfs_redirect(ctx,
@@ -1827,12 +1824,6 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				ucf_flags,
 				allow_broken_path,
 				pp_name_out,
-				&path_contains_wcard);
-
-	if (NT_STATUS_IS_OK(status) &&
-				ppath_contains_wcard != NULL &&
-				path_contains_wcard) {
-		*ppath_contains_wcard = path_contains_wcard;
-	}
+				&ignore);
 	return status;
 }

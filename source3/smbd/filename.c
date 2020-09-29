@@ -1828,8 +1828,7 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 				filename_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
-				&fname,
-				NULL);
+				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("resolve_dfspath "
 				"failed for name %s with %s\n",
@@ -1924,14 +1923,12 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	*_smb_fname = NULL;
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
-		bool path_contains_wcard = false;
 		char *fname = NULL;
 		status = resolve_dfspath_wcard(ctx, conn,
 				name_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
-				&fname,
-				&path_contains_wcard);
+				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("filename_convert_internal: resolve_dfspath "
 				"failed for name %s with %s\n",
