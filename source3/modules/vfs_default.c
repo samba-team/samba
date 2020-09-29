@@ -3556,7 +3556,28 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 				 void *value,
 				 size_t size)
 {
-	return fgetxattr(fsp_get_io_fd(fsp), name, value, size);
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return fgetxattr(fd, name, value, size);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return getxattr(p, name, value, size);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return getxattr(fsp->fsp_name->base_name, name, value, size);
 }
 
 static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
