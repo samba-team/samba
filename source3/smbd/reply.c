@@ -2174,7 +2174,6 @@ void reply_fclose(struct smb_request *req)
 	const char *p;
 	char *path = NULL;
 	NTSTATUS err;
-	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
 	files_struct *fsp = NULL;
@@ -2188,8 +2187,8 @@ void reply_fclose(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
-				       &err, &path_contains_wcard);
+	p += srvstr_get_path_req(ctx, req, &path, p, STR_TERMINATE,
+				       &err);
 	if (!NT_STATUS_IS_OK(err)) {
 		reply_nterror(req, err);
 		END_PROFILE(SMBfclose);
