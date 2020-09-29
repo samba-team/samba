@@ -443,7 +443,7 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	uint16_t in_security_mode;
 	uint16_t in_num_dialects;
 	uint16_t dialect;
-	DATA_BLOB out_guid_blob;
+	struct GUID_ndr_buf out_guid_buf = { .buf = {0}, };
 	NTSTATUS status;
 	enum protocol_types protocol = PROTOCOL_NONE;
 
@@ -520,8 +520,7 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = GUID_to_ndr_blob(&conn->smb2.server.guid, mem_ctx,
-				  &out_guid_blob);
+	status = GUID_to_ndr_buf(&conn->smb2.server.guid, &out_guid_buf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -532,7 +531,7 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	}
 
 	SIVAL(out_output->data, 0x00, conn->smb2.server.capabilities);
-	memcpy(out_output->data+0x04, out_guid_blob.data, 16);
+	memcpy(out_output->data+0x04, out_guid_buf.buf, 16);
 	SSVAL(out_output->data, 0x14, conn->smb2.server.security_mode);
 	SSVAL(out_output->data, 0x16, conn->smb2.server.dialect);
 
