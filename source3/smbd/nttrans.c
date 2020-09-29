@@ -1804,7 +1804,7 @@ void reply_ntrename(struct smb_request *req)
 				  newname,
 				  ucf_flags_dst,
 				  0,
-				  &dest_has_wcard,
+				  NULL,
 				  &smb_fname_new);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,
