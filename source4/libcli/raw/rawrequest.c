@@ -1043,15 +1043,13 @@ NTSTATUS smbcli_pull_guid(void *base, uint16_t offset,
  */
 NTSTATUS smbcli_push_guid(void *base, uint16_t offset, const struct GUID *guid)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	NTSTATUS status;
-	DATA_BLOB blob;
-	status = GUID_to_ndr_blob(guid, tmp_ctx, &blob);
+	struct GUID_ndr_buf buf = { .buf = {0}, };
+
+	status = GUID_to_ndr_buf(guid, &buf);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
 		return status;
 	}
-	memcpy(offset + (uint8_t *)base, blob.data, blob.length);
-	talloc_free(tmp_ctx);
+	memcpy(offset + (uint8_t *)base, buf.buf, sizeof(buf.buf));
 	return NT_STATUS_OK;
 }
