@@ -2831,7 +2831,6 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				req,
 				directory,
 				ucf_flags,
-				NULL,
 				&smb_dname);
 	} else {
 		ntstatus = filename_convert(talloc_tos(), conn,

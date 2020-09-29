@@ -2032,15 +2032,15 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
 				struct smb_request *smbreq,
                                 const char *name_in,
                                 uint32_t ucf_flags,
-                                bool *ppath_contains_wcard,
                                 struct smb_filename **pp_smb_fname)
 {
+	bool ignore = false;
 	return filename_convert_internal(ctx,
 					conn,
 					smbreq,
 					name_in,
 					ucf_flags,
 					0,
-					ppath_contains_wcard,
+					&ignore,
 					pp_smb_fname);
 }

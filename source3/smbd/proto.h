@@ -396,7 +396,6 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
 			struct smb_request *smbreq,
 			const char *name_in,
 			uint32_t ucf_flags,
-			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
 
 /* The following definitions come from smbd/files.c  */
