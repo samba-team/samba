@@ -357,10 +357,11 @@ size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
 }
 
 
-static size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
-				 NTSTATUS *err, bool *contains_wcard)
+				 NTSTATUS *err)
 {
+	bool ignore;
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
 	if (bufrem < 0) {
@@ -378,7 +379,7 @@ static size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request 
 				flags,
 				true,
 				err,
-				contains_wcard);
+				&ignore);
 	} else {
 		return srvstr_get_path_wcard_internal(mem_ctx,
 				(const char *)req->inbuf,
@@ -389,17 +390,8 @@ static size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request 
 				flags,
 				false,
 				err,
-				contains_wcard);
+				&ignore);
 	}
-}
-
-size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
-			   char **pp_dest, const char *src, int flags,
-			   NTSTATUS *err)
-{
-	bool ignore;
-	return srvstr_get_path_req_wcard(mem_ctx, req, pp_dest, src,
-					 flags, err, &ignore);
 }
 
 /**
