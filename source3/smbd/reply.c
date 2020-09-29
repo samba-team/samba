@@ -8697,9 +8697,9 @@ void reply_copy(struct smb_request *req)
 	bool source_has_wild = False;
 	bool dest_has_wild = False;
 	NTSTATUS status;
-	uint32_t ucf_flags_src = UCF_COND_ALLOW_WCARD_LCOMP |
+	uint32_t ucf_flags_src = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 		ucf_flags_from_smb_request(req);
-	uint32_t ucf_flags_dst = UCF_COND_ALLOW_WCARD_LCOMP |
+	uint32_t ucf_flags_dst = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 		ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
