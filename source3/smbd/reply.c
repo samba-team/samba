@@ -8357,11 +8357,11 @@ void reply_mv(struct smb_request *req)
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req) |
 		(req->posix_pathnames ?
 			UCF_UNIX_NAME_LOOKUP :
-			UCF_COND_ALLOW_WCARD_LCOMP);
+			UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req) |
 		(req->posix_pathnames ?
 			0 :
-			UCF_COND_ALLOW_WCARD_LCOMP);
+			UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
