@@ -1839,8 +1839,8 @@ void reply_search(struct smb_request *req)
 	maxentries = SVAL(req->vwv+0, 0);
 	dirtype = SVAL(req->vwv+1, 0);
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
-				       &nt_status, &mask_contains_wcard);
+	p += srvstr_get_path_req(ctx, req, &path, p, STR_TERMINATE,
+				       &nt_status);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status);
 		goto out;
