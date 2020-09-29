@@ -7964,8 +7964,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
 			bool replace_if_exists,
-			bool src_has_wild,
-			bool dest_has_wild,
 			uint32_t access_mask)
 {
 	char *fname_src_dir = NULL;
@@ -7981,6 +7979,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	bool posix_pathnames = (req != NULL && req->posix_pathnames);
 	struct smb2_create_blobs *posx = NULL;
 	int rc;
+	bool src_has_wild = false;
+	bool dest_has_wild = false;
 
 	/*
 	 * Split the old name into directory and last component
@@ -7997,6 +7997,18 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
+	}
+
+	if (req != NULL && !req->posix_pathnames) {
+		/*
+		 * Check the wildcard mask *before*
+		 * unmangling. As mangling is done
+		 * for names that can't be returned
+		 * to Windows the unmangled name may
+		 * contain Windows wildcard characters.
+		 */
+		src_has_wild = ms_has_wild(fname_src_mask);
+		dest_has_wild = ms_has_wild(dst_original_lcomp);
 	}
 
 	/*
@@ -8471,8 +8483,6 @@ void reply_mv(struct smb_request *req)
 				dst_original_lcomp,
 				attrs,
 				false,
-				src_has_wcard,
-				dest_has_wcard,
 				DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {

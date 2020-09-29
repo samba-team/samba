@@ -1843,8 +1843,6 @@ void reply_ntrename(struct smb_request *req)
 						dst_original_lcomp,
 						attrs,
 						false,
-						false, /* src_has_wcard */
-						dest_has_wcard,
 						DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:

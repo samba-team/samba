@@ -7501,8 +7501,6 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					dst_original_lcomp,
 					0,
 					overwrite,
-					false,
-					dest_has_wcard,
 					FILE_WRITE_ATTRIBUTES);
 	}
  out:

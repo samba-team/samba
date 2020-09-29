@@ -1050,8 +1050,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
 			bool replace_if_exists,
-			bool src_has_wild,
-			bool dest_has_wild,
 			uint32_t access_mask);
 void reply_mv(struct smb_request *req);
 NTSTATUS copy_file(TALLOC_CTX *ctx,
