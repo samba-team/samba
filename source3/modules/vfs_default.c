@@ -3623,7 +3623,28 @@ static int vfswrap_removexattr(struct vfs_handle_struct *handle,
 
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
-	return fremovexattr(fsp_get_io_fd(fsp), name);
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return fremovexattr(fd, name);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return removexattr(p, name);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return removexattr(fsp->fsp_name->base_name, name);
 }
 
 static int vfswrap_setxattr(struct vfs_handle_struct *handle,
