@@ -3216,7 +3216,6 @@ static void call_trans2findnext(connection_struct *conn,
 	bool close_if_end;
 	bool requires_resume_key;
 	bool continue_bit;
-	bool mask_contains_wcard = False;
 	char *resume_name = NULL;
 	const char *mask = NULL;
 	const char *directory = NULL;
@@ -3257,25 +3256,23 @@ static void call_trans2findnext(connection_struct *conn,
 	if (!continue_bit) {
 		/* We only need resume_name if continue_bit is zero. */
 		if (req->posix_pathnames) {
-			srvstr_get_path_wcard_posix(ctx,
+			srvstr_get_path_posix(ctx,
 				params,
 				req->flags2,
 				&resume_name,
 				params+12,
 				total_params - 12,
 				STR_TERMINATE,
-				&ntstatus,
-				&mask_contains_wcard);
+				&ntstatus);
 		} else {
-			srvstr_get_path_wcard(ctx,
+			srvstr_get_path(ctx,
 				params,
 				req->flags2,
 				&resume_name,
 				params+12,
 				total_params - 12,
 				STR_TERMINATE,
-				&ntstatus,
-				&mask_contains_wcard);
+				&ntstatus);
 		}
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
