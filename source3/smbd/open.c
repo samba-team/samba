@@ -642,7 +642,12 @@ static int non_widelink_open(files_struct *fsp,
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	struct files_struct *cwdfsp = NULL;
+	bool have_opath = false;
 	bool ok;
+
+#ifdef O_PATH
+	have_opath = true;
+#endif
 
 	if (fsp->fsp_flags.is_directory) {
 		parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
@@ -710,6 +715,45 @@ static int non_widelink_open(files_struct *fsp,
 
 	fsp_set_fd(fsp, fd);
 	fsp->fsp_name = tmp_fsp_name;
+
+	if (fd != -1 &&
+	    !is_ntfs_stream_smb_fname(fsp->fsp_name) &&
+	    fsp->fsp_flags.is_pathref &&
+	    have_opath)
+	{
+		/*
+		 * Opening with O_PATH and O_NOFOLLOW opens a handle on the
+		 * symlink. In follow symlink=yes mode we must avoid this and
+		 * instead should open a handle on the symlink target.
+		 *
+		 * Check for this case by doing an fstat, forcing
+		 * process_symlink_open() codepath down below by setting fd=-1
+		 * and errno=ELOOP.
+		 */
+		int ret;
+
+		fsp->fsp_name = smb_fname_rel;
+
+		ret = SMB_VFS_FSTAT(fsp, &tmp_fsp_name->st);
+
+		fsp->fsp_name = tmp_fsp_name;
+
+		if (ret != 0) {
+			goto out;
+		}
+
+		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+			fsp->fsp_name = smb_fname_rel;
+
+			ret = SMB_VFS_CLOSE(fsp);
+			SMB_ASSERT(ret == 0);
+
+			fsp_set_fd(fsp, -1);
+			fsp->fsp_name = tmp_fsp_name;
+			fd = -1;
+			errno = ELOOP;
+		}
+	}
 
 	if (fd == -1) {
 		saved_errno = link_errno_convert(errno);
