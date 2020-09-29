@@ -5327,14 +5327,14 @@ struct tevent_req *smb2cli_validate_negotiate_info_send(TALLOC_CTX *mem_ctx,
 	}
 	if (state->conn->max_protocol >= PROTOCOL_SMB2_10) {
 		NTSTATUS status;
-		DATA_BLOB blob;
+		struct GUID_ndr_buf guid_buf = { .buf = {0}, };
 
-		status = GUID_to_ndr_blob(&conn->smb2.client.guid,
-					  state, &blob);
+		status = GUID_to_ndr_buf(&conn->smb2.client.guid,
+					 &guid_buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
-		memcpy(buf+4, blob.data, 16); /* ClientGuid */
+		memcpy(buf+4, guid_buf.buf, 16); /* ClientGuid */
 	} else {
 		memset(buf+4, 0, 16);	/* ClientGuid */
 	}
