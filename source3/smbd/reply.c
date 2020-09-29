@@ -268,9 +268,9 @@ static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags,
 			bool posix_pathnames,
-			NTSTATUS *err,
-			bool *contains_wcard)
+			NTSTATUS *err)
 {
+	bool ignore;
 	size_t ret;
 
 	*pp_dest = NULL;
@@ -282,8 +282,6 @@ static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 		*err = NT_STATUS_INVALID_PARAMETER;
 		return ret;
 	}
-
-	*contains_wcard = False;
 
 	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
 		/*
@@ -297,7 +295,7 @@ static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 	if (posix_pathnames) {
 		*err = check_path_syntax_posix(*pp_dest);
 	} else {
-		*err = check_path_syntax_wcard(*pp_dest, contains_wcard);
+		*err = check_path_syntax_wcard(*pp_dest, &ignore);
 	}
 
 	return ret;
@@ -316,7 +314,6 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	bool ignore;
 	return srvstr_get_path_wcard_internal(ctx,
 			base_ptr,
 			smb_flags2,
@@ -325,8 +322,7 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			src_len,
 			flags,
 			false,
-			err,
-			&ignore);
+			err);
 }
 
 /****************************************************************************
@@ -343,7 +339,6 @@ size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	bool ignore;
 	return srvstr_get_path_wcard_internal(ctx,
 			base_ptr,
 			smb_flags2,
@@ -352,8 +347,7 @@ size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
 			src_len,
 			flags,
 			true,
-			err,
-			&ignore);
+			err);
 }
 
 
@@ -361,7 +355,6 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err)
 {
-	bool ignore;
 	ssize_t bufrem = smbreq_bufrem(req, src);
 
 	if (bufrem < 0) {
@@ -378,8 +371,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				bufrem,
 				flags,
 				true,
-				err,
-				&ignore);
+				err);
 	} else {
 		return srvstr_get_path_wcard_internal(mem_ctx,
 				(const char *)req->inbuf,
@@ -389,8 +381,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				bufrem,
 				flags,
 				false,
-				err,
-				&ignore);
+				err);
 	}
 }
 
