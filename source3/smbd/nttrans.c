@@ -1708,7 +1708,6 @@ void reply_ntrename(struct smb_request *req)
 	const char *dst_original_lcomp = NULL;
 	const char *p;
 	NTSTATUS status;
-	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	uint32_t attrs;
 	uint32_t ucf_flags_src = ucf_flags_from_smb_request(req);
@@ -1728,8 +1727,8 @@ void reply_ntrename(struct smb_request *req)
 	rename_type = SVAL(req->vwv+1, 0);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_req_wcard(ctx, req, &oldname, p, STR_TERMINATE,
-				       &status, &src_has_wcard);
+	p += srvstr_get_path_req(ctx, req, &oldname, p, STR_TERMINATE,
+				       &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -1765,7 +1764,6 @@ void reply_ntrename(struct smb_request *req)
 	 * destination's last component.
 	 */
 	if (rename_type == RENAME_FLAG_RENAME) {
-		ucf_flags_src |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 		ucf_flags_dst |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
@@ -1841,12 +1839,12 @@ void reply_ntrename(struct smb_request *req)
 						dst_original_lcomp,
 						attrs,
 						false,
-						src_has_wcard,
+						false, /* src_has_wcard */
 						dest_has_wcard,
 						DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
-			if (src_has_wcard || dest_has_wcard) {
+			if (dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
@@ -1858,7 +1856,7 @@ void reply_ntrename(struct smb_request *req)
 			}
 			break;
 		case RENAME_FLAG_COPY:
-			if (src_has_wcard || dest_has_wcard) {
+			if (dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
