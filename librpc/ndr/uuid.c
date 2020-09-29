@@ -27,6 +27,18 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/util_str_hex.h"
+
+_PUBLIC_ NTSTATUS GUID_to_ndr_buf(
+	const struct GUID *guid, struct GUID_ndr_buf *buf)
+{
+	DATA_BLOB b = { .data = buf->buf, .length = sizeof(buf->buf), };
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&b, guid, (ndr_push_flags_fn_t)ndr_push_GUID);
+	return ndr_map_error2ntstatus(ndr_err);
+}
+
 /**
   build a NDR blob from a GUID
 */
