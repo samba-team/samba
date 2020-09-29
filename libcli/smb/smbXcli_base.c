@@ -4749,14 +4749,14 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	}
 	if (state->conn->max_protocol >= PROTOCOL_SMB2_10) {
 		NTSTATUS status;
-		DATA_BLOB blob;
+		struct GUID_ndr_buf guid_buf = { .buf = {0}, };
 
-		status = GUID_to_ndr_blob(&state->conn->smb2.client.guid,
-					  state, &blob);
+		status = GUID_to_ndr_buf(&state->conn->smb2.client.guid,
+					 &guid_buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
-		memcpy(buf+12, blob.data, 16); /* ClientGuid */
+		memcpy(buf+12, guid_buf.buf, 16); /* ClientGuid */
 	} else {
 		memset(buf+12, 0, 16);	/* ClientGuid */
 	}
