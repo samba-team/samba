@@ -549,12 +549,12 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 				      struct auth_session_info *session_info,
 				      size_t *p_num_jn);
-NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				const char *name_in,
-				uint32_t ucf_flags,
-				bool allow_broken_path,
-				char **pp_name_out);
+NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *name_in,
+			uint32_t ucf_flags,
+			bool allow_broken_path,
+			char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
 struct conn_struct_tos {

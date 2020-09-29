@@ -1823,14 +1823,14 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
 	NTSTATUS status;
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
-		status = resolve_dfspath_wcard(ctx,
+		status = dfs_redirect(ctx,
 				conn,
 				filename_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
 				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("resolve_dfspath "
+			DBG_DEBUG("dfs_redirect "
 				"failed for name %s with %s\n",
 				filename_in,
 				nt_errstr(status));
@@ -1924,13 +1924,13 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 	if (ucf_flags & UCF_DFS_PATHNAME) {
 		char *fname = NULL;
-		status = resolve_dfspath_wcard(ctx, conn,
+		status = dfs_redirect(ctx, conn,
 				name_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
 				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("filename_convert_internal: resolve_dfspath "
+			DEBUG(10,("filename_convert_internal: dfs_redirect "
 				"failed for name %s with %s\n",
 				name_in,
 				nt_errstr(status) ));

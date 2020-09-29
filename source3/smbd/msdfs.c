@@ -816,7 +816,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
  returned to the client.
 *****************************************************************/
 
-static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
+NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *path_in,
 			uint32_t ucf_flags,
@@ -1802,26 +1802,4 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 		}
 	}
 	return jn;
-}
-
-/******************************************************************************
- Core function to resolve a dfs pathname.
-******************************************************************************/
-
-NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				const char *name_in,
-				uint32_t ucf_flags,
-				bool allow_broken_path,
-				char **pp_name_out)
-{
-	NTSTATUS status = NT_STATUS_OK;
-
-	status = dfs_redirect(ctx,
-				conn,
-				name_in,
-				ucf_flags,
-				allow_broken_path,
-				pp_name_out);
-	return status;
 }
