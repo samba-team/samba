@@ -3369,14 +3369,14 @@ static NTSTATUS do_unlink(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32_t dirtype, struct smb_filename *smb_fname,
-			  bool has_wild)
+			  uint32_t dirtype, struct smb_filename *smb_fname)
 {
 	char *fname_dir = NULL;
 	char *fname_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *smb_fname_dir = NULL;
+	bool has_wild = false;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* Split up the directory from the filename/mask. */
@@ -3384,6 +3384,17 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				      &fname_dir, &fname_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
+	}
+
+	if (req != NULL && !req->posix_pathnames) {
+		/*
+		 * Check the wildcard mask *before*
+		 * unmangling. As mangling is done
+		 * for names that can't be returned
+		 * to Windows the unmangled name may
+		 * contain Windows wildcard characters.
+		 */
+		has_wild = ms_has_wild(fname_mask);
 	}
 
 	/*
@@ -3642,8 +3653,7 @@ void reply_unlink(struct smb_request *req)
 
 	DEBUG(3,("reply_unlink : %s\n", smb_fname_str_dbg(smb_fname)));
 
-	status = unlink_internals(conn, req, dirtype, smb_fname,
-				  path_contains_wcard);
+	status = unlink_internals(conn, req, dirtype, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
