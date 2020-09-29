@@ -55,7 +55,7 @@
 #define AFP_OFF_FinderInfo	16
 
 /*
-** Orginal AFP_AfpInfo stream used by NT 
+** Original AFP_AfpInfo stream used by NT
 ** We needed a way to store the create date so SAMBA
 ** AFP_AfpInfo adds for bytes to this structrure
 ** and call's it _SambaAfpInfo
@@ -78,7 +78,7 @@ typedef struct _SambaAfpInfo
 } SambaAfpInfo;
 
 /*
-** On SAMBA this structrue is followed by 4 bytes that store the create
+** On SAMBA this structure is followed by 4 bytes that store the create
 ** date of the file or folder asociated with it.
 */
 
@@ -93,10 +93,10 @@ typedef struct _SambaAfpInfo
 ** Second to return some basic need information about the share to the Macintosh.
 ** Third to see if this share support any other Macintosh extensions.
 **
-** We will be using infromation levels that are betwwen 0x300 and 0x399 for all Macintosh
+** We will be using information levels that are between 0x300 and 0x399 for all Macintosh
 ** extensions calls. The first of these will be the SMB_MAC_QUERY_FS_INFO level which
 ** will allow the server to return the MacQueryFSInfo structure. All fields are Little
-** Endian unless other wise specified.
+** Endian unless otherwise specified.
 */
 #define SMB_MAC_QUERY_FS_INFO 0x301
 
