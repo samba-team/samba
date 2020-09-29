@@ -260,7 +260,7 @@ NTSTATUS check_path_syntax_posix(char *path)
  Passes in posix flag.
 ****************************************************************************/
 
-static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
+static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 			const char *base_ptr,
 			uint16_t smb_flags2,
 			char **pp_dest,
@@ -314,7 +314,7 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	return srvstr_get_path_wcard_internal(ctx,
+	return srvstr_get_path_internal(ctx,
 			base_ptr,
 			smb_flags2,
 			pp_dest,
@@ -339,7 +339,7 @@ size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	return srvstr_get_path_wcard_internal(ctx,
+	return srvstr_get_path_internal(ctx,
 			base_ptr,
 			smb_flags2,
 			pp_dest,
@@ -363,7 +363,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 	}
 
 	if (req->posix_pathnames) {
-		return srvstr_get_path_wcard_internal(mem_ctx,
+		return srvstr_get_path_internal(mem_ctx,
 				(const char *)req->inbuf,
 				req->flags2,
 				pp_dest,
@@ -373,7 +373,7 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				true,
 				err);
 	} else {
-		return srvstr_get_path_wcard_internal(mem_ctx,
+		return srvstr_get_path_internal(mem_ctx,
 				(const char *)req->inbuf,
 				req->flags2,
 				pp_dest,
