@@ -825,6 +825,20 @@ struct smb_filename {
 	uint32_t flags;
 	SMB_STRUCT_STAT st;
 	NTTIME twrp;
+
+	/*
+	 * Internal file handle, O_PATH based if available,
+	 * otherwise O_RDONLY as root.
+	 */
+	struct files_struct *fsp;
+
+	/*
+	 * Link between the struct smb_filename and the above
+	 * fsp. fsp_link is a talloc child of the fsp. Ensures a possible
+	 * talloc_free(fsp) resets the smb_fname->fsp pointer to NULL in
+	 * the is fsp_link talloc destructor.
+	 */
+	struct fsp_smb_fname_link *fsp_link;
 };
 
 /*
