@@ -2733,7 +2733,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool dont_descend = False;
 	bool out_of_space = False;
 	int space_remaining;
-	bool mask_contains_wcard = False;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
@@ -2802,25 +2801,23 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	}
 
 	if (req->posix_pathnames) {
-		srvstr_get_path_wcard_posix(talloc_tos(),
+		srvstr_get_path_posix(talloc_tos(),
 				params,
 				req->flags2,
 				&directory,
 				params+12,
 				total_params - 12,
 				STR_TERMINATE,
-				&ntstatus,
-				&mask_contains_wcard);
+				&ntstatus);
 	} else {
-		srvstr_get_path_wcard(talloc_tos(),
+		srvstr_get_path(talloc_tos(),
 				params,
 				req->flags2,
 				&directory,
 				params+12,
 				total_params - 12,
 				STR_TERMINATE,
-				&ntstatus,
-				&mask_contains_wcard);
+				&ntstatus);
 	}
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
@@ -2835,14 +2832,14 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				req,
 				directory,
 				ucf_flags,
-				&mask_contains_wcard,
+				NULL,
 				&smb_dname);
 	} else {
 		ntstatus = filename_convert(talloc_tos(), conn,
 				    directory,
 				    ucf_flags,
 				    0,
-				    &mask_contains_wcard,
+				    NULL,
 				    &smb_dname);
 	}
 
@@ -2876,7 +2873,6 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
 			}
-			mask_contains_wcard = True;
 		}
 	} else {
 		*p = 0;
