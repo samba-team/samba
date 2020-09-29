@@ -487,8 +487,8 @@ Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we
 didn't get any fatal errors that should immediately terminate the calling SMB
 processing whilst resolving.
 
-If UCF_ALWAYS_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard was detected
-and should be allowed in the last component of the path only.
+If UCF_ALWAYS_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard
+should be allowed in the last component of the path only.
 
 If the orig_path was a stream, smb_filename->base_name will point to the base
 filename, and smb_filename->stream_name will point to the stream name.  If
@@ -1901,9 +1901,6 @@ char *get_original_lcomp(TALLOC_CTX *ctx,
  * @param smbreq	SMB request if we're using privileges.
  * @param name_in	The unconverted name.
  * @param ucf_flags	flags to pass through to unix_convert().
- *			UCF_ALWAYS_ALLOW_WCARD_LCOMP will be OR'd in if
- *			p_cont_wcard != NULL and is true and
- *			UCF_COND_ALLOW_WCARD_LCOMP.
  * @param twrp		Optional VSS time
  * @param p_cont_wcard	If not NULL, will be set to true if the dfs path
  *			resolution detects a wildcard.
@@ -1960,15 +1957,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		smb_fname->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
 		*_smb_fname = smb_fname;
 		return NT_STATUS_OK;
-	}
-
-	/*
-	 * If the caller conditionally allows wildcard lookups, only add the
-	 * always allow if the path actually does contain a wildcard.
-	 */
-	if (ucf_flags & UCF_COND_ALLOW_WCARD_LCOMP &&
-	    ppath_contains_wcard != NULL && *ppath_contains_wcard) {
-		ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
 	status = unix_convert(ctx, conn, name_in, twrp, &smb_fname, ucf_flags);
