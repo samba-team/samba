@@ -4780,7 +4780,6 @@ static NTSTATUS smbd_smb2_flush_with_sendmsg(struct smbXsrv_connection *xconn)
 	while (xconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
 		unsigned sendmsg_flags = 0;
-		struct msghdr msg;
 
 		if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 			/*
@@ -4847,7 +4846,7 @@ static NTSTATUS smbd_smb2_flush_with_sendmsg(struct smbXsrv_connection *xconn)
 			continue;
 		}
 
-		msg = (struct msghdr) {
+		e->msg = (struct msghdr) {
 			.msg_iov = e->vector,
 			.msg_iovlen = e->count,
 		};
@@ -4859,7 +4858,7 @@ static NTSTATUS smbd_smb2_flush_with_sendmsg(struct smbXsrv_connection *xconn)
 		sendmsg_flags |= MSG_DONTWAIT;
 #endif
 
-		ret = sendmsg(xconn->transport.sock, &msg, sendmsg_flags);
+		ret = sendmsg(xconn->transport.sock, &e->msg, sendmsg_flags);
 		if (ret == 0) {
 			/* propagate end of file */
 			return NT_STATUS_INTERNAL_ERROR;

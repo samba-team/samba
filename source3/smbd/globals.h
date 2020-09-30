@@ -688,6 +688,8 @@ struct smbd_smb2_send_queue {
 	DATA_BLOB *sendfile_header;
 	uint32_t sendfile_body_size;
 	NTSTATUS *sendfile_status;
+
+	struct msghdr msg;
 	struct iovec *vector;
 	int count;
 
