@@ -324,11 +324,23 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 	}
 	tevent_fd_set_auto_close(xconn->transport.fde);
 
-	/* Ensure child is set to non-blocking mode */
+	/*
+	 * Ensure child is set to non-blocking mode,
+	 * unless the system supports MSG_DONTWAIT,
+	 * if MSG_DONTWAIT is available we should force
+	 * blocking mode.
+	 */
+#ifdef MSG_DONTWAIT
+	rc = set_blocking(xconn->transport.sock, true);
+	if (rc < 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+#else
 	rc = set_blocking(xconn->transport.sock, false);
 	if (rc < 0) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+#endif
 
 	return NT_STATUS_OK;
 }
@@ -4728,6 +4740,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 
 	while (xconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
+		unsigned sendmsg_flags = 0;
 		bool ok;
 		struct msghdr msg;
 
@@ -4801,7 +4814,14 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			.msg_iovlen = e->count,
 		};
 
-		ret = sendmsg(xconn->transport.sock, &msg, 0);
+#ifdef MSG_NOSIGNAL
+		sendmsg_flags |= MSG_NOSIGNAL;
+#endif
+#ifdef MSG_DONTWAIT
+		sendmsg_flags |= MSG_DONTWAIT;
+#endif
+
+		ret = sendmsg(xconn->transport.sock, &msg, sendmsg_flags);
 		if (ret == 0) {
 			/* propagate end of file */
 			return NT_STATUS_INTERNAL_ERROR;
@@ -4864,6 +4884,7 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
+	unsigned recvmsg_flags = 0;
 	int ret;
 	int err;
 	bool retry;
@@ -4909,7 +4930,14 @@ again:
 		.msg_iovlen = 1,
 	};
 
-	ret = recvmsg(xconn->transport.sock, &msg, 0);
+#ifdef MSG_NOSIGNAL
+	recvmsg_flags |= MSG_NOSIGNAL;
+#endif
+#ifdef MSG_DONTWAIT
+	recvmsg_flags |= MSG_DONTWAIT;
+#endif
+
+	ret = recvmsg(xconn->transport.sock, &msg, recvmsg_flags);
 	if (ret == 0) {
 		/* propagate end of file */
 		status = NT_STATUS_END_OF_FILE;
