@@ -4765,7 +4765,7 @@ static NTSTATUS smbd_smb2_advance_send_queue(struct smbXsrv_connection *xconn,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
+static NTSTATUS smbd_smb2_flush_with_sendmsg(struct smbXsrv_connection *xconn)
 {
 	int ret;
 	int err;
@@ -4888,6 +4888,18 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 								status);
 			return status;
 		}
+	}
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
+{
+	NTSTATUS status;
+
+	status = smbd_smb2_flush_with_sendmsg(xconn);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
 	}
 
 	/*
