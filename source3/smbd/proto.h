@@ -933,7 +933,6 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 /* The following definitions come from smbd/reply.c  */
 
 NTSTATUS check_path_syntax(char *path);
-NTSTATUS check_path_syntax_wcard(char *path, bool *p_contains_wcard);
 NTSTATUS check_path_syntax_posix(char *path);
 size_t srvstr_get_path(TALLOC_CTX *ctx,
 			const char *inbuf,

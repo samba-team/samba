@@ -233,17 +233,6 @@ NTSTATUS check_path_syntax(char *path)
 }
 
 /****************************************************************************
- Ensure we check the path in *exactly* the same way as W2K for regular pathnames.
- Wildcards allowed - p_contains_wcard returns true if the last component contained
- a wildcard.
-****************************************************************************/
-
-NTSTATUS check_path_syntax_wcard(char *path, bool *p_contains_wcard)
-{
-	return check_path_syntax_internal(path, False, p_contains_wcard);
-}
-
-/****************************************************************************
  Check the path for a POSIX client.
  We're assuming here that '/' is not the second byte in any multibyte char
  set (a safe assumption).
