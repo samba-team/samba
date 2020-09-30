@@ -25,6 +25,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+struct streams_depot_config_data {
+	const char *directory;
+	bool check_valid;
+	bool delete_lost;
+};
+
 /*
  * Excerpt from a mail from tridge:
  *
@@ -152,6 +158,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const SMB_STRUCT_STAT *base_sbuf, bool create_it)
 {
+	struct streams_depot_config_data *config = NULL;
 	uint32_t hash;
 	struct smb_filename *smb_fname_hash = NULL;
 	char *result = NULL;
@@ -161,14 +168,16 @@ static char *stream_dir(vfs_handle_struct *handle,
 	struct file_id id;
 	uint8_t id_buf[16];
 	char id_hex[sizeof(id_buf) * 2 + 1];
-	char *rootdir = NULL;
+	const char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
 	struct vfs_rename_how rhow = { .flags = 0, };
 	int ret;
 
-	rootdir = stream_rootdir(handle,
-				 talloc_tos());
+	SMB_VFS_HANDLE_GET_DATA(
+		handle, config, struct streams_depot_config_data, return NULL);
+
+	rootdir = config->directory;
 	if (rootdir == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -243,19 +252,13 @@ static char *stream_dir(vfs_handle_struct *handle,
 	if (SMB_VFS_NEXT_STAT(handle, smb_fname_hash) == 0) {
 		struct smb_filename *smb_fname_new = NULL;
 		char *newname;
-		bool check_valid, delete_lost;
 
 		if (!S_ISDIR(smb_fname_hash->st.st_ex_mode)) {
 			errno = EINVAL;
 			goto fail;
 		}
 
-		check_valid = lp_parm_bool(SNUM(handle->conn),
-					   "streams_depot",
-					   "check_valid",
-					   true);
-
-		if (!check_valid ||
+		if (!config->check_valid ||
 		    file_is_valid(handle, smb_fname)) {
 			return result;
 		}
@@ -267,10 +270,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		 */
 
 	again:
-		delete_lost = lp_parm_bool(SNUM(handle->conn), "streams_depot",
-					   "delete_lost", false);
-
-		if (delete_lost) {
+		if (config->delete_lost) {
 			DBG_NOTICE("Someone has recreated a file under an "
 				   "existing inode. Removing: %s\n",
 				   smb_fname_hash->base_name);
@@ -403,14 +403,12 @@ static char *stream_dir(vfs_handle_struct *handle,
 	}
 
 	TALLOC_FREE(rootdir_fname);
-	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	return result;
 
  fail:
 	TALLOC_FREE(rootdir_fname);
-	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	TALLOC_FREE(result);
@@ -499,6 +497,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 					void *private_data),
 			     void *private_data)
 {
+	struct streams_depot_config_data *config = NULL;
 	char *dirname;
 	char *rootdir = NULL;
 	char *orig_connectpath = NULL;
@@ -507,6 +506,9 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	const char *dname = NULL;
 	char *talloced = NULL;
 	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(
+		handle, config, struct streams_depot_config_data, return NT_STATUS_NO_MEMORY);
 
 	dirname = stream_dir(handle, smb_fname_base, &smb_fname_base->st,
 			     false);
@@ -540,7 +542,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	 * path for this share. We're dealing with absolute paths
 	 * here so we don't care about chdir calls.
 	 */
-	rootdir = stream_rootdir(handle, talloc_tos());
+	rootdir = talloc_strdup(talloc_tos(), config->directory);
 	if (rootdir == NULL) {
 		TALLOC_FREE(dir_smb_fname);
 		TALLOC_FREE(dirname);
@@ -733,11 +735,15 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const struct vfs_open_how *how)
 {
+	struct streams_depot_config_data *config = NULL;
 	struct smb_filename *smb_fname_stream = NULL;
 	struct files_struct *fspcwd = NULL;
 	NTSTATUS status;
 	bool create_it;
 	int ret = -1;
+
+	SMB_VFS_HANDLE_GET_DATA(
+		handle, config, struct streams_depot_config_data, return -1);
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPENAT(handle,
@@ -772,13 +778,8 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	}
 
 	if (create_it) {
-		bool check_valid = lp_parm_bool(
-			SNUM(handle->conn),
-			"streams_depot",
-			"check_valid",
-			true);
 
-		if (check_valid) {
+		if (config->check_valid) {
 			char buf = '1';
 
 			DBG_DEBUG("marking file %s as valid\n",
@@ -1275,7 +1276,50 @@ static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) | FILE_NAMED_STREAMS;
 }
 
+static int streams_depot_connect(
+	struct vfs_handle_struct *handle,
+	const char *service,
+	const char *user)
+{
+	struct connection_struct *conn = handle->conn;
+	struct streams_depot_config_data *config = NULL;
+	int ret;
+
+	config = talloc_zero(conn, struct streams_depot_config_data);
+	if (config == NULL) {
+		goto nomem;
+	}
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
+	}
+
+	config->check_valid = lp_parm_bool(
+		SNUM(conn), "streams_depot", "check_valid", true);
+
+	config->directory = stream_rootdir(handle, config);
+
+	config->delete_lost = lp_parm_bool(
+		SNUM(conn), "streams_depot", "delete_lost", false);
+
+	SMB_VFS_HANDLE_SET_DATA(
+		handle,
+		config,
+		NULL,
+		struct streams_depot_config_data,
+		return -1);
+
+	return 0;
+nomem:
+	TALLOC_FREE(config);
+	errno = ENOMEM;
+	return -1;
+}
+
 static struct vfs_fn_pointers vfs_streams_depot_fns = {
+	.connect_fn = streams_depot_connect,
 	.fs_capabilities_fn = streams_depot_fs_capabilities,
 	.openat_fn = streams_depot_openat,
 	.stat_fn = streams_depot_stat,
