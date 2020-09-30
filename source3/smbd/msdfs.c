@@ -58,8 +58,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 				const char *pathname,
 				bool allow_wcards,
 				bool allow_broken_path,
-				struct dfs_path *pdp, /* MUST BE TALLOCED */
-				bool *ppath_contains_wcard)
+				struct dfs_path *pdp) /* MUST BE TALLOCED */
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -207,8 +206,6 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	p++;
 
   local_path:
-
-	*ppath_contains_wcard = False;
 
 	pdp->reqpath = p;
 
@@ -829,15 +826,13 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	bool search_wcard_flag = (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
-	bool ignore = false;
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = parse_dfs_path(conn, path_in, search_wcard_flag,
-				allow_broken_path, pdp,
-			&ignore);
+				allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -976,7 +971,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	struct connection_struct *conn = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
-	bool dummy;
 	struct dfs_path *pdp = talloc_zero(frame, struct dfs_path);
 
 	if (!pdp) {
@@ -986,8 +980,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path,
-				pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -1229,15 +1222,13 @@ bool create_junction(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	int snum;
-	bool dummy;
 	struct dfs_path *pdp = talloc(ctx,struct dfs_path);
 	NTSTATUS status;
 
 	if (!pdp) {
 		return False;
 	}
-	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path,
-				pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path, pdp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
