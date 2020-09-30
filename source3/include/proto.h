@@ -237,6 +237,9 @@ char *sys_realpath(const char *path);
 int sys_get_number_of_cores(void);
 #endif
 
+bool sys_have_proc_fds(void);
+const char *sys_proc_fd_path(int fd, char *buf, int bufsize);
+
 struct stat;
 void init_stat_ex_from_stat (struct stat_ex *dst,
 			    const struct stat *src,
