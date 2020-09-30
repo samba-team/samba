@@ -216,12 +216,13 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	if (pdp->posix_path) {
 		status = check_path_syntax_posix(pdp->reqpath);
 	} else {
-		if (allow_wcards) {
-			status = check_path_syntax_wcard(pdp->reqpath,
-					ppath_contains_wcard);
-		} else {
-			status = check_path_syntax(pdp->reqpath);
+		if (!allow_wcards) {
+			bool has_wcard = ms_has_wild(pdp->reqpath);
+			if (has_wcard) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 		}
+		status = check_path_syntax(pdp->reqpath);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
