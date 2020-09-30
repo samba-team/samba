@@ -824,70 +824,6 @@ NTSTATUS fd_open(files_struct *fsp,
 	return status;
 }
 
-NTSTATUS fd_openat(files_struct *fsp,
-		   int flags,
-		   mode_t mode)
-{
-	NTSTATUS status = NT_STATUS_OK;
-	int saved_errno = 0;
-
-	if (fsp->dirfsp == fsp->conn->cwd_fsp) {
-		return fd_open(fsp, flags, mode);
-	}
-
-	/*
-	 * Never follow symlinks at this point, filename_convert() should have
-	 * resolved any symlink.
-	 */
-
-	flags |= O_NOFOLLOW;
-
-	/*
-	 * Only follow symlinks within a share
-	 * definition.
-	 */
-	fsp->fh->fd = SMB_VFS_OPENAT(fsp->conn,
-				     fsp->dirfsp,
-				     fsp->fsp_name,
-				     fsp,
-				     flags,
-				     mode);
-	if (fsp->fh->fd == -1) {
-		saved_errno = errno;
-	}
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-
-	if (fsp->fh->fd == -1) {
-		int posix_errno = link_errno_convert(errno);
-
-		status = map_nt_error_from_unix(posix_errno);
-
-		if (errno == EMFILE) {
-			static time_t last_warned = 0L;
-
-			if (time((time_t *) NULL) > last_warned) {
-				DEBUG(0,("Too many open files, unable "
-					"to open more!  smbd's max "
-					"open files = %d\n",
-					lp_max_open_files()));
-				last_warned = time((time_t *) NULL);
-			}
-		}
-
-		DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
-			  fsp_str_dbg(fsp), flags, (int)mode,
-			  fsp->fh->fd, strerror(errno));
-		return status;
-	}
-
-	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
-		  fsp_str_dbg(fsp), flags, (int)mode, fsp->fh->fd);
-
-	return status;
-}
-
 /****************************************************************************
  Close the file associated with a fsp.
 ****************************************************************************/
@@ -1108,7 +1044,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		status = fd_openat(fsp, flags, mode);
+		status = fd_open(fsp, flags, mode);
 		*file_created = false;
 		return status;
 	}
@@ -1117,7 +1053,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		/*
 		 * Fail if already exists, just pass through.
 		 */
-		status = fd_openat(fsp, flags, mode);
+		status = fd_open(fsp, flags, mode);
 
 		/*
 		 * Here we've opened with O_CREAT|O_EXCL. If that went
@@ -1157,7 +1093,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = fd_openat(fsp, curr_flags, mode);
+	status = fd_open(fsp, curr_flags, mode);
 	if (NT_STATUS_IS_OK(status)) {
 		*file_created = !file_existed;
 		return NT_STATUS_OK;
@@ -1176,7 +1112,7 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 			curr_flags = flags | O_EXCL;
 		}
 
-		status = fd_openat(fsp, curr_flags, mode);
+		status = fd_open(fsp, curr_flags, mode);
 	}
 
 	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
@@ -4599,7 +4535,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	flags |= O_DIRECTORY;
 #endif
 
-	status = fd_openat(fsp, flags, 0);
+	status = fd_open(fsp, flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for "
 			"%s (%s)\n",

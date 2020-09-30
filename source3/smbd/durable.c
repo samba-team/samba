@@ -815,7 +815,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		flags = O_RDONLY;
 	}
 
-	status = fd_openat(fsp, flags, 0);
+	status = fd_open(fsp, flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		DEBUG(1, ("vfs_default_durable_reconnect: failed to open "
