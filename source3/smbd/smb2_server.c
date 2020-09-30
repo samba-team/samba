@@ -4732,6 +4732,39 @@ static int socket_error_from_errno(int ret,
 	return sys_errno;
 }
 
+static NTSTATUS smbd_smb2_advance_send_queue(struct smbXsrv_connection *xconn,
+					     struct smbd_smb2_send_queue **_e,
+					     size_t n)
+{
+	struct smbd_smb2_send_queue *e = *_e;
+	bool ok;
+
+	xconn->ack.unacked_bytes += n;
+
+	ok = iov_advance(&e->vector, &e->count, n);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (e->count > 0) {
+		return NT_STATUS_RETRY;
+	}
+
+	xconn->smb2.send_queue_len--;
+	DLIST_REMOVE(xconn->smb2.send_queue, e);
+
+	if (e->ack.req == NULL) {
+		*_e = NULL;
+		talloc_free(e->mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	e->ack.required_acked_bytes = xconn->ack.unacked_bytes;
+	DLIST_ADD_END(xconn->ack.queue, e);
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 {
 	int ret;
@@ -4747,7 +4780,6 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 	while (xconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
 		unsigned sendmsg_flags = 0;
-		bool ok;
 		struct msghdr msg;
 
 		if (!NT_STATUS_IS_OK(xconn->transport.status)) {
@@ -4845,29 +4877,17 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			return status;
 		}
 
-		xconn->ack.unacked_bytes += ret;
-
-		ok = iov_advance(&e->vector, &e->count, ret);
-		if (!ok) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		if (e->count > 0) {
-			/* we have more to write */
+		status = smbd_smb2_advance_send_queue(xconn, &e, ret);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			/* retry later */
 			TEVENT_FD_WRITEABLE(xconn->transport.fde);
 			return NT_STATUS_OK;
 		}
-
-		xconn->smb2.send_queue_len--;
-		DLIST_REMOVE(xconn->smb2.send_queue, e);
-
-		if (e->ack.req == NULL) {
-			talloc_free(e->mem_ctx);
-			continue;
+		if (!NT_STATUS_IS_OK(status)) {
+			smbXsrv_connection_disconnect_transport(xconn,
+								status);
+			return status;
 		}
-
-		e->ack.required_acked_bytes = xconn->ack.unacked_bytes;
-		DLIST_ADD_END(xconn->ack.queue, e);
 	}
 
 	/*
