@@ -61,16 +61,14 @@
 #define IS_PATH_SEP(c,posix_only) ((c) == '/' || (!(posix_only) && (c) == '\\'))
 
 static NTSTATUS check_path_syntax_internal(char *path,
-					   bool posix_path,
-					   bool *p_last_component_contains_wcard)
+					   bool posix_path)
 {
 	char *d = path;
 	const char *s = path;
 	NTSTATUS ret = NT_STATUS_OK;
 	bool start_of_name_component = True;
 	bool stream_started = false;
-
-	*p_last_component_contains_wcard = False;
+	bool last_component_contains_wcard = false;
 
 	while (*s) {
 		if (stream_started) {
@@ -90,7 +88,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 		}
 
 		if ((*s == ':') && !posix_path && !stream_started) {
-			if (*p_last_component_contains_wcard) {
+			if (last_component_contains_wcard) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			/* Stream names allow more characters than file names.
@@ -124,7 +122,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 			start_of_name_component = True;
 			/* New component. */
-			*p_last_component_contains_wcard = False;
+			last_component_contains_wcard = false;
 			continue;
 		}
 
@@ -180,7 +178,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 					case '<':
 					case '>':
 					case '"':
-						*p_last_component_contains_wcard = True;
+						last_component_contains_wcard = true;
 						break;
 					default:
 						break;
@@ -228,8 +226,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 NTSTATUS check_path_syntax(char *path)
 {
-	bool ignore;
-	return check_path_syntax_internal(path, False, &ignore);
+	return check_path_syntax_internal(path, false);
 }
 
 /****************************************************************************
@@ -240,8 +237,7 @@ NTSTATUS check_path_syntax(char *path)
 
 NTSTATUS check_path_syntax_posix(char *path)
 {
-	bool ignore;
-	return check_path_syntax_internal(path, True, &ignore);
+	return check_path_syntax_internal(path, true);
 }
 
 /****************************************************************************
