@@ -270,7 +270,6 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 			bool posix_pathnames,
 			NTSTATUS *err)
 {
-	bool ignore;
 	size_t ret;
 
 	*pp_dest = NULL;
@@ -295,7 +294,7 @@ static size_t srvstr_get_path_internal(TALLOC_CTX *ctx,
 	if (posix_pathnames) {
 		*err = check_path_syntax_posix(*pp_dest);
 	} else {
-		*err = check_path_syntax_wcard(*pp_dest, &ignore);
+		*err = check_path_syntax(*pp_dest);
 	}
 
 	return ret;
