@@ -1458,6 +1458,16 @@ static NTSTATUS open_file(files_struct *fsp,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
+		if (S_ISLNK(smb_fname->st.st_ex_mode) &&
+		    !(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN))
+		{
+			/*
+			 * Don't allow stat opens on symlinks directly unless
+			 * it's a POSIX open.
+			 */
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
 		status = smbd_check_access_rights(conn,
 				conn->cwd_fsp,
 				smb_fname,
