@@ -4693,25 +4693,48 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 {
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *frame;
-	struct smb_acl_wrapper acl_wrapper;
+	struct smb_acl_wrapper acl_wrapper = { 0 };
+	int fd = fsp_get_pathref_fd(fsp);
+	struct smb_filename fname;
 	int ret;
 
-	/* This ensures that we also consider the default ACL */
-	if (fsp->fsp_flags.is_directory ||  fsp_get_io_fd(fsp) == -1) {
-		return posix_sys_acl_blob_get_file(handle,
-						fsp->fsp_name,
-						mem_ctx,
-						blob_description,
-						blob);
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *proc_fd_path = NULL;
+		char buf[PATH_MAX];
+
+		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (proc_fd_path == NULL) {
+			return -1;
+		}
+
+		fname = (struct smb_filename) {
+			.base_name = discard_const_p(char, proc_fd_path),
+		};
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+
+		fname = (struct smb_filename) {
+			.base_name = fsp->fsp_name->base_name,
+		};
 	}
+
 	frame = talloc_stackframe();
 
-	acl_wrapper.default_acl = NULL;
-
-	acl_wrapper.access_acl = smb_vfs_call_sys_acl_get_file(handle,
-					fsp->fsp_name,
+	acl_wrapper.access_acl = smb_vfs_call_sys_acl_get_file(
+					handle,
+					&fname,
 					SMB_ACL_TYPE_ACCESS,
 					frame);
+
+	if (fsp->fsp_flags.is_directory) {
+		acl_wrapper.default_acl = smb_vfs_call_sys_acl_get_file(
+						handle,
+						&fname,
+						SMB_ACL_TYPE_DEFAULT,
+						frame);
+	}
 
 	ret = smb_vfs_call_fstat(handle, fsp, &sbuf);
 	if (ret == -1) {
