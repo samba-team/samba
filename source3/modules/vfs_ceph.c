@@ -407,6 +407,8 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 			   int flags,
 			   mode_t mode)
 {
+	bool have_opath = false;
+	bool became_root = false;
 	int result = -ENOENT;
 
 	/*
@@ -421,8 +423,26 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
+#ifdef O_PATH
+	have_opath = true;
+	if (fsp->fsp_flags.is_pathref) {
+		flags |= O_PATH;
+	}
+#endif
+
+	if (fsp->fsp_flags.is_pathref && !have_opath) {
+		become_root();
+		became_root = true;
+	}
+
 	result = ceph_open(handle->data, smb_fname->base_name, flags, mode);
+
+	if (became_root) {
+		unbecome_root();
+	}
+
 out:
+	fsp->fsp_flags.have_proc_fds = false;
 	DBG_DEBUG("[CEPH] open(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
