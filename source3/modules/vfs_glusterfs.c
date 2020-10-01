@@ -729,6 +729,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 			      int flags,
 			      mode_t mode)
 {
+	bool became_root = false;
 	glfs_fd_t *glfd;
 	glfs_fd_t **p_tmp;
 
@@ -746,6 +747,15 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (fsp->fsp_flags.is_pathref) {
+		/*
+		 * ceph doesn't support O_PATH so we have to fallback to
+		 * become_root().
+		 */
+		become_root();
+		became_root = true;
+	}
+
 	if (flags & O_DIRECTORY) {
 		glfd = glfs_opendir(handle->data, smb_fname->base_name);
 	} else if (flags & O_CREAT) {
@@ -754,6 +764,12 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 	} else {
 		glfd = glfs_open(handle->data, smb_fname->base_name, flags);
 	}
+
+	if (became_root) {
+		unbecome_root();
+	}
+
+	fsp->fsp_flags.have_proc_fds = false;
 
 	if (glfd == NULL) {
 		END_PROFILE(syscall_openat);
