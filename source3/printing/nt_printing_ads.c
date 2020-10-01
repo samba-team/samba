@@ -338,6 +338,101 @@ out_ctx_free:
 	return result;
 }
 
+static WERROR nt_printer_devmode_to_mods(TALLOC_CTX *ctx,
+					struct spoolss_DeviceMode *devmode,
+					ADS_MODLIST *mods)
+{
+	char *str = NULL;
+	ADS_STATUS status;
+
+	/*
+	   the device mode fields bits allow us to make an educated guess if a
+	   printer feature is supported. For sure a feature must be unsupported if
+	   the fields bit is not set. Device Mode Extra Data and FeatureOptionPairs
+	   might help to figure out more information here. Common attributes, that
+	   we can't handle yet:
+		SPOOL_REG_PRINTBINNAMES - printBinNames
+		SPOOL_REG_PRINTMAXXEXTENT - printMaxXExtent
+		SPOOL_REG_PRINTMAXYEXTENT - printMaxYExtent
+		SPOOL_REG_PRINTMINXEXTENT - printMinXExtent
+		SPOOL_REG_PRINTMINYEXTENT - printMinYExtent
+		SPOOL_REG_PRINTSTAPLINGSUPPORTED - printStaplingSupported
+		SPOOL_REG_PRINTPAGESPERMINUTE - printPagesPerMinute
+		SPOOL_REG_PRINTRATE - printRate
+		SPOOL_REG_PRINTRATEUNIT - printRateUnit
+		SPOOL_REG_PRINTMEDIAREADY - printMediaReady
+		SPOOL_REG_PRINTMEDIASUPPORTED - printMediaSupported
+		SPOOL_REG_PRINTNUMBERUP - printNumberUp
+		SPOOL_REG_PRINTMAXCOPIES - printMaxCopies
+	*/
+	if (devmode->fields & DEVMODE_COLOR) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTCOLOR, "TRUE");
+	} else {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTCOLOR, "FALSE");
+	}
+	if (!ADS_ERR_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (devmode->fields & DEVMODE_DUPLEX) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTDUPLEXSUPPORTED, "TRUE");
+	} else {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTDUPLEXSUPPORTED, "FALSE");
+	}
+	if (!ADS_ERR_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (devmode->fields & DEVMODE_COLLATE) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTCOLLATE, "TRUE");
+	} else {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTCOLLATE, "FALSE");
+	}
+	if (!ADS_ERR_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	/* portrait mode is always supported, LANDSCAPE is optional */
+	status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTORIENTATIONSSUPPORTED, "PORTRAIT");
+	if (!ADS_ERR_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	if (devmode->fields & DEVMODE_ORIENTATION) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTORIENTATIONSSUPPORTED, "LANDSCAPE");
+		if (!ADS_ERR_OK(status)) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	/* the driverVersion attribute in AD contains actually specversion */
+	str = talloc_asprintf(ctx, "%u", devmode->specversion);
+	if (str == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	if (strlen(str) != 0) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_DRIVERVERSION, str);
+		if (!ADS_ERR_OK(status)) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	/* devmode->yresolution is a good candidate for printMaxResolutionSupported */
+	str = talloc_asprintf(ctx, "%u", devmode->yresolution);
+	if (str == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	if (strlen(str) != 0) {
+		status = ads_mod_str(ctx, mods, SPOOL_REG_PRINTMAXRESOLUTIONSUPPORTED, str);
+		if (!ADS_ERR_OK(status)) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	return WERR_OK;
+}
+
+
+
 static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 				      struct spoolss_PrinterInfo2 *info2,
 				      ADS_MODLIST *mods)
@@ -414,6 +509,14 @@ static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 	default:
 		DEBUG(3, ("unsupported printer attributes %x\n",
 			  info2->attributes));
+	}
+
+	if (info2->devmode != NULL) {
+		WERROR werr;
+		werr = nt_printer_devmode_to_mods(ctx, info2->devmode, mods);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
 	}
 
 	return WERR_OK;
