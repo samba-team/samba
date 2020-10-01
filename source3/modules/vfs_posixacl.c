@@ -141,10 +141,32 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 {
 	int res;
 	acl_t acl = smb_acl_to_posix(theacl);
+	int fd = fsp_get_pathref_fd(fsp);
+
 	if (acl == NULL) {
 		return -1;
 	}
-	res =  acl_set_fd(fsp_get_io_fd(fsp), acl);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		res = acl_set_fd(fd, acl);
+	} else if (fsp->fsp_flags.have_proc_fds) {
+		const char *proc_fd_path = NULL;
+		char buf[PATH_MAX];
+
+		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (proc_fd_path == NULL) {
+			return -1;
+		}
+		res = acl_set_file(proc_fd_path, ACL_TYPE_ACCESS, acl);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		res = acl_set_file(fsp->fsp_name->base_name,
+				   ACL_TYPE_ACCESS,
+				   acl);
+	}
+
 	acl_free(acl);
 	return res;
 }
