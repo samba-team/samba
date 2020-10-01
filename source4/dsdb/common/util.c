@@ -52,6 +52,7 @@
 #include "lib/util/smb_strtox.h"
 
 #undef strncasecmp
+#undef strcasecmp
 
 /*
  * This included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in

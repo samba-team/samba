@@ -46,6 +46,8 @@
 #include "../libds/common/flags.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
+
 struct oc_context {
 
 	struct ldb_module *module;

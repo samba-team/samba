@@ -80,6 +80,8 @@
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
+#undef strcasecmp
+
 struct operational_data {
 	struct ldb_dn *aggregate_dn;
 };

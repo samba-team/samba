@@ -39,6 +39,8 @@
 #include "param/param.h"
 #include "util/dlinklist.h"
 
+#undef strcasecmp
+
 struct dns_notify_watched_dn {
 	struct dns_notify_watched_dn *next, *prev;
 	struct ldb_dn *dn;

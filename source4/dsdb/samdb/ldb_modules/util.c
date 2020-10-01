@@ -29,6 +29,8 @@
 #include "dsdb/common/util.h"
 #include "libcli/security/security.h"
 
+#undef strcasecmp
+
 /*
   search for attrs on one DN, in the modules below
  */

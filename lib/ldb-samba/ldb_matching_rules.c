@@ -29,6 +29,8 @@
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include "lib/util/smb_strtox.h"
 
+#undef strcasecmp
+
 static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,
 					     const char *attr,

@@ -33,6 +33,7 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 
+#undef strcasecmp
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 

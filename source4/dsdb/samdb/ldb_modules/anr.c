@@ -34,6 +34,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
+
 /**
  * Make a and 'and' or 'or' tree from the two supplied elements 
  */

@@ -27,6 +27,8 @@
 #include "param/param.h"
 #include "lib/util/smb_strtox.h"
 
+#undef strcasecmp
+
 static struct hive_operations reg_backend_ldb;
 
 struct ldb_key_data

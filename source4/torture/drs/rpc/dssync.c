@@ -36,6 +36,8 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_paths.h"
 
+#undef strcasecmp
+
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *drs_pipe;
 	struct dcerpc_binding_handle *drs_handle;

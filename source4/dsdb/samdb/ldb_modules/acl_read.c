@@ -38,6 +38,8 @@
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#undef strcasecmp
+
 struct aclread_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
