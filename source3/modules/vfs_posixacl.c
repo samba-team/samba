@@ -69,8 +69,27 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
-	acl_t acl = acl_get_fd(fsp_get_io_fd(fsp));
+	acl_t acl = NULL;
 
+	if (!fsp->fsp_flags.is_pathref) {
+		acl = acl_get_fd(fsp_get_io_fd(fsp));
+	} else if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *proc_fd_path = NULL;
+		char buf[PATH_MAX];
+
+		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (proc_fd_path == NULL) {
+			return NULL;
+		}
+
+		acl = acl_get_file(proc_fd_path, ACL_TYPE_ACCESS);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		acl = acl_get_file(fsp->fsp_name->base_name, ACL_TYPE_ACCESS);
+	}
 	if (acl == NULL) {
 		return NULL;
 	}
