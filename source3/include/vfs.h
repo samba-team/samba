@@ -327,9 +327,11 @@
  * Version 43 - SMB_VFS_READ_DFS_PATHAT() should take a non-const name.
 		There's no easy way to return stat info for a DFS link
 		otherwise.
+ * Change to Version 44 - will ship with 4.14.
+ * Version 44 - Remove dirfsp arg from struct files_struct
  */
 
-#define SMB_VFS_INTERFACE_VERSION 43
+#define SMB_VFS_INTERFACE_VERSION 44
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -384,7 +386,6 @@ typedef struct files_struct {
 	struct smbXsrv_open *op;
 	struct connection_struct *conn;
 	struct fd_handle *fh;
-	struct files_struct *dirfsp;
 	unsigned int num_smb_operations;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */

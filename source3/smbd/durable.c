@@ -761,9 +761,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->close_write_time = nt_time_to_full_timespec(
 		cookie.close_write_time);
 
-	/* TODO: real dirfsp... */
-	fsp->dirfsp = fsp->conn->cwd_fsp;
-
 	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);

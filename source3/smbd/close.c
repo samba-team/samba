@@ -1300,18 +1300,6 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp->dirfsp != NULL &&
-	    fsp->dirfsp != fsp->conn->cwd_fsp)
-	{
-		status = fd_close(fsp->dirfsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		file_free(NULL, fsp->dirfsp);
-		fsp->dirfsp = NULL;
-	}
-
 	if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
 	} else if (fsp->fake_file_handle != NULL) {
