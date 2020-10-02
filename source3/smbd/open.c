@@ -4307,7 +4307,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 static NTSTATUS open_directory(connection_struct *conn,
 			       struct smb_request *req,
-			       struct files_struct **dirfsp,
 			       uint32_t access_mask,
 			       uint32_t share_access,
 			       uint32_t create_disposition,
@@ -4324,8 +4323,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 	int info = 0;
 	int flags;
 	bool ok;
-
-	SMB_ASSERT(*dirfsp == conn->cwd_fsp);
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
@@ -4350,7 +4347,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 file_attributes);
 
 	status = smbd_calculate_access_mask(conn,
-					*dirfsp,
+					conn->cwd_fsp,
 					smb_dname,
 					false,
 					access_mask,
@@ -4481,7 +4478,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		status = smbd_check_access_rights(conn,
-						*dirfsp,
+						conn->cwd_fsp,
 						smb_dname,
 						false,
 						access_mask);
@@ -5696,7 +5693,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		oplock_request = 0;
 		status = open_directory(conn,
 					req,
-					dirfsp,
 					access_mask,
 					share_access,
 					create_disposition,
@@ -5749,7 +5745,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			oplock_request = 0;
 			status = open_directory(conn,
 						req,
-						dirfsp,
 						access_mask,
 						share_access,
 						create_disposition,
