@@ -329,6 +329,7 @@
 		otherwise.
  * Change to Version 44 - will ship with 4.14.
  * Version 44 - Remove dirfsp arg from struct files_struct
+ * Version 44 - Remove dirfsp arg to SMB_VFS_CREATE_FILE()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -774,7 +775,6 @@ struct vfs_fn_pointers {
 			 mode_t mode);
 	NTSTATUS (*create_file_fn)(struct vfs_handle_struct *handle,
 				   struct smb_request *req,
-				   struct files_struct **dirfsp,
 				   struct smb_filename *smb_fname,
 				   uint32_t access_mask,
 				   uint32_t share_access,
@@ -1289,7 +1289,6 @@ int smb_vfs_call_openat(struct vfs_handle_struct *handle,
 			mode_t mode);
 NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct smb_request *req,
-				  struct files_struct **dirfsp,
 				  struct smb_filename *smb_fname,
 				  uint32_t access_mask,
 				  uint32_t share_access,
@@ -1750,7 +1749,6 @@ int vfs_not_implemented_openat(vfs_handle_struct *handle,
 			       mode_t mode);
 NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				struct smb_request *req,
-				struct files_struct **dirfsp,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t share_access,

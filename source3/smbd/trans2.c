@@ -167,7 +167,6 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,           /* conn */
 		req,            /* req */
-		&conn->cwd_fsp,  /* dirfsp */
 		smb_fname_tmp,  /* fname */
 		access_mask,    /* access_mask */
 		share_access,   /* share_access */
@@ -1437,7 +1436,6 @@ static void call_trans2open(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
@@ -2974,7 +2972,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	ntstatus = SMB_VFS_CREATE_FILE(
 			conn, /* conn */
 			req, /* req */
-			&conn->cwd_fsp, /* dirfsp */
 			smb_dname, /* dname */
 			FILE_LIST_DIRECTORY, /* access_mask */
 			FILE_SHARE_READ|
@@ -6736,7 +6733,6 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname_tmp,				/* fname */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -8001,7 +7997,6 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -8515,7 +8510,6 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
@@ -8757,7 +8751,6 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
@@ -8900,7 +8893,6 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		DELETE_ACCESS,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */

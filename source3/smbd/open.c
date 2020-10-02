@@ -4661,7 +4661,6 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_dname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
@@ -4854,7 +4853,6 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
-			 &conn->cwd_fsp,	/* dirfsp */
 			 smb_fname_cp,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
@@ -5875,7 +5873,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
-			     struct files_struct **_dirfsp,
 			     struct smb_filename *smb_fname,
 			     uint32_t access_mask,
 			     uint32_t share_access,

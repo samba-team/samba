@@ -844,7 +844,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -899,7 +898,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -1103,7 +1101,6 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
-		&conn->cwd_fsp,				/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */

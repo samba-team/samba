@@ -201,7 +201,6 @@ int vfs_not_implemented_openat(vfs_handle_struct *handle,
 
 NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				struct smb_request *req,
-				struct files_struct **dirsp,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t share_access,
