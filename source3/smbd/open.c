@@ -1367,6 +1367,16 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/*
+		 * Close the existing pathref fd and set fsp_flags.is_pathref to
+		 * false so we get a full fd this time.
+		 */
+		status = fd_close(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		fsp->fsp_flags.is_pathref = false;
+
+		/*
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
@@ -1466,6 +1476,33 @@ static NTSTATUS open_file(files_struct *fsp,
 			 * it's a POSIX open.
 			 */
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		if (!fsp->fsp_flags.is_pathref) {
+			/*
+			 * There is only one legit case where end up here:
+			 * openat_pathref_fsp() failed to open a symlink, so the
+			 * fsp was created by fsp_new() which doesn't set
+			 * is_pathref. Other then that, we should always have a
+			 * pathref fsp at this point. The subsequent checks
+			 * assert this.
+			 */
+			if (!(smb_fname->flags & SMB_FILENAME_POSIX_PATH)) {
+				DBG_ERR("[%s] is not a POSIX pathname\n",
+					smb_fname_str_dbg(smb_fname));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
+				DBG_ERR("[%s] is not a symlink\n",
+					smb_fname_str_dbg(smb_fname));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			if (fsp_get_pathref_fd(fsp) != -1) {
+				DBG_ERR("fd for [%s] is not -1: fd [%d]\n",
+					smb_fname_str_dbg(smb_fname),
+					fsp_get_pathref_fd(fsp));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		}
 
 		status = smbd_check_access_rights(conn,
@@ -4486,6 +4523,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/*
 	 * Setup the files_struct for it.
 	 */
@@ -4519,6 +4561,16 @@ static NTSTATUS open_directory(connection_struct *conn,
 	   See bug #9870.
 	*/
 	mtimespec = make_omit_timespec();
+
+	/*
+	 * Close the existing pathref fd and set fsp_flags.is_pathref to
+	 * false so we get a full fd this time.
+	 */
+	status = fd_close(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	fsp->fsp_flags.is_pathref = false;
 
 	/* POSIX allows us to open a directory with O_RDONLY. */
 	flags = O_RDONLY;
@@ -5658,14 +5710,45 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	status = file_new(req, conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	/*
+	 * Now either reuse smb_fname->fsp or allocate a new fsp if
+	 * smb_fname->fsp is NULL. The latter will be the case when processing a
+	 * request to create a file that doesn't exist.
+	 */
+	if (smb_fname->fsp != NULL) {
+		fsp = smb_fname->fsp;
+
+		/*
+		 * Unlink the fsp from the smb_fname so the fsp is not
+		 * autoclosed by the smb_fname pathref fsp talloc destructor.
+		 */
+		smb_fname_fsp_unlink(smb_fname);
+
+		status = fsp_bind_smb(fsp, req);
+		if (!NT_STATUS_IS_OK(status)) {
+			file_free(req, fsp);
+			return status;
+		}
+
+		if (fsp->base_fsp != NULL) {
+			fd_close(fsp->base_fsp);
+			file_free(NULL, fsp->base_fsp);
+			fsp->base_fsp = NULL;
+		}
 	}
 
-	status = fsp_set_smb_fname(fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	if (fsp == NULL) {
+		/* Creating file */
+		status = file_new(req, conn, &fsp);
+		if(!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		status = fsp_set_smb_fname(fsp, smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		fsp->fsp_name->fsp = fsp;
 	}
 
 	if (base_fsp) {
