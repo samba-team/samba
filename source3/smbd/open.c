@@ -1159,7 +1159,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	bool truncating = (flags & O_TRUNC);
 	bool open_fd = false;
 
-	fsp->fh->fd = -1;
 	errno = EPERM;
 
 	/* Check permissions */
@@ -1392,7 +1391,6 @@ static NTSTATUS open_file(files_struct *fsp,
 				     smb_fname->base_name);
 		}
 	} else {
-		fsp->fh->fd = -1; /* What we used to call a stat open. */
 		if (!file_existed) {
 			/* File must exist for a stat open. */
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
