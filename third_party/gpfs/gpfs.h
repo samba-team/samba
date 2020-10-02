@@ -28,7 +28,7 @@
 /* OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF       */
 /* ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                   */
 /*                                                                              */
-/* @(#)42       1.1.12.3  src/avs/fs/mmfs/ts/util/gpfs.h, mmfs, avs_rttn423, rttn423s001a 4/10/17 10:46:33 */
+/* @(#)42       1.1.15.1  src/avs/fs/mmfs/ts/util/gpfs.h, mmfs, avs_rtac505, rtac5052017d.b 4/7/20 08:36:44 */
 /*
  *  Library calls for GPFS interfaces
  */
@@ -44,7 +44,7 @@
    end of this header. */
 /* #define GPFS_64BIT_INODES 1 */
 
-#define NFS_IP_SIZE 32
+#define NFS_IP_SIZE 46
 
 #ifdef __cplusplus
 extern "C" {
@@ -334,6 +334,11 @@ gpfs_getacl(const char *pathname,
             int flags,
             void *acl);
 
+int GPFS_API
+gpfs_getacl_fd(gpfs_file_t fileDesc,
+               int flags,
+               void *acl);
+
 
 /* NAME:        gpfs_putacl()
  *
@@ -354,6 +359,11 @@ int GPFS_API
 gpfs_putacl(const char *pathname,
             int flags,
             void *acl);
+
+int GPFS_API
+gpfs_putacl_fd(gpfs_file_t fileDesc,
+               int flags,
+               void *acl);
 
 
 /* NAME:        gpfs_prealloc()
@@ -919,6 +929,8 @@ typedef struct gpfs_direntx64
 #define GPFS_DEFLAG_IJUNCTION 0x0002 /* DirEnt is a inode space junction */
 #define GPFS_DEFLAG_ORPHAN    0x0004 /* DirEnt is an orphan (pcache) */
 #define GPFS_DEFLAG_CLONE     0x0008 /* DirEnt is a clone child */
+#define GPFS_DEFLAG_OBJECT    0x0010 /* DirEnt is for an AFM Object */
+#define GPFS_DEFLAG_OBJECT_DIR 0x0020 /* DirEnt is for an AFM Object directory */
 
 /* Define a version number for the iattr data to allow future changes
    in this structure. Careful callers should also use the ia_reclen field
@@ -1033,11 +1045,11 @@ typedef struct gpfs_iattr64
 
 #define GPFS_IAFLAG_APPENDONLY      0x00400000 /* AppendOnly only */
 #define GPFS_IAFLAG_DELETED         0x00800000 /* inode has been deleted */
-#ifdef ZIP
 #define GPFS_IAFLAG_ILLCOMPRESSED   0x01000000 /* may not be properly compressed */
-#endif
 #define GPFS_IAFLAG_FPOILLPLACED    0x02000000 /* may not be properly placed per
                                                   FPO attributes (bgf, wad, wadfg) */
+#define GPFS_IAFLAG_OBJECT          0x04000000 /* Object directory entry */
+#define GPFS_IAFLAG_OBJECT_DIR      0x08000000 /* Object directory */
 
 /* Define flags for window's attributes */
 #define GPFS_IWINFLAG_ARCHIVE       0x0001 /* Archive */
@@ -1117,9 +1129,8 @@ typedef struct gpfs_fssnap_id
 #define GPFS_ATTRFLAG_INCL_ENCR          0x0040  /* Include encryption attributes */
 #define GPFS_ATTRFLAG_SKIP_CLONE         0x0080  /* Skip clone attributes */
 #define GPFS_ATTRFLAG_MODIFY_CLONEPARENT 0x0100  /* Allow modification on clone parent */
-#ifdef ZIP
 #define GPFS_ATTRFLAG_NO_COMPRESSED      0x0200  /* exclude "compressed" attribute */
-#endif
+#define GPFS_ATTRFLAG_SKIP_COMPRESSION   0x0400  /* Skip compression attribute */
 
 /* Define structure used by gpfs_statfspool */
 typedef struct gpfs_statfspool_s
@@ -2447,6 +2458,35 @@ gpfs_iputattrsx(gpfs_ifile_t *ifile,
                 void *buffer,
                 const char *pathName);
 
+/* NAME:        gpfs_igetcompressionlib()
+ *
+ * FUNCTION:    Retrieves the selected compression library from ifile which has been
+ *              open by gpfs_iopen().
+ *
+ * Input:       ifile:      pointer to gpfs_ifile_t from gpfs_iopen
+ *              buffer:     pointer to buffer for key and returned extended
+ *                          attribute value
+ *              bufferSize: size of buffer, should be enough to save attribute value
+ *              attrSize:   ptr to key length as input and ptr to the returned
+ *                          size of attributes as putput.
+ *
+ * Returns:      0      Successful
+ *              -1      Failure and errno is set
+ *
+ * Errno:       ENOSYS  function not available
+ *              EPERM   caller must have superuser priviledges
+ *              ESTALE  cached fs information was invalid
+ *              ENOSPC  buffer too small to return all attributes
+ *                      *attrSize will be set to the size necessary
+ *              EINVAL  buffer is NULL
+ *              EIO     selected compression library is corrupted or not available
+ *              GPFS_E_INVAL_IFILE bad ifile parameters
+ */
+int GPFS_API
+gpfs_igetcompressionlib(gpfs_ifile_t *ifile,
+                        void *buffer,
+                        int bufferSize,
+                        int *attrSize);
 
 /* NAME:        gpfs_igetfilesetname()
  *
@@ -3183,8 +3223,14 @@ typedef enum
   GPFS_LWE_EVENT_FILEOPEN_WRITE  = 15, /* Open with Writing privileges - EVENT 'OPEN_WRITE' - deprecated, use 'OPEN' */
 
   GPFS_LWE_EVENT_FILEPOOL_CHANGE = 16, /* Open with Writing privileges - EVENT 'OPEN_WRITE' - deprecated, use 'OPEN' */
+  GPFS_LWE_EVENT_XATTR_CHANGE = 17, /* EAs of file are changed */
+  GPFS_LWE_EVENT_ACL_CHANGE = 18, /* ACLs (both GPFS ACLs and Posix permissions) of a file are changed */
+  GPFS_LWE_EVENT_CREATE = 19, /* create, including mkdir, symlink, special file */
+  GPFS_LWE_EVENT_GPFSATTR_CHANGE = 20, /* ts-specific attributes of file are changed */
+  GPFS_LWE_EVENT_FILETRUNCATE    = 21, /* "File Truncate Event" 'TRUNCATE' */
+  GPFS_LWE_EVENT_FS_UNMOUNT_ALL = 22, /* FS is not externally mounted anywhere */
 
-  GPFS_LWE_EVENT_MAX = 17, /* 1 greater than any of the above */
+  GPFS_LWE_EVENT_MAX = 23, /* 1 greater than any of the above */
 } gpfs_lwe_eventtype_t;
 
 
@@ -3223,6 +3269,7 @@ typedef enum
 #define LWE_DATA_BYTES_WRITTEN    0x00100000  /* "bytesWritten" */
 #define LWE_DATA_CLUSTER_NAME     0x00200000  /* "clusterName" */
 #define LWE_DATA_NODE_NAME        0x00400000  /* "nodeName" */
+#define LWE_DATA_LWESEND          0x00800000  /* "lweSend" */
 
 /*
  * Define light weight events
@@ -3292,10 +3339,12 @@ static const gpfs_lwe_token_t  _gpfs_lwe_invalid_token = { 0, 1 };
 
 /* LWE data events are generated from user access
  * to a LWE managed region. */
-#define GPFS_LWE_DATAEVENT_NONE     (0x0)
-#define GPFS_LWE_DATAEVENT_READ     (0x1)
-#define GPFS_LWE_DATAEVENT_WRITE    (0x2)
-#define GPFS_LWE_DATAEVENT_TRUNCATE (0x4)
+#define GPFS_LWE_DATAEVENT_NONE               (0x0)
+#define GPFS_LWE_DATAEVENT_READ               (0x1)
+#define GPFS_LWE_DATAEVENT_WRITE              (0x2)
+#define GPFS_LWE_DATAEVENT_TRUNCATE           (0x4)
+#define GPFS_LWE_ATTRCHANGEEVENT_IMMUTABILITY (0x8)
+#define GPFS_LWE_ATTRCHANGEEVENT_APPENDONLY   (0x10)
 
 
 
@@ -3753,8 +3802,6 @@ gpfs_lwe_putattrs(gpfs_lwe_sessid_t  sid,
                   void              *buffer,
                   const char        *pathName);
 
-
-
 const char* GPFS_API
 gpfs_get_fspathname_from_fsname(const char* fsname_or_path);
 /* Check that fsname_or_path refers to a GPFS file system and find the path to its root
@@ -3801,7 +3848,7 @@ int GPFS_API
 gpfs_qos_get(
              const char *fspathname,
 	     int  *classnumP,
-             char  classname[18], /* "gold", "silver", or .. "1" or "2" .. */
+             char  classname[GPFS_MAXNAMLEN+1], /* "gold", "silver", or .. "1" or "2" .. */
              int   id,        /* process id or  pgrp or userid */
              int   which,    /* process, pgrp or user */
              double* qshareP); /* return the share, percentage or when negative IOP limit */
@@ -3825,7 +3872,7 @@ int GPFS_API
 gpfs_qos_lkupVal(
                   const char *fspathname,
 		  int        val,
-                  char    classname[18],
+                  char    classname[GPFS_MAXNAMLEN+1],
                   double* qshareP);
 
 int GPFS_API
