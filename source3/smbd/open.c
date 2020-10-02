@@ -5412,7 +5412,6 @@ static NTSTATUS lease_match(connection_struct *conn,
 
 static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     struct smb_request *req,
-				     struct files_struct **dirfsp,
 				     struct smb_filename *smb_fname,
 				     uint32_t access_mask,
 				     uint32_t share_access,
@@ -5434,8 +5433,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
-
-	SMB_ASSERT(*dirfsp == conn->cwd_fsp);
 
 	DBG_DEBUG("create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -5612,7 +5609,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		/* Open the base file. */
 		status = create_file_unixpath(conn,
 					      NULL,
-					      dirfsp,
 					      smb_fname_base,
 					      0,
 					      FILE_SHARE_READ
@@ -5651,11 +5647,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
-	if (*dirfsp == fsp->conn->cwd_fsp) {
-		fsp->dirfsp = fsp->conn->cwd_fsp;
-	} else {
-		fsp->dirfsp = talloc_move(fsp, dirfsp);
-	}
+	fsp->dirfsp = fsp->conn->cwd_fsp;
 
 	if (base_fsp) {
 		/*
@@ -6035,7 +6027,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 
 	status = create_file_unixpath(conn,
 				      req,
-				      _dirfsp,
 				      smb_fname,
 				      access_mask,
 				      share_access,
