@@ -1669,7 +1669,7 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_META_NETATALK:
-		ret = close(fsp->fh->fd);
+		ret = close(fsp_get_pathref_fd(fsp));
 		fsp_set_fd(fsp, -1);
 		break;
 
@@ -1698,7 +1698,7 @@ static int fruit_close_rsrc(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_RSRC_XATTR:
-		ret = close(fsp->fh->fd);
+		ret = close(fsp_get_pathref_fd(fsp));
 		fsp_set_fd(fsp, -1);
 		break;
 
@@ -1716,7 +1716,7 @@ static int fruit_close(vfs_handle_struct *handle,
 	int ret;
 	int fd;
 
-	fd = fsp->fh->fd;
+	fd = fsp_get_pathref_fd(fsp);
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(fsp->fsp_name), fd);
 

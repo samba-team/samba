@@ -521,10 +521,11 @@ static void add_fd_to_close_entry_fn(
 	void *private_data)
 {
 	struct add_fd_to_close_entry_state *state = private_data;
+	int fd = fsp_get_pathref_fd(state->fsp);
 	TDB_DATA values[] = {
 		value,
-		{ .dptr = (uint8_t *)&(state->fsp->fh->fd),
-		  .dsize = sizeof(state->fsp->fh->fd) },
+		{ .dptr = (uint8_t *)&fd,
+		  .dsize = sizeof(fd) },
 	};
 	NTSTATUS status;
 
@@ -593,7 +594,7 @@ int fd_close_posix(const struct files_struct *fsp)
 		 * open file description lock semantics which only removes
 		 * locks on the file descriptor we're closing. Just close.
 		 */
-		return close(fsp->fh->fd);
+		return close(fsp_get_pathref_fd(fsp));
 	}
 
 	if (get_lock_ref_count(fsp)) {
@@ -626,7 +627,7 @@ int fd_close_posix(const struct files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	return close(fsp->fh->fd);
+	return close(fsp_get_pathref_fd(fsp));
 }
 
 /****************************************************************************

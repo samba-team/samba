@@ -419,8 +419,8 @@ static int aio_child_destructor(struct aio_child *child)
 static struct files_struct *close_fsp_fd(struct files_struct *fsp,
 					 void *private_data)
 {
-	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
-		close(fsp->fh->fd);
+	if ((fsp->fh != NULL) && (fsp_get_pathref_fd(fsp) != -1)) {
+		close(fsp_get_pathref_fd(fsp));
 		fsp_set_fd(fsp, -1);
 	}
 	return NULL;

@@ -505,7 +505,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	int ret;
 	int fd;
 
-	fd = fsp->fh->fd;
+	fd = fsp_get_pathref_fd(fsp);
 
 	DBG_DEBUG("streams_xattr_close called [%s] fd [%d]\n",
 			smb_fname_str_dbg(fsp->fsp_name), fd);

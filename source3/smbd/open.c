@@ -847,7 +847,7 @@ NTSTATUS fd_close(files_struct *fsp)
 	if (fsp->dptr) {
 		dptr_CloseDir(fsp);
 	}
-	if (fsp->fh->fd == -1) {
+	if (fsp_get_pathref_fd(fsp) == -1) {
 		/*
 		 * Either a directory where the dptr_CloseDir() already closed
 		 * the fd or a stat open.
