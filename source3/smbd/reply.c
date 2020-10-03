@@ -5991,7 +5991,7 @@ void reply_close(struct smb_request *smb1req)
 	DBG_NOTICE("Close %s fd=%d %s (numopen=%d)\n",
 		  fsp->fsp_flags.is_directory ?
 		  "directory" : "file",
-		  fsp->fh->fd, fsp_fnum_dbg(fsp),
+		  fsp_get_pathref_fd(fsp), fsp_fnum_dbg(fsp),
 		  conn->num_files_open);
 
 	if (!fsp->fsp_flags.is_directory) {

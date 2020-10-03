@@ -23,6 +23,7 @@
 #include "smb1_utils.h"
 #include "libcli/security/security.h"
 #include "lib/util/sys_rw_data.h"
+#include "smbd/fd_handle.h"
 
 /****************************************************************************
  Special FCB or DOS processing in the case of a sharing violation.
@@ -57,7 +58,7 @@ struct files_struct *fcb_or_dos_open(
 			  "private_options = 0x%"PRIx32", "
 			  "access_mask = 0x%"PRIx32"\n",
 			  fsp_str_dbg(fsp),
-			  fsp->fh->fd,
+			  fsp_get_pathref_fd(fsp),
 			  fsp->vuid,
 			  fsp->file_pid,
 			  fsp->fh->private_options,

@@ -551,7 +551,7 @@ static void add_fd_to_close_entry(const files_struct *fsp)
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
 	DBG_DEBUG("added fd %d file %s\n",
-		  fsp->fh->fd,
+		  fsp_get_pathref_fd(fsp),
 		  fsp_str_dbg(fsp));
 }
 

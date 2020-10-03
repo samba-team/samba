@@ -252,12 +252,12 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp)
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
-		       fsp->fh->fd,
+		       fsp_get_pathref_fd(fsp),
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(2, ("vfs_extd_audit: close fd %d %s %s\n",
-	       fsp->fh->fd,
+	       fsp_get_pathref_fd(fsp),
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
