@@ -46,7 +46,7 @@ static ssize_t getxattr_do(vfs_handle_struct *handle,
 	int saved_errno = 0;
 
 	become_root();
-	if (fsp && fsp->fh->fd != -1) {
+	if (fsp && fsp_get_pathref_fd(fsp) != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, xattr_name, val, size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(handle->conn, smb_fname,
@@ -196,7 +196,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		  (unsigned int)pblob->length, fsp_str_dbg(fsp)));
 
 	become_root();
-	if (fsp->fh->fd != -1) {
+	if (fsp_get_pathref_fd(fsp) != -1) {
 		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
 			pblob->data, pblob->length, 0);
 	} else {

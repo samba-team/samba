@@ -271,7 +271,7 @@ static void store_inheritance_attributes(files_struct *fsp,
 	pai_buf = create_pai_buf_v2(file_ace_list, dir_ace_list,
 				sd_type, &store_size);
 
-	if (fsp->fh->fd != -1) {
+	if (fsp_get_pathref_fd(fsp) != -1) {
 		ret = SMB_VFS_FSETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 				pai_buf, store_size, 0);
 	} else {
@@ -624,7 +624,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 	}
 
 	do {
-		if (fsp->fh->fd != -1) {
+		if (fsp_get_pathref_fd(fsp) != -1) {
 			ret = SMB_VFS_FGETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 					pai_buf, pai_buf_size);
 		} else {

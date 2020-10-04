@@ -133,7 +133,7 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (fsp != NULL && fsp->fh->fd != -1) {
+		if (fsp != NULL && fsp_get_pathref_fd(fsp) != -1) {
 			length = SMB_VFS_NEXT_FGETXATTR(handle,
 							fsp,
 							config->xattr_name,
@@ -335,7 +335,7 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 		return false;
 	}
 
-	if (fsp->fh->fd != -1) {
+	if (fsp_get_pathref_fd(fsp) != -1) {
 		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
 					     blob.data, blob.length, 0);
 	} else {
