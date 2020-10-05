@@ -108,7 +108,8 @@ fileserver_tests = [
          "CLEANUP4",
          "DELETE-STREAM",
          "BAD-NBT-SESSION",
-         "SMB1-WILD-MANGLE-UNLINK"]
+         "SMB1-WILD-MANGLE-UNLINK",
+         "SMB1-WILD-MANGLE-RENAME"]
 
 for t in fileserver_tests:
     fileserver_env = "fileserver_smb1"

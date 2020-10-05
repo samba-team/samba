@@ -12825,6 +12825,177 @@ static bool run_smb1_wild_mangle_unlink_test(int dummy)
 	return correct;
 }
 
+static bool run_smb1_wild_mangle_rename_test(int dummy)
+{
+	static struct cli_state *cli_posix = NULL;
+	static struct cli_state *cli = NULL;
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	const char *dname = "smb1_wild_mangle_rename";
+	const char *fooname = "smb1_wild_mangle_rename/foo";
+	const char *foostar_name = "smb1_wild_mangle_rename/fo*";
+	const char *wild_name = "smb1_wild_mangle_rename/*";
+	char *windows_rename_src = NULL;
+	const char *windows_rename_dst = "smb1_wild_mangle_rename\\ba*";
+	char *mangled_name = NULL;
+	NTSTATUS status;
+
+	printf("Starting SMB1 wild mangle rename test\n");
+
+	if (!torture_open_connection(&cli_posix, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli_posix->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli_posix);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("server doesn't support POSIX\n");
+		return false;
+	}
+
+	/* Open a Windows connection. */
+	if (!torture_open_connection(&cli, 0)) {
+		goto out;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	/* Ensure we start from fresh. */
+	cli_unlink(cli,
+		wild_name,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_posix_rmdir(cli_posix, dname);
+
+	/*
+	 * Create two files - 'foo' and 'fo*'.
+	 * We need POSIX extensions for this as 'fo*'
+	 * is not a valid Windows name.
+	 */
+
+	status = cli_posix_mkdir(cli_posix, dname, 0770);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s returned %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_open(cli_posix,
+				fooname,
+				O_RDWR|O_CREAT|O_EXCL,
+				0660,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open (create) of %s returned %s\n",
+			fooname,
+			nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	status = cli_posix_open(cli_posix,
+				foostar_name,
+				O_RDWR|O_CREAT|O_EXCL,
+				0660,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open (create) of %s returned %s\n",
+			foostar_name,
+			nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/*
+	 * Get the mangled name. We can re-use the
+	 * previous smb1_wild_mangle_list_fn for this.
+	 */
+
+	status = cli_list(cli,
+			wild_name,
+			0,
+			smb1_wild_mangle_list_fn,
+			&mangled_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list of %s returned %s\n",
+			wild_name,
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (mangled_name == NULL) {
+		goto out;
+	}
+
+	printf("mangled_name = %s\n",
+		mangled_name);
+
+	/*
+	 * Try a Windows rename with the mangled name.
+	 * This should *NOT* rename the 'foo' name.
+	 */
+
+	windows_rename_src = talloc_asprintf(cli_posix,
+					"%s\\%s",
+					dname,
+					mangled_name);
+
+	status = cli_rename(cli,
+			windows_rename_src,
+			windows_rename_dst,
+			false);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_rename of %s -> %s returned %s\n",
+			windows_rename_src,
+			windows_rename_dst,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Does 'foo' still exist ? */
+	status = cli_posix_open(cli_posix,
+				fooname,
+				O_RDONLY,
+				0,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open O_RNONLY of %s returned %s\n",
+			fooname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	correct = true;
+
+  out:
+
+	TALLOC_FREE(mangled_name);
+	TALLOC_FREE(windows_rename_src);
+
+	if (cli != NULL) {
+		cli_unlink(cli,
+			wild_name,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		torture_close_connection(cli);
+	}
+
+	cli_posix_rmdir(cli_posix, dname);
+	torture_close_connection(cli_posix);
+
+	return correct;
+}
+
 /*
  * Only testing minimal time strings, as the others
  * need (locale-dependent) guessing at what strftime does and
@@ -14779,6 +14950,10 @@ static struct {
 	{
 		.name  = "SMB1-WILD-MANGLE-UNLINK",
 		.fn    = run_smb1_wild_mangle_unlink_test,
+	},
+	{
+		.name  = "SMB1-WILD-MANGLE-RENAME",
+		.fn    = run_smb1_wild_mangle_rename_test,
 	},
 	{
 		.name  = "CASE-INSENSITIVE-CREATE",
