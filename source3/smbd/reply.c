@@ -3268,8 +3268,10 @@ static NTSTATUS do_unlink(connection_struct *conn,
  code.
 ****************************************************************************/
 
-NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32_t dirtype, struct smb_filename *smb_fname)
+NTSTATUS unlink_internals(connection_struct *conn,
+			struct smb_request *req,
+			uint32_t dirtype,
+			struct smb_filename *smb_fname)
 {
 	char *fname_dir = NULL;
 	char *fname_mask = NULL;
