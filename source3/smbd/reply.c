@@ -7909,7 +7909,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		 * to Windows the unmangled name may
 		 * contain Windows wildcard characters.
 		 */
-		src_has_wild = ms_has_wild(fname_src_mask);
+		if (src_original_lcomp != NULL) {
+			src_has_wild = ms_has_wild(src_original_lcomp);
+		}
 		dest_has_wild = ms_has_wild(dst_original_lcomp);
 	}
 
@@ -8264,6 +8266,7 @@ void reply_mv(struct smb_request *req)
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
+	const char *src_original_lcomp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	const char *dst_original_lcomp = NULL;
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req) |
@@ -8329,6 +8332,16 @@ void reply_mv(struct smb_request *req)
 		goto out;
 	}
 
+	/* Get the last component of the source for rename_internals(). */
+	src_original_lcomp = get_original_lcomp(ctx,
+					conn,
+					name,
+					dst_ucf_flags);
+	if (src_original_lcomp == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	status = filename_convert(ctx,
 				  conn,
 				  newname,
@@ -8375,7 +8388,7 @@ void reply_mv(struct smb_request *req)
 				conn,
 				req,
 				smb_fname_src,
-				NULL,
+				src_original_lcomp,
 				smb_fname_dst,
 				dst_original_lcomp,
 				attrs,
