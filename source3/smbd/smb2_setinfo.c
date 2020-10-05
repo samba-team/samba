@@ -415,7 +415,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			file_info_level = SMB2_FILE_RENAME_INFORMATION_INTERNAL;
 		}
 
-		if (fsp->fh->fd == -1) {
+		if (fsp_get_pathref_fd(fsp) == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems

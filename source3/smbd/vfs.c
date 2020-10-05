@@ -1525,7 +1525,7 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	int ret;
 	struct stat_ex saved_stat = fsp->fsp_name->st;
 
-	if(fsp->fh->fd == -1) {
+	if (fsp_get_pathref_fd(fsp) == -1) {
 		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
 		} else {

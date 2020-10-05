@@ -1051,7 +1051,7 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
+	if ((fsp != NULL) && (fsp_get_pathref_fd(fsp) != -1)) {
 		ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &smb_fname_base->st);
 	}
 	else {

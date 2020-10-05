@@ -1783,7 +1783,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
 
-	ret = gpfswrap_fstat_x(fsp->fh->fd, &litemask, &iattr, sizeof(iattr));
+	ret = gpfswrap_fstat_x(fsp_get_pathref_fd(fsp), &litemask, &iattr, sizeof(iattr));
 	if (ret == -1 && errno == ENOSYS) {
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
@@ -1800,7 +1800,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 
 		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-		ret = gpfswrap_fstat_x(fsp->fh->fd, &litemask,
+		ret = gpfswrap_fstat_x(fsp_get_pathref_fd(fsp), &litemask,
 				       &iattr, sizeof(iattr));
 		if (ret == -1) {
 			saved_errno = errno;

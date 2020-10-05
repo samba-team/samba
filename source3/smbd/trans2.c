@@ -6061,7 +6061,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			/* We know this name is ok, it's already passed the checks. */
 
-		} else if(fsp->fh->fd == -1) {
+		} else if(fsp_get_pathref_fd(fsp) == -1) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -9350,7 +9350,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 
 		smb_fname = fsp->fsp_name;
 
-		if(fsp->fh->fd == -1) {
+		if (fsp_get_pathref_fd(fsp) == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
