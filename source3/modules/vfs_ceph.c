@@ -306,9 +306,18 @@ static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 			       const char *mask,
 			       uint32_t attributes)
 {
-	/* OpenDir_fsp() falls back to regular open */
-	errno = ENOSYS;
-	return NULL;
+	int ret = 0;
+	struct ceph_dir_result *result;
+	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
+
+	ret = ceph_opendir(handle->data, fsp->fsp_name->base_name, &result);
+	if (ret < 0) {
+		result = NULL;
+		errno = -ret; /* We return result which is NULL in this case */
+	}
+
+	DBG_DEBUG("[CEPH] fdopendir(...) = %d\n", ret);
+	return (DIR *) result;
 }
 
 static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
