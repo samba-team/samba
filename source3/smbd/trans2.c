@@ -6465,7 +6465,8 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 			status = unlink_internals(conn,
 						req,
 						FILE_ATTRIBUTE_NORMAL,
-						smb_fname_new);
+						smb_fname_new,
+						false);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
