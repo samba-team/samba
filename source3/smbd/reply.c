@@ -420,7 +420,7 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
 		return False;
 	}
-	if (fsp->fh->fd == -1) {
+	if (fsp_get_pathref_fd(fsp) == -1) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return False;
 	}

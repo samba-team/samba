@@ -64,7 +64,7 @@ struct files_struct *fcb_or_dos_open(
 			  fsp->fh->private_options,
 			  fsp->access_mask);
 
-		if (fsp->fh->fd != -1 &&
+		if (fsp_get_pathref_fd(fsp) != -1 &&
 		    fsp->vuid == req->vuid &&
 		    fsp->file_pid == req->smbpid &&
 		    (fsp->fh->private_options &

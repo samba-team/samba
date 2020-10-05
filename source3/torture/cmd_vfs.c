@@ -446,8 +446,8 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->fsp_flags.is_directory = false;
 
-	vfs->files[fsp->fh->fd] = fsp;
-	printf("open: fd=%d\n", fsp->fh->fd);
+	vfs->files[fsp_get_pathref_fd(fsp)] = fsp;
+	printf("open: fd=%d\n", fsp_get_pathref_fd(fsp));
 	return NT_STATUS_OK;
 }
 

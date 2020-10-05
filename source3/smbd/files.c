@@ -386,7 +386,7 @@ files_struct *file_find_fd(struct smbd_server_connection *sconn, int fd)
 	files_struct *fsp;
 
 	for (fsp=sconn->files; fsp; fsp=fsp->next,count++) {
-		if (fsp->fh->fd == fd) {
+		if (fsp_get_pathref_fd(fsp) == fd) {
 			if (count > 10) {
 				DLIST_PROMOTE(sconn->files, fsp);
 			}
@@ -419,7 +419,7 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 				DLIST_PROMOTE(sconn->files, fsp);
 			}
 			/* Paranoia check. */
-			if ((fsp->fh->fd == -1) &&
+			if ((fsp_get_pathref_fd(fsp) == -1) &&
 			    (fsp->oplock_type != NO_OPLOCK &&
 			     fsp->oplock_type != LEASE_OPLOCK)) {
 				struct file_id_buf idbuf;
