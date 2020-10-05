@@ -8695,6 +8695,8 @@ void reply_copy(struct smb_request *req)
 	}
 
 	if (!req->posix_pathnames) {
+		char *orig_src_lcomp = NULL;
+		char *orig_dst_lcomp = NULL;
 		/*
 		 * Check the wildcard mask *before*
 		 * unmangling. As mangling is done
@@ -8702,8 +8704,26 @@ void reply_copy(struct smb_request *req)
 		 * to Windows the unmangled name may
 		 * contain Windows wildcard characters.
 		 */
-		source_has_wild = ms_has_wild(fname_src_mask);
-		dest_has_wild = ms_has_wild(smb_fname_dst->base_name);
+		orig_src_lcomp = get_original_lcomp(ctx,
+					conn,
+					fname_src,
+					ucf_flags_src);
+		if (orig_src_lcomp == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+		orig_dst_lcomp = get_original_lcomp(ctx,
+					conn,
+					fname_dst,
+					ucf_flags_dst);
+		if (orig_dst_lcomp == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+		source_has_wild = ms_has_wild(orig_src_lcomp);
+		dest_has_wild = ms_has_wild(orig_dst_lcomp);
+		TALLOC_FREE(orig_src_lcomp);
+		TALLOC_FREE(orig_dst_lcomp);
 	}
 
 	/*
