@@ -12645,6 +12645,186 @@ static bool run_symlink_open_test(int dummy)
 	return correct;
 }
 
+static NTSTATUS smb1_wild_mangle_list_fn(const char *mnt,
+					struct file_info *finfo,
+					const char *name,
+					void *state)
+{
+	char **mangled_name_return = (char **)state;
+	bool is_mangled = strchr(finfo->name, '~');
+
+	if (is_mangled) {
+		*mangled_name_return = talloc_strdup(NULL, finfo->name);
+		if (*mangled_name_return == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+static bool run_smb1_wild_mangle_unlink_test(int dummy)
+{
+	static struct cli_state *cli_posix = NULL;
+	static struct cli_state *cli = NULL;
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	const char *dname = "smb1_wild_mangle_unlink";
+	const char *aname = "smb1_wild_mangle_unlink/a";
+	const char *star_name = "smb1_wild_mangle_unlink/*";
+	char *windows_unlink_name = NULL;
+	char *mangled_name = NULL;
+	NTSTATUS status;
+
+	printf("Starting SMB1 wild mangle unlink test\n");
+
+	/* Open a Windows connection. */
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	/* Open a POSIX connection. */
+	if (!torture_open_connection(&cli_posix, 0)) {
+		goto out;
+	}
+
+	smbXcli_conn_set_sockopt(cli_posix->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli_posix);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("server doesn't support POSIX\n");
+		goto out;
+	}
+
+	/* Start fresh. */
+	cli_unlink(cli,
+		star_name,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_rmdir(cli, dname);
+
+	/*
+	 * Create two files - 'a' and '*'.
+	 * We need POSIX extensions for this as '*'
+	 * is not a valid Windows name.
+	 */
+
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_mkdir of %s returned %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_open(cli_posix,
+				aname,
+				O_RDWR|O_CREAT|O_EXCL,
+				0660,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open (create) of %s returned %s\n",
+			aname,
+			nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	status = cli_posix_open(cli_posix,
+				star_name,
+				O_RDWR|O_CREAT|O_EXCL,
+				0660,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open (create) of %s returned %s\n",
+			star_name,
+			nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = cli_list(cli,
+			star_name,
+			0,
+			smb1_wild_mangle_list_fn,
+			&mangled_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list of %s returned %s\n",
+			star_name,
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (mangled_name == NULL) {
+		goto out;
+	}
+
+	printf("mangled_name = %s\n",
+		mangled_name);
+
+	/*
+	 * Try a Windows unlink with the mangled name.
+	 * This should *NOT* unlink the 'a' name.
+	 */
+
+	windows_unlink_name = talloc_asprintf(cli_posix,
+					"%s\\%s",
+					dname,
+					mangled_name);
+
+	status = cli_unlink(cli, windows_unlink_name, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_unlink of %s returned %s\n",
+			windows_unlink_name,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Does 'a' still exist ? */
+	status = cli_posix_open(cli_posix,
+				aname,
+				O_RDONLY,
+				0,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open O_RNONLY of %s returned %s\n",
+			aname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	correct = true;
+
+  out:
+
+	TALLOC_FREE(windows_unlink_name);
+	TALLOC_FREE(mangled_name);
+
+	if (cli != NULL) {
+		cli_unlink(cli,
+			star_name,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		cli_rmdir(cli, dname);
+		torture_close_connection(cli);
+	}
+
+	if (cli_posix != NULL) {
+		torture_close_connection(cli_posix);
+	}
+
+	return correct;
+}
+
 /*
  * Only testing minimal time strings, as the others
  * need (locale-dependent) guessing at what strftime does and
@@ -14595,6 +14775,10 @@ static struct {
 	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
+	},
+	{
+		.name  = "SMB1-WILD-MANGLE-UNLINK",
+		.fn    = run_smb1_wild_mangle_unlink_test,
 	},
 	{
 		.name  = "CASE-INSENSITIVE-CREATE",

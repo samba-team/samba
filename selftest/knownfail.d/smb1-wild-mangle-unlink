@@ -1,0 +1,3 @@
+# Check SMB1 wildcard demangle
+^samba3.smbtorture_s3.plain.SMB1-WILD-MANGLE-UNLINK.smbtorture\(fileserver_smb1\)
+^samba3.smbtorture_s3.crypt_client.SMB1-WILD-MANGLE-UNLINK.smbtorture\(nt4_dc_smb1\)

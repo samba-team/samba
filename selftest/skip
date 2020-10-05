@@ -61,6 +61,7 @@
 ^samba3.smbtorture_s3.plain.BAD-NBT-SESSION\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.SMB2-SESSION-REAUTH\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.SMB2-SESSION-RECONNECT\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain.SMB1-WILD-MANGLE-UNLINK\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.*base.charset
 ^samba3.*raw.context
 ^samba3.*raw.ioctl
