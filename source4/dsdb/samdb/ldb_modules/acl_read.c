@@ -744,7 +744,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	static const char * const _all_attrs[] = { "*", NULL };
 	bool all_attrs = false;
 	const char * const *attrs = NULL;
-	uint32_t instanceType;
 	static const char *acl_attrs[] = {
 		"instanceType",
 		NULL
@@ -850,22 +849,11 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 			return ldb_error(ldb, ret,
 					"acl_read: Error retrieving instanceType for base.");
 		}
-		instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
-							"instanceType", 0);
-		if (instanceType != 0 && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
-		{
-			/* the object has a parent, so we have to check for visibility */
-			struct ldb_dn *parent_dn = ldb_dn_get_parent(req, req->op.search.base);
-			ret = dsdb_module_check_access_on_dn(module,
-							     req,
-							     parent_dn,
-							     SEC_ADS_LIST,
-							     NULL, req);
-			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
-			} else if (ret != LDB_SUCCESS) {
-				return ldb_module_done(req, NULL, NULL, ret);
-			}
+		ret = aclread_check_object_visible(ac, res->msgs[0], req);
+		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+			return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
+		} else if (ret != LDB_SUCCESS) {
+			return ldb_module_done(req, NULL, NULL, ret);
 		}
 	}
 
