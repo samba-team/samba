@@ -765,36 +765,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* check accessibility of base */
-	if (!ldb_dn_is_null(req->op.search.base)) {
-		ret = dsdb_module_search_dn(module, req, &res, req->op.search.base,
-					    acl_attrs,
-					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_FLAG_AS_SYSTEM |
-					    DSDB_SEARCH_SHOW_RECYCLED,
-					    req);
-		if (ret != LDB_SUCCESS) {
-			return ldb_error(ldb, ret,
-					"acl_read: Error retrieving instanceType for base.");
-		}
-		instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
-							"instanceType", 0);
-		if (instanceType != 0 && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
-		{
-			/* the object has a parent, so we have to check for visibility */
-			struct ldb_dn *parent_dn = ldb_dn_get_parent(req, req->op.search.base);
-			ret = dsdb_module_check_access_on_dn(module,
-							     req,
-							     parent_dn,
-							     SEC_ADS_LIST,
-							     NULL, req);
-			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
-			} else if (ret != LDB_SUCCESS) {
-				return ldb_module_done(req, NULL, NULL, ret);
-			}
-		}
-	}
 	ac = talloc_zero(req, struct aclread_context);
 	if (ac == NULL) {
 		return ldb_oom(ldb);
@@ -867,6 +837,38 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ac->attrs = req->op.search.attrs;
+
+	/* check accessibility of base */
+	if (!ldb_dn_is_null(req->op.search.base)) {
+		ret = dsdb_module_search_dn(module, req, &res, req->op.search.base,
+					    acl_attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_RECYCLED,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			return ldb_error(ldb, ret,
+					"acl_read: Error retrieving instanceType for base.");
+		}
+		instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
+							"instanceType", 0);
+		if (instanceType != 0 && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
+		{
+			/* the object has a parent, so we have to check for visibility */
+			struct ldb_dn *parent_dn = ldb_dn_get_parent(req, req->op.search.base);
+			ret = dsdb_module_check_access_on_dn(module,
+							     req,
+							     parent_dn,
+							     SEC_ADS_LIST,
+							     NULL, req);
+			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+				return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
+			} else if (ret != LDB_SUCCESS) {
+				return ldb_module_done(req, NULL, NULL, ret);
+			}
+		}
+	}
+
 	ret = ldb_build_search_req_ex(&down_req,
 				      ldb, ac,
 				      req->op.search.base,
