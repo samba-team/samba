@@ -84,7 +84,7 @@ test_smbclient "Test login with user kerberos lowercase realm" 'ls' "$unc" --use
 test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME -U$TRUST_USERNAME@$TRUST_REALM%$TRUST_PASSWORD --realm=$lowerrealm || failed=`expr $failed + 1`
 
 # Test the outgoing direction
-SMBCLIENT_UNC="//$TRUST_SERVER.$TRUST_REALM/tmp"
+unc="//$TRUST_SERVER.$TRUST_REALM/tmp"
 test_smbclient "Test user login with the first outgoing secret" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
 
 testit_expect_failure "setpassword should not work" $VALGRIND $PYTHON $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=`expr $failed + 1`
