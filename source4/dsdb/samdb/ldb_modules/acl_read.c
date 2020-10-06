@@ -152,6 +152,25 @@ static int aclread_check_parent(struct aclread_context *ac,
 	return ret;
 }
 
+static int aclread_check_object_visible(struct aclread_context *ac,
+					struct ldb_message *msg,
+					struct ldb_request *req)
+{
+	uint32_t instanceType;
+
+	/* get the object instance type */
+	instanceType = ldb_msg_find_attr_as_uint(msg,
+						 "instanceType", 0);
+	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
+		/*
+		 * NC_HEAD objects are always visible
+		 */
+		return LDB_SUCCESS;
+	}
+
+	return aclread_check_parent(ac, msg, req);
+}
+
 /*
  * The sd returned from this function is valid until the next call on
  * this module context
@@ -464,7 +483,6 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	TALLOC_CTX *tmp_ctx;
-	uint32_t instanceType;
 	const struct dsdb_class *objectclass;
 	bool suppress_result = false;
 
@@ -507,14 +525,12 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 
 		sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
-		/* get the object instance type */
-		instanceType = ldb_msg_find_attr_as_uint(msg,
-							 "instanceType", 0);
-		if (!ldb_dn_is_null(msg->dn) && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
-		{
-			/* the object has a parent, so we have to check for visibility */
-			ret = aclread_check_parent(ac, msg, req);
-			
+		if (!ldb_dn_is_null(msg->dn)) {
+			/*
+			 * this is a real object, so we have
+			 * to check for visibility
+			 */
+			ret = aclread_check_object_visible(ac, msg, req);
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				talloc_free(tmp_ctx);
 				return LDB_SUCCESS;
