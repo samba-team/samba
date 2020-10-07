@@ -1873,6 +1873,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPOOLSS_ARCHITECTURE_IA_64			= "Windows IA64";
 	const string SPOOLSS_ARCHITECTURE_x64			= "Windows x64";
 	const string SPOOLSS_ARCHITECTURE_4_0			= "Windows 4.0";
+	const string SPOOLSS_ARCHITECTURE_W32MIPS		= "Windows NT R4000";
+	const string SPOOLSS_ARCHITECTURE_W32PPC		= "Windows NT PowerPC";
+	const string SPOOLSS_ARCHITECTURE_W32ALPHA		= "Windows NT Alpha AXP";
 	const string SPOOLSS_ARCHITECTURE_ARM			= "Windows ARM";
 	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
