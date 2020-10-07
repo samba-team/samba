@@ -10,6 +10,7 @@ import re
 sys.path.insert(0, "bin/python")
 import samba
 
+from samba.tests import DynamicTestCase
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.compat import get_string
 
@@ -17,7 +18,7 @@ import samba.getopt as options
 from samba.join import DCJoinContext
 
 from ldb import (
-    SCOPE_BASE, SCOPE_SUBTREE, LdbError, ERR_NO_SUCH_OBJECT,
+    SCOPE_BASE, SCOPE_ONELEVEL, SCOPE_SUBTREE, LdbError, ERR_NO_SUCH_OBJECT,
     ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_OPERATIONS_ERROR
@@ -2189,6 +2190,324 @@ class AclSPNTests(AclTests):
     def test_spn_rodc(self):
         self.dc_spn_test(self.rodcctx)
 
+# tests SEC_ADS_LIST vs. SEC_ADS_LIST_OBJECT
+@DynamicTestCase
+class AclVisibiltyTests(AclTests):
+
+    envs = {
+        "No": False,
+        "Do": True,
+    }
+    modes = {
+        "Allow": False,
+        "Deny": True,
+    }
+    perms = {
+        "nn": 0,
+        "Cn": security.SEC_ADS_LIST,
+        "nO": security.SEC_ADS_LIST_OBJECT,
+        "CO": security.SEC_ADS_LIST | security.SEC_ADS_LIST_OBJECT,
+    }
+
+    @classmethod
+    def setUpDynamicTestCases(cls):
+        for le in cls.envs.keys():
+            for lm in cls.modes.keys():
+                for l1 in cls.perms.keys():
+                    for l2 in cls.perms.keys():
+                        for l3 in cls.perms.keys():
+                            tname = "%s_%s_%s_%s_%s" % (le, lm, l1, l2, l3)
+                            ve = cls.envs[le]
+                            vm = cls.modes[lm]
+                            v1 = cls.perms[l1]
+                            v2 = cls.perms[l2]
+                            v3 = cls.perms[l3]
+                            targs = (tname, ve, vm, v1, v2, v3)
+                            cls.generate_dynamic_test("test_visibility",
+                                                      tname, *targs)
+        return
+
+    def setUp(self):
+        super(AclVisibiltyTests, self).setUp()
+
+        strict_checking = samba.tests.env_get_var_value('STRICT_CHECKING', allow_missing=True)
+        if strict_checking is None:
+            strict_checking = '1'
+        self.strict_checking = bool(int(strict_checking))
+
+        # Get the old "dSHeuristics" if it was set
+        self.dsheuristics = self.ldb_admin.get_dsheuristics()
+        # Reset the "dSHeuristics" as they were before
+        self.addCleanup(self.ldb_admin.set_dsheuristics, self.dsheuristics)
+
+        # Domain Admins and SYSTEM get full access
+        self.sddl_dacl = "D:PAI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+        self.set_dacl_control = ["sd_flags:1:%d" % security.SECINFO_DACL]
+
+        self.level_idxs = [ 1, 2, 3, 4 ]
+        self.oul1 = "OU=acl_visibility_oul1"
+        self.oul1_dn_str = "%s,%s" % (self.oul1, self.base_dn)
+        self.oul2 = "OU=oul2,%s" % self.oul1
+        self.oul2_dn_str = "%s,%s" % (self.oul2, self.base_dn)
+        self.oul3 = "OU=oul3,%s" % self.oul2
+        self.oul3_dn_str = "%s,%s" % (self.oul3, self.base_dn)
+        self.user_name = "acl_visibility_user"
+        self.user_dn_str = "CN=%s,%s" % (self.user_name, self.oul3_dn_str)
+        delete_force(self.ldb_admin, self.user_dn_str)
+        delete_force(self.ldb_admin, self.oul3_dn_str)
+        delete_force(self.ldb_admin, self.oul2_dn_str)
+        delete_force(self.ldb_admin, self.oul1_dn_str)
+        self.ldb_admin.create_ou(self.oul1_dn_str)
+        self.sd_utils.modify_sd_on_dn(self.oul1_dn_str,
+                                      self.sddl_dacl,
+                                      controls=self.set_dacl_control)
+        self.ldb_admin.create_ou(self.oul2_dn_str)
+        self.sd_utils.modify_sd_on_dn(self.oul2_dn_str,
+                                      self.sddl_dacl,
+                                      controls=self.set_dacl_control)
+        self.ldb_admin.create_ou(self.oul3_dn_str)
+        self.sd_utils.modify_sd_on_dn(self.oul3_dn_str,
+                                      self.sddl_dacl,
+                                      controls=self.set_dacl_control)
+
+        self.ldb_admin.newuser(self.user_name, self.user_pass, userou=self.oul3)
+        self.user_sid = self.sd_utils.get_object_sid(self.user_dn_str)
+        self.ldb_user = self.get_ldb_connection(self.user_name, self.user_pass)
+
+    def tearDown(self):
+        super(AclVisibiltyTests, self).tearDown()
+        delete_force(self.ldb_admin, self.user_dn_str)
+        delete_force(self.ldb_admin, self.oul3_dn_str)
+        delete_force(self.ldb_admin, self.oul2_dn_str)
+        delete_force(self.ldb_admin, self.oul1_dn_str)
+
+        del self.ldb_user
+
+    def _test_visibility_with_args(self,
+                                   tname,
+                                   fDoListObject,
+                                   modeDeny,
+                                   l1_allow,
+                                   l2_allow,
+                                   l3_allow):
+        l1_deny = 0
+        l2_deny = 0
+        l3_deny = 0
+        if modeDeny:
+            l1_deny = ~l1_allow
+            l2_deny = ~l2_allow
+            l3_deny = ~l3_allow
+        print("Testing: fDoListObject=%s, modeDeny=%s, l1_allow=0x%02x, l2_allow=0x%02x, l3_allow=0x%02x)" % (
+              fDoListObject, modeDeny, l1_allow, l2_allow, l3_allow))
+        if fDoListObject:
+            self.ldb_admin.set_dsheuristics("001")
+        else:
+            self.ldb_admin.set_dsheuristics("000")
+
+        def _generate_dacl(allow, deny):
+            dacl = self.sddl_dacl
+            drights = ""
+            if deny & security.SEC_ADS_LIST:
+                drights += "LC"
+            if deny & security.SEC_ADS_LIST_OBJECT:
+                drights += "LO"
+            if len(drights) > 0:
+                dacl += "(D;;%s;;;%s)" % (drights, self.user_sid)
+            arights = ""
+            if allow & security.SEC_ADS_LIST:
+                arights += "LC"
+            if allow & security.SEC_ADS_LIST_OBJECT:
+                arights += "LO"
+            if len(arights) > 0:
+                dacl += "(A;;%s;;;%s)" % (arights, self.user_sid)
+            print("dacl: %s" % dacl)
+            return dacl
+
+        l1_dacl = _generate_dacl(l1_allow, l1_deny)
+        l2_dacl = _generate_dacl(l2_allow, l2_deny)
+        l3_dacl = _generate_dacl(l3_allow, l3_deny)
+        self.sd_utils.modify_sd_on_dn(self.oul1_dn_str,
+                                      l1_dacl,
+                                      controls=self.set_dacl_control)
+        self.sd_utils.modify_sd_on_dn(self.oul2_dn_str,
+                                      l2_dacl,
+                                      controls=self.set_dacl_control)
+        self.sd_utils.modify_sd_on_dn(self.oul3_dn_str,
+                                      l3_dacl,
+                                      controls=self.set_dacl_control)
+
+        def _generate_levels(_l1_allow,
+                             _l1_deny,
+                             _l2_allow,
+                             _l2_deny,
+                             _l3_allow,
+                             _l3_deny):
+            _l0_allow = security.SEC_ADS_LIST | security.SEC_ADS_LIST_OBJECT | security.SEC_ADS_READ_PROP
+            _l0_deny = 0
+            _l4_allow = security.SEC_ADS_LIST | security.SEC_ADS_LIST_OBJECT | security.SEC_ADS_READ_PROP
+            _l4_deny = 0
+            _levels = [{
+                "dn": str(self.base_dn),
+                "allow": _l0_allow,
+                "deny": _l0_deny,
+            },{
+                "dn": str(self.oul1_dn_str),
+                "allow": _l1_allow,
+                "deny": _l1_deny,
+            },{
+                "dn": str(self.oul2_dn_str),
+                "allow": _l2_allow,
+                "deny": _l2_deny,
+            },{
+                "dn": str(self.oul3_dn_str),
+                "allow": _l3_allow,
+                "deny": _l3_deny,
+            },{
+                "dn": str(self.user_dn_str),
+                "allow": _l4_allow,
+                "deny": _l4_deny,
+            }]
+            return _levels
+
+        def _generate_admin_levels():
+            _l1_allow = security.SEC_ADS_LIST | security.SEC_ADS_READ_PROP
+            _l1_deny = 0
+            _l2_allow = security.SEC_ADS_LIST | security.SEC_ADS_READ_PROP
+            _l2_deny = 0
+            _l3_allow = security.SEC_ADS_LIST | security.SEC_ADS_READ_PROP
+            _l3_deny = 0
+            return _generate_levels(_l1_allow, _l1_deny,
+                                    _l2_allow, _l2_deny,
+                                    _l3_allow, _l3_deny)
+
+        def _generate_user_levels():
+            return _generate_levels(l1_allow, l1_deny,
+                                    l2_allow, l2_deny,
+                                    l3_allow, l3_deny)
+
+        admin_levels = _generate_admin_levels()
+        user_levels = _generate_user_levels()
+
+        def _msg_require_name(msg, idx, e):
+            self.assertIn("name", msg)
+            self.assertEqual(len(msg["name"]), 1)
+
+        def _msg_no_name(msg, idx, e):
+            self.assertNotIn("name", msg)
+
+        def _has_right(allow, deny, bit):
+            if allow & bit:
+                if not (deny & bit):
+                    return True
+            return False
+
+        def _is_visible(p_allow, p_deny, o_allow, o_deny):
+            plc = _has_right(p_allow, p_deny, security.SEC_ADS_LIST)
+            if plc:
+                return True
+            if not fDoListObject:
+                return False
+            plo = _has_right(p_allow, p_deny, security.SEC_ADS_LIST_OBJECT)
+            if not plo:
+                return False
+            olo = _has_right(o_allow, o_deny, security.SEC_ADS_LIST_OBJECT)
+            if not olo:
+                return False
+            return True
+
+        def _generate_expected(scope, base_level, levels):
+            expected = {}
+
+            p = levels[base_level-1]
+            o = levels[base_level]
+            base_visible = _is_visible(p["allow"], p["deny"],
+                                       o["allow"], o["deny"])
+
+            if scope == SCOPE_BASE:
+                lmin = base_level
+                lmax = base_level
+            elif scope == SCOPE_ONELEVEL:
+                lmin = base_level+1
+                lmax = base_level+1
+            else:
+                lmin = base_level
+                lmax = len(levels)
+
+            next_idx = 0
+            for li in self.level_idxs:
+                if li < lmin:
+                    continue
+                if li > lmax:
+                    break
+                p = levels[li-1]
+                o = levels[li]
+                visible = _is_visible(p["allow"], p["deny"],
+                                      o["allow"], o["deny"])
+                if not visible:
+                    continue
+                read = _has_right(o["allow"], o["deny"], security.SEC_ADS_READ_PROP)
+                if read:
+                    check_msg_fn = _msg_require_name
+                else:
+                    check_msg_fn = _msg_no_name
+                expected[o["dn"]] = {
+                    "idx": next_idx,
+                    "check_msg_fn": check_msg_fn,
+                }
+                next_idx += 1
+
+            if len(expected) == 0 and not base_visible:
+                # This means we're expecting NO_SUCH_OBJECT
+                return None
+            return expected
+
+        def _verify_result_array(results,
+                                 description,
+                                 expected):
+            print("%s Results: %d" % (description, len(results)))
+            for msg in results:
+                print("%s" % msg)
+            self.assertIsNotNone(expected)
+            print("%s Expected: %d" % (description, len(expected)))
+            for e in expected:
+                print("%s" % e)
+            self.assertEqual(len(results), len(expected))
+            idx = 0
+            found = {}
+            for msg in results:
+                dn_str = str(msg.dn)
+                self.assertIn(dn_str, expected)
+                self.assertNotIn(dn_str, found)
+                found[dn_str] = idx
+                e = expected[dn_str]
+                if self.strict_checking:
+                    self.assertEqual(idx, int(e["idx"]))
+                if "check_msg_fn" in e:
+                    check_msg_fn = e["check_msg_fn"]
+                    check_msg_fn(msg, idx, e)
+                idx += 1
+
+            return
+
+        for li in self.level_idxs:
+            base_dn = admin_levels[li]["dn"]
+            for scope in [SCOPE_BASE, SCOPE_ONELEVEL, SCOPE_SUBTREE]:
+                print("\nTesting SCOPE[%d] %s" % (scope, base_dn))
+                admin_expected = _generate_expected(scope, li, admin_levels)
+                admin_res = self.ldb_admin.search(base_dn, scope=scope, attrs=["name"])
+                _verify_result_array(admin_res, "Admin", admin_expected)
+
+                user_expected = _generate_expected(scope, li, user_levels)
+                try:
+                    user_res = self.ldb_user.search(base_dn, scope=scope, attrs=["name"])
+                except LdbError as e:
+                    (num, _) = e.args
+                    if user_expected is None:
+                        self.assertEqual(num, ERR_NO_SUCH_OBJECT)
+                        print("User: NO_SUCH_OBJECT")
+                        continue
+                    self.fail(e)
+                _verify_result_array(user_res, "User", user_expected)
 
 # Important unit running information
 
