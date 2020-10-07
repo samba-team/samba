@@ -63,18 +63,6 @@ const struct generic_mapping job_generic_mapping = {
 	JOB_ALL_ACCESS
 };
 
-static const struct print_architecture_table_node archi_table[]= {
-
-	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
-	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
-	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
-	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
-	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
-	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
-	{"Windows x64",   	 SPL_ARCH_X64,		3 },
-	{NULL,                   "",		-1 }
-};
-
 static bool print_driver_directories_init(void)
 {
 	int service, i;

@@ -191,4 +191,21 @@ void nt_printer_add(TALLOC_CTX *mem_ctx,
 		    struct messaging_context *msg_ctx,
 		    const char *printer);
 
+/* The version int is used by getdrivers.  Note that
+   all architecture strings that support mutliple
+   versions must be grouped together since enumdrivers
+   uses this property to prevent issuing multiple
+   enumdriver calls for the same arch */
+static const struct print_architecture_table_node archi_table[]= {
+	{SPOOLSS_ARCHITECTURE_4_0,	SPL_ARCH_WIN40,		0 },
+	{SPOOLSS_ARCHITECTURE_NT_X86,	SPL_ARCH_W32X86,	2 },
+	{SPOOLSS_ARCHITECTURE_NT_X86,	SPL_ARCH_W32X86,	3 },
+	{SPOOLSS_ARCHITECTURE_W32MIPS,	SPL_ARCH_W32MIPS,	2 },
+	{SPOOLSS_ARCHITECTURE_W32ALPHA,	SPL_ARCH_W32ALPHA,	2 },
+	{SPOOLSS_ARCHITECTURE_W32PPC,	SPL_ARCH_W32PPC,	2 },
+	{SPOOLSS_ARCHITECTURE_IA_64,	SPL_ARCH_IA64,		3 },
+	{SPOOLSS_ARCHITECTURE_x64,	SPL_ARCH_X64,		3 },
+	{NULL,                   "",		-1 }
+};
+
 #endif /* NT_PRINTING_H_ */
