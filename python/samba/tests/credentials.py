@@ -400,7 +400,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.environ["USER"] = "env_user"
         creds.guess(lp)
         creds.parse_string("user@samba.org")
-        self.assertEqual(creds.get_username(), "user@samba.org")
+        self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), "")
         self.assertEqual(creds.get_realm(), "SAMBA.ORG")
         self.assertEqual(creds.get_principal(), "user@samba.org")
@@ -441,7 +441,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.environ["USER"] = "env_user"
         creds.guess(lp)
         creds.parse_string("user@samba.org%pass")
-        self.assertEqual(creds.get_username(), "user@samba.org")
+        self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), "")
         self.assertEqual(creds.get_password(), "pass")
         self.assertEqual(creds.get_realm(), "SAMBA.ORG")
