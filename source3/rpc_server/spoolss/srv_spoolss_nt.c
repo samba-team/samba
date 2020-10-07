@@ -3939,6 +3939,9 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	if (strequal(architecture, SPOOLSS_ARCHITECTURE_x64)) {
 		processor_architecture	= PROCESSOR_ARCHITECTURE_AMD64;
 		processor_type 		= PROCESSOR_AMD_X8664;
+	} else if (strequal(architecture, SPOOLSS_ARCHITECTURE_ARM64)) {
+		processor_architecture	= PROCESSOR_ARCHITECTURE_ARM64;
+		processor_type 		= PROCESSOR_ARM820;
 	} else {
 		processor_architecture	= PROCESSOR_ARCHITECTURE_INTEL;
 		processor_type 		= PROCESSOR_INTEL_PENTIUM;

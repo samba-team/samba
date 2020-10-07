@@ -75,6 +75,7 @@ static bool print_driver_directories_init(void)
 	const char *dir_list[] = {
 		"W32X86/PCC",
 		"x64/PCC",
+		"ARM64",
 		"color"
 	};
 
@@ -1001,8 +1002,9 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	}
 
 	/* If architecture is Windows x64, the version is always 3. */
-	if (strcmp(architecture, SPL_ARCH_X64) == 0) {
-		DEBUG(10,("get_correct_cversion: Driver is x64, cversion = 3\n"));
+	if (strcmp(architecture, SPL_ARCH_X64) == 0 ||
+		strcmp(architecture, SPL_ARCH_ARM64) == 0) {
+		DBG_DEBUG("get_correct_cversion: this architecture must be, cversion = 3\n");
 		*perr = WERR_OK;
 		TALLOC_FREE(frame);
 		return 3;

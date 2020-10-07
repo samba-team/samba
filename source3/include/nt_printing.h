@@ -205,6 +205,7 @@ static const struct print_architecture_table_node archi_table[]= {
 	{SPOOLSS_ARCHITECTURE_W32PPC,	SPL_ARCH_W32PPC,	2 },
 	{SPOOLSS_ARCHITECTURE_IA_64,	SPL_ARCH_IA64,		3 },
 	{SPOOLSS_ARCHITECTURE_x64,	SPL_ARCH_X64,		3 },
+	{SPOOLSS_ARCHITECTURE_ARM64,	SPL_ARCH_ARM64,		3 },
 	{NULL,                   "",		-1 }
 };
 

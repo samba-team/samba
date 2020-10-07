@@ -1866,6 +1866,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPL_ARCH_IA64		= "IA64";
 	const string SPL_ARCH_X64		= "x64";
 	const string SPL_ARCH_ARM		= "ARM";
+	const string SPL_ARCH_ARM64		= "ARM64";
 
 	const string SPOOLSS_ARCHITECTURE_ALL			= "All";
 	const string SPOOLSS_ARCHITECTURE_ALL_CLUSTER		= "AllCluster";
@@ -1877,6 +1878,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPOOLSS_ARCHITECTURE_W32PPC		= "Windows NT PowerPC";
 	const string SPOOLSS_ARCHITECTURE_W32ALPHA		= "Windows NT Alpha AXP";
 	const string SPOOLSS_ARCHITECTURE_ARM			= "Windows ARM";
+	const string SPOOLSS_ARCHITECTURE_ARM64			= "Windows ARM64";
 	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
