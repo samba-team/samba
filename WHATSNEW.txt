@@ -1,4 +1,66 @@
                    ==============================
+                   Release Notes for Samba 4.12.8
+                          October 07, 2020
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+
+
+Changes since 4.12.7
+--------------------
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14318: docs: Add missing winexe manpage.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14465: idmap_ad does not deal properly with a RFC4511 section 4.4.1
+     response.
+
+o  Laurent Menase <laurent.menase@hpe.com>
+   * BUG 14388: winbind: Fix a memleak.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14465: idmap_ad does not deal properly with a RFC4511 section 4.4.1
+     response.
+   * BUG 14482: Compilation of heimdal tree fails if libbsd is not installed.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14166: util: Allow symlinks in directory_create_or_exist.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14399: waf: Only use gnutls_aead_cipher_encryptv2() for GnuTLS >
+     3.6.14.
+   * BUG 14467: s3:smbd: Fix %U substitutions if it contains a domain name.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14466: ctdb disable/enable can fail due to race condition.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.12.7
                          September 18, 2020
                    ==============================
@@ -98,8 +160,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.12.6
@@ -296,7 +358,7 @@ o  Andrew Bartlett <abartlet@samba.org>
 
 o  Gary Lockyer <gary@catalyst.net.nz>
    * BUG 14364: CVE-2020-10730: NULL de-reference in AD DC LDAP server when ASQ
-     and VLV combined, ldb: Bump version to 2.1.4.  
+     and VLV combined, ldb: Bump version to 2.1.4.
    
 
 #######################################
