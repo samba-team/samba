@@ -300,6 +300,7 @@ tasks = {
             "ad_member_idmap_rid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
+            "ad_member_oneway",
             "chgdcpass",
             "vampire_2000_dc",
             "fl2000dc",
@@ -365,6 +366,7 @@ tasks = {
             "ad_member_idmap_rid",
             "ad_member_idmap_ad",
             "ad_member_rfc2307",
+            "ad_member_oneway",
             "chgdcpass",
             "vampire_2000_dc",
             "fl2000dc",
@@ -534,6 +536,7 @@ tasks = {
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=[
             "fl2000dc",
+            "ad_member_oneway",
             "fl2003dc",
             ])),
             ("lcov", LCOV_CMD),
@@ -674,6 +677,7 @@ tasks = {
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=[
             "fl2000dc",
+            "ad_member_oneway",
             "fl2003dc",
             ])),
             ("lcov", LCOV_CMD),

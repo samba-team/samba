@@ -609,6 +609,7 @@ sub get_interface($)
 		fipsdc            => 56,
 		fipsadmember      => 57,
 		offlineadmem      => 58,
+		s2kmember         => 59,
 
 		rootdnsforwarder  => 64,
 

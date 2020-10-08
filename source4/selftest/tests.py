@@ -602,6 +602,14 @@ if have_gnutls_fips_mode_support:
 
 plansmbtorture4testsuite('rpc.echo', "ad_dc_ntvfs", ['ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD'], "samba4.rpc.echo against NetBIOS alias")
 
+# Test wbinfo trust auth
+for env in ["ad_member_oneway:local", "fl2000dc:local", "fl2003dc:local", "fl2008r2dc:local"]:
+    for t in ["--krb5auth=$TRUST_REALM/$TRUST_USERNAME%$TRUST_PASSWORD",
+              "--krb5auth=$TRUST_DOMAIN/$TRUST_USERNAME%$TRUST_PASSWORD",
+              "--authenticate=$TRUST_REALM/$TRUST_USERNAME%$TRUST_PASSWORD",
+              "--authenticate=$TRUST_DOMAIN/$TRUST_USERNAME%$TRUST_PASSWORD"]:
+        plantestsuite("samba3.wbinfo_simple.trust:%s" % t, env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
+
 # json tests hook into ``chgdcpass'' to make them run in contributor CI on
 # gitlab
 planpythontestsuite("chgdcpass", "samba.tests.blackbox.netads_json")
