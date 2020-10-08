@@ -33,6 +33,12 @@
 #include <sys/time.h>
 #include <stdbool.h>
 
+/* for old gcc releases that don't have the feature test macro __has_attribute */
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
+
 struct tevent_context;
 struct tevent_ops;
 struct tevent_fd;
@@ -2076,7 +2082,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 
 #ifdef TEVENT_DEPRECATED
 #ifndef _DEPRECATED_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(deprecated) || (__GNUC__ >= 3)
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
