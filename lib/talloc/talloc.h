@@ -107,7 +107,7 @@ typedef void TALLOC_CTX;
 #endif
 
 #ifndef _DEPRECATED_
-#ifdef HAVE___ATTRIBUTE__
+#if __has_attribute(deprecated) || (__GNUC__ >= 3)
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
