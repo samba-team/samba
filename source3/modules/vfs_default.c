@@ -693,6 +693,8 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 			  int flags,
 			  mode_t mode)
 {
+	bool have_opath = false;
+	bool became_root = false;
 	int result;
 
 	START_PROFILE(syscall_openat);
@@ -703,10 +705,28 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 		goto out;
 	}
 
+#ifdef O_PATH
+	have_opath = true;
+	if (fsp->fsp_flags.is_pathref) {
+		flags |= O_PATH;
+	}
+#endif
+
+	if (fsp->fsp_flags.is_pathref && !have_opath) {
+		become_root();
+		became_root = true;
+	}
+
 	result = openat(fsp_get_pathref_fd(dirfsp),
 			smb_fname->base_name,
 			flags,
 			mode);
+
+	if (became_root) {
+		unbecome_root();
+	}
+
+	fsp->fsp_flags.have_proc_fds = fsp->conn->have_proc_fds;
 
 out:
 	END_PROFILE(syscall_openat);
