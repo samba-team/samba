@@ -723,13 +723,17 @@ static int do_list_queue_empty(void)
  A helper for do_list.
 ****************************************************************************/
 
+struct do_list_helper_state {
+	struct cli_state *cli;
+};
+
 static NTSTATUS do_list_helper(
 	const char *mntpoint,
 	struct file_info *f,
 	const char *mask,
-	void *state)
+	void *private_data)
 {
-	struct cli_state *cli_state = (struct cli_state *)state;
+	struct do_list_helper_state *state = private_data;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dir = NULL;
 	char *dir_end = NULL;
@@ -748,14 +752,14 @@ static NTSTATUS do_list_helper(
 
 	if (!(f->attr & FILE_ATTRIBUTE_DIRECTORY)) {
 		if (do_this_one(f)) {
-			status = do_list_fn(cli_state, f, dir);
+			status = do_list_fn(state->cli, f, dir);
 		}
 		TALLOC_FREE(dir);
 		return status;
 	}
 
 	if (do_list_dirs && do_this_one(f)) {
-		status = do_list_fn(cli_state, f, dir);
+		status = do_list_fn(state->cli, f, dir);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -837,7 +841,7 @@ NTSTATUS do_list(const char *mask,
 
 	while (!do_list_queue_empty()) {
 		const char *head = do_list_queue_head();
-		struct cli_state *targetcli = NULL;
+		struct do_list_helper_state state = { .cli = NULL };
 		char *targetpath = NULL;
 
 		/* check for dfs */
@@ -848,7 +852,7 @@ NTSTATUS do_list(const char *mask,
 			creds,
 			cli,
 			head,
-			&targetcli,
+			&state.cli,
 			&targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("do_list: [%s] %s\n", head,
@@ -858,11 +862,11 @@ NTSTATUS do_list(const char *mask,
 		}
 
 		status = cli_list(
-			targetcli,
+			state.cli,
 			targetpath,
 			attribute,
 			do_list_helper,
-			targetcli);
+			&state);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("%s listing %s\n",
 				 nt_errstr(status), targetpath);
