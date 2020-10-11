@@ -723,8 +723,11 @@ static int do_list_queue_empty(void)
  A helper for do_list.
 ****************************************************************************/
 
-static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
-			   const char *mask, void *state)
+static NTSTATUS do_list_helper(
+	const char *mntpoint,
+	struct file_info *f,
+	const char *mask,
+	void *state)
 {
 	struct cli_state *cli_state = (struct cli_state *)state;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -839,9 +842,14 @@ NTSTATUS do_list(const char *mask,
 
 		/* check for dfs */
 
-		status = cli_resolve_path(ctx, "",
-					  creds,
-					  cli, head, &targetcli, &targetpath);
+		status = cli_resolve_path(
+			ctx,
+			"",
+			creds,
+			cli,
+			head,
+			&targetcli,
+			&targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("do_list: [%s] %s\n", head,
 				 nt_errstr(status));
@@ -849,8 +857,12 @@ NTSTATUS do_list(const char *mask,
 			continue;
 		}
 
-		status = cli_list(targetcli, targetpath, attribute,
-				  do_list_helper, targetcli);
+		status = cli_list(
+			targetcli,
+			targetpath,
+			attribute,
+			do_list_helper,
+			targetcli);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("%s listing %s\n",
 				 nt_errstr(status), targetpath);
