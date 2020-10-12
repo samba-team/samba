@@ -50,6 +50,9 @@ struct aclread_context {
 	bool added_objectClass;
 	bool indirsync;
 
+	bool base_invisible;
+	uint64_t num_entries;
+
 	/* cache on the last parent we checked in this search */
 	struct ldb_dn *last_parent_dn;
 	int last_parent_check_ret;
@@ -711,10 +714,21 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 		talloc_free(tmp_ctx);
 
+		ac->num_entries++;
 		return ldb_module_send_entry(ac->req, ret_msg, ares->controls);
 	case LDB_REPLY_REFERRAL:
 		return ldb_module_send_referral(ac->req, ares->referral);
 	case LDB_REPLY_DONE:
+		if (ac->base_invisible && ac->num_entries == 0) {
+			/*
+			 * If the base is invisible and we didn't
+			 * returned any object, we need to return
+			 * NO_SUCH_OBJECT.
+			 */
+			return ldb_module_done(ac->req,
+					       NULL, NULL,
+					       LDB_ERR_NO_SUCH_OBJECT);
+		}
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, LDB_SUCCESS);
 
@@ -849,7 +863,15 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		}
 		ret = aclread_check_object_visible(ac, res->msgs[0], req);
 		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-			return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
+			if (req->op.search.scope == LDB_SCOPE_BASE) {
+				return ldb_module_done(req, NULL, NULL,
+						       LDB_ERR_NO_SUCH_OBJECT);
+			}
+			/*
+			 * Defer LDB_ERR_NO_SUCH_OBJECT,
+			 * we may return sub objects
+			 */
+			ac->base_invisible = true;
 		} else if (ret != LDB_SUCCESS) {
 			return ldb_module_done(req, NULL, NULL, ret);
 		}
