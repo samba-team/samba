@@ -2116,6 +2116,13 @@ done:
 	if (p != NULL) {
 		SMB_VFS_NEXT_CLOSEDIR(handle, p);
 		p = NULL;
+		if (dirfsp != NULL) {
+			/*
+			 * VFS_CLOSEDIR implicitly
+			 * closed the associated fd.
+			 */
+			dirfsp->fh->fd = -1;
+		}
 	}
 	if (dirfsp != NULL) {
 		fd_close(dirfsp);
