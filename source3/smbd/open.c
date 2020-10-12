@@ -1188,6 +1188,71 @@ static NTSTATUS fd_open_atomic(files_struct *fsp,
 	return status;
 }
 
+static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
+				   struct smb_filename *smb_fname,
+				   int flags,
+				   mode_t mode)
+{
+	struct smb_filename proc_fname;
+	const char *p = NULL;
+	char buf[PATH_MAX];
+	int old_fd;
+	int new_fd;
+	NTSTATUS status;
+	int ret;
+
+	if (!fsp->fsp_flags.have_proc_fds) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	old_fd = fsp_get_pathref_fd(fsp);
+	if (old_fd == -1) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	if (!fsp->fsp_flags.is_pathref) {
+		DBG_ERR("[%s] is not a pathref\n",
+			smb_fname_str_dbg(smb_fname));
+#ifdef DEVELOPER
+		smb_panic("Not a pathref");
+#endif
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	p = sys_proc_fd_path(old_fd, buf, sizeof(buf));
+	if (p == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	proc_fname = (struct smb_filename) {
+		.base_name = discard_const_p(char, p),
+	};
+
+	fsp->fsp_flags.is_pathref = false;
+
+	new_fd = SMB_VFS_OPENAT(fsp->conn,
+				fsp->conn->cwd_fsp,
+				&proc_fname,
+				fsp,
+				flags,
+				mode);
+	if (new_fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		SMB_VFS_CLOSE(fsp);
+		fsp_set_fd(fsp, -1);
+		return status;
+	}
+
+	ret = SMB_VFS_CLOSE(fsp);
+	fsp_set_fd(fsp, -1);
+	if (ret != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	fsp_set_fd(fsp, new_fd);
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Open a file.
 ****************************************************************************/
@@ -1367,23 +1432,32 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/*
-		 * Close the existing pathref fd and set fsp_flags.is_pathref to
-		 * false so we get a full fd this time.
-		 */
-		status = fd_close(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		fsp->fsp_flags.is_pathref = false;
-
-		/*
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = fd_open_atomic(fsp,
-					local_flags & ~O_TRUNC,
-					unx_mode,
-					p_file_created);
+		status = reopen_from_procfd(fsp,
+					    smb_fname,
+					    local_flags & ~O_TRUNC,
+					    unx_mode);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+		{
+			/*
+			 * Close the existing pathref fd and set the fsp flag
+			 * is_pathref to false so we get a "normal" fd this
+			 * time.
+			 */
+			status = fd_close(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			fsp->fsp_flags.is_pathref = false;
+
+			status = fd_open_atomic(fsp,
+						local_flags & ~O_TRUNC,
+						unx_mode,
+						p_file_created);
+		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			/*
 			 * POSIX client that hit a symlink. We don't want to
@@ -4562,28 +4636,32 @@ static NTSTATUS open_directory(connection_struct *conn,
 	*/
 	mtimespec = make_omit_timespec();
 
-	/*
-	 * Close the existing pathref fd and set fsp_flags.is_pathref to
-	 * false so we get a full fd this time.
-	 */
-	status = fd_close(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	fsp->fsp_flags.is_pathref = false;
-
 	/* POSIX allows us to open a directory with O_RDONLY. */
 	flags = O_RDONLY;
 #ifdef O_DIRECTORY
 	flags |= O_DIRECTORY;
 #endif
 
-	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, flags, 0);
+	status = reopen_from_procfd(fsp, smb_dname, flags, 0);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/*
+		 * Close the existing pathref fd and set the fsp flag
+		 * is_pathref to false so we get a "normal" fd this
+		 * time.
+		 */
+		status = fd_close(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		fsp->fsp_flags.is_pathref = false;
+
+		status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, flags, 0);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("Could not open fd for "
-			"%s (%s)\n",
-			smb_fname_str_dbg(smb_dname),
-			nt_errstr(status));
+		DBG_INFO("Could not open fd for%s (%s)\n",
+			 smb_fname_str_dbg(smb_dname),
+			 nt_errstr(status));
 		return status;
 	}
 
