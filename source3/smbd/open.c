@@ -708,6 +708,7 @@ static int non_widelink_open(files_struct *fsp,
 			    flags,
 			    mode);
 
+	fsp_set_fd(fsp, fd);
 	fsp->fsp_name = tmp_fsp_name;
 
 	if (fd == -1) {
@@ -823,8 +824,6 @@ NTSTATUS fd_open(files_struct *fsp,
 			  fd, strerror(errno));
 		return status;
 	}
-
-	fsp_set_fd(fsp, fd);
 
 	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
 		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fd);
