@@ -233,7 +233,7 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 #ifdef O_DIRECTORY
 	open_flags |= O_DIRECTORY;
 #endif
-	status = fd_open(fsp, open_flags, 0);
+	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for %s (%s)\n",
 			 smb_fname_str_dbg(smb_dname),

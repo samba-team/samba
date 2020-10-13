@@ -387,7 +387,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 #ifdef O_DIRECTORY
 		flags |= O_DIRECTORY;
 #endif
-		status = fd_open(fsp, flags, 0);
+		status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, flags, 0);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}

@@ -713,8 +713,10 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask);
-NTSTATUS fd_open(files_struct *fsp,
-		 int flags, mode_t mode);
+NTSTATUS fd_openat(const struct files_struct *dirfsp,
+		   struct smb_filename *smb_fname,
+		   files_struct *fsp,
+		   int flags, mode_t mode);
 NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,
 				 struct smb_filename *inherit_from_dir,
