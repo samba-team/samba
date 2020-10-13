@@ -443,10 +443,10 @@
 #define SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(handle, req, copied) \
 	smb_vfs_call_offload_write_recv((handle)->next, (req), (copied))
 
-#define SMB_VFS_GET_COMPRESSION(conn, mem_ctx, fsp, smb_fname, _compression_fmt)		\
-	smb_vfs_call_get_compression((conn)->vfs_handles, (mem_ctx), (fsp), (smb_fname), (_compression_fmt))
-#define SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname, _compression_fmt)		\
-	smb_vfs_call_get_compression((handle)->next, (mem_ctx), (fsp), (smb_fname), (_compression_fmt))
+#define SMB_VFS_FGET_COMPRESSION(conn, mem_ctx, fsp, _compression_fmt)		\
+	smb_vfs_call_fget_compression((conn)->vfs_handles, (mem_ctx), (fsp), (_compression_fmt))
+#define SMB_VFS_NEXT_FGET_COMPRESSION(handle, mem_ctx, fsp, _compression_fmt)		\
+	smb_vfs_call_fget_compression((handle)->next, (mem_ctx), (fsp), (_compression_fmt))
 
 #define SMB_VFS_SET_COMPRESSION(conn, mem_ctx, fsp, compression_fmt)		\
 	smb_vfs_call_set_compression((conn)->vfs_handles, (mem_ctx), (fsp), (compression_fmt))

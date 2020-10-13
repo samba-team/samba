@@ -175,7 +175,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_OFFLOAD_READ_RECV,
 	SMB_VFS_OP_OFFLOAD_WRITE_SEND,
 	SMB_VFS_OP_OFFLOAD_WRITE_RECV,
-	SMB_VFS_OP_GET_COMPRESSION,
+	SMB_VFS_OP_FGET_COMPRESSION,
 	SMB_VFS_OP_SET_COMPRESSION,
 	SMB_VFS_OP_SNAP_CHECK_PATH,
 	SMB_VFS_OP_SNAP_CREATE,
@@ -318,7 +318,7 @@ static struct {
 	{ SMB_VFS_OP_OFFLOAD_READ_RECV,	"offload_read_recv" },
 	{ SMB_VFS_OP_OFFLOAD_WRITE_SEND,	"offload_write_send" },
 	{ SMB_VFS_OP_OFFLOAD_WRITE_RECV,	"offload_write_recv" },
-	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
+	{ SMB_VFS_OP_FGET_COMPRESSION,	"fget_compression" },
 	{ SMB_VFS_OP_SET_COMPRESSION,	"set_compression" },
 	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
 	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
@@ -2172,21 +2172,19 @@ static NTSTATUS smb_full_audit_offload_write_recv(struct vfs_handle_struct *hand
 	return result;
 }
 
-static NTSTATUS smb_full_audit_get_compression(vfs_handle_struct *handle,
+static NTSTATUS smb_full_audit_fget_compression(vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       struct files_struct *fsp,
-					       struct smb_filename *smb_fname,
 					       uint16_t *_compression_fmt)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
+	result = SMB_VFS_NEXT_FGET_COMPRESSION(handle, mem_ctx, fsp,
 					      _compression_fmt);
 
-	do_log(SMB_VFS_OP_GET_COMPRESSION, NT_STATUS_IS_OK(result), handle,
+	do_log(SMB_VFS_OP_FGET_COMPRESSION, NT_STATUS_IS_OK(result), handle,
 	       "%s",
-	       (fsp ? fsp_str_do_log(fsp) :
-		smb_fname_str_do_log(handle->conn, smb_fname)));
+	       fsp_str_do_log(fsp));
 
 	return result;
 }
@@ -3016,7 +3014,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.offload_read_recv_fn = smb_full_audit_offload_read_recv,
 	.offload_write_send_fn = smb_full_audit_offload_write_send,
 	.offload_write_recv_fn = smb_full_audit_offload_write_recv,
-	.get_compression_fn = smb_full_audit_get_compression,
+	.fget_compression_fn = smb_full_audit_fget_compression,
 	.set_compression_fn = smb_full_audit_set_compression,
 	.snap_check_path_fn =  smb_full_audit_snap_check_path,
 	.snap_create_fn = smb_full_audit_snap_create,

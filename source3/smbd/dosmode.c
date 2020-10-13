@@ -609,7 +609,7 @@ static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
 		goto err_out;
 	}
 
-	status = SMB_VFS_GET_COMPRESSION(conn, tmp_ctx, fsp, smb_fname,
+	status = SMB_VFS_FGET_COMPRESSION(conn, tmp_ctx, fsp,
 					 &compression_fmt);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_ctx_free;

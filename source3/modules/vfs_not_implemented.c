@@ -622,10 +622,9 @@ NTSTATUS vfs_not_implemented_offload_write_recv(struct vfs_handle_struct *handle
 	return NT_STATUS_OK;
 }
 
-NTSTATUS vfs_not_implemented_get_compression(struct vfs_handle_struct *handle,
+NTSTATUS vfs_not_implemented_fget_compression(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct files_struct *fsp,
-					     struct smb_filename *smb_fname,
 					     uint16_t *_compression_fmt)
 {
 	return NT_STATUS_INVALID_DEVICE_REQUEST;
@@ -1110,7 +1109,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.offload_read_recv_fn = vfs_not_implemented_offload_read_recv,
 	.offload_write_send_fn = vfs_not_implemented_offload_write_send,
 	.offload_write_recv_fn = vfs_not_implemented_offload_write_recv,
-	.get_compression_fn = vfs_not_implemented_get_compression,
+	.fget_compression_fn = vfs_not_implemented_fget_compression,
 	.set_compression_fn = vfs_not_implemented_set_compression,
 
 	.streaminfo_fn = vfs_not_implemented_streaminfo,

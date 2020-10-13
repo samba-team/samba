@@ -829,13 +829,12 @@ static NTSTATUS skel_offload_write_recv(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS skel_get_compression(struct vfs_handle_struct *handle,
+static NTSTATUS skel_fget_compression(struct vfs_handle_struct *handle,
 				     TALLOC_CTX *mem_ctx,
 				     struct files_struct *fsp,
-				     struct smb_filename *smb_fname,
 				     uint16_t *_compression_fmt)
 {
-	return SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
+	return SMB_VFS_NEXT_FGET_COMPRESSION(handle, mem_ctx, fsp,
 					    _compression_fmt);
 }
 
@@ -1411,7 +1410,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.offload_read_recv_fn = skel_offload_read_recv,
 	.offload_write_send_fn = skel_offload_write_send,
 	.offload_write_recv_fn = skel_offload_write_recv,
-	.get_compression_fn = skel_get_compression,
+	.fget_compression_fn = skel_fget_compression,
 	.set_compression_fn = skel_set_compression,
 
 	.streaminfo_fn = skel_streaminfo,

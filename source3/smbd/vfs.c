@@ -2623,14 +2623,13 @@ NTSTATUS smb_vfs_call_get_dos_attributes_recv(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smb_vfs_call_get_compression(vfs_handle_struct *handle,
+NTSTATUS smb_vfs_call_fget_compression(vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,
-				      struct smb_filename *smb_fname,
 				      uint16_t *_compression_fmt)
 {
-	VFS_FIND(get_compression);
-	return handle->fns->get_compression_fn(handle, mem_ctx, fsp, smb_fname,
+	VFS_FIND(fget_compression);
+	return handle->fns->fget_compression_fn(handle, mem_ctx, fsp,
 					       _compression_fmt);
 }
 

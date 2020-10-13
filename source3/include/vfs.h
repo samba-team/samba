@@ -339,6 +339,7 @@
  * Version 44 - Add 'have_proc_fds' flag to struct files_struct.
  * Version 44 - Add dirfsp arg to SMB_VFS_READDIR()
  * Version 44 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
+ * Version 44 - Replace SMB_VFS_GET_COMPRESSION() with SMB_VFS_FGET_COMPRESSION()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -1080,10 +1081,9 @@ struct vfs_fn_pointers {
 	NTSTATUS (*offload_write_recv_fn)(struct vfs_handle_struct *handle,
 					  struct tevent_req *req,
 					  off_t *copied);
-	NTSTATUS (*get_compression_fn)(struct vfs_handle_struct *handle,
+	NTSTATUS (*fget_compression_fn)(struct vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx,
 				       struct files_struct *fsp,
-				       struct smb_filename *smb_fname,
 				       uint16_t *_compression_fmt);
 	NTSTATUS (*set_compression_fn)(struct vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx,
@@ -1678,10 +1678,9 @@ struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *han
 NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,
 					 struct tevent_req *req,
 					 off_t *copied);
-NTSTATUS smb_vfs_call_get_compression(struct vfs_handle_struct *handle,
+NTSTATUS smb_vfs_call_fget_compression(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,
-				      struct smb_filename *smb_fname,
 				      uint16_t *_compression_fmt);
 NTSTATUS smb_vfs_call_set_compression(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
@@ -2068,10 +2067,9 @@ struct tevent_req *vfs_not_implemented_offload_write_send(
 NTSTATUS vfs_not_implemented_offload_write_recv(struct vfs_handle_struct *handle,
 						struct tevent_req *req,
 						off_t *copied);
-NTSTATUS vfs_not_implemented_get_compression(struct vfs_handle_struct *handle,
+NTSTATUS vfs_not_implemented_fget_compression(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct files_struct *fsp,
-					     struct smb_filename *smb_fname,
 					     uint16_t *_compression_fmt);
 NTSTATUS vfs_not_implemented_set_compression(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,

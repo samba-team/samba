@@ -353,10 +353,9 @@ static NTSTATUS fsctl_get_cmprn(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(cmpr_state);
 	if (fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) {
-		status = SMB_VFS_GET_COMPRESSION(fsp->conn,
+		status = SMB_VFS_FGET_COMPRESSION(fsp->conn,
 						 mem_ctx,
 						 fsp,
-						 NULL,
 						 &cmpr_state.format);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

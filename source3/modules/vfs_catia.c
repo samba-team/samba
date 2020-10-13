@@ -2190,58 +2190,26 @@ static NTSTATUS catia_fsctl(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS catia_get_compression(vfs_handle_struct *handle,
+static NTSTATUS catia_fget_compression(vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,
-				      struct smb_filename *smb_fname,
 				      uint16_t *_compression_fmt)
 {
 	NTSTATUS result;
 	struct catia_cache *cc = NULL;
 	int ret;
-	struct smb_filename *mapped_smb_fname = NULL;
-	char *mapped_name = NULL;
 
-	if (fsp != NULL) {
-		ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
-		if (ret != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-		mapped_smb_fname = fsp->fsp_name;
-	} else {
-		result = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-		if (!NT_STATUS_IS_OK(result)) {
-			return result;
-		}
-
-		mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
-						mapped_name,
-						NULL,
-						&smb_fname->st,
-						smb_fname->twrp,
-						smb_fname->flags);
-		if (mapped_smb_fname == NULL) {
-			TALLOC_FREE(mapped_name);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		TALLOC_FREE(mapped_name);
+	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
+	if (ret != 0) {
+		return map_nt_error_from_unix(errno);
 	}
 
-	result = SMB_VFS_NEXT_GET_COMPRESSION(handle,
+	result = SMB_VFS_NEXT_FGET_COMPRESSION(handle,
 					mem_ctx,
 					fsp,
-					mapped_smb_fname,
 					_compression_fmt);
 
-	if (fsp != NULL) {
-		CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
-	} else {
-		TALLOC_FREE(mapped_smb_fname);
-	}
+	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 
 	return result;
 }
@@ -2468,7 +2436,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.set_dos_attributes_fn = catia_set_dos_attributes,
 	.fset_dos_attributes_fn = catia_fset_dos_attributes,
 	.fget_dos_attributes_fn = catia_fget_dos_attributes,
-	.get_compression_fn = catia_get_compression,
+	.fget_compression_fn = catia_fget_compression,
 	.set_compression_fn = catia_set_compression,
 	.create_dfs_pathat_fn = catia_create_dfs_pathat,
 	.read_dfs_pathat_fn = catia_read_dfs_pathat,

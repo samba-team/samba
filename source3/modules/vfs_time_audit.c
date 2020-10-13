@@ -2126,10 +2126,9 @@ static NTSTATUS smb_time_audit_offload_write_recv(struct vfs_handle_struct *hand
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smb_time_audit_get_compression(vfs_handle_struct *handle,
+static NTSTATUS smb_time_audit_fget_compression(vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       struct files_struct *fsp,
-					       struct smb_filename *smb_fname,
 					       uint16_t *_compression_fmt)
 {
 	NTSTATUS result;
@@ -2137,19 +2136,14 @@ static NTSTATUS smb_time_audit_get_compression(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
+	result = SMB_VFS_NEXT_FGET_COMPRESSION(handle, mem_ctx, fsp,
 					      _compression_fmt);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		if (fsp !=  NULL) {
-			smb_time_audit_log_fsp("get_compression",
-					       timediff, fsp);
-		} else {
-			smb_time_audit_log_smb_fname("get_compression",
-						     timediff, smb_fname);
-		}
+		smb_time_audit_log_fsp("get_compression",
+				       timediff, fsp);
 	}
 
 	return result;
@@ -2884,7 +2878,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.offload_read_recv_fn = smb_time_audit_offload_read_recv,
 	.offload_write_send_fn = smb_time_audit_offload_write_send,
 	.offload_write_recv_fn = smb_time_audit_offload_write_recv,
-	.get_compression_fn = smb_time_audit_get_compression,
+	.fget_compression_fn = smb_time_audit_fget_compression,
 	.set_compression_fn = smb_time_audit_set_compression,
 	.snap_check_path_fn = smb_time_audit_snap_check_path,
 	.snap_create_fn = smb_time_audit_snap_create,

@@ -60,6 +60,7 @@
         <member>fchmod</member>
         <member>fchown</member>
         <member>fdopendir</member>
+        <member>fget_compression</member>
         <member>fget_dos_attributes</member>
         <member>fget_nt_acl_at</member>
         <member>fgetxattr</member>
@@ -78,7 +79,6 @@
         <member>fsync_send</member>
         <member>ftruncate</member>
         <member>get_alloc_size</member>
-        <member>get_compression</member>
         <member>get_dfs_referrals</member>
         <member>get_dos_attributes</member>
         <member>get_dos_attributes_recv</member>
