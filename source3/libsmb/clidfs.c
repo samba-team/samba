@@ -610,7 +610,7 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
 static bool cli_dfs_check_error(struct cli_state *cli, NTSTATUS expected,
 				NTSTATUS status)
 {
-	/* only deal with DS when we negotiated NT_STATUS codes and UNICODE */
+	/* only deal with DFS when we negotiated NT_STATUS codes and UNICODE */
 
 	if (!(smbXcli_conn_use_unicode(cli->conn))) {
 		return false;
