@@ -1023,7 +1023,7 @@ static int ceph_snap_gmt_ntimes(vfs_handle_struct *handle,
 }
 
 static int ceph_snap_gmt_readlinkat(vfs_handle_struct *handle,
-				files_struct *dirfsp,
+				const struct files_struct *dirfsp,
 				const struct smb_filename *csmb_fname,
 				char *buf,
 				size_t bufsiz)

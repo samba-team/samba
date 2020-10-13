@@ -330,6 +330,7 @@
  * Change to Version 44 - will ship with 4.14.
  * Version 44 - Remove dirfsp arg from struct files_struct
  * Version 44 - Remove dirfsp arg to SMB_VFS_CREATE_FILE()
+ * Version 44 - Make dirfsp arg to SMB_VFS_READLINKAT() const
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -863,7 +864,7 @@ struct vfs_fn_pointers {
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname);
 	int (*readlinkat_fn)(struct vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
+				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				char *buf,
 				size_t bufsiz);
@@ -1407,7 +1408,7 @@ int smb_vfs_call_symlinkat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname);
 int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
+			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			char *buf,
 			size_t bufsiz);
@@ -1853,7 +1854,7 @@ int vfs_not_implemented_symlinkat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname);
 int vfs_not_implemented_vfs_readlinkat(vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
+			const struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			char *buf,
 			size_t bufsiz);

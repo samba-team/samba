@@ -1568,7 +1568,7 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_readlinkat(vfs_handle_struct *handle,
-				files_struct *dirfsp,
+				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				char *buf,
 				size_t bufsiz)

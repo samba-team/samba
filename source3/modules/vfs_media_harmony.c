@@ -1643,7 +1643,7 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_readlinkat(vfs_handle_struct *handle,
-		files_struct *dirfsp,
+		const struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
 		char *buf,
 		size_t bufsiz)

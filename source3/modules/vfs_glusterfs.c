@@ -1703,7 +1703,7 @@ static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_readlinkat(struct vfs_handle_struct *handle,
-				files_struct *dirfsp,
+				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				char *buf,
 				size_t bufsiz)
