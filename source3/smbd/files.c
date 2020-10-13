@@ -876,7 +876,7 @@ size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 	/*
 	 * Don't pass NULL buffer to snprintf (to satisfy static checker)
 	 * Some callers will call this function with NULL for buf and
-	 * 0 for buflen in order to get length of fullbasepatch (without
+	 * 0 for buflen in order to get length of fullbasepath (without
 	 * needing to allocate or write to buf)
 	 */
 	if (buf == NULL) {
