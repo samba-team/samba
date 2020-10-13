@@ -134,7 +134,6 @@ struct notify_mid_map;
 struct notify_db_entry;
 struct notify_event;
 struct notify_change_request;
-struct sys_notify_backend;
 struct sys_notify_context {
 	struct tevent_context *ev;
 	void *private_data; 	/* For use by the system backend */
