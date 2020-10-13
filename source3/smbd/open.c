@@ -467,7 +467,8 @@ static int link_errno_convert(int err)
 	return err;
 }
 
-static int non_widelink_open(files_struct *fsp,
+static int non_widelink_open(const struct files_struct *dirfsp,
+			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
 			mode_t mode,
@@ -477,13 +478,14 @@ static int non_widelink_open(files_struct *fsp,
  Follow a symlink in userspace.
 ****************************************************************************/
 
-static int process_symlink_open(struct connection_struct *conn,
+static int process_symlink_open(const struct files_struct *dirfsp,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
 			mode_t mode,
 			unsigned int link_depth)
 {
+	struct connection_struct *conn = dirfsp->conn;
 	const char *conn_rootdir = NULL;
 	struct smb_filename conn_rootdir_fname;
 	int fd = -1;
@@ -495,6 +497,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	char *resolved_name = NULL;
 	bool matched = false;
 	int saved_errno = 0;
+	struct smb_filename *full_fname = NULL;
 
 	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
 	if (conn_rootdir == NULL) {
@@ -535,7 +538,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	 * we may want to use that instead of SMB_VFS_READLINKAT().
 	 */
 	link_len = SMB_VFS_READLINKAT(conn,
-				conn->cwd_fsp,
+				dirfsp,
 				smb_fname,
 				link_target,
 				PATH_MAX - 1);
@@ -543,8 +546,14 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
+	full_fname = full_path_from_dirfsp_atname(
+		talloc_tos(), dirfsp, smb_fname);
+	if (full_fname == NULL) {
+		goto out;
+	}
+
 	/* Convert to an absolute path. */
-	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), smb_fname);
+	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), full_fname);
 	if (resolved_fname == NULL) {
 		goto out;
 	}
@@ -586,7 +595,7 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+	oldwd_fname = vfs_GetWd(talloc_tos(), dirfsp->conn);
 	if (oldwd_fname == NULL) {
 		goto out;
 	}
@@ -596,8 +605,13 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	/* And do it all again.. */
-	fd = non_widelink_open(fsp,
+	/*
+	 * And do it all again... As smb_fname is not relative to the passed in
+	 * dirfsp anymore, we pass conn->cwd_fsp as dirfsp to
+	 * non_widelink_open() to trigger the chdir(parentdir) logic.
+	 */
+	fd = non_widelink_open(conn->cwd_fsp,
+				fsp,
 				smb_fname,
 				flags,
 				mode,
@@ -627,7 +641,8 @@ static int process_symlink_open(struct connection_struct *conn,
  Non-widelink open.
 ****************************************************************************/
 
-static int non_widelink_open(files_struct *fsp,
+static int non_widelink_open(const struct files_struct *dirfsp,
+			     files_struct *fsp,
 			     struct smb_filename *smb_fname,
 			     int flags,
 			     mode_t mode,
@@ -707,7 +722,7 @@ static int non_widelink_open(files_struct *fsp,
 	fsp->fsp_name = smb_fname_rel;
 
 	fd = SMB_VFS_OPENAT(conn,
-			    cwdfsp,
+			    dirfsp,
 			    smb_fname_rel,
 			    fsp,
 			    flags,
@@ -781,7 +796,7 @@ static int non_widelink_open(files_struct *fsp,
 			 * We may have a symlink. Follow in userspace
 			 * to ensure it's under the share definition.
 			 */
-			fd = process_symlink_open(conn,
+			fd = process_symlink_open(dirfsp,
 					fsp,
 					smb_fname_rel,
 					flags,
@@ -848,7 +863,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	fd = non_widelink_open(fsp, smb_fname, flags, mode, 0);
+	fd = non_widelink_open(dirfsp, fsp, smb_fname, flags, mode, 0);
 	if (fd == -1) {
 		int posix_errno = link_errno_convert(errno);
 		status = map_nt_error_from_unix(posix_errno);
