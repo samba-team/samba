@@ -50,6 +50,8 @@ struct aclread_context {
 	bool added_objectClass;
 	bool indirsync;
 
+	bool do_list_object_initialized;
+	bool do_list_object;
 	bool base_invisible;
 	uint64_t num_entries;
 
@@ -160,6 +162,7 @@ static int aclread_check_object_visible(struct aclread_context *ac,
 					struct ldb_request *req)
 {
 	uint32_t instanceType;
+	int ret;
 
 	/* get the object instance type */
 	instanceType = ldb_msg_find_attr_as_uint(msg,
@@ -171,7 +174,81 @@ static int aclread_check_object_visible(struct aclread_context *ac,
 		return LDB_SUCCESS;
 	}
 
-	return aclread_check_parent(ac, msg, req);
+	ret = aclread_check_parent(ac, msg, req);
+	if (ret == LDB_SUCCESS) {
+		/*
+		 * SEC_ADS_LIST (List Children) alone
+		 * on the parent is enough to make the
+		 * object visible.
+		 */
+		return LDB_SUCCESS;
+	}
+	if (ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		return ret;
+	}
+
+	if (!ac->do_list_object_initialized) {
+		/*
+		 * We only call dsdb_do_list_object() once
+		 * and only when needed in order to
+		 * check the dSHeuristics for fDoListObject.
+		 */
+		ac->do_list_object = dsdb_do_list_object(ac->module, ac, req);
+		ac->do_list_object_initialized = true;
+	}
+
+	if (ac->do_list_object) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct ldb_dn *parent_dn = NULL;
+
+		/*
+		 * Here we're in "List Object" mode (fDoListObject=true).
+		 *
+		 * If SEC_ADS_LIST (List Children) is not
+		 * granted on the parent, we need to check if
+		 * SEC_ADS_LIST_OBJECT (List Object) is granted
+		 * on the parent and also on the object itself.
+		 *
+		 * We could optimize this similar to aclread_check_parent(),
+		 * but that would require quite a bit of restructuring,
+		 * so that we cache the granted access bits instead
+		 * of just the result for 'SEC_ADS_LIST (List Children)'.
+		 *
+		 * But as this is the uncommon case and
+		 * 'SEC_ADS_LIST (List Children)' is most likely granted
+		 * on most of the objects, we'll just implement what
+		 * we have to.
+		 */
+
+		parent_dn = ldb_dn_get_parent(frame, msg->dn);
+		if (parent_dn == NULL) {
+			TALLOC_FREE(frame);
+			return ldb_oom(ldb_module_get_ctx(ac->module));
+		}
+		ret = dsdb_module_check_access_on_dn(ac->module,
+						     frame,
+						     parent_dn,
+						     SEC_ADS_LIST_OBJECT,
+						     NULL, req);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+		ret = dsdb_module_check_access_on_dn(ac->module,
+						     frame,
+						     msg->dn,
+						     SEC_ADS_LIST_OBJECT,
+						     NULL, req);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		TALLOC_FREE(frame);
+		return LDB_SUCCESS;
+	}
+
+	return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 }
 
 /*
