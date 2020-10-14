@@ -493,10 +493,11 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = (struct smb_filename) {
 		.base_name = pathreal,
+		.flags = dptr->dir_hnd->fsp->fsp_name->flags,
 		.twrp = dptr->smb_dname->twrp,
 	};
 
-	if (SMB_VFS_STAT(dptr->conn, &smb_fname_base) == 0) {
+	if (vfs_stat(dptr->conn, &smb_fname_base) == 0) {
 		*pst = smb_fname_base.st;
 		name = talloc_strdup(ctx, dptr->wcard);
 		goto clean;
