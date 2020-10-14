@@ -840,6 +840,31 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 				consumed);
 }
 
+static bool cli_conn_have_dfs(struct cli_state *cli)
+{
+	struct smbXcli_conn *conn = cli->conn;
+	struct smbXcli_tcon *tcon = NULL;
+	bool ok;
+
+	if (smbXcli_conn_protocol(conn) < PROTOCOL_SMB2_02) {
+		uint32_t capabilities = smb1cli_conn_capabilities(conn);
+
+		if ((capabilities & CAP_STATUS32) == 0) {
+			return false;
+		}
+		if ((capabilities & CAP_UNICODE) == 0) {
+			return false;
+		}
+
+		tcon = cli->smb1.tcon;
+	} else {
+		tcon = cli->smb2.tcon;
+	}
+
+	ok = smbXcli_tcon_is_dfs_share(tcon);
+	return ok;
+}
+
 /********************************************************************
 ********************************************************************/
 struct cli_dfs_path_split {
@@ -873,20 +898,12 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	SMB_STRUCT_STAT sbuf;
 	uint32_t attributes;
 	NTSTATUS status;
-	struct smbXcli_tcon *root_tcon = NULL;
 	struct smbXcli_tcon *target_tcon = NULL;
 	struct cli_dfs_path_split *dfs_refs = NULL;
+	bool ok;
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Don't do anything if this is not a DFS root. */
-
-	if (smbXcli_conn_protocol(rootcli->conn) >= PROTOCOL_SMB2_02) {
-		root_tcon = rootcli->smb2.tcon;
-	} else {
-		root_tcon = rootcli->smb1.tcon;
 	}
 
 	/*
@@ -896,7 +913,8 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 		path++;
 	}
 
-	if (!smbXcli_tcon_is_dfs_share(root_tcon)) {
+	ok = cli_conn_have_dfs(rootcli);
+	if (!ok) {
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
