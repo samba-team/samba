@@ -2873,8 +2873,6 @@ static int vfswrap_symlinkat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_symlinkat);
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	result = symlinkat(link_target->base_name,
 			dirfsp->fh->fd,
 			new_smb_fname->base_name);
@@ -2891,8 +2889,6 @@ static int vfswrap_readlinkat(vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(syscall_readlinkat);
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	result = readlinkat(dirfsp->fh->fd,
 			smb_fname->base_name,
@@ -2914,9 +2910,6 @@ static int vfswrap_linkat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_linkat);
 
-	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
-	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
-
 	result = linkat(srcfsp->fh->fd,
 			old_smb_fname->base_name,
 			dstfsp->fh->fd,
@@ -2936,8 +2929,6 @@ static int vfswrap_mknodat(vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(syscall_mknodat);
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	result = sys_mknodat(dirfsp->fh->fd,
 			smb_fname->base_name,
