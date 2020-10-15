@@ -162,6 +162,28 @@
 </refsect1>
 
 <refsect1>
+	<title>CAVEATS</title>
+
+	<para>
+                The GlusterFS write-behind performance translator, when used
+                with Samba, could be a source of data corruption. The
+                translator, while processing a write call, immediately returns
+                success but continues writing the data to the server in the
+                background. This can cause data corruption when two clients
+                relying on Samba to provide data consistency are operating on
+                the same file.
+        </para>
+        <para>
+                The write-behind translator is enabled by default on GlusterFS.
+                The vfs_glusterfs plugin will check for the presence of the
+                translator and refuse to connect if detected.
+                Please disable the write-behind translator for the GlusterFS
+                volume to allow the plugin to connect to the volume.
+	</para>
+</refsect1>
+
+
+<refsect1>
 	<title>VERSION</title>
 
 	<para>
