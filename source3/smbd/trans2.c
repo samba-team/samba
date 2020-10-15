@@ -1784,7 +1784,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 	bool ms_dfs_link = false;
 	uint32_t mode = 0;
 
-	if (INFO_LEVEL_IS_UNIX(state->info_level)) {
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		if (SMB_VFS_LSTAT(state->conn, smb_fname) != 0) {
 			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
 				 "Couldn't lstat [%s] (%s)\n",
