@@ -2881,8 +2881,8 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 						".",
 						NULL,
 						&old_name->st,
-						old_name->flags,
-						old_name->twrp);
+						old_name->twrp,
+						old_name->flags);
 		TALLOC_FREE(old_name);
 		if (smb_dname == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
