@@ -245,6 +245,7 @@ posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA",
                "POSIX-ACL-SHAREROOT",
                "POSIX-LS-WILDCARD",
                "POSIX-LS-SINGLE",
+               "POSIX-READLINK",
               ]
 
 for t in posix_tests:

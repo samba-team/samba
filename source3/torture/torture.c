@@ -14923,6 +14923,10 @@ static struct {
 		.fn    = run_posix_ls_single_test,
 	},
 	{
+		.name  = "POSIX-READLINK",
+		.fn    = run_posix_readlink_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},

@@ -435,3 +435,147 @@ out:
 	TALLOC_FREE(frame);
 	return correct;
 }
+
+/*
+  Test POSIX readlink of symlinks
+ */
+bool run_posix_readlink_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	uint16_t fnum = (uint16_t)-1;
+	NTSTATUS status;
+	const char *file = "file";
+	const char *symlnk_dangling = "dangling";
+	const char *symlnk_dst_dangling = "xxxxxxx";
+	const char *symlnk_in_share = "symlnk_in_share";
+	const char *symlnk_dst_in_share = file;
+	const char *symlnk_outside_share = "symlnk_outside_share";
+	const char *symlnk_dst_outside_share = "/etc/passwd";
+	struct posix_test_entry state[] = {
+		{
+			.name = symlnk_dangling,
+			.target = symlnk_dst_dangling,
+			.expected = symlnk_dangling,
+		}, {
+			.name = symlnk_in_share,
+			.target = symlnk_dst_in_share,
+			.expected = symlnk_in_share,
+		}, {
+			.name = symlnk_outside_share,
+			.target = symlnk_dst_outside_share,
+			.expected = symlnk_outside_share,
+		}, {
+			.name = NULL,
+		}
+	};
+	int i;
+	bool correct = false;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-READLINK test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	cli_posix_unlink(cli_unix, file);
+	cli_posix_unlink(cli_unix, symlnk_dangling);
+	cli_posix_unlink(cli_unix, symlnk_in_share);
+	cli_posix_unlink(cli_unix, symlnk_outside_share);
+
+	status = cli_posix_open(cli_unix,
+				file,
+				O_RDWR|O_CREAT,
+				0666,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+		       file,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli_unix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	for (i = 0; state[i].name != NULL; i++) {
+		status = cli_posix_symlink(cli_unix,
+					   state[i].target,
+					   state[i].name);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("POSIX symlink of %s failed (%s)\n",
+			       symlnk_dangling, nt_errstr(status));
+			goto out;
+		}
+	}
+
+	for (i = 0; state[i].name != NULL; i++) {
+		char *target = NULL;
+
+		status = cli_posix_readlink(cli_unix,
+					    state[i].name,
+					    talloc_tos(),
+					    &target);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("POSIX readlink on %s failed (%s)\n",
+			       state[i].name, nt_errstr(status));
+			goto out;
+		}
+		if (strequal(target, state[i].target)) {
+			state[i].ok = true;
+			state[i].returned_size = strlen(target);
+		}
+	}
+
+	if (!posix_test_entry_check(state,
+				    symlnk_dangling,
+				    true,
+				    strlen(symlnk_dst_dangling)))
+	{
+		goto out;
+	}
+	if (!posix_test_entry_check(state,
+				    symlnk_outside_share,
+				    true,
+				    strlen(symlnk_dst_outside_share)))
+	{
+		goto out;
+	}
+	if (!posix_test_entry_check(state,
+				    symlnk_in_share,
+				    true,
+				    strlen(symlnk_dst_in_share))) {
+		goto out;
+	}
+
+	printf("POSIX-READLINK test passed\n");
+	correct = true;
+
+out:
+	cli_posix_unlink(cli_unix, file);
+	cli_posix_unlink(cli_unix, symlnk_dangling);
+	cli_posix_unlink(cli_unix, symlnk_in_share);
+	cli_posix_unlink(cli_unix, symlnk_outside_share);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
