@@ -2784,17 +2784,20 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 			break;
 		case SMB_FIND_FILE_UNIX:
 		case SMB_FIND_FILE_UNIX_INFO2:
-			/* Always use filesystem for UNIX mtime query. */
-			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				goto out;
 			}
-			ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 			break;
 		default:
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 			goto out;
+	}
+
+	if (req->posix_pathnames) {
+		/* Always use filesystem for UNIX mtime query. */
+		ask_sharemode = false;
+		ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 	}
 
 	if (req->posix_pathnames) {
