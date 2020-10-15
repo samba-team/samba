@@ -3446,8 +3446,8 @@ NTSTATUS unlink_internals(connection_struct *conn,
 						p,
 						NULL,
 						&smb_fname->st,
-						smb_fname->flags,
-						smb_fname->twrp);
+						smb_fname->twrp,
+						smb_fname->flags);
 			if (f == NULL) {
 				TALLOC_FREE(dir_hnd);
 				status = NT_STATUS_NO_MEMORY;
