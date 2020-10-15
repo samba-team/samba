@@ -1183,6 +1183,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/test_async_echo.c
                         torture/test_addrchange.c
                         torture/test_posix_append.c
+                        torture/test_posix.c
                         torture/test_nttrans_create.c
                         torture/test_nttrans_fsctl.c
                         torture/test_case_insensitive.c

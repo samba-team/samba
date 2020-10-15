@@ -14915,6 +14915,10 @@ static struct {
 		.fn    = run_posix_acl_shareroot_test,
 	},
 	{
+		.name  = "POSIX-LS-WILDCARD",
+		.fn    = run_posix_ls_wildcard_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},
