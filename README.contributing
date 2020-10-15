@@ -48,7 +48,7 @@ your employer, simply email a copy of the following text
 from your corporate email address to contributing@samba.org
 
 ------------------------------------------------------------
-Samba Developer's Certificate of Origin. Version 1.0
+Samba Developer's Declaration, Version 1.0
 
 By making a contribution to this project, I certify that:
 
@@ -95,7 +95,7 @@ above, add a line that states:
 Signed-off-by: Random J Developer <random@developer.example.org>
 
 using your real name and the email address you sent the original email
-you used to send the Samba Developer's Certificate of Origin to us
+you used to send the Samba Developer's Declaration to us
 (sorry, no pseudonyms or anonymous contributions.)
 
 That's it ! Such code can then quite happily contain changes that have
@@ -105,7 +105,7 @@ copyright messages such as :
 
 and can be merged into the Samba codebase in the same way as patches
 from any other individual. You don't need to send in a copy of the
-Samba Developer's Certificate of Origin for each patch, or inside each
+Samba Developer's Declaration for each patch, or inside each
 patch. Just the sign-off message is all that is required once we've
 received the initial email.
 
@@ -114,7 +114,7 @@ Have fun and happy Samba hacking !
 The Samba Team.
 
 
-The "Samba Developer's Certificate of Origin. Version 1.0" is:
+The "Samba Developer's Declaration, Version 1.0" is:
   (C) 2011 Software Freedom Conservancy, Inc.
   (C) 2005 Open Source Development Labs, Inc.
 
