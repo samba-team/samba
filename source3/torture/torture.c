@@ -452,6 +452,10 @@ bool torture_close_connection(struct cli_state *c)
 	return ret;
 }
 
+void torture_conn_set_sockopt(struct cli_state *cli)
+{
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+}
 
 /* check if the server produced the expected dos or nt error code */
 static bool check_both_error(int line, NTSTATUS status,
