@@ -40,19 +40,8 @@
 ^samba3.smbtorture_s3.plain.DIR1\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.DIR-CREATETIME\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.DELETE-LN\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.UID-REGRESSION-TEST\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.SHORTNAME-TEST\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-APPEND\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-SYMLINK-ACL\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-SYMLINK-EA\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-OFD-LOCK\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-STREAM-DELETE\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-MKDIR\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-ACL-OPLOCK\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-ACL-SHAREROOT\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.POSIX-BLOCKING-LOCK\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
-^samba3.smbtorture_s3.plain.WINDOWS-BAD-SYMLINK\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.RENAME-ACCESS\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain.OWNER-RIGHTS\(ad_dc_ntvfs\) # Don't test against the s4 ntvfs server anymore
 ^samba3.smbtorture_s3.plain.PIDHIGH\(ad_dc_ntvfs\) # Fails against the s4 ntvfs server
