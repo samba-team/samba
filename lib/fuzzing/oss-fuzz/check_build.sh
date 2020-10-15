@@ -13,8 +13,15 @@ OUT=$1
 
 # build_samba.sh will have put a non-zero number of fuzzers here.  If
 # there are none, this will fail as it becomes literally fuzz_*
+
+seeds_found=no
+
 for bin in $OUT/fuzz_*
 do
+    # we only want to look at the elf files, not the zips
+    if [ ${bin%_seed_corpus.zip} != $bin ]; then
+        continue
+    fi
     # Confirm that the chrpath was reset to lib/ in the same directory
     # as the binary
     chrpath -l $bin | grep 'RUNPATH=$ORIGIN/lib'
@@ -22,4 +29,13 @@ do
     # Confirm that we link to at least some libraries in this
     # directory (shows that the libraries were found and copied).
     ldd $bin | grep "$OUT/lib"
+
+    if [ -f ${bin}_seed_corpus.zip ]; then
+        seeds_found=yes
+    fi
 done
+
+if [ $seeds_found = no ]; then
+    echo "no seed zip files were found!"
+    exit 1
+fi

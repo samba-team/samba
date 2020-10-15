@@ -110,4 +110,15 @@ do
 
     # Truncate the original binary to save space
     echo -n > $x
+
 done
+
+# Grap the seeds dictionary from github and put the seed zips in place
+# beside their executables.
+
+wget https://gitlab.com/samba-team/samba-fuzz-seeds/-/jobs/artifacts/master/download?job=zips \
+     -O seeds.zip
+
+# We might not have unzip, but we do have python
+$PYTHON -mzipfile -e seeds.zip  $OUT
+rm -f seeds.zip
