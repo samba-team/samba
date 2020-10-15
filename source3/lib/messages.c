@@ -1163,6 +1163,7 @@ int messaging_filtered_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (presult != NULL) {
 		*presult = talloc_move(mem_ctx, &state->rec);
 	}
+	tevent_req_received(req);
 	return 0;
 }
 
