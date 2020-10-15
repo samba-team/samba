@@ -1,5 +1,7 @@
 # Fuzzing Samba
 
+See also https://wiki.samba.org/index.php/Fuzzing
+
 Fuzzing supplies valid, invalid, unexpected or random data as input to a piece
 of code. Instrumentation, usually compiler-implemented, is used to monitor for
 exceptions such as crashes, assertions or memory corruption.
@@ -7,7 +9,7 @@ exceptions such as crashes, assertions or memory corruption.
 See [Wikipedia article on fuzzing](https://en.wikipedia.org/wiki/Fuzzing) for
 more information.
 
-# Hongfuzz
+# Honggfuzz
 
 ## Configure with fuzzing
 
