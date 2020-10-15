@@ -1,10 +1,15 @@
 #!/bin/sh
 #
-# This is not a general-purpose build script, but instead one specific to the Google oss-fuzz compile environment.
+# This is not a general-purpose build script, but instead one specific
+# to the Google oss-fuzz compile environment.
 #
 # https://google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements
 #
 # https://github.com/google/oss-fuzz/blob/master/infra/base-images/base-builder/README.md#provided-environment-variables
+#
+# This file is run by
+# https://github.com/google/oss-fuzz/blob/master/projects/samba/build.sh
+# which does nothing else.
 #
 # We have to push to oss-fuzz CFLAGS into the waf ADDITIONAL_CFLAGS
 # as otherwise waf's configure fails linking the first test binary
