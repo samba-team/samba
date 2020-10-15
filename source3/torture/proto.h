@@ -86,6 +86,7 @@ bool torture_casetable(int dummy);
 
 bool run_posix_append(int dummy);
 bool run_posix_ls_wildcard_test(int dummy);
+bool run_posix_ls_single_test(int dummy);
 bool run_case_insensitive_create(int dummy);
 
 bool run_nbench2(int dummy);

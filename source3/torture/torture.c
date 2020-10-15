@@ -14919,6 +14919,10 @@ static struct {
 		.fn    = run_posix_ls_wildcard_test,
 	},
 	{
+		.name  = "POSIX-LS-SINGLE",
+		.fn    = run_posix_ls_single_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},
