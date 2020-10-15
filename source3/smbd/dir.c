@@ -872,6 +872,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			.base_name = pathreal,
 			.st = sbuf,
 			.twrp = dirptr->smb_dname->twrp,
+			.flags = dirptr->smb_dname->flags,
 		};
 
 		ok = mode_fn(ctx, private_data, &smb_fname, get_dosmode, &mode);
