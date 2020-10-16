@@ -59,7 +59,6 @@ static NTSTATUS appendacl_get(struct composite_context *c,
 {
 	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	struct smbcli_tree *tree = state->req->tree;
-	int i;
 	NTSTATUS status;
 	
 	status = smb_raw_fileinfo_recv(state->req, state->io_fileinfo, state->io_fileinfo);
@@ -78,6 +77,7 @@ static NTSTATUS appendacl_get(struct composite_context *c,
 
 	/* append all aces from io->in.sd->dacl to new security descriptor */
 	if (io->in.sd->dacl != NULL) {
+		uint32_t i;
 		for (i = 0; i < io->in.sd->dacl->num_aces; i++) {
 			security_descriptor_dacl_add(state->io_setfileinfo->set_secdesc.in.sd,
 						     &(io->in.sd->dacl->aces[i]));
