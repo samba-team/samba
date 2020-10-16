@@ -1134,7 +1134,7 @@ plantestsuite("samba3.blackbox.smbclient-mget",
 t = "readdir-timestamp"
 plantestsuite(
     "samba3.smbtorture_s3.plain.%s" % t,
-    "clusteredmember_smb1",
+    "clusteredmember",
     [os.path.join(samba3srcdir,
                   "script/tests/test_smbtorture_s3.sh"),
      t,
@@ -1143,7 +1143,7 @@ plantestsuite(
      '$DC_PASSWORD',
      smbtorture3,
      "",
-     "-b $PREFIX/clusteredmember_smb1/unclists/tmp.txt -N 5 -o 10"])
+     "-b $PREFIX/clusteredmember/unclists/tmp.txt -N 5 -o 10"])
 
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
@@ -1155,7 +1155,7 @@ def planclusteredmembertestsuite(tname, prefix):
     modnamearg = 'samba3.%s' % namearg
     extraargs = ''
 
-    prefix = os.path.join(prefix, 'clusteredmember_smb1')
+    prefix = os.path.join(prefix, 'clusteredmember')
     unclist = os.path.join(prefix, 'unclists/%s.txt' % tshare)
 
     unclistarg = '--unclist=%s' % unclist
@@ -1163,7 +1163,7 @@ def planclusteredmembertestsuite(tname, prefix):
 
     return selftesthelpers.plansmbtorture4testsuite(
         namearg,
-        'clusteredmember_smb1',
+        'clusteredmember',
         [extraargs, unclistarg, sharearg, autharg, tname],
         target='samba3',
         modname=modnamearg)
@@ -1182,7 +1182,7 @@ CLUSTERED_LOCAL_TESTS = [
 for t in CLUSTERED_LOCAL_TESTS:
     plantestsuite(
         "samba3.%s" % t,
-        "clusteredmember_smb1:local",
+        "clusteredmember:local",
         [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"),
          t,
          '//foo/bar',
