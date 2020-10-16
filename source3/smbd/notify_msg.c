@@ -69,7 +69,7 @@ struct notify_context *notify_init(
 	names_db = messaging_names_db(msg);
 	if (!server_id_db_lookup_one(names_db, "notify-daemon",
 				     &ctx->notifyd)) {
-		DEBUG(1, ("No notify daemon around\n"));
+		DBG_WARNING("No notify daemon around\n");
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
@@ -84,8 +84,8 @@ struct notify_context *notify_init(
 		status = messaging_register(msg, ctx, MSG_PVFS_NOTIFY,
 					    notify_handler);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("messaging_register failed: %s\n",
-				  nt_errstr(status)));
+			DBG_WARNING("messaging_register failed: %s\n",
+				    nt_errstr(status));
 			TALLOC_FREE(ctx);
 			return NULL;
 		}
@@ -115,11 +115,11 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 	struct notify_event event;
 
 	if (data->length < offsetof(struct notify_event_msg, path) + 1) {
-		DEBUG(1, ("message too short: %u\n", (unsigned)data->length));
+		DBG_WARNING("message too short: %zu\n", data->length);
 		return;
 	}
 	if (data->data[data->length-1] != 0) {
-		DEBUG(1, ("%s: path not 0-terminated\n", __func__));
+		DBG_WARNING("path not 0-terminated\n");
 		return;
 	}
 
@@ -129,9 +129,11 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 	event.path = event_msg->path;
 	event.private_data = event_msg->private_data;
 
-	DEBUG(10, ("%s: Got notify_event action=%u, private_data=%p, "
-		   "path=%s\n", __func__, (unsigned)event.action,
-		   event.private_data, event.path));
+	DBG_DEBUG("Got notify_event action=%"PRIu32", private_data=%p, "
+		   "path=%s\n",
+		  event.action,
+		  event.private_data,
+		  event.path);
 
 	ctx->callback(ctx->sconn, event.private_data, event_msg->when, &event);
 }
@@ -149,9 +151,12 @@ NTSTATUS notify_add(struct notify_context *ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	DEBUG(10, ("%s: path=[%s], filter=%u, subdir_filter=%u, "
-		   "private_data=%p\n", __func__, path, (unsigned)filter,
-		   (unsigned)subdir_filter, private_data));
+	DBG_DEBUG("path=[%s], filter=%"PRIu32", subdir_filter=%"PRIu32", "
+		  "private_data=%p\n",
+		  path,
+		  filter,
+		  subdir_filter,
+		  private_data);
 
 	pathlen = strlen(path)+1;
 
@@ -170,8 +175,8 @@ NTSTATUS notify_add(struct notify_context *ctx,
 		iov, ARRAY_SIZE(iov), NULL, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("messaging_send_iov returned %s\n",
-			   nt_errstr(status)));
+		DBG_DEBUG("messaging_send_iov returned %s\n",
+			  nt_errstr(status));
 		return status;
 	}
 
@@ -212,9 +217,12 @@ void notify_trigger(struct notify_context *ctx,
 	struct iovec iov[4];
 	char slash = '/';
 
-	DEBUG(10, ("notify_trigger called action=0x%x, filter=0x%x, "
-		   "dir=%s, name=%s\n", (unsigned)action, (unsigned)filter,
-		   dir, name));
+	DBG_DEBUG("notify_trigger called action=0x%"PRIx32", "
+		  "filter=0x%"PRIx32", dir=%s, name=%s\n",
+		  action,
+		  filter,
+		  dir,
+		  name);
 
 	if (ctx == NULL) {
 		return;
@@ -272,23 +280,23 @@ NTSTATUS notify_walk(struct notify_context *notify,
 	status = messaging_send_buf(notify->msg_ctx, notify->notifyd,
 				    MSG_SMB_NOTIFY_GET_DB, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("%s: messaging_send_buf failed\n",
-			   nt_errstr(status)));
+		DBG_DEBUG("messaging_send_buf failed: %s\n",
+			  nt_errstr(status));
 		TALLOC_FREE(ev);
 		return status;
 	}
 
 	ok = tevent_req_poll(req, ev);
 	if (!ok) {
-		DEBUG(10, ("%s: tevent_req_poll failed\n", __func__));
+		DBG_DEBUG("tevent_req_poll failed\n");
 		TALLOC_FREE(ev);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ret = messaging_read_recv(req, ev, &rec);
 	if (ret != 0) {
-		DEBUG(10, ("%s: messaging_read_recv failed: %s\n",
-			   __func__, strerror(ret)));
+		DBG_DEBUG("messaging_read_recv failed: %s\n",
+			  strerror(ret));
 		TALLOC_FREE(ev);
 		return map_nt_error_from_unix(ret);
 	}
@@ -296,8 +304,8 @@ NTSTATUS notify_walk(struct notify_context *notify,
 	ret = notifyd_parse_db(rec->buf.data, rec->buf.length, &log_idx,
 			       fn, private_data);
 	if (ret != 0) {
-		DEBUG(10, ("%s: notifyd_parse_db failed: %s\n",
-			   __func__, strerror(ret)));
+		DBG_DEBUG("notifyd_parse_db failed: %s\n",
+			  strerror(ret));
 		TALLOC_FREE(ev);
 		return map_nt_error_from_unix(ret);
 	}
