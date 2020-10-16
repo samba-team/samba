@@ -619,10 +619,13 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 
 	/*
 	 * As this is an optimization, ignore it if we stat'ed a
-	 * symlink. Make the caller do it again as we don't know if
-	 * they wanted the link info, or its target info.
+	 * symlink for non-POSIX context. Make the caller do it again
+	 * as we don't know if they wanted the link info, or its
+	 * target info.
 	 */
-	if (S_ISLNK(st.st_mode)) {
+	if (S_ISLNK(st.st_mode) &&
+	    !(dirfsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH))
+	{
 		return result;
 	}
 	init_stat_ex_from_stat(sbuf, &st, fake_ctime);
