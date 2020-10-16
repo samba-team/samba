@@ -1169,7 +1169,7 @@ def planclusteredmembertestsuite(tname, prefix):
         modname=modnamearg)
 
 
-CLUSTERED_TESTS = [ 'base.ntdeny2' ]
+CLUSTERED_TESTS = [ 'smb2.deny.deny2' ]
 
 for test in CLUSTERED_TESTS:
     planclusteredmembertestsuite(test, "$PREFIX")
