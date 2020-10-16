@@ -1333,9 +1333,17 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
+	smb_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						 dirfsp,
+						 smb_fname_in);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	ok = shadow_copy2_strip_snapshot_converted(talloc_tos(),
 						   handle,
-						   smb_fname_in,
+						   smb_fname,
 						   &timestamp,
 						   &stripped,
 						   &is_converted);
@@ -1359,13 +1367,6 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 					   fsp,
 					   flags,
 					   mode);
-	}
-
-	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(stripped);
-		errno = ENOMEM;
-		return -1;
 	}
 
 	smb_fname->base_name = shadow_copy2_convert(smb_fname,
