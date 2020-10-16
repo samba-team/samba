@@ -1298,6 +1298,8 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			struct smb_request *smbreq);
+int vfs_stat(struct connection_struct *conn,
+	     struct smb_filename *smb_fname);
 int vfs_stat_smb_basename(struct connection_struct *conn,
 			const struct smb_filename *smb_fname_in,
 			SMB_STRUCT_STAT *psbuf);

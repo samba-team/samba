@@ -1492,6 +1492,18 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Ensure LSTAT is called for POSIX paths.
+ */
+int vfs_stat(struct connection_struct *conn,
+	     struct smb_filename *smb_fname)
+{
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
+		return SMB_VFS_LSTAT(conn, smb_fname);
+	}
+	return SMB_VFS_STAT(conn, smb_fname);
+}
+
 /**
  * XXX: This is temporary and there should be no callers of this once
  * smb_filename is plumbed through all path based operations.
