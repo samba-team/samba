@@ -515,8 +515,6 @@ sub setup_clusteredmember_smb1
        server signing = on
        clustering = yes
        ctdbd socket = ${socket}
-       client min protocol = CORE
-       server min protocol = LANMAN1
        dbwrap_tdb_mutexes:* = yes
        ${require_mutexes}
 ";
