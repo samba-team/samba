@@ -26,7 +26,7 @@ char buf[MAX_LENGTH + 1];
 
 int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	TALLOC_CTX *mem_ctx = NULL;
 	struct dcerpc_binding *binding = NULL;
 	struct dcerpc_binding *dup = NULL;
 	struct epm_tower tower;
@@ -36,9 +36,11 @@ int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 	if (len > MAX_LENGTH) {
 		return 0;
 	}
+
 	memcpy(buf, input, len);
 	buf[len]  = '\0';
 
+	mem_ctx = talloc_new(NULL);
 	status = dcerpc_parse_binding(mem_ctx, buf, &binding);
 
 	if (! NT_STATUS_IS_OK(status)) {
