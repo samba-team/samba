@@ -244,7 +244,15 @@
 	directory (or the <filename>var/locks</filename> directory configured
 	under wherever Samba was configured to install itself). This will also
 	cause <command>nmbd</command> to dump out its server database in
-	the <filename>log.nmb</filename> file.</para>
+	the <filename>log.nmb</filename> file. Additionally, the signal will
+	cause reloading <command>nmbd</command> configuration.</para>
+
+        <para>
+        Instead of sending a SIGHUP signal, a request to dump namelists
+        into the file and reload a configuration file may be sent using
+        <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+       <manvolnum>1</manvolnum></citerefentry> program.
+        </para>
 
 	<para>The debug log level of nmbd may be raised or lowered
 	using <citerefentry><refentrytitle>smbcontrol</refentrytitle>

@@ -390,7 +390,12 @@ auth  required    /lib/security/pam_unix.so \
 		apply any parameter changes to the running
 		version of winbindd.  This signal also clears any cached
 		user and group information.  The list of other domains trusted
-		by winbindd is also reloaded.  </para></listitem>
+		by winbindd is also reloaded.
+		</para>
+		<para>Instead of sending a SIGHUP signal, a request to reload configuration
+		file may be sent using <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry> program.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>

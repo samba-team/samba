@@ -68,11 +68,18 @@
 	the copy of the server for that client terminates.</para>
 
 	<para>The configuration file, and any files that it includes, 
-	are automatically reloaded every minute, if they change.  You 
-	can force a reload by sending a SIGHUP to the server.  Reloading 
+	are automatically reloaded every three minutes, if they change.
+	One can force a reload by sending a SIGHUP to the server. Reloading
 	the configuration file will not affect connections to any service 
 	that is already established.  Either the user will have to 
-	disconnect from the service, or <command>smbd</command> killed and restarted.</para>
+	disconnect from the service, or <command>smbd</command> killed and restarted.
+        </para>
+
+        <para>Instead of sending a SIGHUP signal, a request to reload configuration
+	file may be sent using <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> program.
+        </para>
+
 </refsect1>
 
 <refsect1>
