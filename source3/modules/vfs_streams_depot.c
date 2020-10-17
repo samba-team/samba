@@ -627,11 +627,6 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	int ret = -1;
 
-	/*
-	 * For now assert this so the below SMB_VFS_STAT() is ok.
-	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
-
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
@@ -640,6 +635,11 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 					   flags,
 					   mode);
 	}
+
+	/*
+	 * For now assert this so the below SMB_VFS_STAT() is ok.
+	 */
+	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
 
 	/* Ensure the base file still exists. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
