@@ -27,6 +27,36 @@
 	</para>
 </refsect1>
 
+<refsect1>
+	<title>HOW CONFIGURATION CHANGES ARE APPLIED</title>
+
+	<para>
+	The Samba suite includes a number of different programs. Some of them operate in a client mode, others are
+	server daemons that provide various services to its clients. The <filename moreinfo="none">smb.conf
+        </filename> file is processed in the following way:
+        </para>
+
+	<itemizedlist>
+		<listitem><para>
+		The Samba suite's client applications read their configuration only once. Any changes made after start aren't
+		reflected in the context of already running client code.
+		</para></listitem>
+
+		<listitem><para>
+		The Samba suite's server daemons reload their configuration when requested. However, already active connections
+		do not change their configuration. More detailed information can be found in
+		<citerefentry><refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum></citerefentry> and <citerefentry>
+		<refentrytitle>winbindd</refentrytitle><manvolnum>8</manvolnum></citerefentry> manual pages.
+                </para></listitem>
+	</itemizedlist>
+
+	<para>
+	To request Samba server daemons to refresh their configuration, please use
+	<citerefentry><refentrytitle>smbcontrol</refentrytitle><manvolnum>1</manvolnum></citerefentry> utility.
+        </para>
+
+</refsect1>
+
 <refsect1 id="FILEFORMATSECT">
 	<title>FILE FORMAT</title>
 
