@@ -375,11 +375,6 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	bool set_empty_xattr = false;
 	int ret;
 
-	/*
-	 * For now assert this, so the below SMB_VFS_SETXATTR() works.
-	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
-
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return -1);
 
@@ -394,6 +389,11 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 					   flags,
 					   mode);
 	}
+
+	/*
+	 * For now assert this, so the below SMB_VFS_SETXATTR() works.
+	 */
+	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
 
 	status = streams_xattr_get_name(handle, talloc_tos(),
 					smb_fname->stream_name, &xattr_name);
