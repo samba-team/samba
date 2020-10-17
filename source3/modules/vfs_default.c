@@ -667,7 +667,7 @@ static int vfswrap_mkdirat(vfs_handle_struct *handle,
 
 	TALLOC_FREE(parent);
 
-	result = mkdirat(dirfsp->fh->fd, smb_fname->base_name, mode);
+	result = mkdirat(fsp_get_pathref_fd(dirfsp), smb_fname->base_name, mode);
 
 	END_PROFILE(syscall_mkdirat);
 	return result;
@@ -702,7 +702,10 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = openat(dirfsp->fh->fd, smb_fname->base_name, flags, mode);
+	result = openat(fsp_get_pathref_fd(dirfsp),
+			smb_fname->base_name,
+			flags,
+			mode);
 
 out:
 	END_PROFILE(syscall_openat);
@@ -1230,9 +1233,9 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = renameat(srcfsp->fh->fd,
+	result = renameat(fsp_get_pathref_fd(srcfsp),
 			smb_fname_src->base_name,
-			dstfsp->fh->fd,
+			fsp_get_pathref_fd(dstfsp),
 			smb_fname_dst->base_name);
 
  out:
@@ -1264,7 +1267,7 @@ static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUC
 	int result;
 
 	START_PROFILE(syscall_fstat);
-	result = sys_fstat(fsp->fh->fd,
+	result = sys_fstat(fsp_get_pathref_fd(fsp),
 			   sbuf, lp_fake_directory_create_times(SNUM(handle->conn)));
 	END_PROFILE(syscall_fstat);
 	return result;
@@ -2396,7 +2399,7 @@ static int vfswrap_unlinkat(vfs_handle_struct *handle,
 		errno = ENOENT;
 		goto out;
 	}
-	result = unlinkat(dirfsp->fh->fd,
+	result = unlinkat(fsp_get_pathref_fd(dirfsp),
 			smb_fname->base_name,
 			flags);
 
@@ -2874,7 +2877,7 @@ static int vfswrap_symlinkat(vfs_handle_struct *handle,
 	START_PROFILE(syscall_symlinkat);
 
 	result = symlinkat(link_target->base_name,
-			dirfsp->fh->fd,
+			fsp_get_pathref_fd(dirfsp),
 			new_smb_fname->base_name);
 	END_PROFILE(syscall_symlinkat);
 	return result;
@@ -2890,7 +2893,7 @@ static int vfswrap_readlinkat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_readlinkat);
 
-	result = readlinkat(dirfsp->fh->fd,
+	result = readlinkat(fsp_get_pathref_fd(dirfsp),
 			smb_fname->base_name,
 			buf,
 			bufsiz);
@@ -2910,9 +2913,9 @@ static int vfswrap_linkat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_linkat);
 
-	result = linkat(srcfsp->fh->fd,
+	result = linkat(fsp_get_pathref_fd(srcfsp),
 			old_smb_fname->base_name,
-			dstfsp->fh->fd,
+			fsp_get_pathref_fd(dstfsp),
 			new_smb_fname->base_name,
 			flags);
 
@@ -2930,7 +2933,7 @@ static int vfswrap_mknodat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_mknodat);
 
-	result = sys_mknodat(dirfsp->fh->fd,
+	result = sys_mknodat(fsp_get_pathref_fd(dirfsp),
 			smb_fname->base_name,
 			mode,
 			dev);
@@ -3304,7 +3307,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_getxattrat, profile_p,
 				     state->profile_bytes, 0);
 
-	if (dir_fsp->fh->fd == -1) {
+	if (fsp_get_pathref_fd(dir_fsp) == -1) {
 		DBG_ERR("Need a valid directory fd\n");
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
@@ -3442,7 +3445,7 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 		goto end_profile;
 	}
 
-	ret = fchdir(state->dir_fsp->fh->fd);
+	ret = fchdir(fsp_get_pathref_fd(state->dir_fsp));
 	if (ret == -1) {
 		state->xattr_size = -1;
 		state->vfs_aio_state.error = errno;

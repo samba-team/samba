@@ -639,7 +639,7 @@ static int streams_depot_openat(struct vfs_handle_struct *handle,
 	/*
 	 * For now assert this so the below SMB_VFS_STAT() is ok.
 	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
 
 	/* Ensure the base file still exists. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),

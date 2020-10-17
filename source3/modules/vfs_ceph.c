@@ -412,7 +412,7 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	/*
 	 * cephfs API doesn't have ceph_openat(), so for now assert this.
 	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
 
 	DBG_DEBUG("[CEPH] openat(%p, %s, %p, %d, %d)\n", handle,
 		  smb_fname_str_dbg(smb_fname), fsp, flags, mode);

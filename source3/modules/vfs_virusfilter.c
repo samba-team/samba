@@ -1171,7 +1171,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 	/*
 	 * For now assert this, so SMB_VFS_NEXT_STAT() below works.
 	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct virusfilter_config, return -1);

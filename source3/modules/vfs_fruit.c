@@ -1536,7 +1536,7 @@ static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 	/*
 	 * As there's no attropenat() this is only going to work with AT_FDCWD.
 	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
 
 	fd = attropen(smb_fname->base_name,
 		      AFPRESOURCE_EA_NETATALK,

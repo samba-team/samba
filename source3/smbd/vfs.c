@@ -895,7 +895,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		 * conn->cwd_fsp->fh->fd = AT_FDCWD
 		 * on success!
 		 */
-		if (conn->cwd_fsp->fh->fd != AT_FDCWD) {
+		if (fsp_get_pathref_fd(conn->cwd_fsp) != AT_FDCWD) {
 			/*
 			 * This should never happen and
 			 * we might change this to

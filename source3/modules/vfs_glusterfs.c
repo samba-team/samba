@@ -737,7 +737,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 	/*
 	 * Looks like glfs API doesn't have openat().
 	 */
-	SMB_ASSERT(dirfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
 
 	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
 	if (p_tmp == NULL) {
