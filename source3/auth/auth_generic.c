@@ -66,7 +66,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	if (pac_blob) {
 #ifdef HAVE_KRB5
-		struct wbcAuthUserParams params = {};
+		struct wbcAuthUserParams params = { 0 };
 		struct wbcAuthUserInfo *info = NULL;
 		struct wbcAuthErrorInfo *err = NULL;
 		wbcErr wbc_err;
