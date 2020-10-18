@@ -156,8 +156,7 @@ static void http_connect_dns_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(state->http_server_ip, req)) {
 		return;
 	}
-
-	return http_connect_tcp_connect(req);
+	http_connect_tcp_connect(req);
 }
 
 static void http_connect_tcp_connect(struct tevent_req *req)
