@@ -426,6 +426,10 @@ def configure(conf):
             strict=True,
             msg='Checking for __attribute__')
 
+    # Solaris by defauls uses draft versions of some functions unless you set _POSIX_PTHREAD_SEMANTICS
+    if sys.platform.startswith('sunos'):
+        conf.DEFINE('_POSIX_PTHREAD_SEMANTICS', 1)
+
     if sys.platform.startswith('aix'):
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
         # Might not be needed if ALL_SOURCE is defined
