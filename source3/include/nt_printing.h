@@ -22,7 +22,6 @@
 #ifndef NT_PRINTING_H_
 #define NT_PRINTING_H_
 
-#include "client.h"
 #include "../librpc/gen_ndr/spoolss.h"
 
 #ifndef SAMBA_PRINTER_PORT_NAME
