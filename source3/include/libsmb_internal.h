@@ -81,7 +81,7 @@ struct _SMBCSRV {
         struct policy_handle pol;
 	time_t last_echo_time;
 
-	SMBCSRV *next, *prev;
+	struct _SMBCSRV *next, *prev;
 };
 
 /*
@@ -116,7 +116,7 @@ struct _SMBCFILE {
 	struct smbc_dirplus_list *dirplus_list, *dirplus_end, *dirplus_next;
 	int dir_type, dir_error;
 
-	SMBCFILE *next, *prev;
+	struct _SMBCFILE *next, *prev;
 };
 
 
