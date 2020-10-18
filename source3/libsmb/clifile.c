@@ -5205,7 +5205,7 @@ NTSTATUS cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum,
 			 const char *ea_name, const char *ea_val,
 			 size_t ea_len)
 {
-	uint8_t param[6];
+	uint8_t param[6] = { 0, };
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_set_ea_fnum(cli,
@@ -5215,7 +5215,6 @@ NTSTATUS cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum,
 					ea_len);
 	}
 
-	memset(param, 0, 6);
 	SSVAL(param,0,fnum);
 	SSVAL(param,2,SMB_INFO_SET_EA);
 
