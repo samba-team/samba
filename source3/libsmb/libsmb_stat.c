@@ -414,7 +414,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 	}
 
         /* Initialize all fields (at least until we actually use them) */
-        memset(st, 0, sizeof(*st));
+	ZERO_STRUCTP(st);
 
         /*
          * The state of each flag is such that the same bits are unset as
