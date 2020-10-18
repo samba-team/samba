@@ -724,6 +724,7 @@ static int do_list_queue_empty(void)
 ****************************************************************************/
 
 struct do_list_helper_state {
+	const char *mask;
 	struct cli_state *cli;
 };
 
@@ -742,7 +743,7 @@ static NTSTATUS do_list_helper(
 	char *p = NULL;
 
 	/* Work out the directory. */
-	dir = talloc_strdup(ctx, mask);
+	dir = talloc_strdup(ctx, state->mask);
 	if (!dir) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -840,8 +841,9 @@ NTSTATUS do_list(const char *mask,
 	add_to_do_list_queue(mask);
 
 	while (!do_list_queue_empty()) {
-		const char *head = do_list_queue_head();
-		struct do_list_helper_state state = { .cli = NULL };
+		struct do_list_helper_state state = {
+			.mask = do_list_queue_head(),
+		};
 		char *targetpath = NULL;
 
 		/* check for dfs */
@@ -851,11 +853,11 @@ NTSTATUS do_list(const char *mask,
 			"",
 			creds,
 			cli,
-			head,
+			state.mask,
 			&state.cli,
 			&targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("do_list: [%s] %s\n", head,
+			d_printf("do_list: [%s] %s\n", state.mask,
 				 nt_errstr(status));
 			remove_do_list_queue_head();
 			continue;
