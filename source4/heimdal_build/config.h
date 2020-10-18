@@ -62,4 +62,9 @@
 #define HAVE_GETPROGNAME 1
 #endif
 
+/* lib/replace provides a strsep */
+#ifndef HAVE_STRSEP
+#define HAVE_STRSEP 1
+#endif
+
 #endif
