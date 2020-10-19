@@ -716,6 +716,46 @@ sub provision_ad_member
 	path = $share_dir
 	valid users = ADDOMAIN/%U
 
+[sub_valid_users_domain]
+    path = $share_dir
+    valid users = %D/%U
+
+[sub_valid_users_group]
+    path = $share_dir
+    valid users = \@$dcvars->{DOMAIN}/%G
+
+[valid_users]
+    path = $share_dir
+    valid users = $dcvars->{DOMAIN}/$dcvars->{DC_USERNAME}
+
+[valid_users_group]
+    path = $share_dir
+    valid users = \"\@$dcvars->{DOMAIN}/domain users\"
+
+[valid_users_unix_group]
+    path = $share_dir
+    valid users = \"+$dcvars->{DOMAIN}/domain users\"
+
+[valid_users_nis_group]
+    path = $share_dir
+    valid users = \"&$dcvars->{DOMAIN}/domain users\"
+
+[valid_users_unix_nis_group]
+    path = $share_dir
+    valid users = \"+&$dcvars->{DOMAIN}/domain users\"
+
+[valid_users_nis_unix_group]
+    path = $share_dir
+    valid users = \"&+$dcvars->{DOMAIN}/domain users\"
+
+[invalid_users]
+    path = $share_dir
+    invalid users = $dcvars->{DOMAIN}/$dcvars->{DC_USERNAME}
+
+[valid_and_invalid_users]
+    path = $share_dir
+    valid users = $dcvars->{DOMAIN}/$dcvars->{DC_USERNAME} $dcvars->{DOMAIN}/alice
+    invalid users = $dcvars->{DOMAIN}/$dcvars->{DC_USERNAME}
 ";
 
 	my $ret = $self->provision(
