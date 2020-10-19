@@ -471,7 +471,7 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 		if (!CAN_WRITE(conn)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		dosattrs = dos_mode(conn, smb_fname);
+		dosattrs = fdos_mode(smb_fname->fsp);
 		if (IS_DOS_READONLY(dosattrs)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
