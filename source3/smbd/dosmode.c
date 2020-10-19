@@ -1362,7 +1362,7 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dosmode = dos_mode(conn, smb_fname);
+	dosmode = fdos_mode(psmb_fname->fsp);
 
 	smb_fname->st.st_ex_btime = create_time;
 
