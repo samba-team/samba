@@ -1211,7 +1211,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return status;
 	}
 
-	old_dosmode = dos_mode(conn, fsp->fsp_name);
+	old_dosmode = fdos_mode(fsp);
 
 	if (sparse && !(old_dosmode & FILE_ATTRIBUTE_SPARSE)) {
 		new_dosmode = old_dosmode | FILE_ATTRIBUTE_SPARSE;
