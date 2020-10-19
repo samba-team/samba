@@ -1317,8 +1317,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	DEBUG(10, ("smbd_smb2_create_send: "
 		   "response construction phase\n"));
 
-	state->out_file_attributes = dos_mode(state->result->conn,
-					      state->result->fsp_name);
+	state->out_file_attributes = fdos_mode(state->result);
 
 	if (state->mxac != NULL) {
 		NTTIME last_write_time;
