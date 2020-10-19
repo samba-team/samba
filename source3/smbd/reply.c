@@ -8557,7 +8557,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	dosattrs = dos_mode(conn, smb_fname_src);
+	dosattrs = fdos_mode(fsp1);
 
 	if (SMB_VFS_STAT(conn, smb_fname_dst_tmp) == -1) {
 		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
