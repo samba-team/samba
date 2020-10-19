@@ -115,7 +115,7 @@ bool torture_smb2_hold_sharemode(struct torture_context *tctx)
 
 	for (i = 0; i < ARRAY_SIZE(hold_sharemode_table); i++) {
 		struct hold_sharemode_info *info = &hold_sharemode_table[i];
-		struct smb2_create create = { };
+		struct smb2_create create = { 0 };
 
 		create.in.desired_access = SEC_RIGHTS_FILE_ALL;
 		create.in.alloc_size = 0;
@@ -184,7 +184,7 @@ bool torture_smb2_check_sharemode(struct torture_context *tctx)
 	const char *sharemode_string, *access_string, *filename, *operation;
 	uint32_t sharemode, access;
 	struct smb2_tree *tree;
-	struct smb2_create create = { };
+	struct smb2_create create = { 0 };
 	NTSTATUS status;
 	bool ret = true;
 	int error = 0;
@@ -479,7 +479,7 @@ static bool test_smb2_sharemode_access(struct torture_context *tctx,
 
 	for (i = 0; i < ARRAY_SIZE(sharemode_table); i++) {
 		struct sharemode_info *info = &sharemode_table[i];
-		struct smb2_create create1 = { }, create2 = { };
+		struct smb2_create create1 = { 0 }, create2 = { 0 };
 		NTSTATUS expected_status;
 
 		torture_comment(tctx, "index %3d, sharemode %3s, "
@@ -560,7 +560,7 @@ static bool test_smb2_access_sharemode(struct torture_context *tctx,
 
 	for (i = 0; i < ARRAY_SIZE(sharemode_table); i++) {
 		struct sharemode_info *info = &sharemode_table[i];
-		struct smb2_create create1 = { }, create2 = { };
+		struct smb2_create create1 = { 0 }, create2 = { 0 };
 		NTSTATUS expected_status;
 
 		torture_comment(tctx, "index %3d, access mask 0x%06x, "
