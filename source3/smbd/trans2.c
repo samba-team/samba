@@ -5199,7 +5199,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	unsigned int data_size;
 	struct timespec create_time_ts, mtime_ts, atime_ts, ctime_ts;
 	time_t create_time, mtime, atime, c_time;
-	SMB_STRUCT_STAT *psbuf = &smb_fname->st;
+	SMB_STRUCT_STAT *psbuf = NULL;
 	char *p;
 	char *base_name;
 	char *dos_fname;
@@ -5222,7 +5222,16 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		 fsp_fnum_dbg(fsp),
 		 info_level, max_data_bytes));
 
-	mode = dos_mode(conn, smb_fname);
+	/*
+	 * In case of querying a symlink in POSIX context,
+	 * fsp will be NULL. fdos_mode() deals with it.
+	 */
+	if (fsp != NULL) {
+		smb_fname = fsp->fsp_name;
+	}
+	mode = fdos_mode(fsp);
+	psbuf = &smb_fname->st;
+
 	nlink = psbuf->st_ex_nlink;
 
 	if (nlink && (mode&FILE_ATTRIBUTE_DIRECTORY)) {
