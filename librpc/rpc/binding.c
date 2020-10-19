@@ -385,13 +385,14 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *_s, stru
 
 	p = strchr(s, '[');
 	if (p) {
-		*p = '\0';
-		options = p + 1;
-		if (options[strlen(options)-1] != ']') {
+		char *q = p + strlen(p) - 1;
+		if (*q != ']') {
 			talloc_free(b);
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
-		options[strlen(options)-1] = 0;
+		*p = '\0';
+		*q = '\0';
+		options = p + 1;
 	}
 
 	p = strchr(s, '@');
