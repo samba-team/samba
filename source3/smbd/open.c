@@ -651,7 +651,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status;
 	int fd = -1;
-	struct smb_filename *tmp_fsp_name = fsp->fsp_name;
+	struct smb_filename *orig_fsp_name = fsp->fsp_name;
 	struct smb_filename *smb_fname_rel = NULL;
 	int saved_errno = 0;
 	struct smb_filename *oldwd_fname = NULL;
@@ -720,7 +720,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 			    mode);
 
 	fsp_set_fd(fsp, fd);
-	fsp->fsp_name = tmp_fsp_name;
+	fsp->fsp_name = orig_fsp_name;
 
 	if (fd != -1 &&
 	    !is_ntfs_stream_smb_fname(fsp->fsp_name) &&
@@ -740,9 +740,9 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 
 		fsp->fsp_name = smb_fname_rel;
 
-		ret = SMB_VFS_FSTAT(fsp, &tmp_fsp_name->st);
+		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
 
-		fsp->fsp_name = tmp_fsp_name;
+		fsp->fsp_name = orig_fsp_name;
 
 		if (ret != 0) {
 			goto out;
@@ -755,7 +755,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 			SMB_ASSERT(ret == 0);
 
 			fsp_set_fd(fsp, -1);
-			fsp->fsp_name = tmp_fsp_name;
+			fsp->fsp_name = orig_fsp_name;
 			fd = -1;
 			errno = ELOOP;
 		}
