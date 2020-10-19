@@ -1462,7 +1462,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	size = get_file_size_stat(&smb_fname->st);
-	fattr = dos_mode(conn, smb_fname);
+	fattr = fdos_mode(fsp);
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	inode = smb_fname->st.st_ex_ino;
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
