@@ -742,7 +742,7 @@ NTSTATUS is_bad_finfo_name(const struct cli_state *cli,
 			const struct file_info *finfo);
 
 NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint32_t attribute,
-		      NTSTATUS (*fn)(const char *, struct file_info *,
+		      NTSTATUS (*fn)(struct file_info *,
 				 const char *, void *), void *state);
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 			uint32_t attribute, int info_level,
@@ -760,8 +760,7 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_list(struct cli_state *cli,
 		  const char *mask,
 		  uint32_t attribute,
-		  NTSTATUS (*fn)(const char *mointpoint,
-				 struct file_info *finfo,
+		  NTSTATUS (*fn)(struct file_info *finfo,
 				 const char *mask,
 				 void *private_data),
 		  void *private_data);

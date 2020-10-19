@@ -33,8 +33,7 @@ struct sync_context {
 	uint16_t attribute;
 };
 
-static NTSTATUS gpo_sync_func(const char *mnt,
-			  struct file_info *info,
+static NTSTATUS gpo_sync_func(struct file_info *info,
 			  const char *mask,
 			  void *state);
 
@@ -136,8 +135,7 @@ static NTSTATUS gpo_sync_files(struct sync_context *ctx)
  syncronisation call back
 ****************************************************************/
 
-static NTSTATUS gpo_sync_func(const char *mnt,
-			  struct file_info *info,
+static NTSTATUS gpo_sync_func(struct file_info *info,
 			  const char *mask,
 			  void *state)
 {

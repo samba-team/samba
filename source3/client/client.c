@@ -748,9 +748,8 @@ struct do_list_helper_state {
 };
 
 static NTSTATUS do_list_helper(
-	const char *mntpoint,
 	struct file_info *f,
-	const char *mask,
+	const char *_mask,
 	void *private_data)
 {
 	struct do_list_helper_state *state = private_data;
@@ -5721,8 +5720,7 @@ struct completion_remote {
 	int len;
 };
 
-static NTSTATUS completion_remote_filter(const char *mnt,
-				struct file_info *f,
+static NTSTATUS completion_remote_filter(struct file_info *f,
 				const char *mask,
 				void *state)
 {

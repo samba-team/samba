@@ -1287,8 +1287,7 @@ static bool windows_parent_dirname(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 		       const char *pathname,
 		       uint32_t attribute,
-		       NTSTATUS (*fn)(const char *mointpoint,
-				      struct file_info *finfo,
+		       NTSTATUS (*fn)(struct file_info *finfo,
 				      const char *mask,
 				      void *private_data),
 		       void *private_data)
@@ -1430,7 +1429,7 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				 */
 				processed_file = true;
 
-				status = fn(cli->dfs_mountpoint,
+				status = fn(
 					finfo,
 					pathname,
 					private_data);

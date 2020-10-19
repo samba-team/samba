@@ -569,7 +569,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 		      uint32_t attribute,
-		      NTSTATUS (*fn)(const char *, struct file_info *,
+		      NTSTATUS (*fn)(struct file_info *,
 				 const char *, void *), void *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -603,7 +603,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	}
 	num_finfo = talloc_array_length(finfo);
 	for (i=0; i<num_finfo; i++) {
-		status = fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		status = fn(&finfo[i], mask, state);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
@@ -1040,8 +1040,7 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_list(struct cli_state *cli,
 		  const char *mask,
 		  uint32_t attribute,
-		  NTSTATUS (*fn)(const char *mointpoint,
-				 struct file_info *finfo,
+		  NTSTATUS (*fn)(struct file_info *finfo,
 				 const char *mask,
 				 void *private_data),
 		  void *private_data)
@@ -1089,8 +1088,7 @@ NTSTATUS cli_list(struct cli_state *cli,
 	}
 
 	for (i=0; i<num_finfo; i++) {
-		status = fn(
-			cli->dfs_mountpoint, &finfo[i], mask, private_data);
+		status = fn(&finfo[i], mask, private_data);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}

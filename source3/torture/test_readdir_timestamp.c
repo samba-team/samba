@@ -403,7 +403,6 @@ struct list_cb_state {
 };
 
 static NTSTATUS list_cb(
-	const char *mntpoint,
 	struct file_info *f,
 	const char *mask,
 	void *private_data)

@@ -1240,7 +1240,7 @@ out:
  * propagate_inherited_aces. Children that are themselves directories are passed
  * to cli_list again ( to decend the directory structure )
  */
-static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
+static NTSTATUS cacl_set_cb(struct file_info *f,
 			   const char *mask, void *state)
 {
 	struct cacl_callback_state *cbstate =

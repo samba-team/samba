@@ -333,8 +333,7 @@ list_fn(const char *name,
 }
 
 static NTSTATUS
-dir_list_fn(const char *mnt,
-            struct file_info *finfo,
+dir_list_fn(struct file_info *finfo,
             const char *mask,
             void *state)
 {
@@ -1636,8 +1635,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
  */
 
 static NTSTATUS
-rmdir_list_fn(const char *mnt,
-              struct file_info *finfo,
+rmdir_list_fn(struct file_info *finfo,
               const char *mask,
               void *state)
 {

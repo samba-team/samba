@@ -96,8 +96,7 @@ NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 		       const char *pathname,
 		       uint32_t attribute,
-		       NTSTATUS (*fn)(const char *mointpoint,
-				      struct file_info *finfo,
+		       NTSTATUS (*fn)(struct file_info *finfo,
 				      const char *mask,
 				      void *private_data),
 		       void *private_data);

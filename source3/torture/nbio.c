@@ -290,7 +290,7 @@ void nb_qfsinfo(int level)
 	cli_disk_size(c, "", &bsize, &total, &avail);
 }
 
-static NTSTATUS find_fn(const char *mnt, struct file_info *finfo, const char *name,
+static NTSTATUS find_fn(struct file_info *finfo, const char *name,
 		    void *state)
 {
 	/* noop */
@@ -312,7 +312,7 @@ void nb_flush(int fnum)
 
 static int total_deleted;
 
-static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
+static NTSTATUS delete_fn(struct file_info *finfo,
 		      const char *name, void *state)
 {
 	NTSTATUS status;

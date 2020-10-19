@@ -62,8 +62,7 @@ struct have_file_state {
 	const char *fname;
 };
 
-static NTSTATUS have_file_fn(const char *mntpoint,
-			     struct file_info *f,
+static NTSTATUS have_file_fn(struct file_info *f,
 			     const char *mask,
 			     void *private_data)
 {
