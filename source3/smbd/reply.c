@@ -2273,7 +2273,7 @@ void reply_open(struct smb_request *req)
 	smb_fname = fsp->fsp_name;
 
 	size = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn, smb_fname);
+	fattr = fdos_mode(fsp);
 
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 
