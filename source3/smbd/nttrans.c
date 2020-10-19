@@ -1425,7 +1425,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 	p += 8;
 
-	fattr = dos_mode(conn, smb_fname);
+	fattr = fdos_mode(fsp);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
