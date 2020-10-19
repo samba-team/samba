@@ -6665,7 +6665,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	DEBUG(6,("smb_set_file_dosmode: dosmode: 0x%x\n", (unsigned int)dosmode));
 
 	/* check the mode isn't different, before changing it */
-	if ((dosmode != 0) && (dosmode != dos_mode(conn, smb_fname_base))) {
+	if ((dosmode != 0) && (dosmode != fdos_mode(fsp))) {
 		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode "
 			  "0x%x\n", smb_fname_str_dbg(smb_fname_base),
 			  (unsigned int)dosmode));
