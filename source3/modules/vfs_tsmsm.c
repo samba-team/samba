@@ -571,7 +571,7 @@ static NTSTATUS tsmsm_fset_dos_attributes(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	uint32_t old_dosmode;
 
-	old_dosmode = dos_mode(handle->conn, fsp->fsp_name);
+	old_dosmode = fdos_mode(fsp);
 
 	status = SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
