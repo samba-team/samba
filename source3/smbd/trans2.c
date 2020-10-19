@@ -6896,7 +6896,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	}
 
 	delete_on_close = (CVAL(pdata,0) ? True : False);
-	dosmode = dos_mode(conn, smb_fname);
+	dosmode = fdos_mode(fsp);
 
 	DEBUG(10,("smb_set_file_disposition_info: file %s, dosmode = %u, "
 		"delete_on_close = %u\n",
