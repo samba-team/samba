@@ -757,32 +757,6 @@ static uint32_t dos_mode_post(uint32_t dosmode,
  if "store dos attributes" is true.
 ****************************************************************************/
 
-uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
-{
-	uint32_t result = 0;
-	NTSTATUS status = NT_STATUS_OK;
-
-	DEBUG(8,("dos_mode: %s\n", smb_fname_str_dbg(smb_fname)));
-
-	if (!VALID_STAT(smb_fname->st)) {
-		return 0;
-	}
-
-	/* Get the DOS attributes via the VFS if we can */
-	status = SMB_VFS_GET_DOS_ATTRIBUTES(conn, smb_fname, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
-		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			result |= dos_mode_from_sbuf(conn, smb_fname);
-		}
-	}
-
-	result = dos_mode_post(result, conn, NULL, smb_fname, __func__);
-	return result;
-}
-
 uint32_t fdos_mode(struct files_struct *fsp)
 {
 	uint32_t result = 0;

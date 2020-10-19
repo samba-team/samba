@@ -267,7 +267,6 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		 struct smb_filename *smb_fname_parent);
 uint32_t dos_mode_msdfs(connection_struct *conn,
 		      const struct smb_filename *smb_fname);
-uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
 uint32_t fdos_mode(struct files_struct *fsp);
 struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
