@@ -9675,7 +9675,7 @@ void reply_getattrE(struct smb_request *req)
 		return;
 	}
 
-	mode = dos_mode(conn, fsp->fsp_name);
+	mode = fdos_mode(fsp);
 
 	/*
 	 * Convert the times into dos times. Set create
