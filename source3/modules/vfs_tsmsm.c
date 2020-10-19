@@ -547,7 +547,7 @@ static NTSTATUS tsmsm_set_dos_attributes(struct vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	old_dosmode = dos_mode(handle->conn, fname);
+	old_dosmode = fdos_mode(smb_fname->fsp);
 	TALLOC_FREE(fname);
 
 	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, dosmode);
