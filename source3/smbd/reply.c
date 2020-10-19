@@ -1386,7 +1386,7 @@ void reply_getatr(struct smb_request *req)
 			goto out;
 		}
 
-		mode = dos_mode(conn, smb_fname);
+		mode = fdos_mode(smb_fname->fsp);
 		size = smb_fname->st.st_ex_size;
 
 		if (ask_sharemode) {
