@@ -2267,7 +2267,7 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 	struct ldb_message *filtered_msg;
 	unsigned int i;
 	unsigned int num_keys = 0;
-	uint8_t previous_guid_key[LDB_KV_GUID_KEY_SIZE] = {};
+	uint8_t previous_guid_key[LDB_KV_GUID_KEY_SIZE] = {0};
 	struct ldb_val *keys = NULL;
 
 	/*
