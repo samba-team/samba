@@ -720,7 +720,6 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 			    mode);
 
 	fsp_set_fd(fsp, fd);
-	fsp->fsp_name = orig_fsp_name;
 
 	if (fd != -1 &&
 	    !is_ntfs_stream_smb_fname(fsp->fsp_name) &&
@@ -738,24 +737,16 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 		 */
 		int ret;
 
-		fsp->fsp_name = smb_fname_rel;
-
 		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
-
-		fsp->fsp_name = orig_fsp_name;
-
 		if (ret != 0) {
 			goto out;
 		}
 
 		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-			fsp->fsp_name = smb_fname_rel;
-
 			ret = SMB_VFS_CLOSE(fsp);
 			SMB_ASSERT(ret == 0);
 
 			fsp_set_fd(fsp, -1);
-			fsp->fsp_name = orig_fsp_name;
 			fd = -1;
 			errno = ELOOP;
 		}
@@ -783,6 +774,9 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 				/* Explicitly no symlinks. */
 				goto out;
 			}
+
+			fsp->fsp_name = orig_fsp_name;
+
 			/*
 			 * We may have a symlink. Follow in userspace
 			 * to ensure it's under the share definition.
@@ -810,7 +804,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 	}
 
   out:
-
+	fsp->fsp_name = orig_fsp_name;
 	TALLOC_FREE(parent_dir_fname);
 
 	if (oldwd_fname != NULL) {
