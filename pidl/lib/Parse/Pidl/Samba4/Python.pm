@@ -2304,10 +2304,12 @@ $ndr_hdr_include
  * functions
  */
 #ifndef _MAYBE_UNUSED_
-#ifdef HAVE___ATTRIBUTE__
+#ifdef __has_attribute
+#if __has_attribute(unused)
 #define _MAYBE_UNUSED_ __attribute__ ((unused))
 #else
 #define _MAYBE_UNUSED_
+#endif
 #endif
 #endif
 /*
