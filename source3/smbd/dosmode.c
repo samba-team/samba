@@ -633,6 +633,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
  * check whether a file or directory is flagged as compressed.
  */
 static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
+					  struct files_struct *fsp,
 					  struct smb_filename *smb_fname,
 					  bool *is_compressed)
 {
@@ -644,7 +645,7 @@ static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
 		goto err_out;
 	}
 
-	status = SMB_VFS_GET_COMPRESSION(conn, tmp_ctx, NULL, smb_fname,
+	status = SMB_VFS_GET_COMPRESSION(conn, tmp_ctx, fsp, smb_fname,
 					 &compression_fmt);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_ctx_free;
@@ -699,10 +700,15 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 
 static uint32_t dos_mode_post(uint32_t dosmode,
 			      connection_struct *conn,
+			      struct files_struct *fsp,
 			      struct smb_filename *smb_fname,
 			      const char *func)
 {
 	NTSTATUS status;
+
+	if (fsp != NULL) {
+		smb_fname = fsp->fsp_name;
+	}
 
 	/*
 	 * According to MS-FSA a stream name does not have
@@ -724,7 +730,7 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
 		bool compressed = false;
 
-		status = dos_mode_check_compressed(conn, smb_fname,
+		status = dos_mode_check_compressed(conn, fsp, smb_fname,
 						   &compressed);
 		if (NT_STATUS_IS_OK(status) && compressed) {
 			dosmode |= FILE_ATTRIBUTE_COMPRESSED;
@@ -773,7 +779,47 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		}
 	}
 
-	result = dos_mode_post(result, conn, smb_fname, __func__);
+	result = dos_mode_post(result, conn, NULL, smb_fname, __func__);
+	return result;
+}
+
+uint32_t fdos_mode(struct files_struct *fsp)
+{
+	uint32_t result = 0;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (fsp == NULL) {
+		/*
+		 * The pathological case where a callers does
+		 * fdos_mode(smb_fname->fsp) passing a pathref fsp. But as
+		 * smb_fname points at a symlink in POSIX context smb_fname->fsp
+		 * is NULL.
+		 */
+		return FILE_ATTRIBUTE_NORMAL;
+	}
+
+	DBG_DEBUG("%s\n", fsp_str_dbg(fsp));
+
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		return 0;
+	}
+
+	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+		return FILE_ATTRIBUTE_NORMAL;
+	}
+
+	/* Get the DOS attributes via the VFS if we can */
+	status = SMB_VFS_FGET_DOS_ATTRIBUTES(fsp->conn, fsp, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			result |= dos_mode_from_sbuf(fsp->conn, fsp->fsp_name);
+		}
+	}
+
+	result = dos_mode_post(result, fsp->conn, fsp, NULL, __func__);
 	return result;
 }
 
@@ -874,6 +920,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	if (NT_STATUS_IS_OK(status)) {
 		state->dosmode = dos_mode_post(state->dosmode,
 					       state->dir_fsp->conn,
+					       NULL,
 					       state->smb_fname,
 					       __func__);
 		tevent_req_done(req);
