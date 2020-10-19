@@ -182,7 +182,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SNAP_DELETE,
 
 	/* DOS attribute operations. */
-	SMB_VFS_OP_GET_DOS_ATTRIBUTES,
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV,
 	SMB_VFS_OP_FGET_DOS_ATTRIBUTES,
@@ -324,7 +323,6 @@ static struct {
 	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
 	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
 	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
-	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES, "get_dos_attributes" },
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND, "get_dos_attributes_send" },
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV, "get_dos_attributes_recv" },
 	{ SMB_VFS_OP_FGET_DOS_ATTRIBUTES, "fget_dos_attributes" },
@@ -2224,26 +2222,6 @@ static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS smb_full_audit_get_dos_attributes(
-				struct vfs_handle_struct *handle,
-				struct smb_filename *smb_fname,
-				uint32_t *dosmode)
-{
-	NTSTATUS status;
-
-	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
-				smb_fname,
-				dosmode);
-
-	do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES,
-		NT_STATUS_IS_OK(status),
-		handle,
-		"%s",
-		smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return status;
-}
-
 struct smb_full_audit_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	vfs_handle_struct *handle;
@@ -3051,7 +3029,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.strict_lock_check_fn = smb_full_audit_strict_lock_check,
 	.translate_name_fn = smb_full_audit_translate_name,
 	.fsctl_fn = smb_full_audit_fsctl,
-	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,
 	.get_dos_attributes_send_fn = smb_full_audit_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = smb_full_audit_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,

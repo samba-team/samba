@@ -1786,30 +1786,6 @@ static NTSTATUS smb_time_audit_fsctl(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS smb_time_get_dos_attributes(struct vfs_handle_struct *handle,
-					struct smb_filename *smb_fname,
-					uint32_t *dosmode)
-{
-	NTSTATUS result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
-				smb_fname,
-				dosmode);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("get_dos_attributes",
-				timediff,
-				smb_fname->base_name);
-	}
-
-	return result;
-}
-
 struct smb_time_audit_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	files_struct *dir_fsp;
@@ -2921,7 +2897,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.strict_lock_check_fn = smb_time_audit_strict_lock_check,
 	.translate_name_fn = smb_time_audit_translate_name,
 	.fsctl_fn = smb_time_audit_fsctl,
-	.get_dos_attributes_fn = smb_time_get_dos_attributes,
 	.get_dos_attributes_send_fn = smb_time_audit_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = smb_time_audit_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = smb_time_fget_dos_attributes,

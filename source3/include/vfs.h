@@ -338,6 +338,7 @@
  * Version 44 - Add 'have_proc_fds' flag to struct connection_struct.
  * Version 44 - Add 'have_proc_fds' flag to struct files_struct.
  * Version 44 - Add dirfsp arg to SMB_VFS_READDIR()
+ * Version 44 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -1149,10 +1150,6 @@ struct vfs_fn_pointers {
 			     uint32_t max_out_len,
 			     uint32_t *out_len); 
 
-	NTSTATUS (*get_dos_attributes_fn)(struct vfs_handle_struct *handle,
-					  struct smb_filename *smb_fname,
-					  uint32_t *dosmode);
-
 	NTSTATUS (*fget_dos_attributes_fn)(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   uint32_t *dosmode);
@@ -1637,9 +1634,6 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    uint8_t **_out_data,
 			    uint32_t max_out_len,
 			    uint32_t *out_len);
-NTSTATUS smb_vfs_call_get_dos_attributes(struct vfs_handle_struct *handle,
-					 struct smb_filename *smb_fname,
-					 uint32_t *dosmode);
 NTSTATUS smb_vfs_call_fget_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t *dosmode);
@@ -2122,9 +2116,6 @@ NTSTATUS vfs_not_implemented_readdir_attr(struct vfs_handle_struct *handle,
 					  const struct smb_filename *fname,
 					  TALLOC_CTX *mem_ctx,
 					  struct readdir_attr_data **pattr_data);
-NTSTATUS vfs_not_implemented_get_dos_attributes(struct vfs_handle_struct *handle,
-						struct smb_filename *smb_fname,
-						uint32_t *dosmode);
 struct tevent_req *vfs_not_implemented_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,

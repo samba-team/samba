@@ -935,15 +935,6 @@ static NTSTATUS skel_readdir_attr(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
 }
 
-static NTSTATUS skel_get_dos_attributes(struct vfs_handle_struct *handle,
-				struct smb_filename *smb_fname,
-				uint32_t *dosmode)
-{
-	return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
-				smb_fname,
-				dosmode);
-}
-
 struct skel_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	uint32_t dosmode;
@@ -1435,7 +1426,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.audit_file_fn = skel_audit_file,
 
 	/* DOS attributes. */
-	.get_dos_attributes_fn = skel_get_dos_attributes,
 	.get_dos_attributes_send_fn = skel_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = skel_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = skel_fget_dos_attributes,

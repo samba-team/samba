@@ -1621,49 +1621,6 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 	return winattrs;
 }
 
-static int get_dos_attr_with_capability(struct smb_filename *smb_fname,
-					unsigned int *litemask,
-					struct gpfs_iattr64 *iattr)
-{
-	int saved_errno = 0;
-	int ret;
-
-	/*
-	 * According to MS-FSA 2.1.5.1.2.1 "Algorithm to Check Access to an
-	 * Existing File" FILE_LIST_DIRECTORY on a directory implies
-	 * FILE_READ_ATTRIBUTES for directory entries. Being able to stat() a
-	 * file implies FILE_LIST_DIRECTORY for the directory containing the
-	 * file.
-	 */
-
-	if (!VALID_STAT(smb_fname->st)) {
-		/*
-		 * Safety net: dos_mode() already checks this, but as we set
-		 * DAC_OVERRIDE_CAPABILITY based on this, add an additional
-		 * layer of defense.
-		 */
-		DBG_ERR("Rejecting DAC override, invalid stat [%s]\n",
-			smb_fname_str_dbg(smb_fname));
-		errno = EACCES;
-		return -1;
-	}
-
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
-
-	ret = gpfswrap_stat_x(smb_fname->base_name, litemask,
-			      iattr, sizeof(*iattr));
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
-
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static NTSTATUS vfs_gpfs_get_file_id(struct gpfs_iattr64 *iattr,
 				     uint64_t *fileid)
 {
@@ -1701,66 +1658,6 @@ static NTSTATUS vfs_gpfs_get_file_id(struct gpfs_iattr64 *iattr,
 static struct timespec gpfs_timestruc64_to_timespec(struct gpfs_timestruc64 g)
 {
 	return (struct timespec) { .tv_sec = g.tv_sec, .tv_nsec = g.tv_nsec };
-}
-
-static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
-					    struct smb_filename *smb_fname,
-					    uint32_t *dosmode)
-{
-	struct gpfs_config_data *config;
-	struct gpfs_iattr64 iattr = { };
-	unsigned int litemask = 0;
-	struct timespec ts;
-	uint64_t file_id;
-	NTSTATUS status;
-	int ret;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	if (!config->winattr) {
-		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
-						       smb_fname, dosmode);
-	}
-
-	ret = gpfswrap_stat_x(smb_fname->base_name, &litemask,
-			      &iattr, sizeof(iattr));
-	if (ret == -1 && errno == ENOSYS) {
-		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname,
-						       dosmode);
-	}
-	if (ret == -1 && errno == EACCES) {
-		ret = get_dos_attr_with_capability(smb_fname, &litemask,
-						   &iattr);
-	}
-
-	if (ret == -1 && errno == EBADF) {
-		/*
-		 * Returned for directory listings in gpfs root for
-		 * .. entry which steps out of gpfs.
-		 */
-		DBG_DEBUG("Getting winattrs for %s returned EBADF.\n",
-			  smb_fname->base_name);
-		return map_nt_error_from_unix(errno);
-	} else if (ret == -1) {
-		DBG_WARNING("Getting winattrs failed for %s: %s\n",
-			    smb_fname->base_name, strerror(errno));
-		return map_nt_error_from_unix(errno);
-	}
-
-	status = vfs_gpfs_get_file_id(&iattr, &file_id);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ts = gpfs_timestruc64_to_timespec(iattr.ia_createtime);
-
-	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
-	update_stat_ex_create_time(&smb_fname->st, ts);
-	update_stat_ex_file_id(&smb_fname->st, file_id);
-
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
@@ -2735,7 +2632,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.kernel_flock_fn = vfs_gpfs_kernel_flock,
 	.linux_setlease_fn = vfs_gpfs_setlease,
 	.get_real_filename_fn = vfs_gpfs_get_real_filename,
-	.get_dos_attributes_fn = vfs_gpfs_get_dos_attributes,
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,

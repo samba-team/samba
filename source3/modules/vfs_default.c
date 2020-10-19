@@ -1703,20 +1703,6 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 static bool vfswrap_is_offline(struct connection_struct *conn,
 			       const struct smb_filename *fname);
 
-static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
-					   struct smb_filename *smb_fname,
-					   uint32_t *dosmode)
-{
-	bool offline;
-
-	offline = vfswrap_is_offline(handle->conn, smb_fname);
-	if (offline) {
-		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
-	}
-
-	return get_ea_dos_attribute(handle->conn, smb_fname, dosmode);
-}
-
 struct vfswrap_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	connection_struct *conn;
@@ -3870,7 +3856,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fsctl_fn = vfswrap_fsctl,
 	.set_dos_attributes_fn = vfswrap_set_dos_attributes,
 	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
-	.get_dos_attributes_fn = vfswrap_get_dos_attributes,
 	.get_dos_attributes_send_fn = vfswrap_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfswrap_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfswrap_fget_dos_attributes,

@@ -2450,14 +2450,6 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 				     out_len);
 }
 
-NTSTATUS smb_vfs_call_get_dos_attributes(struct vfs_handle_struct *handle,
-					 struct smb_filename *smb_fname,
-					 uint32_t *dosmode)
-{
-	VFS_FIND(get_dos_attributes);
-	return handle->fns->get_dos_attributes_fn(handle, smb_fname, dosmode);
-}
-
 NTSTATUS smb_vfs_call_fget_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t *dosmode)
