@@ -1791,7 +1791,8 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 	if (ms_dfs_link) {
 		mode = dos_mode_msdfs(state->conn, smb_fname);
 	} else if (get_dosmode) {
-		mode = dos_mode(state->conn, smb_fname);
+		mode = fdos_mode(smb_fname->fsp);
+		smb_fname->st = smb_fname->fsp->fsp_name->st;
 	}
 
 	*_mode = mode;
