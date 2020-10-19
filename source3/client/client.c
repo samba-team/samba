@@ -585,6 +585,8 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 			time_to_asc(t));
 		dir_total += finfo->size;
 	} else {
+		struct cli_state *targetcli = NULL;
+		char *targetpath = NULL;
 		char *afname = NULL;
 		uint16_t fnum;
 
@@ -605,9 +607,26 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->attr));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
+
+		status = cli_resolve_path(
+			ctx,
+			"",
+			get_cmdline_auth_info_creds(
+				popt_get_cmdline_auth_info()),
+			cli_state,
+			afname,
+			&targetcli,
+			&targetpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("display_finfo() Failed to resolve "
+				    "%s: %s\n",
+				    afname, nt_errstr(status));
+			return status;
+		}
+
 		status = cli_ntcreate(
-			cli_state,	      /* cli */
-			afname,		      /* fname */
+			targetcli,	      /* cli */
+			targetpath,	      /* fname */
 			0,		      /* CreatFlags */
 			READ_CONTROL_ACCESS,  /* DesiredAccess */
 			0,		      /* FileAttributes */
@@ -623,7 +642,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 				   afname, nt_errstr(status)));
 		} else {
 			struct security_descriptor *sd = NULL;
-			status = cli_query_secdesc(cli_state, fnum,
+			status = cli_query_secdesc(targetcli, fnum,
 						   ctx, &sd);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG( 0, ("display_finfo() failed to "
@@ -740,7 +759,6 @@ static NTSTATUS do_list_helper(
 	char *dir_end = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	char *mask2 = NULL;
-	char *p = NULL;
 
 	/* Work out the directory. */
 	dir = talloc_strdup(ctx, state->mask);
@@ -780,23 +798,11 @@ static NTSTATUS do_list_helper(
 	}
 
 	mask2 = talloc_asprintf(ctx,
-				"%s%s",
-				mntpoint,
-				mask);
-	if (!mask2) {
-		TALLOC_FREE(dir);
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
-	if (p) {
-		p[1] = 0;
-	} else {
-		mask2[0] = '\0';
-	}
-	mask2 = talloc_asprintf_append(mask2,
-				       "%s%s*",
-				       f->name,
-				       CLI_DIRSEP_STR);
+				"%s%c%s%c*",
+				dir,
+				CLI_DIRSEP_CHAR,
+				f->name,
+				CLI_DIRSEP_CHAR);
 	if (!mask2) {
 		TALLOC_FREE(dir);
 		return NT_STATUS_NO_MEMORY;
@@ -819,6 +825,7 @@ NTSTATUS do_list(const char *mask,
 			bool rec,
 			bool dirs)
 {
+	struct do_list_helper_state state = { .cli = cli, };
 	static int in_do_list = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct cli_credentials *creds =
@@ -841,10 +848,10 @@ NTSTATUS do_list(const char *mask,
 	add_to_do_list_queue(mask);
 
 	while (!do_list_queue_empty()) {
-		struct do_list_helper_state state = {
-			.mask = do_list_queue_head(),
-		};
+		struct cli_state *targetcli = NULL;
 		char *targetpath = NULL;
+
+		state.mask = do_list_queue_head();
 
 		/* check for dfs */
 
@@ -854,7 +861,7 @@ NTSTATUS do_list(const char *mask,
 			creds,
 			cli,
 			state.mask,
-			&state.cli,
+			&targetcli,
 			&targetpath);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("do_list: [%s] %s\n", state.mask,
@@ -864,7 +871,7 @@ NTSTATUS do_list(const char *mask,
 		}
 
 		status = cli_list(
-			state.cli,
+			targetcli,
 			targetpath,
 			attribute,
 			do_list_helper,
