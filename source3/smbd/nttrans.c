@@ -1569,7 +1569,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	}
 
 	/* Ensure attributes match. */
-	fattr = dos_mode(conn, smb_fname_src);
+	fattr = fdos_mode(smb_fname_src->fsp);
 	if ((fattr & ~attrs) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto out;
