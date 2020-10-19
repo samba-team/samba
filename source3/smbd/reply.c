@@ -3149,7 +3149,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	fattr = dos_mode(conn, smb_fname);
+	fattr = fdos_mode(smb_fname->fsp);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
 		dirtype = FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY;
