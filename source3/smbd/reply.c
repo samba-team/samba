@@ -3083,7 +3083,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 		/* Only bother to read the DOS attribute if we might deny the
 		   rename on the grounds of attribute mismatch. */
-		uint32_t fmode = dos_mode(conn, fsp->fsp_name);
+		uint32_t fmode = fdos_mode(fsp);
 		if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 			return NT_STATUS_NO_SUCH_FILE;
 		}
