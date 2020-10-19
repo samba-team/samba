@@ -747,7 +747,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 	p += 4;
 
-	fattr = dos_mode(conn, smb_fname);
+	fattr = fdos_mode(fsp);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
