@@ -125,10 +125,24 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         return name
 
     def randomXid(self):
-        # pick some hopefully unused, high UID/GID range to avoid interference
+        # pick some unused, high UID/GID range to avoid interference
         # from the system the test runs on
-        xid = random.randint(4711000, 4799000)
-        return xid
+
+        # initialize a list to store used IDs
+        try:
+            self.used_xids
+        except AttributeError:
+            self.used_xids = []
+
+        # try to get an unused ID
+        failed = 0
+        while failed < 50:
+            xid = random.randint(4711000, 4799000)
+            if xid not in self.used_xids:
+                self.used_xids += [xid]
+                return xid
+            failed += 1
+        assert False, "No Xid are available"
 
     def assertWithin(self, val1, val2, delta, msg=""):
         """Assert that val1 is within delta of val2, useful for time computations"""
