@@ -1293,8 +1293,7 @@ static NTSTATUS cacl_set_cb(const char *mntpoint, struct file_info *f,
 		dir_end = NULL;
 
 		/* ignore special '.' & '..' */
-		if (!f->name || strequal(f->name, ".") ||
-			strequal(f->name, "..")) {
+		if ((f->name == NULL) || ISDOT(f->name) || ISDOTDOT(f->name)) {
 			status = NT_STATUS_OK;
 			goto out;
 		}
