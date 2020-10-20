@@ -2794,7 +2794,7 @@ static int match_cluster_movable_ip(uint32_t total_ip_count,
 	};
 
 	if (is_movable_ip && sockaddr_equal(&pub_ip.u.sa, &srv_ip.u.sa)) {
-		return EREMOTEIO;
+		return EADDRNOTAVAIL;
 	}
 
 	return 0;
@@ -2830,7 +2830,7 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 		ret = ctdbd_public_ip_foreach(cconn,
 					      match_cluster_movable_ip,
 					      srv);
-		if (ret == EREMOTEIO) {
+		if (ret == EADDRNOTAVAIL) {
 			xconn->has_cluster_movable_ip = true;
 			DBG_DEBUG("cluster movable IP on %s\n",
 				  smbXsrv_connection_dbg(xconn));
