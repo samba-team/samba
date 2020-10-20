@@ -1819,6 +1819,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
+	ZERO_STRUCT(file_id);
 	status = vfs_gpfs_get_file_id(&iattr, &file_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
