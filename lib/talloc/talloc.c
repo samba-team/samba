@@ -1901,8 +1901,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 #if (ALWAYS_REALLOC != 0)
 	if (pool_hdr) {
 		new_ptr = tc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
-		pool_hdr->object_count--;
-
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
 			malloced = true;
@@ -1912,6 +1910,11 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
 			TC_INVALIDATE_FULL_CHUNK(tc);
+			/*
+			 * Only decrement the object count in the pool once
+			 * we know we're returning a valid new_ptr.
+			 */
+			pool_hdr->object_count--;
 		}
 	} else {
 		/* We're doing malloc then free here, so record the difference. */
