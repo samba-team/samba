@@ -1898,7 +1898,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	 */
 	_talloc_chunk_set_free(tc, NULL);
 
-#if ALWAYS_REALLOC
+#if (ALWAYS_REALLOC != 0)
 	if (pool_hdr) {
 		new_ptr = tc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
 		pool_hdr->object_count--;
