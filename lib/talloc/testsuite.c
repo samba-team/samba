@@ -1803,6 +1803,109 @@ static bool test_memlimit(void)
 	torture_assert("memlimit", l2 == NULL,
 			"failed: alloc should fail due to memory limit\n");
 
+	printf("==== talloc_free_children(pool)\n");
+	talloc_free(l1);
+	talloc_free_children(pool);
+
+	printf("==== talloc_size(pool, 1024)\n");
+	l1 = talloc_size(pool, 1024);
+
+	/* try reallocs of increasing size */
+	for (i = 1; i < 9; i++) {
+		printf("==== talloc_realloc_size(NULL, l1, %i*1024) %i/10\n", i, i + 1);
+		l1 = talloc_realloc_size(NULL, l1, i*1024);
+		torture_assert("memlimit", l1 != NULL,
+			"failed: realloc should not fail due to memory limit\n");
+		talloc_report_full(pool, stdout);
+	}
+	/* The next alloc should fail. */
+	printf("==== talloc_realloc_size(NULL, l1, 10*1024) 10/10\n");
+	l2 = talloc_realloc_size(NULL, l1, 10*1024);
+	torture_assert("memlimit", l2 == NULL,
+			"failed: realloc should fail due to memory limit\n");
+
+	/* Increase the memlimit */
+	printf("==== talloc_set_memlimit(pool, 11*1024)\n");
+	talloc_set_memlimit(pool, 11*1024);
+
+	/* The final realloc should still fail
+	   as the entire realloced chunk needs to be moved out of the pool */
+	printf("==== talloc_realloc_size(NULL, l1, 10*1024) 10/10\n");
+	l2 = talloc_realloc_size(NULL, l1, 10*1024);
+	torture_assert("memlimit", l2 == NULL,
+			"failed: realloc should fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	printf("==== talloc_set_memlimit(pool, 21*1024)\n");
+	talloc_set_memlimit(pool, 21*1024);
+
+	/* There's now sufficient space to move the chunk out of the pool */
+	printf("==== talloc_realloc_size(NULL, l1, 10*1024) 10/10\n");
+	l2 = talloc_realloc_size(NULL, l1, 10*1024);
+	torture_assert("memlimit", l2 != NULL,
+			"failed: realloc should not fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	/* ...which should mean smaller allocations can now occur within the pool */
+	printf("==== talloc_size(pool, 9*1024)\n");
+	l1 = talloc_size(pool, 9*1024);
+	torture_assert("memlimit", l1 != NULL,
+			"failed: new allocations should be allowed in the pool\n");
+
+	talloc_report_full(pool, stdout);
+
+	/* But reallocs bigger than the pool will still fail */
+	printf("==== talloc_realloc_size(NULL, l1, 10*1024)\n");
+	l2 = talloc_realloc_size(NULL, l1, 10*1024);
+	torture_assert("memlimit", l2 == NULL,
+			"failed: realloc should fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	/* ..as well as allocs */
+	printf("==== talloc_size(pool, 1024)\n");
+	l1 = talloc_size(pool, 1024);
+	torture_assert("memlimit", l1 == NULL,
+			"failed: alloc should fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	printf("==== talloc_free_children(pool)\n");
+	talloc_free_children(pool);
+
+	printf("==== talloc_set_memlimit(pool, 1024)\n");
+	talloc_set_memlimit(pool, 1024);
+
+	/* We should still be able to allocate up to the pool limit
+	   because the memlimit only applies to new heap allocations */
+	printf("==== talloc_size(pool, 9*1024)\n");
+	l1 = talloc_size(pool, 9*1024);
+	torture_assert("memlimit", l1 != NULL,
+			"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	l1 = talloc_size(pool, 1024);
+	torture_assert("memlimit", l1 == NULL,
+			"failed: alloc should fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
+	printf("==== talloc_free_children(pool)\n");
+	talloc_free_children(pool);
+
+	printf("==== talloc_set_memlimit(pool, 10*1024)\n");
+	talloc_set_memlimit(pool, 10*1024);
+
+	printf("==== talloc_size(pool, 1024)\n");
+	l1 = talloc_size(pool, 1024);
+	torture_assert("memlimit", l1 != NULL,
+			"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(pool, stdout);
+
 	talloc_free(pool);
 	talloc_free(root);
 	printf("success: memlimit\n");
