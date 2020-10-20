@@ -1864,15 +1864,13 @@ int main(int argc, char *argv[])
 		result = owner_set(targetcli, change_mode, targetfile, owner_username);
 	} else if (the_acl) {
 		if (inheritance) {
-			struct cacl_callback_state cbstate;
-			cbstate.auth_info = popt_get_cmdline_auth_info();
-			cbstate.cli = targetcli;
-			cbstate.aclsd = NULL;
-			cbstate.acl_to_add = NULL;
-			cbstate.mode = mode;
-			cbstate.the_acl = the_acl;
-			cbstate.acl_no_propagate = false;
-			cbstate.numeric = numeric;
+			struct cacl_callback_state cbstate = {
+				.auth_info = popt_get_cmdline_auth_info(),
+				.cli = targetcli,
+				.mode = mode,
+				.the_acl = the_acl,
+				.numeric = numeric,
+			};
 			result = inheritance_cacl_set(targetfile, &cbstate);
 		} else {
 			result =  cacl_set(targetcli,
