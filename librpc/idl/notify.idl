@@ -70,12 +70,6 @@ interface notify
 		pointer private_data;
 	} notify_event;
 
-	typedef [public] struct {
-		uint32 action;
-		uint32 filter;
-		utf8string path;
-	} notify_remote_event;
-
 	typedef [v1_enum] enum {
 		FILE_ACTION_ADDED		= 0x00000001,
 		FILE_ACTION_REMOVED		= 0x00000002,
