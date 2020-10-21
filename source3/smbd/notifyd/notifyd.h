@@ -142,17 +142,4 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct sys_notify_context *sys_notify_ctx);
 int notifyd_recv(struct tevent_req *req);
 
-/*
- * Parse a database received via the MSG_SMB_NOTIFY_[GET_]DB messages to the
- * notify daemon
- */
-int notifyd_parse_db(const uint8_t *buf, size_t buflen,
-		     uint64_t *log_index,
-		     bool (*fn)(const char *path,
-				struct server_id server,
-				const struct notify_instance *instance,
-				void *private_data),
-		     void *private_data);
-
-
 #endif

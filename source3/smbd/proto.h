@@ -660,13 +660,6 @@ void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter,
 		    const char *dir, const char *path);
 
-struct notify_instance;
-NTSTATUS notify_walk(struct notify_context *notify,
-		     bool (*fn)(const char *path, struct server_id server,
-				const struct notify_instance *instance,
-				void *private_data),
-		     void *private_data);
-
 /* The following definitions come from smbd/ntquotas.c  */
 
 NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,

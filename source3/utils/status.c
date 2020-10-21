@@ -47,7 +47,7 @@
 #include "conn_tdb.h"
 #include "serverid.h"
 #include "status_profile.h"
-#include "smbd/notifyd/notifyd.h"
+#include "smbd/notifyd/notifyd_db.h"
 #include "cmdline_contexts.h"
 #include "locking/leases_db.h"
 #include "lib/util/string_wrappers.h"
@@ -837,15 +837,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (show_notify) {
-		struct notify_context *n;
-
-		n = notify_init(talloc_tos(), msg_ctx,
-				NULL, NULL);
-		if (n == NULL) {
-			goto done;
-		}
-		notify_walk(n, print_notify_rec, NULL);
-		TALLOC_FREE(n);
+		notify_walk(msg_ctx, print_notify_rec, NULL);
 	}
 
 done:
