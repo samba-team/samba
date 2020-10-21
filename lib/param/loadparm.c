@@ -2408,11 +2408,14 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 				local_parm_name, parm_opt);
 			if (parm_opt_value) {
 				fprintf(f, "%s\n", parm_opt_value);
+				TALLOC_FREE(local_parm_name);
 				return true;
 			}
 		}
+		TALLOC_FREE(local_parm_name);
 		return false;
 	}
+	TALLOC_FREE(local_parm_name);
 
 	/* parameter is not parametric, search the table */
 	parm = lpcfg_parm_struct(lp_ctx, parm_name);
