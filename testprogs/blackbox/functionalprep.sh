@@ -10,45 +10,56 @@ fi
 PREFIX_ABS="$1"
 shift 1
 
+failed=0
+
 . `dirname $0`/subunit.sh
+. `dirname $0`/common_test_fns.inc
 
 RELEASE="release-4-8-0-pre1"
-release_dir=`dirname $0`/../../source4/selftest/provisions/$RELEASE
+release_dir="$SRCDIR_ABS/source4/selftest/provisions/$RELEASE"
 
 OLD_RELEASE="release-4-1-0rc3"
-old_release_dir=`dirname $0`/../../source4/selftest/provisions/$OLD_RELEASE
+old_release_dir="$SRCDIR_ABS/source4/selftest/provisions/$OLD_RELEASE"
+
+samba_tdbrestore="tdbrestore"
+if [ -x "$BINDIR/tdbrestore" ]; then
+    samba_tdbrestore="$BINDIR/tdbrestore"
+fi
+
+samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+
+if [ ! -x $samba_undump ] || [ ! -d $release_dir ] || [ ! -d $old_release_dir ]; then
+    subunit_start_test $RELEASE
+    subunit_skip_test $RELEASE <<EOF
+no test provision
+EOF
+
+    subunit_start_test "functional_prep"
+    subunit_skip_test "functional_prep" <<EOF
+no test provision
+EOF
+
+    subunit_start_test "functional_prep_old"
+    subunit_skip_test "functional_prep_old" <<EOF
+no test provision
+EOF
+
+    exit 0
+fi
 
 cleanup_output_directories()
 {
-    if [ -d $PREFIX_ABS/2012R2_schema ]; then
-        rm -fr $PREFIX_ABS/2012R2_schema
-    fi
-
-    if [ -d $PREFIX_ABS/$RELEASE ]; then
-        rm -fr $PREFIX_ABS/$RELEASE
-    fi
-
-    if [ -d $PREFIX_ABS/$OLD_RELEASE ]; then
-        rm -fr $PREFIX_ABS/$OLD_RELEASE
-    fi
+    remove_directory $PREFIX_ABS/2012R2_schema
+    remove_directory $PREFIX_ABS/$RELEASE
+    remove_directory $PREFIX_ABS/$OLD_RELEASE
 }
 
 undump() {
-   if test -x $BINDIR/tdbrestore;
-   then
-       `dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE $BINDIR/tdbrestore
-   else
-       `dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE
-   fi
+    $samba_undump $release_dir $PREFIX_ABS/$RELEASE $samba_tdbrestore
 }
 
 undump_old() {
-   if test -x $BINDIR/tdbrestore;
-   then
-       `dirname $0`/../../source4/selftest/provisions/undump.sh $old_release_dir $PREFIX_ABS/$OLD_RELEASE $BINDIR/tdbrestore
-   else
-       `dirname $0`/../../source4/selftest/provisions/undump.sh $old_release_dir $PREFIX_ABS/$OLD_RELEASE
-   fi
+    $samba_undump $old_release_dir $PREFIX_ABS/$OLD_RELEASE $samba_tdbrestore
 }
 
 
@@ -91,24 +102,24 @@ schema_upgrade() {
 # double-check we cleaned up from the last test run
 cleanup_output_directories
 
-testit $RELEASE undump
+testit $RELEASE undump || failed=`expr $failed + 1`
 
 # Provision a DC based on 2012R2 schema
-testit "provision_2012R2_schema" provision_2012r2
+testit "provision_2012R2_schema" provision_2012r2 || failed=`expr $failed + 1`
 
 # Perform functional prep up to 2012 R2 level
-testit "functional_prep" functional_prep
+testit "functional_prep" functional_prep || failed=`expr $failed + 1`
 
 # check that the databases are now the same
-testit "check_databases_same" ldapcmp
+testit "check_databases_same" ldapcmp || failed=`expr $failed + 1`
 
-testit $OLD_RELEASE undump_old
+testit $OLD_RELEASE undump_old || failed=`expr $failed + 1`
 
-testit "steal_roles" steal_roles
+testit "steal_roles" steal_roles || failed=`expr $failed + 1`
 
-testit "schema_upgrade" schema_upgrade
+testit "schema_upgrade" schema_upgrade || failed=`expr $failed + 1`
 
-testit "functional_prep_old" functional_prep_old
+testit "functional_prep_old" functional_prep_old || failed=`expr $failed + 1`
 
 cleanup_output_directories
 
