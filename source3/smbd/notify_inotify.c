@@ -76,7 +76,7 @@ static const struct {
 
 static uint32_t inotify_map(uint32_t *filter)
 {
-	int i;
+	size_t i;
 	uint32_t out=0;
 	for (i=0;i<ARRAY_SIZE(inotify_mapping);i++) {
 		if (inotify_mapping[i].notify_mask & *filter) {
@@ -93,7 +93,7 @@ static uint32_t inotify_map(uint32_t *filter)
  */
 static uint32_t inotify_map_mask_to_filter(uint32_t mask)
 {
-	int i;
+	size_t i;
 	uint32_t filter = 0;
 
 	for (i = 0; i < ARRAY_SIZE(inotify_mapping); i++) {
