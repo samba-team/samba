@@ -59,7 +59,14 @@ case "$SANITIZER" in
 	SANITIZER_ARG='--undefined-sanitizer'
 	;;
     coverage)
-       SANITIZER_ARG=''
+	# Thankfully clang operating as ld has no objection to the
+	# cc style options, so we can just set ADDITIONAL_LDFLAGS
+	# to ensure the coverage build is done, despite waf splitting
+	# the compile and link phases.
+	ADDITIONAL_LDFLAGS="$COVERAGE_FLAGS"
+	export ADDITIONAL_LDFLAGS
+
+	SANITIZER_ARG=''
        ;;
 esac
 
