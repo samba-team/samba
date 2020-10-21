@@ -11,9 +11,12 @@ PREFIX_ABS="$1"
 RELEASE="$2"
 shift 2
 
-. `dirname $0`/subunit.sh
+failed=0
 
-release_dir=`dirname $0`/../../source4/selftest/provisions/$RELEASE
+. `dirname $0`/subunit.sh
+. `dirname $0`/common_test_fns.inc
+
+release_dir="$SRCDIR_ABS/source4/selftest/provisions/$RELEASE"
 
 ldbadd="ldbadd"
 if [ -x "$BINDIR/ldbadd" ]; then
@@ -35,13 +38,28 @@ if [ -x "$BINDIR/ldbsearch" ]; then
     ldbsearch="$BINDIR/ldbsearch"
 fi
 
+samba_tdbrestore="tdbrestore"
+if [ -x "$BINDIR/tdbrestore" ]; then
+    samba_tdbrestore="$BINDIR/tdbrestore"
+fi
+
+samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+if [ ! -x $samba_undump ] || [ ! -d $release_dir ]; then
+    subunit_start_test $RELEASE
+    subunit_skip_test $RELEASE <<EOF
+no test provision
+EOF
+
+    subunit_start_test "tombstones_expunge"
+    subunit_skip_test "tombstones_expunge" <<EOF
+no test provision
+EOF
+
+    exit 0
+fi
+
 undump() {
-       if test -x $BINDIR/tdbrestore;
-       then
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE $BINDIR/tdbrestore
-       else
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE
-       fi
+    $samba_undump $release_dir $PREFIX_ABS/$RELEASE $samba_tdbrestore
 }
 
 tombstones_expunge() {
@@ -198,42 +216,30 @@ check_expected_unsorted_links() {
     fi
 }
 
-if [ -d $release_dir ]; then
-    testit $RELEASE undump
-    testit "add_two_more_users" add_two_more_users
-    testit "add_four_more_links" add_four_more_links
-    testit "add_dangling_link" add_dangling_link
-    testit "remove_one_link" remove_one_link
-    testit "remove_one_user" remove_one_user
-    testit "check_match_rule_links" check_match_rule_links
-    testit_expect_failure "check_match_rule_links_negative" check_match_rule_links_negative
-    testit_expect_failure "check_match_rule_links_overflow" check_match_rule_links_overflow
-    testit_expect_failure "check_match_rule_links_null" check_match_rule_links_null
-    testit_expect_failure "check_match_rule_links_hex" check_match_rule_links_hex
-    testit_expect_failure "check_match_rule_links_hex2" check_match_rule_links_hex2
-    testit_expect_failure "check_match_rule_links_decimal" check_match_rule_links_decimal
-    testit_expect_failure "check_match_rule_links_backlink" check_match_rule_links_backlink
-    testit_expect_failure "check_match_rule_links_notlink" check_match_rule_links_notlink
-    testit "add_unsorted_links" add_unsorted_links
-    testit "tombstones_expunge" tombstones_expunge
-    testit "check_expected_after_deleted_links" check_expected_after_deleted_links
-    testit "check_expected_after_links" check_expected_after_links
-    testit "check_expected_after_objects" check_expected_after_objects
-    testit "check_expected_unsorted_links" check_expected_unsorted_links
-else
-    subunit_start_test $RELEASE
-    subunit_skip_test $RELEASE <<EOF
-no test provision
-EOF
+remove_directory $PREFIX_ABS/${RELEASE}
 
-    subunit_start_test "tombstones_expunge"
-    subunit_skip_test "tombstones_expunge" <<EOF
-no test provision
-EOF
-fi
+testit $RELEASE undump || failed=`expr $failed + 1`
+testit "add_two_more_users" add_two_more_users || failed=`expr $failed + 1`
+testit "add_four_more_links" add_four_more_links || failed=`expr $failed + 1`
+testit "add_dangling_link" add_dangling_link || failed=`expr $failed + 1`
+testit "remove_one_link" remove_one_link || failed=`expr $failed + 1`
+testit "remove_one_user" remove_one_user || failed=`expr $failed + 1`
+testit "check_match_rule_links" check_match_rule_links || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_negative" check_match_rule_links_negative || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_overflow" check_match_rule_links_overflow || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_null" check_match_rule_links_null || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_hex" check_match_rule_links_hex || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_hex2" check_match_rule_links_hex2 || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_decimal" check_match_rule_links_decimal || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_backlink" check_match_rule_links_backlink || failed=`expr $failed + 1`
+testit_expect_failure "check_match_rule_links_notlink" check_match_rule_links_notlink || failed=`expr $failed + 1`
+testit "add_unsorted_links" add_unsorted_links || failed=`expr $failed + 1`
+testit "tombstones_expunge" tombstones_expunge || failed=`expr $failed + 1`
+testit "check_expected_after_deleted_links" check_expected_after_deleted_links || failed=`expr $failed + 1`
+testit "check_expected_after_links" check_expected_after_links || failed=`expr $failed + 1`
+testit "check_expected_after_objects" check_expected_after_objects || failed=`expr $failed + 1`
+testit "check_expected_unsorted_links" check_expected_unsorted_links || failed=`expr $failed + 1`
 
-if [ -d $PREFIX_ABS/${RELEASE} ]; then
-    rm -fr $PREFIX_ABS/${RELEASE}
-fi
+remove_directory $PREFIX_ABS/${RELEASE}
 
 exit $failed
