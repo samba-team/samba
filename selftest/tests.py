@@ -93,6 +93,8 @@ planpythontestsuite(
                 os.path.join(samba4srcdir, "..", "third_party", "waf")])
 planpythontestsuite("fileserver", "samba.tests.smbd_fuzztest")
 planpythontestsuite("nt4_dc_smb1", "samba.tests.dcerpc.binding")
+for env in [ 'ad_dc:local', 'ad_dc_fips:local' ]:
+    planpythontestsuite(env, "samba.tests.dcerpc.samr_change_password")
 
 
 def cmdline(script, *args):
