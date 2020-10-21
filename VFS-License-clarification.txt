@@ -1,0 +1,28 @@
+A clarification of the GNU GPL License boundary within the Samba
+Virtual File System (VFS) layer.
+
+Samba is licensed under the GNU GPL. All code committed to the Samba
+project or creating a derived work must be either licensed under the
+GNU GPL or a compatible license.
+
+Samba has several plug-in interfaces where external code may be called
+from Samba GNU GPL licensed code. The most important of these is the
+Samba VFS layer.
+
+Samba VFS modules are intimately connected by header files and API
+definitions to the part of the Samba code that provides file services,
+and as such, code that implements a plug-in Samba VFS module must be
+licensed under the GNU GPL or a compatible license.
+
+However, Samba VFS modules may themselves call third-party external
+libraries that are not part of the Samba project and are externally
+developed and maintained.
+
+As long as these third-party external libraries do not use any of the
+Samba internal structure, APIs or interface definitions created by the
+Samba project that are licensed under the GNU GPL then it is the view
+of the Samba Team that such third-party external libraries called from
+Samba VFS modules are not part of the Samba code and cannot be
+considered a derived work of Samba for the purposes of GNU GPL
+licensing. Thus such libraries are not required to be under the GNU
+GPL or a GNU GPL compatible license.
