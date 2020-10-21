@@ -11,7 +11,10 @@ PREFIX_ABS="$1"
 RELEASE="$2"
 shift 2
 
+failed=0
+
 . `dirname $0`/subunit.sh
+. `dirname $0`/common_test_fns.inc
 
 release_dir=`dirname $0`/../../source4/selftest/provisions/$RELEASE
 
@@ -30,13 +33,94 @@ if [ -x "$BINDIR/ldbsearch" ]; then
     ldbsearch="$BINDIR/ldbsearch"
 fi
 
+samba_tdbrestore="tdbrestore"
+if [ -x "$BINDIR/tdbrestore" ]; then
+    samba_tdbrestore="$BINDIR/tdbrestore"
+fi
+
+samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+if [ ! -x $samba_undump ] || [ ! -d $release_dir ]; then
+    subunit_start_test $RELEASE
+    subunit_skip_test $RELEASE <<EOF
+no test provision
+EOF
+
+    subunit_start_test "reindex"
+    subunit_skip_test "reindex" <<EOF
+no test provision
+EOF
+    subunit_start_test check_expected_before_values
+    subunit_skip_test check_expected_before_values<<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck"
+    subunit_skip_test "dbcheck" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_clean"
+    subunit_skip_test "dbcheck_clean" <<EOF
+no test provision
+EOF
+    subunit_start_test check_expected_after_values
+    subunit_skip_test check_expected_after_values<<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_acl_reset"
+    subunit_skip_test "dbcheck_acl_reset" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_clean_acl_reset"
+    subunit_skip_test "dbcheck_clean_acl_reset" <<EOF
+no test provision
+EOF
+    subunit_start_test add_userparameters0
+    subunit_skip_test add_userparameters0<<EOF
+no test provision
+EOF
+
+    subunit_start_test add_userparameters1
+    subunit_skip_test add_userparameters1<<EOF
+no test provision
+EOF
+
+    subunit_start_test add_userparameters2
+    subunit_skip_test add_userparameters2<<EOF
+no test provision
+EOF
+
+    subunit_start_test add_userparameters3
+    subunit_skip_test add_userparameters3<<EOF
+no test provision
+EOF
+
+    subunit_start_test check_expected_before_values
+    subunit_skip_test check_expected_before_values<<EOF
+no test provision
+EOF
+
+    subunit_start_test "dbcheck2"
+    subunit_skip_test "dbcheck2" <<EOF
+no test provision
+EOF
+
+    subunit_start_test "referenceprovision"
+    subunit_skip_test "referenceprovision" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp"
+    subunit_skip_test "ldapcmp" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp_sd"
+    subunit_skip_test "ldapcmp_sd" <<EOF
+no test provision
+EOF
+
+    exit 0
+fi
+
 undump() {
-       if test -x $BINDIR/tdbrestore;
-       then
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE $BINDIR/tdbrestore
-       else
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE
-       fi
+    $samba_undump $release_dir $PREFIX_ABS/$RELEASE $samba_tdbrestore
 }
 
 add_userparameters0() {
@@ -398,121 +482,43 @@ ldapcmp_sd() {
     fi
 }
 
-if [ -d $release_dir ]; then
-    testit $RELEASE undump
-    testit "reindex" reindex
-    testit "current_version_mod" do_current_version_mod
-    testit "check_expected_before_values" check_expected_before_values
-    testit_expect_failure "dbcheck_objectclass" dbcheck_objectclass
-    testit_expect_failure "dbcheck" dbcheck
-    testit "check_expected_after_values" check_expected_after_values
-    testit "check_forced_duplicate_values" check_forced_duplicate_values
-    testit_expect_failure "dbcheck_after_dup" dbcheck_after_dup
-    testit "check_expected_after_dup_values" check_expected_after_dup_values
-    testit "dbcheck_clean" dbcheck_clean
-    testit_expect_failure "dbcheck_acl_reset" dbcheck_acl_reset
-    testit "dbcheck_acl_reset_clean" dbcheck_acl_reset_clean
-    testit "add_userparameters0" add_userparameters1
-    testit "add_userparameters1" add_userparameters1
-    testit "add_userparameters2" add_userparameters2
-    testit "add_userparameters3" add_userparameters3
-    testit_expect_failure "dbcheck2" dbcheck2
-    testit "dbcheck_clean2" dbcheck_clean2
-    testit "check_expected_userparameters" check_expected_userparameters
-    testit "rm_deleted_objects" rm_deleted_objects
-    # We must re-index again because rm_deleted_objects went behind
-    # the back of the main sam.ldb.
-    testit "reindex2" reindex
-    testit_expect_failure "dbcheck3" dbcheck3
-    testit "dbcheck_clean3" dbcheck_clean3
-    testit "check_expected_after_deleted_objects" check_expected_after_deleted_objects
-    testit "referenceprovision" referenceprovision
-    testit "ldapcmp" ldapcmp
-    testit "ldapcmp_sd" ldapcmp_sd
-else
-    subunit_start_test $RELEASE
-    subunit_skip_test $RELEASE <<EOF
-no test provision
-EOF
+remove_directory $PREFIX_ABS/${RELEASE}_reference
 
-    subunit_start_test "reindex"
-    subunit_skip_test "reindex" <<EOF
-no test provision
-EOF
-    subunit_start_test check_expected_before_values
-    subunit_skip_test check_expected_before_values<<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck"
-    subunit_skip_test "dbcheck" <<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck_clean"
-    subunit_skip_test "dbcheck_clean" <<EOF
-no test provision
-EOF
-    subunit_start_test check_expected_after_values
-    subunit_skip_test check_expected_after_values<<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck_acl_reset"
-    subunit_skip_test "dbcheck_acl_reset" <<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck_clean_acl_reset"
-    subunit_skip_test "dbcheck_clean_acl_reset" <<EOF
-no test provision
-EOF
-    subunit_start_test add_userparameters0
-    subunit_skip_test add_userparameters0<<EOF
-no test provision
-EOF
-
-    subunit_start_test add_userparameters1
-    subunit_skip_test add_userparameters1<<EOF
-no test provision
-EOF
-
-    subunit_start_test add_userparameters2
-    subunit_skip_test add_userparameters2<<EOF
-no test provision
-EOF
-
-    subunit_start_test add_userparameters3
-    subunit_skip_test add_userparameters3<<EOF
-no test provision
-EOF
-
-    subunit_start_test check_expected_before_values
-    subunit_skip_test check_expected_before_values<<EOF
-no test provision
-EOF
-
-    subunit_start_test "dbcheck2"
-    subunit_skip_test "dbcheck2" <<EOF
-no test provision
-EOF
-
-    subunit_start_test "referenceprovision"
-    subunit_skip_test "referenceprovision" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp"
-    subunit_skip_test "ldapcmp" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp_sd"
-    subunit_skip_test "ldapcmp_sd" <<EOF
-no test provision
-EOF
-fi
+testit $RELEASE undump || failed=`expr $failed + 1`
+testit "reindex" reindex || failed=`expr $failed + 1`
+testit "current_version_mod" do_current_version_mod || failed=`expr $failed + 1`
+testit "check_expected_before_values" check_expected_before_values || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck_objectclass" dbcheck_objectclass || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck" dbcheck || failed=`expr $failed + 1`
+testit "check_expected_after_values" check_expected_after_values || failed=`expr $failed + 1`
+testit "check_forced_duplicate_values" check_forced_duplicate_values || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck_after_dup" dbcheck_after_dup || failed=`expr $failed + 1`
+testit "check_expected_after_dup_values" check_expected_after_dup_values || failed=`expr $failed + 1`
+testit "dbcheck_clean" dbcheck_clean || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck_acl_reset" dbcheck_acl_reset || failed=`expr $failed + 1`
+testit "dbcheck_acl_reset_clean" dbcheck_acl_reset_clean || failed=`expr $failed + 1`
+testit "add_userparameters0" add_userparameters1 || failed=`expr $failed + 1`
+testit "add_userparameters1" add_userparameters1 || failed=`expr $failed + 1`
+testit "add_userparameters2" add_userparameters2 || failed=`expr $failed + 1`
+testit "add_userparameters3" add_userparameters3 || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck2" dbcheck2 || failed=`expr $failed + 1`
+testit "dbcheck_clean2" dbcheck_clean2 || failed=`expr $failed + 1`
+testit "check_expected_userparameters" check_expected_userparameters || failed=`expr $failed + 1`
+testit "rm_deleted_objects" rm_deleted_objects || failed=`expr $failed + 1`
+# We must re-index again because rm_deleted_objects went behind
+# the back of the main sam.ldb.
+testit "reindex2" reindex || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck3" dbcheck3 || failed=`expr $failed + 1`
+testit "dbcheck_clean3" dbcheck_clean3 || failed=`expr $failed + 1`
+testit "check_expected_after_deleted_objects" check_expected_after_deleted_objects || failed=`expr $failed + 1`
+testit "referenceprovision" referenceprovision || failed=`expr $failed + 1`
+testit "ldapcmp" ldapcmp || failed=`expr $failed + 1`
+testit "ldapcmp_sd" ldapcmp_sd || failed=`expr $failed + 1`
 
 if [ -d $PREFIX_ABS/${RELEASE} ]; then
     rm -fr $PREFIX_ABS/${RELEASE}
 fi
 
-if [ -d $PREFIX_ABS/${RELEASE}_reference ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_reference
-fi
+remove_directory $PREFIX_ABS/${RELEASE}_reference
 
 exit $failed
