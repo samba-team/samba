@@ -445,7 +445,7 @@ class cmd_domain_provision(Command):
 
         if targetdir is not None:
             if not os.path.isdir(targetdir):
-                os.mkdir(targetdir)
+                os.makedirs(targetdir)
 
         eadb = True
 
