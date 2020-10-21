@@ -63,7 +63,7 @@ struct notifyd_state {
 	 *
 	 * struct notifyd_instance
 	 *
-	 * to be maintained and parsed by notifyd_entry_parse()
+	 * to be maintained and parsed by notifyd_parse_entry()
 	 */
 	struct db_context *entries;
 
