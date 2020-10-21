@@ -1,4 +1,4 @@
-release_dir=`dirname $0`/../../source4/selftest/provisions/$RELEASE
+release_dir=$SRCDIR_ABS/source4/selftest/provisions/$RELEASE
 
 ldbadd="ldbadd"
 if [ -x "$BINDIR/ldbadd" ]; then
@@ -25,13 +25,15 @@ if [ -x "$BINDIR/ldbrename" ]; then
     ldbrename="$BINDIR/ldbrename"
 fi
 
+samba_tdbrestore="tdbrestore"
+if [ -x "$BINDIR/tdbrestore" ]; then
+    samba_tdbrestore="$BINDIR/tdbrestore"
+fi
+
+samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+
 undump() {
-       if test -x $BINDIR/tdbrestore;
-       then
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE $BINDIR/tdbrestore
-       else
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE
-       fi
+    $samba_undump $release_dir $PREFIX_ABS/$RELEASE $samba_tdbrestore
 }
 
 add_dangling_link() {
