@@ -94,11 +94,24 @@ mkdir -p $OUT/lib
 
 for x in bin/fuzz_*
 do
+    # Copy any system libraries needed by this fuzzer to $OUT/lib.
+
+    # We run ldd on $x, the fuzz_binary in bin/ which has not yet had
+    # the RUNPATH altered.  This is clearer for debugging in local
+    # development builds as $OUT is not cleaned between runs.
+    #
+    # Otherwise trying to re-run this can see cp can fail with:
+    # cp: '/out/lib/libgcc_s.so.1' and '/out/lib/libgcc_s.so.1' are the same file
+    # which is really confusing!
+
+    # The cut for ( and ' ' removes the special case references to:
+    # 	linux-vdso.so.1 =>  (0x00007ffe8f2b2000)
+    #   /lib64/ld-linux-x86-64.so.2 (0x00007fc63ea6f000)
+
+    ldd $x | cut -f 2 -d '>' | cut -f 1 -d \( | cut -f 2 -d  ' ' | xargs -i cp \{\} $OUT/lib/
+
     cp $x $OUT/
     bin=`basename $x`
-
-    # Copy any system libraries needed by this fuzzer to $OUT/lib
-    ldd $OUT/$bin | cut -f 2 -d '>' | cut -f 1 -d \( | cut -f 2 -d  ' ' | xargs -i cp \{\} $OUT/lib/
 
     # Change any RPATH to RUNPATH.
     #
