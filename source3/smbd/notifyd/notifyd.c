@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include <tevent.h>
+#include "notifyd_private.h"
 #include "lib/util/server_id.h"
 #include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/notify.h"
@@ -97,22 +98,6 @@ struct notifyd_state {
 
 	sys_notify_watch_fn sys_notify_watch;
 	struct sys_notify_context *sys_notify_ctx;
-};
-
-/*
- * notifyd's representation of a notify instance
- */
-struct notifyd_instance {
-	struct server_id client;
-	struct notify_instance instance;
-
-	void *sys_watch; /* inotify/fam/etc handle */
-
-	/*
-	 * Filters after sys_watch took responsibility of some bits
-	 */
-	uint32_t internal_filter;
-	uint32_t internal_subdir_filter;
 };
 
 struct notifyd_peer {
@@ -340,28 +325,6 @@ static void notifyd_clean_peers_finished(struct tevent_req *subreq)
 int notifyd_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_unix(req);
-}
-
-/*
- * Parse an entry in the notifyd_context->entries database
- */
-
-static bool notifyd_parse_entry(uint8_t *buf, size_t buflen,
-				struct notifyd_instance **instances,
-				size_t *num_instances)
-{
-	if ((buflen % sizeof(struct notifyd_instance)) != 0) {
-		DBG_WARNING("invalid buffer size: %zu\n", buflen);
-		return false;
-	}
-
-	if (instances != NULL) {
-		*instances = (struct notifyd_instance *)buf;
-	}
-	if (num_instances != NULL) {
-		*num_instances = buflen / sizeof(struct notifyd_instance);
-	}
-	return true;
 }
 
 static bool notifyd_apply_rec_change(

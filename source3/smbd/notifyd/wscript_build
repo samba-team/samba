@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 
+bld.SAMBA3_SUBSYSTEM('notifyd_db',
+		     source='notifyd_entry.c',
+                     deps='samba-debug')
+
 bld.SAMBA3_SUBSYSTEM('notifyd',
 		     source='notifyd.c',
-                     deps='util_tdb TDB_LIB messages_util')
+                     deps='''
+                         util_tdb
+                         TDB_LIB
+                         messages_util
+                         notifyd_db
+                     ''')
 
 bld.SAMBA3_BINARY('notifyd-tests',
                   source='tests.c',
