@@ -129,6 +129,16 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 
 	iService = lp_servicenumber(*p_service_out);
 
+	/*
+	 * check for whether the service is a registry share before
+	 * handling home directories. This is to ensure that
+	 * that in the case service name is identical to a user's
+	 * home directory, the explicit service is preferred.
+	 */
+	if (iService < 0) {
+		iService = load_registry_service(*p_service_out);
+	}
+
 	/* now handle the special case of a home directory */
 	if (iService < 0) {
 		char *phome_dir = get_user_home_dir(ctx, *p_service_out);
@@ -184,10 +194,6 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 					*p_service_out));
 			}
 		}
-	}
-
-	if (iService < 0) {
-		iService = load_registry_service(*p_service_out);
 	}
 
 	/* Is it a usershare service ? */
