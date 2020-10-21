@@ -11,37 +11,113 @@ PREFIX_ABS="$1"
 RELEASE="$2"
 shift 2
 
-. `dirname $0`/subunit.sh
+failed=0
 
-release_dir=`dirname $0`/../../source4/selftest/provisions/${RELEASE}
+. `dirname $0`/subunit.sh
+. `dirname $0`/common_test_fns.inc
+
+release_dir="$SRCDIR_ABS/source4/selftest/provisions/${RELEASE}"
 
 LDBDEL_BIN=ldbdel
 if [ -x "$BINDIR/ldbdel" ]; then
 	LDBDEL_BIN=$BINDIR/ldbdel
 fi
 
-undump() {
-       if test -x $BINDIR/tdbrestore;
-       then
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/${RELEASE}_upgrade $BINDIR/tdbrestore
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/${RELEASE}_upgrade_full $BINDIR/tdbrestore
-       else
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/${RELEASE}_upgrade
-	`dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/${RELEASE}_upgrade_full
-       fi
-       cp -a $release_dir/private/*.keytab $PREFIX_ABS/${RELEASE}_upgrade/private/
-       cp -a $release_dir/sysvol $PREFIX_ABS/${RELEASE}_upgrade/
-       mkdir $PREFIX_ABS/${RELEASE}_upgrade/etc/
-       cat $release_dir/etc/smb.conf.template | \
-              sed "s|@@PREFIX@@|$PREFIX_ABS/${RELEASE}_upgrade|g" \
-        >  $PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf
+samba_tdbrestore="tdbrestore"
+if [ -x "$BINDIR/tdbrestore" ]; then
+    samba_tdbrestore="$BINDIR/tdbrestore"
+fi
 
-       cp -a $release_dir/private/*.keytab $PREFIX_ABS/${RELEASE}_upgrade_full/private/
-       cp -a $release_dir/sysvol $PREFIX_ABS/${RELEASE}_upgrade_full/
-       mkdir $PREFIX_ABS/${RELEASE}_upgrade_full/etc/
-       cat $release_dir/etc/smb.conf.template | \
-              sed "s|@@PREFIX@@|$PREFIX_ABS/${RELEASE}_upgrade_full|g" \
-        >  $PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf
+samba_undump="$SRCDIR_ABS/source4/selftest/provisions/undump.sh"
+if [ ! -x $samba_undump ] || [ ! -d $release_dir ]; then
+    subunit_start_test "${RELEASE}"
+    subunit_skip_test "${RELEASE}" <<EOF
+no test provision
+EOF
+
+    subunit_start_test "remove_dns_user"
+    subunit_skip_test "remove_dns_user" <<EOF
+no test provision
+EOF
+
+    subunit_start_test "upgradeprovision"
+    subunit_skip_test "upgradeprovision" <<EOF
+no test provision
+EOF
+    subunit_start_test "upgradeprovision_full"
+    subunit_skip_test "upgradeprovision_full" <<EOF
+no test provision
+EOF
+    subunit_start_test "reindex"
+    subunit_skip_test "reindex" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck"
+    subunit_skip_test "dbcheck" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_clean"
+    subunit_skip_test "dbcheck_clean" <<EOF
+no test provision
+EOF
+    # So far, only releases before 4.0.0rc6 need a dbcheck if upgradeprovision has already been run
+    if [ x$RELEASE != x"release-4-0-0" ]; then
+	subunit_start_test "dbcheck_full"
+	subunit_skip_test "dbcheck_full" <<EOF
+no test provision
+EOF
+    fi
+    subunit_start_test "dbcheck_full_clean"
+    subunit_skip_test "dbcheck_full_clean" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_full_clean_well_known_acls"
+    subunit_skip_test "dbcheck_full_clean_well_known_acls" <<EOF
+no test provision
+EOF
+    subunit_start_test "samba_dnsupgrade"
+    subunit_skip_test "samba_dnsupgrade" <<EOF
+no test provision
+EOF
+    subunit_start_test "referenceprovision"
+    subunit_skip_test "referenceprovision" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp"
+    subunit_skip_test "ldapcmp" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp_full"
+    subunit_skip_test "ldapcmp_full" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp_sd"
+    subunit_skip_test "ldapcmp_sd" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp_full_sd"
+    subunit_skip_test "ldapcmp_full_sd" <<EOF
+no test provision
+EOF
+
+    exit 0
+fi
+
+undump() {
+    $samba_undump $release_dir $PREFIX_ABS/${RELEASE}_upgrade $samba_tdbrestore
+    $samba_undump $release_dir $PREFIX_ABS/${RELEASE}_upgrade_full $samba_tdbrestore
+
+    cp -a $release_dir/private/*.keytab $PREFIX_ABS/${RELEASE}_upgrade/private/
+    cp -a $release_dir/sysvol $PREFIX_ABS/${RELEASE}_upgrade/
+    mkdir $PREFIX_ABS/${RELEASE}_upgrade/etc/
+    sed -e "s|@@PREFIX@@|$PREFIX_ABS/${RELEASE}_upgrade|g" $release_dir/etc/smb.conf.template \
+     >  $PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf
+
+    cp -a $release_dir/private/*.keytab $PREFIX_ABS/${RELEASE}_upgrade_full/private/
+    cp -a $release_dir/sysvol $PREFIX_ABS/${RELEASE}_upgrade_full/
+    mkdir $PREFIX_ABS/${RELEASE}_upgrade_full/etc/
+    sed -e "s|@@PREFIX@@|$PREFIX_ABS/${RELEASE}_upgrade_full|g" $release_dir/etc/smb.conf.template \
+     >  $PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf
 }
 
 remove_dns_user() {
@@ -122,116 +198,28 @@ ldapcmp_full_sd() {
         $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/${RELEASE}_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --two --sd --skip-missing-dn
 }
 
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade
-fi
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade_full
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade_reference
 
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade_full ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_full
-fi
+testit $RELEASE undump || failed=`expr $failed + 1`
+testit "remove_dns_user" remove_dns_user || failed=`expr $failed + 1`
+testit "upgradeprovision" upgradeprovision || failed=`expr $failed + 1`
+testit "upgradeprovision_full" upgradeprovision_full || failed=`expr $failed + 1`
+testit "reindex" reindex || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck" dbcheck || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck_full" dbcheck_full || failed=`expr $failed + 1`
+testit "dbcheck_clean" dbcheck_clean || failed=`expr $failed + 1`
+testit "dbcheck_full_clean" dbcheck_full_clean || failed=`expr $failed + 1`
+testit "dbcheck_full_clean_well_known_acls" dbcheck_full_clean_well_known_acls || failed=`expr $failed + 1`
+testit "referenceprovision" referenceprovision || failed=`expr $failed + 1`
+testit "samba_upgradedns" samba_upgradedns || failed=`expr $failed + 1`
+testit "ldapcmp" ldapcmp || failed=`expr $failed + 1`
+testit "ldapcmp_sd" ldapcmp_sd || failed=`expr $failed + 1`
+testit "ldapcmp_full_sd" ldapcmp_full_sd || failed=`expr $failed + 1`
 
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade_reference ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_reference
-fi
-
-if [ -d $release_dir ]; then
-    testit $RELEASE undump
-    testit "remove_dns_user" remove_dns_user
-    testit "upgradeprovision" upgradeprovision
-    testit "upgradeprovision_full" upgradeprovision_full
-    testit "reindex" reindex
-    testit_expect_failure "dbcheck" dbcheck
-    testit_expect_failure "dbcheck_full" dbcheck_full
-    testit "dbcheck_clean" dbcheck_clean
-    testit "dbcheck_full_clean" dbcheck_full_clean
-    testit "dbcheck_full_clean_well_known_acls" dbcheck_full_clean_well_known_acls
-    testit "referenceprovision" referenceprovision
-    testit "samba_upgradedns" samba_upgradedns
-    testit "ldapcmp" ldapcmp
-    testit "ldapcmp_sd" ldapcmp_sd
-    testit "ldapcmp_full_sd" ldapcmp_full_sd
-else
-    subunit_start_test "${RELEASE}"
-    subunit_skip_test "${RELEASE}" <<EOF
-no test provision
-EOF
-
-    subunit_start_test "remove_dns_user"
-    subunit_skip_test "remove_dns_user" <<EOF
-no test provision
-EOF
-
-    subunit_start_test "upgradeprovision"
-    subunit_skip_test "upgradeprovision" <<EOF
-no test provision
-EOF
-    subunit_start_test "upgradeprovision_full"
-    subunit_skip_test "upgradeprovision_full" <<EOF
-no test provision
-EOF
-    subunit_start_test "reindex"
-    subunit_skip_test "reindex" <<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck"
-    subunit_skip_test "dbcheck" <<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck_clean"
-    subunit_skip_test "dbcheck_clean" <<EOF
-no test provision
-EOF
-    # So far, only releases before 4.0.0rc6 need a dbcheck if upgradeprovision has already been run
-    if [ x$RELEASE != x"release-4-0-0" ]; then
-	subunit_start_test "dbcheck_full"
-	subunit_skip_test "dbcheck_full" <<EOF
-no test provision
-EOF
-    fi
-    subunit_start_test "dbcheck_full_clean"
-    subunit_skip_test "dbcheck_full_clean" <<EOF
-no test provision
-EOF
-    subunit_start_test "dbcheck_full_clean_well_known_acls"
-    subunit_skip_test "dbcheck_full_clean_well_known_acls" <<EOF
-no test provision
-EOF
-    subunit_start_test "samba_dnsupgrade"
-    subunit_skip_test "samba_dnsupgrade" <<EOF
-no test provision
-EOF
-    subunit_start_test "referenceprovision"
-    subunit_skip_test "referenceprovision" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp"
-    subunit_skip_test "ldapcmp" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp_full"
-    subunit_skip_test "ldapcmp_full" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp_sd"
-    subunit_skip_test "ldapcmp_sd" <<EOF
-no test provision
-EOF
-    subunit_start_test "ldapcmp_full_sd"
-    subunit_skip_test "ldapcmp_full_sd" <<EOF
-no test provision
-EOF
-fi
-
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade
-fi
-
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade_full ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_full
-fi
-
-if [ -d $PREFIX_ABS/${RELEASE}_upgrade_reference ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_reference
-fi
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade_full
+remove_directory $PREFIX_ABS/${RELEASE}_upgrade_reference
 
 exit $failed
