@@ -326,3 +326,11 @@ bld.SAMBA3_BINARY('mdsearch',
                  RPCCLI_MDSSVC
                  mdssvc
                  ''')
+
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+pyrpc_util = bld.pyembed_libname('pyrpc_util')
+bld.SAMBA3_PYTHON('python_net_s3',
+        source='py_net.c',
+        deps='LIBNET popt_samba3_cmdline %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/net_s3.so'
+        )
