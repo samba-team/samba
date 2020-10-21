@@ -8,7 +8,8 @@ import "misc.idl";
   pointer_default(unique),
   helpstring("SMB Witness Service"),
   helper("../librpc/ndr/ndr_witness.h"),
-  endpoint("ncacn_ip_tcp:")
+  endpoint("ncacn_ip_tcp:"),
+  authservice("cifs")
 ]
 interface witness
 {
