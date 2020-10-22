@@ -63,7 +63,7 @@ struct trans_state {
 #define UCF_ALWAYS_ALLOW_WCARD_LCOMP	0x00000002
 /* UCF_COND_ALLOW_WCARD_LCOMP 0x00000004 is no longer used. */
 #define UCF_POSIX_PATHNAMES		0x00000008
-#define UCF_UNIX_NAME_LOOKUP		0x00000010
+/* #define UCF_UNIX_NAME_LOOKUP 0x00000010 is no longer used. */
 #define UCF_PREP_CREATEFILE		0x00000020
 /*
  * Use the same bit as FLAGS2_REPARSE_PATH
