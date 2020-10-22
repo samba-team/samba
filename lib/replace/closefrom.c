@@ -54,7 +54,7 @@ static int closefrom_procfs(int lower)
 	int ret = ENOMEM;
 
 	dirp = opendir("/proc/self/fd");
-	if (dirp == 0) {
+	if (dirp == NULL) {
 		return errno;
 	}
 
