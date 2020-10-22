@@ -2797,7 +2797,6 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	if (req->posix_pathnames) {
 		/* Always use filesystem for UNIX mtime query. */
 		ask_sharemode = false;
-		ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 	}
 
 	if (req->posix_pathnames) {
@@ -6146,12 +6145,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
-			if (info_level == SMB_QUERY_FILE_UNIX_BASIC ||
-					info_level == SMB_QUERY_FILE_UNIX_INFO2 ||
-					info_level == SMB_QUERY_FILE_UNIX_LINK ||
-					req->posix_pathnames) {
-				ucf_flags |= UCF_UNIX_NAME_LOOKUP;
-			}
 		}
 
 		if (req->posix_pathnames) {
@@ -9388,14 +9381,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
-		}
-
-		if (info_level == SMB_SET_FILE_UNIX_BASIC ||
-				info_level == SMB_SET_FILE_UNIX_INFO2 ||
-				info_level == SMB_FILE_RENAME_INFORMATION ||
-				info_level == SMB_POSIX_PATH_OPEN ||
-				info_level == SMB_POSIX_PATH_UNLINK) {
-			ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 		}
 
 		status = filename_convert(req, conn,
