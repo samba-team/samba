@@ -97,7 +97,7 @@ do
     # Copy any system libraries needed by this fuzzer to $OUT/lib.
 
     # We run ldd on $x, the fuzz_binary in bin/ which has not yet had
-    # the RUNPATH altered.  This is clearer for debugging in local
+    # the RPATH altered.  This is clearer for debugging in local
     # development builds as $OUT is not cleaned between runs.
     #
     # Otherwise trying to re-run this can see cp can fail with:
