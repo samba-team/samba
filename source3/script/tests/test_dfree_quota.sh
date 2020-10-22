@@ -197,7 +197,7 @@ test_smbcquotas() {
 	return $status
 }
 
-if [ $protocol != "SMB3" -a $protocol != "NT1"]; then
+if [ $protocol != "SMB3" ] && [ $protocol != "NT1" ]; then
 	echo "unsupported protocol $protocol" | subunit_fail_test "Test dfree quota"
 	failed=`expr $failed + 1`
 fi
