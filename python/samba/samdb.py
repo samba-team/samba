@@ -42,6 +42,11 @@ __docformat__ = "restructuredText"
 def get_default_backend_store():
     return "tdb"
 
+class SamDBError(Exception):
+    pass
+
+class SamDBNotFoundError(SamDBError):
+    pass
 
 class SamDB(samba.Ldb):
     """The SAM database."""
@@ -179,6 +184,31 @@ dn: %s
 changetype: modify
 replace: pwdLastSet
 pwdLastSet: 0
+""" % (user_dn)
+        self.modify_ldif(mod)
+
+    def unlock_account(self, search_filter):
+        """Unlock a user account by resetting lockoutTime to 0.
+        This does also reset the badPwdCount to 0.
+
+        :param search_filter: LDAP filter to find the user (e.g.
+            sAMAccountName=username)
+        """
+        res = self.search(base=self.domain_dn(),
+                          scope=ldb.SCOPE_SUBTREE,
+                          expression=search_filter,
+                          attrs=[])
+        if len(res) == 0:
+            raise SamDBNotFoundError('Unable to find user "%s"' % search_filter)
+        if len(res) != 1:
+            raise SamDBError('User "%s" is not unique' % search_filter)
+        user_dn = res[0].dn
+
+        mod = """
+dn: %s
+changetype: modify
+replace: lockoutTime
+lockoutTime: 0
 """ % (user_dn)
         self.modify_ldif(mod)
 

@@ -1466,6 +1466,12 @@
 </refsect3>
 
 <refsect3>
+	<title>user unlock <replaceable>username</replaceable> [options]</title>
+	<para>This command unlocks a user account in the Active Directory
+	domain.</para>
+</refsect3>
+
+<refsect3>
 	<title>user getpassword <replaceable>username</replaceable> [options]</title>
 	<para>Gets the password of a user account.</para>
 </refsect3>

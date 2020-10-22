@@ -33,7 +33,7 @@ import binascii
 from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError
 from getpass import getpass
 from samba.auth import system_session
-from samba.samdb import SamDB
+from samba.samdb import SamDB, SamDBError, SamDBNotFoundError
 from samba.dcerpc import misc
 from samba.dcerpc import security
 from samba.dcerpc import drsblobs
@@ -3257,6 +3257,77 @@ unixHomeDirectory: {6}
             self.outf.write("Modified User '{}' successfully\n"
                             .format(username))
 
+class cmd_user_unlock(Command):
+    """Unlock a user account.
+
+    This command unlocks a user account in the Active Directory domain. The
+    username specified on the command is the sAMAccountName. The username may
+    also be specified using the --filter option.
+
+    The command may be run from the root userid or another authorized userid.
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example:
+    samba-tool user unlock user1 -H ldap://samba.samdom.example.com \\
+        --username=Administrator --password=Passw0rd
+
+    The example shows how to unlock a user account in the domain against a
+    remote LDAP server. The -H parameter is used to specify the remote target
+    server. The --username= and --password= options are used to pass the
+    username and password of a user that exists on the remote server and is
+    authorized to issue the command on that server.
+"""
+
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+    takes_options = [
+        Option("-H",
+               "--URL",
+               help="LDB URL for database or target server",
+               type=str,
+               metavar="URL",
+               dest="H"),
+        Option("--filter",
+               help="LDAP Filter to set password on",
+               type=str),
+    ]
+
+    takes_args = ["username?"]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def run(self,
+            username=None,
+            sambaopts=None,
+            credopts=None,
+            versionopts=None,
+            filter=None,
+            H=None):
+        if username is None and filter is None:
+            raise CommandError("Either the username or '--filter' must be "
+                               "specified!")
+
+        if filter is None:
+            filter = ("(&(objectClass=user)(sAMAccountName=%s))" % (
+                ldb.binary_encode(username)))
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        samdb = SamDB(url=H,
+                      session_info=system_session(),
+                      credentials=creds,
+                      lp=lp)
+        try:
+            samdb.unlock_account(filter)
+        except (SamDBError, ldb.LdbError) as msg:
+            raise CommandError("Failed to unlock user '%s': %s" % (
+                               username or filter, msg))
 
 class cmd_user_sensitive(Command):
     """Set/unset or show UF_NOT_DELEGATED for an account."""
@@ -3336,5 +3407,6 @@ class cmd_user(SuperCommand):
     subcommands["show"] = cmd_user_show()
     subcommands["move"] = cmd_user_move()
     subcommands["rename"] = cmd_user_rename()
+    subcommands["unlock"] = cmd_user_unlock()
     subcommands["addunixattrs"] = cmd_user_add_unix_attrs()
     subcommands["sensitive"] = cmd_user_sensitive()
