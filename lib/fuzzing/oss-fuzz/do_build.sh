@@ -88,9 +88,146 @@ make -j
 # Make a directory for the system shared libraries to be copied into
 mkdir -p $OUT/lib
 
-# We can't static link to all the system libs with waf, so copy them
-# to $OUT/lib and set the rpath to point there.  This is similar to how
-# firefox handles this.
+# oss-fuzz would prefer for all the binaries put into $OUT to be
+# statically linked.
+#
+# We can't static link to all the system libs with waf, so copy the
+# libraries we need to $OUT/lib and set the rpath to point there.
+# This is similar to how firefox handles this.
+#
+# NOTE on RPATH vs RUNPATH:
+#
+# RUNPATH appears to be the more modern version, and so modern ld.bfd
+# and ld.gold only set RUNPATH.  RUNPATH makes sense on most systems,
+# but not for our hack.
+#
+# If we use RUNPATH, we can get an error like this:
+# Step #6: Error occured while running fuzz_nmblib_parse_packet:
+# Step #6: /workspace/out/coverage/fuzz_nmblib_parse_packet: error while loading shared libraries: libavahi-common.so.3: cannot open shared object file: No such file or directory
+#
+# This is because the full contents of $OUT are copied to yet another
+# host, which otherwise does not have much of linux at all.  oss-fuzz
+# prefers a static binary because that will 'just work', but we can't
+# do that, so we need to use linker tricks.
+#
+# If the linker used RUNPATH (eg ld.bfd on Ubuntu 18.04 and later, ld.gold):
+# * bin=fuzz_nmblib_parse_packet
+# * OUT=/tmp/3/b12207/prefix/samba-fuzz
+# * chrpath -r '$ORIGIN/lib' $OUT/$bin'
+# * ldd $OUT/$bin
+#	linux-vdso.so.1 (0x00007ffd4b7a5000)
+#	libasan.so.5 => /tmp/3/b12207/prefix/samba-fuzz/lib/libasan.so.5 (0x00007ff25bdd0000)
+#	libldap_r-2.4.so.2 => /tmp/3/b12207/prefix/samba-fuzz/lib/libldap_r-2.4.so.2 (0x00007ff25bd7a000)
+#	liblber-2.4.so.2 => /tmp/3/b12207/prefix/samba-fuzz/lib/liblber-2.4.so.2 (0x00007ff25bd69000)
+#	libunwind-x86_64.so.8 => /tmp/3/b12207/prefix/samba-fuzz/lib/libunwind-x86_64.so.8 (0x00007ff25bd47000)
+#	libunwind.so.8 => /tmp/3/b12207/prefix/samba-fuzz/lib/libunwind.so.8 (0x00007ff25bd2a000)
+#	libgnutls.so.30 => /tmp/3/b12207/prefix/samba-fuzz/lib/libgnutls.so.30 (0x00007ff25bb54000)
+#	libdl.so.2 => /tmp/3/b12207/prefix/samba-fuzz/lib/libdl.so.2 (0x00007ff25bb4c000)
+#	libz.so.1 => /tmp/3/b12207/prefix/samba-fuzz/lib/libz.so.1 (0x00007ff25bb30000)
+#	libjansson.so.4 => /tmp/3/b12207/prefix/samba-fuzz/lib/libjansson.so.4 (0x00007ff25bb21000)
+#	libresolv.so.2 => /tmp/3/b12207/prefix/samba-fuzz/lib/libresolv.so.2 (0x00007ff25bb05000)
+#	libsystemd.so.0 => /tmp/3/b12207/prefix/samba-fuzz/lib/libsystemd.so.0 (0x00007ff25ba58000)
+#	libpthread.so.0 => /tmp/3/b12207/prefix/samba-fuzz/lib/libpthread.so.0 (0x00007ff25ba35000)
+#	libicuuc.so.66 => /tmp/3/b12207/prefix/samba-fuzz/lib/libicuuc.so.66 (0x00007ff25b84d000)
+#	libicui18n.so.66 => /tmp/3/b12207/prefix/samba-fuzz/lib/libicui18n.so.66 (0x00007ff25b54e000)
+#	libcap.so.2 => /tmp/3/b12207/prefix/samba-fuzz/lib/libcap.so.2 (0x00007ff25b545000)
+#	libbsd.so.0 => /tmp/3/b12207/prefix/samba-fuzz/lib/libbsd.so.0 (0x00007ff25b52b000)
+#	libnsl.so.1 => /tmp/3/b12207/prefix/samba-fuzz/lib/libnsl.so.1 (0x00007ff25b50e000)
+#	libc.so.6 => /tmp/3/b12207/prefix/samba-fuzz/lib/libc.so.6 (0x00007ff25b31c000)
+#	librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007ff25b2f2000)
+#	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007ff25b1a3000)
+#	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007ff25b188000)
+#	libsasl2.so.2 => /usr/lib/x86_64-linux-gnu/libsasl2.so.2 (0x00007ff25b16b000)
+#	libgssapi.so.3 => /usr/lib/x86_64-linux-gnu/libgssapi.so.3 (0x00007ff25b126000)
+#	liblzma.so.5 => /lib/x86_64-linux-gnu/liblzma.so.5 (0x00007ff25b0fd000)
+#	/lib64/ld-linux-x86-64.so.2 (0x00007ff25ea0c000)
+#	libp11-kit.so.0 => /usr/lib/x86_64-linux-gnu/libp11-kit.so.0 (0x00007ff25afc5000)
+#	libidn2.so.0 => /usr/lib/x86_64-linux-gnu/libidn2.so.0 (0x00007ff25afa4000)
+#	libunistring.so.2 => /usr/lib/x86_64-linux-gnu/libunistring.so.2 (0x00007ff25ae22000)
+#	libtasn1.so.6 => /usr/lib/x86_64-linux-gnu/libtasn1.so.6 (0x00007ff25ae0c000)
+#	libnettle.so.7 => /usr/lib/x86_64-linux-gnu/libnettle.so.7 (0x00007ff25add2000)
+#	libhogweed.so.5 => /usr/lib/x86_64-linux-gnu/libhogweed.so.5 (0x00007ff25ad9a000)
+#	libgmp.so.10 => /usr/lib/x86_64-linux-gnu/libgmp.so.10 (0x00007ff25ad14000)
+#	liblz4.so.1 => /usr/lib/x86_64-linux-gnu/liblz4.so.1 (0x00007ff25acf3000)
+#	libgcrypt.so.20 => /usr/lib/x86_64-linux-gnu/libgcrypt.so.20 (0x00007ff25abd5000)
+#	libicudata.so.66 => /usr/lib/x86_64-linux-gnu/libicudata.so.66 (0x00007ff259114000)
+#	libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007ff258f33000)
+#	libheimntlm.so.0 => /usr/lib/x86_64-linux-gnu/libheimntlm.so.0 (0x00007ff258f25000)
+#	libkrb5.so.26 => /usr/lib/x86_64-linux-gnu/libkrb5.so.26 (0x00007ff258e92000)
+#	libasn1.so.8 => /usr/lib/x86_64-linux-gnu/libasn1.so.8 (0x00007ff258deb000)
+#	libcom_err.so.2 => /lib/x86_64-linux-gnu/libcom_err.so.2 (0x00007ff258de4000)
+#	libhcrypto.so.4 => /usr/lib/x86_64-linux-gnu/libhcrypto.so.4 (0x00007ff258dac000)
+#	libroken.so.18 => /usr/lib/x86_64-linux-gnu/libroken.so.18 (0x00007ff258d93000)
+#	libffi.so.7 => /usr/lib/x86_64-linux-gnu/libffi.so.7 (0x00007ff258d85000)
+#	libgpg-error.so.0 => /lib/x86_64-linux-gnu/libgpg-error.so.0 (0x00007ff258d62000)
+#	libwind.so.0 => /usr/lib/x86_64-linux-gnu/libwind.so.0 (0x00007ff258d38000)
+#	libheimbase.so.1 => /usr/lib/x86_64-linux-gnu/libheimbase.so.1 (0x00007ff258d26000)
+#	libhx509.so.5 => /usr/lib/x86_64-linux-gnu/libhx509.so.5 (0x00007ff258cd8000)
+#	libsqlite3.so.0 => /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 (0x00007ff258bad000)
+#	libcrypt.so.1 => /lib/x86_64-linux-gnu/libcrypt.so.1 (0x00007ff258b72000)
+#
+# Note how all the dependencies of libc and gnutls are not forced to
+# $OUT/lib (via the magic $ORIGIN variable, meaning the directory of
+# the binary).  These will not be found on the target system!
+#
+# If the linker used RPATH however
+# * bin=fuzz_nmblib_parse_packet
+# * OUT=/tmp/3/b22/prefix/samba-fuzz
+# * chrpath -r '$ORIGIN/lib' $OUT/$bin'
+# * ldd $OUT/$bin
+#	linux-vdso.so.1 =>  (0x00007ffef85c7000)
+#	libasan.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libasan.so.2 (0x00007f3668b4f000)
+#	libldap_r-2.4.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libldap_r-2.4.so.2 (0x00007f36688fe000)
+#	liblber-2.4.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/liblber-2.4.so.2 (0x00007f36686ef000)
+#	libunwind-x86_64.so.8 => /tmp/3/b22/prefix/samba-fuzz/lib/libunwind-x86_64.so.8 (0x00007f36684d0000)
+#	libunwind.so.8 => /tmp/3/b22/prefix/samba-fuzz/lib/libunwind.so.8 (0x00007f36682b5000)
+#	libgnutls.so.30 => /tmp/3/b22/prefix/samba-fuzz/lib/libgnutls.so.30 (0x00007f3667f85000)
+#	libdl.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libdl.so.2 (0x00007f3667d81000)
+#	libz.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libz.so.1 (0x00007f3667b67000)
+#	libjansson.so.4 => /tmp/3/b22/prefix/samba-fuzz/lib/libjansson.so.4 (0x00007f366795a000)
+#	libresolv.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libresolv.so.2 (0x00007f366773f000)
+#	libsystemd.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libsystemd.so.0 (0x00007f366be2f000)
+#	libpthread.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libpthread.so.0 (0x00007f3667522000)
+#	libicuuc.so.55 => /tmp/3/b22/prefix/samba-fuzz/lib/libicuuc.so.55 (0x00007f366718e000)
+#	libicui18n.so.55 => /tmp/3/b22/prefix/samba-fuzz/lib/libicui18n.so.55 (0x00007f3666d2c000)
+#	libcap.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libcap.so.2 (0x00007f3666b26000)
+#	libbsd.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libbsd.so.0 (0x00007f3666911000)
+#	libnsl.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libnsl.so.1 (0x00007f36666f8000)
+#	libc.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libc.so.6 (0x00007f366632e000)
+#	libm.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libm.so.6 (0x00007f3666025000)
+#	libgcc_s.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libgcc_s.so.1 (0x00007f3665e0f000)
+#	libsasl2.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libsasl2.so.2 (0x00007f3665bf4000)
+#	libgssapi.so.3 => /tmp/3/b22/prefix/samba-fuzz/lib/libgssapi.so.3 (0x00007f36659b3000)
+#	liblzma.so.5 => /tmp/3/b22/prefix/samba-fuzz/lib/liblzma.so.5 (0x00007f3665791000)
+#	/lib64/ld-linux-x86-64.so.2 (0x00007f366bc93000)
+#	libp11-kit.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libp11-kit.so.0 (0x00007f366552d000)
+#	libidn.so.11 => /tmp/3/b22/prefix/samba-fuzz/lib/libidn.so.11 (0x00007f36652fa000)
+#	libtasn1.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libtasn1.so.6 (0x00007f36650e7000)
+#	libnettle.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libnettle.so.6 (0x00007f3664eb1000)
+#	libhogweed.so.4 => /tmp/3/b22/prefix/samba-fuzz/lib/libhogweed.so.4 (0x00007f3664c7e000)
+#	libgmp.so.10 => /tmp/3/b22/prefix/samba-fuzz/lib/libgmp.so.10 (0x00007f36649fe000)
+#	libselinux.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libselinux.so.1 (0x00007f36647dc000)
+#	librt.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/librt.so.1 (0x00007f36645d4000)
+#	libgcrypt.so.20 => /tmp/3/b22/prefix/samba-fuzz/lib/libgcrypt.so.20 (0x00007f36642f3000)
+#	libicudata.so.55 => /tmp/3/b22/prefix/samba-fuzz/lib/libicudata.so.55 (0x00007f366283c000)
+#	libstdc++.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libstdc++.so.6 (0x00007f36624ba000)
+#	libheimntlm.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libheimntlm.so.0 (0x00007f36622b1000)
+#	libkrb5.so.26 => /tmp/3/b22/prefix/samba-fuzz/lib/libkrb5.so.26 (0x00007f3662027000)
+#	libasn1.so.8 => /tmp/3/b22/prefix/samba-fuzz/lib/libasn1.so.8 (0x00007f3661d85000)
+#	libcom_err.so.2 => /tmp/3/b22/prefix/samba-fuzz/lib/libcom_err.so.2 (0x00007f3661b81000)
+#	libhcrypto.so.4 => /tmp/3/b22/prefix/samba-fuzz/lib/libhcrypto.so.4 (0x00007f366194e000)
+#	libroken.so.18 => /tmp/3/b22/prefix/samba-fuzz/lib/libroken.so.18 (0x00007f3661738000)
+#	libffi.so.6 => /tmp/3/b22/prefix/samba-fuzz/lib/libffi.so.6 (0x00007f3661530000)
+#	libpcre.so.3 => /tmp/3/b22/prefix/samba-fuzz/lib/libpcre.so.3 (0x00007f36612c0000)
+#	libgpg-error.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libgpg-error.so.0 (0x00007f36610ac000)
+#	libwind.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libwind.so.0 (0x00007f3660e83000)
+#	libheimbase.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libheimbase.so.1 (0x00007f3660c74000)
+#	libhx509.so.5 => /tmp/3/b22/prefix/samba-fuzz/lib/libhx509.so.5 (0x00007f3660a29000)
+#	libsqlite3.so.0 => /tmp/3/b22/prefix/samba-fuzz/lib/libsqlite3.so.0 (0x00007f3660754000)
+#	libcrypt.so.1 => /tmp/3/b22/prefix/samba-fuzz/lib/libcrypt.so.1 (0x00007f366051c000)
+#
+# See how the runtime linker seems to honour the RPATH for
+# dependencies of dependencies in this case.  This helps us us lot.
 
 for x in bin/fuzz_*
 do
