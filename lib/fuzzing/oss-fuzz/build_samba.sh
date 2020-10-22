@@ -63,7 +63,7 @@ case "$SANITIZER" in
 	# cc style options, so we can just set ADDITIONAL_LDFLAGS
 	# to ensure the coverage build is done, despite waf splitting
 	# the compile and link phases.
-	ADDITIONAL_LDFLAGS="$COVERAGE_FLAGS"
+	ADDITIONAL_LDFLAGS="${ADDITIONAL_LDFLAGS:-} $COVERAGE_FLAGS"
 	export ADDITIONAL_LDFLAGS
 
 	SANITIZER_ARG=''
@@ -113,19 +113,16 @@ do
     cp $x $OUT/
     bin=`basename $x`
 
-    # Change any RPATH to RUNPATH.
+    # Changing RPATH (not RUNPATH, but we can't tell here which was
+    # set) is critical, otherwise libraries used by libraries won't be
+    # found on the oss-fuzz target host.  Sadly this is only possible
+    # with clang or ld.bfd on Ubuntu 16.04 (this script is only run on
+    # that).
     #
-    # We use ld.bfd for the coverage builds, rather than the faster ld.gold.
+    # chrpath --convert only allows RPATH to be changed to RUNPATH,
+    # not the other way around, and we really don't want RUNPATH.
     #
-    # On Ubuntu 16.04, used for the oss-fuzz build, when linking with
-    # ld.bfd the binaries get a RPATH, but builds in Ubuntu 18.04
-    # ld.bfd and those using ld.gold get a RUNPATH.
-    #
-    # Just convert them all to RUNPATH to make the check_build.sh test
-    # easier.
-    chrpath -c $OUT/$bin
-    # Change RUNPATH so that the copied libraries are found on the
-    # runner
+    # This means the copied libraries are found on the runner
     chrpath -r '$ORIGIN/lib' $OUT/$bin
 
     # Truncate the original binary to save space

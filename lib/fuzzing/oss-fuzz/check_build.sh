@@ -23,12 +23,21 @@ do
         continue
     fi
     # Confirm that the chrpath was reset to lib/ in the same directory
-    # as the binary
-    chrpath -l $bin | grep 'RUNPATH=$ORIGIN/lib'
+    # as the binary.  RPATH (not RUNPATH) is critical, otherwise
+    # libraries used by libraries won't be found on the oss-fuzz
+    # target host, but is only possible with clang or ld.bfd on Ubuntu
+    # 16.04 (this script is only run on that).
+    chrpath -l $bin | grep 'RPATH=$ORIGIN/lib'
 
     # Confirm that we link to at least some libraries in this
     # directory (shows that the libraries were found and copied).
     ldd $bin | grep "$OUT/lib"
+    num_libs=$(ldd $bin | grep -v ld-linux | grep -v linux-vdso | grep -v "$OUT/lib"| wc -l)
+
+    if [ 0$num_libs -ne 0 ]; then
+	echo "some libraries not linked to $ORIGIN/lib, oss-fuzz will fail!"
+	exit 1
+    fi
 
     if [ -f ${bin}_seed_corpus.zip ]; then
         seeds_found=yes
