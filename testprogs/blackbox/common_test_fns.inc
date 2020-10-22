@@ -107,3 +107,14 @@ kerberos_kinit() {
 	fi
 	return $status
 }
+
+remove_directory() {
+	local xdir=${1}
+	shift
+
+	if [ "$xdir" == "/" ] || [ ! -d "$xdir" ] || [ ! $(ls -A "$xdir") ]; then
+		return
+	fi
+
+	rm -rf "$xdir"
+}
