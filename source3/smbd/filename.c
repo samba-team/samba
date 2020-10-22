@@ -1961,9 +1961,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if ((ucf_flags & UCF_UNIX_NAME_LOOKUP) &&
-			VALID_STAT(smb_fname->st) &&
-			S_ISLNK(smb_fname->st.st_ex_mode)) {
+	if ((ucf_flags & UCF_POSIX_PATHNAMES) &&
+	    VALID_STAT(smb_fname->st) &&
+	    S_ISLNK(smb_fname->st.st_ex_mode))
+	{
 		status = check_veto_path(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(smb_fname);
