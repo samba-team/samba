@@ -21,6 +21,9 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
+#include "replace.h"
+#include <tevent.h>
+
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGE_VERSION 2
 
