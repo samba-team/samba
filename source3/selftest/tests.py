@@ -905,6 +905,11 @@ plantestsuite(
     [os.path.join(samba3srcdir, "../nsswitch/tests/test_ticket_expiry.sh"),
      '$DOMAIN'])
 
+plansmbtorture4testsuite(
+    "notifyd",
+    "fileserver:local",
+    '//foo/bar -U%')
+
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
 signseal_options = ["", ",connect", ",packet", ",sign", ",seal"]

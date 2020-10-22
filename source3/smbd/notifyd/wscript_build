@@ -30,3 +30,15 @@ bld.SAMBA3_BINARY('notifydd',
                   deps='''notifyd
                        smbconf
                   ''')
+
+TORTURE_NOTIFYD_SOURCE='test_notifyd.c'
+TORTURE_NOTIFYD_DEPS='fcn_wait'
+
+bld.SAMBA_MODULE('TORTURE_NOTIFYD',
+	source=TORTURE_NOTIFYD_SOURCE,
+	subsystem='smbtorture',
+	init_function='torture_notifyd_init',
+	deps=TORTURE_NOTIFYD_DEPS,
+	internal_module=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED()
+	)
