@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+bld.SAMBA3_SUBSYSTEM('fcn_wait',
+                     source='fcn_wait.c',
+                     deps='samba3core')
+
 bld.SAMBA3_SUBSYSTEM('notifyd_db',
 		     source='notifyd_entry.c notifyd_db.c',
                      deps='samba-debug dbwrap errors3')
