@@ -261,6 +261,25 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 
 		ids[i]->status = ID_UNMAPPED;
 
+		if (ids[i]->xid.type == ID_TYPE_NOT_SPECIFIED) {
+			/*
+			 * idmap_hash used to bounce back the requested type,
+			 * which was ID_TYPE_UID, ID_TYPE_GID or
+			 * ID_TYPE_NOT_SPECIFIED before as the winbindd parent
+			 * always used a lookupsids.  When the lookupsids
+			 * failed because of an unknown domain, the idmap child
+			 * weren't requested at all and the caller sees
+			 * ID_TYPE_NOT_SPECIFIED.
+			 *
+			 * Now that the winbindd parent will pass ID_TYPE_BOTH
+			 * in order to indicate that the domain exists.
+			 * We should ask the parent to fallback to lookupsids
+			 * if the domain is not known yet.
+			 */
+			ids[i]->status = ID_REQUIRE_TYPE;
+			continue;
+		}
+
 		sid_copy(&sid, ids[i]->sid);
 		sid_split_rid(&sid, &rid);
 
@@ -270,6 +289,22 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 		/* Check that both hashes are non-zero*/
 
 		if (h_domain && h_rid) {
+			/*
+			 * idmap_hash used to bounce back the requested type,
+			 * which was ID_TYPE_UID, ID_TYPE_GID or
+			 * ID_TYPE_NOT_SPECIFIED before as the winbindd parent
+			 * always used a lookupsids.
+			 *
+			 * This module should have supported ID_TYPE_BOTH since
+			 * samba-4.1.0, similar to idmap_rid and idmap_autorid.
+			 *
+			 * Now that the winbindd parent will pass ID_TYPE_BOTH
+			 * in order to indicate that the domain exists, it's
+			 * better to always return ID_TYPE_BOTH instead of a
+			 * random mix of ID_TYPE_UID, ID_TYPE_GID or
+			 * ID_TYPE_BOTH.
+			 */
+			ids[i]->xid.type = ID_TYPE_BOTH;
 			ids[i]->xid.id = combine_hashes(h_domain, h_rid);
 			ids[i]->status = ID_MAPPED;
 		}
