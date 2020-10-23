@@ -624,6 +624,8 @@ _PUBLIC_ void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 
 _PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn);
 
+_PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call);
+
 _PUBLIC_ const struct dcesrv_interface *find_interface_by_uuid(
 				const struct dcesrv_endpoint *endpoint,
 				const struct GUID *uuid, uint32_t if_version);
