@@ -43,7 +43,7 @@ struct files_struct *fcb_or_dos_open(
 
 	if ((private_flags &
 	     (NTCREATEX_FLAG_DENY_DOS|
-	      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB))
+	      NTCREATEX_FLAG_DENY_FCB))
 	    == 0) {
 		return NULL;
 	}
@@ -68,7 +68,7 @@ struct files_struct *fcb_or_dos_open(
 		    fsp->file_pid == req->smbpid &&
 		    (fsp->fh->private_options &
 		     (NTCREATEX_FLAG_DENY_DOS |
-		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
+		      NTCREATEX_FLAG_DENY_FCB)) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
 		    strequal(fsp->fsp_name->base_name, smb_fname->base_name) &&
 		    strequal(fsp->fsp_name->stream_name,

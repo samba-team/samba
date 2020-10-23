@@ -406,7 +406,7 @@ Offset  Data			length.
  * argument.
  */
 #define NTCREATEX_FLAG_DENY_DOS			0x0001
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x0002
+#define NTCREATEX_FLAG_DENY_FCB			0x0002
 
 /* Private options for printer support */
 #define NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE 0x0008

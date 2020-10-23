@@ -185,7 +185,7 @@
  * This values have different meaning for some ntvfs backends.
  */
 #define NTCREATEX_FLAG_DENY_DOS      0x0001
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB      0x0002
+#define NTCREATEX_FLAG_DENY_FCB      0x0002
 
 
 /* ntcreatex impersonation field */

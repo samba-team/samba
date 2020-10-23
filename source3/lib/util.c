@@ -1724,7 +1724,7 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 	}
 	if (private_options & NTCREATEX_FLAG_DENY_DOS) {
 		return DENY_DOS;
-	} else if (private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_FCB) {
+	} else if (private_options & NTCREATEX_FLAG_DENY_FCB) {
 		return DENY_FCB;
 	}
 
@@ -2051,7 +2051,7 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 			break;
 
 		case DENY_FCB:
-			private_flags |= NTCREATEX_OPTIONS_PRIVATE_DENY_FCB;
+			private_flags |= NTCREATEX_FLAG_DENY_FCB;
 			share_mode = FILE_SHARE_NONE;
 			break;
 

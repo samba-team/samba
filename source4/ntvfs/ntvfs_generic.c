@@ -347,7 +347,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 		}
 		break;
 	case OPENX_MODE_DENY_FCB:
-		io2->generic.in.private_flags |= NTCREATEX_OPTIONS_PRIVATE_DENY_FCB;
+		io2->generic.in.private_flags |= NTCREATEX_FLAG_DENY_FCB;
 		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 		break;
 	default:
