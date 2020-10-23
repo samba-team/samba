@@ -3011,6 +3011,16 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 	/* This can never go async for now! */
 	SMB_ASSERT(!(call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC));
 
+	/* call the reply function */
+	status = call->context->iface->reply(call, call, call->r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
+			call->context->iface->name,
+			call->pkt.u.request.opnum,
+			dcerpc_errstr(call, call->fault_code));
+		return dcerpc_fault_to_nt_status(call->fault_code);
+	}
+
 	push = ndr_push_init_ctx(call);
 	if (push == NULL) {
 		return NT_STATUS_NO_MEMORY;
