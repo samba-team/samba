@@ -797,7 +797,10 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	 *
 	 * 0x7FFFFFFFFFFFFFFEULL + 0x7FFFFFFFFFFFFFFFULL
 	 * =
-	 * 0xFFFFFFFFFFFFFFFFULL
+	 * 0xFFFFFFFFFFFFFFFDULL
+	 *
+	 * or to put it another way, adding two numbers less than 1<<63 can't
+	 * ever be more than 1<<64, therefore this result can't wrap.
 	 */
 	ret = (NTTIME)pwdLastSet - (NTTIME)maxPwdAge;
 	if (ret >= 0x7FFFFFFFFFFFFFFFULL) {
