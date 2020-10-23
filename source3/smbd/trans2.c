@@ -5655,7 +5655,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case 0xFF12:/*SMB2_FILE_ALL_INFORMATION*/
+		case SMB2_FILE_ALL_INFORMATION:
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(conn, fsp, smb_fname);
