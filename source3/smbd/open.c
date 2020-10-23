@@ -1366,6 +1366,18 @@ static NTSTATUS open_file(files_struct *fsp,
 					local_flags & ~O_TRUNC,
 					unx_mode,
 					p_file_created);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			/*
+			 * POSIX client that hit a symlink. We don't want to
+			 * return NT_STATUS_STOPPED_ON_SYMLINK to avoid handling
+			 * this special error code in all callers, so we map
+			 * this to NT_STATUS_OBJECT_PATH_NOT_FOUND. Historically
+			 * the lower level functions returned status code mapped
+			 * from errno by map_nt_error_from_unix() where ELOOP is
+			 * mapped to NT_STATUS_OBJECT_PATH_NOT_FOUND.
+			 */
+			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n", smb_fname_str_dbg(smb_fname),
