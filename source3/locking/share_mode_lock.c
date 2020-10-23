@@ -1803,7 +1803,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 	e = (struct share_mode_entry) {
 		.pid = my_pid,
 		.share_access = share_access,
-		.private_options = fsp->fh->private_options,
+		.private_options = fh_get_private_options(fsp->fh),
 		.access_mask = access_mask,
 		.op_mid = mid,
 		.op_type = op_type,

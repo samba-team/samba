@@ -7781,7 +7781,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			conn->cwd_fsp,
 			smb_fname_dst);
 	if (ret == 0) {
-		uint32_t create_options = fsp->fh->private_options;
+		uint32_t create_options = fh_get_private_options(fsp->fh);
 
 		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
 			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),

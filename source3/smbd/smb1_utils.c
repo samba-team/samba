@@ -61,13 +61,13 @@ struct files_struct *fcb_or_dos_open(
 			  fsp_get_pathref_fd(fsp),
 			  fsp->vuid,
 			  fsp->file_pid,
-			  fsp->fh->private_options,
+			  fh_get_private_options(fsp->fh),
 			  fsp->access_mask);
 
 		if (fsp_get_pathref_fd(fsp) != -1 &&
 		    fsp->vuid == req->vuid &&
 		    fsp->file_pid == req->smbpid &&
-		    (fsp->fh->private_options &
+		    (fh_get_private_options(fsp->fh) &
 		     (NTCREATEX_FLAG_DENY_DOS |
 		      NTCREATEX_FLAG_DENY_FCB)) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
@@ -85,7 +85,7 @@ struct files_struct *fcb_or_dos_open(
 
 	/* quite an insane set of semantics ... */
 	if (is_executable(smb_fname->base_name) &&
-	    (fsp->fh->private_options & NTCREATEX_FLAG_DENY_DOS)) {
+	    (fh_get_private_options(fsp->fh) & NTCREATEX_FLAG_DENY_DOS)) {
 		DBG_DEBUG("file fail due to is_executable.\n");
 		return NULL;
 	}

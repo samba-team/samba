@@ -678,7 +678,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return status;
 	}
 
-	fsp->fh->private_options = e.private_options;
+	fh_set_private_options(fsp->fh, e.private_options);
 	fsp->file_id = file_id;
 	fsp->file_pid = smb1req->smbpid;
 	fsp->vuid = smb1req->vuid;

@@ -318,7 +318,7 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
 
-	if (fsp->fh->private_options &
+	if (fh_get_private_options(fsp->fh) &
 	    NTCREATEX_FLAG_DELETE_ON_CLOSE) {
 		int ret;
 
