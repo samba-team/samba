@@ -2996,7 +2996,7 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 			call->context->iface->name,
 			call->pkt.u.request.opnum,
 			dcerpc_errstr(call, call->fault_code));
-		return status;
+		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
 	status = call->context->iface->local(call, call, call->r);
@@ -3005,7 +3005,7 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 			call->context->iface->name,
 			call->pkt.u.request.opnum,
 			dcerpc_errstr(call, call->fault_code));
-		return status;
+		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
 	push = ndr_push_init_ctx(call);
@@ -3021,7 +3021,7 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 			call->context->iface->name,
 			call->pkt.u.request.opnum,
 			dcerpc_errstr(call, call->fault_code));
-		return status;
+		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
 	rep = talloc_zero(call, struct data_blob_list_item);
