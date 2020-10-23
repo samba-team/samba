@@ -1069,7 +1069,7 @@ static bool file_has_open_streams_fn(
 	struct file_has_open_streams_state *state = private_data;
 
 	if ((e->private_options &
-	     NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN) == 0) {
+	     NTCREATEX_FLAG_STREAM_BASEOPEN) == 0) {
 		return false;
 	}
 

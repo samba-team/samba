@@ -5600,7 +5600,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		}
 
-		base_privflags = NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN;
+		base_privflags = NTCREATEX_FLAG_STREAM_BASEOPEN;
 
 		/* Open the base file. */
 		status = create_file_unixpath(conn,
