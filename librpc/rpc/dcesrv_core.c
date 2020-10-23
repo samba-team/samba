@@ -3008,6 +3008,9 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
+	/* This can never go async for now! */
+	SMB_ASSERT(!(call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC));
+
 	push = ndr_push_init_ctx(call);
 	if (push == NULL) {
 		return NT_STATUS_NO_MEMORY;
