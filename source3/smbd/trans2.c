@@ -5423,11 +5423,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-		case 0xFF0F:/*SMB2_INFO_QUERY_ALL_EAS*/
+		case SMB2_FILE_FULL_EA_INFORMATION:
 		{
-			/* This is FileFullEaInformation - 0xF which maps to
-			 * 1015 (decimal) in smbd_do_setfilepathinfo. */
-
 			/* We have data_size bytes to put EA's into. */
 			size_t total_ea_len = 0;
 			struct ea_list *ea_file_list = NULL;
