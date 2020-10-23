@@ -401,17 +401,16 @@ Offset  Data			length.
 #define NTCREATEX_OPTIONS_INVALID_PARAM_MASK    (0xFF100030)
 
 /*
- * Private create options used by the ntcreatex processing code. From Samba4.
- * We reuse some ignored flags for private use. Passed in the private_flags
- * argument.
+ * Private flags used by the ntcreatex processing
+ * code. Passed in the private_flags argument.
  */
 #define NTCREATEX_FLAG_DENY_DOS			0x0001
 #define NTCREATEX_FLAG_DENY_FCB			0x0002
 
-/* Private options for printer support */
+/* Private flag for printer support */
 #define NTCREATEX_FLAG_DELETE_ON_CLOSE		0x0008
 
-/* Private option for streams support */
+/* Private flag for streams support */
 #define NTCREATEX_FLAG_STREAM_BASEOPEN		0x0010
 
 /* Flag for NT transact rename call. */
