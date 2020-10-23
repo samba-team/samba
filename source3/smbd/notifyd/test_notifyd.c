@@ -231,6 +231,86 @@ static bool test_notifyd_trigger1(struct torture_context *tctx)
 	return true;
 }
 
+struct notifyd_have_state {
+	struct server_id self;
+	bool found;
+};
+
+static bool notifyd_have_fn(
+	const char *path,
+	struct server_id server,
+	const struct notify_instance *instance,
+	void *private_data)
+{
+	struct notifyd_have_state *state = private_data;
+	state->found |= server_id_equal(&server, &state->self);
+	return true;
+}
+
+static bool notifyd_have_self(struct messaging_context *msg_ctx)
+{
+	struct notifyd_have_state state = {
+		.self = messaging_server_id(msg_ctx),
+	};
+	NTSTATUS status;
+
+	status = notify_walk(msg_ctx, notifyd_have_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	return state.found;
+}
+
+static bool test_notifyd_dbtest1(struct torture_context *tctx)
+{
+	struct tevent_context *ev = tctx->ev;
+	struct messaging_context *msg_ctx = NULL;
+	struct tevent_req *req = NULL;
+	struct server_id_db *names = NULL;
+	struct server_id notifyd;
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure fcn_wait_send adds us to the notifyd internal
+	 * database and that cancelling the fcn request removes us
+	 * again.
+	 */
+
+	lp_load_global(tctx->lp_ctx->szConfigFile);
+
+	msg_ctx = messaging_init(tctx, ev);
+	torture_assert_not_null(tctx, msg_ctx, "messaging_init");
+
+	names = messaging_names_db(msg_ctx);
+	ok = server_id_db_lookup_one(names, "notify-daemon", &notifyd);
+	torture_assert(tctx, ok, "server_id_db_lookup_one");
+
+	req = fcn_wait_send(
+		msg_ctx, ev, msg_ctx, notifyd, "/x", UINT32_MAX, UINT32_MAX);
+	torture_assert_not_null(tctx, req, "fcn_wait_send");
+
+	ok = notifyd_have_self(msg_ctx);
+	torture_assert(tctx, ok, "notifyd_have_self");
+
+	ok = tevent_req_cancel(req);
+	torture_assert(tctx, ok, "tevent_req_cancel");
+
+	ok = tevent_req_poll(req, ev);
+	torture_assert(tctx, ok, "tevent_req_poll");
+
+	status = fcn_wait_recv(req, NULL, NULL, NULL, NULL);
+	torture_assert_ntstatus_equal(
+		tctx, status, NT_STATUS_CANCELLED, "fcn_wait_recv");
+	TALLOC_FREE(req);
+
+	ok = notifyd_have_self(msg_ctx);
+	torture_assert(tctx, !ok, "tevent_req_poll");
+	TALLOC_FREE(msg_ctx);
+
+	return true;
+}
+
 NTSTATUS torture_notifyd_init(TALLOC_CTX *mem_ctx);
 NTSTATUS torture_notifyd_init(TALLOC_CTX *mem_ctx)
 {
@@ -249,6 +329,11 @@ NTSTATUS torture_notifyd_init(TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
+	tcase = torture_suite_add_simple_test(
+		suite, "dbtest1", test_notifyd_dbtest1);
+	if (tcase == NULL) {
+		goto fail;
+	}
 	suite->description = "notifyd unit tests";
 
 	ok = torture_register_suite(mem_ctx, suite);

@@ -32,7 +32,7 @@ bld.SAMBA3_BINARY('notifydd',
                   ''')
 
 TORTURE_NOTIFYD_SOURCE='test_notifyd.c'
-TORTURE_NOTIFYD_DEPS='fcn_wait'
+TORTURE_NOTIFYD_DEPS='fcn_wait notifyd_db'
 
 bld.SAMBA_MODULE('TORTURE_NOTIFYD',
 	source=TORTURE_NOTIFYD_SOURCE,
