@@ -333,7 +333,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 	case OPENX_MODE_DENY_DOS:
 		/* DENY_DOS is quite strange - it depends on the filename! */
 		io2->generic.in.private_flags |=
-			NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
+			NTCREATEX_FLAG_DENY_DOS;
 		if (is_exe_filename(fname)) {
 			io2->generic.in.share_access = 
 				NTCREATEX_SHARE_ACCESS_READ | 

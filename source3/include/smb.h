@@ -405,7 +405,7 @@ Offset  Data			length.
  * We reuse some ignored flags for private use. Passed in the private_flags
  * argument.
  */
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x0001
+#define NTCREATEX_FLAG_DENY_DOS			0x0001
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x0002
 
 /* Private options for printer support */

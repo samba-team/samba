@@ -3329,7 +3329,7 @@ static int calculate_open_access_flags(uint32_t access_mask,
 	   says. */
 
 	need_read =
-		((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
+		((private_flags & NTCREATEX_FLAG_DENY_DOS) ||
 		 access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
 				FILE_READ_EA|FILE_EXECUTE));
 

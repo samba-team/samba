@@ -184,7 +184,7 @@
  * private_flags field in ntcreatex
  * This values have different meaning for some ntvfs backends.
  */
-#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS      0x0001
+#define NTCREATEX_FLAG_DENY_DOS      0x0001
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB      0x0002
 
 

@@ -1088,7 +1088,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 		    f2->ntvfs->session_info == req->session_info &&
 		    f2->ntvfs->smbpid == req->smbpid &&
 		    (f2->handle->private_flags &
-		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
+		     (NTCREATEX_FLAG_DENY_DOS |
 		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (f2->access_mask & SEC_FILE_WRITE_DATA) &&
 		    strcasecmp_m(f2->handle->name->original_name, 
@@ -1103,7 +1103,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 
 	/* quite an insane set of semantics ... */
 	if (is_exe_filename(io->generic.in.fname) &&
-	    (f2->handle->private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+	    (f2->handle->private_flags & NTCREATEX_FLAG_DENY_DOS)) {
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
@@ -1156,7 +1156,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	struct timeval *final_timeout = NULL;
 
 	if (io->generic.in.private_flags &
-	    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+	    (NTCREATEX_FLAG_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 		/* see if we can satisfy the request using the special DENY_DOS
 		   code */
 		status = pvfs_open_deny_dos(ntvfs, req, io, f, lck);
