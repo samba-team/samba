@@ -1126,7 +1126,9 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
 	uint16_t remote_fd = (uint16_t) -1;
 	int err = 0;
 	int flags = O_RDWR | O_CREAT | O_TRUNC;
-	mode_t mode = archive_entry_filetype(entry);
+	mode_t filetype = archive_entry_filetype(entry);
+	mode_t mode = archive_entry_mode(entry);
+	time_t mtime = archive_entry_mtime(entry);
 	int rc;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	if (ctx == NULL) {
@@ -1156,7 +1158,7 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
 		goto out;
 	}
 
-	if (mode != AE_IFREG && mode != AE_IFDIR) {
+	if (filetype != AE_IFREG && filetype != AE_IFDIR) {
 		d_printf("Skipping non-dir & non-regular file %s\n", full_path);
 		goto out;
 	}
@@ -1167,7 +1169,7 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
 		goto out;
 	}
 
-	if (mode == AE_IFDIR) {
+	if (filetype == AE_IFDIR) {
 		goto out;
 	}
 
@@ -1212,6 +1214,13 @@ close_out:
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error closing remote file %s: %s\n",
 					full_path, nt_errstr(status));
+		err = 1;
+	}
+
+	status = cli_setatr(cli, full_path, mode, mtime);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Error setting attributes on remote file %s: %s\n",
+				full_path, nt_errstr(status));
 		err = 1;
 	}
 
