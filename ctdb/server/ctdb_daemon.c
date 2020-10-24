@@ -1168,9 +1168,9 @@ static void ctdb_accept_client(struct tevent_context *ev,
 
 
 /*
-  create a unix domain socket and bind it
-  return a file descriptor open on the socket 
-*/
+ * Create a unix domain socket, bind it, secure it and listen.  Return
+ * the file descriptor for the socket.
+ */
 static int ux_socket_bind(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr = { .sun_family = AF_UNIX };
@@ -1191,38 +1191,46 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 
 	ret = set_blocking(ctdb->daemon.sd, false);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__
-		       " failed to set socket non-blocking (%s)\n",
-		       strerror(errno)));
+		DBG_ERR("Failed to set socket non-blocking (%s)\n",
+			strerror(errno));
 		goto failed;
 	}
 
-	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
+	ret = bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr));
+	if (ret == -1) {
+		D_ERR("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name);
 		goto failed;
 	}
 
-	if (chown(ctdb->daemon.name, geteuid(), getegid()) != 0 ||
-	    chmod(ctdb->daemon.name, 0700) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n", ctdb->daemon.name));
+	ret = chown(ctdb->daemon.name, geteuid(), getegid());
+	if (ret != 0) {
+		D_ERR("Unable to secure (chown) ctdb socket '%s'\n",
+		      ctdb->daemon.name);
+		goto failed;
+	}
+
+	ret = chmod(ctdb->daemon.name, 0700);
+	if (ret != 0) {
+		D_ERR("Unable to secure (chmod) ctdb socket '%s'\n",
+		      ctdb->daemon.name);
 		goto failed;
 	}
 
 
-	if (listen(ctdb->daemon.sd, 100) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
+	ret = listen(ctdb->daemon.sd, 100);
+	if (ret != 0) {
+		D_ERR("Unable to listen on ctdb socket '%s'\n",
+		      ctdb->daemon.name);
 		goto failed;
 	}
 
-	DEBUG(DEBUG_NOTICE, ("Listening to ctdb socket %s\n",
-			     ctdb->daemon.name));
+	D_NOTICE("Listening to ctdb socket %s\n", ctdb->daemon.name);
 	return 0;
 
 failed:
 	close(ctdb->daemon.sd);
 	ctdb->daemon.sd = -1;
-	return -1;	
+	return -1;
 }
 
 static void initialise_node_flags (struct ctdb_context *ctdb)
