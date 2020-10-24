@@ -53,6 +53,7 @@ from samba.compat import get_string
 from samba.compat import text_type
 import ldb
 
+from samba.dnsresolver import DNSResolver
 import dns.resolver
 import dns.exception
 
@@ -259,7 +260,7 @@ def hostname_match(h1, h2):
 
 def get_resolver(d=None):
     resolv_conf = os.getenv('RESOLV_CONF', default='/etc/resolv.conf')
-    resolver = dns.resolver.Resolver(filename=resolv_conf, configure=True)
+    resolver = DNSResolver(filename=resolv_conf, configure=True)
 
     if d is not None and d.nameservers != []:
         resolver.nameservers = d.nameservers
@@ -271,7 +272,7 @@ def check_one_dns_name(name, name_type, d=None):
     if d and not d.nameservers:
         d.nameservers = resolver.nameservers
     # dns.resolver.Answer
-    return resolver.query(name, name_type)
+    return resolver.resolve(name, name_type)
 
 def check_dns_name(d):
     """check that a DNS entry exists."""
