@@ -1171,7 +1171,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
  * Create a unix domain socket, bind it, secure it and listen.  Return
  * the file descriptor for the socket.
  */
-static int ux_socket_bind(struct ctdb_context *ctdb)
+static int ux_socket_bind(struct ctdb_context *ctdb, bool test_mode_enabled)
 {
 	struct sockaddr_un addr = { .sun_family = AF_UNIX };
 	int ret;
@@ -1202,11 +1202,13 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	ret = chown(ctdb->daemon.name, geteuid(), getegid());
-	if (ret != 0) {
-		D_ERR("Unable to secure (chown) ctdb socket '%s'\n",
-		      ctdb->daemon.name);
-		goto failed;
+	if (!test_mode_enabled) {
+		ret = chown(ctdb->daemon.name, geteuid(), getegid());
+		if (ret != 0 && !test_mode_enabled) {
+			D_ERR("Unable to secure (chown) ctdb socket '%s'\n",
+			      ctdb->daemon.name);
+			goto failed;
+		}
 	}
 
 	ret = chmod(ctdb->daemon.name, 0700);
@@ -1493,7 +1495,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 	ctdb_create_pidfile(ctdb);
 
 	/* create a unix domain stream socket to listen to */
-	ret = ux_socket_bind(ctdb);
+	ret = ux_socket_bind(ctdb, test_mode_enabled);
 	if (ret != 0) {
 		D_ERR("Cannot continue.  Exiting!\n");
 		exit(10);
