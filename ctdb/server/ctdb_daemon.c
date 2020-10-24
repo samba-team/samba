@@ -1470,7 +1470,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 		      bool interactive,
 		      bool test_mode_enabled)
 {
-	int res, ret = -1;
+	int ret;
 	struct tevent_fd *fde;
 
 	/* Fork if not interactive */
@@ -1493,9 +1493,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 	ctdb_create_pidfile(ctdb);
 
 	/* create a unix domain stream socket to listen to */
-	res = ux_socket_bind(ctdb);
-	if (res!=0) {
-		DEBUG(DEBUG_ALERT,("Cannot continue.  Exiting!\n"));
+	ret = ux_socket_bind(ctdb);
+	if (ret != 0) {
+		D_ERR("Cannot continue.  Exiting!\n");
 		exit(10);
 	}
 
