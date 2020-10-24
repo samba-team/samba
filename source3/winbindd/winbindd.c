@@ -1880,8 +1880,11 @@ int main(int argc, const char **argv)
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGCHLD);
 
-	if (!interactive)
+	if (!interactive) {
 		become_daemon(Fork, no_process_group, log_stdout);
+	} else {
+		daemon_status("winbindd", "Starting process ...");
+	}
 
 	pidfile_create(lp_pid_directory(), "winbindd");
 
