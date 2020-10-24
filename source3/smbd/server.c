@@ -1889,6 +1889,8 @@ extern void build_options(bool screen);
 	if (is_daemon && !interactive) {
 		DEBUG(3, ("Becoming a daemon.\n"));
 		become_daemon(Fork, no_process_group, log_stdout);
+	} else {
+		daemon_status("smbd", "Starting process ...");
 	}
 
 #ifdef HAVE_SETPGID
@@ -2096,7 +2098,7 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot setup ep pipe", EACCES);
 	}
 
-	if (is_daemon && !interactive) {
+	if (!interactive) {
 		daemon_ready("smbd");
 	}
 

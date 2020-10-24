@@ -1009,6 +1009,8 @@ static bool open_sockets(bool isdaemon, int port)
 	if (is_daemon && !opt_interactive) {
 		DEBUG(3, ("Becoming a daemon.\n"));
 		become_daemon(Fork, no_process_group, log_stdout);
+	} else if (!opt_interactive) {
+		daemon_status("nmbd", "Starting process...");
 	}
 
 #ifdef HAVE_SETPGID
@@ -1135,7 +1137,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit_daemon( "NMBD failed to setup packet server.", EACCES);
 	}
 
-	if (is_daemon && !opt_interactive) {
+	if (!opt_interactive) {
 		daemon_ready("nmbd");
 	}
 
