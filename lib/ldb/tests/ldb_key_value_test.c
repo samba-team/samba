@@ -76,8 +76,7 @@ int ldb_kv_increase_sequence_number(struct ldb_module *module) {
 	return LDB_SUCCESS;
 }
 
-struct test_ctx {
-};
+struct test_ctx { uint8_t dummy; };
 
 static int setup(void **state)
 {
