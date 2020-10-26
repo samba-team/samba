@@ -47,13 +47,13 @@ _PUBLIC_ uint64_t generate_random_u64(void)
 	return BVAL(v, 0);
 }
 
-static struct generate_unique_u64_state {
-	uint64_t next_value;
-	int pid;
-} generate_unique_u64_state;
-
 _PUBLIC_ uint64_t generate_unique_u64(uint64_t veto_value)
 {
+	static struct generate_unique_u64_state {
+		uint64_t next_value;
+		int pid;
+	} generate_unique_u64_state;
+
 	int pid = getpid();
 
 	if (unlikely(pid != generate_unique_u64_state.pid)) {
