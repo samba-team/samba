@@ -1353,6 +1353,7 @@ for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
                                                             '--option=torture:expect_machine_account=true'] + extra_options,
                              "samba4.krb5.kdc with machine account")
 
+planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests")
 
 for env in [
         'vampire_dc',

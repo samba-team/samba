@@ -89,6 +89,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/simple_tests.py',
     'python/samba/tests/krb5/s4u_tests.py',
     'python/samba/tests/krb5/xrealm_tests.py',
+    'python/samba/tests/krb5/as_canonicalization_tests.py',
 }
 
 EXCLUDE_HELP = {
