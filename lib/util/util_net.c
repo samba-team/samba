@@ -560,8 +560,9 @@ bool is_ipaddress_v6(const char *str)
 	}
 
 	return true;
-#endif
+#else
 	return false;
+#endif
 }
 
 /**
