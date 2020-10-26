@@ -470,6 +470,7 @@ class RawKerberosTest(TestCase):
         }
         return Checksum_obj
 
+    @classmethod
     def PrincipalName_create(self, name_type, names):
         # PrincipalName   ::= SEQUENCE {
         #         name-type       [0] Int32,
