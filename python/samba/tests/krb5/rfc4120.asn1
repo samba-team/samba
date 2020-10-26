@@ -196,8 +196,8 @@ KDCOptions      ::= KerberosFlags
         -- opt-hardware-auth(11),
         -- unused12(12),
         -- unused13(13),
--- 15 is reserved for canonicalize
-        -- unused15(15),
+-- Canonicalize is used in RFC 6806
+        -- canonicalize(15),
 -- 26 was unused in 1510
         -- disable-transited-check(26),
 --
@@ -489,8 +489,8 @@ KDCOptionsValues      ::= BIT STRING { -- KerberosFlags
         opt-hardware-auth(11),
         unused12(12),
         unused13(13),
--- 15 is reserved for canonicalize
-        unused15(15),
+-- Canonicalize is used by RFC 6806
+        canonicalize(15),
 -- 26 was unused in 1510
         disable-transited-check(26),
 --
