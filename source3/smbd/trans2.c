@@ -6387,7 +6387,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		break;
 	}
 
-	if ((info_level & 0xFF00) == 0xFF00) {
+	if ((info_level & SMB2_INFO_SPECIAL) == SMB2_INFO_SPECIAL) {
 		/*
 		 * We use levels that start with 0xFF00
 		 * internally to represent SMB2 specific levels
