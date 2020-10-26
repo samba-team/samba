@@ -27,9 +27,7 @@
 
 #include "../include/ldb.h"
 
-struct test_ctx
-{
-};
+struct test_ctx { uint8_t dummy; };
 
 static int setup(void **state)
 {
