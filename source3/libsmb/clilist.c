@@ -465,7 +465,7 @@ static void cli_list_old_done(struct tevent_req *subreq)
 		 * I don't think this can wrap. received is
 		 * initialized from a 16-bit value.
 		 */
-		if (num_bytes < (received * DIR_STRUCT_SIZE + 3)) {
+		if (num_bytes < ((uint32_t)received * DIR_STRUCT_SIZE + 3)) {
 			TALLOC_FREE(subreq);
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
