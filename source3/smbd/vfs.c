@@ -794,6 +794,11 @@ int vfs_set_blocking(files_struct *fsp, bool set)
 #define FLAG_TO_SET FNDELAY
 #endif
 #endif
+
+	if (fsp->fsp_flags.is_pathref) {
+		return 0;
+	}
+
 	val = SMB_VFS_FCNTL(fsp, F_GETFL, 0);
 	if (val == -1) {
 		return -1;
