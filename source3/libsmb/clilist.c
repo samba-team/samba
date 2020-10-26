@@ -970,9 +970,11 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 }
 
 struct cli_list_state {
+	struct tevent_context *ev;
 	NTSTATUS (*recv_fn)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    struct file_info **finfo);
 	struct file_info *finfo;
+	size_t num_received;
 };
 
 static void cli_list_done(struct tevent_req *subreq);
@@ -991,6 +993,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 
 	if (smbXcli_conn_protocol(cli->conn) <= PROTOCOL_LANMAN1) {
 		subreq = cli_list_old_send(state, ev, cli, mask, attribute);
@@ -1021,22 +1024,110 @@ static void cli_list_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	tevent_req_done(req);
+	tevent_req_defer_callback(req, state->ev);
+	tevent_req_notify_callback(req);
 }
 
-NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-		       struct file_info **finfo, size_t *num_finfo)
+NTSTATUS cli_list_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct file_info **pfinfo)
 {
 	struct cli_list_state *state = tevent_req_data(
 		req, struct cli_list_state);
+	size_t num_results;
+	struct file_info *finfo = NULL;
 	NTSTATUS status;
+	bool in_progress;
 
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
+	in_progress = tevent_req_is_in_progress(req);
+
+	if (!in_progress) {
+		if (!tevent_req_is_nterror(req, &status)) {
+			status = NT_STATUS_NO_MORE_FILES;
+		}
+		goto fail;
 	}
-	*num_finfo = talloc_array_length(state->finfo);
-	*finfo = talloc_move(mem_ctx, &state->finfo);
+
+	num_results = talloc_array_length(state->finfo);
+	if (state->num_received == num_results) {
+		status = NT_STATUS_NO_MORE_FILES;
+		goto fail;
+	}
+
+	if (num_results == 1) {
+		finfo = talloc_move(mem_ctx, &state->finfo);
+	} else {
+		struct file_info *src_finfo =
+			&state->finfo[state->num_received];
+
+		finfo = talloc(mem_ctx, struct file_info);
+		if (finfo == NULL) {
+			goto nomem;
+		}
+		*finfo = *src_finfo;
+		finfo->name = talloc_move(finfo, &src_finfo->name);
+		finfo->short_name = talloc_move(finfo, &src_finfo->short_name);
+	}
+
+	state->num_received += 1;
+
+	tevent_req_defer_callback(req, state->ev);
+	tevent_req_notify_callback(req);
+
+	*pfinfo = finfo;
 	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(finfo);
+	tevent_req_received(req);
+	return status;
+}
+
+struct cli_list_sync_state {
+	const char *mask;
+	uint32_t attribute;
+	NTSTATUS (*fn)(struct file_info *finfo,
+		       const char *mask,
+		       void *private_data);
+	void *private_data;
+	NTSTATUS status;
+	bool processed_file;
+};
+
+static void cli_list_sync_cb(struct tevent_req *subreq)
+{
+	struct cli_list_sync_state *state =
+		tevent_req_callback_data_void(subreq);
+	struct file_info *finfo;
+	bool ok;
+
+	state->status = cli_list_recv(subreq, talloc_tos(), &finfo);
+	/* No TALLOC_FREE(subreq), we get here more than once */
+
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return;
+	}
+
+	ok = dir_check_ftype(finfo->attr, state->attribute);
+	if (!ok) {
+		/*
+		 * Only process if attributes match.  On SMB1 server
+		 * does this, so on SMB2 we need to emulate in the
+		 * client.
+		 *
+		 * https://bugzilla.samba.org/show_bug.cgi?id=10260
+		 */
+		return;
+	}
+
+	state->status = state->fn(finfo, state->mask, state->private_data);
+
+	state->processed_file = true;
+
+	TALLOC_FREE(finfo);
 }
 
 NTSTATUS cli_list(struct cli_state *cli,
@@ -1048,11 +1139,15 @@ NTSTATUS cli_list(struct cli_state *cli,
 		  void *private_data)
 {
 	TALLOC_CTX *frame = NULL;
+	struct cli_list_sync_state state = {
+		.mask = mask,
+		.attribute = attribute,
+		.fn = fn,
+		.private_data = private_data,
+	};
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	struct file_info *finfo;
-	size_t i, num_finfo = 0;
 	uint16_t info_level;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
@@ -1080,21 +1175,22 @@ NTSTATUS cli_list(struct cli_state *cli,
 	if (req == NULL) {
 		goto fail;
 	}
+	tevent_req_set_callback(req, cli_list_sync_cb, &state);
+
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
-	status = cli_list_recv(req, frame, &finfo, &num_finfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	status = state.status;
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
+		status = NT_STATUS_OK;
 	}
 
-	for (i=0; i<num_finfo; i++) {
-		status = fn(&finfo[i], mask, private_data);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
+	if (NT_STATUS_IS_OK(status) && !state.processed_file) {
+		status = NT_STATUS_NO_SUCH_FILE;
 	}
+
  fail:
 	TALLOC_FREE(frame);
 	return status;

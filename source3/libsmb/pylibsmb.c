@@ -1146,6 +1146,29 @@ static NTSTATUS list_helper(struct file_info *finfo,
 	return NT_STATUS_OK;
 }
 
+struct do_listing_state {
+	const char *mask;
+	NTSTATUS (*callback_fn)(
+		struct file_info *finfo,
+		const char *mask,
+		void *private_data);
+	void *private_data;
+	NTSTATUS status;
+};
+
+static void do_listing_cb(struct tevent_req *subreq)
+{
+	struct do_listing_state *state = tevent_req_callback_data_void(subreq);
+	struct file_info *finfo = NULL;
+
+	state->status = cli_list_recv(subreq, NULL, &finfo);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return;
+	}
+	state->callback_fn(finfo, state->mask, state->private_data);
+	TALLOC_FREE(finfo);
+}
+
 static NTSTATUS do_listing(struct py_cli_state *self,
 			   const char *base_dir, const char *user_mask,
 			   uint16_t attribute,
@@ -1155,9 +1178,6 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 {
 	char *mask = NULL;
 	unsigned int info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
-	struct file_info *finfos = NULL;
-	size_t i;
-	size_t num_finfos = 0;
 	NTSTATUS status;
 
 	if (user_mask == NULL) {
@@ -1172,36 +1192,37 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	dos_format(mask);
 
 	if (self->is_smb1) {
+		struct do_listing_state state = {
+			.mask = mask,
+			.callback_fn = callback_fn,
+			.private_data = priv,
+		};
 		struct tevent_req *req = NULL;
 
 		req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
 				    info_level);
+		if (req == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		tevent_req_set_callback(req, do_listing_cb, &state);
+
 		if (!py_tevent_req_wait_exc(self, req)) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		status = cli_list_recv(req, NULL, &finfos, &num_finfos);
 		TALLOC_FREE(req);
+
+		status = state.status;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
+			status = NT_STATUS_OK;
+		}
 	} else {
 		status = cli_list(self->cli, mask, attribute, callback_fn,
 				  priv);
 	}
+
+done:
 	TALLOC_FREE(mask);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* invoke the callback for the async results (SMBv1 connections) */
-	for (i = 0; i < num_finfos; i++) {
-		status = callback_fn(&finfos[i], user_mask,
-				     priv);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(finfos);
-			return status;
-		}
-	}
-
-	TALLOC_FREE(finfos);
 	return status;
 }
 
