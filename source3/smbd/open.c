@@ -280,6 +280,36 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 					   access_mask);
 }
 
+NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
+				      bool use_privs,
+				      uint32_t access_mask)
+{
+	struct security_descriptor *sd = NULL;
+	NTSTATUS status;
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+				     (SECINFO_OWNER |
+				      SECINFO_GROUP |
+				      SECINFO_DACL),
+				     talloc_tos(),
+				     &sd);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Could not get acl on %s: %s\n",
+			  fsp_str_dbg(fsp),
+			  nt_errstr(status));
+		return status;
+	}
+
+	return smbd_check_access_rights_sd(fsp->conn,
+					   fsp->fsp_name,
+					   sd,
+					   use_privs,
+					   access_mask);
+}
+
 NTSTATUS check_parent_access(struct connection_struct *conn,
 				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
