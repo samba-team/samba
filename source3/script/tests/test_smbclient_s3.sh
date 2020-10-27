@@ -404,6 +404,40 @@ EOF
     return 0
 }
 
+# Test recursive listing across msdfs links
+test_msdfs_recursive_dir()
+{
+    tmpfile=$PREFIX/smbclient.in.$$
+    error="NT_STATUS_OBJECT_PATH_NOT_FOUND"
+
+    cat > $tmpfile <<EOF
+recurse
+dir
+quit
+EOF
+
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS -m $PROTOCOL < $tmpfile 2>&1'
+    out=$(eval $cmd)
+    ret="$?"
+
+    if [ "$ret" -ne 0 ] ; then
+	echo "$out"
+	echo "failed listing msfds-share\ with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep "$error" > /dev/null 2>&1
+
+    ret="$?"
+    if [ "$ret" -eq 0 ] ; then
+	echo "$out"
+	echo "Listing \\msdfs-share recursively found $error"
+	return 1
+    fi
+
+    return 0
+}
+
 # Archive bits are correctly set on file/dir creation and rename.
 test_rename_archive_bit()
 {
@@ -1985,6 +2019,10 @@ testit "Reading a owner-only file fails" \
 
 testit "Accessing an MS-DFS link" \
    test_msdfs_link || \
+   failed=`expr $failed + 1`
+
+testit "Recursive ls across MS-DFS links" \
+   test_msdfs_recursive_dir || \
    failed=`expr $failed + 1`
 
 testit "Ensure archive bit is set correctly on file/dir rename" \
