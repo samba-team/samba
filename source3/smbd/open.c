@@ -95,79 +95,58 @@ static bool parent_override_delete(connection_struct *conn,
  Check if we have open rights.
 ****************************************************************************/
 
-NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
-				struct files_struct *dirfsp,
+static NTSTATUS smbd_check_access_rights_sd(
+				struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
+				struct security_descriptor *sd,
 				bool use_privs,
 				uint32_t access_mask)
 {
-	/* Check if we have rights to open. */
-	NTSTATUS status;
-	struct security_descriptor *sd = NULL;
 	uint32_t rejected_share_access;
 	uint32_t rejected_mask = access_mask;
 	uint32_t do_not_check_mask = 0;
-
-	SMB_ASSERT(dirfsp == conn->cwd_fsp);
+	NTSTATUS status;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
 	if (rejected_share_access) {
-		DEBUG(10, ("smbd_check_access_rights: rejected share access 0x%x "
-			"on %s (0x%x)\n",
-			(unsigned int)access_mask,
-			smb_fname_str_dbg(smb_fname),
-			(unsigned int)rejected_share_access ));
+		DBG_DEBUG("rejected share access 0x%x on %s (0x%x)\n",
+			  (unsigned int)access_mask,
+			  smb_fname_str_dbg(smb_fname),
+			  (unsigned int)rejected_share_access);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!use_privs && get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
-		DEBUG(10,("smbd_check_access_rights: root override "
-			"on %s. Granting 0x%x\n",
-			smb_fname_str_dbg(smb_fname),
-			(unsigned int)access_mask ));
+		DBG_DEBUG("root override on %s. Granting 0x%x\n",
+			  smb_fname_str_dbg(smb_fname),
+			  (unsigned int)access_mask);
 		return NT_STATUS_OK;
 	}
 
-	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
-		DEBUG(10,("smbd_check_access_rights: not checking ACL "
-			"on DELETE_ACCESS on file %s. Granting 0x%x\n",
-			smb_fname_str_dbg(smb_fname),
-			(unsigned int)access_mask ));
+	if ((access_mask & DELETE_ACCESS) &&
+	    !lp_acl_check_permissions(SNUM(conn)))
+	{
+		DBG_DEBUG("Not checking ACL on DELETE_ACCESS on file %s. "
+			  "Granting 0x%x\n",
+			  smb_fname_str_dbg(smb_fname),
+			  (unsigned int)access_mask);
 		return NT_STATUS_OK;
 	}
 
 	if (access_mask == DELETE_ACCESS &&
-			VALID_STAT(smb_fname->st) &&
-			S_ISLNK(smb_fname->st.st_ex_mode)) {
+	    VALID_STAT(smb_fname->st) &&
+	    S_ISLNK(smb_fname->st.st_ex_mode))
+	{
 		/* We can always delete a symlink. */
-		DEBUG(10,("smbd_check_access_rights: not checking ACL "
-			"on DELETE_ACCESS on symlink %s.\n",
-			smb_fname_str_dbg(smb_fname) ));
+		DBG_DEBUG("Not checking ACL on DELETE_ACCESS on symlink %s.\n",
+			  smb_fname_str_dbg(smb_fname));
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL_AT(conn,
-			dirfsp,
-			smb_fname,
-			(SECINFO_OWNER |
-				SECINFO_GROUP |
-				SECINFO_DACL),
-			talloc_tos(),
-			&sd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
-			"on %s: %s\n",
-			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status)));
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			goto access_denied;
-		}
-
-		return status;
+	if (sd == NULL) {
+		goto access_denied;
 	}
 
  	/*
@@ -199,17 +178,16 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				(access_mask & ~do_not_check_mask),
 				&rejected_mask);
 
-	DEBUG(10,("smbd_check_access_rights: file %s requesting "
-		"0x%x returning 0x%x (%s)\n",
-		smb_fname_str_dbg(smb_fname),
-		(unsigned int)access_mask,
-		(unsigned int)rejected_mask,
-		nt_errstr(status) ));
+	DBG_DEBUG("File [%s] requesting [0x%x] returning [0x%x] (%s)\n",
+		  smb_fname_str_dbg(smb_fname),
+		  (unsigned int)access_mask,
+		  (unsigned int)rejected_mask,
+		  nt_errstr(status));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("smbd_check_access_rights: acl for %s is:\n",
-				smb_fname_str_dbg(smb_fname) ));
+			DBG_DEBUG("acl for %s is:\n",
+				  smb_fname_str_dbg(smb_fname));
 			NDR_PRINT_DEBUG(security_descriptor, sd);
 		}
 	}
@@ -217,55 +195,89 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	TALLOC_FREE(sd);
 
 	if (NT_STATUS_IS_OK(status) ||
-			!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+	    !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED))
+	{
 		return status;
 	}
 
 	/* Here we know status == NT_STATUS_ACCESS_DENIED. */
 
-  access_denied:
+access_denied:
 
 	if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
-			(rejected_mask & FILE_WRITE_ATTRIBUTES) &&
-			!lp_store_dos_attributes(SNUM(conn)) &&
-			(lp_map_readonly(SNUM(conn)) ||
-			lp_map_archive(SNUM(conn)) ||
-			lp_map_hidden(SNUM(conn)) ||
-			lp_map_system(SNUM(conn)))) {
+	    (rejected_mask & FILE_WRITE_ATTRIBUTES) &&
+	    !lp_store_dos_attributes(SNUM(conn)) &&
+	    (lp_map_readonly(SNUM(conn)) ||
+	     lp_map_archive(SNUM(conn)) ||
+	     lp_map_hidden(SNUM(conn)) ||
+	     lp_map_system(SNUM(conn))))
+	{
 		rejected_mask &= ~FILE_WRITE_ATTRIBUTES;
 
-		DEBUG(10,("smbd_check_access_rights: "
-			"overrode "
-			"FILE_WRITE_ATTRIBUTES "
-			"on file %s\n",
-			smb_fname_str_dbg(smb_fname)));
+		DBG_DEBUG("overrode FILE_WRITE_ATTRIBUTES on file %s\n",
+			  smb_fname_str_dbg(smb_fname));
 	}
 
 	if (parent_override_delete(conn,
-				smb_fname,
-				access_mask,
-				rejected_mask)) {
-		/* Were we trying to do an open
-		 * for delete and didn't get DELETE
-		 * access (only) ? Check if the
-		 * directory allows DELETE_CHILD.
+				   smb_fname,
+				   access_mask,
+				   rejected_mask))
+	{
+		/*
+		 * Were we trying to do an open for delete and didn't get DELETE
+		 * access. Check if the directory allows DELETE_CHILD.
 		 * See here:
 		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
-		 * for details. */
+		 * for details.
+		 */
 
 		rejected_mask &= ~DELETE_ACCESS;
 
-		DEBUG(10,("smbd_check_access_rights: "
-			"overrode "
-			"DELETE_ACCESS on "
-			"file %s\n",
-			smb_fname_str_dbg(smb_fname)));
+		DBG_DEBUG("Overrode DELETE_ACCESS on file %s\n",
+			  smb_fname_str_dbg(smb_fname));
 	}
 
 	if (rejected_mask != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
+}
+
+NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				bool use_privs,
+				uint32_t access_mask)
+{
+	/* Check if we have rights to open. */
+	NTSTATUS status;
+	struct security_descriptor *sd = NULL;
+
+	status = SMB_VFS_GET_NT_ACL_AT(conn,
+			dirfsp,
+			smb_fname,
+			(SECINFO_OWNER |
+				SECINFO_GROUP |
+				SECINFO_DACL),
+			talloc_tos(),
+			&sd);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
+			"on %s: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status)));
+		return status;
+	}
+
+	return smbd_check_access_rights_sd(conn,
+					   smb_fname,
+					   sd,
+					   use_privs,
+					   access_mask);
 }
 
 NTSTATUS check_parent_access(struct connection_struct *conn,
