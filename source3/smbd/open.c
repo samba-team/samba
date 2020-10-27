@@ -5629,8 +5629,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				   nt_errstr(status)));
 			goto fail;
 		}
-		/* we don't need the low level fd */
-		fd_close(base_fsp);
 	}
 
 	status = file_new(req, conn, &fsp);
