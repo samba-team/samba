@@ -1497,7 +1497,8 @@ class cmd_domain_passwordsettings_set(Command):
                 account_lockout_duration = int(account_lockout_duration)
 
             if account_lockout_duration < 0 or account_lockout_duration > 99999:
-                raise CommandError("Maximum password age must be in the range of 0 to 99999!")
+                raise CommandError("Account lockout duration "
+                                   "must be in the range of 0 to 99999!")
 
             # minutes -> ticks
             if account_lockout_duration == 0:
