@@ -71,6 +71,8 @@ from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import drsuapi_connect
 from samba import remove_dc, arcfour_encrypt, string_to_byte_array
 from samba.auth_util import system_session_unix
+from samba.net_s3 import Net as s3_Net
+from samba.param import default_path
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -628,6 +630,12 @@ class cmd_domain_join(Command):
             action="store_true")
     ]
 
+    selftest_options = [
+        Option("--experimental-s4-member", action="store_true",
+               help="Perform member joins using the s4 Net join_member. "
+                    "Don't choose this unless you know what you're doing")
+    ]
+
     takes_options = []
     takes_options.extend(common_join_options)
     takes_options.extend(common_provision_join_options)
@@ -635,12 +643,15 @@ class cmd_domain_join(Command):
     if samba.is_ntvfs_fileserver_built():
         takes_options.extend(ntvfs_options)
 
+    if samba.is_selftest_enabled():
+        takes_options.extend(selftest_options)
+
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, machinepass=None,
-            use_ntvfs=False, dns_backend=None,
+            use_ntvfs=False, experimental_s4_member=False, dns_backend=None,
             quiet=False, verbose=False,
             plaintext_secrets=False,
             backend_store=None, backend_store_size=None):
@@ -656,9 +667,33 @@ class cmd_domain_join(Command):
             role = role.upper()
 
         if role is None or role == "MEMBER":
-            (join_password, sid, domain_name) = net.join_member(
-                domain, netbios_name, LIBNET_JOIN_AUTOMATIC,
-                machinepass=machinepass)
+            if experimental_s4_member:
+                (join_password, sid, domain_name) = net.join_member(
+                    domain, netbios_name, LIBNET_JOIN_AUTOMATIC,
+                    machinepass=machinepass)
+            else:
+                lp.set('realm', domain)
+                if lp.get('workgroup') == 'WORKGROUP':
+                    lp.set('workgroup', net.finddc(domain=domain,
+                        flags=(nbt.NBT_SERVER_LDAP |
+                               nbt.NBT_SERVER_DS)).domain_name)
+                lp.set('server role', 'member server')
+                smb_conf = lp.configfile if lp.configfile else default_path()
+                with tempfile.NamedTemporaryFile(delete=False,
+                        dir=os.path.dirname(smb_conf)) as f:
+                    lp.dump(False, f.name)
+                    if os.path.exists(smb_conf):
+                        mode = os.stat(smb_conf).st_mode
+                        os.chmod(f.name, mode)
+                    os.rename(f.name, smb_conf)
+                s3_lp = s3param.get_context()
+                s3_lp.load(smb_conf)
+                if machinepass is None:
+                    machinepass = samba.generate_random_machine_password(14, 40)
+                s3_net = s3_Net(creds, s3_lp, server=server)
+                (sid, domain_name) = s3_net.join_member(netbios_name,
+                                                        machinepass=machinepass,
+                                                        debug=verbose)
 
             self.errf.write("Joined domain %s (%s)\n" % (domain_name, sid))
         elif role == "DC":

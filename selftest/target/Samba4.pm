@@ -1336,7 +1336,7 @@ server min protocol = LANMAN1
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = $self->get_cmd_env_vars($ret);
-	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
+	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} --experimental-s4-member member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
 
@@ -1401,7 +1401,7 @@ sub provision_rpc_proxy($$$)
 
 	# The joind runs in the context of the rpc_proxy/member for now
 	my $cmd = $self->get_cmd_env_vars($ret);
-	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} member";
+	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} --experimental-s4-member member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
 
@@ -1481,7 +1481,7 @@ sub provision_promoted_dc($$$)
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = $self->get_cmd_env_vars($ret);
-	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} MEMBER --realm=$dcvars->{REALM}";
+	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} --experimental-s4-member MEMBER --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
 
