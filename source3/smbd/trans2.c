@@ -7905,15 +7905,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
-	if (fsp != NULL) {
-		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
-	} else {
-		status = smbd_check_access_rights(conn,
-				conn->cwd_fsp,
-				smb_fname,
-				false,
-				FILE_WRITE_ATTRIBUTES);
-	}
+	status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
