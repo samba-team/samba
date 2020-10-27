@@ -7838,15 +7838,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp != NULL) {
-		status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
-	} else {
-		status = smbd_check_access_rights(conn,
-				conn->cwd_fsp,
-				smb_fname,
-				false,
-				FILE_WRITE_ATTRIBUTES);
-	}
+	status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
