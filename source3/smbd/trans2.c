@@ -797,15 +797,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return status;
 	}
 
-	if (fsp != NULL) {
-		status = check_access_fsp(fsp, FILE_WRITE_EA);
-	} else {
-		status = smbd_check_access_rights(conn,
-				conn->cwd_fsp,
-				smb_fname,
-				false,
-				FILE_WRITE_EA);
-	}
+	status = check_access_fsp(fsp, FILE_WRITE_EA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
