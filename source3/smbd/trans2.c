@@ -9561,6 +9561,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			     char **ppdata, int total_data,
 			     unsigned int max_data_bytes)
 {
+	struct files_struct *fsp = NULL;
 	struct smb_filename *smb_dname = NULL;
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -9661,8 +9662,24 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	 * The System i QNTC IBM SMB client puts bad values here,
 	 * so ignore them. */
 
-	status = create_directory(conn, req, smb_dname);
-
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		smb_dname,				/* fname */
+		MAXIMUM_ALLOWED_ACCESS,			/* access_mask */
+		FILE_SHARE_NONE,			/* share_access */
+		FILE_CREATE,				/* create_disposition*/
+		FILE_DIRECTORY_FILE,			/* create_options */
+		FILE_ATTRIBUTE_DIRECTORY,		/* file_attributes */
+		0,					/* oplock_request */
+		NULL,					/* lease */
+		0,					/* allocation_size */
+		0,					/* private_flags */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -9670,7 +9687,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	/* Try and set any given EA. */
 	if (ea_list) {
-		status = set_ea(conn, NULL, smb_dname, ea_list);
+		status = set_ea(conn, fsp, smb_dname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
@@ -9690,6 +9707,10 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	send_trans2_replies(conn, req, NT_STATUS_OK, params, 2, *ppdata, 0, max_data_bytes);
 
  out:
+	if (fsp != NULL) {
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		fsp = NULL;
+	}
 	TALLOC_FREE(smb_dname);
 	return;
 }
