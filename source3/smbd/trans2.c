@@ -6526,16 +6526,24 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
-	struct smb_filename smb_fname_base;
+	struct files_struct *set_fsp = NULL;
 	struct timeval_buf tbuf[4];
 	uint32_t action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE
 		|FILE_NOTIFY_CHANGE_CREATION;
+	int ret;
 
 	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	if (fsp == NULL) {
+		/* A symlink */
+		return NT_STATUS_OK;
+	}
+
+	set_fsp = fsp->base_fsp == NULL ? fsp : fsp->base_fsp;
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (is_omit_timespec(&ft->create_time)) {
@@ -6586,13 +6594,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		DBG_DEBUG("setting pending modtime to %s\n",
 			  timespec_string_buf(&ft->mtime, true, &tbuf[0]));
 
-		if (fsp != NULL) {
-			if (fsp->base_fsp) {
-				set_sticky_write_time_fsp(fsp->base_fsp,
-							  ft->mtime);
-			} else {
-				set_sticky_write_time_fsp(fsp, ft->mtime);
-			}
+		if (set_fsp != NULL) {
+			set_sticky_write_time_fsp(set_fsp, ft->mtime);
 		} else {
 			set_sticky_write_time_path(
 				vfs_file_id_from_sbuf(conn, &smb_fname->st),
@@ -6602,11 +6605,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
-	/* Always call ntimes on the base, even if a stream was passed in. */
-	smb_fname_base = *smb_fname;
-	smb_fname_base.stream_name = NULL;
-
-	if(file_ntimes(conn, &smb_fname_base, ft)!=0) {
+	ret = file_ntimes(conn, set_fsp->fsp_name, ft);
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
