@@ -1776,12 +1776,9 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
-		/* Quick check for "." and ".." */
-		if (dname[0] == '.') {
-			if (!dname[1] || (dname[1] == '.' && !dname[2])) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
+		if (ISDOT(dname) || (ISDOTDOT(dname))) {
+			TALLOC_FREE(talloced);
+			continue;
 		}
 
 		if (!is_visible_file(conn,
