@@ -3414,20 +3414,13 @@ sub check_or_start_ctdb($$) {
 
 		my $cmd = "ctdb/tests/local_daemons.sh";
 		my @full_cmd = ("$cmd", "$prefix", "start", "$i");
-		# Dummy environment variables to avoid
-		# Samba3::get_env_for_process() from generating them
-		# and including UID_WRAPPER_ROOT=1, which causes
-		# "Unable to secure ctdb socket" error.
-		my $env_vars = {
-			CTDB_DUMMY => "1",
-		};
 		my $daemon_ctx = {
 			NAME => "ctdbd",
 			BINARY_PATH => $cmd,
 			FULL_CMD => [ @full_cmd ],
 			TEE_STDOUT => 1,
 			LOG_FILE => "/dev/null",
-			ENV_VARS => $env_vars,
+			ENV_VARS => {},
 		};
 
 		print "STARTING CTDBD (node ${i})\n";
