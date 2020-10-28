@@ -463,6 +463,23 @@ static PyObject *py_lp_ctx_config_file(PyObject *self, void *closure)
 		return PyUnicode_FromString(configfile);
 }
 
+static PyObject *py_lp_ctx_weak_crypto(PyObject *self, void *closure)
+{
+	enum samba_weak_crypto weak_crypto =
+		lpcfg_weak_crypto(PyLoadparmContext_AsLoadparmContext(self));
+
+	switch(weak_crypto) {
+	case SAMBA_WEAK_CRYPTO_UNKNOWN:
+		Py_RETURN_NONE;
+	case SAMBA_WEAK_CRYPTO_ALLOWED:
+		return PyUnicode_FromString("allowed");
+	case SAMBA_WEAK_CRYPTO_DISALLOWED:
+		return PyUnicode_FromString("disallowed");
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyGetSetDef py_lp_ctx_getset[] = {
 	{
 		.name = discard_const_p(char, "default_service"),
@@ -472,6 +489,11 @@ static PyGetSetDef py_lp_ctx_getset[] = {
 		.name = discard_const_p(char, "configfile"),
 		.get  = (getter)py_lp_ctx_config_file,
 		.doc  = discard_const_p(char, "Name of last config file that was loaded.")
+	},
+	{
+		.name = discard_const_p(char, "weak_crypto"),
+		.get  = (getter)py_lp_ctx_weak_crypto,
+		.doc  = discard_const_p(char, "If weak crypto is allowed.")
 	},
 	{ .name = NULL }
 };
