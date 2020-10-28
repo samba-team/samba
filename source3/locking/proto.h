@@ -141,7 +141,6 @@ struct share_mode_lock *get_share_mode_lock(
 
 bool file_has_read_lease(struct files_struct *fsp);
 
-struct db_record;
 NTSTATUS share_mode_do_locked(
 	struct file_id id,
 	void (*fn)(const uint8_t *buf,
