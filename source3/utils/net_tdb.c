@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "locking/share_mode_lock.h"
 #include "locking/proto.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "librpc/gen_ndr/ndr_open_files.h"

@@ -1,0 +1,108 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __LOCKING_SHARE_MODE_LOCK_H__
+#define __LOCKING_SHARE_MODE_LOCK_H__
+
+bool locking_init(void);
+bool locking_init_readonly(void);
+bool locking_end(void);
+
+struct share_mode_lock *get_share_mode_lock(
+	TALLOC_CTX *mem_ctx,
+	struct file_id id,
+	const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time);
+
+bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
+bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
+bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
+bool file_has_read_lease(struct files_struct *fsp);
+
+bool set_share_mode(
+	struct share_mode_lock *lck,
+	struct files_struct *fsp,
+	uid_t uid,
+	uint64_t mid,
+	uint16_t op_type,
+	uint32_t share_access,
+	uint32_t access_mask);
+bool reset_share_mode_entry(
+	struct share_mode_lock *lck,
+	struct server_id old_pid,
+	uint64_t old_share_file_id,
+	struct server_id new_pid,
+	uint64_t new_mid,
+	uint64_t new_share_file_id);
+
+bool mark_share_mode_disconnected(
+	struct share_mode_lock *lck, struct files_struct *fsp);
+
+struct share_mode_lock *fetch_share_mode_unlocked(
+	TALLOC_CTX *mem_ctx,
+	struct file_id id);
+
+struct tevent_req *fetch_share_mode_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct file_id id,
+	bool *queued);
+NTSTATUS fetch_share_mode_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct share_mode_lock **_lck);
+
+int share_entry_forall(
+	int (*fn)(struct file_id fid,
+		  const struct share_mode_data *data,
+		  const struct share_mode_entry *entry,
+		  void *private_data),
+	void *private_data);
+bool share_mode_cleanup_disconnected(
+	struct file_id fid,
+	uint64_t open_persistent_id);
+
+NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
+NTSTATUS share_mode_do_locked(
+	struct file_id id,
+	void (*fn)(const uint8_t *buf,
+		   size_t buflen,
+		   bool *modified_dependent,
+		   void *private_data),
+	void *private_data);
+int share_mode_forall(
+	int (*fn)(struct file_id fid,
+		  const struct share_mode_data *data,
+		  void *private_data),
+	void *private_data);
+bool share_mode_forall_entries(
+	struct share_mode_lock *lck,
+	bool (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data),
+	void *private_data);
+bool share_mode_have_entries(struct share_mode_lock *lck);
+
+struct tevent_req *share_mode_watch_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct file_id id,
+	struct server_id blocker);
+NTSTATUS share_mode_watch_recv(
+	struct tevent_req *req, bool *blockerdead, struct server_id *blocker);
+NTSTATUS share_mode_wakeup_waiters(struct file_id id);
+
+#endif

@@ -35,6 +35,7 @@
 #include "dbwrap/dbwrap.h"
 #include "session.h"
 #include "../lib/util/util_pw.h"
+#include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "auth.h"

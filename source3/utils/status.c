@@ -39,6 +39,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "session.h"
+#include "locking/share_mode_lock.h"
 #include "locking/proto.h"
 #include "messages.h"
 #include "librpc/gen_ndr/open_files.h"

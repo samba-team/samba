@@ -28,6 +28,7 @@
 #include "libsmb/namequery.h"
 #include "system/filesys.h"
 #include "printing.h"
+#include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "fake_file.h"

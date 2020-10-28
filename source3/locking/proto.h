@@ -124,50 +124,12 @@ NTSTATUS do_unlock(files_struct *fsp,
 		   enum brl_flavour lock_flav);
 void locking_close_file(files_struct *fsp,
 			enum file_close_type close_type);
-bool locking_init(void);
-bool locking_init_readonly(void);
-bool locking_end(void);
 char *share_mode_str(TALLOC_CTX *ctx, int num,
 		     const struct file_id *id,
 		     const struct share_mode_entry *e);
 struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 						     struct file_id id);
-struct share_mode_lock *get_share_mode_lock(
-	TALLOC_CTX *mem_ctx,
-	struct file_id id,
-	const char *servicepath,
-	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time);
 
-bool file_has_read_lease(struct files_struct *fsp);
-
-NTSTATUS share_mode_do_locked(
-	struct file_id id,
-	void (*fn)(const uint8_t *buf,
-		   size_t buflen,
-		   bool *modified_dependent,
-		   void *private_data),
-	void *private_data);
-NTSTATUS share_mode_wakeup_waiters(struct file_id id);
-bool share_mode_have_entries(struct share_mode_lock *lck);
-
-struct tevent_req *share_mode_watch_send(
-	TALLOC_CTX *mem_ctx,
-	struct tevent_context *ev,
-	struct file_id id,
-	struct server_id blocker);
-NTSTATUS share_mode_watch_recv(
-	struct tevent_req *req, bool *blockerdead, struct server_id *blocker);
-
-struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  struct file_id id);
-struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct file_id id,
-					 bool *queued);
-NTSTATUS fetch_share_mode_recv(struct tevent_req *req,
-			       TALLOC_CTX *mem_ctx,
-			       struct share_mode_lock **_lck);
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			struct file_id id,
@@ -181,28 +143,9 @@ void get_file_infos(struct file_id id,
 		    struct timespec *write_time);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool share_entry_stale_pid(struct share_mode_entry *e);
-bool set_share_mode(struct share_mode_lock *lck,
-		    struct files_struct *fsp,
-		    uid_t uid,
-		    uint64_t mid,
-		    uint16_t op_type,
-		    uint32_t share_access,
-		    uint32_t access_mask);
-bool reset_share_mode_entry(
-	struct share_mode_lock *lck,
-	struct server_id old_pid,
-	uint64_t old_share_file_id,
-	struct server_id new_pid,
-	uint64_t new_mid,
-	uint64_t new_share_file_id);
 NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key);
-bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
-bool mark_share_mode_disconnected(struct share_mode_lock *lck,
-				  struct files_struct *fsp);
-bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
-bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool get_delete_on_close_token(struct share_mode_lock *lck,
 				uint32_t name_hash,
 				const struct security_token **pp_nt_tok,
@@ -221,31 +164,11 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
 struct timespec get_share_mode_write_time(struct share_mode_lock *lck);
 bool file_has_open_streams(files_struct *fsp);
-int share_mode_forall(int (*fn)(struct file_id fid,
-				const struct share_mode_data *data,
-				void *private_data),
-		      void *private_data);
-int share_entry_forall(int (*fn)(struct file_id fid,
-				 const struct share_mode_data *data,
-				 const struct share_mode_entry *entry,
-				 void *private_data),
-		      void *private_data);
-bool share_mode_cleanup_disconnected(struct file_id id,
-				     uint64_t open_persistent_id);
 bool share_mode_forall_leases(
 	struct share_mode_lock *lck,
 	bool (*fn)(struct share_mode_entry *e,
 		   void *private_data),
 	void *private_data);
-
-bool share_mode_forall_entries(
-	struct share_mode_lock *lck,
-	bool (*fn)(struct share_mode_entry *e,
-		   bool *modified,
-		   void *private_data),
-	void *private_data);
-
-NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
 
 /* The following definitions come from locking/posix.c  */
 

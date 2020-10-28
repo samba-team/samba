@@ -28,6 +28,7 @@
 #include "lib/param/param.h"
 #include "libcli/security/security.h"
 #include "smbd/proto.h"
+#include "locking/share_mode_lock.h"
 #include "locking/proto.h"
 #include "auth.h"
 #include "client.h"

@@ -22,6 +22,7 @@
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
 #include "lib/util/server_id.h"
+#include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "messages.h"

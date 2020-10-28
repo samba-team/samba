@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 #include "system/filesys.h"
+#include "locking/share_mode_lock.h"
 #include "locking/proto.h"
 #include "lib/util/string_wrappers.h"
 
