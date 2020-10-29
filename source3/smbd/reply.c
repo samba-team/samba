@@ -7544,7 +7544,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
-			const struct smb_filename *smb_fname_dst_in,
+			struct smb_filename *smb_fname_dst_in,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
 			bool replace_if_exists)
