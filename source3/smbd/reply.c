@@ -7724,6 +7724,16 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
+	/*
+	 * Drop the pathref fsp on the destination otherwise we trip upon in in
+	 * the below check for open files check.
+	 */
+	if (smb_fname_dst_in->fsp != NULL) {
+		fd_close(smb_fname_dst_in->fsp);
+		file_free(NULL, smb_fname_dst_in->fsp);
+		SMB_ASSERT(smb_fname_dst_in->fsp == NULL);
+	}
+
 	if (dst_exists) {
 		struct file_id fileid = vfs_file_id_from_sbuf(conn,
 		    &smb_fname_dst->st);
