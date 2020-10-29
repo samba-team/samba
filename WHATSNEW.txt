@@ -1,4 +1,97 @@
                    ==============================
+                   Release Notes for Samba 4.13.1
+                          October 29, 2020
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2020-14318: Missing handle permissions check in SMB1/2/3 ChangeNotify.
+o CVE-2020-14323: Unprivileged user can crash winbind.
+o CVE-2020-14383: An authenticated user can crash the DCE/RPC DNS with easily
+		  crafted records.
+
+
+=======
+Details
+=======
+
+o  CVE-2020-14318:
+   The SMB1/2/3 protocols have a concept of "ChangeNotify", where a client can
+   request file name notification on a directory handle when a condition such as
+   "new file creation" or "file size change" or "file timestamp update" occurs.
+
+   A missing permissions check on a directory handle requesting ChangeNotify
+   meant that a client with a directory handle open only for
+   FILE_READ_ATTRIBUTES (minimal access rights) could be used to obtain change
+   notify replies from the server. These replies contain information that should
+   not be available to directory handles open for FILE_READ_ATTRIBUTE only.
+
+o  CVE-2020-14323:
+   winbind in version 3.6 and later implements a request to translate multiple
+   Windows SIDs into names in one request. This was done for performance
+   reasons: The Microsoft RPC call domain controllers offer to do this
+   translation, so it was an obvious extension to also offer this batch
+   operation on the winbind unix domain stream socket that is available to local
+   processes on the Samba server.
+
+   Due to improper input validation a hand-crafted packet can make winbind
+   perform a NULL pointer dereference and thus crash.
+
+o  CVE-2020-14383:
+   Some DNS records (such as MX and NS records) usually contain data in the
+   additional section. Samba's dnsserver RPC pipe (which is an administrative
+   interface not used in the DNS server itself) made an error in handling the
+   case where there are no records present: instead of noticing the lack of
+   records, it dereferenced uninitialised memory, causing the RPC server to
+   crash. This RPC server, which also serves protocols other than dnsserver,
+   will be restarted after a short delay, but it is easy for an authenticated
+   non-admin attacker to crash it again as soon as it returns. The Samba DNS
+   server itself will continue to operate, but many RPC services will not.
+
+For more details, please refer to the security advisories.
+
+
+Changes since 4.13.0
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14434: CVE-2020-14318: s3: smbd: Ensure change notifies can't get set
+     unless the directory handle is open for SEC_DIR_LIST.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 12795: CVE-2020-14383: Remote crash after adding NS or MX records using
+     'samba-tool'.
+   * BUG 14472: CVE-2020-14383: Remote crash after adding MX records.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14436: CVE-2020-14323: winbind: Fix invalid lookupsids DoS.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.13.0
                           September 22, 2020
                    ==============================
