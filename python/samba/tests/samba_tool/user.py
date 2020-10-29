@@ -800,6 +800,47 @@ sAMAccountName: %s
         self._check_posix_user(user)
         self.runsubcmd("user", "delete", user["name"])
 
+    # Test: samba-tool user unlock
+    # This test does not verify that the command unlocks the user, it just
+    # tests the command itself. The unlock test, which unlocks locked users,
+    # is located in the 'samba4.ldap.password_lockout' test in
+    # source4/dsdb/tests/python/password_lockout.py
+    def test_unlock(self):
+
+        # try to unlock a nonexistent user, this should fail
+        nonexistentusername = "userdoesnotexist"
+        (result, out, err) = self.runsubcmd(
+            "user", "unlock", nonexistentusername)
+        self.assertCmdFail(result, "Ensure that unlock nonexistent user fails")
+        self.assertIn("Failed to unlock user '%s'" % nonexistentusername, err)
+        self.assertIn("Unable to find user", err)
+
+        # try to unlock with insufficient permissions, this should fail
+        unprivileged_username = "unprivilegedunlockuser"
+        unlocktest_username = "usertounlock"
+
+        self.runsubcmd("user", "add", unprivileged_username, "Passw0rd")
+        self.runsubcmd("user", "add", unlocktest_username, "Passw0rd")
+
+        (result, out, err) = self.runsubcmd(
+            "user", "unlock", unlocktest_username,
+            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (unprivileged_username,
+                          "Passw0rd"))
+        self.assertCmdFail(result, "Fail with LDAP_INSUFFICIENT_ACCESS_RIGHTS")
+        self.assertIn("Failed to unlock user '%s'" % unlocktest_username, err)
+        self.assertIn("LDAP error 50 LDAP_INSUFFICIENT_ACCESS_RIGHTS", err)
+
+        self.runsubcmd("user", "delete", unprivileged_username)
+        self.runsubcmd("user", "delete", unlocktest_username)
+
+        # run unlock against test users
+        for user in self.users:
+            (result, out, err) = self.runsubcmd(
+                "user", "unlock", user["name"])
+            self.assertCmdSuccess(result, out, err, "Error running user unlock")
+            self.assertEqual(err, "", "Shouldn't be any error messages")
+
     def _randomUser(self, base={}):
         """create a user with random attribute values, you can specify base attributes"""
         user = {

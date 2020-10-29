@@ -113,6 +113,7 @@ class BasePasswordTestCase(PasswordTestCase):
             print("\033[01;32m %s \033[00m\n" % msg)
         attrs = [
             "objectSid",
+           "sAMAccountName",
            "badPwdCount",
            "badPasswordTime",
            "lastLogon",
