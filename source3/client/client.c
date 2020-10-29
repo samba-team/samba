@@ -813,8 +813,6 @@ NTSTATUS do_list(const char *mask,
 {
 	static int in_do_list = 0;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct cli_state *targetcli = NULL;
-	char *targetpath = NULL;
 	struct cli_credentials *creds =
 		get_cmdline_auth_info_creds(popt_get_cmdline_auth_info());
 	NTSTATUS ret_status = NT_STATUS_OK;
@@ -836,6 +834,8 @@ NTSTATUS do_list(const char *mask,
 
 	while (!do_list_queue_empty()) {
 		const char *head = do_list_queue_head();
+		struct cli_state *targetcli = NULL;
+		char *targetpath = NULL;
 
 		/* check for dfs */
 
