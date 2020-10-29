@@ -557,6 +557,3 @@ msgstr ""
 #: ../../libsmb/nterr.c:649
 msgid "No more files"
 msgstr ""
-=======
-msgstr "Извините, пароли не совпадают"
->>>>>>> s3: update Russian translation of pam_winbind
