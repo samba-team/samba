@@ -392,7 +392,13 @@ _PUBLIC_ void talloc_set_log_fn(void (*log_fn)(const char *message))
 }
 
 #ifdef HAVE_CONSTRUCTOR_ATTRIBUTE
-void talloc_lib_init(void) __attribute__((constructor));
+#define CONSTRUCTOR __attribute__((constructor))
+#elif defined(HAVE_PRAGMA_INIT)
+#define CONSTRUCTOR
+#pragma init (talloc_lib_init)
+#endif
+#if defined(HAVE_CONSTRUCTOR_ATTRIBUTE) || defined(HAVE_PRAGMA_INIT)
+void talloc_lib_init(void) CONSTRUCTOR;
 void talloc_lib_init(void)
 {
 	uint32_t random_value;
