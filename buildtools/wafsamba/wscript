@@ -391,7 +391,26 @@ def configure(conf):
             strict=True,
             msg='Checking for library constructor support')
 
-        # check HAVE_DESTRUCTOR_ATTRIBUTE
+    # check HAVE_PRAGMA_INIT alternatively
+    if not conf.env.HAVE_CONSTRUCTOR_ATTRIBUTE:
+	    conf.CHECK_CODE('''
+                #pragma init (test_init)
+
+                void test_init(void)
+                {
+                    return;
+                }
+
+                int main(void) {
+                    return 0;
+                }
+                ''',
+                'HAVE_PRAGMA_INIT',
+                addmain=False,
+                strict=True,
+                msg='Checking for pragma init support')
+
+    # check HAVE_DESTRUCTOR_ATTRIBUTE
     conf.CHECK_CODE('''
             void test_destructor_attribute(void) __attribute__ ((destructor));
 
@@ -408,6 +427,25 @@ def configure(conf):
             addmain=False,
             strict=True,
             msg='Checking for library destructor support')
+
+    # check HAVE_PRAGMA_FINI alternatively
+    if not conf.env.HAVE_DESTRUCTOR_ATTRIBUTE:
+	    conf.CHECK_CODE('''
+                #pragma fini (test_fini)
+
+                void test_fini(void)
+                {
+                    return;
+                }
+
+                int main(void) {
+                    return 0;
+                }
+                ''',
+                'HAVE_PRAGMA_FINI',
+                addmain=False,
+                strict=True,
+                msg='Checking for pragma fini support')
 
     conf.CHECK_CODE('''
             void test_attribute(void) __attribute__ (());
