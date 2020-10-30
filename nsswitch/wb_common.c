@@ -151,6 +151,8 @@ static void winbind_close_sock(struct winbindd_context *ctx)
 
 #ifdef HAVE_DESTRUCTOR_ATTRIBUTE
 __attribute__((destructor))
+#elif defined (HAVE_PRAGMA_FINI)
+#pragma fini (winbind_destructor)
 #endif
 static void winbind_destructor(void)
 {
