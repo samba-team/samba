@@ -7829,7 +7829,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 				uint32_t old_dosmode;
 
 				fsp->fsp_name->st = smb_fname_dst->st;
-				old_dosmode = dos_mode(conn, smb_fname_dst);
+				old_dosmode = fdos_mode(fsp);
 
 				file_set_dosmode(conn,
 					smb_fname_dst,
