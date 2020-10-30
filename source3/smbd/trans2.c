@@ -6632,6 +6632,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
+				     struct files_struct *fsp,
 				     struct smb_filename *smb_fname,
 				     uint32_t dosmode)
 {
@@ -7855,7 +7856,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
-	status = smb_set_file_dosmode(conn, smb_fname, dosmode);
+	status = smb_set_file_dosmode(conn, fsp, smb_fname, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
