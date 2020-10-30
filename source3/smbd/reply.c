@@ -7818,14 +7818,18 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		if (!fsp->fsp_flags.is_directory &&
 		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
-		    lp_store_dos_attributes(SNUM(conn)))) {
-			/* We must set the archive bit on the newly
-			   renamed file. */
-			if (SMB_VFS_FSTAT(fsp, &smb_fname_dst->st) == 0) {
-				uint32_t old_dosmode = dos_mode(conn,
-							smb_fname_dst);
+		    lp_store_dos_attributes(SNUM(conn))))
+		{
+			/*
+			 * We must set the archive bit on the newly renamed
+			 * file.
+			 */
+			ret = SMB_VFS_FSTAT(fsp, &smb_fname_dst->st);
+			if (ret == 0) {
+				uint32_t old_dosmode;
 
 				fsp->fsp_name->st = smb_fname_dst->st;
+				old_dosmode = dos_mode(conn, smb_fname_dst);
 
 				file_set_dosmode(conn,
 					smb_fname_dst,
