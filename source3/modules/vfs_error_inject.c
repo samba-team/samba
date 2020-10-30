@@ -34,7 +34,7 @@ struct unix_error_map {
 
 static int find_unix_error_from_string(const char *err_str)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(unix_error_map_array); i++) {
 		struct unix_error_map *m = &unix_error_map_array[i];
