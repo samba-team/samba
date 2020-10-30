@@ -31,8 +31,9 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	This example shows how to use idmap_nss to check the local accounts for its
-	own domain while using allocation to create new mappings for trusted domains
+    This example shows how to use idmap_nss to obtain the local account ID's
+    for its own domain (SAMBA) from NSS, whilst allocating new mappings for
+    the default domain (*) and any trusted domains.
 	</para>
 
 	<programlisting>
