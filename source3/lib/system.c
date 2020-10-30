@@ -587,7 +587,8 @@ char *sys_getwd(void)
 static bool set_process_capability(enum smbd_capability capability,
 				   bool enable)
 {
-	cap_value_t cap_vals[2] = {0};
+	/* "5" is the number of "num_cap_vals++" below */
+	cap_value_t cap_vals[5] = {0};
 	size_t num_cap_vals = 0;
 
 	cap_t cap;
@@ -613,6 +614,12 @@ static bool set_process_capability(enum smbd_capability capability,
 	}
 
 	switch (capability) {
+		/*
+		 * WARNING: If you add any #ifdef for a fresh
+		 * capability, bump up the array size in the
+		 * declaration of cap_vals[] above just to be
+		 * trivially safe to never overwrite cap_vals[].
+		 */
 		case KERNEL_OPLOCK_CAPABILITY:
 #ifdef CAP_NETWORK_MGT
 			/* IRIX has CAP_NETWORK_MGT for oplocks. */
@@ -638,8 +645,6 @@ static bool set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_DAC_OVERRIDE;
 #endif
 	}
-
-	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
 
 	if (num_cap_vals == 0) {
 		cap_free(cap);
