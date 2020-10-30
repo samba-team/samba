@@ -588,7 +588,7 @@ static bool set_process_capability(enum smbd_capability capability,
 				   bool enable)
 {
 	cap_value_t cap_vals[2] = {0};
-	int num_cap_vals = 0;
+	size_t num_cap_vals = 0;
 
 	cap_t cap;
 
