@@ -7821,9 +7821,12 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		    lp_store_dos_attributes(SNUM(conn)))) {
 			/* We must set the archive bit on the newly
 			   renamed file. */
-			if (SMB_VFS_STAT(conn, smb_fname_dst) == 0) {
+			if (SMB_VFS_FSTAT(fsp, &smb_fname_dst->st) == 0) {
 				uint32_t old_dosmode = dos_mode(conn,
 							smb_fname_dst);
+
+				fsp->fsp_name->st = smb_fname_dst->st;
+
 				file_set_dosmode(conn,
 					smb_fname_dst,
 					old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
