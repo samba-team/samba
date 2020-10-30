@@ -7807,6 +7807,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 
+		notify_rename(conn,
+			      fsp->fsp_flags.is_directory,
+			      fsp->fsp_name,
+			      smb_fname_dst);
+
+		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
+				  smb_fname_dst);
+
 		if (!fsp->fsp_flags.is_directory &&
 		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
@@ -7823,14 +7831,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 					true);
 			}
 		}
-
-		notify_rename(conn,
-			      fsp->fsp_flags.is_directory,
-			      fsp->fsp_name,
-			      smb_fname_dst);
-
-		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
-				  smb_fname_dst);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
