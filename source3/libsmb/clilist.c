@@ -922,8 +922,10 @@ static NTSTATUS cli_list_trans_recv(struct tevent_req *req,
 
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 			uint32_t attribute, int info_level,
-			NTSTATUS (*fn)(const char *mnt, struct file_info *finfo,
-				   const char *mask, void *private_data),
+			NTSTATUS (*fn)(
+				struct file_info *finfo,
+				const char *mask,
+				void *private_data),
 			void *private_data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -957,7 +959,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	}
 	num_finfo = talloc_array_length(finfo);
 	for (i=0; i<num_finfo; i++) {
-		status = fn(cli->dfs_mountpoint, &finfo[i], mask, private_data);
+		status = fn(&finfo[i], mask, private_data);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}

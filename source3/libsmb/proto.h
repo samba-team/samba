@@ -746,8 +746,10 @@ NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint32_t attribute,
 				 const char *, void *), void *state);
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 			uint32_t attribute, int info_level,
-			NTSTATUS (*fn)(const char *mnt, struct file_info *finfo,
-				   const char *mask, void *private_data),
+			NTSTATUS (*fn)(
+				struct file_info *finfo,
+				const char *mask,
+				void *private_data),
 			void *private_data);
 struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
