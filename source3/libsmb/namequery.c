@@ -2469,7 +2469,7 @@ NTSTATUS dns_lookup_list_async(TALLOC_CTX *ctx,
 		goto fail;
 	}
 
-	/* Hit all the DNS servers with asnyc lookups for all the names. */
+	/* Hit all the DNS servers with async lookups for all the names. */
 	for (i = 0; i < num_dns_names; i++) {
 		DBG_INFO("async DNS lookup A record for %s\n",
 			dns_lookup_names[i]);
