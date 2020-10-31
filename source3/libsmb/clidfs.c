@@ -262,22 +262,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
-
-static void cli_set_mntpoint(struct cli_state *cli, const char *mnt)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	char *name = clean_name(frame, mnt);
-	if (!name) {
-		TALLOC_FREE(frame);
-		return;
-	}
-	TALLOC_FREE(cli->dfs_mountpoint);
-	cli->dfs_mountpoint = talloc_strdup(cli, name);
-	TALLOC_FREE(frame);
-}
-
 /********************************************************************
  Add a new connection to the list.
  referring_cli == NULL means a new initial connection.
@@ -1104,8 +1088,6 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 		TALLOC_FREE(dfs_refs);
 		return NT_STATUS_NOT_FOUND;
 	}
-
-	cli_set_mntpoint(*targetcli, newmount);
 
 	/* Check for another dfs referral, note that we are not
 	   checking for loops here. */
