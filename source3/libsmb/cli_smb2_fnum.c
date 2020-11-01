@@ -1422,9 +1422,9 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 			if (dir_check_ftype(finfo->attr, attribute)) {
 				/*
 				 * Only process if attributes match.
-				 * On SMB1 server does this, so on
-				 * SMB2 we need to emulate in the
-				 * client.
+				 * SMB1 servers do the filtering, so
+				 * with SMB2 we need to emulate it in
+				 * the client.
 				 *
 				 * https://bugzilla.samba.org/show_bug.cgi?id=10260
 				 */
