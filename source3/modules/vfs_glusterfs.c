@@ -338,11 +338,13 @@ static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
 			"Please check the vfs_glusterfs(8) manpage for "
 			"further details.\n",
 			volume);
+		TALLOC_FREE(lines);
 		TALLOC_FREE(option);
 		TALLOC_FREE(buf);
 		return -1;
 	}
 
+	TALLOC_FREE(lines);
 	TALLOC_FREE(option);
 	TALLOC_FREE(buf);
 	return 0;
