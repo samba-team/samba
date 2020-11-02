@@ -363,6 +363,7 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 	glfs_t *fs = NULL;
 	TALLOC_CTX *tmp_ctx;
 	int ret = 0;
+	bool write_behind_pass_through_set = false;
 
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
@@ -429,6 +430,17 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
+#ifdef HAVE_GFAPI_VER_7_9
+	ret = glfs_set_xlator_option(fs, "*-write-behind", "pass-through",
+				     "true");
+	if (ret < 0) {
+		DBG_ERR("%s: Failed to set xlator option: pass-through\n",
+			volume);
+		goto done;
+	}
+	write_behind_pass_through_set = true;
+#endif
+
 	ret = glfs_set_logging(fs, logfile, loglevel);
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to set logfile %s loglevel %d\n",
@@ -443,9 +455,11 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = check_for_write_behind_translator(tmp_ctx, fs, volume);
-	if (ret < 0) {
-		goto done;
+	if (!write_behind_pass_through_set) {
+		ret = check_for_write_behind_translator(tmp_ctx, fs, volume);
+		if (ret < 0) {
+			goto done;
+		}
 	}
 
 	ret = glfs_set_preopened(volume, handle->conn->connectpath, fs);
