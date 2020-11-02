@@ -264,6 +264,90 @@ out:
 
 /* Disk Operations */
 
+static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
+					     glfs_t *fs,
+					     const char *volume)
+{
+	char *buf = NULL;
+	char **lines = NULL;
+	int numlines = 0;
+	int i;
+	char *option;
+	bool write_behind_present = false;
+	size_t newlen;
+	int ret;
+
+	ret = glfs_get_volfile(fs, NULL, 0);
+	if (ret == 0) {
+		DBG_ERR("%s: Failed to get volfile for "
+			"volume (%s): No volfile\n",
+			volume,
+			strerror(errno));
+		return -1;
+	}
+	if (ret > 0) {
+		DBG_ERR("%s: Invalid return %d for glfs_get_volfile for "
+			"volume (%s): No volfile\n",
+			volume,
+			ret,
+			strerror(errno));
+		return -1;
+	}
+
+	newlen = 0 - ret;
+
+	buf = talloc_zero_array(mem_ctx, char, newlen);
+	if (buf == NULL) {
+		return -1;
+	}
+
+	ret = glfs_get_volfile(fs, buf, newlen);
+	if (ret != newlen) {
+		TALLOC_FREE(buf);
+		DBG_ERR("%s: Failed to get volfile for volume (%s)\n",
+			volume, strerror(errno));
+		return -1;
+	}
+
+	option = talloc_asprintf(mem_ctx, "volume %s-write-behind", volume);
+	if (option == NULL) {
+		TALLOC_FREE(buf);
+		return -1;
+	}
+
+	lines = file_lines_parse(buf,
+				newlen,
+				&numlines,
+				mem_ctx);
+	if (lines == NULL || numlines <= 0) {
+		TALLOC_FREE(option);
+		TALLOC_FREE(buf);
+		return -1;
+	}
+
+	for (i=0; i < numlines; i++) {
+		if (strequal(lines[i], option)) {
+			write_behind_present = true;
+			break;
+		}
+	}
+
+	if (write_behind_present) {
+		DBG_ERR("Write behind translator is enabled for "
+			"volume (%s), refusing to connect! "
+			"Please check the vfs_glusterfs(8) manpage for "
+			"further details.\n",
+			volume);
+		TALLOC_FREE(option);
+		TALLOC_FREE(buf);
+		return -1;
+	}
+
+	TALLOC_FREE(option);
+	TALLOC_FREE(buf);
+	return 0;
+}
+
 static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 			       const char *service,
 			       const char *user)
@@ -360,6 +444,11 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to initialize volume (%s)\n",
 			  volume, strerror(errno)));
+		goto done;
+	}
+
+	ret = check_for_write_behind_translator(tmp_ctx, fs, volume);
+	if (ret < 0) {
 		goto done;
 	}
 
