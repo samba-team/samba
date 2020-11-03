@@ -1131,10 +1131,10 @@ static void share_mode_watch_done(struct tevent_req *subreq);
 struct tevent_req *share_mode_watch_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct file_id id,
+	struct share_mode_lock *lck,
 	struct server_id blocker)
 {
-	TDB_DATA key = locking_key(&id);
+	TDB_DATA key = locking_key(&lck->data->id);
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct share_mode_watch_state *state = NULL;
 

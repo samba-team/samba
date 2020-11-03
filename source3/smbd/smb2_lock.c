@@ -669,7 +669,7 @@ setup_retry:
 	DBG_DEBUG("Watching share mode lock\n");
 
 	subreq = share_mode_watch_send(
-		state, state->ev, lck->data->id, blocking_pid);
+		state, state->ev, lck, blocking_pid);
 	TALLOC_FREE(lck);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

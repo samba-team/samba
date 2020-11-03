@@ -578,7 +578,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 
 setup_retry:
 	subreq = share_mode_watch_send(
-		state, state->ev, lck->data->id, blocking_pid);
+		state, state->ev, lck, blocking_pid);
 	if (tevent_req_nomem(subreq, req)) {
 		goto done;
 	}

@@ -101,7 +101,7 @@ bool share_mode_have_entries(struct share_mode_lock *lck);
 struct tevent_req *share_mode_watch_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct file_id id,
+	struct share_mode_lock *lck,
 	struct server_id blocker);
 NTSTATUS share_mode_watch_recv(
 	struct tevent_req *req, bool *blockerdead, struct server_id *blocker);

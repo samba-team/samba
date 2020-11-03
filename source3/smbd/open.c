@@ -2772,7 +2772,7 @@ static void defer_open(struct share_mode_lock *lck,
 	watch_req = share_mode_watch_send(
 		watch_state,
 		req->sconn->ev_ctx,
-		lck->data->id,
+		lck,
 		(struct server_id){0});
 	if (watch_req == NULL) {
 		exit_server("Could not watch share mode record");
@@ -2893,7 +2893,7 @@ static bool setup_poll_open(
 		open_rec->watch_req = share_mode_watch_send(
 			open_rec,
 			req->sconn->ev_ctx,
-			lck->data->id,
+			lck,
 			(struct server_id) {0});
 		if (open_rec->watch_req == NULL) {
 			DBG_WARNING("share_mode_watch_send failed\n");

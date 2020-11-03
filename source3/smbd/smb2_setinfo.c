@@ -269,7 +269,7 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 	subreq = share_mode_watch_send(
 				rename_state,
 				ev,
-				lck->data->id,
+				lck,
 				(struct server_id){0});
 
 	if (subreq == NULL) {
