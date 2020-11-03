@@ -27,6 +27,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
+from samba.vgp_sudoers_ext import vgp_sudoers_ext
 from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
 import logging
@@ -37,6 +38,7 @@ from samba.dcerpc import preg
 from samba.ndr import ndr_pack
 import codecs
 from shutil import copyfile
+import xml.etree.ElementTree as etree
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -439,6 +441,72 @@ class GPOTests(tests.TestCase):
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
+
+    def test_vgp_sudoers(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/SUDO/SUDOERSCONFIGURATION/MANIFEST.XML')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_sudoers_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml file with test data
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.Element('policysetting')
+        stage.append(policysetting)
+        version = etree.Element('version')
+        version.text = '1'
+        policysetting.append(version)
+        data = etree.Element('data')
+        sudoers_entry = etree.Element('sudoers_entry')
+        command = etree.Element('command')
+        command.text = 'ALL'
+        sudoers_entry.append(command)
+        user = etree.Element('user')
+        user.text = 'ALL'
+        sudoers_entry.append(user)
+        principal_list = etree.Element('listelement')
+        principal = etree.Element('principal')
+        principal.text = 'fakeu'
+        principal.attrib['type'] = 'user'
+        principal_list.append(principal)
+        sudoers_entry.append(principal_list)
+        data.append(sudoers_entry)
+        policysetting.append(data)
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        data = 'fakeu ALL=(ALL) NOPASSWD: ALL'
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            sudoers = os.listdir(dname)
+            self.assertEquals(len(sudoers), 1, 'The sudoer file was not created')
+            self.assertIn(data,
+                    open(os.path.join(dname, sudoers[0]), 'r').read(),
+                    'The sudoers entry was not applied')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertEquals(len(os.listdir(dname)), 0,
+                              'Unapply failed to cleanup scripts')
+
+        # Unstage the Registry.pol file
+        unstage_file(manifest)
 
     def test_gp_inf_ext_utf(self):
         logger = logging.getLogger('gpo_tests')
