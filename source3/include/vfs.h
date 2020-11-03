@@ -331,6 +331,8 @@
  * Version 44 - Remove dirfsp arg from struct files_struct
  * Version 44 - Remove dirfsp arg to SMB_VFS_CREATE_FILE()
  * Version 44 - Make dirfsp arg to SMB_VFS_READLINKAT() const
+ * Version 44 - Add a flag 'encryption_required' to files_struct that that
+ *              prevents that encrypted connections can be downgraded.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
