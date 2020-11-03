@@ -24,7 +24,9 @@
 #include "smbd/globals.h"
 #include "smbd/scavenger.h"
 #include "locking/share_mode_lock.h"
+#include "locking/leases_db.h"
 #include "locking/proto.h"
+#include "librpc/gen_ndr/open_files.h"
 #include "lib/util/server_id.h"
 #include "lib/util/util_process.h"
 #include "lib/util/sys_rw_data.h"
@@ -463,6 +465,224 @@ struct scavenger_timer_context {
 	struct smbd_scavenger_state *state;
 	struct scavenger_message msg;
 };
+
+struct cleanup_disconnected_state {
+	struct share_mode_lock *lck;
+	uint64_t open_persistent_id;
+	size_t num_disconnected;
+	bool found_connected;
+};
+
+static bool cleanup_disconnected_lease(struct share_mode_entry *e,
+				       void *private_data)
+{
+	struct cleanup_disconnected_state *state = private_data;
+	NTSTATUS status;
+
+	status = leases_db_del(
+		&e->client_guid, &e->lease_key, &state->lck->data->id);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_del failed: %s\n",
+			  nt_errstr(status));
+	}
+
+	return false;
+}
+
+static bool share_mode_find_connected_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct cleanup_disconnected_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
+	bool disconnected;
+
+	disconnected = server_id_is_disconnected(&e->pid);
+	if (!disconnected) {
+		struct file_id_buf tmp1;
+		struct server_id_buf tmp2;
+		DBG_INFO("file (file-id='%s', servicepath='%s', "
+			 "base_name='%s%s%s') "
+			 "is used by server %s ==> do not cleanup\n",
+			 file_id_str_buf(d->id, &tmp1),
+			 d->servicepath,
+			 d->base_name,
+			 (d->stream_name == NULL)
+			 ? "" : "', stream_name='",
+			 (d->stream_name == NULL)
+			 ? "" : d->stream_name,
+			 server_id_str_buf(e->pid, &tmp2));
+		state->found_connected = true;
+		return true;
+	}
+
+	if (state->open_persistent_id != e->share_file_id) {
+		struct file_id_buf tmp;
+		DBG_INFO("entry for file "
+			 "(file-id='%s', servicepath='%s', "
+			 "base_name='%s%s%s') "
+			 "has share_file_id %"PRIu64" but expected "
+			 "%"PRIu64"==> do not cleanup\n",
+			 file_id_str_buf(d->id, &tmp),
+			 d->servicepath,
+			 d->base_name,
+			 (d->stream_name == NULL)
+			 ? "" : "', stream_name='",
+			 (d->stream_name == NULL)
+			 ? "" : d->stream_name,
+			 e->share_file_id,
+			 state->open_persistent_id);
+		state->found_connected = true;
+		return true;
+	}
+
+	state->num_disconnected += 1;
+
+	return false;
+}
+
+static bool cleanup_disconnected_share_mode_entry_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct cleanup_disconnected_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
+
+	bool disconnected;
+
+	disconnected = server_id_is_disconnected(&e->pid);
+	if (!disconnected) {
+		struct file_id_buf tmp1;
+		struct server_id_buf tmp2;
+		DBG_ERR("file (file-id='%s', servicepath='%s', "
+			"base_name='%s%s%s') "
+			"is used by server %s ==> internal error\n",
+			file_id_str_buf(d->id, &tmp1),
+			d->servicepath,
+			d->base_name,
+			(d->stream_name == NULL)
+			? "" : "', stream_name='",
+			(d->stream_name == NULL)
+			? "" : d->stream_name,
+			server_id_str_buf(e->pid, &tmp2));
+		smb_panic(__location__);
+	}
+
+	/*
+	 * Setting e->stale = true is
+	 * the indication to delete the entry.
+	 */
+	e->stale = true;
+	return false;
+}
+
+static bool share_mode_cleanup_disconnected(
+	struct file_id fid, uint64_t open_persistent_id)
+{
+	struct cleanup_disconnected_state state = {
+		.open_persistent_id = open_persistent_id
+	};
+	struct share_mode_data *data;
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct file_id_buf idbuf;
+	bool ok;
+
+	state.lck = get_existing_share_mode_lock(frame, fid);
+	if (state.lck == NULL) {
+		DBG_INFO("Could not fetch share mode entry for %s\n",
+			 file_id_str_buf(fid, &idbuf));
+		goto done;
+	}
+	data = state.lck->data;
+
+	ok = share_mode_forall_entries(
+		state.lck, share_mode_find_connected_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		goto done;
+	}
+	if (state.found_connected) {
+		DBG_DEBUG("Found connected entry\n");
+		goto done;
+	}
+
+	ok = share_mode_forall_leases(
+		state.lck, cleanup_disconnected_lease, &state);
+	if (!ok) {
+		DBG_DEBUG("failed to clean up leases associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  file_id_str_buf(fid, &idbuf),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
+		goto done;
+	}
+
+	ok = brl_cleanup_disconnected(fid, open_persistent_id);
+	if (!ok) {
+		DBG_DEBUG("failed to clean up byte range locks associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  file_id_str_buf(fid, &idbuf),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
+		goto done;
+	}
+
+	DBG_DEBUG("cleaning up %zu entries for file "
+		  "(file-id='%s', servicepath='%s', "
+		  "base_name='%s%s%s') "
+		  "from open_persistent_id %"PRIu64"\n",
+		  state.num_disconnected,
+		  file_id_str_buf(fid, &idbuf),
+		  data->servicepath,
+		  data->base_name,
+		  (data->stream_name == NULL)
+		  ? "" : "', stream_name='",
+		  (data->stream_name == NULL)
+		  ? "" : data->stream_name,
+		  open_persistent_id);
+
+	ok = share_mode_forall_entries(
+		state.lck, cleanup_disconnected_share_mode_entry_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("failed to clean up %zu entries associated "
+			  "with file (file-id='%s', servicepath='%s', "
+			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "==> do not cleanup\n",
+			  state.num_disconnected,
+			  file_id_str_buf(fid, &idbuf),
+			  data->servicepath,
+			  data->base_name,
+			  (data->stream_name == NULL)
+			  ? "" : "', stream_name='",
+			  (data->stream_name == NULL)
+			  ? "" : data->stream_name,
+			  open_persistent_id);
+		goto done;
+	}
+
+	ret = true;
+done:
+	talloc_free(frame);
+	return ret;
+}
 
 static void scavenger_timer(struct tevent_context *ev,
 			    struct tevent_timer *te,

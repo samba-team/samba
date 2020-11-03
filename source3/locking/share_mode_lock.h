@@ -71,9 +71,6 @@ int share_entry_forall(
 		  const struct share_mode_entry *entry,
 		  void *private_data),
 	void *private_data);
-bool share_mode_cleanup_disconnected(
-	struct file_id fid,
-	uint64_t open_persistent_id);
 
 NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
 NTSTATUS share_mode_do_locked(
