@@ -165,10 +165,8 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 		return "";
 	}
 
-	fname = talloc_asprintf(talloc_tos(),
-				"%s {%s}",
-				fname,
-				tstr);
+	fname = talloc_asprintf_append_buffer(
+		fname, " {%s}", tstr);
 	if (fname == NULL) {
 		return "";
 	}
