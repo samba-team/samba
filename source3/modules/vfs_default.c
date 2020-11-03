@@ -1894,7 +1894,7 @@ static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
 	}
 
-	return get_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
+	return fget_ea_dos_attribute(fsp, dosmode);
 }
 
 static NTSTATUS vfswrap_set_dos_attributes(struct vfs_handle_struct *handle,

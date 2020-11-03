@@ -290,6 +290,8 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp,
 NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 			      struct smb_filename *smb_fname,
 			      uint32_t *pattr);
+NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
+			      uint32_t *pattr);
 NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			      const struct smb_filename *smb_fname,
 			      uint32_t dosmode);

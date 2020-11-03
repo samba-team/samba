@@ -436,6 +436,43 @@ NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
+			      uint32_t *pattr)
+{
+	DATA_BLOB blob;
+	ssize_t sizeret;
+	fstring attrstr;
+	NTSTATUS status;
+
+	if (!lp_store_dos_attributes(SNUM(fsp->conn))) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/* Don't reset pattr to zero as we may already have filename-based attributes we
+	   need to preserve. */
+
+	sizeret = SMB_VFS_FGETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
+				    SAMBA_XATTR_DOS_ATTRIB,
+				    attrstr,
+				    sizeof(attrstr));
+	if (sizeret == -1) {
+		DBG_INFO("Cannot get attribute "
+			 "from EA on file %s: Error = %s\n",
+			 fsp_str_dbg(fsp), strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	blob.data = (uint8_t *)attrstr;
+	blob.length = sizeret;
+
+	status = parse_dos_attribute_blob(fsp->fsp_name, blob, pattr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Set DOS attributes in an EA.
  Also sets the create time.
