@@ -341,6 +341,15 @@ class gp_pol_ext(gp_ext):
         return ndr_unpack(preg.file, raw)
 
 
+class gp_xml_ext(gp_ext):
+    def read(self, data_file):
+        raw = open(data_file, 'rb').read()
+        try:
+            return etree.fromstring(raw.decode())
+        except UnicodeDecodeError:
+            return etree.fromstring(raw.decode('utf-16'))
+
+
 ''' Fetch the hostname of a writable DC '''
 
 
