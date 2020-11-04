@@ -24,25 +24,6 @@
 #include "librpc/gen_ndr/open_files.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
 
-static int net_tdb_locking_dump(TALLOC_CTX *mem_ctx,
-				struct share_mode_data *data)
-{
-	struct ndr_print *ndr_print;
-
-	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-	if (ndr_print == NULL) {
-		d_printf("Could not allocate memory.\n");
-		return -1;
-	}
-
-	ndr_print->print = ndr_print_printf_helper;
-	ndr_print->depth = 1;
-	ndr_print_share_mode_data(ndr_print, "SHARE_MODE_DATA", data);
-	TALLOC_FREE(ndr_print);
-
-	return 0;
-}
-
 static int net_tdb_locking(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -80,7 +61,9 @@ static int net_tdb_locking(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (argc == 2 && strequal(argv[1], "dump")) {
-		ret = net_tdb_locking_dump(mem_ctx, lock->data);
+		char *dump = share_mode_data_dump(mem_ctx, lock);
+		d_printf("%s\n", dump);
+		TALLOC_FREE(dump);
 	} else {
 		NTSTATUS status;
 		size_t num_share_modes = 0;
