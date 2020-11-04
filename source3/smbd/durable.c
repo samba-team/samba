@@ -212,8 +212,8 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		init_smb_file_time(&ft);
 
 		if (fsp->fsp_flags.write_time_forced) {
-			ft.mtime = nt_time_to_full_timespec(
-				lck->data->changed_write_time);
+			NTTIME mtime = share_mode_changed_write_time(lck);
+			ft.mtime = nt_time_to_full_timespec(mtime);
 		} else if (fsp->fsp_flags.update_write_time_on_close) {
 			if (is_omit_timespec(&fsp->close_write_time)) {
 				ft.mtime = timespec_current();
