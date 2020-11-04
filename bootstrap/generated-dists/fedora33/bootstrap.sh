@@ -74,6 +74,7 @@ dnf install -y \
     perl \
     perl-Archive-Tar \
     perl-ExtUtils-MakeMaker \
+    perl-FindBin \
     perl-JSON \
     perl-JSON-Parse \
     perl-Parse-Yapp \

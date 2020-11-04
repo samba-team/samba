@@ -150,6 +150,7 @@ PKGS = [
     ('libjson-perl', 'perl-JSON'),
     ('', 'perl-JSON-Parse'),
     ('perl-modules', ''),
+    ('', 'perl-FindBin'),
     ('', 'perl-Archive-Tar'),
     ('', 'perl-ExtUtils-MakeMaker'),
     ('', 'perl-Test-Base'),
@@ -443,6 +444,7 @@ RPM_DISTS = {
             # update perl core modules on centos
             # fix: Can't locate Archive/Tar.pm in @INC
             'perl': 'perl-core',
+            'perl-FindBin': '',
             'rpcsvc-proto-devel': '',
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
@@ -462,23 +464,25 @@ RPM_DISTS = {
             'lcov': '', # does not exist
             'perl-JSON-Parse': '', # does not exist?
             'perl-Test-Base': 'perl-Test-Simple',
+            'perl-FindBin': '',
             'policycoreutils-python': 'python3-policycoreutils',
             'liburing-devel': '', # not available yet, Add me back, once available!
-        }
-    },
-    'fedora31': {
-        'docker_image': 'fedora:31',
-        'vagrant_box': 'fedora/31-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'libsemanage-python': 'python3-libsemanage',
-            'policycoreutils-python': 'python3-policycoreutils',
         }
     },
     'fedora32': {
         'docker_image': 'fedora:32',
         'vagrant_box': 'fedora/32-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            'libsemanage-python': 'python3-libsemanage',
+            'policycoreutils-python': 'python3-policycoreutils',
+            'perl-FindBin': '',
+        }
+    },
+    'fedora33': {
+        'docker_image': 'fedora:33',
+        'vagrant_box': 'fedora/33-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
@@ -507,6 +511,7 @@ RPM_DISTS = {
             'perl-JSON-Parse': 'perl-JSON-XS',
             'perl-generators': '',
             'perl-interpreter': '',
+            'perl-FindBin': '',
             'procps-ng': 'procps',
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
@@ -538,6 +543,7 @@ RPM_DISTS = {
             'perl-JSON-Parse': 'perl-JSON-XS',
             'perl-generators': '',
             'perl-interpreter': '',
+            'perl-FindBin': '',
             'procps-ng': 'procps',
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
