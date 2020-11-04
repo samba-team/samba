@@ -430,7 +430,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		const struct wbcBlob *wbc_auth_blob = NULL;
 		const struct wbcBlob *wbc_session_key = NULL;
 		wbcErr wbc_status;
-		int i;
+		size_t i;
 		bool new_spnego = false;
 
 		params.account_name = user;
