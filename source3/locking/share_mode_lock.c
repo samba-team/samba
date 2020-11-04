@@ -2399,6 +2399,7 @@ bool reset_share_mode_entry(
 	}
 
 	d->have_share_modes = true;
+	d->modified = true;
 	ret = true;
 done:
 	TALLOC_FREE(ltdb);

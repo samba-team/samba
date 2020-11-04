@@ -928,10 +928,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	DEBUG(10, ("vfs_default_durable_reconnect: opened file '%s'\n",
 		   fsp_str_dbg(fsp)));
 
-	/*
-	 * release the sharemode lock: this writes the changes
-	 */
-	lck->data->modified = true;
 	TALLOC_FREE(lck);
 
 	*result = fsp;
