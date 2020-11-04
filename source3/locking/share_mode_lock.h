@@ -98,6 +98,8 @@ bool share_mode_forall_entries(
 	void *private_data);
 bool share_mode_have_entries(struct share_mode_lock *lck);
 
+NTTIME share_mode_changed_write_time(struct share_mode_lock *lck);
+
 struct tevent_req *share_mode_watch_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,

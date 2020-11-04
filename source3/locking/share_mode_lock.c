@@ -1121,6 +1121,11 @@ bool share_mode_have_entries(struct share_mode_lock *lck)
 	return lck->data->have_share_modes;
 }
 
+NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
+{
+	return lck->data->changed_write_time;
+}
+
 struct share_mode_watch_state {
 	bool blockerdead;
 	struct server_id blocker;
