@@ -1,4 +1,76 @@
                    ===============================
+                   Release Notes for Samba 4.11.16
+                          November 04, 2020
+                   ===============================
+
+
+This is an extraordinary release of the Samba 4.11 release series to address the
+following issues:
+
+  o BUG 14537: ctdb-common: Avoid aliasing errors during code optimization.
+  o BUG 14486: vfs_glusterfs: Avoid data corruption with the write-behind
+               translator.
+
+
+=======
+Details
+=======
+
+The GlusterFS write-behind performance translator, when used with Samba, could
+be a source of data corruption. The translator, while processing a write call,
+immediately returns success but continues writing the data to the server in the
+background. This can cause data corruption when two clients relying on Samba to
+provide data consistency are operating on the same file.
+
+The write-behind translator is enabled by default on GlusterFS.
+The vfs_glusterfs plugin will check for the presence of the translator and
+refuse to connect if detected. Please disable the write-behind translator for
+the GlusterFS volume to allow the plugin to connect to the volume.
+
+
+Changes since 4.11.15
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14486: s3: modules: vfs_glusterfs: Fix leak of char
+     **lines onto mem_ctx on return.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14486: s3-vfs_glusterfs: Refuse connection when write-behind xlator is
+     present.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14537: ctdb-common: Avoid aliasing errors during code optimization.
+
+o  Sachin Prabhu <sprabhu@redhat.com>
+   * BUG 14486: docs-xml/manpages: Add warning about write-behind translator for
+     vfs_glusterfs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.11.15
                           October 29, 2020
                    ===============================
@@ -88,8 +160,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ===============================
