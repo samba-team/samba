@@ -93,7 +93,8 @@ static int net_tdb_locking(struct net_context *c, int argc, const char **argv)
 			goto out;
 		}
 
-		d_printf("Share path:            %s\n", lock->data->servicepath);
+		d_printf("Share path:            %s\n",
+			 share_mode_servicepath(lock));
 		d_printf("Name:                  %s\n", lock->data->base_name);
 		d_printf("Number of share modes: %zu\n", num_share_modes);
 	}
