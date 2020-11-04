@@ -16,6 +16,11 @@
 #ifndef __LOCKING_SHARE_MODE_LOCK_H__
 #define __LOCKING_SHARE_MODE_LOCK_H__
 
+struct share_mode_data;
+struct share_mode_lock {
+	struct share_mode_data *data;
+};
+
 bool locking_init(void);
 bool locking_init_readonly(void);
 bool locking_end(void);

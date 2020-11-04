@@ -71,8 +71,6 @@ struct smbd_lock_element {
 	uint64_t count;
 };
 
-struct share_mode_lock {
-	struct share_mode_data *data;
-};
+struct share_mode_lock;
 
 #endif /* _LOCKING_H_ */
