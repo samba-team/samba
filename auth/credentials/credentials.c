@@ -860,10 +860,11 @@ _PUBLIC_ void cli_credentials_parse_name(struct cli_credentials *credentials, co
 		 * in order to undo the effect of
 		 * cli_credentials_guess().
 		 */
-		cli_credentials_set_principal(credentials, uname, obtained);
-		*p = 0;
 		cli_credentials_set_username(credentials, uname, obtained);
 		cli_credentials_set_domain(credentials, "", obtained);
+
+		cli_credentials_set_principal(credentials, uname, obtained);
+		*p = 0;
 		cli_credentials_set_realm(credentials, p+1, obtained);
 		return;
 	} else if ((p = strchr_m(uname,'\\'))

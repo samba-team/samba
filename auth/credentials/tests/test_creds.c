@@ -187,7 +187,7 @@ static void torture_creds_parse_string(void **state)
 	assert_string_equal(creds->domain, "");
 	assert_int_equal(creds->domain_obtained, CRED_SPECIFIED);
 
-	assert_string_equal(creds->username, "wurst");
+	assert_string_equal(creds->username, "wurst@brot.realm");
 	assert_int_equal(creds->username_obtained, CRED_SPECIFIED);
 
 	assert_string_equal(creds->principal, "wurst@brot.realm");
