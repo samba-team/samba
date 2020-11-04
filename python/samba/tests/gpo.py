@@ -32,6 +32,7 @@ from samba.vgp_symlink_ext import vgp_symlink_ext
 from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
 from samba.vgp_files_ext import vgp_files_ext
+from samba.vgp_openssh_ext import vgp_openssh_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -1034,3 +1035,69 @@ class GPOTests(tests.TestCase):
         # Unstage the manifest and source files
         unstage_file(manifest)
         unstage_file(source_file)
+
+    def test_vgp_openssh(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/SSHCFG/SSHD/MANIFEST.XML')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_openssh_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml file with test data
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.Element('policysetting')
+        stage.append(policysetting)
+        version = etree.Element('version')
+        version.text = '1'
+        policysetting.append(version)
+        data = etree.Element('data')
+        configfile = etree.Element('configfile')
+        configsection = etree.Element('configsection')
+        sectionname = etree.Element('sectionname')
+        configsection.append(sectionname)
+        kvpair = etree.Element('keyvaluepair')
+        key = etree.Element('key')
+        key.text = 'AddressFamily'
+        kvpair.append(key)
+        value = etree.Element('value')
+        value.text = 'inet6'
+        kvpair.append(value)
+        configsection.append(kvpair)
+        configfile.append(configsection)
+        data.append(configfile)
+        policysetting.append(data)
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        data = 'AddressFamily inet6'
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            conf = os.listdir(dname)
+            self.assertEquals(len(conf), 1, 'The conf file was not created')
+            gp_cfg = os.path.join(dname, conf[0])
+            self.assertIn(data, open(gp_cfg, 'r').read(),
+                    'The sshd_config entry was not applied')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            self.assertFalse(os.path.exists(gp_cfg),
+                             'Unapply failed to cleanup config')
+
+        # Unstage the Registry.pol file
+        unstage_file(manifest)
