@@ -501,39 +501,33 @@ static bool share_mode_find_connected_fn(
 
 	disconnected = server_id_is_disconnected(&e->pid);
 	if (!disconnected) {
+		char *name = share_mode_filename(talloc_tos(), state->lck);
 		struct file_id_buf tmp1;
 		struct server_id_buf tmp2;
-		DBG_INFO("file (file-id='%s', servicepath='%s', "
-			 "base_name='%s%s%s') "
+		DBG_INFO("file (file-id='%s', servicepath='%s', name='%s') "
 			 "is used by server %s ==> do not cleanup\n",
 			 file_id_str_buf(d->id, &tmp1),
 			 d->servicepath,
-			 d->base_name,
-			 (d->stream_name == NULL)
-			 ? "" : "', stream_name='",
-			 (d->stream_name == NULL)
-			 ? "" : d->stream_name,
+			 name,
 			 server_id_str_buf(e->pid, &tmp2));
+		TALLOC_FREE(name);
 		state->found_connected = true;
 		return true;
 	}
 
 	if (state->open_persistent_id != e->share_file_id) {
+		char *name = share_mode_filename(talloc_tos(), state->lck);
 		struct file_id_buf tmp;
 		DBG_INFO("entry for file "
-			 "(file-id='%s', servicepath='%s', "
-			 "base_name='%s%s%s') "
+			 "(file-id='%s', servicepath='%s', name='%s') "
 			 "has share_file_id %"PRIu64" but expected "
 			 "%"PRIu64"==> do not cleanup\n",
 			 file_id_str_buf(d->id, &tmp),
 			 d->servicepath,
-			 d->base_name,
-			 (d->stream_name == NULL)
-			 ? "" : "', stream_name='",
-			 (d->stream_name == NULL)
-			 ? "" : d->stream_name,
+			 name,
 			 e->share_file_id,
 			 state->open_persistent_id);
+		TALLOC_FREE(name);
 		state->found_connected = true;
 		return true;
 	}
@@ -555,19 +549,16 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 
 	disconnected = server_id_is_disconnected(&e->pid);
 	if (!disconnected) {
+		char *name = share_mode_filename(talloc_tos(), state->lck);
 		struct file_id_buf tmp1;
 		struct server_id_buf tmp2;
-		DBG_ERR("file (file-id='%s', servicepath='%s', "
-			"base_name='%s%s%s') "
+		DBG_ERR("file (file-id='%s', servicepath='%s', name='%s') "
 			"is used by server %s ==> internal error\n",
 			file_id_str_buf(d->id, &tmp1),
 			d->servicepath,
-			d->base_name,
-			(d->stream_name == NULL)
-			? "" : "', stream_name='",
-			(d->stream_name == NULL)
-			? "" : d->stream_name,
+			name,
 			server_id_str_buf(e->pid, &tmp2));
+		TALLOC_FREE(name);
 		smb_panic(__location__);
 	}
 
@@ -588,6 +579,7 @@ static bool share_mode_cleanup_disconnected(
 	struct share_mode_data *data;
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
+	char *name = NULL;
 	struct file_id_buf idbuf;
 	bool ok;
 
@@ -597,6 +589,7 @@ static bool share_mode_cleanup_disconnected(
 			 file_id_str_buf(fid, &idbuf));
 		goto done;
 	}
+	name = share_mode_filename(frame, state.lck);
 	data = state.lck->data;
 
 	ok = share_mode_forall_entries(
@@ -615,15 +608,11 @@ static bool share_mode_cleanup_disconnected(
 	if (!ok) {
 		DBG_DEBUG("failed to clean up leases associated "
 			  "with file (file-id='%s', servicepath='%s', "
-			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
 			  file_id_str_buf(fid, &idbuf),
 			  data->servicepath,
-			  data->base_name,
-			  (data->stream_name == NULL)
-			  ? "" : "', stream_name='",
-			  (data->stream_name == NULL)
-			  ? "" : data->stream_name,
+			  name,
 			  open_persistent_id);
 		goto done;
 	}
@@ -632,31 +621,22 @@ static bool share_mode_cleanup_disconnected(
 	if (!ok) {
 		DBG_DEBUG("failed to clean up byte range locks associated "
 			  "with file (file-id='%s', servicepath='%s', "
-			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
 			  file_id_str_buf(fid, &idbuf),
 			  data->servicepath,
-			  data->base_name,
-			  (data->stream_name == NULL)
-			  ? "" : "', stream_name='",
-			  (data->stream_name == NULL)
-			  ? "" : data->stream_name,
+			  name,
 			  open_persistent_id);
 		goto done;
 	}
 
 	DBG_DEBUG("cleaning up %zu entries for file "
-		  "(file-id='%s', servicepath='%s', "
-		  "base_name='%s%s%s') "
+		  "(file-id='%s', servicepath='%s', name='%s') "
 		  "from open_persistent_id %"PRIu64"\n",
 		  state.num_disconnected,
 		  file_id_str_buf(fid, &idbuf),
 		  data->servicepath,
-		  data->base_name,
-		  (data->stream_name == NULL)
-		  ? "" : "', stream_name='",
-		  (data->stream_name == NULL)
-		  ? "" : data->stream_name,
+		  name,
 		  open_persistent_id);
 
 	ok = share_mode_forall_entries(
@@ -664,16 +644,12 @@ static bool share_mode_cleanup_disconnected(
 	if (!ok) {
 		DBG_DEBUG("failed to clean up %zu entries associated "
 			  "with file (file-id='%s', servicepath='%s', "
-			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
+			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
 			  state.num_disconnected,
 			  file_id_str_buf(fid, &idbuf),
 			  data->servicepath,
-			  data->base_name,
-			  (data->stream_name == NULL)
-			  ? "" : "', stream_name='",
-			  (data->stream_name == NULL)
-			  ? "" : data->stream_name,
+			  name,
 			  open_persistent_id);
 		goto done;
 	}
