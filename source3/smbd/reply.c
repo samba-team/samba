@@ -1517,7 +1517,7 @@ void reply_setatr(struct smb_request *req)
 
 	ft.mtime = time_t_to_full_timespec(mtime);
 
-	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
+	status = smb_set_file_time(conn, smb_fname->fsp, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
