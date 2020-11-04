@@ -262,6 +262,9 @@ def cmd_testonly(opt):
         env.OPTIONS += " --mitkrb5 --exclude=${srcdir}/selftest/skip_mit_kdc"
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_mit_kdc"
+    else:
+        env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
+                            "knownfail_heimdal_kdc"
 
     if not CONFIG_GET(opt, 'HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X'):
         # older MIT krb5 libraries (< 1.14) don't have
