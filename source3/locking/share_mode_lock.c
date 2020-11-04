@@ -1126,6 +1126,11 @@ NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
 	return lck->data->changed_write_time;
 }
 
+const char *share_mode_servicepath(struct share_mode_lock *lck)
+{
+	return lck->data->servicepath;
+}
+
 char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = lck->data;
