@@ -340,7 +340,7 @@ static bool find_in_cluster_movable_ips(
 			.ss = *ifss,
 		},
 	};
-	int i;
+	uint32_t i;
 
 	for (i = 0; i < cluster_movable_ips->array_index; i++) {
 		struct samba_sockaddr pub_ip = {
