@@ -40,6 +40,7 @@
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "share_mode_lock.h"
+#include "share_mode_lock_private.h"
 #include "locking/proto.h"
 #include "smbd/globals.h"
 #include "dbwrap/dbwrap.h"
