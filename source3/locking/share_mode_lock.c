@@ -1126,6 +1126,21 @@ NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
 	return lck->data->changed_write_time;
 }
 
+char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
+{
+	struct share_mode_data *d = lck->data;
+	bool has_stream = (d->stream_name != NULL);
+	char *fname = NULL;
+
+	fname = talloc_asprintf(
+		mem_ctx,
+		"%s%s%s",
+		d->base_name,
+		has_stream ? ":" : "",
+		has_stream ? d->stream_name : "");
+	return fname;
+}
+
 struct share_mode_watch_state {
 	bool blockerdead;
 	struct server_id blocker;
