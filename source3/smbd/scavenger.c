@@ -496,7 +496,6 @@ static bool share_mode_find_connected_fn(
 	void *private_data)
 {
 	struct cleanup_disconnected_state *state = private_data;
-	struct share_mode_data *d = state->lck->data;
 	bool disconnected;
 
 	disconnected = server_id_is_disconnected(&e->pid);
@@ -507,7 +506,7 @@ static bool share_mode_find_connected_fn(
 		DBG_INFO("file (file-id='%s', servicepath='%s', name='%s') "
 			 "is used by server %s ==> do not cleanup\n",
 			 file_id_str_buf(state->fid, &tmp1),
-			 d->servicepath,
+			 share_mode_servicepath(state->lck),
 			 name,
 			 server_id_str_buf(e->pid, &tmp2));
 		TALLOC_FREE(name);
@@ -523,7 +522,7 @@ static bool share_mode_find_connected_fn(
 			 "has share_file_id %"PRIu64" but expected "
 			 "%"PRIu64"==> do not cleanup\n",
 			 file_id_str_buf(state->fid, &tmp),
-			 d->servicepath,
+			 share_mode_servicepath(state->lck),
 			 name,
 			 e->share_file_id,
 			 state->open_persistent_id);
@@ -543,7 +542,6 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 	void *private_data)
 {
 	struct cleanup_disconnected_state *state = private_data;
-	struct share_mode_data *d = state->lck->data;
 
 	bool disconnected;
 
@@ -555,7 +553,7 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 		DBG_ERR("file (file-id='%s', servicepath='%s', name='%s') "
 			"is used by server %s ==> internal error\n",
 			file_id_str_buf(state->fid, &tmp1),
-			d->servicepath,
+			share_mode_servicepath(state->lck),
 			name,
 			server_id_str_buf(e->pid, &tmp2));
 		TALLOC_FREE(name);
@@ -577,7 +575,6 @@ static bool share_mode_cleanup_disconnected(
 		.fid = fid,
 		.open_persistent_id = open_persistent_id
 	};
-	struct share_mode_data *data;
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *name = NULL;
@@ -591,7 +588,6 @@ static bool share_mode_cleanup_disconnected(
 		goto done;
 	}
 	name = share_mode_filename(frame, state.lck);
-	data = state.lck->data;
 
 	ok = share_mode_forall_entries(
 		state.lck, share_mode_find_connected_fn, &state);
@@ -612,7 +608,7 @@ static bool share_mode_cleanup_disconnected(
 			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
 			  file_id_str_buf(fid, &idbuf),
-			  data->servicepath,
+			  share_mode_servicepath(state.lck),
 			  name,
 			  open_persistent_id);
 		goto done;
@@ -625,7 +621,7 @@ static bool share_mode_cleanup_disconnected(
 			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
 			  file_id_str_buf(fid, &idbuf),
-			  data->servicepath,
+			  share_mode_servicepath(state.lck),
 			  name,
 			  open_persistent_id);
 		goto done;
@@ -636,7 +632,7 @@ static bool share_mode_cleanup_disconnected(
 		  "from open_persistent_id %"PRIu64"\n",
 		  state.num_disconnected,
 		  file_id_str_buf(fid, &idbuf),
-		  data->servicepath,
+		  share_mode_servicepath(state.lck),
 		  name,
 		  open_persistent_id);
 
@@ -649,7 +645,7 @@ static bool share_mode_cleanup_disconnected(
 			  "==> do not cleanup\n",
 			  state.num_disconnected,
 			  file_id_str_buf(fid, &idbuf),
-			  data->servicepath,
+			  share_mode_servicepath(state.lck),
 			  name,
 			  open_persistent_id);
 		goto done;
