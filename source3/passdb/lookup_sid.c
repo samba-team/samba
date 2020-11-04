@@ -29,6 +29,7 @@
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "auth/credentials/credentials.h"
 
 static bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
 {
@@ -78,52 +79,85 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		 const char **ret_domain, const char **ret_name,
 		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type)
 {
-	char *p;
 	const char *tmp;
 	const char *domain = NULL;
 	const char *name = NULL;
+	const char *realm = NULL;
 	uint32_t rid;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct cli_credentials *creds = NULL;
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return false;
 	}
 
-	p = strchr_m(full_name, '\\');
-
-	if (p != NULL) {
-		domain = talloc_strndup(tmp_ctx, full_name,
-					PTR_DIFF(p, full_name));
-		name = talloc_strdup(tmp_ctx, p+1);
-	} else {
-		domain = talloc_strdup(tmp_ctx, "");
-		name = talloc_strdup(tmp_ctx, full_name);
+	creds = cli_credentials_init(tmp_ctx);
+	if (creds == NULL) {
+		DEBUG(0, ("cli_credentials_init failed\n"));
+		return false;
 	}
 
-	if ((domain == NULL) || (name == NULL)) {
-		DEBUG(0, ("talloc failed\n"));
+	cli_credentials_parse_name(creds, full_name, CRED_SPECIFIED);
+	name = cli_credentials_get_username(creds);
+	domain = cli_credentials_get_domain(creds);
+	realm = cli_credentials_get_realm(creds);
+
+	/* At this point we have:
+	 * - name -- normal name or empty string
+	 * - domain -- either NULL or domain name
+	 * - realm -- either NULL or realm name
+	 *
+	 * domain and realm are exclusive to each other
+	 * the code below in lookup_name assumes domain
+	 * to be at least empty string, not NULL
+	*/
+
+	if (name == NULL) {
+		DEBUG(0, ("lookup_name with empty name, exit\n"));
 		TALLOC_FREE(tmp_ctx);
 		return false;
+	}
+
+	if ((domain == NULL) && (realm == NULL)) {
+		domain = talloc_strdup(creds, "");
 	}
 
 	DEBUG(10,("lookup_name: %s => domain=[%s], name=[%s]\n",
 		full_name, domain, name));
 	DEBUG(10, ("lookup_name: flags = 0x0%x\n", flags));
 
-	if (((flags & LOOKUP_NAME_DOMAIN) || (flags == 0)) &&
-	    strequal(domain, get_global_sam_name()))
-	{
+	/* Windows clients may send a LookupNames request with both NetBIOS
+	 * domain name- and realm-qualified user names. Thus, we need to check
+	 * both against both of the SAM domain name and realm, if set. Since
+	 * domain name and realm in the request are exclusive, test the one
+	 * that is specified.  cli_credentials_parse_string() will either set
+	 * realm or wouldn't so we can use it to detect if realm was specified.
+	 */
+	if ((flags & LOOKUP_NAME_DOMAIN) || (flags == 0)) {
+		const char *domain_name = realm ? realm : domain;
+		bool check_global_sam = false;
 
-		/* It's our own domain, lookup the name in passdb */
-		if (lookup_global_sam_name(name, flags, &rid, &type)) {
-			sid_compose(&sid, get_global_sam_sid(), rid);
-			goto ok;
+		if (domain_name[0] != '\0') {
+			check_global_sam = strequal(domain_name, get_global_sam_name());
+			if (!check_global_sam && lp_realm() != NULL) {
+				/* Only consider realm when we are DC
+				 * otherwise use lookup through winbind */
+				check_global_sam = strequal(domain_name, lp_realm()) && IS_DC;
+			}
 		}
-		TALLOC_FREE(tmp_ctx);
-		return false;
+
+		if (check_global_sam) {
+			/* It's our own domain, lookup the name in passdb */
+			if (lookup_global_sam_name(name, flags, &rid, &type)) {
+				sid_compose(&sid, get_global_sam_sid(), rid);
+				goto ok;
+			}
+			TALLOC_FREE(tmp_ctx);
+			return false;
+		}
 	}
 
 	if ((flags & LOOKUP_NAME_BUILTIN) &&
