@@ -316,12 +316,12 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if (fsp->fsp_flags.write_time_forced) {
-		struct timespec ts;
+		NTTIME mtime = share_mode_changed_write_time(lck);
+		struct timespec ts = nt_time_to_full_timespec(mtime);
 
 		DEBUG(10,("close_remove_share_mode: write time forced "
 			"for file %s\n",
 			fsp_str_dbg(fsp)));
-		ts = nt_time_to_full_timespec(lck->data->changed_write_time);
 		set_close_write_time(fsp, ts);
 	} else if (fsp->fsp_flags.update_write_time_on_close) {
 		/* Someone had a pending write. */
@@ -602,13 +602,14 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck) {
+		NTTIME share_mtime = share_mode_changed_write_time(lck);
 		/* On close if we're changing the real file time we
 		 * must update it in the open file db too. */
 		(void)set_write_time(fsp->file_id, fsp->close_write_time);
 
 		/* Close write times overwrite sticky write times
 		   so we must replace any sticky write time here. */
-		if (!null_nttime(lck->data->changed_write_time)) {
+		if (!null_nttime(share_mtime)) {
 			(void)set_sticky_write_time(fsp->file_id, fsp->close_write_time);
 		}
 		TALLOC_FREE(lck);
