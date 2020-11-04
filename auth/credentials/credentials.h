@@ -155,6 +155,7 @@ bool cli_credentials_set_password(struct cli_credentials *cred,
 				  enum credentials_obtained obtained);
 struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx);
 void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained);
+void cli_credentials_parse_name(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained);
 struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
 						  TALLOC_CTX *mem_ctx);
 struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_credentials *cred,

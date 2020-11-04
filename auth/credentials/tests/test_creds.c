@@ -197,6 +197,61 @@ static void torture_creds_parse_string(void **state)
 	assert_int_equal(creds->password_obtained, CRED_SPECIFIED);
 }
 
+static void _parse_name_as_lookup_name(TALLOC_CTX *mem_ctx,
+				      const char *full_name,
+				      const char *expected_name,
+				      const char *expected_domain,
+				      const char *expected_realm)
+{
+	struct cli_credentials *creds = NULL;
+
+	creds = cli_credentials_init(mem_ctx);
+	assert_non_null(creds);
+
+	cli_credentials_parse_name(creds, full_name, CRED_SPECIFIED);
+
+	if (expected_name == NULL) {
+		assert_null(cli_credentials_get_username(creds));
+	} else {
+		assert_string_equal(cli_credentials_get_username(creds), expected_name);
+	}
+
+	if (expected_domain == NULL) {
+		assert_null(cli_credentials_get_domain(creds));
+	} else {
+		assert_string_equal(cli_credentials_get_domain(creds), expected_domain);
+	}
+
+	if (expected_realm == NULL) {
+		assert_null(cli_credentials_get_realm(creds));
+	} else {
+		assert_string_equal(cli_credentials_get_realm(creds), expected_realm);
+	}
+
+	TALLOC_FREE(creds);
+
+}
+
+static void torture_creds_parse_name(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+
+	_parse_name_as_lookup_name(mem_ctx, "XXL\\",
+				   "", "XXL", NULL);
+
+	_parse_name_as_lookup_name(mem_ctx, "XXL\\wurst",
+				   "wurst", "XXL", NULL);
+
+	_parse_name_as_lookup_name(mem_ctx, "wurst@brot.realm",
+				   "wurst", "", "BROT.REALM");
+
+	_parse_name_as_lookup_name(mem_ctx, "wur%t",
+				   "wur%t", NULL, NULL);
+
+	_parse_name_as_lookup_name(mem_ctx, "wurst",
+				   "wurst", NULL, NULL);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -206,6 +261,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_creds_guess),
 		cmocka_unit_test(torture_creds_anon_guess),
 		cmocka_unit_test(torture_creds_parse_string),
+		cmocka_unit_test(torture_creds_parse_name),
 	};
 
 	if (argc == 2) {

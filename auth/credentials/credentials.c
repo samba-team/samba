@@ -836,6 +836,24 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		cli_credentials_set_password(credentials, p+1, obtained);
 	}
 
+	cli_credentials_parse_name(credentials, uname, obtained);
+}
+
+/**
+ * Given a string, parse it into a domain, username and realm fields
+ *
+ * The format accepted is [domain\\]user or user[@realm]
+ *
+ * @param credentials Credentials structure on which to set the components
+ * @param data the string containing the username, prefixed or suffixed with domain or realm
+ * @param obtained This enum describes how 'specified' this credential name is.
+ */
+
+_PUBLIC_ void cli_credentials_parse_name(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained)
+{
+	char *uname, *p;
+
+	uname = talloc_strdup(credentials, data);
 	if ((p = strchr_m(uname,'@'))) {
 		/*
 		 * We also need to set username and domain
