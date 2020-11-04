@@ -1146,6 +1146,36 @@ char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
 	return fname;
 }
 
+char *share_mode_data_dump(
+	TALLOC_CTX *mem_ctx, struct share_mode_lock *lck)
+{
+	struct ndr_print *p = talloc(mem_ctx, struct ndr_print);
+	char *ret = NULL;
+
+	if (p == NULL) {
+		return NULL;
+	}
+
+	*p = (struct ndr_print) {
+		.print = ndr_print_string_helper,
+		.depth = 1,
+		.private_data = talloc_strdup(mem_ctx, ""),
+	};
+
+	if (p->private_data == NULL) {
+		TALLOC_FREE(p);
+		return NULL;
+	}
+
+	ndr_print_share_mode_data(p, "SHARE_MODE_DATA", lck->data);
+
+	ret = p->private_data;
+
+	TALLOC_FREE(p);
+
+	return ret;
+}
+
 struct share_mode_watch_state {
 	bool blockerdead;
 	struct server_id blocker;
