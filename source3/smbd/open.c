@@ -2278,7 +2278,6 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 				    const struct smb2_lease *lease,
 				    uint32_t granted)
 {
-	struct share_mode_data *d = lck->data;
 	NTSTATUS status;
 
 	fsp->lease = talloc_zero(fsp->conn->sconn, struct fsp_lease);
@@ -2308,7 +2307,21 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
-	d->modified = true;
+	/*
+	 * We used to set lck->data->modified=true here without
+	 * actually modifying lck->data, triggering a needless
+	 * writeback of lck->data.
+	 *
+	 * Apart from that writeback, setting modified=true has the
+	 * effect of triggering all waiters for this file to
+	 * retry. This only makes sense if any blocking condition
+	 * (i.e. waiting for a lease to be downgraded or removed) is
+	 * gone. This routine here only adds a lease, so it will never
+	 * free up resources that blocked waiters can now claim. So
+	 * that second effect also does not matter in this
+	 * routine. Thus setting lck->data->modified=true does not
+	 * need to be done here.
+	 */
 
 	return NT_STATUS_OK;
 }
