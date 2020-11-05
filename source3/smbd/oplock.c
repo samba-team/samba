@@ -1282,7 +1282,6 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		.sconn = fsp->conn->sconn, .id = fsp->file_id,
 	};
 	struct share_mode_lock *lck = NULL;
-	struct share_mode_data *d = NULL;
 	bool ok, has_read_lease;
 
 	/*
@@ -1321,7 +1320,6 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 			    file_id_str_buf(state.id, &idbuf));
 		return;
 	}
-	d = lck->data;
 
 	/*
 	 * Walk leases and oplocks separately: We have to send one break per
@@ -1345,8 +1343,10 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		 * Lazy update here. It might be that the read lease
 		 * has gone in the meantime.
 		 */
-		d->flags &= ~SHARE_MODE_LEASE_READ;
-		d->modified = true;
+		uint32_t acc, sh, ls;
+		share_mode_flags_get(lck, &acc, &sh, &ls);
+		ls &= ~SHARE_MODE_LEASE_READ;
+		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 
 	TALLOC_FREE(lck);

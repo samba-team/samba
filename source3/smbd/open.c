@@ -1666,96 +1666,17 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
 	return state.ret;
 }
 
-static void share_mode_flags_get(
-	uint16_t flags,
-	uint32_t *access_mask,
-	uint32_t *share_mode,
-	uint32_t *lease_type)
-{
-	if (access_mask != NULL) {
-		*access_mask =
-			((flags & SHARE_MODE_ACCESS_READ) ?
-			 FILE_READ_DATA : 0) |
-			((flags & SHARE_MODE_ACCESS_WRITE) ?
-			 FILE_WRITE_DATA : 0) |
-			((flags & SHARE_MODE_ACCESS_DELETE) ?
-			 DELETE_ACCESS : 0);
-	}
-	if (share_mode != NULL) {
-		*share_mode =
-			((flags & SHARE_MODE_SHARE_READ) ?
-			 FILE_SHARE_READ : 0) |
-			((flags & SHARE_MODE_SHARE_WRITE) ?
-			 FILE_SHARE_WRITE : 0) |
-			((flags & SHARE_MODE_SHARE_DELETE) ?
-			 FILE_SHARE_DELETE : 0);
-	}
-	if (lease_type != NULL) {
-		*lease_type =
-			((flags & SHARE_MODE_LEASE_READ) ?
-			 SMB2_LEASE_READ : 0) |
-			((flags & SHARE_MODE_LEASE_WRITE) ?
-			 SMB2_LEASE_WRITE : 0) |
-			((flags & SHARE_MODE_LEASE_HANDLE) ?
-			 SMB2_LEASE_HANDLE : 0);
-	}
-}
-
-static uint16_t share_mode_flags_set(
-	uint16_t flags,
-	uint32_t access_mask,
-	uint32_t share_mode,
-	uint32_t lease_type)
-{
-	if (access_mask != UINT32_MAX) {
-		flags &= ~(SHARE_MODE_ACCESS_READ|
-			   SHARE_MODE_ACCESS_WRITE|
-			   SHARE_MODE_ACCESS_DELETE);
-		flags |= (access_mask & (FILE_READ_DATA | FILE_EXECUTE)) ?
-			SHARE_MODE_ACCESS_READ : 0;
-		flags |= (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ?
-			SHARE_MODE_ACCESS_WRITE : 0;
-		flags |= (access_mask & (DELETE_ACCESS)) ?
-			SHARE_MODE_ACCESS_DELETE : 0;
-	}
-	if (share_mode != UINT32_MAX) {
-		flags &= ~(SHARE_MODE_SHARE_READ|
-			   SHARE_MODE_SHARE_WRITE|
-			   SHARE_MODE_SHARE_DELETE);
-		flags |= (share_mode & FILE_SHARE_READ) ?
-			SHARE_MODE_SHARE_READ : 0;
-		flags |= (share_mode & FILE_SHARE_WRITE) ?
-			SHARE_MODE_SHARE_WRITE : 0;
-		flags |= (share_mode & FILE_SHARE_DELETE) ?
-			SHARE_MODE_SHARE_DELETE : 0;
-	}
-	if (lease_type != UINT32_MAX) {
-		flags &= ~(SHARE_MODE_LEASE_READ|
-			   SHARE_MODE_LEASE_WRITE|
-			   SHARE_MODE_LEASE_HANDLE);
-		flags |= (lease_type & SMB2_LEASE_READ) ?
-			SHARE_MODE_LEASE_READ : 0;
-		flags |= (lease_type & SMB2_LEASE_WRITE) ?
-			SHARE_MODE_LEASE_WRITE : 0;
-		flags |= (lease_type & SMB2_LEASE_HANDLE) ?
-			SHARE_MODE_LEASE_HANDLE : 0;
-	}
-
-	return flags;
-}
-
-static uint16_t share_mode_flags_restrict(
-	uint16_t flags,
+static void share_mode_flags_restrict(
+	struct share_mode_lock *lck,
 	uint32_t access_mask,
 	uint32_t share_mode,
 	uint32_t lease_type)
 {
 	uint32_t existing_access_mask, existing_share_mode;
 	uint32_t existing_lease_type;
-	uint16_t ret;
 
 	share_mode_flags_get(
-		flags,
+		lck,
 		&existing_access_mask,
 		&existing_share_mode,
 		&existing_lease_type);
@@ -1766,12 +1687,12 @@ static uint16_t share_mode_flags_restrict(
 	}
 	existing_lease_type |= lease_type;
 
-	ret = share_mode_flags_set(
-		flags,
+	share_mode_flags_set(
+		lck,
 		existing_access_mask,
 		existing_share_mode,
-		existing_lease_type);
-	return ret;
+		existing_lease_type,
+		NULL);
 }
 
 /****************************************************************************
@@ -1832,10 +1753,9 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32_t access_mask,
 				uint32_t share_access)
 {
-	struct share_mode_data *d = lck->data;
 	struct open_mode_check_state state;
-	uint16_t new_flags;
 	bool ok, conflict, have_share_entries;
+	bool modified = false;
 
 	if (is_oplock_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
@@ -1870,7 +1790,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 
 	share_mode_flags_get(
-		d->flags, &state.access_mask, &state.share_access, NULL);
+		lck, &state.access_mask, &state.share_access, NULL);
 
 	conflict = share_conflict(
 		state.access_mask,
@@ -1899,18 +1819,19 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	new_flags = share_mode_flags_set(
-		0, state.access_mask, state.share_access, state.lease_type);
-	if (new_flags == d->flags) {
+	share_mode_flags_set(
+		lck,
+		state.access_mask,
+		state.share_access,
+		state.lease_type,
+		&modified);
+	if (!modified) {
 		/*
 		 * We only end up here if we had a sharing violation
 		 * from d->flags and have recalculated it.
 		 */
 		return NT_STATUS_SHARING_VIOLATION;
 	}
-
-	d->flags = new_flags;
-	d->modified = true;
 
 	conflict = share_conflict(
 		state.access_mask,
@@ -2656,10 +2577,11 @@ grant:
 		}
 	}
 
-	if ((granted & SMB2_LEASE_READ) &&
-	    ((lck->data->flags & SHARE_MODE_LEASE_READ) == 0)) {
-		lck->data->flags |= SHARE_MODE_LEASE_READ;
-		lck->data->modified = true;
+	if (granted & SMB2_LEASE_READ) {
+		uint32_t acc, sh, ls;
+		share_mode_flags_get(lck, &acc, &sh, &ls);
+		ls |= SHARE_MODE_LEASE_READ;
+		share_mode_flags_set(lck, acc, sh, ls, NULL);
 	}
 
 	DBG_DEBUG("oplock type 0x%x on file %s\n",
@@ -3914,16 +3836,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return status;
 	}
 
-	{
-		struct share_mode_data *d = lck->data;
-		uint16_t new_flags = share_mode_flags_restrict(
-			d->flags, access_mask, share_access, UINT32_MAX);
-
-		if (new_flags != d->flags) {
-			d->flags = new_flags;
-			d->modified = true;
-		}
-	}
+	share_mode_flags_restrict(lck, access_mask, share_access, 0);
 
 	ok = set_share_mode(
 		lck,
@@ -4600,16 +4513,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	{
-		struct share_mode_data *d = lck->data;
-		uint16_t new_flags = share_mode_flags_restrict(
-			d->flags, access_mask, share_access, UINT32_MAX);
-
-		if (new_flags != d->flags) {
-			d->flags = new_flags;
-			d->modified = true;
-		}
-	}
+	share_mode_flags_restrict(lck, access_mask, share_access, 0);
 
 	ok = set_share_mode(
 		lck,

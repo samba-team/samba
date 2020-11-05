@@ -1176,6 +1176,85 @@ char *share_mode_data_dump(
 	return ret;
 }
 
+void share_mode_flags_get(
+	struct share_mode_lock *lck,
+	uint32_t *access_mask,
+	uint32_t *share_mode,
+	uint32_t *lease_type)
+{
+	uint16_t flags = lck->data->flags;
+
+	if (access_mask != NULL) {
+		*access_mask =
+			((flags & SHARE_MODE_ACCESS_READ) ?
+			 FILE_READ_DATA : 0) |
+			((flags & SHARE_MODE_ACCESS_WRITE) ?
+			 FILE_WRITE_DATA : 0) |
+			((flags & SHARE_MODE_ACCESS_DELETE) ?
+			 DELETE_ACCESS : 0);
+	}
+	if (share_mode != NULL) {
+		*share_mode =
+			((flags & SHARE_MODE_SHARE_READ) ?
+			 FILE_SHARE_READ : 0) |
+			((flags & SHARE_MODE_SHARE_WRITE) ?
+			 FILE_SHARE_WRITE : 0) |
+			((flags & SHARE_MODE_SHARE_DELETE) ?
+			 FILE_SHARE_DELETE : 0);
+	}
+	if (lease_type != NULL) {
+		*lease_type =
+			((flags & SHARE_MODE_LEASE_READ) ?
+			 SMB2_LEASE_READ : 0) |
+			((flags & SHARE_MODE_LEASE_WRITE) ?
+			 SMB2_LEASE_WRITE : 0) |
+			((flags & SHARE_MODE_LEASE_HANDLE) ?
+			 SMB2_LEASE_HANDLE : 0);
+	}
+}
+
+void share_mode_flags_set(
+	struct share_mode_lock *lck,
+	uint32_t access_mask,
+	uint32_t share_mode,
+	uint32_t lease_type,
+	bool *modified)
+{
+	struct share_mode_data *d = lck->data;
+	uint16_t flags = 0;
+
+	flags |= (access_mask & (FILE_READ_DATA | FILE_EXECUTE)) ?
+		SHARE_MODE_ACCESS_READ : 0;
+	flags |= (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ?
+		SHARE_MODE_ACCESS_WRITE : 0;
+	flags |= (access_mask & (DELETE_ACCESS)) ?
+		SHARE_MODE_ACCESS_DELETE : 0;
+
+	flags |= (share_mode & FILE_SHARE_READ) ?
+		SHARE_MODE_SHARE_READ : 0;
+	flags |= (share_mode & FILE_SHARE_WRITE) ?
+		SHARE_MODE_SHARE_WRITE : 0;
+	flags |= (share_mode & FILE_SHARE_DELETE) ?
+		SHARE_MODE_SHARE_DELETE : 0;
+
+	flags |= (lease_type & SMB2_LEASE_READ) ?
+		SHARE_MODE_LEASE_READ : 0;
+	flags |= (lease_type & SMB2_LEASE_WRITE) ?
+		SHARE_MODE_LEASE_WRITE : 0;
+	flags |= (lease_type & SMB2_LEASE_HANDLE) ?
+		SHARE_MODE_LEASE_HANDLE : 0;
+
+	if (d->flags == flags) {
+		return;
+	}
+
+	if (modified != NULL) {
+		*modified = true;
+	}
+	d->flags = flags;
+	d->modified = true;
+}
+
 struct share_mode_watch_state {
 	bool blockerdead;
 	struct server_id blocker;

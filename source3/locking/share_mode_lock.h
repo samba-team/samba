@@ -104,6 +104,18 @@ char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck);
 char *share_mode_data_dump(
 	TALLOC_CTX *mem_ctx, struct share_mode_lock *lck);
 
+void share_mode_flags_get(
+	struct share_mode_lock *lck,
+	uint32_t *access_mask,
+	uint32_t *share_mode,
+	uint32_t *lease_type);
+void share_mode_flags_set(
+	struct share_mode_lock *lck,
+	uint32_t access_mask,
+	uint32_t share_mode,
+	uint32_t lease_type,
+	bool *modified);
+
 struct tevent_req *share_mode_watch_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
