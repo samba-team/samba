@@ -180,6 +180,11 @@
                 Please disable the write-behind translator for the GlusterFS
                 volume to allow the plugin to connect to the volume.
 	</para>
+        <para>
+                With GlusterFS versions >= 9, we silently bypass write-behind
+                translator during intial connect and failure is avoided.
+        </para>
+
 </refsect1>
 
 
