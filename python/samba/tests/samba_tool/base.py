@@ -105,8 +105,11 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
     def assertCmdSuccess(self, exit, out, err, msg=""):
-        self.assertIsNone(exit, msg="exit[%s] stdout[%s] stderr[%s]: %s" % (
-                          exit, out, err, msg))
+        # Make sure we allow '\n]\n' in stdout and stderr
+        # without causing problems with the subunit protocol.
+        # We just inject a space...
+        msg = "exit[%s] stdout[%s] stderr[%s]: %s" % (exit, out, err, msg)
+        self.assertIsNone(exit, msg=msg.replace("\n]\n", "\n] \n"))
 
     def assertCmdFail(self, val, msg=""):
         self.assertIsNotNone(val, msg)
