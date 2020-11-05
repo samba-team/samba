@@ -1880,7 +1880,8 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(p->session_info->unix_token->uid), NULL,
+		if (!user_ok_token(p->session_info->unix_info->unix_name,
+				   p->session_info->info->domain_name,
 				   p->session_info->security_token, snum) ||
 		    !W_ERROR_IS_OK(print_access_check(p->session_info,
 						      p->msg_ctx,
