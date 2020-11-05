@@ -85,8 +85,7 @@ def parse_results(msg_ops, statistics, fh):
                     if l == "":
                         break
                     msg_ops.control_msg(l)
-                    if l[-2:] == "]\n":
-                        reason += l[:-2]
+                    if l == "]\n":
                         terminated = True
                         break
                     else:
