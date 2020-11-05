@@ -3390,7 +3390,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct smb_filename *parent_dir_fname = NULL;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
-	struct file_id id;
 	bool setup_poll = false;
 	bool ok;
 
@@ -3868,9 +3867,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Nadav Danieli <nadavd@exanet.com>. JRA.
 	 */
 
-	id = fsp->file_id;
-
-	lck = get_share_mode_lock(talloc_tos(), id,
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  smb_fname, &old_write_time);
 
