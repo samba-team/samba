@@ -92,6 +92,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/as_canonicalization_tests.py',
     'python/samba/tests/krb5/compatability_tests.py',
     'python/samba/tests/krb5/rfc4120_constants.py',
+    'python/samba/tests/krb5/kdc_tests.py',
 }
 
 EXCLUDE_HELP = {
