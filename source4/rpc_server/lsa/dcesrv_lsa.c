@@ -892,7 +892,7 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 		goto out;
 	}
 
-	rc = gnutls_cipher_encrypt(cipher_hnd,
+	rc = gnutls_cipher_decrypt(cipher_hnd,
 				   auth_blob->data,
 				   auth_blob->length);
 	gnutls_cipher_deinit(cipher_hnd);
