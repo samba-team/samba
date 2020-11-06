@@ -50,7 +50,7 @@ subunit_fail_test () {
   timestamp
   printf 'failure: %s [\n' "$1"
   cat -
-  echo "]"
+  printf '\n]\n'
 }
 
 
@@ -62,7 +62,7 @@ subunit_error_test () {
   timestamp
   printf 'error: %s [\n' "$1"
   cat -
-  echo "]"
+  printf '\n]\n'
 }
 
 subunit_skip_test () {
@@ -72,7 +72,7 @@ subunit_skip_test () {
   # makes it convenient to write in scripts (using <<END syntax.
   printf 'skip: %s [\n' "$1"
   cat -
-  echo "]"
+  printf '\n]\n'
 }
 
 testit () {
