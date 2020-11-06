@@ -67,6 +67,7 @@ from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.netcmd.common import attr_default
 from samba.common import get_bytes
 from configparser import ConfigParser
+from io import StringIO
 
 
 def gpo_flags_string(value):
@@ -1999,6 +2000,12 @@ PasswordComplexity      Password must meet complexity requirements
 
 class cmd_list_security(Command):
     """List Samba Security Group Policy from the sysvol
+
+This command lists security settings from the sysvol that will be applied to winbind clients.
+These settings only apply to the ADDC.
+
+Example:
+samba-tool gpo manage security list {31B2F340-016D-11D2-945F-00C04FB984F9}
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -2017,7 +2024,47 @@ class cmd_list_security(Command):
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        inf_file = '\\'.join([realm.lower(), 'Policies', gpo,
+            'MACHINE\\Microsoft\\Windows NT\\SecEdit\\GptTmpl.inf'])
+        try:
+            inf_data = ConfigParser(interpolation=None)
+            inf_data.optionxform=str
+            raw = conn.loadfile(inf_file)
+            try:
+                inf_data.readfp(StringIO(raw.decode()))
+            except UnicodeDecodeError:
+                inf_data.readfp(StringIO(raw.decode('utf-16')))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
+                return # The file doesn't exist, so there is nothing to list
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
+
+        for section in inf_data.sections():
+            if section not in ['Kerberos Policy', 'System Access']:
+                continue
+            for key, value in inf_data.items(section):
+                self.outf.write('%s = %s\n' % (key, value))
 
 class cmd_security(SuperCommand):
     """Manage Security Group Policy Objects"""
