@@ -2142,7 +2142,7 @@ main() {
                  and conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
                  and conf.CHECK_LIB('dbus-1', shlib=True))):
         conf.fatal("vfs_snapper is enabled but prerequisite dbus-1 package not "
-                   "found. Use --with-shared-modules=!vfs_snapper to disable "
+                   "found. Use --with-shared-modules='!vfs_snapper' to disable "
                    "vfs_snapper support.")
 
     conf.SAMBA_CONFIG_H('include/config.h')
