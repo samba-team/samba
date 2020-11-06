@@ -1882,6 +1882,35 @@ class cmd_sudoers(SuperCommand):
 
 class cmd_set_security(Command):
     """Set Samba Security Group Policy to the sysvol
+
+This command sets a security setting to the sysvol for applying to winbind
+clients. Not providing a value will unset the policy.
+These settings only apply to the ADDC.
+
+Example:
+samba-tool gpo manage security set {31B2F340-016D-11D2-945F-00C04FB984F9} MaxTicketAge 10
+
+Possible policies:
+MaxTicketAge            Maximum lifetime for user ticket
+                        Defined in hours
+
+MaxServiceAge           Maximum lifetime for service ticket
+                        Defined in minutes
+
+MaxRenewAge             Maximum lifetime for user ticket renewal
+                        Defined in minutes
+
+MinimumPasswordAge      Minimum password age
+                        Defined in days
+
+MaximumPasswordAge      Maximum password age
+                        Defined in days
+
+MinimumPasswordLength   Minimum password length
+                        Defined in characters
+
+PasswordComplexity      Password must meet complexity requirements
+                        1 is Enabled, 0 is Disabled
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -1901,7 +1930,71 @@ class cmd_set_security(Command):
 
     def run(self, gpo, policy, value=None, H=None, sambaopts=None,
             credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        inf_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+            'MACHINE\\Microsoft\\Windows NT\\SecEdit'])
+        inf_file = '\\'.join([inf_dir, 'GptTmpl.inf'])
+        try:
+            inf_data = ConfigParser(interpolation=None)
+            inf_data.optionxform=str
+            raw = conn.loadfile(inf_file)
+            try:
+                inf_data.readfp(StringIO(raw.decode()))
+            except UnicodeDecodeError:
+                inf_data.readfp(StringIO(raw.decode('utf-16')))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] not in [0xC0000033, 0xC000003A]:
+                raise
+
+        section_map = { 'MaxTicketAge' : 'Kerberos Policy',
+                        'MaxServiceAge' : 'Kerberos Policy',
+                        'MaxRenewAge' : 'Kerberos Policy',
+                        'MinimumPasswordAge' : 'System Access',
+                        'MaximumPasswordAge' : 'System Access',
+                        'MinimumPasswordLength' : 'System Access',
+                        'PasswordComplexity' : 'System Access'
+                    }
+
+        section = section_map[policy]
+        if not inf_data.has_section(section):
+            inf_data.add_section(section)
+        if value is not None:
+            inf_data.set(section, policy, value)
+        else:
+            inf_data.remove_option(section, policy)
+
+        out = StringIO()
+        inf_data.write(out)
+        try:
+            create_directory_hier(conn, inf_dir)
+            conn.savefile(inf_file, get_bytes(out.getvalue()))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
 
 class cmd_security(SuperCommand):
     """Manage Security Group Policy Objects"""
