@@ -36,9 +36,10 @@ depending on ldap or mysql. To build as much parts of samba as a plugin, run:
 </para>
 
 <para>
-The option <literal>--with-shared-modules</literal> is maintained to support specific modules such as
-idmap_XXX and vfs_XXX. For example, <literal>--with-shared-modules=idmap_ad</literal>. Use of this parameter
-to the <command>configure</command> command as not been supported in official releases.
+The configure option <literal>--with-shared-modules</literal> is provided to
+enable or disable specific modules such as idmap_XXX and vfs_XXX. For example,
+<literal>--with-shared-modules=idmap_ad</literal>. Disabled modules are
+prefixed with a '!'. E.g. <literal>--with-shared-modules='!idmap_ad'</literal>.
 </para>
 
 <para>
