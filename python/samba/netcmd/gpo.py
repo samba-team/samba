@@ -37,7 +37,8 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 from samba import dsdb
 from samba.dcerpc import security
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_unpack, ndr_pack
+from samba.dcerpc import preg
 import samba.security
 import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
@@ -1666,6 +1667,11 @@ class cmd_admxload(Command):
 
 class cmd_list_sudoers(Command):
     """List Samba Sudoers Group Policy from the sysvol
+
+This command lists sudo rules from the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -1684,7 +1690,40 @@ class cmd_list_sudoers(Command):
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
+                                'MACHINE\\Registry.pol'])
+        try:
+            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
+                return # The file doesn't exist, so there is nothing to list
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
+
+        keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        for entry in pol_data.entries:
+            if get_bytes(entry.keyname) == keyname:
+                self.outf.write('%s\n' % entry.data)
 
 class cmd_sudoers(SuperCommand):
     """Manage Sudoers Group Policy Objects"""
