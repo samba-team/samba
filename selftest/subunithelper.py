@@ -98,7 +98,8 @@ def parse_results(msg_ops, statistics, fh):
 
                 if not terminated:
                     statistics['TESTS_ERROR'] += 1
-                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"reason (%s) interrupted" % result))
+                    msg_ops.addError(subunit.RemotedTestCase(testname),
+                                     subunit.RemoteError(u"result (%s) reason (%s) interrupted" % (result, reason)))
                     return 1
             else:
                 reason = None
