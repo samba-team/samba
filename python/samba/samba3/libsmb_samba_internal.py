@@ -16,4 +16,10 @@
 from samba.samba3.libsmb_samba_cwrapper import *
 
 class Conn(LibsmbCConn):
-    pass
+    def deltree(self, path):
+        if self.chkpath(path):
+            for entry in self.list(path):
+                self.deltree(path + "\\" + entry['name'])
+            self.rmdir(path)
+        else:
+            self.unlink(path)
