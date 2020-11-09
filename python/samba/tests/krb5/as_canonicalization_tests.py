@@ -41,6 +41,7 @@ from samba.dsdb import (
     UF_NORMAL_ACCOUNT)
 from samba.samdb import SamDB
 from samba.tests import delete_force, DynamicTestCase
+from samba.tests.krb5.rfc4120_constants import *
 
 global_asn1_print = False
 global_hexdump = False
@@ -122,35 +123,6 @@ class TestData:
 
 MACHINE_NAME = "tstkrb5cnnmch"
 USER_NAME    = "tstkrb5cnnusr"
-
-# Encryption types
-AES256_CTS_HMAC_SHA1_96 = int(
-    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-AES256-CTS-HMAC-SHA1-96'))
-AES128_CTS_HMAC_SHA1_96 = int(
-    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-AES128-CTS-HMAC-SHA1-96'))
-ARCFOUR_HMAC_MD5 = int(
-    krb5_asn1.EncryptionTypeValues('kRB5-ENCTYPE-ARCFOUR-HMAC-MD5'))
-
-# Message types
-KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
-KRB_AS_REP = int(krb5_asn1.MessageTypeValues('krb-as-rep'))
-
-# PAData types
-PADATA_ENC_TIMESTAMP = int(
-    krb5_asn1.PADataTypeValues('kRB5-PADATA-ENC-TIMESTAMP'))
-PADATA_ETYPE_INFO2 = int(
-    krb5_asn1.PADataTypeValues('kRB5-PADATA-ETYPE-INFO2'))
-
-# Error codes
-KDC_ERR_C_PRINCIPAL_UNKNOWN =  6
-KDC_ERR_PREAUTH_REQUIRED    = 25
-
-# Name types
-NT_UNKNOWN   = int(krb5_asn1.NameTypeValues('kRB5-NT-UNKNOWN'))
-NT_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-PRINCIPAL'))
-NT_SRV_INST  = int(krb5_asn1.NameTypeValues('kRB5-NT-SRV-INST'))
-NT_ENTERPRISE_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-ENTERPRISE-PRINCIPAL'))
-
 
 @DynamicTestCase
 class KerberosASCanonicalizationTests(RawKerberosTest):
