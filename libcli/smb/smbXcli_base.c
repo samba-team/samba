@@ -6141,7 +6141,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->signing_key->blob.data);
+					     session->smb2->signing_key->blob.data,
+					     session->smb2->signing_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -6170,7 +6171,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->encryption_key->blob.data);
+					     session->smb2->encryption_key->blob.data,
+					     session->smb2->encryption_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -6199,7 +6201,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->decryption_key->blob.data);
+					     session->smb2->decryption_key->blob.data,
+					     session->smb2->decryption_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -6219,7 +6222,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->application_key.data);
+					     session->smb2->application_key.data,
+					     session->smb2->application_key.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -6423,7 +6427,8 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(channel_key, sizeof(channel_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2_channel.signing_key->blob.data);
+					     session->smb2_channel.signing_key->blob.data,
+					     session->smb2_channel.signing_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

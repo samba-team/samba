@@ -316,9 +316,8 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			     const uint8_t *Label, size_t Label_len,
 			     const uint8_t *Context, size_t Context_len,
-			     uint8_t KO[16])
+			     uint8_t *KO, size_t KO_len)
 {
-	size_t KO_len = 16;
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
 	static const uint8_t zero = 0;

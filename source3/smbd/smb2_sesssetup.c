@@ -361,7 +361,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     x->global->signing_key->blob.data);
+					     x->global->signing_key->blob.data,
+					     x->global->signing_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -391,7 +392,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     x->global->decryption_key->blob.data);
+					     x->global->decryption_key->blob.data,
+					     x->global->decryption_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -422,7 +424,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     x->global->encryption_key->blob.data);
+					     x->global->encryption_key->blob.data,
+					     x->global->encryption_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -468,7 +471,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     x->global->application_key.data);
+					     x->global->application_key.data,
+					     x->global->application_key.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -769,7 +773,8 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     c->signing_key->blob.data);
+					     c->signing_key->blob.data,
+					     c->signing_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
