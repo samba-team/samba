@@ -25,6 +25,9 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
 from samba.netcmd.gpo import get_gpo_dn, get_gpo_info
 from samba.param import LoadParm
+from samba.tests.gpo import stage_file, unstage_file
+from samba.dcerpc import preg
+from samba.ndr import ndr_pack
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
@@ -541,6 +544,37 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertTrue(os.path.exists(os.path.join(admx_path, 'samba.admx')),
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
+
+    def test_sudoers_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "sudoers",
+                                                 "list"), self.gpo_guid,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(e.data, out, 'The test entry was not found!')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
 
     def setUp(self):
         """set up a temporary GPO to work with"""

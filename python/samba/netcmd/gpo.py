@@ -1664,6 +1664,38 @@ class cmd_admxload(Command):
                             raise CommandError("The authenticated user does "
                                                "not have sufficient privileges")
 
+class cmd_list_sudoers(Command):
+    """List Samba Sudoers Group Policy from the sysvol
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_sudoers(SuperCommand):
+    """Manage Sudoers Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_sudoers()
+
+class cmd_manage(SuperCommand):
+    """Manage Group Policy Objects"""
+    subcommands = {}
+    subcommands["sudoers"] = cmd_sudoers()
+
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
 
@@ -1684,3 +1716,4 @@ class cmd_gpo(SuperCommand):
     subcommands["backup"] = cmd_backup()
     subcommands["restore"] = cmd_restore()
     subcommands["admxload"] = cmd_admxload()
+    subcommands["manage"] = cmd_manage()
