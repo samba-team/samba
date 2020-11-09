@@ -6289,15 +6289,6 @@ int main(int argc,char *argv[])
 		POPT_AUTOHELP
 
 		{
-			.longName   = "name-resolve",
-			.shortName  = 'R',
-			.argInfo    = POPT_ARG_STRING,
-			.arg        = &new_name_resolve_order,
-			.val        = 'R',
-			.descrip    = "Use these name resolution services only",
-			.argDescrip = "NAME-RESOLVE-ORDER",
-		},
-		{
 			.longName   = "message",
 			.shortName  = 'M',
 			.argInfo    = POPT_ARG_STRING,
