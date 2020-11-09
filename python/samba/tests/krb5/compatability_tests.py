@@ -25,9 +25,16 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests.krb5.raw_testcase import RawKerberosTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
+from samba.tests.krb5.rfc4120_constants import *
 
 global_asn1_print = False
 global_hexdump = False
+
+HIEMDAL_ENC_AS_REP_PART_TYPE_TAG = 0x79
+# MIT uses the EncTGSRepPart tag for the EncASRepPart
+MIT_ENC_AS_REP_PART_TYPE_TAG = 0x7A
+
+ENC_PA_REP_FLAG = 0x00010000
 
 
 class SimpleKerberosTests(RawKerberosTest):
@@ -40,12 +47,12 @@ class SimpleKerberosTests(RawKerberosTest):
     def test_mit_EncASRepPart_tag(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(0x7a, enc[0])
+        self.assertEqual(MIT_ENC_AS_REP_PART_TYPE_TAG, enc[0])
 
     def test_heimdal_EncASRepPart_tag(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(0x79, enc[0])
+        self.assertEqual(HIEMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
 
     def test_mit_EncryptedData_kvno(self):
         creds = self.get_user_creds()
@@ -62,37 +69,44 @@ class SimpleKerberosTests(RawKerberosTest):
     def test_mit_EncASRepPart_FAST_support(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(0x7A, enc[0])
+        self.assertEqual(MIT_ENC_AS_REP_PART_TYPE_TAG, enc[0])
         as_rep = self.der_decode(enc, asn1Spec=krb5_asn1.EncTGSRepPart())
         flags = int(as_rep['flags'], base=2)
         # MIT sets enc-pa-rep, flag bit 15
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
-        self.assertTrue(0x00010000 & flags)
+        self.assertTrue(ENC_PA_REP_FLAG & flags)
 
     def test_heimdal_EncASRepPart_FAST_support(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
-        self.assertEqual(0x79, enc[0])
+        self.assertEqual(HIEMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
         as_rep = self.der_decode(enc, asn1Spec=krb5_asn1.EncASRepPart())
         flags = as_rep['flags']
         flags = int(as_rep['flags'], base=2)
         # Heimdal does not set enc-pa-rep, flag bit 15
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
-        self.assertFalse(0x00010000 & flags)
+        self.assertFalse(ENC_PA_REP_FLAG & flags)
 
     def as_req(self, creds):
         user = creds.get_username()
         realm = creds.get_realm()
 
-        cname = self.PrincipalName_create(name_type=1, names=[user])
-        sname = self.PrincipalName_create(name_type=2, names=["krbtgt", realm])
+        cname = self.PrincipalName_create(
+                name_type=NT_PRINCIPAL,
+                names=[user])
+        sname = self.PrincipalName_create(
+                name_type=NT_SRV_INST,
+                names=["krbtgt", realm])
 
         till = self.get_KerberosTime(offset=36000)
 
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = None
 
-        etypes = (18, 17, 23)
+        etypes = (
+            AES256_CTS_HMAC_SHA1_96,
+            AES128_CTS_HMAC_SHA1_96,
+            ARCFOUR_HMAC_MD5)
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),
@@ -111,14 +125,14 @@ class SimpleKerberosTests(RawKerberosTest):
         rep = self.send_recv_transaction(req)
         self.assertIsNotNone(rep)
 
-        self.assertEqual(rep['msg-type'], 30)
-        self.assertEqual(rep['error-code'], 25)
+        self.assertEqual(rep['msg-type'], KRB_ERROR)
+        self.assertEqual(rep['error-code'], KDC_ERR_PREAUTH_REQUIRED)
         rep_padata = self.der_decode(
             rep['e-data'],
             asn1Spec=krb5_asn1.METHOD_DATA())
 
         for pa in rep_padata:
-            if pa['padata-type'] == 19:
+            if pa['padata-type'] == PADATA_ETYPE_INFO2:
                 etype_info2 = pa['padata-value']
                 break
 
@@ -136,7 +150,7 @@ class SimpleKerberosTests(RawKerberosTest):
         pa_ts = self.EncryptedData_create(key, enc_pa_ts_usage, pa_ts)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
 
-        pa_ts = self.PA_DATA_create(2, pa_ts)
+        pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
 
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = [pa_ts]
@@ -159,7 +173,7 @@ class SimpleKerberosTests(RawKerberosTest):
         self.assertIsNotNone(rep)
 
         msg_type = rep['msg-type']
-        self.assertEqual(msg_type, 11)
+        self.assertEqual(msg_type, KRB_AS_REP)
 
         usage = 3
         enc_part = rep['enc-part']
