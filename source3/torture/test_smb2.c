@@ -2715,7 +2715,7 @@ bool run_smb2_sacl(int dummy)
 	 * even though we have SEC_FLAG_SYSTEM_SECURITY,
 	 * as it seems to also need WRITE_DAC access.
 	 */
-	status = cli_smb2_set_security_descriptor(cli,
+	status = cli_set_security_descriptor(cli,
 				fnum,
 				SECINFO_DACL|SECINFO_SACL,
 				sd_sacl);
@@ -2767,13 +2767,13 @@ bool run_smb2_sacl(int dummy)
 	 * as we have both SEC_FLAG_SYSTEM_SECURITY
 	 * and WRITE_DAC access.
 	 */
-	status = cli_smb2_set_security_descriptor(cli,
+	status = cli_set_security_descriptor(cli,
 				fnum,
 				SECINFO_DACL|SECINFO_SACL,
 				sd_sacl);
 
         if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_smb2_set_security_descriptor SACL "
+		printf("cli_set_security_descriptor SACL "
 			"on file %s failed (%s)\n",
 			fname,
 			nt_errstr(status));
