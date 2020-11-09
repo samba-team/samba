@@ -1665,6 +1665,28 @@ class cmd_admxload(Command):
                             raise CommandError("The authenticated user does "
                                                "not have sufficient privileges")
 
+class cmd_add_sudoers(Command):
+    """Adds a Samba Sudoers Group Policy to the sysvol
+    """
+
+    synopsis = "%prog <gpo> <entry> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "entry"]
+
+    def run(self, gpo, entry, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
 class cmd_list_sudoers(Command):
     """List Samba Sudoers Group Policy from the sysvol
 
@@ -1728,6 +1750,7 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
 class cmd_sudoers(SuperCommand):
     """Manage Sudoers Group Policy Objects"""
     subcommands = {}
+    subcommands["add"] = cmd_add_sudoers()
     subcommands["list"] = cmd_list_sudoers()
 
 class cmd_manage(SuperCommand):

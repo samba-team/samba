@@ -27,7 +27,8 @@ from samba.netcmd.gpo import get_gpo_dn, get_gpo_info
 from samba.param import LoadParm
 from samba.tests.gpo import stage_file, unstage_file
 from samba.dcerpc import preg
-from samba.ndr import ndr_pack
+from samba.ndr import ndr_pack, ndr_unpack
+from samba.common import get_string
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
@@ -544,6 +545,29 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertTrue(os.path.exists(os.path.join(admx_path, 'samba.admx')),
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
+
+    def test_sudoers_add(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        entry = 'fakeu  ALL=(ALL) NOPASSWD: ALL'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "sudoers",
+                                                 "add"), self.gpo_guid, entry,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers add failed')
+
+        self.assertTrue(os.path.exists(reg_pol),
+                        'The Registry.pol does not exist')
+        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
+        self.assertTrue(any([get_string(e.data) == entry for e in reg_data.entries]),
+                        'The sudoers entry was not added')
 
     def test_sudoers_list(self):
         lp = LoadParm()
