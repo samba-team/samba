@@ -91,6 +91,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/xrealm_tests.py',
     'python/samba/tests/krb5/as_canonicalization_tests.py',
     'python/samba/tests/krb5/compatability_tests.py',
+    'python/samba/tests/krb5/rfc4120_constants.py',
 }
 
 EXCLUDE_HELP = {
