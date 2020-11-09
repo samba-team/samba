@@ -204,11 +204,6 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 			char **_volume_name,
 			uint32_t *pserial_number,
 			time_t *pdate);
-NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
-			uint16_t fnum,
-			uint32_t sec_info,
-			TALLOC_CTX *mem_ctx,
-			struct security_descriptor **ppsd);
 NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,

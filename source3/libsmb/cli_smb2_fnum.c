@@ -2799,78 +2799,6 @@ fail:
 	return status;
 }
 
-
-/***************************************************************
- Wrapper that allows SMB2 to query a security descriptor.
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
-					uint16_t fnum,
-					uint32_t sec_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppsd)
-{
-	NTSTATUS status;
-	DATA_BLOB outbuf = data_blob_null;
-	struct security_descriptor *lsd = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	/* getinfo on the returned handle with info_type SMB2_GETINFO_SEC (3) */
-
-	status = cli_smb2_query_info_fnum(
-		cli,
-		fnum,
-		3, /* in_info_type */
-		0, /* in_file_info_class */
-		0xFFFF, /* in_max_output_length */
-		NULL, /* in_input_buffer */
-		sec_info, /* in_additional_info */
-		0, /* in_flags */
-		frame,
-		&outbuf);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	/* Parse the reply. */
-	status = unmarshall_sec_desc(mem_ctx,
-				outbuf.data,
-				outbuf.length,
-				&lsd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	if (ppsd != NULL) {
-		*ppsd = lsd;
-	} else {
-		TALLOC_FREE(lsd);
-	}
-
-  fail:
-
-	cli->raw_status = status;
-
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /***************************************************************
  Wrapper that allows SMB2 to set a security descriptor.
  Synchronous only.
@@ -2924,12 +2852,6 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
-
-/***************************************************************
- Wrapper that allows SMB2 to query a security descriptor.
- Synchronous only.
-
-***************************************************************/
 
 struct cli_smb2_mxac_state {
 	struct tevent_context *ev;
