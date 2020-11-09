@@ -77,10 +77,16 @@ class TestData:
         self.user_creds = creds
         self.user_name = self.get_username(options, creds)
         self.realm = self.get_realm(options, creds)
+
+        if TestOptions.Enterprise.is_set(options):
+            client_name_type = NT_ENTERPRISE_PRINCIPAL
+        else:
+            client_name_type = NT_PRINCIPAL
+
         self.cname = RawKerberosTest.PrincipalName_create(
-            name_type=1, names=[self.user_name])
+            name_type=client_name_type, names=[self.user_name])
         self.sname = RawKerberosTest.PrincipalName_create(
-            name_type=2, names=["krbtgt", self.realm])
+            name_type=NT_SRV_INST, names=["krbtgt", self.realm])
         self.canonicalize = TestOptions.Canonicalize.is_set(options)
 
     def get_realm(self, options, creds):
@@ -143,6 +149,7 @@ KDC_ERR_PREAUTH_REQUIRED    = 25
 NT_UNKNOWN   = int(krb5_asn1.NameTypeValues('kRB5-NT-UNKNOWN'))
 NT_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-PRINCIPAL'))
 NT_SRV_INST  = int(krb5_asn1.NameTypeValues('kRB5-NT-SRV-INST'))
+NT_ENTERPRISE_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-ENTERPRISE-PRINCIPAL'))
 
 
 @DynamicTestCase
@@ -436,10 +443,17 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         return (rep, as_rep)
 
     def check_cname(self, cname, data):
-        nt = cname['name-type']
+        if TestOptions.Canonicalize.is_set(data.options):
+            expected_name_type = NT_PRINCIPAL
+        elif TestOptions.Enterprise.is_set(data.options):
+            expected_name_type = NT_ENTERPRISE_PRINCIPAL
+        else:
+            expected_name_type = NT_PRINCIPAL
+
+        name_type = cname['name-type']
         self.assertEqual(
-            NT_PRINCIPAL,
-            nt,
+            expected_name_type,
+            name_type,
             "cname name-type, Options {0:08b}".format(data.options))
 
         ns = cname['name-string']
