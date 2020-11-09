@@ -1,0 +1,136 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_BINARY('locktest2',
+                 source='locktest2.c',
+                 deps='''
+                      talloc
+                      smbconf
+                      libsmb
+                      LOCKING
+                      ''',
+                 for_selftest=True)
+
+TORTURE3_ADDITIONAL_SOURCE=""
+
+if bld.env.with_ctdb:
+    TORTURE3_ADDITIONAL_SOURCE += ' test_ctdbd_conn.c'
+
+bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
+                 source='''
+                        torture.c
+                        nbio.c
+                        scanner.c
+                        utable.c
+                        denytest.c
+                        mangle_test.c
+                        nbench.c
+                        test_async_echo.c
+                        test_addrchange.c
+                        test_matching.c
+                        test_posix_append.c
+                        test_posix.c
+                        test_nttrans_create.c
+                        test_nttrans_fsctl.c
+                        test_case_insensitive.c
+                        test_notify_online.c
+                        test_chain3.c
+                        test_smb2.c
+                        test_authinfo_structs.c
+                        test_smbsock_any_connect.c
+                        test_cleanup.c
+                        test_notify.c
+                        ../lib/tevent_barrier.c
+                        test_dbwrap_watch.c
+                        test_dbwrap_do_locked.c
+                        test_idmap_tdb_common.c
+                        test_dbwrap_ctdb.c
+                        test_buffersize.c
+                        test_messaging_read.c
+                        test_messaging_fd_passing.c
+                        test_messaging_send_all.c
+                        test_oplock_cancel.c
+                        test_pthreadpool_tevent.c
+                        bench_pthreadpool.c
+                        wbc_async.c
+                        test_g_lock.c
+                        test_namemap_cache.c
+                        test_idmap_cache.c
+                        test_hidenewfiles.c
+                        test_readdir_timestamp.c
+                        ../lib/util_sd.c
+                        ''' + TORTURE3_ADDITIONAL_SOURCE,
+                 deps='''
+                      talloc
+                      smbconf
+                      libsmb
+                      msrpc3
+                      TLDAP
+                      RPC_NDR_ECHO
+                      WB_REQTRANS
+                      LOCKING
+                      NDR_OPEN_FILES
+                      idmap
+                      IDMAP_TDB_COMMON
+                      libcli_lsa3
+                      samba-cluster-support
+                      ''',
+                 cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
+                 for_selftest=True)
+
+bld.SAMBA3_BINARY('msgtest',
+                 source='msgtest.c',
+                 deps='''
+                      talloc
+                      smbconf
+                      ''',
+                 install=False)
+
+bld.SAMBA3_BINARY('msg_sink',
+                 source='msg_sink.c',
+                 deps='''
+                      talloc
+                      smbconf
+                      ''',
+                 install=False)
+
+bld.SAMBA3_BINARY('msg_source',
+                 source='msg_source.c',
+                 deps='''
+                      talloc
+                      smbconf
+                      ''',
+                 install=False)
+
+bld.SAMBA3_BINARY('pdbtest',
+                 source='pdbtest.c',
+                 deps='''
+                      talloc
+                      pdb
+                      CMDLINE_S3
+                      AUTH_COMMON
+                      auth
+                      ''',
+                 for_selftest=True)
+
+bld.SAMBA3_BINARY('vfstest',
+                 source='''
+                        cmd_vfs.c
+                        vfstest.c
+                        vfstest_chain.c
+                        ''',
+                 deps='''
+                      vfs
+                      CMDLINE_S3
+                      smbconf
+                      SMBREADLINE
+                      ''',
+                 for_selftest=True)
+
+bld.SAMBA3_BINARY('rpc_open_tcp',
+                 source='rpc_open_tcp.c',
+                 deps='''
+                      talloc
+                      msrpc3
+                      ''',
+                 for_selftest=True)
+

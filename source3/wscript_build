@@ -1153,83 +1153,6 @@ bld.SAMBA3_BINARY('smbspool_argv_wrapper',
 		  source='script/tests/smbspool_argv_wrapper.c',
 		  for_selftest=True)
 
-bld.SAMBA3_BINARY('locktest2',
-                 source='torture/locktest2.c',
-                 deps='''
-                      talloc
-                      smbconf
-                      libsmb
-                      LOCKING
-                      ''',
-                 for_selftest=True)
-
-TORTURE3_ADDITIONAL_SOURCE=""
-
-if bld.env.with_ctdb:
-    TORTURE3_ADDITIONAL_SOURCE += ' torture/test_ctdbd_conn.c'
-
-bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
-                 source='''
-                        torture/torture.c
-                        torture/nbio.c
-                        torture/scanner.c
-                        torture/utable.c
-                        torture/denytest.c
-                        torture/mangle_test.c
-                        torture/nbench.c
-                        torture/test_async_echo.c
-                        torture/test_addrchange.c
-                        torture/test_matching.c
-                        torture/test_posix_append.c
-                        torture/test_posix.c
-                        torture/test_nttrans_create.c
-                        torture/test_nttrans_fsctl.c
-                        torture/test_case_insensitive.c
-                        torture/test_notify_online.c
-                        torture/test_chain3.c
-                        torture/test_smb2.c
-                        torture/test_authinfo_structs.c
-                        torture/test_smbsock_any_connect.c
-                        torture/test_cleanup.c
-                        torture/test_notify.c
-                        lib/tevent_barrier.c
-                        torture/test_dbwrap_watch.c
-                        torture/test_dbwrap_do_locked.c
-                        torture/test_idmap_tdb_common.c
-                        torture/test_dbwrap_ctdb.c
-                        torture/test_buffersize.c
-                        torture/test_messaging_read.c
-                        torture/test_messaging_fd_passing.c
-                        torture/test_messaging_send_all.c
-                        torture/test_oplock_cancel.c
-                        torture/test_pthreadpool_tevent.c
-                        torture/bench_pthreadpool.c
-                        torture/wbc_async.c
-                        torture/test_g_lock.c
-                        torture/test_namemap_cache.c
-                        torture/test_idmap_cache.c
-                        torture/test_hidenewfiles.c
-                        torture/test_readdir_timestamp.c
-                        lib/util_sd.c
-                        ''' + TORTURE3_ADDITIONAL_SOURCE,
-                 deps='''
-                      talloc
-                      smbconf
-                      libsmb
-                      msrpc3
-                      TLDAP
-                      RPC_NDR_ECHO
-                      WB_REQTRANS
-                      LOCKING
-                      NDR_OPEN_FILES
-                      idmap
-                      IDMAP_TDB_COMMON
-                      libcli_lsa3
-                      samba-cluster-support
-                      ''',
-                 cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
-                 for_selftest=True)
-
 bld.SAMBA3_BINARY('smbconftort',
                  source='lib/smbconf/testsuite.c',
                  deps='''
@@ -1238,30 +1161,6 @@ bld.SAMBA3_BINARY('smbconftort',
                       CMDLINE_S3
                       ''',
                  for_selftest=True)
-
-bld.SAMBA3_BINARY('msgtest',
-                 source='torture/msgtest.c',
-                 deps='''
-                      talloc
-                      smbconf
-                      ''',
-                 install=False)
-
-bld.SAMBA3_BINARY('msg_sink',
-                 source='torture/msg_sink.c',
-                 deps='''
-                      talloc
-                      smbconf
-                      ''',
-                 install=False)
-
-bld.SAMBA3_BINARY('msg_source',
-                 source='torture/msg_source.c',
-                 deps='''
-                      talloc
-                      smbconf
-                      ''',
-                 install=False)
 
 bld.SAMBA3_BINARY('test_mdsparser_es',
                  source='''
@@ -1281,31 +1180,6 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  enabled=bld.env.spotlight_backend_es,
                  for_selftest=True)
 
-bld.SAMBA3_BINARY('pdbtest',
-                 source='torture/pdbtest.c',
-                 deps='''
-                      talloc
-                      pdb
-                      CMDLINE_S3
-                      AUTH_COMMON
-                      auth
-                      ''',
-                 for_selftest=True)
-
-bld.SAMBA3_BINARY('vfstest',
-                 source='''
-                        torture/cmd_vfs.c
-                        torture/vfstest.c
-                        torture/vfstest_chain.c
-                        ''',
-                 deps='''
-                      vfs
-                      CMDLINE_S3
-                      smbconf
-                      SMBREADLINE
-                      ''',
-                 for_selftest=True)
-
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='''
@@ -1316,14 +1190,6 @@ bld.SAMBA3_BINARY('versiontest',
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
-                 for_selftest=True)
-
-bld.SAMBA3_BINARY('rpc_open_tcp',
-                 source='torture/rpc_open_tcp.c',
-                 deps='''
-                      talloc
-                      msrpc3
-                      ''',
                  for_selftest=True)
 
 bld.SAMBA3_BINARY('vlp',
@@ -1419,6 +1285,7 @@ bld.RECURSE('rpcclient')
 bld.RECURSE('utils')
 bld.RECURSE('nmbd')
 bld.RECURSE('lib/util')
+bld.RECURSE('torture')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
