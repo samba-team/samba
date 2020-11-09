@@ -172,7 +172,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   const char *remote_name,
 				   enum smb_signing_setting signing_state,
 				   int flags);
-void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint32_t cli_setpid(struct cli_state *cli, uint32_t pid);

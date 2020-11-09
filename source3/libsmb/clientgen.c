@@ -206,7 +206,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
  Close all pipes open on this session.
 ****************************************************************************/
 
-void cli_nt_pipes_close(struct cli_state *cli)
+static void cli_nt_pipes_close(struct cli_state *cli)
 {
 	while (cli->pipe_list != NULL) {
 		/*
