@@ -1260,34 +1260,22 @@ static PyObject *py_smb_unlink(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-/*
- * Delete an empty directory
- */
-static NTSTATUS remove_dir(struct py_cli_state *self, const char *dirname)
-{
-	NTSTATUS status;
-	struct tevent_req *req = NULL;
-
-	req = cli_rmdir_send(NULL, self->ev, self->cli, dirname);
-	if (!py_tevent_req_wait_exc(self, req)) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	status = cli_rmdir_recv(req);
-	TALLOC_FREE(req);
-
-	return status;
-}
-
 static PyObject *py_smb_rmdir(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
+	struct tevent_req *req = NULL;
 	const char *dirname = NULL;
 
 	if (!PyArg_ParseTuple(args, "s:rmdir", &dirname)) {
 		return NULL;
 	}
 
-	status = remove_dir(self, dirname);
+	req = cli_rmdir_send(NULL, self->ev, self->cli, dirname);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_rmdir_recv(req);
+	TALLOC_FREE(req);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
