@@ -120,8 +120,8 @@ class TestData:
         return rep
 
 
-MACHINE_NAME = "tstkrb5cnnusr"
-USER_NAME    = "tstkrb5cnnmch"
+MACHINE_NAME = "tstkrb5cnnmch"
+USER_NAME    = "tstkrb5cnnusr"
 
 # Encryption types
 AES256_CTS_HMAC_SHA1_96 = int(
