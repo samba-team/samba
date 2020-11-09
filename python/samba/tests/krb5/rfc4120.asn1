@@ -239,7 +239,8 @@ EncKDCRepPart   ::= SEQUENCE {
         renew-till      [8] KerberosTime OPTIONAL,
         srealm          [9] Realm,
         sname           [10] PrincipalName,
-        caddr           [11] HostAddresses OPTIONAL
+        caddr           [11] HostAddresses OPTIONAL,
+        encrypted-pa-data[12]	METHOD-DATA OPTIONAL
 }
 
 LastReq         ::=     SEQUENCE OF SEQUENCE {
