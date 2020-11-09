@@ -1802,11 +1802,34 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
             if get_bytes(entry.keyname) == keyname:
                 self.outf.write('%s\n' % entry.data)
 
+class cmd_remove_sudoers(Command):
+    """Removes a Samba Sudoers Group Policy from the sysvol
+    """
+
+    synopsis = "%prog <gpo> <entry> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "entry"]
+
+    def run(self, gpo, entry, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
 class cmd_sudoers(SuperCommand):
     """Manage Sudoers Group Policy Objects"""
     subcommands = {}
     subcommands["add"] = cmd_add_sudoers()
     subcommands["list"] = cmd_list_sudoers()
+    subcommands["remove"] = cmd_remove_sudoers()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""

@@ -546,6 +546,35 @@ class GpoCmdTestCase(SambaToolCmdTest):
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
 
+    def test_sudoers_remove(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
+        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+        e.type = 1
+        e.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "sudoers",
+                                                 "remove"), self.gpo_guid,
+                                                 get_string(e.data),
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+
     def test_sudoers_add(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
