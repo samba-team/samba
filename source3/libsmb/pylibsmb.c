@@ -1238,36 +1238,23 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	return result;
 }
 
-/*
- * Deletes a file
- */
-static NTSTATUS unlink_file(struct py_cli_state *self, const char *filename)
-{
-	NTSTATUS status;
-	uint32_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	struct tevent_req *req = NULL;
-
-	req = cli_unlink_send(
-		NULL, self->ev, self->cli, filename, attrs);
-	if (!py_tevent_req_wait_exc(self, req)) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	status = cli_unlink_recv(req);
-	TALLOC_FREE(req);
-
-	return status;
-}
-
 static PyObject *py_smb_unlink(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *filename = NULL;
+	struct tevent_req *req = NULL;
+	const uint32_t attrs = (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (!PyArg_ParseTuple(args, "s:unlink", &filename)) {
 		return NULL;
 	}
 
-	status = unlink_file(self, filename);
+	req = cli_unlink_send(NULL, self->ev, self->cli, filename, attrs);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_unlink_recv(req);
+	TALLOC_FREE(req);
 	PyErr_NTSTATUS_NOT_OK_RAISE(status);
 
 	Py_RETURN_NONE;
