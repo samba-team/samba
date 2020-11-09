@@ -296,8 +296,8 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         except pyasn1.error.PyAsn1Error as e:
             import traceback
             self.fail("ASN1 Error, Options {0:08b}:{1} {2}".format(
-                traceback.format_exc(),
                 data.options,
+                traceback.format_exc(),
                 e))
         # If as_req triggered an expected server error response
         # No need to test the response data.
