@@ -1307,7 +1307,6 @@ static bool test_pool(void)
 	p4 = talloc_size(p3, 1000);
 	memset(p4, 0x11, talloc_get_size(p4));
 
-#if 1 /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 	p2_2 = talloc_realloc_size(pool, p2, 20+1);
 	torture_assert("pool realloc 20+1", p2_2 == p2, "failed: pointer changed");
 	memset(p2, 0x11, talloc_get_size(p2));
@@ -1372,8 +1371,6 @@ static bool test_pool(void)
 	torture_assert("pool alloc 800", p3 == p1, "failed: pointer changed");
 	memset(p3, 0x11, talloc_get_size(p3));
 
-#endif /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
-
 	talloc_free(pool);
 
 	return true;
@@ -1408,7 +1405,6 @@ static bool test_pool_steal(void)
 
 	p1_2 = p1;
 
-#if 1 /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 	p1_2 = talloc_realloc_size(root, p1, 5 * 16);
 	torture_assert("pool realloc 5 * 16", p1_2 > p2, "failed: pointer not changed");
 	memset(p1_2, 0x11, talloc_get_size(p1_2));
@@ -1420,13 +1416,11 @@ static bool test_pool_steal(void)
 	p2_2 = talloc_realloc_size(root, p2, 3 * 16);
 	torture_assert("pool realloc 5 * 16", p2_2 == p2, "failed: pointer changed");
 	memset(p2_2, 0x11, talloc_get_size(p2_2));
-#endif /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 
 	talloc_free(p1_2);
 
 	p2_2 = p2;
 
-#if 1 /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 	/* now we should reclaim the full pool */
 	p2_2 = talloc_realloc_size(root, p2, 8 * 16);
 	torture_assert("pool realloc 8 * 16", p2_2 == p1, "failed: pointer not expected");
@@ -1437,8 +1431,6 @@ static bool test_pool_steal(void)
 	p2_2 = talloc_realloc_size(root, p2, 2 * 1024);
 	torture_assert("pool realloc 2 * 1024", p2_2 != p1, "failed: pointer not expected");
 	memset(p2_2, 0x11, talloc_get_size(p2_2));
-
-#endif /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 
 	talloc_free(p2_2);
 

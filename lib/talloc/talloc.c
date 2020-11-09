@@ -54,11 +54,6 @@
 #include <valgrind.h>
 #endif
 
-/* use this to force every realloc to change the pointer, to stress test
-   code that might not cope */
-#define ALWAYS_REALLOC 0
-
-
 #define MAX_TALLOC_SIZE 0x10000000
 
 #define TALLOC_FLAG_FREE 0x01
@@ -1844,7 +1839,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		pool_hdr = tc->pool;
 	}
 
-#if (ALWAYS_REALLOC == 0)
 	/* don't shrink if we have less than 1k to gain */
 	if (size < tc->size && tc->limit == NULL) {
 		if (pool_hdr) {
@@ -1878,7 +1872,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		 */
 		return ptr;
 	}
-#endif
 
 	/*
 	 * by resetting magic we catch users of the old memory
@@ -1897,66 +1890,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	 */
 	_talloc_chunk_set_free(tc, NULL);
 
-#if (ALWAYS_REALLOC != 0)
-	if (pool_hdr) {
-		new_ptr = tc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
-		if (new_ptr == NULL) {
-			/*
-			 * Couldn't allocate from pool (pool size
-			 * counts as already allocated for memlimit
-			 * purposes). We must check memory limit
-			 * before any real malloc.
-			 */
-			if (tc->limit) {
-				/*
-				 * Note we're doing an extra malloc,
-				 * on top of the pool size, so account
-				 * for size only, not the difference
-				 * between old and new size.
-				 */
-				if (!talloc_memlimit_check(tc->limit, size)) {
-					_talloc_chunk_set_not_free(tc);
-					errno = ENOMEM;
-					return NULL;
-				}
-			}
-			new_ptr = malloc(TC_HDR_SIZE+size);
-			malloced = true;
-			new_size = size;
-		}
-
-		if (new_ptr) {
-			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
-			TC_INVALIDATE_FULL_CHUNK(tc);
-			/*
-			 * Only decrement the object count in the pool once
-			 * we know we're returning a valid new_ptr.
-			 */
-			pool_hdr->object_count--;
-		}
-	} else {
-		/* We're doing malloc then free here, so record the difference. */
-		old_size = tc->size;
-		new_size = size;
-		/*
-		 * We must check memory limit
-		 * before any real malloc.
-		 */
-		if (tc->limit && (size > old_size)) {
-			if (!talloc_memlimit_check(tc->limit,
-					(size - old_size))) {
-				_talloc_chunk_set_not_free(tc);
-				errno = ENOMEM;
-				return NULL;
-			}
-		}
-		new_ptr = malloc(size + TC_HDR_SIZE);
-		if (new_ptr) {
-			memcpy(new_ptr, tc, MIN(tc->size, size) + TC_HDR_SIZE);
-			free(tc);
-		}
-	}
-#else
 	if (pool_hdr) {
 		struct talloc_chunk *pool_tc;
 		void *next_tc = tc_next_chunk(tc);
@@ -2102,7 +2035,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		new_ptr = realloc(tc, size + TC_HDR_SIZE);
 	}
 got_new_ptr:
-#endif
+
 	if (unlikely(!new_ptr)) {
 		/*
 		 * Ok, this is a strange spot.  We have to put back
