@@ -2799,60 +2799,6 @@ fail:
 	return status;
 }
 
-/***************************************************************
- Wrapper that allows SMB2 to set a security descriptor.
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
-					uint16_t fnum,
-					uint32_t sec_info,
-					const struct security_descriptor *sd)
-{
-	NTSTATUS status;
-	DATA_BLOB inbuf = data_blob_null;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	status = marshall_sec_desc(frame,
-				sd,
-				&inbuf.data,
-				&inbuf.length);
-
-        if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-        }
-
-	/* setinfo on the returned handle with info_type SMB2_SETINFO_SEC (3) */
-
-	status = cli_smb2_set_info_fnum(
-		cli,
-		fnum,
-		3,			  /* in_info_type */
-		0,			  /* in_file_info_class */
-		&inbuf,			  /* in_input_buffer */
-		sec_info);		  /* in_additional_info */
-
-  fail:
-
-	cli->raw_status = status;
-
-	TALLOC_FREE(frame);
-	return status;
-}
-
 struct cli_smb2_mxac_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
