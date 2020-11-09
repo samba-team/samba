@@ -29,6 +29,8 @@ from samba.tests.gpo import stage_file, unstage_file
 from samba.dcerpc import preg
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.common import get_string
+from configparser import ConfigParser
+from io import StringIO
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
@@ -583,6 +585,38 @@ class GpoCmdTestCase(SambaToolCmdTest):
         inf_pol_contents = open(inf_pol, 'r').read()
         self.assertNotIn('MaxTicketAge = 10', inf_pol_contents,
                       'The test entry was still found!')
+
+    def test_security_list(self):
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge', '10',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to set MaxTicketAge')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "list"), self.gpo_guid,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn('MaxTicketAge = 10', out, 'The test entry was not found!')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to unset MaxTicketAge')
 
     def test_sudoers_remove(self):
         lp = LoadParm()

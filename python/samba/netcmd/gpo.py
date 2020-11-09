@@ -66,6 +66,7 @@ from samba import param
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.netcmd.common import attr_default
 from samba.common import get_bytes
+from configparser import ConfigParser
 
 
 def gpo_flags_string(value):
@@ -1996,15 +1997,39 @@ PasswordComplexity      Password must meet complexity requirements
             else:
                 raise
 
+class cmd_list_security(Command):
+    """List Samba Security Group Policy from the sysvol
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
 class cmd_security(SuperCommand):
     """Manage Security Group Policy Objects"""
     subcommands = {}
     subcommands["set"] = cmd_set_security()
+    subcommands["list"] = cmd_list_security()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
     subcommands["sudoers"] = cmd_sudoers()
+    subcommands["security"] = cmd_security()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
