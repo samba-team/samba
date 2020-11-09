@@ -2819,11 +2819,8 @@ bool run_smb2_sacl(int dummy)
         }
 
 	/* Try and read the SACL - should succeed. */
-	status = cli_smb2_query_security_descriptor(cli,
-				fnum,
-				SECINFO_SACL,
-				talloc_tos(),
-				&sd_sacl);
+	status = cli_query_security_descriptor(
+		cli, fnum, SECINFO_SACL, talloc_tos(), &sd_sacl);
 
         if (!NT_STATUS_IS_OK(status)) {
 		printf("Read SACL from file %s failed (%s)\n",
@@ -2838,11 +2835,8 @@ bool run_smb2_sacl(int dummy)
 	 * Try and read the DACL - should fail as we have
 	 * no READ_DAC access.
 	 */
-	status = cli_smb2_query_security_descriptor(cli,
-				fnum,
-				SECINFO_DACL,
-				talloc_tos(),
-				&sd_sacl);
+	status = cli_query_security_descriptor(
+		cli, fnum, SECINFO_DACL, talloc_tos(), &sd_sacl);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("Reading DACL on file %s got (%s) "
