@@ -318,13 +318,29 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			     const uint8_t *Context, size_t Context_len,
 			     uint8_t KO[16])
 {
+	size_t KO_len = 16;
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
 	static const uint8_t zero = 0;
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	const size_t digest_len = gnutls_hash_get_len(GNUTLS_MAC_SHA256);
+	uint8_t digest[digest_len];
 	uint32_t i = 1;
-	uint32_t L = 128;
+	uint32_t L = KO_len * 8;
 	int rc;
+
+	if (KO_len > digest_len) {
+		DBG_ERR("KO_len[%zu] > digest_len[%zu]\n", KO_len, digest_len);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	switch (KO_len) {
+	case 16:
+	case 32:
+		break;
+	default:
+		DBG_ERR("KO_len[%zu] not supported\n", KO_len);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	/*
 	 * a simplified version of
@@ -374,7 +390,7 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 
 	gnutls_hmac_deinit(hmac_hnd, digest);
 
-	memcpy(KO, digest, 16);
+	memcpy(KO, digest, KO_len);
 
 	ZERO_ARRAY(digest);
 
