@@ -1380,6 +1380,30 @@ static PyObject *py_smb_getacl(struct py_cli_state *self, PyObject *args)
 				    sd, sd);
 }
 
+static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
+{
+	int fnum;
+	unsigned sinfo;
+	struct tevent_req *req = NULL;
+	struct security_descriptor *sd = NULL;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args, "iI:get_acl", &fnum, &sinfo)) {
+		return NULL;
+	}
+
+	req = cli_query_security_descriptor_send(
+		NULL, self->ev, self->cli, fnum, sinfo);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return false;
+	}
+	status = cli_query_security_descriptor_recv(req, NULL, &sd);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	return py_return_ndr_struct(
+		"samba.dcerpc.security", "descriptor", sd, sd);
+}
+
 /*
  * Set ACL on file/directory using given security descriptor object
  */
@@ -1483,6 +1507,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
 	  "get_acl(path[, security_info=0]) -> security_descriptor object\n\n"
 	  "\t\tGet security descriptor for file." },
+	{ "get_sd", (PyCFunction)py_smb_get_sd, METH_VARARGS,
+	  "get_sd(fnum[, security_info=0]) -> security_descriptor object\n\n"
+	  "\t\tGet security descriptor for opened file." },
 	{ "set_acl", (PyCFunction)py_smb_setacl, METH_VARARGS,
 	  "set_acl(path, security_descriptor[, security_info=0]) -> None\n\n"
 	  "\t\tSet security descriptor for file." },
