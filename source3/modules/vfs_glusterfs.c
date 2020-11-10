@@ -315,15 +315,25 @@ static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
+	/*
+	 * file_lines_parse() plays horrible tricks with
+	 * the passed-in talloc pointers and the hierarcy
+	 * which makes freeing hard to get right.
+	 *
+	 * As we know mem_ctx is freed by the caller, after
+	 * this point don't free on exit and let the caller
+	 * handle it. This violates good Samba coding practice
+	 * but we know we're not leaking here.
+	 */
+
 	lines = file_lines_parse(buf,
 				newlen,
 				&numlines,
 				mem_ctx);
 	if (lines == NULL || numlines <= 0) {
-		TALLOC_FREE(option);
-		TALLOC_FREE(buf);
 		return -1;
 	}
+	/* On success, buf is now a talloc child of lines !! */
 
 	for (i=0; i < numlines; i++) {
 		if (strequal(lines[i], option)) {
@@ -338,15 +348,9 @@ static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
 			"Please check the vfs_glusterfs(8) manpage for "
 			"further details.\n",
 			volume);
-		TALLOC_FREE(lines);
-		TALLOC_FREE(option);
-		TALLOC_FREE(buf);
 		return -1;
 	}
 
-	TALLOC_FREE(lines);
-	TALLOC_FREE(option);
-	TALLOC_FREE(buf);
 	return 0;
 }
 
