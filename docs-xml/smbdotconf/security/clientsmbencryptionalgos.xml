@@ -15,7 +15,7 @@
 	</para>
 </description>
 
-<value type="default">aes-128-gcm, aes-128-ccm</value>
-<value type="example">aes-128-gcm</value>
-<value type="example">-aes-128-ccm</value>
+<value type="default">aes-128-gcm, aes-128-ccm, aes-256-gcm, aes-256-ccm</value>
+<value type="example">aes-256-gcm</value>
+<value type="example">-aes-128-gcm -aes-128-ccm</value>
 </samba:parameter>
