@@ -87,7 +87,7 @@ class SimpleKerberosTests(RawKerberosTest):
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
         self.assertFalse(ENC_PA_REP_FLAG & flags)
 
-    def as_req(self, creds):
+    def as_pre_auth_req(self, creds, etypes):
         user = creds.get_username()
         realm = creds.get_realm()
 
@@ -103,10 +103,6 @@ class SimpleKerberosTests(RawKerberosTest):
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = None
 
-        etypes = (
-            AES256_CTS_HMAC_SHA1_96,
-            AES128_CTS_HMAC_SHA1_96,
-            ARCFOUR_HMAC_MD5)
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),
@@ -123,10 +119,16 @@ class SimpleKerberosTests(RawKerberosTest):
                                  EncAuthorizationData_key=None,
                                  additional_tickets=None)
         rep = self.send_recv_transaction(req)
-        self.assertIsNotNone(rep)
 
+        return (rep, cname, sname, realm, till)
+
+    def check_preauth_rep(self, rep):
+        self.assertIsNotNone(rep)
         self.assertEqual(rep['msg-type'], KRB_ERROR)
         self.assertEqual(rep['error-code'], KDC_ERR_PREAUTH_REQUIRED)
+
+    def get_etype_info2(self, rep):
+
         rep_padata = self.der_decode(
             rep['e-data'],
             asn1Spec=krb5_asn1.METHOD_DATA())
@@ -139,7 +141,17 @@ class SimpleKerberosTests(RawKerberosTest):
         etype_info2 = self.der_decode(
             etype_info2,
             asn1Spec=krb5_asn1.ETYPE_INFO2())
+        return etype_info2
 
+    def as_req(self, creds):
+        etypes = (
+            AES256_CTS_HMAC_SHA1_96,
+            AES128_CTS_HMAC_SHA1_96,
+            ARCFOUR_HMAC_MD5)
+        (rep, cname, sname, realm, till) = self.as_pre_auth_req(creds, etypes)
+        self.check_preauth_rep(rep)
+
+        etype_info2 = self.get_etype_info2(rep)
         key = self.PasswordKey_from_etype_info2(creds, etype_info2[0])
 
         (patime, pausec) = self.get_KerberosTimeWithUsec()
