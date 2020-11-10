@@ -366,17 +366,6 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         self.assertEqual(
             rep['msg-type'], KRB_ERROR, "Data {0}".format(str(data)))
 
-        # We should get KDC_ERR_PREAUTH_REQUIRED
-        # unless the RemoveDollar and Enterprise options are set
-        # then we should get a KDC_ERR_C_PRINCIPAL_UNKNOWN
-        if TestOptions.RemoveDollar.is_set(data.options) and\
-                TestOptions.Enterprise.is_set(data.options):
-            self.assertEqual(
-                rep['error-code'],
-                KDC_ERR_C_PRINCIPAL_UNKNOWN,
-                "Error code {0}, Data {1}".format(rep['error-code'], str(data)))
-            return (None, None)
-
         self.assertEqual(
             rep['error-code'],
             KDC_ERR_PREAUTH_REQUIRED,
