@@ -184,16 +184,19 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         cls.lp       = cls.get_loadparm(cls)
         cls.username = os.environ["USERNAME"]
         cls.password = os.environ["PASSWORD"]
-        cls.domain   = os.environ["DOMAIN"]
         cls.host     = os.environ["SERVER"]
 
         c = Credentials()
         c.set_username(cls.username)
         c.set_password(cls.password)
-        c.set_domain(cls.domain)
         try:
             realm    = os.environ["REALM"]
             c.set_realm(realm)
+        except KeyError:
+            pass
+        try:
+            domain    = os.environ["DOMAIN"]
+            c.set_domain(domain)
         except KeyError:
             pass
 
@@ -243,6 +246,7 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         cls.user_creds = Credentials()
         cls.user_creds.guess(cls.lp)
         cls.user_creds.set_realm(cls.ldb.domain_dns_name().upper())
+        cls.user_creds.set_domain(cls.ldb.domain_netbios_name().upper())
         cls.user_creds.set_password(cls.user_pass)
         cls.user_creds.set_username(cls.user_name)
         cls.user_creds.set_workstation(cls.machine_name)
@@ -271,6 +275,7 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         cls.machine_creds = Credentials()
         cls.machine_creds.guess(cls.lp)
         cls.machine_creds.set_realm(cls.ldb.domain_dns_name().upper())
+        cls.machine_creds.set_domain(cls.ldb.domain_netbios_name().upper())
         cls.machine_creds.set_secure_channel_type(SEC_CHAN_WKSTA)
         cls.machine_creds.set_kerberos_state(DONT_USE_KERBEROS)
         cls.machine_creds.set_password(cls.machine_pass)
