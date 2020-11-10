@@ -253,7 +253,7 @@ _PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC
 parse a buffer into lines
 'p' will be freed on error, and otherwise will be made a child of the returned array
 **/
-char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
+static char **file_lines_parse_internal(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	unsigned int i;
 	char *s, **ret;
@@ -305,7 +305,7 @@ _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize
 	p = file_load(fname, &size, maxsize, mem_ctx);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines, mem_ctx);
+	return file_lines_parse_internal(p, size, numlines, mem_ctx);
 }
 
 /**
@@ -321,7 +321,15 @@ _PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX 
 	p = fd_load(fd, &size, maxsize, mem_ctx);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines, mem_ctx);
+	return file_lines_parse_internal(p, size, numlines, mem_ctx);
+}
+
+_PUBLIC_ char **file_lines_parse(char *p,
+			size_t size,
+			int *numlines,
+			TALLOC_CTX *mem_ctx)
+{
+	return file_lines_parse_internal(p, size, numlines, mem_ctx);
 }
 
 _PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
