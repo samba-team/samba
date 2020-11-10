@@ -142,11 +142,13 @@
 #define SMB2_SIGNING_HMAC_SHA256           0x0000 /* default <= 0x210 */
 #define SMB2_SIGNING_AES128_CMAC           0x0001 /* default >= 0x224 */
 
-/* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x310) */
+/* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x311) */
 #define SMB2_ENCRYPTION_INVALID_ALGO       0xffff /* only used internally */
 #define SMB2_ENCRYPTION_NONE               0x0000 /* only used internally */
 #define SMB2_ENCRYPTION_AES128_CCM         0x0001 /* only in dialect >= 0x224 */
-#define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x310 */
+#define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x311 */
+#define SMB2_ENCRYPTION_AES256_CCM         0x0003 /* only in dialect >= 0x311 */
+#define SMB2_ENCRYPTION_AES256_GCM         0x0004 /* only in dialect >= 0x311 */
 #define SMB2_NONCE_HIGH_MAX(nonce_len_bytes) ((uint64_t)(\
 	((nonce_len_bytes) >= 16) ? UINT64_MAX : \
 	((nonce_len_bytes) <= 8) ? 0 : \

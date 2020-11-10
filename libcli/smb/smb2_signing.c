@@ -224,6 +224,19 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 		}
 		in_key_length = out_key_length = 16;
 		break;
+	case SMB2_ENCRYPTION_AES256_CCM:
+	case SMB2_ENCRYPTION_AES256_GCM:
+		/*
+		 * AES256 uses the available input and
+		 * generated a 32 byte encryption key.
+		 */
+		if (master_key->length == 0) {
+			DBG_ERR("cipher_algo_id[%u] without key\n",
+				cipher_algo_id);
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
+		out_key_length = 32;
+		break;
 	default:
 		DBG_ERR("cipher_algo_id[%u] not supported\n", cipher_algo_id);
 		return NT_STATUS_FWP_INCOMPATIBLE_CIPHER_CONFIG;
@@ -671,6 +684,14 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		algo = GNUTLS_CIPHER_AES_128_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
 		break;
+	case SMB2_ENCRYPTION_AES256_CCM:
+		algo = GNUTLS_CIPHER_AES_256_CCM;
+		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+		break;
+	case SMB2_ENCRYPTION_AES256_GCM:
+		algo = GNUTLS_CIPHER_AES_256_GCM;
+		iv_size = gnutls_cipher_get_iv_size(algo);
+		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -883,6 +904,14 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		break;
 	case SMB2_ENCRYPTION_AES128_GCM:
 		algo = GNUTLS_CIPHER_AES_128_GCM;
+		iv_size = gnutls_cipher_get_iv_size(algo);
+		break;
+	case SMB2_ENCRYPTION_AES256_CCM:
+		algo = GNUTLS_CIPHER_AES_256_CCM;
+		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+		break;
+	case SMB2_ENCRYPTION_AES256_GCM:
+		algo = GNUTLS_CIPHER_AES_256_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
 		break;
 	default:

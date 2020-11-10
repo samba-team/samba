@@ -468,6 +468,8 @@ enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
 static const struct enum_list enum_smb3_encryption_algorithms[] = {
 	{SMB2_ENCRYPTION_AES128_GCM, "aes-128-gcm"},
 	{SMB2_ENCRYPTION_AES128_CCM, "aes-128-ccm"},
+	{SMB2_ENCRYPTION_AES256_GCM, "aes-256-gcm"},
+	{SMB2_ENCRYPTION_AES256_CCM, "aes-256-ccm"},
 	{-1, NULL}
 };
 

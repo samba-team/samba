@@ -6281,6 +6281,12 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	case SMB2_ENCRYPTION_AES128_GCM:
 		nonce_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_GCM);
 		break;
+	case SMB2_ENCRYPTION_AES256_CCM:
+		nonce_size = SMB2_AES_128_CCM_NONCE_SIZE;
+		break;
+	case SMB2_ENCRYPTION_AES256_GCM:
+		nonce_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_256_GCM);
+		break;
 	default:
 		nonce_size = 0;
 		break;
