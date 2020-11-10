@@ -928,6 +928,21 @@ accountExpires: %u
         domain_dn = self.get_default_basedn()
         return domain_dn.canonical_str().split('/')[0]
 
+    def domain_netbios_name(self):
+        """return the NetBIOS name of the domain root"""
+        domain_dn = self.get_default_basedn()
+        dns_name = self.domain_dns_name()
+        filter = "(&(objectClass=crossRef)(nETBIOSName=*)(ncName=%s)(dnsroot=%s))" % (domain_dn, dns_name)
+        partitions_dn = self.get_partitions_dn()
+        res = self.search(partitions_dn,
+                          scope=ldb.SCOPE_ONELEVEL,
+                          expression=filter)
+        try:
+            netbios_domain = res[0]["nETBIOSName"][0].decode()
+        except IndexError:
+            return None
+        return netbios_domain
+
     def forest_dns_name(self):
         """return the DNS name of the forest root"""
         forest_dn = self.get_root_basedn()

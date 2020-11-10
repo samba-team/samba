@@ -3001,14 +3001,8 @@ The users gecos field will be set to 'User4 test'
 
         if unix_home is None:
             # obtain nETBIOS Domain Name
-            filter = "(&(objectClass=crossRef)(nETBIOSName=*))"
-            searchdn = ("CN=Partitions,CN=Configuration," + domaindn)
-            try:
-                res = samdb.search(searchdn,
-                                   scope=ldb.SCOPE_SUBTREE,
-                                   expression=filter)
-                unix_domain = res[0]["nETBIOSName"][0]
-            except IndexError:
+            unix_domain = samdb.domain_netbios_name()
+            if unix_domain is None:
                 raise CommandError('Unable to find Unix domain')
 
             unix_home = "/home/{0}/{1}".format(unix_domain, username)
