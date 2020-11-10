@@ -324,11 +324,20 @@ _PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX 
 	return file_lines_parse_internal(p, size, numlines, mem_ctx);
 }
 
-_PUBLIC_ char **file_lines_parse(char *p,
+_PUBLIC_ char **file_lines_parse(const char *p_in,
 			size_t size,
 			int *numlines,
 			TALLOC_CTX *mem_ctx)
 {
+	/*
+	 * Copy the incoming string so it can end up
+	 * being owned by the returned pointer and
+	 * freed when that is.
+	 */
+	char *p = talloc_strdup(mem_ctx, p_in);
+	if (p == NULL) {
+		return NULL;
+	}
 	return file_lines_parse_internal(p, size, numlines, mem_ctx);
 }
 

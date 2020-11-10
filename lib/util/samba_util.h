@@ -394,7 +394,7 @@ load a file into memory from a fd.
 _PUBLIC_ char *fd_load(int fd, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 
-char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
+char **file_lines_parse(const char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
 
 /**
 load a file into memory
