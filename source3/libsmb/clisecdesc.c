@@ -216,6 +216,104 @@ NTSTATUS cli_query_mxac(struct cli_state *cli,
 	return cli_smb2_query_mxac(cli, filename, mxac);
 }
 
+struct cli_set_security_descriptor_state {
+	uint8_t param[8];
+	DATA_BLOB buf;
+};
+
+static void cli_set_security_descriptor_done1(struct tevent_req *subreq);
+static void cli_set_security_descriptor_done2(struct tevent_req *subreq);
+
+struct tevent_req *cli_set_security_descriptor_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t sec_info,
+	const struct security_descriptor *sd)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_set_security_descriptor_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_set_security_descriptor_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = marshall_sec_desc(
+		state, sd, &state->buf.data, &state->buf.length);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_set_info_fnum_send(
+			state, 	/* mem_ctx */
+			ev,	/* ev */
+			cli,	/* cli */
+			fnum,	/* fnum */
+			3,	/* in_info_type */
+			0,	/* in_file_info_class */
+			&state->buf, /* in_input_buffer */
+			sec_info); /* in_additional_info */
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq,	cli_set_security_descriptor_done2, req);
+		return req;
+	}
+
+	SIVAL(state->param, 0, fnum);
+	SIVAL(state->param, 4, sec_info);
+
+	subreq = cli_trans_send(
+		state, 		/* mem_ctx */
+		ev,		/* ev */
+		cli, 		/* cli */
+		0,		/* additional_flags2 */
+		SMBnttrans,	/* cmd */
+		NULL,		/* pipe_name */
+		-1,		/* fid */
+		NT_TRANSACT_SET_SECURITY_DESC, /* function */
+		0,		/* flags */
+		NULL,		/* setup */
+		0,		/* num_setup */
+		0,		/* max_setup */
+		state->param,	/* param */
+		8,		/* num_param */
+		0,		/* max_param */
+		state->buf.data, /* data */
+		state->buf.length, /* num_data */
+		0);		/* max_data */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(
+		subreq, cli_set_security_descriptor_done1, req);
+	return req;
+}
+
+static void cli_set_security_descriptor_done1(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_trans_recv(
+		subreq,	NULL, NULL, NULL, 0, NULL, NULL, 0, NULL,
+		NULL, 0, NULL);
+	return tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_set_security_descriptor_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_set_info_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_set_security_descriptor_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
 
 /****************************************************************************
   set the security descriptor for a open file
@@ -225,43 +323,30 @@ NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
 				     uint32_t sec_info,
 				     const struct security_descriptor *sd)
 {
-	uint8_t param[8];
-	uint8_t *data;
-	size_t len;
-	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_set_security_descriptor(cli,
-							fnum,
-							sec_info,
-							sd);
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	status = marshall_sec_desc(talloc_tos(), sd, &data, &len);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("marshall_sec_desc failed: %s\n",
-			   nt_errstr(status)));
-		return status;
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	SIVAL(param, 0, fnum);
-	SIVAL(param, 4, sec_info);
-
-	status = cli_trans(talloc_tos(), cli, SMBnttrans,
-			   NULL, -1, /* name, fid */
-			   NT_TRANSACT_SET_SECURITY_DESC, 0,
-			   NULL, 0, 0, /* setup */
-			   param, 8, 0, /* param */
-			   data, len, 0, /* data */
-			   NULL,	 /* recv_flags2 */
-			   NULL, 0, NULL, /* rsetup */
-			   NULL, 0, NULL, /* rparam */
-			   NULL, 0, NULL); /* rdata */
-	TALLOC_FREE(data);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to send NT_TRANSACT_SET_SECURITY_DESC: %s\n",
-			  nt_errstr(status)));
+	req = cli_set_security_descriptor_send(
+		frame, ev, cli, fnum, sec_info, sd);
+	if (req == NULL) {
+		goto fail;
 	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_set_security_descriptor_recv(req);
+ fail:
+	TALLOC_FREE(frame);
 	return status;
 }
 

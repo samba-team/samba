@@ -954,6 +954,14 @@ NTSTATUS cli_query_security_descriptor(struct cli_state *cli,
 				       struct security_descriptor **sd);
 NTSTATUS cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
 			  TALLOC_CTX *mem_ctx, struct security_descriptor **sd);
+struct tevent_req *cli_set_security_descriptor_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint32_t sec_info,
+	const struct security_descriptor *sd);
+NTSTATUS cli_set_security_descriptor_recv(struct tevent_req *req);
 NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
 				     uint16_t fnum,
 				     uint32_t sec_info,
