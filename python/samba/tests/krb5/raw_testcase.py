@@ -425,7 +425,6 @@ class RawKerberosTest(TestCase):
             pass
 
         if e == kcrypto.Enctype.RC4:
-            self.assertIsNone(salt)
             nthash = creds.get_nt_hash()
             return self.SessionKey_create(etype=e, contents=nthash, kvno=kvno)
 
