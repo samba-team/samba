@@ -38,13 +38,13 @@ class SamDBTestCase(TestCaseInTempDir):
         super(SamDBTestCase, self).setUp()
         self.session = system_session()
         logger = logging.getLogger("selftest")
-        domain = "dsdb"
-        realm = "dsdb.samba.example.com"
+        self.domain = "dsdb"
+        self.realm = "dsdb.samba.example.com"
         host_name = "test"
         server_role = "active directory domain controller"
         self.result = provision(logger,
                                 self.session, targetdir=self.tempdir,
-                                realm=realm, domain=domain,
+                                realm=self.realm, domain=self.domain,
                                 hostname=host_name,
                                 use_ntvfs=True,
                                 serverrole=server_role,
@@ -61,3 +61,10 @@ class SamDBTestCase(TestCaseInTempDir):
             shutil.rmtree(os.path.join(self.tempdir, d))
 
         super(SamDBTestCase, self).tearDown()
+
+
+class SamDBTests(SamDBTestCase):
+
+    def test_get_domain(self):
+        self.assertEqual(self.samdb.domain_dns_name(), self.realm.lower())
+        self.assertEqual(self.samdb.domain_netbios_name(), self.domain.upper())
