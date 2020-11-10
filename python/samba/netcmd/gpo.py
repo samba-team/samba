@@ -1880,6 +1880,34 @@ class cmd_sudoers(SuperCommand):
     subcommands["list"] = cmd_list_sudoers()
     subcommands["remove"] = cmd_remove_sudoers()
 
+class cmd_set_security(Command):
+    """Set Samba Security Group Policy to the sysvol
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "policy", "value?"]
+
+    def run(self, gpo, policy, value=None, H=None, sambaopts=None,
+            credopts=None, versionopts=None):
+        pass
+
+class cmd_security(SuperCommand):
+    """Manage Security Group Policy Objects"""
+    subcommands = {}
+    subcommands["set"] = cmd_set_security()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}

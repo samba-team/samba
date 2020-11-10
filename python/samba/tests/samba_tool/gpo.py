@@ -546,6 +546,44 @@ class GpoCmdTestCase(SambaToolCmdTest):
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
 
+    def test_security_set(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        inf_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+            self.gpo_guid, 'Machine/Microsoft/Windows NT/SecEdit/GptTmpl.inf')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge', '10',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to set MaxTicketAge')
+        self.assertTrue(os.path.exists(inf_pol),
+                        '%s was not created' % inf_pol)
+        inf_pol_contents = open(inf_pol, 'r').read()
+        self.assertIn('MaxTicketAge = 10', inf_pol_contents,
+                      'The test entry was not found!')
+
+        # Ensure an empty set command deletes the entry
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to unset MaxTicketAge')
+        inf_pol_contents = open(inf_pol, 'r').read()
+        self.assertNotIn('MaxTicketAge = 10', inf_pol_contents,
+                      'The test entry was still found!')
+
     def test_sudoers_remove(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
