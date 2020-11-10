@@ -243,6 +243,34 @@ done:
 	return ret;
 }
 
+static bool test_file_lines_parse(struct torture_context *tctx)
+{
+	char **lines;
+	int numlines;
+	TALLOC_CTX *mem_ctx = tctx;
+	char *buf;
+	size_t size;
+
+	torture_assert(tctx, file_save(TEST_FILENAME,
+				       (const void *)TEST_DATA,
+				       strlen(TEST_DATA)),
+			"saving file");
+
+	buf = file_load(TEST_FILENAME, &size, 0, mem_ctx);
+	torture_assert(tctx, buf, "failed to load file");
+	unlink(TEST_FILENAME);
+
+	lines = file_lines_parse(buf,
+				 size,
+				 &numlines,
+				 mem_ctx);
+	torture_assert(tctx, lines, "failed to parse lines");
+
+	TALLOC_FREE(lines);
+	TALLOC_FREE(buf);
+	return true;
+}
+
 struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "file");
@@ -255,6 +283,9 @@ struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)
 				      test_file_lines_load);
 
 	torture_suite_add_simple_test(suite, "afdgets", test_afdgets);
+
+	torture_suite_add_simple_test(suite, "file_lines_parse",
+			test_file_lines_parse);
 
 	return suite;
 }
