@@ -1112,7 +1112,7 @@ def send_email(subject, text, log_tar):
     outer['From'] = options.email_from
     outer['Date'] = email.utils.formatdate(localtime=True)
     outer.preamble = 'Autobuild mails are now in MIME because we optionally attach the logs.\n'
-    outer.attach(MIMEText(text, 'plain'))
+    outer.attach(MIMEText(text, 'plain', 'utf-8'))
     if options.attach_logs:
         with open(log_tar, 'rb') as fp:
             msg = MIMEApplication(fp.read(), 'gzip', email.encoders.encode_base64)
