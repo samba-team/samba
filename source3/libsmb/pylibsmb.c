@@ -1408,6 +1408,39 @@ static PyObject *py_smb_setacl(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
+{
+	PyObject *py_sd = NULL;
+	struct tevent_req *req = NULL;
+	struct security_descriptor *sd = NULL;
+	uint16_t fnum;
+	unsigned int sinfo;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args, "iOI:set_sd", &fnum, &py_sd, &sinfo)) {
+		return NULL;
+	}
+
+	sd = pytalloc_get_type(py_sd, struct security_descriptor);
+	if (!sd) {
+		PyErr_Format(PyExc_TypeError,
+			"Expected dcerpc.security.descriptor as argument, got %s",
+			pytalloc_get_name(py_sd));
+		return NULL;
+	}
+
+	req = cli_set_security_descriptor_send(
+		NULL, self->ev, self->cli, fnum, sinfo, sd);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return false;
+	}
+
+	status = cli_set_security_descriptor_recv(req);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -1466,6 +1499,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "set_acl", (PyCFunction)py_smb_setacl, METH_VARARGS,
 	  "set_acl(path, security_descriptor[, security_info=0]) -> None\n\n"
 	  "\t\tSet security descriptor for file." },
+	{ "set_sd", (PyCFunction)py_smb_set_sd, METH_VARARGS,
+	  "set_sd(fnum, security_descriptor[, security_info=0]) -> None\n\n"
+	  "\t\tSet security descriptor for opened file." },
 	{ NULL, NULL, 0, NULL }
 };
 
