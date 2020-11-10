@@ -87,6 +87,26 @@ class SimpleKerberosTests(RawKerberosTest):
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
         self.assertFalse(ENC_PA_REP_FLAG & flags)
 
+    def test_mit_arcfour_salt(self):
+        creds = self.get_user_creds()
+        etypes = (ARCFOUR_HMAC_MD5,)
+        (rep, *_) = self.as_pre_auth_req(creds, etypes)
+        self.check_preauth_rep(rep)
+        etype_info2 = self.get_etype_info2(rep)
+        if 'salt' not in etype_info2[0]:
+            self.fail(
+                "(MIT) Salt not populated for ARCFOUR_HMAC_MD5 encryption")
+
+    def test_heimdal_arcfour_salt(self):
+        creds = self.get_user_creds()
+        etypes = (ARCFOUR_HMAC_MD5,)
+        (rep, *_) = self.as_pre_auth_req(creds, etypes)
+        self.check_preauth_rep(rep)
+        etype_info2 = self.get_etype_info2(rep)
+        if 'salt' in etype_info2[0]:
+            self.fail(
+                "(Heimdal) Salt populated for ARCFOUR_HMAC_MD5 encryption")
+
     def as_pre_auth_req(self, creds, etypes):
         user = creds.get_username()
         realm = creds.get_realm()
