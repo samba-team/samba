@@ -135,14 +135,17 @@
 #define SMB2_NETNAME_NEGOTIATE_CONTEXT_ID   0x0005
 #define SMB2_TRANSPORT_CAPABILITIES         0x0006
 #define SMB2_RDMA_TRANSFORM_CAPABILITIES    0x0007
+#define SMB2_SIGNING_CAPABILITIES           0x0008
 
 /* Values for the SMB2_PREAUTH_INTEGRITY_CAPABILITIES Context (>= 0x310) */
 #define SMB2_PREAUTH_INTEGRITY_SHA512       0x0001
 
+/* Values for the SMB2_SIGNING_CAPABILITIES Context (>= 0x311) */
 #define SMB2_SIGNING_INVALID_ALGO          0xffff /* only used internally */
 #define SMB2_SIGNING_MD5_SMB1              0xfffe /* internally for SMB1 */
 #define SMB2_SIGNING_HMAC_SHA256           0x0000 /* default <= 0x210 */
 #define SMB2_SIGNING_AES128_CMAC           0x0001 /* default >= 0x224 */
+#define SMB2_SIGNING_AES128_GMAC           0x0002 /* only in dialect >= 0x311 */
 
 /* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x311) */
 #define SMB2_ENCRYPTION_INVALID_ALGO       0xffff /* only used internally */
