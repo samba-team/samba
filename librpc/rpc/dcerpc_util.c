@@ -361,10 +361,9 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	 *
 	 * See also bug #11982.
 	 */
-	if (auth_data_only && data_and_pad == 0 &&
-	    auth->auth_pad_length > 0) {
+	if (auth_data_only) {
 		/*
-		 * we need to ignore invalid auth_pad_length
+		 * We need to ignore auth_pad_length
 		 * values for BIND_*, ALTER_* and AUTH3 pdus.
 		 */
 		auth->auth_pad_length = 0;
@@ -381,34 +380,6 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		auth->auth_context_id = DCERPC_BIND_NAK_REASON_NOT_SPECIFIED;
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	if (auth_data_only && data_and_pad > auth->auth_pad_length) {
-		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
-			    "Client sent a longer BIND packet than expected by %"PRIu16" bytes "
-			    "(pkt_trailer->length=%zu - auth_length=%"PRIu16") "
-			    "= %"PRIu16" auth_pad_length=%"PRIu8"\n",
-			    data_and_pad - auth->auth_pad_length,
-			    pkt_trailer->length,
-			    auth_length,
-			    data_and_pad,
-			    auth->auth_pad_length);
-		talloc_free(ndr);
-		ZERO_STRUCTP(auth);
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
-		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
-			    "Calculated %"PRIu16" (pkt_trailer->length=%zu - auth_length=%"PRIu16") "
-			    "but auth_pad_length=%"PRIu8"\n",
-			    data_and_pad,
-			    pkt_trailer->length,
-			    auth_length,
-			    auth->auth_pad_length);
-		talloc_free(ndr);
-		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
