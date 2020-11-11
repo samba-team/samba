@@ -137,6 +137,10 @@
 /* Values for the SMB2_PREAUTH_INTEGRITY_CAPABILITIES Context (>= 0x310) */
 #define SMB2_PREAUTH_INTEGRITY_SHA512       0x0001
 
+#define SMB2_SIGNING_INVALID_ALGO          0xffff /* only used internally */
+#define SMB2_SIGNING_HMAC_SHA256           0x0000 /* default <= 0x210 */
+#define SMB2_SIGNING_AES128_CMAC           0x0001 /* default >= 0x224 */
+
 /* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x310) */
 #define SMB2_ENCRYPTION_AES128_CCM         0x0001 /* only in dialect >= 0x224 */
 #define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x310 */
