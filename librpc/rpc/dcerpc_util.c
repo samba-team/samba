@@ -240,8 +240,10 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	enum ndr_err_code ndr_err;
 	uint16_t data_and_pad;
 	uint16_t auth_length;
+	uint16_t auth_offset;
 	uint32_t tmp_length;
 	uint32_t max_pad_len = 0;
+	DATA_BLOB auth_blob;
 
 	ZERO_STRUCTP(auth);
 	if (_auth_length != NULL) {
@@ -281,20 +283,22 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	}
 
 	data_and_pad = pkt_trailer->length - auth_length;
+	auth_offset = pkt->frag_length - auth_length;
+	if ((auth_offset % 4) != 0) {
+		DBG_WARNING("auth_offset[%u] not 4 byte aligned\n",
+			    (unsigned)auth_offset);
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
 
-	ndr = ndr_pull_init_blob(pkt_trailer, mem_ctx);
+	auth_blob = data_blob_const(pkt_trailer->data + data_and_pad,
+				    auth_length);
+	ndr = ndr_pull_init_blob(&auth_blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	ndr_err = ndr_pull_advance(ndr, data_and_pad);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(ndr);
-		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth);
