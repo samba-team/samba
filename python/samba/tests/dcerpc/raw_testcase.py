@@ -889,6 +889,7 @@ class RawDCERPCTest(TestCase):
         if len(ai) > samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH:
             p.auth_length = len(ai) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH
         else:
+            self.assertEqual(len(ai), 0)
             p.auth_length = 0
         p.call_id = call_id
         p.u = payload
@@ -1001,10 +1002,10 @@ class RawDCERPCTest(TestCase):
         if len(ai) > samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH:
             self.assertEqual(p.auth_length,
                              len(ai) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
-        elif auth_length is not None:
-            self.assertEqual(p.auth_length, auth_length)
-        else:
+        elif auth_length is None:
             self.assertEqual(p.auth_length, 0)
+        if auth_length is not None:
+            self.assertEqual(p.auth_length, auth_length)
         self.assertEqual(p.call_id, call_id)
 
         return
