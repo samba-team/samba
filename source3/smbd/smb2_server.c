@@ -399,7 +399,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 			NTSTATUS status;
 			size_t enc_len;
 
-			if (xconn->protocol < PROTOCOL_SMB2_24) {
+			if (xconn->protocol < PROTOCOL_SMB3_00) {
 				DEBUG(10, ("Got SMB2_TRANSFORM header, "
 					   "but dialect[0x%04X] is used\n",
 					   xconn->smb2.server.dialect));
