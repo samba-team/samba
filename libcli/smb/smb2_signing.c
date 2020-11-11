@@ -323,6 +323,9 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 					    uint8_t signature[16])
 {
 	const uint8_t *hdr = (uint8_t *)vector[0].iov_base;
+	uint16_t opcode;
+	uint32_t flags;
+	uint64_t msg_id;
 	static const uint8_t zero_sig[16] = { 0, };
 	gnutls_mac_algorithm_t hmac_algo = GNUTLS_MAC_UNKNOWN;
 	int i;
@@ -337,6 +340,29 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	SMB_ASSERT(count >= 2);
 	SMB_ASSERT(vector[0].iov_len == SMB2_HDR_BODY);
 	SMB_ASSERT(count <= 4);
+
+	opcode = SVAL(hdr, SMB2_HDR_OPCODE);
+	flags = IVAL(hdr, SMB2_HDR_FLAGS);
+	if (flags & SMB2_HDR_FLAG_REDIRECT) {
+		NTSTATUS pdu_status = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
+		if (NT_STATUS_EQUAL(pdu_status, NT_STATUS_PENDING)) {
+			DBG_ERR("opcode[%u] NT_STATUS_PENDING\n", opcode);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		if (opcode == SMB2_OP_CANCEL) {
+			DBG_ERR("SMB2_OP_CANCEL response should not be signed\n");
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+	msg_id = BVAL(hdr, SMB2_HDR_MESSAGE_ID);
+	if (msg_id == 0) {
+		DBG_ERR("opcode[%u] msg_id == 0\n", opcode);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (msg_id == UINT64_MAX) {
+		DBG_ERR("opcode[%u] msg_id == UINT64_MAX\n", opcode);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	switch (sign_algo_id) {
 	case SMB2_SIGNING_AES128_CMAC:
@@ -474,6 +500,9 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("smb2_signing_calc_signature(sign_algo_id=%u) - %s\n",
 			(unsigned)sign_algo_id, nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
+			smb_panic(__location__);
+		}
 		return status;
 	}
 
@@ -535,6 +564,9 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("smb2_signing_calc_signature(sign_algo_id=%u) - %s\n",
 			(unsigned)sign_algo_id, nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
 		return status;
 	}
 
