@@ -2811,7 +2811,7 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 
 	SMB_ASSERT(!req->request_counters_updated);
 
-	if (xconn->protocol < PROTOCOL_SMB2_22) {
+	if (xconn->protocol < PROTOCOL_SMB3_00) {
 		return NT_STATUS_OK;
 	}
 
@@ -3047,7 +3047,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	if (opcode == SMB2_OP_CANCEL) {
 		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
 	}
-	if (xconn->protocol >= PROTOCOL_SMB2_22) {
+	if (xconn->protocol >= PROTOCOL_SMB3_00) {
 		allowed_flags |= SMB2_HDR_FLAG_REPLAY_OPERATION;
 	}
 	if ((flags & ~allowed_flags) != 0) {
@@ -3455,7 +3455,7 @@ static void smbd_smb2_request_reply_update_counts(struct smbd_smb2_request *req)
 
 	req->request_counters_updated = false;
 
-	if (xconn->protocol < PROTOCOL_SMB2_22) {
+	if (xconn->protocol < PROTOCOL_SMB3_00) {
 		return;
 	}
 

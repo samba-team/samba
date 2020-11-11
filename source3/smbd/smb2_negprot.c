@@ -524,7 +524,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
 	}
 
-	if (protocol >= PROTOCOL_SMB2_22 &&
+	if (protocol >= PROTOCOL_SMB3_00 &&
 	    xconn->client->server_multi_channel_enabled)
 	{
 		if (in_capabilities & SMB2_CAP_MULTI_CHANNEL) {
