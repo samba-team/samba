@@ -1,7 +1,4 @@
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_full_pad_spnego_alter
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_full_pad_spnego_auth3
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_pad_auth3_align2_ntlm
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_pad_auth3_align2_spnego
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_pad_ntlm_2889_auth3
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_alter
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_auth3
