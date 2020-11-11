@@ -6426,7 +6426,16 @@ int main(int argc,char *argv[])
 	lp_set_cmdline("log level", "1");
 
 	/* skip argv(0) */
-	pc = poptGetContext("smbclient", argc, const_argv, long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    const_argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		exit(1);
+	}
+
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
 	creds = samba_cmdline_get_creds();
