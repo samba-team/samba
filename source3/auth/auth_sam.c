@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -142,10 +143,28 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 			break;
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
-			if ( !is_local_name && !is_my_domain ) {
-				DEBUG(6,("check_samstrict_security: %s is not one of my local names or domain name (DC)\n",
-					effective_domain));
-				return NT_STATUS_NOT_IMPLEMENTED;
+			if (!is_local_name && !is_my_domain) {
+			       /* If we are running on a DC that has PASSDB module with domain
+				* information, check if DNS forest name is matching the domain
+				* name. This is the case of FreeIPA domain controller when
+				* trusted AD DCs attempt to authenticate FreeIPA users using
+				* the forest root domain (which is the only domain in FreeIPA).
+				*/
+				struct pdb_domain_info *dom_info = NULL;
+
+				dom_info = pdb_get_domain_info(mem_ctx);
+				if ((dom_info != NULL) && (dom_info->dns_forest != NULL)) {
+					is_my_domain = strequal(user_info->mapped.domain_name,
+								dom_info->dns_forest);
+				}
+
+				TALLOC_FREE(dom_info);
+				if (!is_my_domain) {
+					DEBUG(6,("check_samstrict_security: %s is not one "
+						 "of my local names or domain name (DC)\n",
+						 effective_domain));
+					return NT_STATUS_NOT_IMPLEMENTED;
+				}
 			}
 
 			break;
@@ -230,6 +249,24 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 	}
 
 	is_my_domain = strequal(user_info->mapped.domain_name, lp_workgroup());
+	if (!is_my_domain) {
+	       /* If we are running on a DC that has PASSDB module with domain
+		* information, check if DNS forest name is matching the domain
+		* name. This is the case of FreeIPA domain controller when
+		* trusted AD DCs attempt to authenticate FreeIPA users using
+		* the forest root domain (which is the only domain in FreeIPA).
+		*/
+		struct pdb_domain_info *dom_info = NULL;
+		dom_info = pdb_get_domain_info(mem_ctx);
+
+		if ((dom_info != NULL) && (dom_info->dns_forest != NULL)) {
+			is_my_domain = strequal(user_info->mapped.domain_name,
+						dom_info->dns_forest);
+		}
+
+		TALLOC_FREE(dom_info);
+	}
+
 	if (!is_my_domain) {
 		DBG_INFO("%s is not our domain name (DC for %s)\n",
 			 effective_domain, lp_workgroup());
