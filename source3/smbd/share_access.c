@@ -79,7 +79,7 @@ static bool token_contains_name(TALLOC_CTX *mem_ctx,
 	enum lsa_SidType type;
 
 	if (username != NULL) {
-		size_t domain_len = strlen(domain);
+		size_t domain_len = domain != NULL ? strlen(domain) : 0;
 
 		/* Check if username starts with domain name */
 		if (domain_len > 0) {
