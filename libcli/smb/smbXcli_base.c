@@ -4775,7 +4775,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		memset(buf+12, 0, 16);	/* ClientGuid */
 	}
 
-	if (state->conn->max_protocol >= PROTOCOL_SMB3_10) {
+	if (state->conn->max_protocol >= PROTOCOL_SMB3_11) {
 		const struct smb3_encryption_capabilities *client_ciphers =
 			&state->conn->smb2.client.smb3_capabilities.encryption;
 		NTSTATUS status;
@@ -4964,7 +4964,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	}
 
 	conn->smb2.server.security_mode = SVAL(body, 2);
-	if (conn->protocol >= PROTOCOL_SMB3_10) {
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		negotiate_context_count = SVAL(body, 6);
 	}
 
@@ -5007,7 +5007,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		conn->smb2.server.sign_algo = SMB2_SIGNING_HMAC_SHA256;
 	}
 
-	if (conn->protocol < PROTOCOL_SMB3_10) {
+	if (conn->protocol < PROTOCOL_SMB3_11) {
 		TALLOC_FREE(subreq);
 
 		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
@@ -6050,7 +6050,7 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (session->conn->protocol < PROTOCOL_SMB3_10) {
+	if (session->conn->protocol < PROTOCOL_SMB3_11) {
 		return NT_STATUS_OK;
 	}
 
@@ -6130,7 +6130,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB3_10) {
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		preauth_hash = data_blob_const(session->smb2_channel.preauth_sha512,
 				sizeof(session->smb2_channel.preauth_sha512));
 	}
@@ -6199,7 +6199,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		check_signature = true;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB3_10) {
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		check_signature = true;
 	}
 
@@ -6336,7 +6336,7 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB3_10) {
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		struct _derivation *d;
 		DATA_BLOB p;
 

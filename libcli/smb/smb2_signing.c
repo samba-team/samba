@@ -40,7 +40,7 @@ void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *
 {
 	*ds = (struct smb2_signing_derivations) { .signing = NULL, };
 
-	if (protocol >= PROTOCOL_SMB3_10) {
+	if (protocol >= PROTOCOL_SMB3_11) {
 		struct smb2_signing_derivation *d = NULL;
 
 		SMB_ASSERT(preauth_hash.length != 0);

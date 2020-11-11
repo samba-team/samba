@@ -76,7 +76,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 
 	fixed = state->fixed;
 	SSVAL(fixed, 0, 9);
-	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_10) {
+	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_11) {
 		SSVAL(fixed, 2, flags);
 	} else {
 		SSVAL(fixed, 2, 0); /* Reserved */
@@ -161,7 +161,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (smbXcli_conn_protocol(state->conn) >= PROTOCOL_SMB3_10) {
+	if (smbXcli_conn_protocol(state->conn) >= PROTOCOL_SMB3_11) {
 		tevent_req_done(req);
 		return;
 	}
