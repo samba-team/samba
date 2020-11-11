@@ -320,8 +320,13 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		 */
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
-		auth->auth_context_id =
-			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+			auth->auth_context_id =
+				call->in_auth_info.auth_context_id;
+		} else {
+			auth->auth_context_id =
+				DCERPC_BIND_NAK_REASON_NOT_SPECIFIED;
+		}
 		return false;
 	}
 
