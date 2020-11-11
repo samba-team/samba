@@ -133,6 +133,7 @@
 #define SMB2_ENCRYPTION_CAPABILITIES        0x0002
 #define SMB2_COMPRESSION_CAPABILITIES       0x0003
 #define SMB2_NETNAME_NEGOTIATE_CONTEXT_ID   0x0005
+#define SMB2_TRANSPORT_CAPABILITIES         0x0006
 
 /* Values for the SMB2_PREAUTH_INTEGRITY_CAPABILITIES Context (>= 0x310) */
 #define SMB2_PREAUTH_INTEGRITY_SHA512       0x0001
@@ -154,6 +155,9 @@
 	((nonce_len_bytes) <= 8) ? 0 : \
 	(((uint64_t)1 << (((nonce_len_bytes) - 8)*8)) - 1) \
 	))
+
+/* Values for the SMB2_TRANSPORT_CAPABILITIES Context (>= 0x311) */
+#define SMB2_ACCEPT_TRANSPORT_LEVEL_SECURITY           0x0001
 
 /* SMB2 session (request) flags */
 #define SMB2_SESSION_FLAG_BINDING       0x01
