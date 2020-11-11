@@ -209,7 +209,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 	*_auth = NULL;
 
-	if (xconn->protocol >= PROTOCOL_SMB3_10) {
+	if (xconn->protocol >= PROTOCOL_SMB3_11) {
 		struct smbXsrv_preauth *preauth;
 		gnutls_hash_hd_t hash_hnd;
 		int rc;
@@ -559,7 +559,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 
 	*_auth = NULL;
 
-	if (xconn->protocol >= PROTOCOL_SMB3_10) {
+	if (xconn->protocol >= PROTOCOL_SMB3_11) {
 		struct smbXsrv_preauth *preauth;
 		gnutls_hash_hd_t hash_hnd = NULL;
 		int rc;

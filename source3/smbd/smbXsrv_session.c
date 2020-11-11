@@ -1543,7 +1543,7 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 	a->idle_time = now;
 	a->channel_id = conn->channel_id;
 
-	if (conn->protocol >= PROTOCOL_SMB3_10) {
+	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		a->preauth = talloc(a, struct smbXsrv_preauth);
 		if (a->preauth == NULL) {
 			TALLOC_FREE(session);
