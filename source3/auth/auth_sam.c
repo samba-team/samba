@@ -143,12 +143,13 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 			break;
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
+		case ROLE_IPA_DC:
 			if (!is_local_name && !is_my_domain) {
 			       /* If we are running on a DC that has PASSDB module with domain
 				* information, check if DNS forest name is matching the domain
-				* name. This is the case of FreeIPA domain controller when
-				* trusted AD DCs attempt to authenticate FreeIPA users using
-				* the forest root domain (which is the only domain in FreeIPA).
+				* name. This is the case of IPA domain controller when
+				* trusted AD DCs attempt to authenticate IPA users using
+				* the forest root domain (which is the only domain in IPA).
 				*/
 				struct pdb_domain_info *dom_info = NULL;
 
@@ -234,6 +235,7 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
+	case ROLE_IPA_DC:
 		break;
 	default:
 		DBG_ERR("Invalid server role\n");
@@ -252,9 +254,9 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 	if (!is_my_domain) {
 	       /* If we are running on a DC that has PASSDB module with domain
 		* information, check if DNS forest name is matching the domain
-		* name. This is the case of FreeIPA domain controller when
-		* trusted AD DCs attempt to authenticate FreeIPA users using
-		* the forest root domain (which is the only domain in FreeIPA).
+		* name. This is the case of IPA domain controller when
+		* trusted AD DCs attempt to authenticate IPA users using
+		* the forest root domain (which is the only domain in IPA).
 		*/
 		struct pdb_domain_info *dom_info = NULL;
 		dom_info = pdb_get_domain_info(mem_ctx);

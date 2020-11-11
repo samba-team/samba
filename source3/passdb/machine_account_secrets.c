@@ -198,7 +198,8 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	dyn_guid = (struct GUID *)secrets_fetch(key, &size);
 
 	if (!dyn_guid) {
-		if (lp_server_role() == ROLE_DOMAIN_PDC) {
+		if (lp_server_role() == ROLE_DOMAIN_PDC ||
+		    lp_server_role() == ROLE_IPA_DC) {
 			new_guid = GUID_random();
 			if (!secrets_store_domain_guid(domain, &new_guid))
 				return False;
@@ -314,9 +315,7 @@ static const char *trust_keystr(const char *domain)
 
 enum netr_SchannelType get_default_sec_channel(void)
 {
-	if (lp_server_role() == ROLE_DOMAIN_BDC ||
-	    lp_server_role() == ROLE_DOMAIN_PDC ||
-	    lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+	if (IS_DC) {
 		return SEC_CHAN_BDC;
 	} else {
 		return SEC_CHAN_WKSTA;

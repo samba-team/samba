@@ -378,6 +378,7 @@ WERROR NetGetJoinInformation_l(struct libnetapi_ctx *ctx,
 		case ROLE_DOMAIN_MEMBER:
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
+		case ROLE_IPA_DC:
 			*r->out.name_type = NetSetupDomainName;
 			break;
 		case ROLE_STANDALONE:

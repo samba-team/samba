@@ -109,6 +109,7 @@ static const struct enum_list enum_server_role[] = {
 	{ROLE_ACTIVE_DIRECTORY_DC, "active directory domain controller"},
 	{ROLE_ACTIVE_DIRECTORY_DC, "domain controller"},
 	{ROLE_ACTIVE_DIRECTORY_DC, "dc"},
+	{ROLE_IPA_DC, "IPA primary domain controller"},
 	{-1, NULL}
 };
 

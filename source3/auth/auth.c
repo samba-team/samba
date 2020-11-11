@@ -544,6 +544,7 @@ NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 		break;
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
+	case ROLE_IPA_DC:
 		role = "'DC'";
 		methods = "anonymous sam winbind sam_ignoredomain";
 		break;
@@ -575,6 +576,7 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
+	case ROLE_IPA_DC:
 		methods = "sam_netlogon3 winbind";
 		break;
 
@@ -596,6 +598,7 @@ NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
 	case ROLE_DOMAIN_MEMBER:
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
+	case ROLE_IPA_DC:
 		methods = "sam";
 		break;
 	case ROLE_ACTIVE_DIRECTORY_DC:
