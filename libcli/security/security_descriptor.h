@@ -48,8 +48,6 @@ bool security_descriptor_equal(const struct security_descriptor *sd1,
 bool security_descriptor_mask_equal(const struct security_descriptor *sd1, 
 				    const struct security_descriptor *sd2, 
 				    uint32_t mask);
-struct security_descriptor *security_descriptor_append(struct security_descriptor *sd,
-						       ...);
 struct security_descriptor *security_descriptor_dacl_create(TALLOC_CTX *mem_ctx,
 							    uint16_t sd_type,
 							    const char *owner_sid,

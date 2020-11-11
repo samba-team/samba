@@ -547,18 +547,6 @@ static struct security_descriptor *security_descriptor_appendv(struct security_d
 	return sd;
 }
 
-struct security_descriptor *security_descriptor_append(struct security_descriptor *sd,
-						       ...)
-{
-	va_list ap;
-
-	va_start(ap, sd);
-	sd = security_descriptor_appendv(sd, false, ap);
-	va_end(ap);
-
-	return sd;
-}
-
 static struct security_descriptor *security_descriptor_createv(TALLOC_CTX *mem_ctx,
 							       uint16_t sd_type,
 							       const char *owner_sid,
