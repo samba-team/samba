@@ -573,6 +573,7 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 		break;
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
+	case ROLE_IPA_DC:
 	case ROLE_AUTO:
 		return NT_STATUS_INTERNAL_ERROR;
 	case ROLE_DOMAIN_MEMBER:
@@ -721,6 +722,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 		break;
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
+	case ROLE_IPA_DC:
 	case ROLE_AUTO:
 		return NT_STATUS_INTERNAL_ERROR;
 	case ROLE_DOMAIN_MEMBER:

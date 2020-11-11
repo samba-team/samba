@@ -42,6 +42,7 @@ static const struct srv_role_tab {
 	{ ROLE_DOMAIN_BDC, "ROLE_DOMAIN_BDC" },
 	{ ROLE_DOMAIN_PDC, "ROLE_DOMAIN_PDC" },
 	{ ROLE_ACTIVE_DIRECTORY_DC, "ROLE_ACTIVE_DIRECTORY_DC" },
+	{ ROLE_IPA_DC, "ROLE_IPA_DC"},
 	{ 0, NULL }
 };
 
@@ -140,6 +141,7 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
+	case ROLE_IPA_DC:
 		if (security == SEC_USER) {
 			valid = true;
 		}

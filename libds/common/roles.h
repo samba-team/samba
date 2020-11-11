@@ -33,6 +33,7 @@ enum server_role {
 	
 	/* not in samr.idl */
 	ROLE_ACTIVE_DIRECTORY_DC = 4,
+	ROLE_IPA_DC = 5,
 
 	/* To determine the role automatically, this is not a valid role */
 	ROLE_AUTO          = 100

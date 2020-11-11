@@ -276,6 +276,7 @@ static NTSTATUS kdc_task_init(struct task_server *task)
 		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
+	case ROLE_IPA_DC:
 		task_server_terminate(
 		    task, "Cannot start KDC as a 'classic Samba' DC", false);
 		return NT_STATUS_INVALID_DOMAIN_ROLE;
