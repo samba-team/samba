@@ -121,7 +121,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 		/* If we are running on a DC that has PASSDB module with domain
 		 * information, check if DNS forest name is matching the domain
-		 * name. This is the case of FreeIPA domain controller when
+		 * name. This is the case of IPA domain controller when
 		 * trusted AD DC looks up users found in a Global Catalog of
 		 * the forest root domain. */
 		if (!check_global_sam && (IS_DC)) {

@@ -203,7 +203,7 @@ copy an IP address from one buffer to another
  Check to see if we are a DC for this domain
 *****************************************************************************/
 
-#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC || lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) 
+#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC || lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC || lp_server_role() == ROLE_IPA_DC)
 #define IS_AD_DC  (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC)
 
 /*
