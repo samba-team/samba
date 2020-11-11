@@ -187,6 +187,7 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 		break;
 	case SMB2_SIGNING_HMAC_SHA256:
 	case SMB2_SIGNING_AES128_CMAC:
+	case SMB2_SIGNING_AES128_GMAC:
 		/*
 		 * signing keys are padded or truncated to
 		 * 16 bytes.
@@ -316,6 +317,79 @@ bool smb2_signing_key_valid(const struct smb2_signing_key *key)
 	return true;
 }
 
+static NTSTATUS smb2_signing_gmac(gnutls_aead_cipher_hd_t cipher_hnd,
+				  const uint8_t *iv, size_t iv_size,
+				  const giovec_t *auth_iov, uint8_t auth_iovcnt,
+				  uint8_t *tag, size_t _tag_size)
+{
+	size_t tag_size = _tag_size;
+	int rc;
+#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
+
+	rc = gnutls_aead_cipher_encryptv2(cipher_hnd,
+					  iv, iv_size,
+					  auth_iov, auth_iovcnt,
+					  NULL, 0,
+					  tag, &tag_size);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+
+	return NT_STATUS_OK;
+#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+	TALLOC_CTX *tmp_ctx = NULL;
+	size_t atext_size = 0;
+	uint8_t *atext = NULL;
+	size_t len = 0;
+	size_t i;
+
+	/*
+	 * If we come from python bindings, we don't have a stackframe
+	 * around, so use the NULL context.
+	 *
+	 * This is fine as we make sure we free the memory.
+	 */
+	if (talloc_stackframe_exists()) {
+		tmp_ctx = talloc_tos();
+	}
+
+	for (i=0; i < auth_iovcnt; i++) {
+		atext_size += auth_iov[i].iov_len;
+	}
+
+	atext = talloc_size(tmp_ctx, atext_size);
+	if (atext == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < auth_iovcnt; i++) {
+		memcpy(atext + len,
+		       auth_iov[i].iov_base,
+		       auth_iov[i].iov_len);
+
+		len += auth_iov[i].iov_len;
+		if (len > atext_size) {
+			TALLOC_FREE(atext);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	rc = gnutls_aead_cipher_encrypt(cipher_hnd,
+					iv, iv_size,
+					atext,
+					atext_size,
+					tag_size,
+					NULL, 0,
+					tag, &tag_size);
+	TALLOC_FREE(atext);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+
+	return NT_STATUS_OK;
+#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+}
+
 static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key,
 					    uint16_t sign_algo_id,
 					    const struct iovec *vector,
@@ -365,6 +439,72 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	}
 
 	switch (sign_algo_id) {
+	case SMB2_SIGNING_AES128_GMAC: {
+		gnutls_cipher_algorithm_t algo = GNUTLS_CIPHER_AES_128_GCM;
+		uint32_t key_size = gnutls_cipher_get_key_size(algo);
+		uint32_t iv_size = gnutls_cipher_get_iv_size(algo);
+		size_t tag_size = gnutls_cipher_get_tag_size(algo);
+		gnutls_datum_t key = {
+			.data = signing_key->blob.data,
+			.size = MIN(signing_key->blob.length, key_size),
+		};
+		uint64_t high_bits = 0;
+		uint8_t iv[AES_BLOCK_SIZE] = {0};
+		giovec_t auth_iov[count+1];
+		size_t auth_iovcnt = 0;
+		NTSTATUS status;
+		int rc;
+
+		high_bits = flags & SMB2_HDR_FLAG_REDIRECT;
+		if (opcode == SMB2_OP_CANCEL) {
+			high_bits |= SMB2_HDR_FLAG_ASYNC;
+		}
+		SBVAL(iv, 0, msg_id);
+		SBVAL(iv, 8, high_bits);
+
+		if (signing_key->cipher_hnd == NULL) {
+			rc = gnutls_aead_cipher_init(&signing_key->cipher_hnd,
+						     algo,
+					             &key);
+			if (rc < 0) {
+				return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+			}
+		}
+
+		SMB_ASSERT(key_size == 16);
+		SMB_ASSERT(iv_size == 12);
+		SMB_ASSERT(tag_size == 16);
+
+		auth_iov[auth_iovcnt++] = (giovec_t) {
+			.iov_base = discard_const_p(uint8_t, hdr),
+			.iov_len  = SMB2_HDR_SIGNATURE,
+		};
+		auth_iov[auth_iovcnt++] = (giovec_t) {
+			.iov_base = discard_const_p(uint8_t, zero_sig),
+			.iov_len  = 16,
+		};
+		for (i=1; i < count; i++) {
+			auth_iov[auth_iovcnt++] = (giovec_t) {
+				.iov_base = discard_const_p(uint8_t, vector[i].iov_base),
+				.iov_len  = vector[i].iov_len,
+			};
+		}
+
+		status = smb2_signing_gmac(signing_key->cipher_hnd,
+					   iv,
+					   iv_size,
+					   auth_iov,
+					   auth_iovcnt,
+					   signature,
+					   tag_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		return NT_STATUS_OK;
+	}	break;
+
 	case SMB2_SIGNING_AES128_CMAC:
 #ifdef HAVE_GNUTLS_AES_CMAC
 		hmac_algo = GNUTLS_MAC_AES_CMAC_128;

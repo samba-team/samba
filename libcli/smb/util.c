@@ -466,6 +466,7 @@ enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
 }
 
 static const struct enum_list enum_smb3_signing_algorithms[] = {
+	{SMB2_SIGNING_AES128_GMAC, "aes-128-gmac"},
 	{SMB2_SIGNING_AES128_CMAC, "aes-128-cmac"},
 	{SMB2_SIGNING_HMAC_SHA256, "hmac-sha-256"},
 	{-1, NULL}

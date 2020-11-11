@@ -57,7 +57,7 @@ struct smb2_negotiate_context *smb2_negotiate_context_find(const struct smb2_neg
 #define WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK	31
 
 struct smb3_signing_capabilities {
-#define SMB3_SIGNING_CAPABILITIES_MAX_ALGOS 2
+#define SMB3_SIGNING_CAPABILITIES_MAX_ALGOS 3
 	uint16_t num_algos;
 	uint16_t algos[SMB3_SIGNING_CAPABILITIES_MAX_ALGOS];
 };
