@@ -255,6 +255,7 @@ const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
+	case ROLE_IPA_DC:
 		return lpcfg_workgroup(lp_ctx);
 	default:
 		return lpcfg_netbios_name(lp_ctx);

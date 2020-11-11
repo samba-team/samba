@@ -63,6 +63,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 			basic->domain = get_global_sam_name();
 			break;
 		case ROLE_DOMAIN_PDC:
+		case ROLE_IPA_DC:
 			basic->role = DS_ROLE_PRIMARY_DC;
 			basic->domain = get_global_sam_name();
 			break;

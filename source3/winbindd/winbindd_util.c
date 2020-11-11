@@ -1254,15 +1254,37 @@ bool init_domain_list(void)
 			secure_channel_type = SEC_CHAN_LOCAL;
 		}
 
-		status = add_trusted_domain(get_global_sam_name(),
-					    NULL,
-					    get_global_sam_sid(),
-					    LSA_TRUST_TYPE_DOWNLEVEL,
-					    trust_flags,
-					    0, /* trust_attribs */
-					    secure_channel_type,
-					    NULL,
-					    &domain);
+		if ((pdb_domain_info != NULL) && (role == ROLE_IPA_DC)) {
+			/* This is IPA DC that presents itself as
+			 * an Active Directory domain controller to trusted AD
+			 * forests but in fact is a classic domain controller.
+			 */
+			trust_flags = NETR_TRUST_FLAG_PRIMARY;
+			trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
+			trust_flags |= NETR_TRUST_FLAG_NATIVE;
+			trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
+			trust_flags |= NETR_TRUST_FLAG_TREEROOT;
+			status = add_trusted_domain(pdb_domain_info->name,
+						    pdb_domain_info->dns_domain,
+						    &pdb_domain_info->sid,
+						    LSA_TRUST_TYPE_UPLEVEL,
+						    trust_flags,
+						    LSA_TRUST_ATTRIBUTE_WITHIN_FOREST,
+						    secure_channel_type,
+						    NULL,
+						    &domain);
+			TALLOC_FREE(pdb_domain_info);
+		} else {
+			status = add_trusted_domain(get_global_sam_name(),
+						    NULL,
+						    get_global_sam_sid(),
+						    LSA_TRUST_TYPE_DOWNLEVEL,
+						    trust_flags,
+						    0, /* trust_attribs */
+						    secure_channel_type,
+						    NULL,
+						    &domain);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to add local SAM to "
 				"domain to winbindd's internal list\n");

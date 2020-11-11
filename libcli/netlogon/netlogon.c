@@ -93,7 +93,7 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		if (ndr->offset < ndr->data_size) {
 			TALLOC_FREE(ndr);
 			/*
-			 * We need to handle a bug in FreeIPA (at least <= 4.1.2).
+			 * We need to handle a bug in IPA (at least <= 4.1.2).
 			 *
 			 * They include the ip address information without setting
 			 * NETLOGON_NT_VERSION_5EX_WITH_IP, while using
