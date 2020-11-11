@@ -1775,6 +1775,7 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
 					DATA_BLOB *full_in)
 {
+	DATA_BLOB consume = data_blob_null;
 	struct spnego_state *spnego_state =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct spnego_state);
@@ -1841,17 +1842,26 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	consume = in;
 	expected = spnego_state->in_needed - spnego_state->in_frag.length;
-	if (in.length > expected) {
+	if (consume.length > expected) {
+		if (spnego_state->state_position != SPNEGO_SERVER_START) {
+			/*
+			 * we got more than expected
+			 */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		/*
-		 * we got more than expected
+		 * In SPNEGO_SERVER_START we need to ignore unexpected
+		 * bytes at the end.
 		 */
-		return NT_STATUS_INVALID_PARAMETER;
+		consume.length = expected;
 	}
 
-	if (in.length == spnego_state->in_needed) {
+	if (consume.length == spnego_state->in_needed) {
 		/*
-		 * if the in.length contains the full blob
+		 * if the consume.length contains the full blob
 		 * we are done.
 		 *
 		 * Note: this implies spnego_state->in_frag.length == 0,
@@ -1859,13 +1869,13 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 		 *       because we already know that we did not get
 		 *       more than expected.
 		 */
-		*full_in = in;
+		*full_in = consume;
 		spnego_state->in_needed = 0;
 		return NT_STATUS_OK;
 	}
 
 	ok = data_blob_append(spnego_state, &spnego_state->in_frag,
-			      in.data, in.length);
+			      consume.data, consume.length);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
