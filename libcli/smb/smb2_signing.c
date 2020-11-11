@@ -411,7 +411,6 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 }
 
 NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
-			       enum protocol_types protocol,
 			       struct iovec *vector,
 			       int count)
 {
@@ -452,11 +451,7 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, IVAL(hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
-	if (protocol >= PROTOCOL_SMB2_24) {
-		sign_algo_id = SMB2_SIGNING_AES128_CMAC;
-	} else {
-		sign_algo_id = SMB2_SIGNING_HMAC_SHA256;
-	}
+	sign_algo_id = signing_key->sign_algo_id;
 
 	status = smb2_signing_calc_signature(signing_key,
 					     sign_algo_id,
@@ -478,7 +473,6 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 }
 
 NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
-				enum protocol_types protocol,
 				const struct iovec *vector,
 				int count)
 {
@@ -518,11 +512,7 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 
 	sig = hdr+SMB2_HDR_SIGNATURE;
 
-	if (protocol >= PROTOCOL_SMB2_24) {
-		sign_algo_id = SMB2_SIGNING_AES128_CMAC;
-	} else {
-		sign_algo_id = SMB2_SIGNING_HMAC_SHA256;
-	}
+	sign_algo_id = signing_key->sign_algo_id;
 
 	status = smb2_signing_calc_signature(signing_key,
 					     sign_algo_id,

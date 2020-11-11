@@ -1939,7 +1939,6 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 		}
 	} else if (smb2_signing_key_valid(req->last_sign_key)) {
 		status = smb2_signing_sign_pdu(req->last_sign_key,
-					       xconn->protocol,
 					       outhdr_v,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2338,7 +2337,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 			smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
-					xconn->protocol,
 					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3078,7 +3076,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 
 		status = smb2_signing_check_pdu(signing_key,
-						xconn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
 						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3534,7 +3531,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		 * with the last signing key we remembered.
 		 */
 		status = smb2_signing_sign_pdu(req->last_sign_key,
-					       xconn->protocol,
 					       lasthdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3623,7 +3619,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
-					       xconn->protocol,
 					       outhdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -78,12 +78,10 @@ NTSTATUS smb2_signing_key_cipher_create(TALLOC_CTX *mem_ctx,
 bool smb2_signing_key_valid(const struct smb2_signing_key *key);
 
 NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
-			       enum protocol_types protocol,
 			       struct iovec *vector,
 			       int count);
 
 NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
-				enum protocol_types protocol,
 				const struct iovec *vector,
 				int count);
 

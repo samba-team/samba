@@ -3342,7 +3342,6 @@ skip_credits:
 			NTSTATUS status;
 
 			status = smb2_signing_sign_pdu(signing_key,
-						       state->session->conn->protocol,
 						       &iov[hdr_iov], num_iov - hdr_iov);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
@@ -3936,7 +3935,6 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			NTSTATUS signing_status;
 
 			signing_status = smb2_signing_check_pdu(signing_key,
-								state->conn->protocol,
 								&cur[1], 3);
 			if (!NT_STATUS_IS_OK(signing_status)) {
 				/*
@@ -6161,7 +6159,6 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 
 	if (check_signature) {
 		status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
-						session->conn->protocol,
 						recv_iov, 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -6339,7 +6336,6 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	ZERO_STRUCT(channel_key);
 
 	status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
-					session->conn->protocol,
 					recv_iov, 3);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
