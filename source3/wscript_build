@@ -1341,7 +1341,7 @@ pycredentials = 'pycredentials'
 bld.SAMBA3_PYTHON('pylibsmb',
                   source='libsmb/pylibsmb.c',
                   deps='smbclient samba-credentials %s' % pycredentials,
-                  realname='samba/samba3/libsmb_samba_internal.so'
+                  realname='samba/samba3/libsmb_samba_cwrapper.so'
                   )
 
 bld.SAMBA3_PYTHON('pymdscli',

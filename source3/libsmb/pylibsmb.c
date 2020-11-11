@@ -1610,10 +1610,10 @@ static PyMethodDef py_cli_state_methods[] = {
 
 static PyTypeObject py_cli_state_type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "libsmb_samba_internal.Conn",
+	.tp_name = "libsmb_samba_cwrapper.LibsmbCConn",
 	.tp_basicsize = sizeof(struct py_cli_state),
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-	.tp_doc = "libsmb connection",
+	.tp_doc = "libsmb cwrapper connection",
 	.tp_new = py_cli_state_new,
 	.tp_init = (initproc)py_cli_state_init,
 	.tp_dealloc = (destructor)py_cli_state_dealloc,
@@ -1624,17 +1624,17 @@ static PyMethodDef py_libsmb_methods[] = {
 	{0},
 };
 
-void initlibsmb_samba_internal(void);
+void initlibsmb_samba_cwrapper(void);
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "libsmb_samba_internal",
+    .m_name = "libsmb_samba_cwrapper",
     .m_doc = "libsmb wrapper",
     .m_size = -1,
     .m_methods = py_libsmb_methods,
 };
 
-MODULE_INIT_FUNC(libsmb_samba_internal)
+MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 {
 	PyObject *m = NULL;
 
@@ -1648,7 +1648,7 @@ MODULE_INIT_FUNC(libsmb_samba_internal)
 		return NULL;
 	}
 	Py_INCREF(&py_cli_state_type);
-	PyModule_AddObject(m, "Conn", (PyObject *)&py_cli_state_type);
+	PyModule_AddObject(m, "LibsmbCConn", (PyObject *)&py_cli_state_type);
 
 #define ADD_FLAGS(val)	PyModule_AddObject(m, #val, PyLong_FromLong(val))
 
