@@ -4756,7 +4756,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	SSVAL(buf, 2, dialect_count);
 	SSVAL(buf, 4, state->conn->smb2.client.security_mode);
 	SSVAL(buf, 6, 0);	/* Reserved */
-	if (state->conn->max_protocol >= PROTOCOL_SMB2_22) {
+	if (state->conn->max_protocol >= PROTOCOL_SMB3_00) {
 		SIVAL(buf, 8, state->conn->smb2.client.capabilities);
 	} else {
 		SIVAL(buf, 8, 0); 	/* Capabilities */
@@ -5379,7 +5379,7 @@ struct tevent_req *smb2cli_validate_negotiate_info_send(TALLOC_CTX *mem_ctx,
 	}
 	buf = state->in_input_buffer.data;
 
-	if (state->conn->max_protocol >= PROTOCOL_SMB2_22) {
+	if (state->conn->max_protocol >= PROTOCOL_SMB3_00) {
 		SIVAL(buf, 0, conn->smb2.client.capabilities);
 	} else {
 		SIVAL(buf, 0, 0); /* Capabilities */
