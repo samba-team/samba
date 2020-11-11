@@ -156,6 +156,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_contexts in_c = { .num_contexts = 0, };
 	struct smb2_negotiate_context *in_preauth = NULL;
 	struct smb2_negotiate_context *in_cipher = NULL;
+	struct smb2_negotiate_context *in_sign_algo = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
 	const struct smb311_capabilities default_smb3_capabilities =
 		smb311_capabilities_parse("server",
@@ -305,6 +306,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 	in_cipher = smb2_negotiate_context_find(&in_c,
 					SMB2_ENCRYPTION_CAPABILITIES);
+	in_sign_algo = smb2_negotiate_context_find(&in_c,
+					SMB2_SIGNING_CAPABILITIES);
 
 	/* negprot_spnego() returns a the server guid in the first 16 bytes */
 	negprot_spnego_blob = negprot_spnego(req, xconn);
@@ -533,6 +536,83 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	if (capabilities & SMB2_CAP_ENCRYPTION) {
 		xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
+	}
+
+	if (in_sign_algo != NULL) {
+		const struct smb3_signing_capabilities *srv_sign_algos =
+			&default_smb3_capabilities.signing;
+		uint16_t srv_preferred_idx = UINT16_MAX;
+		size_t needed = 2;
+		uint16_t sign_algo_count;
+		const uint8_t *p;
+		size_t i;
+
+		if (in_sign_algo->data.length < needed) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		sign_algo_count = SVAL(in_sign_algo->data.data, 0);
+		if (sign_algo_count == 0) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		p = in_sign_algo->data.data + needed;
+		needed += sign_algo_count * 2;
+
+		if (in_sign_algo->data.length < needed) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		for (i=0; i < sign_algo_count; i++) {
+			uint16_t si;
+			uint16_t v;
+
+			v = SVAL(p, 0);
+			p += 2;
+
+			for (si = 0; si < srv_sign_algos->num_algos; si++) {
+				if (srv_sign_algos->algos[si] != v) {
+					continue;
+				}
+
+				/*
+				 * The server sign_algos are listed
+				 * with the lowest idx being preferred.
+				 */
+				if (si < srv_preferred_idx) {
+					srv_preferred_idx = si;
+				}
+				break;
+			}
+		}
+
+		/*
+		 * If we found a match announce it
+		 * otherwise we'll keep the default
+		 * of SMB2_SIGNING_AES128_CMAC
+		 */
+		if (srv_preferred_idx != UINT16_MAX) {
+			uint8_t buf[4];
+
+			xconn->smb2.server.sign_algo =
+				srv_sign_algos->algos[srv_preferred_idx];
+
+			SSVAL(buf, 0, 1); /* SigningAlgorithmCount */
+			SSVAL(buf, 2, xconn->smb2.server.sign_algo);
+
+			status = smb2_negotiate_context_add(
+				req,
+				&out_c,
+				SMB2_SIGNING_CAPABILITIES,
+				buf,
+				sizeof(buf));
+			if (!NT_STATUS_IS_OK(status)) {
+				return smbd_smb2_request_error(req, status);
+			}
+		}
 	}
 
 	status = smb311_capabilities_check(&default_smb3_capabilities,
