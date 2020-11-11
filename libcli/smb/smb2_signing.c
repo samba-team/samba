@@ -174,10 +174,11 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 			       struct iovec *vector,
 			       int count)
 {
+	uint16_t sign_algo_id;
 	uint8_t *hdr;
 	uint64_t session_id;
 	uint8_t res[16];
-	int i;
+	NTSTATUS status;
 
 	/*
 	 * We expect
@@ -211,76 +212,24 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 	SIVAL(hdr, SMB2_HDR_FLAGS, IVAL(hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
 	if (protocol >= PROTOCOL_SMB2_24) {
-#ifdef HAVE_GNUTLS_AES_CMAC
-		gnutls_datum_t key = {
-			.data = signing_key->blob.data,
-			.size = MIN(signing_key->blob.length, 16),
-		};
-		int rc;
-
-		if (signing_key->hmac_hnd == NULL) {
-			rc = gnutls_hmac_init(&signing_key->hmac_hnd,
-					      GNUTLS_MAC_AES_CMAC_128,
-					      key.data,
-					      key.size);
-			if (rc < 0) {
-				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
-			}
-		}
-
-		for (i = 0; i < count; i++) {
-			rc = gnutls_hmac(signing_key->hmac_hnd,
-					 vector[i].iov_base,
-					 vector[i].iov_len);
-			if (rc < 0) {
-				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
-			}
-		}
-		gnutls_hmac_output(signing_key->hmac_hnd, res);
-#else /* NOT HAVE_GNUTLS_AES_CMAC */
-		struct aes_cmac_128_context ctx;
-		uint8_t key[AES_BLOCK_SIZE] = {0};
-
-		memcpy(key,
-		       signing_key->blob.data,
-		       MIN(signing_key->blob.length, 16));
-
-		aes_cmac_128_init(&ctx, key);
-		for (i=0; i < count; i++) {
-			aes_cmac_128_update(&ctx,
-					(const uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-		}
-		aes_cmac_128_final(&ctx, res);
-
-		ZERO_ARRAY(key);
-#endif /* HAVE_GNUTLS_AES_CMAC */
+		sign_algo_id = SMB2_SIGNING_AES128_CMAC;
 	} else {
-		uint8_t digest[gnutls_hmac_get_len(GNUTLS_MAC_SHA256)];
-		int rc;
-
-		if (signing_key->hmac_hnd == NULL) {
-			rc = gnutls_hmac_init(&signing_key->hmac_hnd,
-					      GNUTLS_MAC_SHA256,
-					      signing_key->blob.data,
-					      MIN(signing_key->blob.length, 16));
-			if (rc < 0) {
-				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
-			}
-		}
-
-		for (i = 0; i < count; i++) {
-			rc = gnutls_hmac(signing_key->hmac_hnd,
-					 vector[i].iov_base,
-					 vector[i].iov_len);
-			if (rc < 0) {
-				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
-			}
-		}
-		gnutls_hmac_output(signing_key->hmac_hnd, digest);
-		memcpy(res, digest, sizeof(res));
+		sign_algo_id = SMB2_SIGNING_HMAC_SHA256;
 	}
-	DEBUG(5,("signed SMB2 message\n"));
+
+	status = smb2_signing_calc_signature(signing_key,
+					     sign_algo_id,
+					     vector,
+					     count,
+					     res);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smb2_signing_calc_signature(sign_algo_id=%u) - %s\n",
+			(unsigned)sign_algo_id, nt_errstr(status));
+		return status;
+	}
+
+	DEBUG(5,("signed SMB2 message (sign_algo_id=%u)\n",
+		 (unsigned)sign_algo_id));
 
 	memcpy(hdr + SMB2_HDR_SIGNATURE, res, 16);
 
