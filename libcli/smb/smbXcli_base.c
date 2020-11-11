@@ -5001,7 +5001,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (conn->protocol >= PROTOCOL_SMB3_00) {
 		conn->smb2.server.sign_algo = SMB2_SIGNING_AES128_CMAC;
 	} else {
 		conn->smb2.server.sign_algo = SMB2_SIGNING_HMAC_SHA256;
@@ -6226,7 +6226,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		session->smb2->should_encrypt = true;
 	}
 
-	if (conn->protocol < PROTOCOL_SMB2_24) {
+	if (conn->protocol < PROTOCOL_SMB3_00) {
 		session->smb2->should_encrypt = false;
 	}
 
@@ -6346,7 +6346,7 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		d = &derivation.signing;
 		d->label = data_blob_string_const_null("SMBSigningKey");
 		d->context = p;
-	} else if (conn->protocol >= PROTOCOL_SMB2_24) {
+	} else if (conn->protocol >= PROTOCOL_SMB3_00) {
 		struct _derivation *d;
 
 		d = &derivation.signing;
@@ -6367,7 +6367,7 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
+	if (conn->protocol >= PROTOCOL_SMB3_00) {
 		struct _derivation *d = &derivation.signing;
 
 		status = smb2_key_derivation(channel_key, sizeof(channel_key),
@@ -6404,7 +6404,7 @@ NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 		return NT_STATUS_OK;
 	}
 
-	if (session->conn->protocol < PROTOCOL_SMB2_24) {
+	if (session->conn->protocol < PROTOCOL_SMB3_00) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -6421,7 +6421,7 @@ NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 
 uint16_t smb2cli_session_get_encryption_cipher(struct smbXcli_session *session)
 {
-	if (session->conn->protocol < PROTOCOL_SMB2_24) {
+	if (session->conn->protocol < PROTOCOL_SMB3_00) {
 		return 0;
 	}
 

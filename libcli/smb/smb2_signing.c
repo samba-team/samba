@@ -65,7 +65,7 @@ void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *
 		d->label = data_blob_string_const_null("SMBAppKey");
 		d->context = preauth_hash;
 
-	} else if (protocol >= PROTOCOL_SMB2_24) {
+	} else if (protocol >= PROTOCOL_SMB3_00) {
 		struct smb2_signing_derivation *d = NULL;
 
 		d = &ds->__signing;
