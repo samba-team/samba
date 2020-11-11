@@ -279,7 +279,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 
 	auth_length = DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length;
 	if (pkt_trailer->length < auth_length) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	data_and_pad = pkt_trailer->length - auth_length;
@@ -287,6 +287,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	if ((auth_offset % 4) != 0) {
 		DBG_WARNING("auth_offset[%u] not 4 byte aligned\n",
 			    (unsigned)auth_offset);
+		auth->auth_context_id = DCERPC_BIND_NAK_REASON_NOT_SPECIFIED;
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
@@ -350,6 +351,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 			  auth->auth_pad_length));
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
+		auth->auth_context_id = DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
@@ -379,6 +381,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 			    auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
+		auth->auth_context_id = DCERPC_BIND_NAK_REASON_NOT_SPECIFIED;
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
