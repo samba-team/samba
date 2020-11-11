@@ -529,6 +529,7 @@ struct smbXsrv_connection {
 			uint32_t max_trans;
 			uint32_t max_read;
 			uint32_t max_write;
+			uint16_t sign_algo;
 			uint16_t cipher;
 		} server;
 

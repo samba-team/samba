@@ -455,6 +455,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		req->preauth = &req->xconn->smb2.preauth;
 	}
 
+	if (protocol >= PROTOCOL_SMB2_24) {
+		xconn->smb2.server.sign_algo = SMB2_SIGNING_AES128_CMAC;
+	} else {
+		xconn->smb2.server.sign_algo = SMB2_SIGNING_HMAC_SHA256;
+	}
+
 	if ((capabilities & SMB2_CAP_ENCRYPTION) && (in_cipher != NULL)) {
 		size_t needed = 2;
 		uint16_t cipher_count;
