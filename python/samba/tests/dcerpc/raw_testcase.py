@@ -318,7 +318,7 @@ class RawDCERPCTest(TestCase):
                                 pfc_flags=req.pfc_flags |
                                 samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                                 auth_length=0)
-                self.assertNotEquals(rep.u.alloc_hint, 0)
+                self.assertNotEqual(rep.u.alloc_hint, 0)
                 self.assertEqual(rep.u.context_id, 0)
                 self.assertEqual(rep.u.cancel_count, 0)
                 self.assertEqual(rep.u.flags, 0)
@@ -358,7 +358,7 @@ class RawDCERPCTest(TestCase):
             if assoc_group_id != 0:
                 self.assertEqual(rep.u.assoc_group_id, assoc_group_id)
             else:
-                self.assertNotEquals(rep.u.assoc_group_id, 0)
+                self.assertNotEqual(rep.u.assoc_group_id, 0)
                 assoc_group_id = rep.u.assoc_group_id
             sda_str = self.secondary_address
             sda_len = len(sda_str) + 1
@@ -382,7 +382,7 @@ class RawDCERPCTest(TestCase):
             self.assertEqual(rep.auth_length, 0)
             self.assertEqual(len(rep.u.auth_info), 0)
             return ack
-        self.assertNotEquals(rep.auth_length, 0)
+        self.assertNotEqual(rep.auth_length, 0)
         self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         self.assertEqual(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
@@ -423,7 +423,7 @@ class RawDCERPCTest(TestCase):
                             pfc_flags=req.pfc_flags |
                             samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                             auth_length=0)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
+            self.assertNotEqual(rep.u.alloc_hint, 0)
             self.assertEqual(rep.u.context_id, 0)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertEqual(rep.u.flags, 0)
@@ -448,7 +448,7 @@ class RawDCERPCTest(TestCase):
         if finished:
             self.assertEqual(rep.auth_length, 0)
         else:
-            self.assertNotEquals(rep.auth_length, 0)
+            self.assertNotEqual(rep.auth_length, 0)
         self.assertGreaterEqual(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
         self.assertEqual(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
@@ -544,7 +544,7 @@ class RawDCERPCTest(TestCase):
             if fault_status:
                 self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_FAULT, req.call_id,
                                 pfc_flags=fault_pfc_flags, auth_length=0)
-                self.assertNotEquals(rep.u.alloc_hint, 0)
+                self.assertNotEqual(rep.u.alloc_hint, 0)
                 self.assertEqual(rep.u.context_id, fault_context_id)
                 self.assertEqual(rep.u.cancel_count, 0)
                 self.assertEqual(rep.u.flags, 0)
@@ -560,7 +560,7 @@ class RawDCERPCTest(TestCase):
 
             self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                             auth_length=expected_auth_length)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
+            self.assertNotEqual(rep.u.alloc_hint, 0)
             self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)

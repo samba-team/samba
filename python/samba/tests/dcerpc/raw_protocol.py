@@ -66,7 +66,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=rep_pfc_flags, auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -87,7 +87,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -109,7 +109,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -129,7 +129,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=rep_pfc_flags, auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertEqual(rep.u.secondary_address, "")
         self.assertPadding(rep.u._pad1, 2)
@@ -150,7 +150,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -397,7 +397,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -470,7 +470,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -490,7 +490,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -522,7 +522,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -542,7 +542,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -563,7 +563,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, ctx1.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -590,7 +590,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -610,7 +610,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -631,7 +631,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -647,7 +647,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -706,7 +706,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -733,7 +733,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -766,7 +766,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -795,7 +795,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -827,7 +827,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -856,7 +856,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -877,7 +877,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, ctx1a.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -903,7 +903,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -929,7 +929,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -948,7 +948,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -967,7 +967,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -986,7 +986,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1005,7 +1005,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 1)
@@ -1024,7 +1024,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1050,7 +1050,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 2)
@@ -1074,7 +1074,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1086,7 +1086,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 2)
@@ -1110,7 +1110,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1123,7 +1123,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1135,7 +1135,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 2)
@@ -1159,7 +1159,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1172,7 +1172,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1198,7 +1198,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 2)
@@ -1222,7 +1222,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1234,7 +1234,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 0)
         self.assertPadding(rep.u._pad1, 2)
         self.assertEqual(rep.u.num_results, 2)
@@ -1258,7 +1258,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1283,7 +1283,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1319,7 +1319,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1353,7 +1353,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1425,7 +1425,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1460,7 +1460,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1495,7 +1495,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1618,7 +1618,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1639,7 +1639,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1659,7 +1659,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We get a fault back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -1709,7 +1709,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, rep_both)
         self.assertEqual(rep.u.max_recv_frag, rep_both)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1761,7 +1761,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu(ndr_print=True, hexdump=True)
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1776,7 +1776,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1792,7 +1792,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We get a fault
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -1867,7 +1867,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         auth_length=0)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -1889,7 +1889,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1903,7 +1903,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1917,7 +1917,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -1995,7 +1995,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                 # We get a fault back
                 self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                                 auth_length=0)
-                self.assertNotEquals(rep.u.alloc_hint, 0)
+                self.assertNotEqual(rep.u.alloc_hint, 0)
                 self.assertEqual(rep.u.context_id, req.u.context_id)
                 self.assertEqual(rep.u.cancel_count, 0)
                 self.assertEqual(rep.u.flags, 0)
@@ -2015,7 +2015,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                 # We get a fault back
                 self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                                 auth_length=0)
-                self.assertNotEquals(rep.u.alloc_hint, 0)
+                self.assertNotEqual(rep.u.alloc_hint, 0)
                 self.assertEqual(rep.u.context_id, req.u.context_id)
                 self.assertEqual(rep.u.cancel_count, 0)
                 self.assertEqual(rep.u.flags, 0)
@@ -2037,7 +2037,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
             # We get a fault back
             self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                             auth_length=0)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
+            self.assertNotEqual(rep.u.alloc_hint, 0)
             self.assertEqual(rep.u.context_id, req.u.context_id)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertEqual(rep.u.flags, 0)
@@ -2053,7 +2053,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2099,7 +2099,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
             # We get a fault back
             self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                             auth_length=0)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
+            self.assertNotEqual(rep.u.alloc_hint, 0)
             self.assertEqual(rep.u.context_id, 0)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertEqual(rep.u.flags, 0)
@@ -2129,7 +2129,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
             # We get a fault back
             self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                             auth_length=0)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
+            self.assertNotEqual(rep.u.alloc_hint, 0)
             self.assertEqual(rep.u.context_id, req.u.context_id)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertEqual(rep.u.flags, 0)
@@ -2196,7 +2196,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         dcerpc.DCERPC_PFC_FLAG_LAST |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2244,7 +2244,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2278,7 +2278,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2314,7 +2314,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=dcerpc.DCERPC_PFC_FLAG_FIRST |
                         dcerpc.DCERPC_PFC_FLAG_LAST,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2342,7 +2342,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2377,7 +2377,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2391,7 +2391,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2416,7 +2416,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2451,7 +2451,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2465,7 +2465,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2504,7 +2504,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2518,7 +2518,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2553,7 +2553,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req1.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req1.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2601,7 +2601,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req2.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2651,7 +2651,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -2661,7 +2661,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -2692,7 +2692,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -2708,7 +2708,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2728,7 +2728,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We don't get an auth_info back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -2748,7 +2748,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We get a fault back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2806,7 +2806,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -2816,7 +2816,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -2847,7 +2847,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -2869,7 +2869,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We get a fault back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -2927,7 +2927,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         assoc_group_id = rep.u.assoc_group_id
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
@@ -2938,7 +2938,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -2962,7 +2962,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3010,7 +3010,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3020,7 +3020,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3048,7 +3048,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We get a fault back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3099,7 +3099,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3109,7 +3109,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3138,7 +3138,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3154,7 +3154,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -3174,7 +3174,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We don't get an auth_info back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -3206,7 +3206,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3257,7 +3257,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3267,7 +3267,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3296,7 +3296,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3312,7 +3312,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -3332,7 +3332,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We don't get an auth_info back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -3363,7 +3363,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3410,7 +3410,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3420,7 +3420,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3441,7 +3441,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3494,7 +3494,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3504,7 +3504,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3525,7 +3525,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3580,7 +3580,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3590,7 +3590,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3612,7 +3612,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3660,7 +3660,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3670,7 +3670,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3692,7 +3692,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3747,7 +3747,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3757,7 +3757,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3779,7 +3779,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3834,7 +3834,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3844,7 +3844,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3866,7 +3866,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -3931,7 +3931,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -3941,7 +3941,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -3985,7 +3985,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -4001,7 +4001,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4021,7 +4021,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We don't get an auth_info back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4145,7 +4145,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -4155,7 +4155,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -4192,7 +4192,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -4257,7 +4257,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -4267,7 +4267,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -4296,7 +4296,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4316,7 +4316,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         # We don't get an auth_info back
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4376,7 +4376,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
         self.assertEqual(rep.u.secondary_address_size, 4)
         self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
         self.assertPadding(rep.u._pad1, 2)
@@ -4386,7 +4386,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.ctx_list[0].reason,
                           dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertNotEquals(len(rep.u.auth_info), 0)
+        self.assertNotEqual(len(rep.u.auth_info), 0)
         a = self.parse_auth(rep.u.auth_info)
 
         from_server = a.credentials
@@ -4407,7 +4407,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, 0)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -4522,7 +4522,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
                         pfc_flags=req.pfc_flags | response_fault_flags,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, ctx1.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -4689,7 +4689,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         (rep, rep_blob) = self.recv_pdu_raw()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=sig_size)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4757,7 +4757,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                         pfc_flags=req.pfc_flags |
                         dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                         auth_length=0)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, ctx1.context_id)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertEqual(rep.u.flags, 0)
@@ -4806,7 +4806,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         (rep, rep_blob) = self.recv_pdu_raw()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=sig_size)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
@@ -4871,7 +4871,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         (rep, rep_blob) = self.recv_pdu_raw()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                         auth_length=sig_size)
-        self.assertNotEquals(rep.u.alloc_hint, 0)
+        self.assertNotEqual(rep.u.alloc_hint, 0)
         self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
