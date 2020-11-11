@@ -127,6 +127,7 @@ struct smbXcli_conn {
 			NTTIME system_time;
 			NTTIME start_time;
 			DATA_BLOB gss_blob;
+			uint16_t sign_algo;
 			uint16_t cipher;
 		} server;
 
@@ -4983,6 +4984,12 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 						security_length);
 	if (tevent_req_nomem(conn->smb2.server.gss_blob.data, req)) {
 		return;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		conn->smb2.server.sign_algo = SMB2_SIGNING_AES128_CMAC;
+	} else {
+		conn->smb2.server.sign_algo = SMB2_SIGNING_HMAC_SHA256;
 	}
 
 	if (conn->protocol < PROTOCOL_SMB3_10) {
