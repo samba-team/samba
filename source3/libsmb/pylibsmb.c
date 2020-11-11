@@ -1336,50 +1336,6 @@ static PyObject *py_smb_chkpath(struct py_cli_state *self, PyObject *args)
 	return PyBool_FromLong(dir_exists);
 }
 
-/*
- * Read ACL on a given file/directory as a security descriptor object
- */
-static PyObject *py_smb_getacl(struct py_cli_state *self, PyObject *args)
-{
-	NTSTATUS status;
-	const char *filename = NULL;
-	unsigned int sinfo = SECINFO_DEFAULT_FLAGS;
-	unsigned int access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	uint16_t fnum;
-	struct security_descriptor *sd = NULL;
-
-	/* there's no async version of cli_query_security_descriptor() */
-	if (self->thread_state != NULL) {
-		PyErr_SetString(PyExc_RuntimeError,
-				"get_acl() is not supported on "
-				"a multi_threaded connection");
-		return NULL;
-	}
-
-	if (!PyArg_ParseTuple(args, "s|II:get_acl", &filename, &sinfo,
-			      &access_mask)) {
-		return NULL;
-	}
-
-	/* get a file handle with the desired access */
-	status = cli_ntcreate(self->cli, filename, 0, access_mask, 0,
-			      FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
-	/* query the security descriptor for this file */
-	status = cli_query_security_descriptor(self->cli, fnum, sinfo,
-					       NULL, &sd);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
-	/* close the file handle and convert the SD to a python struct */
-	status = cli_close(self->cli, fnum);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
-	return py_return_ndr_struct("samba.dcerpc.security", "descriptor",
-				    sd, sd);
-}
-
 static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 {
 	int fnum;
@@ -1504,9 +1460,6 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
 	  "loadfile(path) -> file contents as a " PY_DESC_PY3_BYTES
 	  "\n\n\t\tRead contents of a file." },
-	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
-	  "get_acl(path[, security_info=0]) -> security_descriptor object\n\n"
-	  "\t\tGet security descriptor for file." },
 	{ "get_sd", (PyCFunction)py_smb_get_sd, METH_VARARGS,
 	  "get_sd(fnum[, security_info=0]) -> security_descriptor object\n\n"
 	  "\t\tGet security descriptor for opened file." },

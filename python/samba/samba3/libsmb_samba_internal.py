@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from samba.samba3.libsmb_samba_cwrapper import *
+from samba.dcerpc import security
 
 class Conn(LibsmbCConn):
     def deltree(self, path):
@@ -23,3 +24,28 @@ class Conn(LibsmbCConn):
             self.rmdir(path)
         else:
             self.unlink(path)
+
+    SECINFO_DEFAULT_FLAGS = \
+        security.SECINFO_OWNER | \
+        security.SECINFO_GROUP | \
+        security.SECINFO_DACL | \
+        security.SECINFO_PROTECTED_DACL | \
+        security.SECINFO_UNPROTECTED_DACL | \
+        security.SECINFO_SACL | \
+        security.SECINFO_PROTECTED_SACL | \
+        security.SECINFO_UNPROTECTED_SACL
+
+    def get_acl(self,
+                filename,
+                sinfo = SECINFO_DEFAULT_FLAGS,
+                access_mask = security.SEC_FLAG_MAXIMUM_ALLOWED):
+        """Get security descriptor for file."""
+        fnum = self.create(
+            Name=filename,
+            DesiredAccess=access_mask,
+            ShareAccess=(FILE_SHARE_READ|FILE_SHARE_WRITE))
+        try:
+            sd = self.get_sd(fnum, sinfo)
+        finally:
+            self.close(fnum)
+        return sd
