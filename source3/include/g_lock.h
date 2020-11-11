@@ -20,6 +20,8 @@
 #ifndef _G_LOCK_H_
 #define _G_LOCK_H_
 
+#include "replace.h"
+#include "librpc/gen_ndr/server_id.h"
 #include "dbwrap/dbwrap.h"
 
 struct g_lock_ctx;
