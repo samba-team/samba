@@ -895,6 +895,11 @@ static bool readdir_attr_meta_finderi_stream(
 		return false;
 	}
 
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,                           /* conn */
 		NULL,                                   /* req */
