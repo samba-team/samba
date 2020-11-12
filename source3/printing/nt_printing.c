@@ -1098,6 +1098,11 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		goto error_exit;
 	}
 
+	nt_status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return false;
+	}
+
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
