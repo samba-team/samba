@@ -6720,6 +6720,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def _test_spnego_level_bind(self, auth_level,
                                 g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                auth_pad_alignment=dcerpc.DCERPC_AUTH_PAD_ALIGNMENT,
                                 alter_fault=None,
                                 request_fault=None,
                                 response_fault_flags=0):
@@ -6749,10 +6750,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNotNone(g)
 
         stub_bin = b'\x00' * 17
-        mod_len = len(stub_bin) % dcerpc.DCERPC_AUTH_PAD_ALIGNMENT
+        mod_len = len(stub_bin) % auth_pad_alignment
         auth_pad_length = 0
         if mod_len > 0:
-            auth_pad_length = dcerpc.DCERPC_AUTH_PAD_ALIGNMENT - mod_len
+            auth_pad_length = auth_pad_alignment - mod_len
         stub_bin += b'\x00' * auth_pad_length
 
         if g_auth_level >= dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -6881,6 +6882,20 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                             g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_PRIVACY,
                                             request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
                                             response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+
+    def test_spnego_integrity_bind_auth_align4(self):
+        return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            auth_pad_alignment=4,
+                                            request_fault=dcerpc.DCERPC_NCA_S_OP_RNG_ERROR,
+                                            response_fault_flags=dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE)
+
+    def test_spnego_integrity_bind_auth_align2(self):
+        return self._test_spnego_level_bind(auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                            auth_pad_alignment=2,
+                                            request_fault=dcerpc.DCERPC_NCA_S_PROTO_ERROR,
+                                            response_fault_flags=0)
 
     def test_spnego_privacy_bind_none(self):
         # This fails...
