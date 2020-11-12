@@ -1837,6 +1837,15 @@ void reply_search(struct smb_request *req)
 			goto out;
 		}
 
+		nt_status = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			nt_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_nterror(req, nt_status);
+			goto out;
+		}
+
 		/*
 		 * Open an fsp on this directory for the dptr.
 		 */
