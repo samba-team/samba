@@ -124,12 +124,6 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 #endif
 
 	if (request.length) {
-		if (request.length > UINT16_MAX) {
-			DEBUG(1, ("ntlmssp_server_negotiate: reject large request of length %u\n",
-				(unsigned int)request.length));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
 		if ((request.length < 16) || !msrpc_parse(ntlmssp_state, &request, "Cdd",
 							  "NTLMSSP",
 							  &ntlmssp_command,

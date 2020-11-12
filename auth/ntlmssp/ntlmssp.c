@@ -36,6 +36,8 @@ struct auth_session_info;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+#define NTLMSSP_MAX_UPDATE_SIZE 2888
+
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes
  *
@@ -134,6 +136,13 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 			dump_data(2, input.data, input.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+	}
+
+	if (input.length > NTLMSSP_MAX_UPDATE_SIZE) {
+		DBG_WARNING("reject large command=%u message, length %zu > %u)\n",
+			    ntlmssp_command, input.length,
+			    NTLMSSP_MAX_UPDATE_SIZE);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (ntlmssp_command != gensec_ntlmssp->ntlmssp_state->expected_state) {
