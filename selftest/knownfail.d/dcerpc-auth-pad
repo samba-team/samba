@@ -18,3 +18,7 @@
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_alter
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_auth3
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_spnego_integrity_bind_auth_align2
+^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_schannel_invalid_alter_no_padding.*chgdcpass
+^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_schannel_invalid_alter_tail_padding.*chgdcpass
+^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_schannel_invalid_bind_no_padding.*chgdcpass
+^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_schannel_invalid_bind_tail_padding.*chgdcpass
