@@ -6523,7 +6523,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
-			   const struct smb_filename *smb_fname,
+			   struct smb_filename *smb_fname,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
@@ -6623,7 +6623,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
-				     const struct smb_filename *smb_fname,
+				     struct smb_filename *smb_fname,
 				     uint32_t dosmode)
 {
 	struct smb_filename *smb_fname_base;
@@ -6683,7 +6683,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 static NTSTATUS smb_set_file_size(connection_struct *conn,
 				  struct smb_request *req,
 				  files_struct *fsp,
-				  const struct smb_filename *smb_fname,
+				  struct smb_filename *smb_fname,
 				  const SMB_STRUCT_STAT *psbuf,
 				  off_t size,
 				  bool fail_after_createfile)
@@ -6789,7 +6789,7 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				const struct smb_filename *smb_fname)
+				struct smb_filename *smb_fname)
 {
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = NULL;
@@ -6978,7 +6978,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				       struct smb_request *req,
 				       const char *pdata,
 				       int total_data,
-				       const struct smb_filename *new_smb_fname)
+				       struct smb_filename *new_smb_fname)
 {
 	char *link_target = NULL;
 	struct smb_filename target_fname;
@@ -7836,7 +7836,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const struct smb_filename *smb_fname)
+					struct smb_filename *smb_fname)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 	struct smb_file_time ft;
@@ -7903,7 +7903,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const struct smb_filename *smb_fname)
+					struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
 	struct smb_file_time ft;
@@ -8063,7 +8063,7 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const struct smb_filename *smb_fname,
+					struct smb_filename *smb_fname,
 					bool fail_after_createfile)
 {
 	off_t size;
@@ -8206,7 +8206,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const struct smb_filename *smb_fname)
+					struct smb_filename *smb_fname)
 {
 	struct smb_file_time ft;
 	uint32_t raw_unixmode;
@@ -8436,7 +8436,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const struct smb_filename *smb_fname)
+					struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
 	uint32_t smb_fflags;
