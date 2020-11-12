@@ -2072,11 +2072,39 @@ class cmd_security(SuperCommand):
     subcommands["set"] = cmd_set_security()
     subcommands["list"] = cmd_list_security()
 
+class cmd_list_smb_conf(Command):
+    """List Samba smb.conf Group Policy from the sysvol
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_smb_conf(SuperCommand):
+    """Manage smb.conf Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_smb_conf()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
     subcommands["sudoers"] = cmd_sudoers()
     subcommands["security"] = cmd_security()
+    subcommands["smb_conf"] = cmd_smb_conf()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""

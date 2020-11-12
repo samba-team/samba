@@ -548,6 +548,37 @@ class GpoCmdTestCase(SambaToolCmdTest):
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
 
+    def test_smb_conf_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        # Stage the Registry.pol file with test data
+        stage = preg.file()
+        e = preg.entry()
+        e.keyname = b'Software\\Policies\\Samba\\smb_conf'
+        e.valuename = b'apply group policies'
+        e.type = 4
+        e.data = 1
+        stage.num_entries = 1
+        stage.entries = [e]
+        ret = stage_file(reg_pol, ndr_pack(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "smb_conf",
+                                                 "list"), self.gpo_guid,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn('%s = True' % e.valuename, out, 'The test entry was not found!')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
     def test_security_set(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
