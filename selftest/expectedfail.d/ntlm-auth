@@ -19,3 +19,7 @@
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_last_only_requests\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_mix_requests\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_none_only_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_schannel_invalid_alter_no_padding\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_schannel_invalid_alter_tail_padding\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_schannel_invalid_auth3_no_padding\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_schannel_invalid_auth3_tail_padding\(ad_member\)
