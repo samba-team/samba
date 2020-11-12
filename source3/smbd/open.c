@@ -4828,6 +4828,18 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 				   smb_fname_str_dbg(smb_fname_cp)));
 		}
 
+		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_cp);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Unable to open stream [%s]: %s\n",
+				  smb_fname_str_dbg(smb_fname_cp),
+				  nt_errstr(status));
+			TALLOC_FREE(smb_fname_cp);
+			break;
+		}
+
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
