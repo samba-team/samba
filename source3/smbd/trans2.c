@@ -2833,6 +2833,19 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		goto out;
 	}
 
+	/*
+	 * The above call to filename_convert() is on the path from the client
+	 * including the search mask. Until the code that chops of the search
+	 * mask from the path below is moved before the call to
+	 * filename_convert(), we close a possible pathref fsp to ensure
+	 * SMB_VFS_CREATE_FILE() below will internally open a pathref fsp on the
+	 * correct path.
+	 */
+	if (smb_dname->fsp != NULL) {
+		fsp_free(smb_dname->fsp);
+		smb_dname->fsp = NULL;
+	}
+
 	mask = get_original_lcomp(talloc_tos(),
 				conn,
 				directory,
@@ -2947,6 +2960,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if (ret == -1) {
 		ntstatus = map_nt_error_from_unix(errno);
+		reply_nterror(req, ntstatus);
+		goto out;
+	}
+
+	ntstatus = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
+	if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		ntstatus = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		goto out;
 	}
