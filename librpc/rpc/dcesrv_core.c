@@ -1905,7 +1905,20 @@ static void dcesrv_alter_done(struct tevent_req *subreq)
 
 	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+		/*
+		 * NT_STATUS_ACCESS_DENIED from gensec means
+		 * a signing check or decryption failure,
+		 * which should result in DCERPC_FAULT_SEC_PKG_ERROR.
+		 *
+		 * Any other status, e.g. NT_STATUS_LOGON_FAILURE or
+		 * NT_STATUS_INVALID_PARAMETER should result in
+		 * DCERPC_FAULT_ACCESS_DENIED.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			status = dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+		} else {
+			status = dcesrv_fault_disconnect(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
 		dcesrv_conn_auth_wait_finished(conn, status);
 		return;
 	}
