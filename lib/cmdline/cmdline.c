@@ -653,6 +653,15 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			const char *error_string = NULL;
 			int rc;
 
+			ok = cli_credentials_set_kerberos_state(creds,
+								CRED_USE_KERBEROS_REQUIRED,
+								CRED_SPECIFIED);
+			if (!ok) {
+				fprintf(stderr,
+					"Failed to set Kerberos state to %s!\n", arg);
+				exit(1);
+			}
+
 			rc = cli_credentials_set_ccache(creds,
 							lp_ctx,
 							arg,
