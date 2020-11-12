@@ -142,12 +142,6 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 
 	/* parse the NTLMSSP packet */
 
-	if (in.length > UINT16_MAX) {
-		DEBUG(1, ("%s: reject large request of length %u\n",
-			__func__, (unsigned int)in.length));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	ok = msrpc_parse(ntlmssp_state, &in, "Cdd",
 			 "NTLMSSP",
 			 &ntlmssp_command,
