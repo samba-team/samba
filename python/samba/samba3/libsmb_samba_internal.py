@@ -49,3 +49,17 @@ class Conn(LibsmbCConn):
         finally:
             self.close(fnum)
         return sd
+
+    def set_acl(self,
+                filename,
+                sd,
+                sinfo = SECINFO_DEFAULT_FLAGS):
+        """Set security descriptor for file."""
+        fnum = self.create(
+            Name=filename,
+            DesiredAccess=security.SEC_FLAG_MAXIMUM_ALLOWED,
+            ShareAccess=(FILE_SHARE_READ|FILE_SHARE_WRITE))
+        try:
+            self.set_sd(fnum, sd, sinfo)
+        finally:
+            self.close(fnum)
