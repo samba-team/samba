@@ -830,6 +830,11 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
