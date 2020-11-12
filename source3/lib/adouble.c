@@ -1538,6 +1538,11 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,				/* conn */
 		NULL,					/* req */
