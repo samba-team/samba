@@ -8501,6 +8501,14 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	if (!target_is_directory && count) {
 		new_create_disposition = FILE_OPEN;
 	} else {
@@ -8543,6 +8551,17 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 
 	if (SMB_VFS_STAT(conn, smb_fname_dst_tmp) == -1) {
 		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_dst);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+	{
+		goto out;
 	}
 
 	/* Open the dst file for writing. */
