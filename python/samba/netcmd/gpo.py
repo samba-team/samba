@@ -2074,6 +2074,11 @@ class cmd_security(SuperCommand):
 
 class cmd_list_smb_conf(Command):
     """List Samba smb.conf Group Policy from the sysvol
+
+This command lists smb.conf settings from the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}
     """
 
     synopsis = "%prog <gpo> [options]"
@@ -2092,7 +2097,43 @@ class cmd_list_smb_conf(Command):
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
+                                'MACHINE\\Registry.pol'])
+        try:
+            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
+                return # The file doesn't exist, so there is nothing to list
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
+
+        keyname = b'Software\\Policies\\Samba\\smb_conf'
+        lp = param.LoadParm()
+        for entry in pol_data.entries:
+            if get_bytes(entry.keyname) == keyname:
+                lp.set(entry.valuename, str(entry.data))
+                val = lp.get(entry.valuename)
+                self.outf.write('%s = %s\n' % (entry.valuename, val))
 
 class cmd_smb_conf(SuperCommand):
     """Manage smb.conf Group Policy Objects"""
