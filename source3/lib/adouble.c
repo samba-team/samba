@@ -1480,6 +1480,13 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	int ret;
 
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, adpath);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+	{
+		return false;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
