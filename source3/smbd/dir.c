@@ -770,7 +770,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   uint32_t dirtype,
 			   bool dont_descend,
 			   bool ask_sharemode,
-			   bool get_dosmode,
+			   bool get_dosmode_in,
 			   bool (*match_fn)(TALLOC_CTX *ctx,
 					    void *private_data,
 					    const char *dname,
@@ -792,6 +792,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	size_t pathlen;
 	const char *dpath = dirptr->smb_dname->base_name;
 	bool dirptr_path_is_dot = ISDOT(dpath);
+	NTSTATUS status;
 
 	*_smb_fname = NULL;
 	*_mode = 0;
@@ -807,8 +808,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		bool isdots;
 		char *fname = NULL;
 		char *pathreal = NULL;
-		struct smb_filename smb_fname;
+		struct smb_filename *atname = NULL;
+		struct smb_filename *smb_fname = NULL;
 		uint32_t mode = 0;
+		bool check_dfs_symlink = false;
+		bool get_dosmode = get_dosmode_in;
 		bool ok;
 
 		cur_offset = dptr_TellDir(dirptr);
@@ -856,6 +860,73 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			return false;
 		}
 
+		/* Create smb_fname with NULL stream_name. */
+		atname = synthetic_smb_fname(talloc_tos(),
+					     dname,
+					     NULL,
+					     &sbuf,
+					     dirptr->smb_dname->twrp,
+					     dirptr->smb_dname->flags);
+		if (atname == NULL) {
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(pathreal);
+			return false;
+		}
+
+		/*
+		 * openat_pathref_fsp() will return
+		 * NT_STATUS_OBJECT_NAME_NOT_FOUND in non-POSIX context when
+		 * hitting a dangling symlink. It may be a DFS symlink, this is
+		 * checked below by the mode_fn() call, so we have to allow this
+		 * here.
+		 *
+		 * NT_STATUS_STOPPED_ON_SYMLINK is returned in POSIX context
+		 * when hitting a symlink and ensures we always return directory
+		 * entries that are symlinks in POSIX context.
+		 */
+		status = openat_pathref_fsp(dirptr->dir_hnd->fsp, atname);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK))
+		{
+			TALLOC_FREE(atname);
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(pathreal);
+			continue;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			if (!(atname->flags & SMB_FILENAME_POSIX_PATH)) {
+				TALLOC_FREE(atname);
+				TALLOC_FREE(dname);
+				TALLOC_FREE(fname);
+				TALLOC_FREE(pathreal);
+				continue;
+			}
+			/*
+			 * It's a symlink, disable getting dosmode in the
+			 * mode_fn() and prime the mode as
+			 * FILE_ATTRIBUTE_NORMAL.
+			 */
+			mode = FILE_ATTRIBUTE_NORMAL;
+			get_dosmode = false;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			if (atname->flags & SMB_FILENAME_POSIX_PATH) {
+				TALLOC_FREE(atname);
+				TALLOC_FREE(dname);
+				TALLOC_FREE(fname);
+				TALLOC_FREE(pathreal);
+				continue;
+			}
+			/*
+			 * Likely a dangling symlink. We only want to return
+			 * this if it's a DFS symlink, so we need to check for
+			 * that. Set get_dosmode to skip getting dosmode.
+			 */
+			get_dosmode = false;
+			check_dfs_symlink = true;
+		}
+
 		/*
 		 * We don't want to pass ./xxx to modules below us so don't
 		 * add the path if it is just . by itself.
@@ -870,15 +941,55 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		/* Create smb_fname with NULL stream_name. */
-		smb_fname = (struct smb_filename) {
-			.base_name = pathreal,
-			.st = sbuf,
-			.twrp = dirptr->smb_dname->twrp,
-			.flags = dirptr->smb_dname->flags,
-		};
+		smb_fname = synthetic_smb_fname(talloc_tos(),
+						pathreal,
+						NULL,
+						&sbuf,
+						dirptr->smb_dname->twrp,
+						dirptr->smb_dname->flags);
+		if (smb_fname == NULL) {
+			TALLOC_FREE(atname);
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(pathreal);
+			return false;
+		}
 
-		ok = mode_fn(ctx, private_data, &smb_fname, get_dosmode, &mode);
+		status = move_smb_fname_fsp_link(smb_fname, atname);
+		TALLOC_FREE(atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("Failed to move pathref for [%s]: %s\n",
+				    smb_fname_str_dbg(smb_fname),
+				    nt_errstr(status));
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(pathreal);
+			continue;
+		}
+
+		ok = mode_fn(ctx, private_data, smb_fname, get_dosmode, &mode);
 		if (!ok) {
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			TALLOC_FREE(pathreal);
+			continue;
+		}
+
+		/*
+		 * The only valid cases where we return the directory entry if
+		 * it's a symlink are:
+		 *
+		 * 1. POSIX context, always return it, or
+		 *
+		 * 2. a DFS symlink where the mode_fn() call above has verified
+		 *    this and set mode to FILE_ATTRIBUTE_REPARSE_POINT.
+		 */
+		if (check_dfs_symlink &&
+		    !(mode & FILE_ATTRIBUTE_REPARSE_POINT))
+		{
+			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			TALLOC_FREE(pathreal);
@@ -888,28 +999,29 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		if (!dir_check_ftype(mode, dirtype)) {
 			DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",
 				fname, (unsigned int)mode, (unsigned int)dirtype));
+			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			TALLOC_FREE(pathreal);
 			continue;
 		}
 
-		if (ask_sharemode && !S_ISDIR(smb_fname.st.st_ex_mode)) {
+		if (ask_sharemode && !S_ISDIR(smb_fname->st.st_ex_mode)) {
 			struct timespec write_time_ts;
 			struct file_id fileid;
 
 			fileid = vfs_file_id_from_sbuf(conn,
-						       &smb_fname.st);
+						       &smb_fname->st);
 			get_file_infos(fileid, 0, NULL, &write_time_ts);
 			if (!is_omit_timespec(&write_time_ts)) {
-				update_stat_ex_mtime(&smb_fname.st,
+				update_stat_ex_mtime(&smb_fname->st,
 						     write_time_ts);
 			}
 		}
 
 		DEBUG(3,("smbd_dirptr_get_entry mask=[%s] found %s "
 			"fname=%s (%s)\n",
-			mask, smb_fname_str_dbg(&smb_fname),
+			mask, smb_fname_str_dbg(smb_fname),
 			dname, fname));
 
 		if (!conn->sconn->using_smb2) {
@@ -924,7 +1036,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		TALLOC_FREE(dname);
 
-		*_smb_fname = cp_smb_filename(ctx, &smb_fname);
+		*_smb_fname = talloc_move(ctx, &smb_fname);
 		TALLOC_FREE(pathreal);
 		if (*_smb_fname == NULL) {
 			return false;
