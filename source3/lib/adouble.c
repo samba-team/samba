@@ -1106,6 +1106,14 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 
 		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
 
+		status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+		{
+			ok = false;
+			goto fail;
+		}
+
 		status = SMB_VFS_CREATE_FILE(
 			handle->conn,			/* conn */
 			NULL,				/* req */
