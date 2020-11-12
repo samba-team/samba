@@ -2042,6 +2042,14 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 		goto err_out;
 	}
 
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err_out;
+	}
+
 	status = unlink_internals(conn, NULL, 0, smb_fname, false);
 err_out:
 	talloc_free(tmp_ctx);
