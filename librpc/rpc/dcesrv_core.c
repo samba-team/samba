@@ -1362,7 +1362,7 @@ static void dcesrv_bind_done(struct tevent_req *subreq)
 
 	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = dcesrv_bind_nak(call, 0);
+		status = dcesrv_bind_nak(call, DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM);
 		dcesrv_conn_auth_wait_finished(conn, status);
 		return;
 	}
