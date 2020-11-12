@@ -6689,7 +6689,6 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 				  bool fail_after_createfile)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct smb_filename *smb_fname_tmp = NULL;
 	files_struct *new_fsp = NULL;
 
 	if (!VALID_STAT(*psbuf)) {
@@ -6730,17 +6729,10 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	smb_fname_tmp->st = *psbuf;
-
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		smb_fname_tmp,				/* fname */
+		smb_fname,				/* fname */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -6756,8 +6748,6 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		&new_fsp,				/* result */
 		NULL,					/* pinfo */
 		NULL, NULL);				/* create context */
-
-	TALLOC_FREE(smb_fname_tmp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
