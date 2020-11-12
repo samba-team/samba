@@ -282,6 +282,13 @@ bld.SAMBA_PYTHON('python_gmsa',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_schannel',
+        source='../../librpc/gen_ndr/py_schannel.c',
+        deps='NDR_SCHANNEL %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/schannel.so',
+        cflags_end=gen_cflags
+        )
+
 bld.SAMBA_PYTHON('python_netlogon',
         source='../../librpc/gen_ndr/py_netlogon.c',
         deps='RPC_NDR_NETLOGON %s %s' % (pytalloc_util, pyrpc_util),
