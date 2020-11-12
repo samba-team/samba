@@ -2109,6 +2109,11 @@ static int ad_open_rsrc(vfs_handle_struct *handle,
 		share_access &= ~FILE_SHARE_WRITE;
 	}
 
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, adp_smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,			/* conn */
 		NULL,				/* req */
