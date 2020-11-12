@@ -110,12 +110,11 @@ NTSTATUS check_access_fsp(const struct files_struct *fsp,
 
 static NTSTATUS get_posix_fsp(connection_struct *conn,
 			struct smb_request *req,
-			const struct smb_filename *smb_fname,
+			struct smb_filename *smb_fname,
 			uint32_t access_mask,
 			files_struct **ret_fsp)
 {
 	NTSTATUS status;
-	struct smb_filename *smb_fname_tmp = NULL;
 	uint32_t create_disposition = FILE_OPEN;
 	uint32_t share_access = FILE_SHARE_READ|
 				FILE_SHARE_WRITE|
@@ -148,14 +147,6 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 		create_options = FILE_DIRECTORY_FILE;
 	}
 
-	/* Createfile uses a non-const smb_fname. */
-	smb_fname_tmp = cp_smb_filename(talloc_tos(),
-					smb_fname);
-	if (smb_fname_tmp == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
 	status = make_smb2_posix_create_ctx(
 		talloc_tos(), &posx, file_attributes);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -167,7 +158,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,           /* conn */
 		req,            /* req */
-		smb_fname_tmp,  /* fname */
+		smb_fname,      /* fname */
 		access_mask,    /* access_mask */
 		share_access,   /* share_access */
 		create_disposition,/* create_disposition*/
@@ -186,7 +177,6 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 
 done:
 	TALLOC_FREE(posx);
-	TALLOC_FREE(smb_fname_tmp);
 	return status;
 }
 #endif
@@ -7496,7 +7486,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 				const char *pdata,
 				int total_data_in,
 				files_struct *fsp,
-				const struct smb_filename *smb_fname)
+				struct smb_filename *smb_fname)
 {
 	uint16_t posix_acl_version;
 	uint16_t num_file_acls;
