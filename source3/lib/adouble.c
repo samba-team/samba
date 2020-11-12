@@ -1642,6 +1642,12 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
+	status = openat_pathref_fsp(handle->conn->cwd_fsp, sname);
+	if (!NT_STATUS_IS_OK(status)) {
+		ok = false;
+		goto out;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
