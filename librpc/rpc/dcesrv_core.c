@@ -36,6 +36,7 @@
 #include "system/network.h"
 #include "lib/util/idtree_random.h"
 #include "nsswitch/winbind_client.h"
+#include "libcli/smb/tstream_smbXcli_np.h"
 
 /**
  * @file
@@ -676,6 +677,8 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 {
 	struct dcesrv_auth *auth = NULL;
 	struct dcesrv_connection *p = NULL;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(ep->ep_description);
 
 	if (!session_info) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -695,9 +698,21 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->event_ctx = event_ctx;
 	p->state_flags = state_flags;
 	p->allow_bind = true;
-	p->max_recv_frag = 5840;
-	p->max_xmit_frag = 5840;
 	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
+	/*
+	 * SMB uses 4280, while all others use 5480
+	 * note that p->transport_max_recv_frag is fixed
+	 * for the lifetime of the connection, it's not
+	 * negotiated by bind.
+	 */
+	if (transport == NCACN_NP) {
+		p->transport_max_recv_frag = TSTREAM_SMBXCLI_NP_MAX_BUF_SIZE;
+	} else {
+		p->transport_max_recv_frag = DCERPC_FRAG_MAX_SIZE;
+	}
+	/* these might be overwritten by BIND */
+	p->max_recv_frag = p->transport_max_recv_frag;
+	p->max_xmit_frag = p->transport_max_recv_frag;
 
 	p->support_hdr_signing = lpcfg_parm_bool(dce_ctx->lp_ctx,
 						 NULL,
@@ -1116,12 +1131,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED);
 	}
 
+	/*
+	 * Note that BIND and ALTER allow frag_len up to UINT16_MAX,
+	 * so we don't check again frag_len against
+	 * call->conn->transport_max_recv_frag
+	 */
+
 	/* max_recv_frag and max_xmit_frag result always in the same value! */
 	max_req = MIN(call->pkt.u.bind.max_xmit_frag,
 		      call->pkt.u.bind.max_recv_frag);
 	/*
 	 * The values are between 2048 and 5840 tested against Windows 2012R2
 	 * via ncacn_ip_tcp on port 135.
+	 *
+	 * call->conn->transport_max_recv_frag stays fixed at 5840 (4280 for SMB)
 	 */
 	max_req = MAX(2048, max_req);
 	max_rep = MIN(max_req, conn->max_recv_frag);
@@ -1759,6 +1782,12 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
+	/*
+	 * Note that BIND and ALTER allow frag_len up to UINT16_MAX,
+	 * so we don't check again frag_len against
+	 * call->conn->transport_max_recv_frag
+	 */
+
 	auth_ok = dcesrv_auth_alter(call);
 	if (!auth_ok) {
 		if (call->fault_code != 0) {
@@ -2318,14 +2347,15 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
-		if (call->pkt.frag_length > DCERPC_FRAG_MAX_SIZE) {
+		if (call->pkt.frag_length > call->conn->transport_max_recv_frag) {
 			/*
 			 * We don't use dcesrv_fault_disconnect()
 			 * here, because we don't want to set
 			 * DCERPC_PFC_FLAG_DID_NOT_EXECUTE
 			 *
 			 * Note that we don't check against the negotiated
-			 * max_recv_frag, but a hard coded value.
+			 * max_recv_frag, but a hard coded value from
+			 * the transport.
 			 */
 			return dcesrv_fault_disconnect0(call, DCERPC_NCA_S_PROTO_ERROR);
 		}

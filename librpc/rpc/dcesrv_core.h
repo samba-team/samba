@@ -272,6 +272,7 @@ struct dcesrv_connection {
 	struct dcesrv_call_state *call_list;
 
 	/* the maximum size the client wants to receive */
+	uint16_t transport_max_recv_frag;
 	uint16_t max_recv_frag;
 	uint16_t max_xmit_frag;
 
