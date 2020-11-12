@@ -98,7 +98,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     ODJ.idl
                     printcap.idl
                     rap.idl
-                    schannel.idl
                     smb2_lease_struct.idl
                     ''',
                     options='--header --ndr-parser',
@@ -135,6 +134,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     idmap.idl
                     krb5pac.idl
                     krb5ccache.idl
+                    schannel.idl
                     messaging.idl
                     misc.idl
                     nbt.idl
