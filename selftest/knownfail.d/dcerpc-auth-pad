@@ -17,3 +17,4 @@
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_ntlm_auth3
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_alter
 ^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_auth_tail_pad_spnego_auth3
+^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_spnego_integrity_bind_auth_align2
