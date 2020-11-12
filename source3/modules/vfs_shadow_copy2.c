@@ -1462,7 +1462,7 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 			 * EINVAL which we carefully map to EROFS. In sum, this
 			 * matches Windows behaviour.
 			 */
-			flags = O_RDONLY;
+			flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
 		}
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
@@ -1483,7 +1483,7 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
 	 * this matches Windows behaviour.
 	 */
-	flags = O_RDONLY;
+	flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
 
 	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	if (ret == -1) {
