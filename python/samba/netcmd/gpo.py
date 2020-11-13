@@ -65,7 +65,7 @@ from samba.gp_parse.gp_aas import GPAasParser
 from samba import param
 from samba.credentials import SMB_SIGNING_REQUIRED
 from samba.netcmd.common import attr_default
-from samba.common import get_bytes
+from samba.common import get_bytes, get_string
 from configparser import ConfigParser
 from io import StringIO
 
@@ -2137,6 +2137,12 @@ samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}
 
 class cmd_set_smb_conf(Command):
     """Sets a Samba smb.conf Group Policy to the sysvol
+
+This command sets an smb.conf setting to the sysvol for applying to winbind
+clients. Not providing a value will unset the policy.
+
+Example:
+samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply gpo policies' yes
     """
 
     synopsis = "%prog <gpo> <entry> [options]"
@@ -2156,7 +2162,77 @@ class cmd_set_smb_conf(Command):
 
     def run(self, gpo, setting, value=None, H=None, sambaopts=None, credopts=None,
             versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        pol_dir = '\\'.join([realm.lower(), 'Policies', gpo, 'MACHINE'])
+        pol_file = '\\'.join([pol_dir, 'Registry.pol'])
+        try:
+            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034]:
+                pol_data = preg.file() # The file doesn't exist
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        if value is None:
+            if setting not in [e.valuename for e in pol_data.entries]:
+                raise CommandError("Cannot remove '%s' because it does "
+                                    "not exist" % setting)
+            entries = [e for e in pol_data.entries \
+                if e.valuename != setting]
+            pol_data.entries = entries
+            pol_data.num_entries = len(entries)
+        else:
+            if get_string(value).lower() in ['yes', 'true', '1']:
+                etype = 4
+                val = 1
+            elif get_string(value).lower() in ['no', 'false', '0']:
+                etype = 4
+                val = 0
+            elif get_string(value).isnumeric():
+                etype = 4
+                val = int(get_string(value))
+            else:
+                etype = 1
+                val = get_bytes(value)
+            e = preg.entry()
+            e.keyname = b'Software\\Policies\\Samba\\smb_conf'
+            e.valuename = get_bytes(setting)
+            e.type = etype
+            e.data = val
+            entries = list(pol_data.entries)
+            entries.append(e)
+            pol_data.entries = entries
+            pol_data.num_entries = len(entries)
+
+        try:
+            create_directory_hier(conn, pol_dir)
+            conn.savefile(pol_file, ndr_pack(pol_data))
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
 
 class cmd_smb_conf(SuperCommand):
     """Manage smb.conf Group Policy Objects"""
