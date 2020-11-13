@@ -92,8 +92,7 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 	}
 
 	if (!smb2_signing_key_valid(signing_key)) {
-		DBG_WARNING("Wrong session key length %zu for SMB2 signing\n",
-			    signing_key->blob.length);
+		DBG_WARNING("No signing key for SMB2 signing\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -416,8 +415,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	tf = (uint8_t *)vector[0].iov_base;
 
 	if (!smb2_signing_key_valid(encryption_key)) {
-		DBG_WARNING("Wrong encryption key length %zu for SMB2 signing\n",
-			    encryption_key->blob.length);
+		DBG_WARNING("No encryption key for SMB2 signing\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -613,8 +611,7 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	tf = (uint8_t *)vector[0].iov_base;
 
 	if (!smb2_signing_key_valid(decryption_key)) {
-		DBG_WARNING("Wrong decryption key length %zu for SMB2 signing\n",
-			    decryption_key->blob.length);
+		DBG_WARNING("No decryption key for SMB2 signing\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
