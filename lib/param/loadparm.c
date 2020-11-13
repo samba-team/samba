@@ -3190,6 +3190,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	settings.debug_pid = lp_ctx->globals->debug_pid;
 	settings.debug_uid = lp_ctx->globals->debug_uid;
 	settings.debug_class = lp_ctx->globals->debug_class;
+	settings.max_log_size = lp_ctx->globals->max_log_size;
 	debug_set_settings(&settings, lp_ctx->globals->logging,
 			   lp_ctx->globals->syslog,
 			   lp_ctx->globals->syslog_only);
