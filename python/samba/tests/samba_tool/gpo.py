@@ -548,6 +548,48 @@ class GpoCmdTestCase(SambaToolCmdTest):
                         'Filling PolicyDefinitions failed')
         shutil.rmtree(admx_path)
 
+    def test_smb_conf_set(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Registry.pol')
+
+        policy = 'apply group policies'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "smb_conf",
+                                                 "set"), self.gpo_guid,
+                                                 policy, "yes",
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to set apply group policies')
+
+        self.assertTrue(os.path.exists(reg_pol),
+                        'The Registry.pol does not exist')
+        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
+        ret = any([get_string(e.valuename) == policy and e.data == 1 \
+            for e in reg_data.entries])
+        self.assertTrue(ret, 'The sudoers entry was not added')
+
+        # Ensure an empty set command deletes the entry
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "smb_conf",
+                                                 "set"), self.gpo_guid,
+                                                 policy, "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to unset apply group policies')
+
+        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
+        ret = not any([get_string(e.valuename) == policy and e.data == 1 \
+            for e in reg_data.entries])
+        self.assertTrue(ret, 'The sudoers entry was not removed')
+
     def test_smb_conf_list(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])

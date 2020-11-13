@@ -2135,10 +2135,34 @@ samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}
                 val = lp.get(entry.valuename)
                 self.outf.write('%s = %s\n' % (entry.valuename, val))
 
+class cmd_set_smb_conf(Command):
+    """Sets a Samba smb.conf Group Policy to the sysvol
+    """
+
+    synopsis = "%prog <gpo> <entry> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "setting", "value?"]
+
+    def run(self, gpo, setting, value=None, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        pass
+
 class cmd_smb_conf(SuperCommand):
     """Manage smb.conf Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_smb_conf()
+    subcommands["set"] = cmd_set_smb_conf()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
