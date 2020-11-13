@@ -1817,43 +1817,83 @@ fail:
  Helper function for pathname operations.
 ***************************************************************/
 
-static NTSTATUS get_fnum_from_path(struct cli_state *cli,
-				const char *name,
-				uint32_t desired_access,
-				uint16_t *pfnum)
-{
-	NTSTATUS status;
-	size_t namelen = strlen(name);
-	TALLOC_CTX *frame = talloc_stackframe();
-	uint32_t create_options = 0;
+struct get_fnum_from_path_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *name;
+	uint32_t desired_access;
+	uint16_t fnum;
+};
 
-	/* SMB2 is pickier about pathnames. Ensure it doesn't
-	   end in a '\' */
+static void get_fnum_from_path_opened_file(struct tevent_req *subreq);
+static void get_fnum_from_path_opened_reparse(struct tevent_req *subreq);
+static void get_fnum_from_path_opened_dir(struct tevent_req *subreq);
+
+static struct tevent_req *get_fnum_from_path_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *name,
+	uint32_t desired_access)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct get_fnum_from_path_state *state = NULL;
+	size_t namelen = strlen(name);
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct get_fnum_from_path_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->name = name;
+	state->desired_access = desired_access;
+
+	/*
+	 * SMB2 is pickier about pathnames. Ensure it doesn't end in a
+	 * '\'
+	 */
 	if (namelen > 0 && name[namelen-1] == '\\') {
-		char *modname = talloc_strdup(frame, name);
-		if (modname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+		state->name = talloc_strndup(state, name, namelen-1);
+		if (tevent_req_nomem(state->name, req)) {
+			return tevent_req_post(req, ev);
 		}
-		modname[namelen-1] = '\0';
-		name = modname;
 	}
 
-	/* Try to open a file handle first. */
-	status = cli_smb2_create_fnum(cli,
-			name,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			desired_access,
-			0, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
-			FILE_OPEN,		/* create_disposition */
-			create_options,
-			NULL,
-			pfnum,
-			NULL,
-			NULL,
-			NULL);
+	subreq = cli_smb2_create_fnum_send(
+		state,		/* mem_ctx, */
+		ev,		/* ev */
+		cli,		/* cli */
+		state->name,	/* fname */
+		0,		/* create_flags */
+		SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level */
+		desired_access,	/* desired_access */
+		0,		/* file_attributes */
+		FILE_SHARE_READ|
+		FILE_SHARE_WRITE|
+		FILE_SHARE_DELETE, /* share_access */
+		FILE_OPEN,	/* create_disposition */
+		0,		/* create_options */
+		NULL);		/* in_cblobs */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, get_fnum_from_path_opened_file, req);
+	return req;
+}
+
+static void get_fnum_from_path_opened_file(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct get_fnum_from_path_state *state = tevent_req_data(
+		req, struct get_fnum_from_path_state);
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		/*
@@ -1862,43 +1902,117 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 		 * component and try again. Eventually we will have to
 		 * deal with the returned path unprocessed component. JRA.
 		 */
-		create_options |= FILE_OPEN_REPARSE_POINT;
-		status = cli_smb2_create_fnum(cli,
-			name,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			desired_access,
-			0, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
-			FILE_OPEN,		/* create_disposition */
-			create_options,
-			NULL,
-			pfnum,
-			NULL,
-			NULL,
-			NULL);
+		subreq = cli_smb2_create_fnum_send(
+			state,		/* mem_ctx, */
+			state->ev,	/* ev */
+			state->cli,	/* cli */
+			state->name,	/* fname */
+			0,		/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation */
+			state->desired_access, /* desired_access */
+			0,		/* file_attributes */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE|
+			FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,	/* create_disposition */
+			FILE_OPEN_REPARSE_POINT, /* create_options */
+			NULL);		/* in_cblobs */
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(
+			subreq, get_fnum_from_path_opened_reparse, req);
+		return;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
-		create_options |= FILE_DIRECTORY_FILE;
-		status = cli_smb2_create_fnum(cli,
-			name,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			desired_access,
-			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
-			FILE_OPEN,		/* create_disposition */
-			create_options,		/* create_options */
-			NULL,
-			pfnum,
-			NULL,
-			NULL,
-			NULL);
+		subreq = cli_smb2_create_fnum_send(
+			state,		/* mem_ctx, */
+			state->ev,	/* ev */
+			state->cli,	/* cli */
+			state->name,	/* fname */
+			0,		/* create_flags */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation */
+			state->desired_access, /* desired_access */
+			0,		/* file_attributes */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE|
+			FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,	/* create_disposition */
+			FILE_DIRECTORY_FILE, /* create_options */
+			NULL);		/* in_cblobs */
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(
+			subreq, get_fnum_from_path_opened_dir, req);
+		return;
 	}
 
-  fail:
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
 
+static void get_fnum_from_path_opened_reparse(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct get_fnum_from_path_state *state = tevent_req_data(
+		req, struct get_fnum_from_path_state);
+	NTSTATUS status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, NULL, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void get_fnum_from_path_opened_dir(struct tevent_req *subreq)
+{
+	/* Abstraction violation, but these two are just the same... */
+	get_fnum_from_path_opened_reparse(subreq);
+}
+
+static NTSTATUS get_fnum_from_path_recv(
+	struct tevent_req *req, uint16_t *pfnum)
+{
+	struct get_fnum_from_path_state *state = tevent_req_data(
+		req, struct get_fnum_from_path_state);
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!tevent_req_is_nterror(req, &status)) {
+		*pfnum = state->fnum;
+	}
+	tevent_req_received(req);
+	return status;
+}
+
+static NTSTATUS get_fnum_from_path(struct cli_state *cli,
+				const char *name,
+				uint32_t desired_access,
+				uint16_t *pfnum)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = get_fnum_from_path_send(frame, ev, cli, name, desired_access);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = get_fnum_from_path_recv(req, pfnum);
+ fail:
 	TALLOC_FREE(frame);
 	return status;
 }
