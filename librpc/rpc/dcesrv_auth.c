@@ -130,6 +130,12 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	auth->auth_level = call->in_auth_info.auth_level;
 	auth->auth_context_id = call->in_auth_info.auth_context_id;
 
+	if (auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT &&
+	    !call->conn->got_explicit_auth_level_connect)
+	{
+		call->conn->default_auth_level_connect = auth;
+	}
+
 	cb->auth.become_root();
 	status = cb->auth.gensec_prepare(
 		auth,
@@ -379,12 +385,6 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 	}
 	auth->auth_finished = true;
 
-	if (auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT &&
-	    !call->conn->got_explicit_auth_level_connect)
-	{
-		call->conn->default_auth_level_connect = auth;
-	}
-
 	if (call->pkt.ptype != DCERPC_PKT_AUTH3) {
 		return NT_STATUS_OK;
 	}
@@ -620,12 +620,12 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 		return false;
 	}
 
-	if (!auth->auth_finished) {
-		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
+	if (auth->auth_invalid) {
 		return false;
 	}
 
-	if (auth->auth_invalid) {
+	if (!auth->auth_finished) {
+		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		return false;
 	}
 
