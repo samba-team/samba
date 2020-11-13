@@ -2338,7 +2338,13 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		dcesrv_default_auth_state_prepare_request(call);
 
 		if (call->auth_state->auth_started &&
+		    !call->auth_state->auth_invalid &&
 		    !call->auth_state->auth_finished) {
+			/*
+			 * We have this check here instead of
+			 * relying on the check in dcesrv_auth_pkt_pull()
+			 * because the fault should have context_id=0
+			 */
 			return dcesrv_fault_disconnect(call,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
