@@ -1383,6 +1383,7 @@ struct cli_rename_state {
 
 static void cli_rename_done1(struct tevent_req *subreq);
 static void cli_rename_done_cifs(struct tevent_req *subreq);
+static void cli_rename_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
@@ -1397,6 +1398,16 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct cli_rename_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_rename_send(
+			state, ev, cli, fname_src, fname_dst, replace);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_rename_done2, req);
+		return req;
 	}
 
 	if (replace && smbXcli_conn_support_passthrough(cli->conn)) {
@@ -1430,6 +1441,12 @@ static void cli_rename_done_cifs(struct tevent_req *subreq)
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
+static void cli_rename_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_rename_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
 NTSTATUS cli_rename_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
@@ -1444,10 +1461,6 @@ NTSTATUS cli_rename(struct cli_state *cli,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_rename(cli, fname_src, fname_dst, replace);
-	}
 
 	frame = talloc_stackframe();
 
