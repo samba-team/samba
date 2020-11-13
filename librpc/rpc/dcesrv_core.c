@@ -722,6 +722,9 @@ static NTSTATUS _dcesrv_fault_disconnect_flags(struct dcesrv_call_state *call,
 	_dcesrv_fault_disconnect_flags(call, fault_code, \
 		DCERPC_PFC_FLAG_DID_NOT_EXECUTE, \
 		__func__, __location__)
+#define dcesrv_fault_disconnect0(call, fault_code) \
+	_dcesrv_fault_disconnect_flags(call, fault_code, 0, \
+		__func__, __location__)
 
 static int dcesrv_connection_context_destructor(struct dcesrv_connection_context *c)
 {
@@ -2082,10 +2085,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			 * Note that we don't check against the negotiated
 			 * max_recv_frag, but a hard coded value.
 			 */
-			dcesrv_call_disconnect_after(call,
-				"dcesrv_auth_request - frag_length too large");
-			return dcesrv_fault(call,
-					DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect0(call, DCERPC_NCA_S_PROTO_ERROR);
 		}
 
 		if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
@@ -2095,10 +2095,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 				 * if DCERPC_PFC_FLAG_CONC_MPX was negotiated.
 				 */
 				if (!(dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
-					dcesrv_call_disconnect_after(call,
-						"dcesrv_auth_request - "
-						"existing pending call without CONN_MPX");
-					return dcesrv_fault(call,
+					return dcesrv_fault_disconnect0(call,
 						DCERPC_NCA_S_PROTO_ERROR);
 				}
 			}
@@ -2116,10 +2113,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					TALLOC_FREE(call);
 					call = dce_conn->incoming_fragmented_call_list;
 				}
-				dcesrv_call_disconnect_after(call,
-					"dcesrv_auth_request - "
-					"existing fragmented call");
-				return dcesrv_fault(call,
+				return dcesrv_fault_disconnect0(call,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
 			if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_PENDING_CANCEL) {
@@ -2140,10 +2134,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			existing = dcesrv_find_fragmented_call(dce_conn,
 							call->pkt.call_id);
 			if (existing == NULL) {
-				dcesrv_call_disconnect_after(call,
-					"dcesrv_auth_request - "
-					"no existing fragmented call");
-				return dcesrv_fault(call,
+				return dcesrv_fault_disconnect0(call,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
 			er = &existing->pkt.u.request;
@@ -2196,12 +2187,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			 * here, because we don't want to set
 			 * DCERPC_PFC_FLAG_DID_NOT_EXECUTE
 			 */
-			dcesrv_call_disconnect_after(call,
-						"dcesrv_auth_request - failed");
 			if (call->fault_code == 0) {
 				call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
 			}
-			return dcesrv_fault(call, call->fault_code);
+			return dcesrv_fault_disconnect0(call, call->fault_code);
 		}
 	}
 
@@ -2218,20 +2207,17 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		 */
 		available = dce_conn->max_total_request_size;
 		if (er->stub_and_verifier.length > available) {
-			dcesrv_call_disconnect_after(existing,
-				"dcesrv_auth_request - existing payload too large");
-			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault_disconnect0(existing,
+					DCERPC_FAULT_ACCESS_DENIED);
 		}
 		available -= er->stub_and_verifier.length;
 		if (nr->alloc_hint > available) {
-			dcesrv_call_disconnect_after(existing,
-				"dcesrv_auth_request - alloc hint too large");
-			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault_disconnect0(existing,
+					DCERPC_FAULT_ACCESS_DENIED);
 		}
 		if (nr->stub_and_verifier.length > available) {
-			dcesrv_call_disconnect_after(existing,
-				"dcesrv_auth_request - new payload too large");
-			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault_disconnect0(existing,
+					DCERPC_FAULT_ACCESS_DENIED);
 		}
 		alloc_hint = er->stub_and_verifier.length + nr->alloc_hint;
 		/* allocate at least 1 byte */
@@ -2270,9 +2256,8 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		 * Up to 4 MByte are allowed by all fragments
 		 */
 		if (call->pkt.u.request.alloc_hint > dce_conn->max_total_request_size) {
-			dcesrv_call_disconnect_after(call,
-				"dcesrv_auth_request - initial alloc hint too large");
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault_disconnect0(call,
+					DCERPC_FAULT_ACCESS_DENIED);
 		}
 		dcesrv_call_set_list(call, DCESRV_LIST_FRAGMENTED_CALL_LIST);
 		return NT_STATUS_OK;
