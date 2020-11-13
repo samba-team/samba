@@ -1419,14 +1419,6 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
-	if (!auth->auth_started) {
-		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
-	}
-
-	if (auth->auth_finished) {
-		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
-	}
-
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
 			DCERPC_PKT_AUTH3,
 			call->pkt.u.auth3.auth_info.length,
