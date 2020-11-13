@@ -213,6 +213,14 @@ NTSTATUS cli_smb2_query_mxac_recv(struct tevent_req *req,
 NTSTATUS cli_smb2_query_mxac(struct cli_state *cli,
 			     const char *fname,
 			     uint32_t *mxac);
+struct tevent_req *cli_smb2_rename_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst,
+	bool replace);
+NTSTATUS cli_smb2_rename_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_rename(struct cli_state *cli,
 			 const char *fname_src,
 			 const char *fname_dst,

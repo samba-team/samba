@@ -3090,85 +3090,75 @@ fail:
 	return status;
 }
 
-/***************************************************************
- Wrapper that allows SMB2 to rename a file.
- Synchronous only.
-***************************************************************/
+struct cli_smb2_rename_fnum_state {
+	DATA_BLOB inbuf;
+};
 
-NTSTATUS cli_smb2_rename(struct cli_state *cli,
-			 const char *fname_src,
-			 const char *fname_dst,
-			 bool replace)
+static void cli_smb2_rename_fnum_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_smb2_rename_fnum_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	const char *fname_dst,
+	bool replace)
 {
-	NTSTATUS status;
-	DATA_BLOB inbuf = data_blob_null;
-	uint16_t fnum = 0xffff;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_rename_fnum_state *state = NULL;
+	size_t namelen = strlen(fname_dst);
 	smb_ucs2_t *converted_str = NULL;
 	size_t converted_size_bytes = 0;
-	size_t namelen = 0;
 	size_t inbuf_size;
-	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb2_rename_fnum_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	status = get_fnum_from_path(cli,
-				fname_src,
-				DELETE_ACCESS,
-				&fnum);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	/* SMB2 is pickier about pathnames. Ensure it doesn't
-	   start in a '\' */
+	/*
+	 * SMB2 is pickier about pathnames. Ensure it doesn't start in
+	 * a '\'
+	 */
 	if (*fname_dst == '\\') {
 		fname_dst++;
 	}
 
-	/* SMB2 is pickier about pathnames. Ensure it doesn't
-	   end in a '\' */
-	namelen = strlen(fname_dst);
+	/*
+	 * SMB2 is pickier about pathnames. Ensure it doesn't end in a
+	 * '\'
+	 */
 	if (namelen > 0 && fname_dst[namelen-1] == '\\') {
-		char *modname = talloc_strdup(frame, fname_dst);
-		modname[namelen-1] = '\0';
-		fname_dst = modname;
+		fname_dst = talloc_strndup(state, fname_dst, namelen-1);
+		if (tevent_req_nomem(fname_dst, req)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
-	if (!push_ucs2_talloc(frame,
-				&converted_str,
-				fname_dst,
-				&converted_size_bytes)) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
+	ok = push_ucs2_talloc(
+		state, &converted_str, fname_dst, &converted_size_bytes);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
-	/* W2K8 insists the dest name is not null
-	   terminated. Remove the last 2 zero bytes
-	   and reduce the name length. */
-
+	/*
+	 * W2K8 insists the dest name is not null terminated. Remove
+	 * the last 2 zero bytes and reduce the name length.
+	 */
 	if (converted_size_bytes < 2) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 	converted_size_bytes -= 2;
 
 	inbuf_size = 20 + converted_size_bytes;
 	if (inbuf_size < 20) {
 		/* Integer wrap check. */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	/*
@@ -3182,42 +3172,192 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	 *
 	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14403
 	 */
-	if (inbuf_size < 24) {
-		inbuf_size = 24;
-	}
+	inbuf_size = MAX(inbuf_size, 24);
 
-	inbuf = data_blob_talloc_zero(frame, inbuf_size);
-	if (inbuf.data == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	state->inbuf = data_blob_talloc_zero(state, inbuf_size);
+	if (tevent_req_nomem(state->inbuf.data, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	if (replace) {
-		SCVAL(inbuf.data, 0, 1);
+		SCVAL(state->inbuf.data, 0, 1);
 	}
 
-	SIVAL(inbuf.data, 16, converted_size_bytes);
-	memcpy(inbuf.data + 20, converted_str, converted_size_bytes);
+	SIVAL(state->inbuf.data, 16, converted_size_bytes);
+	memcpy(state->inbuf.data + 20, converted_str, converted_size_bytes);
+
+	TALLOC_FREE(converted_str);
 
 	/* setinfo on the returned handle with info_type SMB2_GETINFO_FILE (1),
 	   level SMB2_FILE_RENAME_INFORMATION (SMB_FILE_RENAME_INFORMATION - 1000) */
 
-	status = cli_smb2_set_info_fnum(
-		cli,
-		fnum,
+	subreq = cli_smb2_set_info_fnum_send(
+		state,		/* mem_ctx */
+		ev,		/* ev */
+		cli,		/* cli */
+		fnum,		/* fnum */
 		1,		/* in_info_type */
 		SMB_FILE_RENAME_INFORMATION - 1000, /* in_file_info_class */
-		&inbuf,		   /* in_input_buffer */
-		0);		   /* in_additional_info */
+		&state->inbuf,	/* in_input_buffer */
+		0);		/* in_additional_info */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rename_fnum_done, req);
+	return req;
+}
 
-  fail:
+static void cli_smb2_rename_fnum_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_set_info_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
 
-	if (fnum != 0xffff) {
-		cli_smb2_close_fnum(cli, fnum);
+static NTSTATUS cli_smb2_rename_fnum_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+/***************************************************************
+ Wrapper that allows SMB2 to rename a file.
+***************************************************************/
+
+struct cli_smb2_rename_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *fname_dst;
+	bool replace;
+	uint16_t fnum;
+
+	NTSTATUS rename_status;
+};
+
+static void cli_smb2_rename_opened(struct tevent_req *subreq);
+static void cli_smb2_rename_renamed(struct tevent_req *subreq);
+static void cli_smb2_rename_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_rename_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst,
+	bool replace)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_rename_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb2_rename_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fname_dst = fname_dst;
+	state->replace = replace;
+
+	subreq = get_fnum_from_path_send(
+		state, ev, cli, fname_src, DELETE_ACCESS);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rename_opened, req);
+	return req;
+}
+
+static void cli_smb2_rename_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_rename_state *state = tevent_req_data(
+		req, struct cli_smb2_rename_state);
+	NTSTATUS status;
+
+	status = get_fnum_from_path_recv(subreq, &state->fnum);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
-	cli->raw_status = status;
+	subreq = cli_smb2_rename_fnum_send(
+		state,
+		state->ev,
+		state->cli,
+		state->fnum,
+		state->fname_dst,
+		state->replace);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rename_renamed, req);
+}
 
+static void cli_smb2_rename_renamed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_rename_state *state = tevent_req_data(
+		req, struct cli_smb2_rename_state);
+
+	state->rename_status = cli_smb2_rename_fnum_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	subreq = cli_smb2_close_fnum_send(
+		state, state->ev, state->cli, state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rename_closed, req);
+}
+
+static void cli_smb2_rename_closed(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_close_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_smb2_rename_recv(struct tevent_req *req)
+{
+	struct cli_smb2_rename_state *state = tevent_req_data(
+		req, struct cli_smb2_rename_state);
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!tevent_req_is_nterror(req, &status)) {
+		status = state->rename_status;
+	}
+	tevent_req_received(req);
+	return status;
+}
+
+NTSTATUS cli_smb2_rename(struct cli_state *cli,
+			 const char *fname_src,
+			 const char *fname_dst,
+			 bool replace)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_rename_send(
+		frame, ev, cli, fname_src, fname_dst, replace);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_smb2_rename_recv(req);
+ fail:
 	TALLOC_FREE(frame);
 	return status;
 }
