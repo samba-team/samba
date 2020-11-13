@@ -1210,36 +1210,6 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
  Rename a file.
 ****************************************************************************/
 
-static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
-					       struct tevent_context *ev,
-					       struct cli_state *cli,
-					       const char *fname_src,
-					       const char *fname_dst,
-					       bool replace);
-
-static struct tevent_req *cli_smb1_rename_send(TALLOC_CTX *mem_ctx,
-					       struct tevent_context *ev,
-					       struct cli_state *cli,
-					       const char *fname_src,
-					       const char *fname_dst,
-					       bool replace);
-
-struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   struct cli_state *cli,
-				   const char *fname_src,
-				   const char *fname_dst,
-				   bool replace)
-{
-	if (replace && smbXcli_conn_support_passthrough(cli->conn)) {
-		return cli_smb1_rename_send(mem_ctx, ev, cli, fname_src,
-					    fname_dst, replace);
-	} else {
-		return cli_cifs_rename_send(mem_ctx, ev, cli, fname_src,
-					    fname_dst, replace);
-	}
-}
-
 struct cli_smb1_rename_state {
 	uint8_t *data;
 };
@@ -1318,6 +1288,11 @@ static void cli_smb1_rename_done(struct tevent_req *subreq)
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
+static NTSTATUS cli_smb1_rename_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 static void cli_cifs_rename_done(struct tevent_req *subreq);
 
 struct cli_cifs_rename_state {
@@ -1392,16 +1367,67 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 
 static void cli_cifs_rename_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	NTSTATUS status;
+	NTSTATUS status = cli_smb_recv(
+		subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
 
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
+static NTSTATUS cli_cifs_rename_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct cli_rename_state {
+	uint8_t dummy;
+};
+
+static void cli_rename_done1(struct tevent_req *subreq);
+static void cli_rename_done_cifs(struct tevent_req *subreq);
+
+struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli,
+				   const char *fname_src,
+				   const char *fname_dst,
+				   bool replace)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_rename_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_rename_state);
+	if (req == NULL) {
+		return NULL;
 	}
-	tevent_req_done(req);
+
+	if (replace && smbXcli_conn_support_passthrough(cli->conn)) {
+		subreq = cli_smb1_rename_send(
+			state, ev, cli, fname_src, fname_dst, replace);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_rename_done1, req);
+		return req;
+	}
+
+	subreq = cli_cifs_rename_send(
+		state, ev, cli, fname_src,fname_dst, replace);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_rename_done_cifs, req);
+	return req;
+}
+
+static void cli_rename_done1(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb1_rename_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_rename_done_cifs(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_cifs_rename_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_rename_recv(struct tevent_req *req)
