@@ -27,6 +27,7 @@ import tdb
 import samba.getopt as options
 from samba.samdb import SamDB, get_default_backend_store
 import ldb
+from ldb import LdbError
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 from samba.ntacls import backup_online, backup_restore, backup_offline
@@ -576,7 +577,49 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                            attrs=['sidForRestore'])
         sid = res[0].get('sidForRestore')[0]
         logger.info('Creating account with SID: ' + str(sid))
-        ctx.join_add_objects(specified_sid=dom_sid(str(sid)))
+        try:
+            ctx.join_add_objects(specified_sid=dom_sid(str(sid)))
+        except LdbError as e:
+            (enum, emsg) = e.args
+            if enum != ldb.ERR_CONSTRAINT_VIOLATION:
+                raise
+
+            dup_res = []
+            try:
+                dup_res = samdb.search(base=ldb.Dn(samdb, "<SID=%s>" % sid),
+                                       scope=ldb.SCOPE_BASE,
+                                       attrs=['objectGUID'],
+                                       controls=["show_deleted:0",
+                                                 "show_recycled:0"])
+            except LdbError as dup_e:
+                if enum != ldb.ERR_NO_SUCH_OBJECT:
+                    raise e
+
+            if (len(dup_res) != 1):
+                raise e
+
+            objectguid = samdb.schema_format_value("objectGUID",
+                                                       dup_res[0]["objectGUID"][0])
+            objectguid = objectguid.decode('utf-8')
+            logger.error("The RID Pool on the source DC for the backup in %s "
+                         "may be corrupt "
+                         "or in conflict with SIDs already allocated "
+                         "in the domain. " % backup_file)
+            logger.error("Running 'samba-tool dbcheck' on the source "
+                         "DC (and obtaining a new backup) may correct the issue.")
+            logger.error("Alternatively please obtain a new backup "
+                         "against a different DC.")
+            logger.error("The SID we wish to use (%s) is recorded in "
+                         "@SAMBA_DSDB as the sidForRestore attribute."
+                         % sid)
+
+            raise CommandError("Domain restore failed because there "
+                               "is already an existing object (%s) "
+                               "with SID %s and objectGUID %s.  "
+                               "This conflicts with "
+                               "the new DC account we want to add "
+                               "for the restored domain.   " % (
+                                dup_res[0].dn, sid, objectguid))
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, '@ROOTDSE')
