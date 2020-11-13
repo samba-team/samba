@@ -705,18 +705,37 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS dcesrv_fault_disconnect(struct dcesrv_call_state *call,
-				 uint32_t fault_code)
+static NTSTATUS _dcesrv_fault_disconnect_flags(struct dcesrv_call_state *call,
+					       uint32_t fault_code,
+					       uint8_t extra_flags,
+					       const char *func,
+					       const char *location)
 {
+	const char *reason = NULL;
+
+	reason = talloc_asprintf(call, "%s:%s: fault=%u (%s) flags=0x%x",
+				 func, location,
+				 fault_code,
+				 dcerpc_errstr(call, fault_code),
+				 extra_flags);
+	if (reason == NULL) {
+		reason = location;
+	}
+
 	/*
 	 * We add the call to the pending_call_list
 	 * in order to defer the termination.
 	 */
-	dcesrv_call_disconnect_after(call, "dcesrv_fault_disconnect");
 
-	return dcesrv_fault_with_flags(call, fault_code,
-				       DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
+	dcesrv_call_disconnect_after(call, reason);
+
+	return dcesrv_fault_with_flags(call, fault_code, extra_flags);
 }
+
+#define dcesrv_fault_disconnect(call, fault_code) \
+	_dcesrv_fault_disconnect_flags(call, fault_code, \
+		DCERPC_PFC_FLAG_DID_NOT_EXECUTE, \
+		__func__, __location__)
 
 static int dcesrv_connection_context_destructor(struct dcesrv_connection_context *c)
 {
