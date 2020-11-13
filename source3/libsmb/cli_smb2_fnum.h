@@ -221,10 +221,6 @@ struct tevent_req *cli_smb2_rename_send(
 	const char *fname_dst,
 	bool replace);
 NTSTATUS cli_smb2_rename_recv(struct tevent_req *req);
-NTSTATUS cli_smb2_rename(struct cli_state *cli,
-			 const char *fname_src,
-			 const char *fname_dst,
-			 bool replace);
 NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 			uint16_t fnum,
 			const char *ea_name,

@@ -3330,38 +3330,6 @@ NTSTATUS cli_smb2_rename_recv(struct tevent_req *req)
 	return status;
 }
 
-NTSTATUS cli_smb2_rename(struct cli_state *cli,
-			 const char *fname_src,
-			 const char *fname_dst,
-			 bool replace)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev = NULL;
-	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_smb2_rename_send(
-		frame, ev, cli, fname_src, fname_dst, replace);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_smb2_rename_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /***************************************************************
  Wrapper that allows SMB2 to set an EA on a fnum.
  Synchronous only.
