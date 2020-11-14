@@ -84,9 +84,6 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	epmd_mode = rpc_epmapper_mode();
 
