@@ -1279,10 +1279,311 @@ static bool windows_parent_dirname(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+struct cli_smb2_list_dir_data {
+	uint8_t *data;
+	uint32_t length;
+};
+
+struct cli_smb2_list_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *mask;
+
+	uint16_t fnum;
+
+	NTSTATUS status;
+	struct cli_smb2_list_dir_data *response;
+	uint32_t offset;
+};
+
+static void cli_smb2_list_opened(struct tevent_req *subreq);
+static void cli_smb2_list_done(struct tevent_req *subreq);
+static void cli_smb2_list_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_list_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *pathname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_list_state *state = NULL;
+	char *parent = NULL;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_list_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->status = NT_STATUS_OK;
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	ok = windows_parent_dirname(state, pathname, &parent, &state->mask);
+	if (!ok) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb2_create_fnum_send(
+		state,					/* mem_ctx */
+		ev,					/* ev */
+		cli,					/* cli */
+		parent,					/* fname */
+		0,					/* create_flags */
+		SMB2_IMPERSONATION_IMPERSONATION,	/* impersonation_level */
+		SEC_DIR_LIST|SEC_DIR_READ_ATTRIBUTE,	/* desired_access */
+		FILE_ATTRIBUTE_DIRECTORY, 		/* file_attributes */
+		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition */
+		FILE_DIRECTORY_FILE,			/* create_options */
+		NULL);					/* in_cblobs */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_list_opened, req);
+	return req;
+}
+
+static void cli_smb2_list_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_list_state *state = tevent_req_data(
+		req, struct cli_smb2_list_state);
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Make our caller get back to us via cli_smb2_list_recv(),
+	 * triggering the smb2_query_directory_send()
+	 */
+	tevent_req_defer_callback(req, state->ev);
+	tevent_req_notify_callback(req);
+}
+
+static void cli_smb2_list_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_list_state *state = tevent_req_data(
+		req, struct cli_smb2_list_state);
+	struct cli_smb2_list_dir_data *response = NULL;
+
+	response = talloc(state, struct cli_smb2_list_dir_data);
+	if (tevent_req_nomem(response, req)) {
+		return;
+	}
+
+	state->status = smb2cli_query_directory_recv(
+		subreq, response, &response->data, &response->length);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_IS_OK(state->status)) {
+		state->response = response;
+		state->offset = 0;
+
+		tevent_req_defer_callback(req, state->ev);
+		tevent_req_notify_callback(req);
+		return;
+	}
+
+	TALLOC_FREE(response);
+
+	subreq = cli_smb2_close_fnum_send(
+		state, state->ev, state->cli, state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_list_closed, req);
+}
+
+static void cli_smb2_list_closed(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_close_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+/*
+ * Return the next finfo directory.
+ *
+ * This parses the blob returned from QUERY_DIRECTORY step by step. If
+ * the blob ends, this triggers a fresh QUERY_DIRECTORY and returns
+ * NT_STATUS_RETRY, which will then trigger the caller again when the
+ * QUERY_DIRECTORY has returned with another buffer. This way we
+ * guarantee that no asynchronous request is open after this call
+ * returns an entry, so that other synchronous requests can be issued
+ * on the same connection while the directoy listing proceeds.
+ */
+NTSTATUS cli_smb2_list_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct file_info **pfinfo)
+{
+	struct cli_smb2_list_state *state = tevent_req_data(
+		req, struct cli_smb2_list_state);
+	struct cli_smb2_list_dir_data *response = NULL;
+	struct file_info *finfo = NULL;
+	NTSTATUS status;
+	uint32_t next_offset = 0;
+	bool in_progress;
+
+	in_progress = tevent_req_is_in_progress(req);
+
+	if (!in_progress) {
+		if (!tevent_req_is_nterror(req, &status)) {
+			status = NT_STATUS_NO_MORE_FILES;
+		}
+		goto fail;
+	}
+
+	response = state->response;
+	if (response == NULL) {
+		struct tevent_req *subreq = NULL;
+		struct cli_state *cli = state->cli;
+		struct smb2_hnd *ph = NULL;
+		uint32_t max_trans, max_avail_len;
+		bool ok;
+
+		if (!NT_STATUS_IS_OK(state->status)) {
+			status = state->status;
+			goto fail;
+		}
+
+		status = map_fnum_to_smb2_handle(cli, state->fnum, &ph);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		max_trans = smb2cli_conn_max_trans_size(cli->conn);
+		ok = smb2cli_conn_req_possible(cli->conn, &max_avail_len);
+		if (ok) {
+			max_trans = MIN(max_trans, max_avail_len);
+		}
+
+		subreq = smb2cli_query_directory_send(
+			state,				/* mem_ctx */
+			state->ev,			/* ev */
+			cli->conn,			/* conn */
+			cli->timeout,			/* timeout_msec */
+			cli->smb2.session,		/* session */
+			cli->smb2.tcon,			/* tcon */
+			SMB2_FIND_ID_BOTH_DIRECTORY_INFO, /* level */
+			0,				/* flags */
+			0,		    		/* file_index */
+			ph->fid_persistent, 		/* fid_persistent */
+			ph->fid_volatile,   		/* fid_volatile */
+			state->mask,	    		/* mask */
+			max_trans);	    		/* outbuf_len */
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, cli_smb2_list_done, req);
+		return NT_STATUS_RETRY;
+	}
+
+	SMB_ASSERT(response->length > state->offset);
+
+	finfo = talloc_zero(mem_ctx, struct file_info);
+	if (finfo == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	status = parse_finfo_id_both_directory_info(
+		response->data + state->offset,
+		response->length - state->offset,
+		finfo,
+		&next_offset);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = is_bad_finfo_name(state->cli, finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/*
+	 * parse_finfo_id_both_directory_info() checks for overflow,
+	 * no need to check again here.
+	 */
+	state->offset += next_offset;
+
+	if (next_offset == 0) {
+		TALLOC_FREE(state->response);
+	}
+
+	tevent_req_defer_callback(req, state->ev);
+	tevent_req_notify_callback(req);
+
+	*pfinfo = finfo;
+	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(finfo);
+	tevent_req_received(req);
+	return status;
+}
+
 /***************************************************************
  Wrapper that allows SMB2 to list a directory.
- Synchronous only.
 ***************************************************************/
+
+struct cli_smb2_list_sync_state {
+	const char *pathname;
+	uint32_t attribute;
+	NTSTATUS (*fn)(struct file_info *finfo,
+		       const char *mask,
+		       void *private_data);
+	void *private_data;
+	NTSTATUS status;
+	bool processed_file;
+};
+
+static void cli_smb2_list_sync_cb(struct tevent_req *subreq)
+{
+	struct cli_smb2_list_sync_state *state =
+		tevent_req_callback_data_void(subreq);
+	struct file_info *finfo = NULL;
+	bool ok;
+
+	state->status = cli_smb2_list_recv(subreq, talloc_tos(), &finfo);
+	/* No TALLOC_FREE(subreq), we get here more than once */
+
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return;
+	}
+
+	ok = dir_check_ftype(finfo->attr, state->attribute);
+	if (ok) {
+		/*
+		 * Only process if attributes match.  SMB1 servers do
+		 * the filtering, so with SMB2 we need to emulate it
+		 * in the client.
+		 *
+		 * https://bugzilla.samba.org/show_bug.cgi?id=10260
+		 */
+		state->status = state->fn(
+			finfo, state->pathname, state->private_data);
+
+		state->processed_file = true;
+	}
+
+	TALLOC_FREE(finfo);
+}
 
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 		       const char *pathname,
@@ -1292,18 +1593,16 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				      void *private_data),
 		       void *private_data)
 {
-	NTSTATUS status;
-	uint16_t fnum = 0xffff;
-	char *parent_dir = NULL;
-	const char *mask = NULL;
-	struct smb2_hnd *ph = NULL;
-	bool processed_file = false;
 	TALLOC_CTX *frame = talloc_stackframe();
-	TALLOC_CTX *subframe = NULL;
-	bool mask_has_wild;
-	uint32_t max_trans;
-	uint32_t max_avail_len;
-	bool ok;
+	struct cli_smb2_list_sync_state state = {
+		.pathname = pathname,
+		.attribute = attribute,
+		.fn = fn,
+		.private_data = private_data,
+	};
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -1313,177 +1612,33 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_list_send(frame, ev, cli, pathname);
+	if (req == NULL) {
+		goto fail;
+	}
+	tevent_req_set_callback(req, cli_smb2_list_sync_cb, &state);
+
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
-	/* Get the directory name. */
-	if (!windows_parent_dirname(frame,
-				pathname,
-				&parent_dir,
-				&mask)) {
-                status = NT_STATUS_NO_MEMORY;
-		goto fail;
-        }
+	status = state.status;
 
-	mask_has_wild = ms_has_wild(mask);
-
-	status = cli_smb2_create_fnum(cli,
-			parent_dir,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			SEC_DIR_LIST|SEC_DIR_READ_ATTRIBUTE,/* desired_access */
-			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
-			FILE_OPEN,		/* create_disposition */
-			FILE_DIRECTORY_FILE,	/* create_options */
-			NULL,
-			&fnum,
-			NULL,
-			NULL,
-			NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	/*
-	 * ideally, use the max transaction size, but don't send a request
-	 * bigger than we have credits available for
-	 */
-	max_trans = smb2cli_conn_max_trans_size(cli->conn);
-	ok = smb2cli_conn_req_possible(cli->conn, &max_avail_len);
-	if (ok) {
-		max_trans = MIN(max_trans, max_avail_len);
-	}
-
-	do {
-		uint8_t *dir_data = NULL;
-		uint32_t dir_data_length = 0;
-		uint32_t next_offset = 0;
-		subframe = talloc_stackframe();
-
-		status = smb2cli_query_directory(cli->conn,
-					cli->timeout,
-					cli->smb2.session,
-					cli->smb2.tcon,
-					SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
-					0,	/* flags */
-					0,	/* file_index */
-					ph->fid_persistent,
-					ph->fid_volatile,
-					mask,
-					max_trans,
-					subframe,
-					&dir_data,
-					&dir_data_length);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
-				break;
-			}
-			goto fail;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
+		if (state.processed_file) {
+			status = NT_STATUS_OK;
+		} else {
+			status = NT_STATUS_NO_SUCH_FILE;
 		}
-
-		do {
-			struct file_info *finfo = talloc_zero(subframe,
-							struct file_info);
-
-			if (finfo == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-
-			status = parse_finfo_id_both_directory_info(dir_data,
-						dir_data_length,
-						finfo,
-						&next_offset);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-
-			/* Protect against server attack. */
-			status = is_bad_finfo_name(cli, finfo);
-			if (!NT_STATUS_IS_OK(status)) {
-				smbXcli_conn_disconnect(cli->conn, status);
-				goto fail;
-			}
-
-			if (dir_check_ftype(finfo->attr, attribute)) {
-				/*
-				 * Only process if attributes match.
-				 * SMB1 servers do the filtering, so
-				 * with SMB2 we need to emulate it in
-				 * the client.
-				 *
-				 * https://bugzilla.samba.org/show_bug.cgi?id=10260
-				 */
-				processed_file = true;
-
-				status = fn(
-					finfo,
-					pathname,
-					private_data);
-
-				if (!NT_STATUS_IS_OK(status)) {
-					break;
-				}
-			}
-
-			TALLOC_FREE(finfo);
-
-			/* Move to next entry. */
-			if (next_offset) {
-				dir_data += next_offset;
-				dir_data_length -= next_offset;
-			}
-		} while (next_offset != 0);
-
-		TALLOC_FREE(subframe);
-
-		if (!mask_has_wild) {
-			/*
-			 * MacOSX 10 doesn't set STATUS_NO_MORE_FILES
-			 * when handed a non-wildcard path. Do it
-			 * for the server (with a non-wildcard path
-			 * there should only ever be one file returned.
-			 */
-			status = STATUS_NO_MORE_FILES;
-			break;
-		}
-
-	} while (NT_STATUS_IS_OK(status));
-
-	if (NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
-		status = NT_STATUS_OK;
 	}
 
-	if (NT_STATUS_IS_OK(status) && !processed_file) {
-		/*
-		 * In SMB1 findfirst returns NT_STATUS_NO_SUCH_FILE
-		 * if no files match. Emulate this in the client.
-		 */
-		status = NT_STATUS_NO_SUCH_FILE;
-	}
-
-  fail:
-
-	if (fnum != 0xffff) {
-		cli_smb2_close_fnum(cli, fnum);
-	}
-
-	cli->raw_status = status;
-
-	TALLOC_FREE(subframe);
+fail:
+	TALLOC_FREE(req);
+	TALLOC_FREE(ev);
 	TALLOC_FREE(frame);
 	return status;
 }
