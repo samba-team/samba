@@ -100,7 +100,8 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 						       0,
 						       &local);
 		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
 		status = rpcint_binding_handle(tmp_ctx,
