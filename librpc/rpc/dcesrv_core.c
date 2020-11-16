@@ -1818,6 +1818,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct ndr_pull *pull;
 	NTSTATUS status;
 
+	if (auth->auth_invalid) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+
 	if (!auth->auth_finished) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
@@ -1981,6 +1985,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	enum dcerpc_AuthType auth_type = 0;
 	enum dcerpc_AuthLevel auth_level = 0;
 	uint32_t auth_context_id = 0;
+	bool auth_invalid = false;
 
 	call = talloc_zero(dce_conn, struct dcesrv_call_state);
 	if (!call) {
@@ -2012,12 +2017,16 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 	if (call->auth_state == NULL) {
 		struct dcesrv_auth *a = NULL;
+		bool check_type_level = true;
 
 		auth_type = dcerpc_get_auth_type(&blob);
 		auth_level = dcerpc_get_auth_level(&blob);
 		auth_context_id = dcerpc_get_auth_context_id(&blob);
 
 		if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+			if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
+				check_type_level = false;
+			}
 			dce_conn->default_auth_level_connect = NULL;
 			if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 				dce_conn->got_explicit_auth_level_connect = true;
@@ -2027,14 +2036,19 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		for (a = dce_conn->auth_states; a != NULL; a = a->next) {
 			num_auth_ctx++;
 
-			if (a->auth_type != auth_type) {
-				continue;
-			}
-			if (a->auth_finished && a->auth_level != auth_level) {
-				continue;
-			}
 			if (a->auth_context_id != auth_context_id) {
 				continue;
+			}
+
+			if (a->auth_type != auth_type) {
+				auth_invalid = true;
+			}
+			if (a->auth_level != auth_level) {
+				auth_invalid = true;
+			}
+
+			if (check_type_level && auth_invalid) {
+				a->auth_invalid = true;
 			}
 
 			DLIST_PROMOTE(dce_conn->auth_states, a);
@@ -2061,6 +2075,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			/*
 			 * This can never be valid.
 			 */
+			auth_invalid = true;
 			a->auth_invalid = true;
 		}
 		call->auth_state = a;
@@ -2129,6 +2144,18 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			}
 			/* only one request is possible in the fragmented list */
 			if (dce_conn->incoming_fragmented_call_list != NULL) {
+				call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
+
+				existing = dcesrv_find_fragmented_call(dce_conn,
+								       call->pkt.call_id);
+				if (existing != NULL && call->auth_state != existing->auth_state) {
+					call->context = dcesrv_find_context(call->conn,
+								call->pkt.u.request.context_id);
+
+					if (call->pkt.auth_length != 0 && existing->context == call->context) {
+						call->fault_code = DCERPC_FAULT_SEC_PKG_ERROR;
+					}
+				}
 				if (!(dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
 					/*
 					 * Without DCERPC_PFC_FLAG_CONC_MPX
@@ -2138,11 +2165,14 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					 * This is important to get the
 					 * call_id and context_id right.
 					 */
+					dce_conn->incoming_fragmented_call_list->fault_code = call->fault_code;
 					TALLOC_FREE(call);
 					call = dce_conn->incoming_fragmented_call_list;
 				}
-				return dcesrv_fault_disconnect0(call,
-						DCERPC_NCA_S_PROTO_ERROR);
+				if (existing != NULL) {
+					call->context = existing->context;
+				}
+				return dcesrv_fault_disconnect0(call, call->fault_code);
 			}
 			if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_PENDING_CANCEL) {
 				return dcesrv_fault_disconnect(call,
@@ -2155,17 +2185,43 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 			}
 		} else {
-			const struct dcerpc_request *nr = &call->pkt.u.request;
-			const struct dcerpc_request *er = NULL;
 			int cmp;
 
 			existing = dcesrv_find_fragmented_call(dce_conn,
 							call->pkt.call_id);
 			if (existing == NULL) {
+				if (!(dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
+					/*
+					 * Without DCERPC_PFC_FLAG_CONC_MPX
+					 * we need to return the FAULT on the
+					 * already existing call.
+					 *
+					 * This is important to get the
+					 * call_id and context_id right.
+					 */
+					if (dce_conn->incoming_fragmented_call_list != NULL) {
+						TALLOC_FREE(call);
+						call = dce_conn->incoming_fragmented_call_list;
+					}
+					return dcesrv_fault_disconnect0(call,
+							DCERPC_NCA_S_PROTO_ERROR);
+				}
+				if (dce_conn->incoming_fragmented_call_list != NULL) {
+					return dcesrv_fault_disconnect0(call, DCERPC_NCA_S_PROTO_ERROR);
+				}
+				call->context = dcesrv_find_context(call->conn,
+							call->pkt.u.request.context_id);
+				if (call->context == NULL) {
+					return dcesrv_fault_with_flags(call, DCERPC_NCA_S_UNKNOWN_IF,
+						DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
+				}
+				if (auth_invalid) {
+					return dcesrv_fault_disconnect0(call,
+									DCERPC_FAULT_ACCESS_DENIED);
+				}
 				return dcesrv_fault_disconnect0(call,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
-			er = &existing->pkt.u.request;
 
 			if (call->pkt.ptype != existing->pkt.ptype) {
 				/* trying to play silly buggers are we? */
@@ -2178,14 +2234,8 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 				return dcesrv_fault_disconnect(existing,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
-			if (nr->context_id != er->context_id)  {
-				return dcesrv_fault_disconnect(existing,
-						DCERPC_NCA_S_PROTO_ERROR);
-			}
-			if (nr->opnum != er->opnum)  {
-				return dcesrv_fault_disconnect(existing,
-						DCERPC_NCA_S_PROTO_ERROR);
-			}
+			call->auth_state = existing->auth_state;
+			call->context = existing->context;
 		}
 	}
 
