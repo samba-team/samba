@@ -1,0 +1,19 @@
+<samba:parameter name="smbd force process locks"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This boolean option tells <command moreinfo="none">smbd</command> whether
+	to forcefully disable the use of Open File Description locks on Linux.
+	</para>
+	<para>
+	This option should not be changed from the default unless you know what
+	you're doing.
+	</para>
+
+</description>
+
+<related>locking</related>
+<value type="default">no</value>
+</samba:parameter>
