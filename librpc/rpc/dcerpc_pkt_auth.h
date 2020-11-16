@@ -31,6 +31,7 @@
 
 NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
 				    struct gensec_security *gensec,
+				    bool check_pkt_auth_fields,
 				    TALLOC_CTX *mem_ctx,
 				    enum dcerpc_pkt_type ptype,
 				    uint8_t required_flags,
