@@ -1135,8 +1135,17 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	status = dce_ctx->callbacks->assoc_group.find(
 		call, dce_ctx->callbacks->assoc_group.private_data);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
-			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));
+		char *raddr = NULL;
+
+		raddr = tsocket_address_string(call->conn->remote_address, call);
+
+		endpoint = dcerpc_binding_get_string_option(
+				call->conn->endpoint->ep_description,
+				"endpoint");
+
+		DBG_WARNING("Failed to find assoc_group 0x%08x on ep[%s] raddr[%s]: %s\n",
+			    call->pkt.u.bind.assoc_group_id,
+			    endpoint, raddr, nt_errstr(status));
 		return dcesrv_bind_nak(call, 0);
 	}
 
