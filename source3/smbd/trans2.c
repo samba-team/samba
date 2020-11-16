@@ -4969,7 +4969,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	 * Ensure we always operate on a file descriptor, not just
 	 * the filename.
 	 */
-	if (fsp == NULL) {
+	if (fsp == NULL || !fsp->fsp_flags.is_fsa) {
 		uint32_t access_mask = SEC_STD_READ_CONTROL|
 					FILE_READ_ATTRIBUTES|
 					FILE_WRITE_ATTRIBUTES;
