@@ -989,6 +989,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL;
 	struct cli_list_state *state;
+	enum protocol_types proto = smbXcli_conn_protocol(cli->conn);
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_list_state);
 	if (req == NULL) {
@@ -996,14 +997,17 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	if (smbXcli_conn_protocol(cli->conn) <= PROTOCOL_LANMAN1) {
-		state->subreq = cli_list_old_send(
-			state, ev, cli, mask, attribute);
-		state->recv_fn = cli_list_old_recv;
-	} else {
+	if (proto >= PROTOCOL_SMB2_02) {
+		state->subreq = cli_smb2_list_send(state, ev, cli, mask);
+		state->recv_fn = cli_smb2_list_recv;
+	} else if (proto >= PROTOCOL_LANMAN2) {
 		state->subreq = cli_list_trans_send(
 			state, ev, cli, mask, attribute, info_level);
 		state->recv_fn = cli_list_trans_recv;
+	} else {
+		state->subreq = cli_list_old_send(
+			state, ev, cli, mask, attribute);
+		state->recv_fn = cli_list_old_recv;
 	}
 	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -1184,10 +1188,6 @@ NTSTATUS cli_list(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	uint16_t info_level;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_list(cli, mask, attribute, fn, private_data);
-	}
 
 	frame = talloc_stackframe();
 
