@@ -743,6 +743,39 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_cli_rename(
+	struct py_cli_state *self, PyObject *args, PyObject *kwds)
+{
+	char *fname_src = NULL, *fname_dst = NULL;
+	int replace = false;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	static const char *kwlist[] = { "src", "dst", "replace", NULL };
+
+	ok = ParseTupleAndKeywords(
+		args, kwds, "ss|p", kwlist, &fname_src, &fname_dst, &replace);
+	if (!ok) {
+		return NULL;
+	}
+
+	req = cli_rename_send(
+		NULL, self->ev, self->cli, fname_src, fname_dst, replace);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_rename_recv(req);
+	TALLOC_FREE(req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
+
 struct push_state {
 	char *data;
 	off_t nread;
@@ -1439,6 +1472,10 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "mkdir(path) -> None\n\n \t\tCreate a directory." },
 	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
 	  "rmdir(path) -> None\n\n \t\tDelete a directory." },
+	{ "rename",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_rename),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "rename(src,dst) -> None\n\n \t\tRename a file." },
 	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
 	  "chkpath(dir_path) -> True or False\n\n"
 	  "\t\tReturn true if directory exists, false otherwise." },
