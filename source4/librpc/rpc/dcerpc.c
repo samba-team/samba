@@ -726,6 +726,7 @@ static NTSTATUS ncacn_pull_pkt_auth(struct dcecli_connection *c,
 
 	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
 					    c->security_state.generic_state,
+					    true, /* check_pkt_auth_fields */
 					    mem_ctx,
 					    ptype,
 					    required_flags,

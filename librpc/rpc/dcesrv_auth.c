@@ -438,6 +438,10 @@ bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	if (auth->auth_invalid) {
+		return false;
+	}
+
 	/* We can't work without an existing gensec state */
 	if (auth->gensec_security == NULL) {
 		return false;
@@ -524,6 +528,10 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	if (auth->auth_invalid) {
+		return false;
+	}
+
 	if (call->in_auth_info.auth_type != auth->auth_type) {
 		return false;
 	}
@@ -590,6 +598,7 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 		.auth_level = auth->auth_level,
 		.auth_context_id = auth->auth_context_id,
 	};
+	bool check_pkt_auth_fields;
 	NTSTATUS status;
 
 	if (!auth->auth_started) {
@@ -605,8 +614,27 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 		return false;
 	}
 
+	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
+		/*
+		 * The caller most likely checked this
+		 * already, but we better double check.
+		 */
+		check_pkt_auth_fields = true;
+	} else {
+		/*
+		 * The caller already found first fragment
+		 * and is passing the auth_state of it.
+		 * A server is supposed to use the
+		 * setting of the first fragment and
+		 * completely ignore the values
+		 * on the remaining fragments
+		 */
+		check_pkt_auth_fields = false;
+	}
+
 	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
 					    auth->gensec_security,
+					    check_pkt_auth_fields,
 					    call,
 					    pkt->ptype,
 					    required_flags,
