@@ -654,10 +654,13 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	NTSTATUS status = NT_STATUS_OK;
 	int fd = -1;
 	struct smb_filename *orig_fsp_name = fsp->fsp_name;
+	struct smb_filename *orig_base_fsp_name = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
+	struct smb_filename base_smb_fname_rel;
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
+	int ret;
 	bool ok;
 
 #ifdef O_PATH
@@ -713,6 +716,15 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 
 		/* Setup fsp->fsp_name to be relative to cwd */
 		fsp->fsp_name = smb_fname_rel;
+
+		/* Also setup base_fsp to be relative to the new cwd */
+		if (fsp->base_fsp != NULL) {
+			base_smb_fname_rel = (struct smb_filename) {
+				.base_name = smb_fname_rel->base_name,
+			};
+			orig_base_fsp_name = fsp->base_fsp->fsp_name;
+			fsp->base_fsp->fsp_name = &base_smb_fname_rel;
+		}
 	} else {
 		/*
 		 * fsp->fsp_name is unchanged as it is already correctly
@@ -734,8 +746,16 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	}
 	fsp_set_fd(fsp, fd);
 
-	if (fd != -1 &&
-	    !is_ntfs_stream_smb_fname(fsp->fsp_name) &&
+	if (fd != -1) {
+		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			goto out;
+		}
+		fsp->fsp_name->st = orig_fsp_name->st;
+	}
+
+	if (!is_ntfs_stream_smb_fname(fsp->fsp_name) &&
 	    fsp->fsp_flags.is_pathref &&
 	    have_opath)
 	{
@@ -748,15 +768,6 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 		 * process_symlink_open() codepath down below by setting fd=-1
 		 * and errno=ELOOP.
 		 */
-		int ret;
-
-		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
-		if (ret != 0) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
-		fsp->fsp_name->st = orig_fsp_name->st;
-
 		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
 			ret = SMB_VFS_CLOSE(fsp);
 			SMB_ASSERT(ret == 0);
@@ -814,10 +825,13 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 
   out:
 	fsp->fsp_name = orig_fsp_name;
+	if (fsp->base_fsp != NULL) {
+		fsp->base_fsp->fsp_name = orig_base_fsp_name;
+	}
 	TALLOC_FREE(parent_dir_fname);
 
 	if (oldwd_fname != NULL) {
-		int ret = vfs_ChDir(conn, oldwd_fname);
+		ret = vfs_ChDir(conn, oldwd_fname);
 		if (ret == -1) {
 			smb_panic("unable to get back to old directory\n");
 		}
