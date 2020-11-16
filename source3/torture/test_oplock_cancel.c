@@ -148,6 +148,8 @@ bool run_oplock_cancel(int dummy)
 		return false;
 	}
 
+	cli_close(cli1, fnum1);
+
 	TALLOC_FREE(cli1);
 
 	/*
