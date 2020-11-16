@@ -1178,6 +1178,12 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 {
 	char *mask = NULL;
 	unsigned int info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+	struct do_listing_state state = {
+		.mask = mask,
+		.callback_fn = callback_fn,
+		.private_data = priv,
+	};
+	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
 	if (user_mask == NULL) {
@@ -1191,34 +1197,22 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	}
 	dos_format(mask);
 
-	if (self->is_smb1) {
-		struct do_listing_state state = {
-			.mask = mask,
-			.callback_fn = callback_fn,
-			.private_data = priv,
-		};
-		struct tevent_req *req = NULL;
+	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
+			    info_level);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	tevent_req_set_callback(req, do_listing_cb, &state);
 
-		req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
-				    info_level);
-		if (req == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		tevent_req_set_callback(req, do_listing_cb, &state);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	TALLOC_FREE(req);
 
-		if (!py_tevent_req_wait_exc(self, req)) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		TALLOC_FREE(req);
-
-		status = state.status;
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
-			status = NT_STATUS_OK;
-		}
-	} else {
-		status = cli_list(self->cli, mask, attribute, callback_fn,
-				  priv);
+	status = state.status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
+		status = NT_STATUS_OK;
 	}
 
 done:
