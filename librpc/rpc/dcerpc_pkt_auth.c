@@ -39,6 +39,7 @@
 
 NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
 				    struct gensec_security *gensec,
+				    bool check_pkt_auth_fields,
 				    TALLOC_CTX *mem_ctx,
 				    enum dcerpc_pkt_type ptype,
 				    uint8_t required_flags,
@@ -115,16 +116,18 @@ NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (auth.auth_type != auth_state->auth_type) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	if (check_pkt_auth_fields) {
+		if (auth.auth_type != auth_state->auth_type) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 
-	if (auth.auth_level != auth_state->auth_level) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
+		if (auth.auth_level != auth_state->auth_level) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 
-	if (auth.auth_context_id != auth_state->auth_context_id) {
-		return NT_STATUS_ACCESS_DENIED;
+		if (auth.auth_context_id != auth_state->auth_context_id) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	/* check signature or unseal the packet */
