@@ -2979,6 +2979,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     req_xmit=None,
                                     req_recv=None,
                                     rep_both=None,
+                                    transport_both=5840,
                                     alter_xmit=None,
                                     alter_recv=None):
         ndr32 = base.transfer_syntax_ndr()
@@ -3001,9 +3002,16 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.max_xmit_frag, rep_both)
         self.assertEqual(rep.u.max_recv_frag, rep_both)
         self.assertNotEqual(rep.u.assoc_group_id, req.u.assoc_group_id)
-        self.assertEqual(rep.u.secondary_address_size, 4)
-        self.assertEqual(rep.u.secondary_address, "%d" % self.tcp_port)
-        self.assertPadding(rep.u._pad1, 2)
+        sda_str = self.secondary_address
+        sda_len = len(sda_str) + 1
+        mod_len = (2 + sda_len) % 4
+        if mod_len != 0:
+            sda_pad = 4 - mod_len
+        else:
+            sda_pad = 0
+        self.assertEqual(rep.u.secondary_address_size, sda_len)
+        self.assertEqual(rep.u.secondary_address, sda_str)
+        self.assertPadding(rep.u._pad1, sda_pad)
         self.assertEqual(rep.u.num_results, 1)
         self.assertEqual(rep.u.ctx_list[0].result,
                           dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
@@ -3057,7 +3065,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        chunk_size = 5840 - dcerpc.DCERPC_REQUEST_LENGTH
+        chunk_size = transport_both - dcerpc.DCERPC_REQUEST_LENGTH
         req = self.generate_request(call_id=2,
                                     context_id=ctx1.context_id,
                                     opnum=0,
@@ -3096,10 +3104,20 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
-    def test_neg_xmit_ffff_ffff(self):
+    def test_neg_xmit_ffff_ffff_tcp(self):
         return self._test_neg_xmit_check_values(req_xmit=0xffff,
                                                 req_recv=0xffff,
                                                 rep_both=5840)
+
+    def test_neg_xmit_ffff_ffff_smb(self):
+        transport_creds = self.get_anon_creds()
+        self.reconnect_smb_pipe(primary_address='\\pipe\\lsarpc',
+                                secondary_address='\\pipe\\lsass',
+                                transport_creds=transport_creds)
+        return self._test_neg_xmit_check_values(req_xmit=0xffff,
+                                                req_recv=0xffff,
+                                                rep_both=4280,
+                                                transport_both=4280)
 
     def test_neg_xmit_0_ffff(self):
         return self._test_neg_xmit_check_values(req_xmit=0,
