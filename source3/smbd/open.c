@@ -1412,18 +1412,6 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-		if (ret == -1) {
-			/* If we have an fd, this stat should succeed. */
-			DEBUG(0,("Error doing fstat on open file %s "
-				"(%s)\n",
-				smb_fname_str_dbg(smb_fname),
-				strerror(errno) ));
-			status = map_nt_error_from_unix(errno);
-			fd_close(fsp);
-			return status;
-		}
-
 		if (*p_file_created) {
 			/* We created this file. */
 
