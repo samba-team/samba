@@ -4986,7 +4986,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         (finished, to_server) = g.update(from_server)
         self.assertFalse(finished)
 
-        # We change ctx_list and auth_level
+        # We only change auth_type
         auth_info = self.generate_auth(auth_type=dcerpc.DCERPC_AUTH_TYPE_KRB5,
                                        auth_level=auth_level,
                                        auth_context_id=auth_context_id,
