@@ -107,6 +107,32 @@ def get_sid_for_restore(samdb, logger):
 
     # Construct full SID
     sid = dom_sid(samdb.get_domain_sid())
+    sid_for_restore = str(sid) + '-' + str(rid)
+
+    # Confirm the SID is not already in use
+    try:
+        res = samdb.search(scope=ldb.SCOPE_BASE,
+                           base='<SID=%s>' % sid_for_restore,
+                           attrs=[],
+                           controls=['show_deleted:1',
+                                     'show_recycled:1'])
+        if len(res) != 1:
+            # This case makes no sense, but neither does a corrupt RID set
+            raise CommandError("Cannot create backup - "
+                               "this DC's RID pool is corrupt, "
+                               "the next SID (%s) appears to be in use." %
+                               sid_for_restore)
+        raise CommandError("Cannot create backup - "
+                           "this DC's RID pool is corrupt, "
+                           "the next SID %s points to existing object %s. "
+                           "Please run samba-tool dbcheck on the source DC." %
+                           (sid_for_restore, res[0].dn))
+    except ldb.LdbError as e:
+        (enum, emsg) = e.args
+        if enum != ldb.ERR_NO_SUCH_OBJECT:
+            # We want NO_SUCH_OBJECT, anything else is a serious issue
+            raise
+
     return str(sid) + '-' + str(rid)
 
 
