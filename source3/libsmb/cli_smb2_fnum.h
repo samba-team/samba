@@ -102,13 +102,6 @@ NTSTATUS cli_smb2_list_recv(
 	struct tevent_req *req,
 	TALLOC_CTX *mem_ctx,
 	struct file_info **pfinfo);
-NTSTATUS cli_smb2_list(struct cli_state *cli,
-		       const char *pathname,
-		       uint32_t attribute,
-		       NTSTATUS (*fn)(struct file_info *finfo,
-				      const char *mask,
-				      void *private_data),
-		       void *private_data);
 NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 			const char *name,
 			SMB_STRUCT_STAT *sbuf,
