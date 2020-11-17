@@ -9475,6 +9475,13 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		/*
+		 * smb_fname->fsp may be NULL if smb_fname points at a symlink
+		 * and we're in POSIX context, so be careful when using fsp
+		 * below, it can still be NULL.
+		 */
+		fsp = smb_fname->fsp;
+
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/*
 			 * For CIFS UNIX extensions the target name may not exist.
