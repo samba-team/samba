@@ -526,26 +526,25 @@ class RawDCERPCTest(TestCase):
             if hexdump:
                 sys.stderr.write("stub_in: %d\n%s" % (len(stub_in), self.hexdump(stub_in)))
 
-        pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
-        pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST
-        if object is not None:
-            pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_OBJECT_UUID
+            pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST
+            pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST
+            if object is not None:
+                pfc_flags |= samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_OBJECT_UUID
 
-        req = self.generate_request_auth(call_id=call_id,
-                                         context_id=ctx.context_id,
-                                         pfc_flags=pfc_flags,
-                                         object=object,
-                                         opnum=io.opnum(),
-                                         stub=stub_in,
-                                         auth_context=auth_context)
-        if send_req:
+            req = self.generate_request_auth(call_id=call_id,
+                                             context_id=ctx.context_id,
+                                             pfc_flags=pfc_flags,
+                                             object=object,
+                                             opnum=io.opnum(),
+                                             stub=stub_in,
+                                             auth_context=auth_context)
             self.send_pdu(req, ndr_print=ndr_print, hexdump=hexdump)
         if recv_rep:
             (rep, rep_blob) = self.recv_pdu_raw(timeout=timeout,
                                                 ndr_print=ndr_print,
                                                 hexdump=hexdump)
             if fault_status:
-                self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_FAULT, req.call_id,
+                self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_FAULT, call_id,
                                 pfc_flags=fault_pfc_flags, auth_length=0)
                 self.assertNotEqual(rep.u.alloc_hint, 0)
                 self.assertEqual(rep.u.context_id, fault_context_id)
@@ -559,12 +558,16 @@ class RawDCERPCTest(TestCase):
             expected_auth_length = 0
             if auth_context is not None and \
                auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
-                expected_auth_length = req.auth_length
+                if send_req:
+                    expected_auth_length = req.auth_length
+                else:
+                    expected_auth_length = rep.auth_length
 
-            self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
+
+            self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_RESPONSE, call_id,
                             auth_length=expected_auth_length)
             self.assertNotEqual(rep.u.alloc_hint, 0)
-            self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
+            self.assertEqual(rep.u.context_id, ctx.context_id & 0xff)
             self.assertEqual(rep.u.cancel_count, 0)
             self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
             stub_out = self.check_response_auth(rep, rep_blob, auth_context)
