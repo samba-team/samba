@@ -7456,7 +7456,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 	}
 
-	if (fsp) {
+	if (fsp != NULL && fsp->fsp_flags.is_fsa) {
 		DEBUG(10,("smb_file_rename_information: "
 			  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 			  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
