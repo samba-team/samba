@@ -919,12 +919,12 @@ class RawDCERPCTest(TestCase):
         req_data = req_blob[ofs_stub:ofs_trailer]
         req_whole = req_blob[0:ofs_sig]
 
-        if auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PRIVACY:
+        if auth_context["g_auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PRIVACY:
             # TODO: not yet supported here
             self.assertTrue(False)
-        elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
+        elif auth_context["g_auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
             req_sig = auth_context["gensec"].sign_packet(req_data, req_whole)
-        elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
+        elif auth_context["g_auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
             self.assertEqual(auth_context["auth_type"],
                               dcerpc.DCERPC_AUTH_TYPE_NTLMSSP)
             req_sig = b"\x01" +b"\x00" *15
