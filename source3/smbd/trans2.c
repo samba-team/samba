@@ -5304,7 +5304,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp, psbuf);
 
-	if (!fsp) {
+	if (fsp == NULL || !fsp->fsp_flags.is_fsa) {
 		/* Do we have this path open ? */
 		files_struct *fsp1;
 		struct file_id fileid = vfs_file_id_from_sbuf(conn, psbuf);
