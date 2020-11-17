@@ -51,8 +51,7 @@ class LibsmbTestCase(samba.tests.TestCase):
             except Exception:
                 self.exc = sys.exc_info()
 
-    def test_OpenClose(self):
-
+    def prep_creds(self):
         lp = s3param.get_context()
         lp.load(os.getenv("SMB_CONF_PATH"))
 
@@ -60,6 +59,11 @@ class LibsmbTestCase(samba.tests.TestCase):
         creds.guess(lp)
         creds.set_username(os.getenv("USERNAME"))
         creds.set_password(os.getenv("PASSWORD"))
+
+        return (lp,creds)
+
+    def test_OpenClose(self):
+        (lp,creds) = self.prep_creds()
 
         c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
                         lp, creds, multi_threaded=True,
@@ -82,13 +86,7 @@ class LibsmbTestCase(samba.tests.TestCase):
     def test_SMB3EncryptionRequired(self):
         test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
 
-        lp = s3param.get_context()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_username(os.getenv("USERNAME"))
-        creds.set_password(os.getenv("PASSWORD"))
+        (lp,creds) = self.prep_creds()
         creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
 
         c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
@@ -100,13 +98,7 @@ class LibsmbTestCase(samba.tests.TestCase):
     def test_SMB1EncryptionRequired(self):
         test_dir = 'testing_%d' % random.randint(0, 0xFFFF)
 
-        lp = s3param.get_context()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_username(os.getenv("USERNAME"))
-        creds.set_password(os.getenv("PASSWORD"))
+        (lp,creds) = self.prep_creds()
         creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
 
         c = libsmb.Conn(os.getenv("SERVER_IP"), "tmp",
