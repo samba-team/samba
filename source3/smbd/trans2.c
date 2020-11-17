@@ -9309,11 +9309,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 		info_level = SVAL(params,2);
 
-		smb_fname = cp_smb_filename(talloc_tos(), fsp->fsp_name);
-		if (smb_fname == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
+		smb_fname = fsp->fsp_name;
 
 		if(fsp->fh->fd == -1) {
 			/*
