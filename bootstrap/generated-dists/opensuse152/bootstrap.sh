@@ -57,12 +57,14 @@ zypper --non-interactive install \
     libtasn1-devel \
     libtirpc-devel \
     libunwind-devel \
+    liburing-devel \
     libuuid-devel \
     libxslt \
     lmdb \
     lmdb-devel \
     lsb-release \
     make \
+    mingw64-gcc \
     ncurses-devel \
     openldap2-devel \
     pam-devel \

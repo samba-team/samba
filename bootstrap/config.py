@@ -490,38 +490,6 @@ RPM_DISTS = {
             'policycoreutils-python': 'python3-policycoreutils',
         }
     },
-    'opensuse150': {
-        'docker_image': 'opensuse/leap:15.0',
-        'vagrant_box': 'opensuse/openSUSE-15.0-x86_64',
-        'bootstrap': ZYPPER_BOOTSTRAP,
-        'replace': {
-            '@development-tools': '',
-            'dbus-devel': 'dbus-1-devel',
-            'docbook-style-xsl': 'docbook-xsl-stylesheets',
-            'glibc-common': 'glibc-locale',
-            'glibc-locale-source': 'glibc-i18ndata',
-            'glibc-langpack-en': '',
-            'jansson-devel': 'libjansson-devel',
-            'keyutils-libs-devel': 'keyutils-devel',
-            'krb5-workstation': 'krb5-client',
-            'libnsl2-devel': 'libnsl-devel',
-            'libsemanage-python': 'python2-semanage',
-            'openldap-devel': 'openldap2-devel',
-            'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
-            'perl-JSON-Parse': 'perl-JSON-XS',
-            'perl-generators': '',
-            'perl-interpreter': '',
-            'perl-FindBin': '',
-            'procps-ng': 'procps',
-            'python3-dns': 'python3-dnspython',
-            'python3-markdown': 'python3-Markdown',
-            'quota-devel': '',
-            'glusterfs-api-devel': '',
-            'libtasn1-tools': '', # asn1Parser is part of libtasn1
-            'mingw64-gcc': '', # doesn't exist
-            'liburing-devel': '',   # not available
-        }
-    },
     'opensuse151': {
         'docker_image': 'opensuse/leap:15.1',
         'vagrant_box': 'opensuse/openSUSE-15.1-x86_64',
@@ -551,7 +519,37 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mingw64-gcc': '', # doesn't exist
-            'liburing-devel': '',   # not available, will be added in 15.2
+            'liburing-devel': '',   # not available
+        }
+    },
+    'opensuse152': {
+        'docker_image': 'opensuse/leap:15.2',
+        'vagrant_box': 'opensuse/openSUSE-15.2-x86_64',
+        'bootstrap': ZYPPER_BOOTSTRAP,
+        'replace': {
+            '@development-tools': '',
+            'dbus-devel': 'dbus-1-devel',
+            'docbook-style-xsl': 'docbook-xsl-stylesheets',
+            'glibc-common': 'glibc-locale',
+            'glibc-locale-source': 'glibc-i18ndata',
+            'glibc-langpack-en': '',
+            'jansson-devel': 'libjansson-devel',
+            'keyutils-libs-devel': 'keyutils-devel',
+            'krb5-workstation': 'krb5-client',
+            'libnsl2-devel': 'libnsl-devel',
+            'libsemanage-python': 'python2-semanage',
+            'openldap-devel': 'openldap2-devel',
+            'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
+            'perl-JSON-Parse': 'perl-JSON-XS',
+            'perl-generators': '',
+            'perl-interpreter': '',
+            'perl-FindBin': '',
+            'procps-ng': 'procps',
+            'python3-dns': 'python3-dnspython',
+            'python3-markdown': 'python3-Markdown',
+            'quota-devel': '',
+            'glusterfs-api-devel': '',
+            'libtasn1-tools': '', # asn1Parser is part of libtasn1
         }
     }
 }
