@@ -94,7 +94,7 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS check_access_fsp(const struct files_struct *fsp,
+NTSTATUS check_access_fsp(struct files_struct *fsp,
 			  uint32_t access_mask)
 {
 	if (!(fsp->access_mask & access_mask)) {
