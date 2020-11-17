@@ -8003,6 +8003,39 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
+    def test_no_auth_ctx_request(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        tsf1_list = [transfer]
+        ctx = samba.dcerpc.dcerpc.ctx_list()
+        ctx.context_id = 1
+        ctx.num_transfer_syntaxes = len(tsf1_list)
+        ctx.abstract_syntax = abstract
+        ctx.transfer_syntaxes = tsf1_list
+
+        auth_context = {}
+        auth_context["auth_type"] = 0
+        auth_context["auth_level"] = 0
+        auth_context["auth_context_id"] = 0
+        auth_context["g_auth_level"] = 0
+        auth_context["gensec"] = None
+        auth_context["hdr_signing"] = False
+        auth_context["expect_3legs"] = False
+
+        ack0 = self.do_generic_bind(call_id=1, ctx=ctx)
+
+        inq_if_ids = samba.dcerpc.mgmt.inq_if_ids()
+        self.do_single_request(call_id=2, ctx=ctx, io=inq_if_ids,
+                               auth_context=auth_context,
+                               fault_status=dcerpc.DCERPC_FAULT_ACCESS_DENIED)
+
+        # wait for a disconnect
+        rep = self.recv_pdu()
+        self.assertIsNone(rep)
+        self.assertNotConnected()
+
+
     def test_multiple_auth_limit(self):
         creds = self.get_user_creds()
 
