@@ -20,7 +20,8 @@
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
 from samba.samba3 import param as s3param
-from samba import credentials
+from samba import (credentials,NTSTATUSError)
+from samba.ntstatus import NT_STATUS_DELETE_PENDING
 from samba.credentials import SMB_ENCRYPTION_REQUIRED
 import samba.tests
 import threading
@@ -106,6 +107,38 @@ class LibsmbTestCase(samba.tests.TestCase):
 
         c.mkdir(test_dir)
         c.rmdir(test_dir)
+
+    def test_RenameDstDelOnClose(self):
+        (lp,creds) = self.prep_creds()
+
+        dstdir = "\\dst-subdir"
+
+        c1 = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
+        c2 = libsmb.Conn(os.getenv("SERVER_IP"), "tmp", lp, creds)
+
+        try:
+            c1.deltree(dstdir)
+        except:
+            pass
+
+        c1.mkdir(dstdir)
+        dnum = c1.create(dstdir, DesiredAccess=security.SEC_STD_DELETE)
+        c1.delete_on_close(dnum,1)
+        c2.savefile("\\src.txt", b"Content")
+
+        with self.assertRaises(NTSTATUSError) as cm:
+            c2.rename("\\src.txt", dstdir + "\\dst.txt")
+        if (cm.exception.args[0] != NT_STATUS_DELETE_PENDING):
+            raise AssertionError("Rename must fail with DELETE_PENDING")
+
+        c1.delete_on_close(dnum,0)
+        c1.close(dnum)
+
+        try:
+            c1.deltree(dstdir)
+            c1.unlink("\\src.txt")
+        except:
+            pass
 
 if __name__ == "__main__":
     import unittest
