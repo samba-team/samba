@@ -133,3 +133,10 @@ def timestamp_to_mins(timestamp_str):
 def timestamp_to_days(timestamp_str):
     """Converts a timestamp in -100 nanosecond units to days"""
     return timestamp_to_mins(timestamp_str) / (60 * 24)
+
+
+def attr_default(msg, attrname, default):
+    '''get an attribute from a ldap msg with a default'''
+    if attrname in msg:
+        return msg[attrname][0]
+    return default
