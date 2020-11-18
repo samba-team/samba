@@ -502,12 +502,6 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 				"No PTHREAD support available");
 		return -1;
 #endif
-		if (!force_smb1) {
-			PyErr_SetString(PyExc_RuntimeError,
-					"multi_threaded is only possible on "
-					"SMB1 connections");
-			return -1;
-		}
 	} else {
 		ret = py_cli_state_setup_ev(self);
 		if (!ret) {
