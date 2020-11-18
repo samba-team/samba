@@ -22,28 +22,13 @@ from samba.netcmd import (Command, CommandError, Option, SuperCommand)
 from samba.dcerpc.samr import (DOMAIN_PASSWORD_COMPLEX,
                                DOMAIN_PASSWORD_STORE_CLEARTEXT)
 from samba.auth import system_session
-
-NEVER_TIMESTAMP = int(-0x8000000000000000)
+from samba.netcmd.common import (NEVER_TIMESTAMP,
+                                 timestamp_to_mins,
+                                 timestamp_to_days)
 
 
 def pso_container(samdb):
     return "CN=Password Settings Container,CN=System,%s" % samdb.domain_dn()
-
-
-def timestamp_to_mins(timestamp_str):
-    """Converts a timestamp in -100 nanosecond units to minutes"""
-    # treat a timestamp of 'never' the same as zero (this should work OK for
-    # most settings, and it displays better than trying to convert
-    # -0x8000000000000000 to minutes)
-    if int(timestamp_str) == NEVER_TIMESTAMP:
-        return 0
-    else:
-        return abs(int(timestamp_str)) / (1e7 * 60)
-
-
-def timestamp_to_days(timestamp_str):
-    """Converts a timestamp in -100 nanosecond units to days"""
-    return timestamp_to_mins(timestamp_str) / (60 * 24)
 
 
 def mins_to_timestamp(mins):
