@@ -92,29 +92,6 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
         raise drsException("DsReplicaSync failed %s" % estr)
 
 
-def sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain):
-    """Send RemoveDSServer request.
-
-    :param drsuapiBind: a drsuapi Bind object
-    :param drsuapi_handle: a drsuapi handle on the drsuapi connection
-    :param server_dsa_dn: a DN object of the server's dsa that we want to
-        demote
-    :param domain: a DN object of the server's domain
-    :raise drsException: if any error occur while sending and receiving the
-        reply for the DsRemoveDSServer
-    """
-
-    try:
-        req1 = drsuapi.DsRemoveDSServerRequest1()
-        req1.server_dn = str(server_dsa_dn)
-        req1.domain_dn = str(domain)
-        req1.commit = 1
-
-        drsuapiBind.DsRemoveDSServer(drsuapi_handle, 1, req1)
-    except Exception as estr:
-        raise drsException("DsRemoveDSServer failed %s" % estr)
-
-
 def drs_DsBind(drs):
     '''make a DsBind call, returning the binding handle'''
     bind_info = drsuapi.DsBindInfoCtr()
