@@ -971,6 +971,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 
 struct cli_list_state {
 	struct tevent_context *ev;
+	struct tevent_req *subreq;
 	NTSTATUS (*recv_fn)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    struct file_info **finfo);
 	struct file_info *finfo;
@@ -986,7 +987,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 uint32_t attribute,
 				 uint16_t info_level)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req = NULL;
 	struct cli_list_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_list_state);
@@ -996,17 +997,18 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 
 	if (smbXcli_conn_protocol(cli->conn) <= PROTOCOL_LANMAN1) {
-		subreq = cli_list_old_send(state, ev, cli, mask, attribute);
+		state->subreq = cli_list_old_send(
+			state, ev, cli, mask, attribute);
 		state->recv_fn = cli_list_old_recv;
 	} else {
-		subreq = cli_list_trans_send(state, ev, cli, mask, attribute,
-					     info_level);
+		state->subreq = cli_list_trans_send(
+			state, ev, cli, mask, attribute, info_level);
 		state->recv_fn = cli_list_trans_recv;
 	}
-	if (tevent_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_list_done, req);
+	tevent_req_set_callback(state->subreq, cli_list_done, req);
 	return req;
 }
 
@@ -1018,13 +1020,24 @@ static void cli_list_done(struct tevent_req *subreq)
 		req, struct cli_list_state);
 	NTSTATUS status;
 
+	SMB_ASSERT(subreq == state->subreq);
+
+	/*
+	 * We don't want to be called by the lowerlevel routines
+	 * from within state->recv_fn()
+	 */
+	tevent_req_set_callback(subreq, NULL, NULL);
+
 	status = state->recv_fn(subreq, state, &state->finfo);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/* We'll get back here */
+		tevent_req_set_callback(subreq, cli_list_done, req);
 		return;
 	}
-	tevent_req_defer_callback(req, state->ev);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	tevent_req_notify_callback(req);
 }
 
@@ -1046,14 +1059,30 @@ NTSTATUS cli_list_recv(
 		if (!tevent_req_is_nterror(req, &status)) {
 			status = NT_STATUS_NO_MORE_FILES;
 		}
-		goto fail;
+		return status;
+	}
+
+	if (state->finfo == NULL) {
+		status = state->recv_fn(state->subreq, state, &state->finfo);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			tevent_req_set_callback(
+				state->subreq, cli_list_done, req);
+			return NT_STATUS_RETRY;
+		}
+
+		if (NT_STATUS_IS_OK(status) && (state->finfo == NULL)) {
+			status = NT_STATUS_NO_MORE_FILES;
+		}
+
+		if (tevent_req_nterror(req, status)) {
+			return status;
+		}
+
+		state->num_received = 0;
 	}
 
 	num_results = talloc_array_length(state->finfo);
-	if (state->num_received == num_results) {
-		status = NT_STATUS_NO_MORE_FILES;
-		goto fail;
-	}
 
 	if (num_results == 1) {
 		finfo = talloc_move(mem_ctx, &state->finfo);
@@ -1063,7 +1092,7 @@ NTSTATUS cli_list_recv(
 
 		finfo = talloc(mem_ctx, struct file_info);
 		if (finfo == NULL) {
-			goto nomem;
+			return NT_STATUS_NO_MEMORY;
 		}
 		*finfo = *src_finfo;
 		finfo->name = talloc_move(finfo, &src_finfo->name);
@@ -1072,18 +1101,15 @@ NTSTATUS cli_list_recv(
 
 	state->num_received += 1;
 
+	if (state->num_received == num_results) {
+		TALLOC_FREE(state->finfo);
+	}
+
 	tevent_req_defer_callback(req, state->ev);
 	tevent_req_notify_callback(req);
 
 	*pfinfo = finfo;
 	return NT_STATUS_OK;
-
-nomem:
-	status = NT_STATUS_NO_MEMORY;
-fail:
-	TALLOC_FREE(finfo);
-	tevent_req_received(req);
-	return status;
 }
 
 struct cli_list_sync_state {
@@ -1106,6 +1132,15 @@ static void cli_list_sync_cb(struct tevent_req *subreq)
 
 	state->status = cli_list_recv(subreq, talloc_tos(), &finfo);
 	/* No TALLOC_FREE(subreq), we get here more than once */
+
+	if (NT_STATUS_EQUAL(state->status, NT_STATUS_RETRY)) {
+		/*
+		 * The lowlevel SMB call was rearmed, we'll get back
+		 * here when it's done.
+		 */
+		state->status = NT_STATUS_OK;
+		return;
+	}
 
 	if (!NT_STATUS_IS_OK(state->status)) {
 		return;
