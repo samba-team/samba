@@ -63,13 +63,7 @@ from samba.gp_parse.gp_inf import GptTmplInfParser
 from samba.gp_parse.gp_aas import GPAasParser
 from samba import param
 from samba.credentials import SMB_SIGNING_REQUIRED
-
-
-def attr_default(msg, attrname, default):
-    '''get an attribute from a ldap msg with a default'''
-    if attrname in msg:
-        return msg[attrname][0]
-    return default
+from samba.netcmd.common import attr_default
 
 
 def gpo_flags_string(value):
