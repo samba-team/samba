@@ -62,6 +62,9 @@ from samba.netcmd import (
 )
 from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
+from samba.netcmd.common import (NEVER_TIMESTAMP,
+                                 timestamp_to_mins,
+                                 timestamp_to_days)
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
@@ -1208,26 +1211,6 @@ class cmd_domain_level(Command):
             self.message("\n".join(msgs))
         else:
             raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
-
-
-# In MS AD, setting a timeout to '(never)' corresponds to this value
-NEVER_TIMESTAMP = int(-0x8000000000000000)
-
-
-def timestamp_to_mins(timestamp_str):
-    """Converts a timestamp in -100 nanosecond units to minutes"""
-    # treat a timestamp of 'never' the same as zero (this should work OK for
-    # most settings, and it displays better than trying to convert
-    # -0x8000000000000000 to minutes)
-    if int(timestamp_str) == NEVER_TIMESTAMP:
-        return 0
-    else:
-        return abs(int(timestamp_str)) / (1e7 * 60)
-
-
-def timestamp_to_days(timestamp_str):
-    """Converts a timestamp in -100 nanosecond units to days"""
-    return timestamp_to_mins(timestamp_str) / (60 * 24)
 
 
 class cmd_domain_passwordsettings_show(Command):

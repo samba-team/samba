@@ -22,6 +22,11 @@ from samba.dcerpc import nbt
 from samba.net import Net
 import ldb
 
+
+# In MS AD, setting a timeout to '(never)' corresponds to this value
+NEVER_TIMESTAMP = int(-0x8000000000000000)
+
+
 def _get_user_realm_domain(user):
     r""" get the realm or the domain and the base user
         from user like:
@@ -112,3 +117,19 @@ def get_ldif_for_editor(samdb, msg):
     result_ldif = samdb.write_ldif(m, ldb.CHANGETYPE_NONE)
 
     return result_ldif
+
+
+def timestamp_to_mins(timestamp_str):
+    """Converts a timestamp in -100 nanosecond units to minutes"""
+    # treat a timestamp of 'never' the same as zero (this should work OK for
+    # most settings, and it displays better than trying to convert
+    # -0x8000000000000000 to minutes)
+    if int(timestamp_str) == NEVER_TIMESTAMP:
+        return 0
+    else:
+        return abs(int(timestamp_str)) / (1e7 * 60)
+
+
+def timestamp_to_days(timestamp_str):
+    """Converts a timestamp in -100 nanosecond units to days"""
+    return timestamp_to_mins(timestamp_str) / (60 * 24)
