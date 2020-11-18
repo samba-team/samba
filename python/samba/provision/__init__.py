@@ -499,21 +499,6 @@ class ProvisionResult(object):
             self.backend_result.report_logger(logger)
 
 
-def check_install(lp, session_info, credentials):
-    """Check whether the current install seems ok.
-
-    :param lp: Loadparm context
-    :param session_info: Session information
-    :param credentials: Credentials
-    """
-    if lp.get("realm") == "":
-        raise Exception("Realm empty")
-    samdb = Ldb(lp.samdb_url(), session_info=session_info,
-                credentials=credentials, lp=lp)
-    if len(samdb.search("(cn=Administrator)")) != 1:
-        raise ProvisioningError("No administrator account found")
-
-
 def findnss(nssfn, names):
     """Find a user or group from a list of possibilities.
 
