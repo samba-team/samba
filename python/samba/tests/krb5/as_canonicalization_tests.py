@@ -56,7 +56,8 @@ class TestOptions(Enum):
     NetbiosRealm  =  16
     UPN           =  32
     RemoveDollar  =  64
-    Last          = 128
+    AsReqSelf     = 128
+    Last          = 256
 
     def is_set(self, x):
         return self.value & x
@@ -76,8 +77,8 @@ class TestData:
     def __init__(self, options, creds):
         self.options = options
         self.user_creds = creds
-        self.user_name = self.get_username(options, creds)
-        self.realm = self.get_realm(options, creds)
+        self.user_name = self._get_username(options, creds)
+        self.realm = self._get_realm(options, creds)
 
         if TestOptions.Enterprise.is_set(options):
             client_name_type = NT_ENTERPRISE_PRINCIPAL
@@ -86,11 +87,14 @@ class TestData:
 
         self.cname = RawKerberosTest.PrincipalName_create(
             name_type=client_name_type, names=[self.user_name])
-        self.sname = RawKerberosTest.PrincipalName_create(
-            name_type=NT_SRV_INST, names=["krbtgt", self.realm])
+        if TestOptions.AsReqSelf.is_set(options):
+            self.sname = self.cname
+        else:
+            self.sname = RawKerberosTest.PrincipalName_create(
+                name_type=NT_SRV_INST, names=["krbtgt", self.realm])
         self.canonicalize = TestOptions.Canonicalize.is_set(options)
 
-    def get_realm(self, options, creds):
+    def _get_realm(self, options, creds):
         realm = creds.get_realm()
         if TestOptions.NetbiosRealm.is_set(options):
             realm = creds.get_domain()
@@ -100,7 +104,7 @@ class TestData:
             realm = realm.lower()
         return realm
 
-    def get_username(self, options, creds):
+    def _get_username(self, options, creds):
         name = creds.get_username()
         if TestOptions.RemoveDollar.is_set(options) and name.endswith("$"):
             name = name[:-1]
@@ -134,6 +138,9 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
             ''' Filter out any mutually exclusive test options '''
             if ct != CredentialsType.Machine and\
                     TestOptions.RemoveDollar.is_set(options):
+                return True
+            if ct != CredentialsType.Machine and\
+                    TestOptions.AsReqSelf.is_set(options):
                 return True
             return False
 
@@ -448,26 +455,45 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
 
     def check_sname(self, sname, data):
         nt = sname['name-type']
-        self.assertEqual(
-            NT_SRV_INST,
-            nt,
-            "sname name-type, Options {0:08b}".format(data.options))
-
         ns = sname['name-string']
         name = ns[0].decode('ascii')
-        self.assertEqual(
-            'krbtgt',
-            name,
-            "sname principal, Options {0:08b}".format(data.options))
 
-        realm = ns[1].decode('ascii')
-        expected = data.realm
-        if TestOptions.Canonicalize.is_set(data.options):
-            expected = data.user_creds.get_realm().upper()
-        self.assertEqual(
-            expected,
-            realm,
-            "sname realm, Options {0:08b}".format(data.options))
+        if TestOptions.AsReqSelf.is_set(data.options):
+            expected_name_type = NT_PRINCIPAL
+            if not TestOptions.Canonicalize.is_set(data.options)\
+               and TestOptions.Enterprise.is_set(data.options):
+
+                expected_name_type = NT_ENTERPRISE_PRINCIPAL
+
+            self.assertEqual(
+                expected_name_type,
+                nt,
+                "sname name-type, Options {0:08b}".format(data.options))
+            expected = data.user_name
+            if TestOptions.Canonicalize.is_set(data.options):
+                expected = data.user_creds.get_username()
+            self.assertEqual(
+                expected,
+                name,
+                "sname principal, Options {0:08b}".format(data.options))
+        else:
+            self.assertEqual(
+                NT_SRV_INST,
+                nt,
+                "sname name-type, Options {0:08b}".format(data.options))
+            self.assertEqual(
+                'krbtgt',
+                name,
+                "sname principal, Options {0:08b}".format(data.options))
+
+            realm = ns[1].decode('ascii')
+            expected = data.realm
+            if TestOptions.Canonicalize.is_set(data.options):
+                expected = data.user_creds.get_realm().upper()
+            self.assertEqual(
+                expected,
+                realm,
+                "sname realm, Options {0:08b}".format(data.options))
 
     def check_srealm(self, srealm, data):
         realm = data.user_creds.get_realm()
