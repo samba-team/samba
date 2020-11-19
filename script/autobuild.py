@@ -162,6 +162,7 @@ def format_option(name, value=None):
 def make_test(
         cmd='make test',
         FAIL_IMMEDIATELY=1,
+        INJECT_SELFTEST_PREFIX=1,
         TESTS='',
         include_envs=None,
         exclude_envs=None):
@@ -180,6 +181,10 @@ def make_test(
         _options.append('FAIL_IMMEDIATELY=1')
     if TESTS:
         _options.append("TESTS='{}'".format(TESTS))
+
+    if INJECT_SELFTEST_PREFIX:
+        _options.append("TEST_OPTIONS='--with-selftest-prefix={}'".format("${SELFTEST_PREFIX}"))
+        _options.append("--directory='{}'".format("${TEST_SOURCE_DIR}"))
 
     return ' '.join([cmd] + _options)
 
@@ -213,7 +218,7 @@ tasks = {
     "samba": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",
@@ -277,7 +282,7 @@ tasks = {
     "samba-mitkrb5": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",
@@ -340,7 +345,7 @@ tasks = {
     "samba-nt4": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "nt4_dc",
@@ -359,7 +364,7 @@ tasks = {
     "samba-fileserver": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5 --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fileserver",
@@ -377,7 +382,7 @@ tasks = {
     "samba-admem": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_member",
@@ -393,7 +398,7 @@ tasks = {
     "samba-no-opath": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-DDISABLE_OPATH=1' ./configure.developer --without-ad-dc --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='-DDISABLE_OPATH=1' ./configure.developer --without-ad-dc " + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(
                 cmd="make test DISABLE_OPATH=1",
@@ -416,7 +421,7 @@ tasks = {
     "samba-ad-dc-1": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc",
@@ -433,7 +438,7 @@ tasks = {
     "samba-ad-dc-2": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "vampire_dc",
@@ -448,7 +453,7 @@ tasks = {
     "samba-ad-dc-3": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "promoted_dc",
@@ -464,7 +469,7 @@ tasks = {
     "samba-ad-dc-4": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fl2000dc",
@@ -480,7 +485,7 @@ tasks = {
     "samba-ad-dc-5": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc_default", "ad_dc_default_smb1", "ad_dc_default_smb1_done"])),
@@ -492,7 +497,7 @@ tasks = {
     "samba-ad-dc-6": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=["ad_dc_slowtests"])),
             ("lcov", LCOV_CMD),
@@ -503,7 +508,7 @@ tasks = {
     "samba-schemaupgrade": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=["schema_dc", "schema_pair_dc"])),
             ("lcov", LCOV_CMD),
@@ -516,7 +521,7 @@ tasks = {
     "samba-ad-dc-ntvfs": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=["ad_dc_ntvfs"])),
             ("lcov", LCOV_CMD),
@@ -528,7 +533,7 @@ tasks = {
     "samba-fips": {
         "sequence": [
             ("random-sleep", random_sleep(100, 500)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=["ad_dc_fips", "ad_member_fips"])),
             ("lcov", LCOV_CMD),
@@ -541,7 +546,7 @@ tasks = {
     "samba-ad-dc-backup": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "backupfromdc",
@@ -559,7 +564,7 @@ tasks = {
     "samba-admem-mit": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_member",
@@ -575,7 +580,7 @@ tasks = {
     "samba-ad-dc-1-mitkrb5": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc",
@@ -592,7 +597,7 @@ tasks = {
     "samba-ad-dc-4-mitkrb5": {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fl2000dc",
@@ -607,7 +612,7 @@ tasks = {
 
     "samba-test-only": {
         "sequence": [
-            ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params),
+            ("configure", "./configure.developer  --abi-check-disable" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(TESTS="${TESTS}")),
             ("lcov", LCOV_CMD),
@@ -644,7 +649,7 @@ tasks = {
     "samba-o3": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
             ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
@@ -679,10 +684,11 @@ tasks = {
             ("samba-install", "make install"),
             ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
 
-            ("test",
-         make_test(cmd='make test',
-                   include_envs=["clusteredmember"])
-        ),
+            ("test", make_test(
+                cmd='make test',
+                INJECT_SELFTEST_PREFIX=0,
+                include_envs=["clusteredmember"])
+            ),
 
         # clean up:
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -960,6 +966,7 @@ class builder(object):
         self.stdin  = open("/dev/null", 'r')
         self.test_source_dir = "%s/%s" % (testbase, self.tag)
         self.cwd = "%s/%s" % (self.test_source_dir, self.dir)
+        self.selftest_prefix = "%s/bin/ab" % (self.cwd)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
         rmdir_force(self.test_source_dir)
         rmdir_force(self.prefix)
@@ -983,6 +990,7 @@ class builder(object):
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
         self.cmd = self.cmd.replace("${TEST_SOURCE_DIR}", self.test_source_dir)
+        self.cmd = self.cmd.replace("${SELFTEST_PREFIX}", self.selftest_prefix)
         self.cmd = self.cmd.replace("${LOG_BASE}", options.log_base)
         self.cmd = self.cmd.replace("${NAME}", self.name)
         self.cmd = self.cmd.replace("${ENABLE_COVERAGE}", options.enable_coverage)
