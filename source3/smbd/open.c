@@ -373,7 +373,12 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 		goto out;
 	}
 
-	lck = get_existing_share_mode_lock(frame, id);
+	/*
+	 * Don't take a lock here. We just need a snapshot
+	 * of the current state of delete on close and someone
+	 * else may already have a lock on this id.
+	 */
+	lck = fetch_share_mode_unlocked(frame, id);
 	if (lck == NULL) {
 		status = NT_STATUS_OK;
 		goto out;
