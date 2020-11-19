@@ -142,7 +142,7 @@ testit "Test login with PASSWD" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$S
 oldUSER=$USER
 USER="$USERNAME" 
 export USER
-testit "Test login with USER and PASSWD" $VALGRIND $smbclient -k no -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" || failed=`expr $failed + 1`
+testit "Test login with USER and PASSWD" $VALGRIND $smbclient --use-kerberos=disabled -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" || failed=`expr $failed + 1`
 PASSWD=
 export PASSWD
 unset PASSWD

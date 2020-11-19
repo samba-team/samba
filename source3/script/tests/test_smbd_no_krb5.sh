@@ -29,17 +29,17 @@ failed=0
 opt="--option=gensec:gse_krb5=yes -U${USERNAME}%${PASSWORD}"
 
 # check kerberos access
-test_smbclient "test_krb5" "ls" "//$SERVER/tmp" $opt -k || failed=`expr $failed + 1`
+test_smbclient "test_krb5" "ls" "//$SERVER/tmp" $opt --use-kerberos=required || failed=`expr $failed + 1`
 
 # disbale krb5 globally so smbd won't accept it
 global_inject_conf=$(dirname $SMB_CONF_PATH)/global_inject.conf
 echo 'gensec:gse_krb5=no' > $global_inject_conf
 
 # verify that kerberos fails
-test_smbclient_expect_failure "smbd_no_krb5" "ls" "//$SERVER/tmp" -k $opt || failed=`expr $failed + 1`
+test_smbclient_expect_failure "smbd_no_krb5" "ls" "//$SERVER/tmp" --use-kerberos=required $opt || failed=`expr $failed + 1`
 
 # verify downgrade to ntlmssp
-test_smbclient "test_spnego_downgrade" "ls" "//$SERVER/tmp" $opt || failed=`expr $failed + 1`
+test_smbclient "test_spnego_downgrade" "ls" "//$SERVER/tmp" $opt --use-kerberos=disabled || failed=`expr $failed + 1`
 
 echo '' > $global_inject_conf
 

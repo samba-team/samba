@@ -71,7 +71,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "change user password with 'samba-tool user password' (unforced)" \
 	$VALGRIND $PYTHON $samba_tool user password -W$DOMAIN -U$TEST_USERNAME%$TEST_PASSWORD -k no --newpassword=$TEST_PASSWORD_NEW || failed=`expr $failed + 1`
@@ -84,7 +84,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 ###########################################################
 ### check that a password mismatch is detected
@@ -157,7 +157,7 @@ testit "kpasswd change user password" \
 TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@03%"
 
-test_smbclient "Test login with user kerberos" 'ls' "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos" 'ls' "$SMB_UNC" --use-kerberos=required -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 ###########################################################
 ### Force password change at login
@@ -186,7 +186,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@05%"
 
 test_smbclient "Test login with user kerberos" \
-	"ls" "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=required -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 ###########################################################
 ### Test kpasswd service via 'net ads password'
@@ -199,7 +199,7 @@ testit "change user password with 'net ads password', admin: $DOMAIN/$TEST_USERN
 #TEST_PASSWORD_NEW="testPaSS@06%"
 
 #test_smbclient "Test login with smbclient (ntlm)" \
-#	"ls" "$SMB_UNC" -k no -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+#	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 ###########################################################
 ### Test kpasswd service via 'net ads password' as admin
@@ -212,7 +212,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@07%"
 
 test_smbclient "Test login with smbclient (ntlm)" \
-	"ls" "$SMB_UNC" -k no -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 ###########################################################
 ### Cleanup

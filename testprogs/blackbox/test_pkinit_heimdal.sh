@@ -73,7 +73,7 @@ testit_expect_failure "STEP1 Test wbinfo with password" $wbinfo --authenticate=$
 
 testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP1 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP1 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit_expect_failure "STEP1 kinit with pkinit (wrong name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER not$USERNAME@$REALM || failed=`expr $failed + 1`
 
@@ -81,7 +81,7 @@ testit_expect_failure "STEP1 kinit with pkinit (wrong name specified 2) " $samba
 
 testit "STEP1 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP1 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise not$USERNAME@$REALM || failed=`expr $failed + 1`
 
@@ -89,7 +89,7 @@ testit_expect_failure "STEP1 kinit with pkinit (wrong enterprise name specified 
 
 testit "STEP1 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "STEP1 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP1 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 # STEP2:
 # We still have UF_SMARTCARD_REQUIRED, but with a known password
@@ -101,36 +101,36 @@ testit_expect_failure "STEP2 Test wbinfo with password" $wbinfo --authenticate=$
 
 testit "STEP2 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP2 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP2 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP2 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP2 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP2 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP2 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "STEP2 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP2 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 # STEP3:
 # The account is a normal account without the UF_SMARTCARD_REQUIRED bit set
 testit "STEP3 samba-tool user setpassword $USERNAME --smartcard-required" $PYTHON ${samba_tool} user setpassword $USERNAME --newpassword=$PASSWORD --clear-smartcard-required  || failed=`expr $failed + 1`
 
 testit "STEP3 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
-test_smbclient "STEP3 Test login with user kerberos ccache" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with user kerberos ccache" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 test_smbclient "STEP3 Test login with NTLM" 'ls' "$unc" -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 testit "STEP3 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 
 testit "STEP3 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP3 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP3 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP3 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP3 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP3 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP3 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "STEP3 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP3 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 # STEP4:
 # Now we set the UF_SMARTCARD_REQUIRED bit
@@ -143,15 +143,15 @@ testit_expect_failure "STEP4 Test wbinfo with password" $wbinfo --authenticate=$
 
 testit "STEP4 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP4 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP4 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP4 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "STEP4 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP4 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 testit "STEP4 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "STEP4 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
-test_smbclient "STEP4 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 # STEP5:
 # disable the account

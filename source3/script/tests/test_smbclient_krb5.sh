@@ -16,6 +16,6 @@ ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
-testit "smbclient" $VALGRIND $SMBCLIENT3 //$SERVER/tmp -c 'ls' -k $ADDARGS || failed=`expr $failed + 1`
+testit "smbclient" $VALGRIND $SMBCLIENT3 //$SERVER/tmp -c 'ls' --use-krb5-ccache=$KRB5CCNAME $ADDARGS || failed=`expr $failed + 1`
 
 testok $0 $failed

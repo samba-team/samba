@@ -111,7 +111,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 
@@ -130,7 +130,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 ###########################################################
 ### Change the users password
@@ -146,7 +146,7 @@ testit "kinit with user password" \
 	do_kinit $TEST_PRINCIPAL $TEST_PASSWORD || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" \
-	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 #
 # These tests demonstrate that a credential cache in the environment does not
@@ -154,9 +154,9 @@ test_smbclient "Test login with user kerberos ccache" \
 #
 
 testit_expect_failure "Test login with user kerberos ccache, but wrong password specified" \
-	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -U$TEST_PRINCIPAL%invalidpass && failed=`expr $failed + 1`
+	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' --use-krb5-ccache=$KRB5CCNAME -U$TEST_PRINCIPAL%invalidpass && failed=`expr $failed + 1`
 testit_expect_failure "Test login with user kerberos ccache, but old password specified" \
-	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD_OLD && failed=`expr $failed + 1`
+	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' --use-krb5-ccache=$KRB5CCNAME -U$TEST_PRINCIPAL%$TEST_PASSWORD_OLD && failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 
@@ -172,7 +172,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@03%"
 
 test_smbclient "Test login with user (ntlm)" \
-	"ls" "$SMB_UNC" -k no -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 testit "set password on user locally" $VALGRIND $PYTHON $samba_tool user setpassword $TEST_USERNAME $CONFIG --newpassword=$TEST_PASSWORD_NEW --must-change-at-next-login || failed=`expr $failed + 1`
 
@@ -180,7 +180,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@04%"
 
 test_smbclient_expect_failure "Test login with user (NT_STATUS_PASSWORD_MUST_CHANGE)" \
-	"ls" "$SMB_UNC" -k no -U$TEST_PRINCIPAL%$TEST_PASSWORD && failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD && failed=`expr $failed + 1`
 
 testit "change user password with 'samba-tool user password' (after must change flag set)" \
 	$VALGRIND $PYTHON $samba_tool user password -W$DOMAIN -U$DOMAIN/$TEST_USERNAME%$TEST_PASSWORD -k no --newpassword=$TEST_PASSWORD_NEW || failed=`expr $failed + 1`
@@ -188,7 +188,7 @@ testit "change user password with 'samba-tool user password' (after must change 
 TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@05%"
 
-test_smbclient "Test login with user kerberos" 'ls' "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos" 'ls' "$SMB_UNC" --use-kerberos=required -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 
@@ -208,7 +208,7 @@ TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@06%"
 
 test_smbclient "Test login with user kerberos" \
-	"ls" "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=required -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 
@@ -224,7 +224,7 @@ testit "try to set a non-complex password (command should succeed)" \
 TEST_PASSWORD=$TEST_PASSWORD_WEAK
 
 test_smbclient "test login with non-complex password" \
-	"ls" "$SMB_UNC" -k no -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+	"ls" "$SMB_UNC" --use-kerberos=disabled -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
 testit_expect_failure "try to set a short password (command should not succeed)" \
 	$VALGRIND $PYTHON $samba_tool user password -W$DOMAIN "-U$DOMAIN/$TEST_USERNAME%$TEST_PASSWORD" -k no --newpassword="$TEST_PASSWORD_SHORT" && failed=`expr $failed + 1`

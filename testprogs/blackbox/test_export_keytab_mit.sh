@@ -109,11 +109,11 @@ KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
 
 testit "kinit with keytab as user" $VALGRIND $samba_kinit -k -t $PREFIX/tmpkeytab-all $TEST_USER@$REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' --use-kerberos=required || failed=`expr $failed + 1`
 $samba_kdestroy
 
 testit "kinit with keytab as user (one princ)" $VALGRIND $samba_kinit -k -t $PREFIX/tmpkeytab-user-princ $TEST_USER@$REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache (one princ)" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (one princ)" 'ls' --use-kerberos=required || failed=`expr $failed + 1`
 $samba_kdestroy
 
 KRB5CCNAME="$PREFIX/tmpadminccache"
