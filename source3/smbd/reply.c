@@ -7365,8 +7365,8 @@ static void rename_open_files(connection_struct *conn,
 	NTSTATUS status;
 	uint32_t new_name_hash = 0;
 
-	for(fsp = file_find_di_first(conn->sconn, id); fsp;
-	    fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(conn->sconn, id, false); fsp;
+	    fsp = file_find_di_next(fsp, false)) {
 		struct file_id_buf idbuf;
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
@@ -7519,8 +7519,8 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 	 */
 
 	id = vfs_file_id_from_sbuf(conn, &smb_fname_parent->st);
-	for (fsp = file_find_di_first(conn->sconn, id); fsp;
-			fsp = file_find_di_next(fsp)) {
+	for (fsp = file_find_di_first(conn->sconn, id, true); fsp;
+			fsp = file_find_di_next(fsp, true)) {
 		if (fsp->access_mask & DELETE_ACCESS) {
 			return NT_STATUS_SHARING_VIOLATION;
                 }
@@ -7718,7 +7718,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		struct file_id fileid = vfs_file_id_from_sbuf(conn,
 		    &smb_fname_dst->st);
 		files_struct *dst_fsp = file_find_di_first(conn->sconn,
-							   fileid);
+							   fileid, true);
 		/* The file can be open when renaming a stream */
 		if (dst_fsp && !new_is_stream) {
 			DEBUG(3, ("rename_internals_fsp: Target file open\n"));

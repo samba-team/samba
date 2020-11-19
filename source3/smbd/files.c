@@ -787,7 +787,8 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 ****************************************************************************/
 
 files_struct *file_find_di_first(struct smbd_server_connection *sconn,
-				 struct file_id id)
+				 struct file_id id,
+				 bool need_fsa)
 {
 	files_struct *fsp;
 
@@ -799,6 +800,9 @@ files_struct *file_find_di_first(struct smbd_server_connection *sconn,
 	sconn->fsp_fi_cache.id = id;
 
 	for (fsp=sconn->files;fsp;fsp=fsp->next) {
+		if (need_fsa && !fsp->fsp_flags.is_fsa) {
+			continue;
+		}
 		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			sconn->fsp_fi_cache.fsp = fsp;
@@ -815,11 +819,15 @@ files_struct *file_find_di_first(struct smbd_server_connection *sconn,
  Find the next fsp having the same device and inode.
 ****************************************************************************/
 
-files_struct *file_find_di_next(files_struct *start_fsp)
+files_struct *file_find_di_next(files_struct *start_fsp,
+				bool need_fsa)
 {
 	files_struct *fsp;
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
+		if (need_fsa && !fsp->fsp_flags.is_fsa) {
+			continue;
+		}
 		if (file_id_equal(&fsp->file_id, &start_fsp->file_id)) {
 			return fsp;
 		}

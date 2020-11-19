@@ -2118,9 +2118,9 @@ struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 	 * handles...
 	 */
 
-	for (fsp = file_find_di_first(new_fsp->conn->sconn, new_fsp->file_id);
+	for (fsp = file_find_di_first(new_fsp->conn->sconn, new_fsp->file_id, true);
 	     fsp != NULL;
-	     fsp = file_find_di_next(fsp)) {
+	     fsp = file_find_di_next(fsp, true)) {
 
 		if (fsp == new_fsp) {
 			continue;

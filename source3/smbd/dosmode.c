@@ -1377,9 +1377,9 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 
 	file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 
-	for(fsp = file_find_di_first(conn->sconn, file_id);
+	for(fsp = file_find_di_first(conn->sconn, file_id, true);
 			fsp;
-			fsp = file_find_di_next(fsp)) {
+			fsp = file_find_di_next(fsp, true)) {
 		if (fsp_get_io_fd(fsp) != -1) {
 			*ret_fsp = fsp;
 			return NT_STATUS_OK;

@@ -5301,7 +5301,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		/* Do we have this path open ? */
 		files_struct *fsp1;
 		struct file_id fileid = vfs_file_id_from_sbuf(conn, psbuf);
-		fsp1 = file_find_di_first(conn->sconn, fileid);
+		fsp1 = file_find_di_first(conn->sconn, fileid, true);
 		if (fsp1 && fsp1->initial_allocation_size) {
 			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp1, psbuf);
 		}
@@ -8383,8 +8383,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	}
 
 	id = vfs_file_id_from_sbuf(conn, &sbuf);
-	for(all_fsps = file_find_di_first(conn->sconn, id); all_fsps;
-			all_fsps = file_find_di_next(all_fsps)) {
+	for(all_fsps = file_find_di_first(conn->sconn, id, true); all_fsps;
+			all_fsps = file_find_di_next(all_fsps, true)) {
 		/*
 		 * We're setting the time explicitly for UNIX.
 		 * Cancel any pending changes over all handles.

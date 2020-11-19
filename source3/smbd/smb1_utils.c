@@ -49,9 +49,9 @@ struct files_struct *fcb_or_dos_open(
 		return NULL;
 	}
 
-	for(fsp = file_find_di_first(conn->sconn, id);
+	for(fsp = file_find_di_first(conn->sconn, id, true);
 	    fsp != NULL;
-	    fsp = file_find_di_next(fsp)) {
+	    fsp = file_find_di_next(fsp, true)) {
 
 		DBG_DEBUG("Checking file %s, fd = %d, vuid = %"PRIu64", "
 			  "file_pid = %"PRIu16", "

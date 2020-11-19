@@ -419,8 +419,10 @@ files_struct *file_find_fd(struct smbd_server_connection *sconn, int fd);
 files_struct *file_find_dif(struct smbd_server_connection *sconn,
 			    struct file_id id, unsigned long gen_id);
 files_struct *file_find_di_first(struct smbd_server_connection *sconn,
-				 struct file_id id);
-files_struct *file_find_di_next(files_struct *start_fsp);
+				 struct file_id id,
+				 bool need_fsa);
+files_struct *file_find_di_next(files_struct *start_fsp,
+				 bool need_fsa);
 struct files_struct *file_find_one_fsp_from_lease_key(
 	struct smbd_server_connection *sconn,
 	const struct smb2_lease_key *lease_key);
