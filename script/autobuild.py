@@ -968,15 +968,16 @@ class builder(object):
         self.cwd = "%s/%s" % (self.test_source_dir, self.dir)
         self.selftest_prefix = "%s/bin/ab" % (self.cwd)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
-        rmdir_force(self.test_source_dir)
-        rmdir_force(self.prefix)
-        if not self.git_clone_required:
-            run_cmd("cp -R -a -l %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
-        else:
-            run_cmd("git clone --recursive --shared %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
-        self.start_next()
 
     def start_next(self):
+        if self.next == 0:
+            rmdir_force(self.test_source_dir)
+            rmdir_force(self.prefix)
+            if not self.git_clone_required:
+                run_cmd("cp -R -a -l %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
+            else:
+                run_cmd("git clone --recursive --shared %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
+
         if self.next == len(self.sequence):
             if not options.nocleanup:
                 rmdir_force(self.test_source_dir)
@@ -1081,6 +1082,10 @@ class buildlist(object):
             time.sleep(0.1)
 
     def run(self):
+        for b in self.tlist:
+            b.start_next()
+        if options.retry:
+            self.retry.start_next()
         while True:
             b = self.wait_one()
             if options.retry and self.need_retry:
