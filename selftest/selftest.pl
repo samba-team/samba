@@ -280,7 +280,7 @@ my $bindir_abs = abs_path($bindir);
 my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
 
 $prefix =~ s+//+/+;
-$prefix =~ s+/./+/+;
+$prefix =~ s+/\./+/+;
 $prefix =~ s+/$++;
 
 die("using an empty prefix isn't allowed") unless $prefix ne "";
