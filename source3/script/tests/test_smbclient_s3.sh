@@ -1105,16 +1105,17 @@ test_nosymlinks()
     rm -rf $local_test_dir
 
     local_nosymlink_target_file="nosymlink_target_file"
-    echo "$local_slink_target" > $local_nosymlink_target_file
+    echo "$local_slink_target" > $PREFIX/$local_nosymlink_target_file
 
     local_foobar_target_file="testfile"
-    echo "$share_target_file" > $local_foobar_target_file
+    echo "$share_target_file" > $PREFIX/$local_foobar_target_file
 
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
     cat > $tmpfile <<EOF
 mkdir $share_test_dir
 mkdir $share_foo_dir
 mkdir $share_foobar_dir
+lcd $PREFIX
 cd /$share_test_dir
 put $local_nosymlink_target_file
 cd /$share_foobar_dir
@@ -1127,8 +1128,8 @@ EOF
     out=`eval $cmd`
     ret=$?
     rm -f $tmpfile
-    rm -f $local_nosymlink_target_file
-    rm -f $local_foobar_target_file
+    rm -f $PREFIX/$local_nosymlink_target_file
+    rm -f $PREFIX/$local_foobar_target_file
 
     if [ $ret -ne 0 ] ; then
        echo "$out"

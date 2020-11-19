@@ -24,6 +24,8 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 
 failed=0
 
+cd $SELFTEST_TMPDIR || exit 1
+
 rm -f smbclient-stdin smbclient-stdout smbclient-stderr
 mkfifo smbclient-stdin smbclient-stdout smbclient-stderr
 

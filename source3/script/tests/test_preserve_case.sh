@@ -29,6 +29,8 @@ failed=0
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
+cd $SELFTEST_TMPDIR || exit 1
+
 test_smbclient() {
 	name="$1"
 	share="$2"

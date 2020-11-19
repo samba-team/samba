@@ -7,6 +7,8 @@
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 failed=0
 
+cd $SELFTEST_TMPDIR || exit 1
+
 delay_inject_conf=$(dirname $SMB_CONF_PATH)/delay_inject.conf
 
 echo 'delay_inject:ntimes = 5000' > $delay_inject_conf

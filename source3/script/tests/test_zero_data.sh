@@ -19,6 +19,8 @@ LOCAL_PATH=${4}
 . $(dirname $0)/../../../testprogs/blackbox/subunit.sh
 failed=0
 
+cd $SELFTEST_TMPDIR || exit 1
+
 TESTDIR=$LOCAL_PATH/zero_data
 
 mkdir -p $TESTDIR

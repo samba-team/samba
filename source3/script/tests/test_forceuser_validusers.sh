@@ -25,6 +25,7 @@ failed=0
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
+cd $SELFTEST_TMPDIR || exit 1
 
 run_cmd_nooutput() {
 	CMD="$1"

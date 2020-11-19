@@ -18,7 +18,7 @@ PASSWORD=${5}
 WORKDIR=${6}
 SMBGET="$VALGRIND ${7}"
 
-TMPDIR="$SRCDIR_ABS/st/tmp"
+TMPDIR="$SELFTEST_TMPDIR"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh

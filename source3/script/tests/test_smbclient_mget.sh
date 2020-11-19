@@ -19,6 +19,8 @@ USERNAME="$1"; shift
 PASSWORD="$1"; shift
 DIRECTORY="$1"; shift
 
+cd $SELFTEST_TMPDIR || exit 1
+
 # Can't use "testit" here -- it somehow breaks the -c command passed
 # to smbclient into two, spoiling the "mget"
 

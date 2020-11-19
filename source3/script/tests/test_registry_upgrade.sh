@@ -15,7 +15,7 @@ BASE_DIR="${SCRIPT_DIR}/../../.."
 NET="$1"
 DBWRAP_TOOL="$2 --persistent"
 DATADIR="${BASE_DIR}/testdata/samba3"
-WORKSPACE="${PREFIX}/registry_upgrade"
+WORKSPACE="${SELFTEST_TMPDIR}/registry_upgrade"
 CONFIG_FILE="${WORKSPACE}/smb.conf"
 CONFIGURATION="--configfile=${CONFIG_FILE}"
 
@@ -25,6 +25,8 @@ incdir="${BASE_DIR}/testprogs/blackbox"
 . $incdir/subunit.sh
 
 failed=0
+
+cd $SELFTEST_TMPDIR || exit 1
 
 REGPATH="HKLM\Software\Samba"
 
@@ -77,7 +79,7 @@ registry_upgrade()
 {
     echo registry_upgrade $1 | tee -a $LOG
 
-    cp -v $DATADIR/registry.tdb $WORKSPACE/registry.tdb >> $LOG 2>&1
+    (cat $DATADIR/registry.tdb > $WORKSPACE/registry.tdb) >> $LOG 2>&1
 
     REGISTRY="${WORKSPACE}/registry.tdb"
 
@@ -173,24 +175,18 @@ registry_upgrade()
     }
 }
 
-# remove old logs
-for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ; do
-	echo "removing old directory ${OLDDIR}"
-	rm -rf ${OLDDIR}
-done
-
 # remove old workspace
 rm -rf $WORKSPACE
 
 mkdir $WORKSPACE
 
-DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
+DIR=$(mktemp -d ${WORKSPACE}/${LOGDIR_PREFIX}_XXXXXX)
 LOG=$DIR/log
 
 testit "registry_upgrade" registry_upgrade || failed=`expr $failed + 1`
 
 if [ $failed -eq 0 ]; then
-    rm -r $DIR
+    rm -rf $WORKSPACE
 fi
 
 testok $0 $failed

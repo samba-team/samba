@@ -26,6 +26,8 @@ SNAPSHOT="@GMT-2015.10.31-19.40.30"
 
 failed=0
 
+cd $SELFTEST_TMPDIR || exit 1
+
 # build a hierarchy of files, symlinks, and directories
 build_files()
 {

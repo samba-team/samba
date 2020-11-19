@@ -23,6 +23,8 @@ SMBCACLS="$VALGRIND ${SMBCACLS} ${ADDARGS}"
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
+cd $SELFTEST_TMPDIR || exit 1
+
 # build a file to work with
 build_files()
 {

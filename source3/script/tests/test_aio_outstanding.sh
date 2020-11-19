@@ -22,6 +22,9 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 failed=0
+
+cd $SELFTEST_TMPDIR || exit 1
+
 #
 # Note if we already have any panics in the smbd log.
 #
