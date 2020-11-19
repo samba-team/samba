@@ -749,6 +749,9 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 		if (!file_id_equal(&fsp->file_id, &id)) {
 			continue;
 		}
+		if (!fsp->fsp_flags.is_fsa) {
+			continue;
+		}
 		if (fh_get_gen_id(fsp->fh) != gen_id) {
 			continue;
 		}
