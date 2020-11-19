@@ -215,6 +215,26 @@ tasks = {
         ],
     },
 
+    "samba-def-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "./configure.developer" + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
+    "samba-mit-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
     # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
     "samba": {
         "sequence": [
@@ -381,10 +401,9 @@ tasks = {
     },
 
     "samba-admem": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_member",
             "ad_member_idmap_rid",
@@ -420,10 +439,9 @@ tasks = {
     },
 
     "samba-ad-dc-1": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc",
             "ad_dc_smb1",
@@ -437,10 +455,9 @@ tasks = {
     },
 
     "samba-ad-dc-2": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "vampire_dc",
             "vampire_2000_dc",
@@ -452,10 +469,9 @@ tasks = {
     },
 
     "samba-ad-dc-3": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "promoted_dc",
             "chgdcpass",
@@ -468,10 +484,9 @@ tasks = {
     },
 
     "samba-ad-dc-4": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fl2000dc",
             "fl2003dc",
@@ -484,10 +499,9 @@ tasks = {
     },
 
     "samba-ad-dc-5": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc_default", "ad_dc_default_smb1", "ad_dc_default_smb1_done"])),
             ("lcov", LCOV_CMD),
@@ -496,10 +510,9 @@ tasks = {
     },
 
     "samba-ad-dc-6": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=["ad_dc_slowtests"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -507,10 +520,9 @@ tasks = {
     },
 
     "samba-schemaupgrade": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=["schema_dc", "schema_pair_dc"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -520,10 +532,9 @@ tasks = {
     # We split out the ad_dc_ntvfs tests (which are long) so other test do not wait
     # This is currently the longest task, so we don't randomly delay it.
     "samba-ad-dc-ntvfs": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=["ad_dc_ntvfs"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -532,10 +543,9 @@ tasks = {
 
     # Test fips compliance
     "samba-fips": {
+        "dependency": "samba-mit-build",
         "sequence": [
-            ("random-sleep", random_sleep(100, 500)),
-            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
-            ("make", "make -j"),
+            ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=["ad_dc_fips", "ad_member_fips"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -545,10 +555,9 @@ tasks = {
     # run the backup/restore testenvs separately as they're fairly standalone
     # (and CI seems to max out at ~8 different DCs running at once)
     "samba-ad-dc-backup": {
+        "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "backupfromdc",
             "restoredc",
@@ -563,10 +572,9 @@ tasks = {
     },
 
     "samba-admem-mit": {
+        "dependency": "samba-mit-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_member",
             "ad_member_idmap_rid",
@@ -579,10 +587,9 @@ tasks = {
     },
 
     "samba-ad-dc-1-mitkrb5": {
+        "dependency": "samba-mit-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "ad_dc",
             "ad_dc_smb1",
@@ -596,10 +603,9 @@ tasks = {
     },
 
     "samba-ad-dc-4-mitkrb5": {
+        "dependency": "samba-mit-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("configure", "./configure.developer --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fl2000dc",
             "fl2003dc",
@@ -905,6 +911,8 @@ defaulttasks = list(tasks.keys())
 
 defaulttasks.remove("pass")
 defaulttasks.remove("fail")
+defaulttasks.remove("samba-def-build")
+defaulttasks.remove("samba-mit-build")
 defaulttasks.remove("samba-test-only")
 defaulttasks.remove("samba-fuzz")
 defaulttasks.remove("samba-fips")
