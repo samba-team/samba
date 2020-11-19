@@ -746,30 +746,32 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 		 * We can have a fsp->fh->fd == -1 here as it could be a stat
 		 * open.
 		 */
-		if (file_id_equal(&fsp->file_id, &id) &&
-		    fh_get_gen_id(fsp->fh) == gen_id )
-		{
-			if (count > 10) {
-				DLIST_PROMOTE(sconn->files, fsp);
-			}
-			/* Paranoia check. */
-			if ((fsp_get_pathref_fd(fsp) == -1) &&
-			    (fsp->oplock_type != NO_OPLOCK &&
-			     fsp->oplock_type != LEASE_OPLOCK))
-			{
-				struct file_id_buf idbuf;
-
-				DBG_ERR("file %s file_id = "
-					"%s, gen = %u oplock_type = %u is a "
-					"stat open with oplock type !\n",
-					fsp_str_dbg(fsp),
-					file_id_str_buf(fsp->file_id, &idbuf),
-					(unsigned int)fh_get_gen_id(fsp->fh),
-					(unsigned int)fsp->oplock_type);
-				smb_panic("file_find_dif");
-			}
-			return fsp;
+		if (!file_id_equal(&fsp->file_id, &id)) {
+			continue;
 		}
+		if (fh_get_gen_id(fsp->fh) != gen_id) {
+			continue;
+		}
+		if (count > 10) {
+			DLIST_PROMOTE(sconn->files, fsp);
+		}
+		/* Paranoia check. */
+		if ((fsp_get_pathref_fd(fsp) == -1) &&
+		    (fsp->oplock_type != NO_OPLOCK &&
+		     fsp->oplock_type != LEASE_OPLOCK))
+		{
+			struct file_id_buf idbuf;
+
+			DBG_ERR("file %s file_id = "
+				"%s, gen = %u oplock_type = %u is a "
+				"stat open with oplock type !\n",
+				fsp_str_dbg(fsp),
+				file_id_str_buf(fsp->file_id, &idbuf),
+				(unsigned int)fh_get_gen_id(fsp->fh),
+				(unsigned int)fsp->oplock_type);
+			smb_panic("file_find_dif");
+		}
+		return fsp;
 	}
 
 	return NULL;
