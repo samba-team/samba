@@ -413,6 +413,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 	case DNS_QTYPE_AAAA:
 	case DNS_QTYPE_SRV:
 	case DNS_QTYPE_TXT:
+	case DNS_QTYPE_ALL:
 		break;
 	default:
 		DEBUG(0, ("Can't handle updates of type %u yet\n",
