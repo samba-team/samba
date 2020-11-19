@@ -45,10 +45,7 @@ def parse_results(msg_ops, statistics, fh):
     exitcode = 0
     open_tests = {}
 
-    while fh:
-        l = fh.readline()
-        if l == "":
-            break
+    for l in fh:
         parts = l.split(None, 1)
         if not len(parts) == 2 or not l.startswith(parts[0]):
             msg_ops.output_msg(l)
@@ -80,10 +77,7 @@ def parse_results(msg_ops, statistics, fh):
                 reason = ""
                 # reason may be specified in next lines
                 terminated = False
-                while fh:
-                    l = fh.readline()
-                    if l == "":
-                        break
+                for l in fh:
                     msg_ops.control_msg(l)
                     if l == "]\n":
                         terminated = True
@@ -250,8 +244,7 @@ def read_test_regexes(*names):
             files.append(name)
 
     for filename in files:
-        f = open(filename, 'r')
-        try:
+        with open(filename, 'r') as f:
             for l in f:
                 l = l.strip()
                 if l == "" or l[0] == "#":
@@ -261,8 +254,7 @@ def read_test_regexes(*names):
                     ret[regex.strip()] = reason.strip()
                 else:
                     ret[l] = None
-        finally:
-            f.close()
+
     return ret
 
 
