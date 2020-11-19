@@ -175,11 +175,11 @@ static void send_message(struct smbcli_state *cli, const char *desthost)
 	char msg[1600];
 	int total_len = 0;
 	int grp_id;
+	struct cli_credentials *creds = popt_get_cmdline_credentials();
 
 	if (!smbcli_message_start(cli->tree,
 			desthost,
-			cli_credentials_get_username(
-				popt_get_cmdline_credentials()),
+			cli_credentials_get_username(creds),
 			&grp_id)) {
 		d_printf("message start: %s\n", smbcli_errstr(cli->tree));
 		return;
@@ -2698,12 +2698,14 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 	TALLOC_CTX *mem_ctx = talloc_init("browse_host");
 	struct srvsvc_NetShareCtr1 ctr1;
 	uint32_t totalentries = 0;
+	struct cli_credentials *creds = popt_get_cmdline_credentials();
 
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
 
 	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
 					 &ndr_table_srvsvc,
-				     popt_get_cmdline_credentials(), ev_ctx,
+					 creds,
+					 ev_ctx,
 				     lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
@@ -3318,6 +3320,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	const char *cmdstr = NULL;
 	struct smbcli_options smb_options;
 	struct smbcli_session_options smb_session_options;
+	struct cli_credentials *creds = NULL;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -3455,8 +3458,10 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		}
 	}
 
+	creds = popt_get_cmdline_credentials();
+
 	if (poptPeekArg(pc)) { 
-		cli_credentials_set_password(popt_get_cmdline_credentials(),
+		cli_credentials_set_password(creds,
 			poptGetArg(pc), CRED_SPECIFIED);
 	}
 
@@ -3499,7 +3504,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(cmdline_lp_ctx),
 			desthost, lpcfg_smb_ports(cmdline_lp_ctx), service,
 			lpcfg_socket_options(cmdline_lp_ctx),
-			popt_get_cmdline_credentials(),
+			creds,
 			&smb_options, &smb_session_options,
 			lpcfg_gensec_settings(ctx, cmdline_lp_ctx)))
 		return 1;
