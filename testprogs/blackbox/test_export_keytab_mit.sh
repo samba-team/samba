@@ -77,23 +77,33 @@ test_keytab() {
 TEST_USER=nettestuser
 TEST_PASSWORD=testPaSS@01%
 
+EXPECTED_NKEYS=3
+krb5_version="$(krb5-config --version | cut -d ' ' -f 4)"
+krb5_major_version="$(echo $krb5_version | awk -F. '{ print $1; }')"
+krb5_minor_version="$(echo $krb5_version | awk -F. '{ print $2; }')"
+
+# MIT Kerberos < 1.18 has support for DES keys
+if [ $krb5_major_version -eq 1 ] && [ $krb5_minor_version -lt 18 ]; then
+    EXPECTED_NKEYS=5
+fi
+
 testit "create local user $TEST_USER" $VALGRIND $PYTHON $samba_newuser $TEST_USER $TEST_PASSWORD $@ || failed=`expr $failed + 1`
 
 testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" 5
+test_keytab "read keytab from domain" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" $EXPECTED_NKEYS
 
 testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-all $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" 5
+test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab-all" "$SERVER\\\$" $EXPECTED_NKEYS
 
 testit "dump keytab from domain for cifs service principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain for cifs service principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 5
+test_keytab "read keytab from domain for cifs service principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" $EXPECTED_NKEYS
 testit "dump keytab from domain for cifs service principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain for cifs service principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 5
+test_keytab "read keytab from domain for cifs service principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" $EXPECTED_NKEYS
 
 testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER $@ || failed=`expr $failed + 1`
-test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" 5
+test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" $EXPECTED_NKEYS
 testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-user-princ --principal=$TEST_USER@$REALM $@ || failed=`expr $failed + 1`
-test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" 5
+test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-user-princ" "$TEST_USER@$REALM" $EXPECTED_NKEYS
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
