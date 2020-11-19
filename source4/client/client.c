@@ -33,7 +33,7 @@
 #include "version.h"
 #include "libcli/libcli.h"
 #include "lib/events/events.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -175,7 +175,7 @@ static void send_message(struct smbcli_state *cli, const char *desthost)
 	char msg[1600];
 	int total_len = 0;
 	int grp_id;
-	struct cli_credentials *creds = popt_get_cmdline_credentials();
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	if (!smbcli_message_start(cli->tree,
 			desthost,
@@ -2698,7 +2698,7 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 	TALLOC_CTX *mem_ctx = talloc_init("browse_host");
 	struct srvsvc_NetShareCtr1 ctr1;
 	uint32_t totalentries = 0;
-	struct cli_credentials *creds = popt_get_cmdline_credentials();
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
 
@@ -3300,8 +3300,9 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
+	const char **const_argv = discard_const_p(const char *, argv);
 	char *base_directory = NULL;
 	const char *dest_ip = NULL;
 	int opt;
@@ -3321,6 +3322,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	struct smbcli_options smb_options;
 	struct smbcli_session_options smb_session_options;
 	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	bool ok;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -3398,6 +3401,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
+		POPT_LEGACY_S4
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -3411,7 +3415,25 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	ctx = talloc_zero(mem_ctx, struct smbclient_context);
 	ctx->io_bufsize = 64512;
 
-	pc = poptGetContext("smbclient", argc, argv, long_options, 0);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    const_argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
@@ -3458,7 +3480,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		}
 	}
 
-	creds = popt_get_cmdline_credentials();
+	creds = samba_cmdline_get_creds();
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	if (poptPeekArg(pc)) { 
 		cli_credentials_set_password(creds,
@@ -3471,9 +3494,10 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	}
 
 	poptFreeContext(pc);
+	samba_cmdline_burn(argc, argv);
 
-	lpcfg_smbcli_options(cmdline_lp_ctx, &smb_options);
-	lpcfg_smbcli_session_options(cmdline_lp_ctx, &smb_session_options);
+	lpcfg_smbcli_options(lp_ctx, &smb_options);
+	lpcfg_smbcli_session_options(lp_ctx, &smb_session_options);
 
 	ev_ctx = s4_event_context_init(ctx);
 
@@ -3486,27 +3510,27 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	}
   
 	if (query_host) {
-		rc = do_host_query(cmdline_lp_ctx, ev_ctx, query_host,
-				   lpcfg_workgroup(cmdline_lp_ctx));
+		rc = do_host_query(lp_ctx, ev_ctx, query_host,
+				   lpcfg_workgroup(lp_ctx));
 		return rc;
 	}
 
 	if (message) {
-		rc = do_message_op(lpcfg_netbios_name(cmdline_lp_ctx), desthost,
-				   lpcfg_smb_ports(cmdline_lp_ctx), dest_ip,
+		rc = do_message_op(lpcfg_netbios_name(lp_ctx), desthost,
+				   lpcfg_smb_ports(lp_ctx), dest_ip,
 				   name_type, ev_ctx,
-				   lpcfg_resolve_context(cmdline_lp_ctx),
+				   lpcfg_resolve_context(lp_ctx),
 				   &smb_options, 
-                   lpcfg_socket_options(cmdline_lp_ctx));
+                   lpcfg_socket_options(lp_ctx));
 		return rc;
 	}
 	
-	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(cmdline_lp_ctx),
-			desthost, lpcfg_smb_ports(cmdline_lp_ctx), service,
-			lpcfg_socket_options(cmdline_lp_ctx),
+	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(lp_ctx),
+			desthost, lpcfg_smb_ports(lp_ctx), service,
+			lpcfg_socket_options(lp_ctx),
 			creds,
 			&smb_options, &smb_session_options,
-			lpcfg_gensec_settings(ctx, cmdline_lp_ctx)))
+			lpcfg_gensec_settings(ctx, lp_ctx)))
 		return 1;
 
 	if (base_directory) {
