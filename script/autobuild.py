@@ -1022,14 +1022,23 @@ class buildlist(object):
         self.tail_proc = Popen(cmd, close_fds=True)
 
 
-def cleanup():
+def cleanup(do_raise=False):
     if options.nocleanup:
         return
     run_cmd("stat %s || true" % test_tmpdir, show=True)
     run_cmd("stat %s" % testbase, show=True)
     do_print("Cleaning up %r" % cleanup_list)
     for d in cleanup_list:
-        rmdir_force(d)
+        ok = rmdir_force(d, re_raise=False)
+        if ok:
+            continue
+        if os.path.isdir(d):
+            do_print("Killing, waiting and retry")
+            run_cmd("killbysubdir %s > /dev/null 2>&1" % d, checkfail=False)
+        else:
+            do_print("Waiting and retry")
+        time.sleep(1)
+        rmdir_force(d, re_raise=do_raise)
 
 
 def daemonize(logfile):
@@ -1295,7 +1304,7 @@ while True:
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
         if status != 0 or errstr != "retry":
             break
-        cleanup()
+        cleanup(do_raise=True)
     except Exception:
         cleanup()
         raise
