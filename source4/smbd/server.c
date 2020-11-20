@@ -155,6 +155,19 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 	sig_term(SIGTERM);
 }
 
+static void sighup_signal_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum, int count, void *siginfo,
+				  void *private_data)
+{
+	struct server_state *state = talloc_get_type_abort(
+                private_data, struct server_state);
+
+	DBG_DEBUG("Process %s got SIGHUP\n", state->binary_name);
+
+	reopen_logs_internal();
+}
+
 /*
   setup signal masks
 */
@@ -825,6 +838,22 @@ static int binary_smbd_main(const char *binary_name,
 	if (se == NULL) {
 		TALLOC_FREE(state);
 		exit_daemon("Initialize SIGTERM handler failed", ENOMEM);
+		/*
+		 * return is never reached but is here to satisfy static
+		 * checkers
+		 */
+		return 1;
+	}
+
+	se = tevent_add_signal(state->event_ctx,
+				state->event_ctx,
+				SIGHUP,
+				0,
+				sighup_signal_handler,
+				state);
+	if (se == NULL) {
+		TALLOC_FREE(state);
+		exit_daemon("Initialize SIGHUP handler failed", ENOMEM);
 		/*
 		 * return is never reached but is here to satisfy static
 		 * checkers
