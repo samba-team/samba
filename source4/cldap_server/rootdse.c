@@ -23,7 +23,7 @@
 #include <tevent.h>
 #include <ldb.h>
 #include <ldb_errors.h>
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"

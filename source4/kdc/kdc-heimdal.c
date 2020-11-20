@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "lib/tsocket/tsocket.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"

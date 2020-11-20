@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
-#include "smbd/service.h"
+#include "samba/service.h"
 #include "lib/events/events.h"
 #include "dsdb/repl/drepl_service.h"
 #include <ldb_errors.h>

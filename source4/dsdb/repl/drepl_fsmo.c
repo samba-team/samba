@@ -27,7 +27,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
-#include "smbd/service.h"
+#include "samba/service.h"
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
 

@@ -23,7 +23,7 @@
 #include "vfs_posix.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/security.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
 

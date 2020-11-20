@@ -23,7 +23,7 @@
 #include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
 #include "nbt_server/nbt_server.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "nbt_server/wins/winsserver.h"

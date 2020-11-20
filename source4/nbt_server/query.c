@@ -24,7 +24,7 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "lib/socket/socket.h"
 #include "param/param.h"

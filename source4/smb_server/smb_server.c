@@ -19,9 +19,9 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
-#include "smbd/service_stream.h"
-#include "smbd/service.h"
+#include "samba/service_task.h"
+#include "samba/service_stream.h"
+#include "samba/service.h"
 #include "smb_server/smb_server.h"
 #include "smb_server/service_smb_proto.h"
 #include "lib/messaging/irpc.h"

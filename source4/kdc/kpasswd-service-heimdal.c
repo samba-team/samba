@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "param/param.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"

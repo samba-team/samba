@@ -25,7 +25,7 @@
 #include "nbt_server/wins/winsserver.h"
 #include "system/time.h"
 #include "libcli/composite/composite.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/socket/socket.h"
 

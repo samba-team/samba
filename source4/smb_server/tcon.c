@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "lib/tsocket/tsocket.h"
 #include "ntvfs/ntvfs.h"
 

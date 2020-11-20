@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "tsocket/tsocket.h"
 #include "auth/credentials/credentials.h"
 #include "auth/auth.h"

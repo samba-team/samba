@@ -25,8 +25,8 @@
 #include "tevent.h"
 #include "system/filesys.h"
 #include "lib/param/param.h"
-#include "source4/smbd/service.h"
-#include "source4/smbd/process_model.h"
+#include "source4/samba/service.h"
+#include "source4/samba/process_model.h"
 #include "dynconfig.h"
 #include "nsswitch/winbind_client.h"
 

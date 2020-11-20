@@ -24,8 +24,8 @@
 #define __SERVICE_H__
 
 
-#include "smbd/service_stream.h"
-#include "smbd/service_task.h"
+#include "samba/service_stream.h"
+#include "samba/service_task.h"
 
 struct process_details {
 	unsigned int instances;
@@ -75,6 +75,6 @@ struct service_details {
 	void (*post_fork) (struct task_server *, struct process_details *);
 };
 
-#include "smbd/service_proto.h"
+#include "samba/service_proto.h"
 
 #endif /* __SERVICE_H__ */

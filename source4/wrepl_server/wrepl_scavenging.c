@@ -26,7 +26,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "system/time.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "librpc/gen_ndr/ndr_nbt.h"

@@ -28,7 +28,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/stream/packet.h"

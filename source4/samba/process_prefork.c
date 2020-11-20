@@ -38,7 +38,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/messaging.h"
 #include "lib/socket/socket.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "ldb_wrap.h"

@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "system/time.h"
 #include "libcli/composite/composite.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "system/network.h"
 #include "lib/socket/socket.h"
 #include "lib/socket/netif.h"

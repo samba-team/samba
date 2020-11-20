@@ -38,7 +38,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "libcli/raw/smb.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 
 struct dcesrv_context_callbacks srv_callbacks = {
 	.log.successful_authz = log_successful_dcesrv_authz_event,

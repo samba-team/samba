@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 

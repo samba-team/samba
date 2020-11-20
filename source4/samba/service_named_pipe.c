@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include <tevent.h>
-#include "smbd/service.h"
+#include "samba/service.h"
 #include "param/param.h"
 #include "auth/auth.h"
 #include "auth/session.h"

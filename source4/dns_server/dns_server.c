@@ -20,10 +20,10 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
-#include "smbd/service.h"
-#include "smbd/service_stream.h"
-#include "smbd/process_model.h"
+#include "samba/service_task.h"
+#include "samba/service.h"
+#include "samba/service_stream.h"
+#include "samba/process_model.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"

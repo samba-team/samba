@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
-#include "smbd/service.h"
+#include "samba/service.h"
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"

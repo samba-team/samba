@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/util/tstream.h"
 #include "lib/util/tevent_ntstatus.h"

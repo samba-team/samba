@@ -30,7 +30,7 @@
 #include "system/filesys.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/schannel.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "param/secrets.h"
 #include "lib/util/pidfile.h"
 #include "param/param.h"

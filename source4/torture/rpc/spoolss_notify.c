@@ -28,7 +28,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "rpc_server/service_rpc.h"
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 #include "smb_server/smb_server.h"
 #include "lib/socket/netif.h"
 #include "ntvfs/ntvfs.h"

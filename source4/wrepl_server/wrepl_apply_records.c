@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include <tevent.h>
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"

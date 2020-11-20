@@ -21,8 +21,8 @@
 
 #include "includes.h"
 #include "../lib/util/dlinklist.h"
-#include "smbd/service_task.h"
-#include "smbd/service.h"
+#include "samba/service_task.h"
+#include "samba/service.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"

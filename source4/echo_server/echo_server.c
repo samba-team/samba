@@ -24,7 +24,7 @@
 /* Get at the config file settings */
 #include "param/param.h"
 /* This defines task_server_terminate */
-#include "smbd/process_model.h"
+#include "samba/process_model.h"
 /* We get load_interface_list from here */
 #include "socket/netif.h"
 /* NTSTATUS-related stuff */

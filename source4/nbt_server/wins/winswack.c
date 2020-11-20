@@ -27,7 +27,7 @@
 #include "system/time.h"
 #include "libcli/composite/composite.h"
 #include "param/param.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 
 struct wins_challenge_state {
 	struct wins_challenge_io *io;

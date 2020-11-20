@@ -26,7 +26,7 @@
 #include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "auth/common_auth.h"
 #include "param/param.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "dsdb/samdb/samdb.h"
 #include <ldb_errors.h>
 #include <ldb_module.h>

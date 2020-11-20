@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "auth/auth.h"
-#include "smbd/service.h"
+#include "samba/service.h"
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "../lib/util/dlinklist.h"

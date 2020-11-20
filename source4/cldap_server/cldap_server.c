@@ -22,8 +22,8 @@
 #include "includes.h"
 #include <talloc.h>
 #include "lib/messaging/irpc.h"
-#include "smbd/service_task.h"
-#include "smbd/service.h"
+#include "samba/service_task.h"
+#include "samba/service.h"
 #include "cldap_server/cldap_server.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"

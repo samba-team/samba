@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "libcli/util/werror.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"

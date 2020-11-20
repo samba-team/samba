@@ -21,7 +21,7 @@
 #include "ldap_server/ldap_server.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "../lib/util/tevent_ntstatus.h"
 
 struct ldapsrv_starttls_postprocess_context {

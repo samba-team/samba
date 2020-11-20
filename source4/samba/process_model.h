@@ -25,8 +25,8 @@
 #define __PROCESS_MODEL_H__
 
 #include "lib/socket/socket.h"
-#include "smbd/service.h"
-#include "smbd/process_model_proto.h"
+#include "samba/service.h"
+#include "samba/process_model_proto.h"
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change

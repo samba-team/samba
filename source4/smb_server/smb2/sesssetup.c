@@ -26,7 +26,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
 #include "smb_server/smb2/smb2_server.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "lib/stream/packet.h"
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)

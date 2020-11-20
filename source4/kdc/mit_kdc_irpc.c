@@ -29,7 +29,7 @@
 
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 
-#include "source4/smbd/process_model.h"
+#include "source4/samba/process_model.h"
 #include "lib/param/param.h"
 
 #include "samba_kdc.h"

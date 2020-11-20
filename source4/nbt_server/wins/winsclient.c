@@ -25,7 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "param/param.h"
 
 /* we send WINS client requests using our primary network interface 

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "auth/auth.h"

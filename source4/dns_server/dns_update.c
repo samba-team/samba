@@ -29,7 +29,7 @@
 #include "param/loadparm.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
-#include "smbd/service_task.h"
+#include "samba/service_task.h"
 #include "dns_server/dns_server.h"
 #include "auth/auth.h"
 

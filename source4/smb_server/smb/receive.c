@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "lib/util/server_id.h"
-#include "smbd/service_stream.h"
+#include "samba/service_stream.h"
 #include "smb_server/smb_server.h"
 #include "system/filesys.h"
 #include "param/param.h"
