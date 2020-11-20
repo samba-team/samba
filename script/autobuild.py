@@ -4,7 +4,7 @@
 # released under GNU GPL v3 or later
 
 from __future__ import print_function
-from subprocess import call, check_call, check_output, Popen, PIPE
+from subprocess import call, check_call, check_output, Popen, PIPE, CalledProcessError
 import os
 import tarfile
 import sys
@@ -846,6 +846,17 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     else:
         return call(cmd, shell=True, cwd=dir)
 
+def rmdir_force(dirname, re_raise=True):
+    try:
+        run_cmd("test -d %s && chmod -R +w %s; rm -rf %s" % (
+                dirname, dirname, dirname), output=True, show=True)
+    except CalledProcessError as e:
+        do_print("Failed: '%s'" % (str(e)))
+        run_cmd("tree %s" % dirname, output=True, show=True)
+        if re_raise:
+            raise
+        return False
+    return True
 
 class builder(object):
     '''handle build of one directory'''
@@ -868,8 +879,8 @@ class builder(object):
         self.test_source_dir = "%s/%s" % (testbase, self.tag)
         self.cwd = "%s/%s" % (self.test_source_dir, self.dir)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
-        run_cmd("rm -rf %s" % self.test_source_dir)
-        run_cmd("rm -rf %s" % self.prefix)
+        rmdir_force(self.test_source_dir)
+        rmdir_force(self.prefix)
         if cp:
             run_cmd("cp -R -a -l %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
         else:
@@ -879,8 +890,8 @@ class builder(object):
     def start_next(self):
         if self.next == len(self.sequence):
             if not options.nocleanup:
-                run_cmd("rm -rf %s" % self.test_source_dir)
-                run_cmd("rm -rf %s" % self.prefix)
+                rmdir_force(self.test_source_dir)
+                rmdir_force(self.prefix)
             do_print('%s: Completed OK' % self.name)
             self.done = True
             return
@@ -1004,7 +1015,7 @@ class buildlist(object):
                         'df -m %s' % testbase]:
                 try:
                     out = run_cmd(cmd, output=True, checkfail=False)
-                except subprocess.CalledProcessError as e:
+                except CalledProcessError as e:
                     out = "<failed: %s>" % str(e)
                 print('### %s' % cmd, file=f)
                 print(out, file=f)
@@ -1041,7 +1052,7 @@ def cleanup():
     run_cmd("stat %s" % testbase, show=True)
     do_print("Cleaning up %r" % cleanup_list)
     for d in cleanup_list:
-        run_cmd("rm -rf %s" % d)
+        rmdir_force(d)
 
 
 def daemonize(logfile):
