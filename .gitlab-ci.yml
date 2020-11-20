@@ -80,6 +80,8 @@ include:
     - uname -a
     - lsb_release -a
     - cat /etc/os-release
+    - lscpu
+    - cat /proc/cpuinfo
     - mount
     - df -h
     - cat /proc/swaps
