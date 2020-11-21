@@ -2301,7 +2301,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
 
         /*
-         * Are they asking to remove one or more spceific security descriptor
+         * Are they asking to remove one or more specific security descriptor
          * attributes?
          */
         if (strcasecmp_m(name, "system.nt_sec_desc.revision") == 0 ||
