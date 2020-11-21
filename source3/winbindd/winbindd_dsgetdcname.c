@@ -183,7 +183,7 @@ static uint32_t get_dsgetdc_flags(uint32_t wbc_flags)
 	};
 
 	uint32_t ds_flags = 0;
-	int i = 0 ;
+	size_t i = 0;
 
 	for (i=0; i<ARRAY_SIZE(lookup_dc_flags); i++) {
 		if (wbc_flags & lookup_dc_flags[i].wbc_dc_flag) {
