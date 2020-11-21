@@ -375,8 +375,10 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 
 	/*
 	 * Don't take a lock here. We just need a snapshot
-	 * of the current state of delete on close and someone
-	 * else may already have a lock on this id.
+	 * of the current state of delete on close and this is
+	 * called in a codepath where we may already have a lock
+	 * (and we explicitly can't hold 2 locks at the same time
+	 * as that may deadlock).
 	 */
 	lck = fetch_share_mode_unlocked(frame, id);
 	if (lck == NULL) {
