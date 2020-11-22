@@ -23,7 +23,7 @@ display_name_new="Bjoerns new laptop"
 # echo -e "test \a string" | base64
 display_name_con_b64="dGVzdCAHIHN0cmluZwo="
 
-tmpeditor=$(mktemp --suffix .sh -p $STpath/bin samba-tool-editor-XXXXXXXX)
+tmpeditor=$(mktemp --suffix .sh -p $SELFTEST_TMPDIR samba-tool-editor-XXXXXXXX)
 chmod +x $tmpeditor
 
 create_test_computer() {
