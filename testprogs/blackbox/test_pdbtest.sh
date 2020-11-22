@@ -63,14 +63,14 @@ testit "pdbtest" $VALGRIND $BINDIR/pdbtest -u $USER $@ || failed=`expr $failed +
 NEWUSERPASS=testPaSS@01%
 
 echo "set password with pdbedit"
-cat > ./tmpsmbpasswdscript <<EOF
+cat > $PREFIX/tmpsmbpasswdscript <<EOF
 expect new password:
 send ${NEWUSERPASS}\n
 expect retype new password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "create user with pdbedit" $texpect ./tmpsmbpasswdscript $VALGRIND $pdbedit -s $SMB_CONF -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
+testit "create user with pdbedit" $texpect $PREFIX/tmpsmbpasswdscript $VALGRIND $pdbedit -s $SMB_CONF -a $USER --account-desc="pdbedit-test-user" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' "$unc"  -U$USER%$NEWUSERPASS $@ || failed=`expr $failed + 1`
@@ -114,6 +114,6 @@ test_smbclient "Test login with new password (from hash)" 'ls' "$unc"  -U$USER%$
 
 testit "del user"  $VALGRIND $pdbedit -s $SMB_CONF -x $USER $@ || failed=`expr $failed + 1`
 
-rm ./tmpsmbpasswdscript
+rm $PREFIX/tmpsmbpasswdscript
 
 exit $failed

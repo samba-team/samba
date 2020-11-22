@@ -26,7 +26,7 @@ if test -x $BINDIR/samba4kinit; then
 	samba4kinit=$BINDIR/samba4kinit
 fi
 
-smbtorture4="$samba4bindir/smbtorture"
+smbtorture4="$samba4bindir/smbtorture --basedir=$SELFTEST_TMPDIR"
 
 . `dirname $0`/subunit.sh
 . `dirname $0`/common_test_fns.inc
