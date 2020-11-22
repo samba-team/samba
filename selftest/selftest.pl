@@ -313,7 +313,6 @@ $ENV{PREFIX} = $prefix;
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
-$ENV{GNUPGHOME} = "$srcdir_abs/selftest/gnupg";
 $ENV{BINDIR} = $bindir_abs;
 
 my $tls_enabled = not $opt_quick;
@@ -667,6 +666,9 @@ $ENV{RESOLV_CONF} = "${selftest_resolv_conf_path}.global";
 my $selftest_krbt_ccache_path = "$tmpdir_abs/selftest.krb5_ccache";
 $ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.global";
 
+my $selftest_gnupghome_path = "$tmpdir_abs/selftest.no.gnupg";
+$ENV{GNUPGHOME} = "${selftest_gnupghome_path}.global";
+
 my @available = ();
 foreach my $fn (@testlists) {
 	foreach (read_testlist($fn)) {
@@ -803,6 +805,7 @@ sub setup_env($$)
 
 	$ENV{RESOLV_CONF} = "${selftest_resolv_conf_path}.${envname}/ignore";
 	$ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.${envname}/ignore";
+	$ENV{GNUPGHOME} = "${selftest_gnupghome_path}.${envname}/ignore";
 
 	if (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
