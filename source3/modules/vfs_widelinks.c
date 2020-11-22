@@ -372,8 +372,9 @@ static int widelinks_openat(vfs_handle_struct *handle,
 }
 
 static struct dirent *widelinks_readdir(vfs_handle_struct *handle,
-			DIR *dirp,
-			SMB_STRUCT_STAT *sbuf)
+					struct files_struct *dirfsp,
+					DIR *dirp,
+					SMB_STRUCT_STAT *sbuf)
 {
 	struct widelinks_config *config = NULL;
 	struct dirent *result;
@@ -384,8 +385,9 @@ static struct dirent *widelinks_readdir(vfs_handle_struct *handle,
 				return NULL);
 
 	result = SMB_VFS_NEXT_READDIR(handle,
-				dirp,
-				sbuf);
+				      dirfsp,
+				      dirp,
+				      sbuf);
 
 	if (!config->active) {
 		/* Module not active. */

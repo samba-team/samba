@@ -85,8 +85,9 @@ static int cap_get_quota(vfs_handle_struct *handle,
 }
 
 static struct dirent *cap_readdir(vfs_handle_struct *handle,
-				      DIR *dirp,
-				      SMB_STRUCT_STAT *sbuf)
+				  struct files_struct *dirfsp,
+				  DIR *dirp,
+				  SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
 	struct dirent *newdirent;
@@ -94,7 +95,7 @@ static struct dirent *cap_readdir(vfs_handle_struct *handle,
 	size_t newnamelen;
 	DEBUG(3,("cap: cap_readdir\n"));
 
-	result = SMB_VFS_NEXT_READDIR(handle, dirp, NULL);
+	result = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, NULL);
 	if (!result) {
 		return NULL;
 	}

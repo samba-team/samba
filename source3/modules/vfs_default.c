@@ -571,8 +571,9 @@ static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 
 
 static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
-				          DIR *dirp,
-					  SMB_STRUCT_STAT *sbuf)
+				      struct files_struct *dirfsp,
+				      DIR *dirp,
+				      SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
 

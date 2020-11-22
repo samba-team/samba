@@ -2052,7 +2052,7 @@ static int shadow_copy2_get_shadow_copy_data(
 		time(&(priv->snaps->fetch_time));
 	}
 
-	while ((d = SMB_VFS_NEXT_READDIR(handle, p, NULL))) {
+	while ((d = SMB_VFS_NEXT_READDIR(handle, dirfsp, p, NULL))) {
 		char snapshot[GMT_NAME_LEN+1];
 		SHADOW_COPY_LABEL *tlabels;
 

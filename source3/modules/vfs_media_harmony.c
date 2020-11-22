@@ -818,8 +818,9 @@ err:
  * Failure: set errno, return NULL
  */
 static struct dirent *mh_readdir(vfs_handle_struct *handle,
-		DIR *dirp,
-		SMB_STRUCT_STAT *sbuf)
+				 struct files_struct *dirfsp,
+				 DIR *dirp,
+				 SMB_STRUCT_STAT *sbuf)
 {
 	mh_dirinfo_struct* dirInfo = (mh_dirinfo_struct*)dirp;
 	struct dirent *d = NULL;
@@ -842,7 +843,7 @@ static struct dirent *mh_readdir(vfs_handle_struct *handle,
 
 	if (! dirInfo->isInMediaFiles)
 	{
-		d = SMB_VFS_NEXT_READDIR(handle, dirInfo->dirstream, sbuf);
+		d = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirInfo->dirstream, sbuf);
 		goto out;
 	}
 
@@ -852,7 +853,7 @@ static struct dirent *mh_readdir(vfs_handle_struct *handle,
 		bool isAppleDouble;
 
 		skip = False;
-		d = SMB_VFS_NEXT_READDIR(handle, dirInfo->dirstream, sbuf);
+		d = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirInfo->dirstream, sbuf);
 
 		if (d == NULL)
 		{

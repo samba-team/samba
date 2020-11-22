@@ -79,7 +79,10 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 		return false;
 	}
 
-	dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL);
+	dp = SMB_VFS_NEXT_READDIR(handle,
+				  data->fsp,
+				  data->source_directory,
+				  NULL);
 	if (dp == NULL) {
 		return false;
 	}
@@ -120,7 +123,10 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 		data->directory_list[total_count] = *dp;
 
 		total_count++;
-		dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL);
+		dp = SMB_VFS_NEXT_READDIR(handle,
+					  data->fsp,
+					  data->source_directory,
+					  NULL);
 	} while (dp != NULL);
 
 	data->number_of_entries = total_count;
@@ -178,8 +184,9 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 }
 
 static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
-					  DIR *dirp,
-					  SMB_STRUCT_STAT *sbuf)
+				      struct files_struct *dirfsp,
+				      DIR *dirp,
+				      SMB_STRUCT_STAT *sbuf)
 {
 	struct dirsort_privates *data = NULL;
 	struct timespec current_mtime;

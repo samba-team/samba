@@ -111,10 +111,10 @@
 #define SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr) \
 	smb_vfs_call_fdopendir((handle)->next, (fsp), (mask), (attr))
 
-#define SMB_VFS_READDIR(conn, dirp, sbuf) \
-	smb_vfs_call_readdir((conn)->vfs_handles, (dirp), (sbuf))
-#define SMB_VFS_NEXT_READDIR(handle, dirp, sbuf) \
-	smb_vfs_call_readdir((handle)->next, (dirp), (sbuf))
+#define SMB_VFS_READDIR(conn, dirfsp, dirp, sbuf) \
+	smb_vfs_call_readdir((conn)->vfs_handles, (dirfsp), (dirp), (sbuf))
+#define SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf) \
+	smb_vfs_call_readdir((handle)->next, (dirfsp), (dirp), (sbuf))
 
 #define SMB_VFS_SEEKDIR(conn, dirp, offset) \
 	smb_vfs_call_seekdir((conn)->vfs_handles, (dirp), (offset))

@@ -614,6 +614,7 @@ err:
  * Failure: set errno, return NULL
  */
 static struct dirent *um_readdir(vfs_handle_struct *handle,
+				 struct files_struct *dirfsp,
 				 DIR *dirp,
 				 SMB_STRUCT_STAT *sbuf)
 {
@@ -631,7 +632,7 @@ static struct dirent *um_readdir(vfs_handle_struct *handle,
 		   dirInfo->clientSubDirname));
 
 	if (!dirInfo->isInMediaFiles) {
-		return SMB_VFS_NEXT_READDIR(handle, dirInfo->dirstream, sbuf);
+		return SMB_VFS_NEXT_READDIR(handle, dirfsp, dirInfo->dirstream, sbuf);
 	}
 
 	do {
@@ -642,7 +643,7 @@ static struct dirent *um_readdir(vfs_handle_struct *handle,
 		uintmax_t number;
 
 		skip = false;
-		d = SMB_VFS_NEXT_READDIR(handle, dirInfo->dirstream, sbuf);
+		d = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirInfo->dirstream, sbuf);
 
 		if (d == NULL) {
 			break;

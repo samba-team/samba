@@ -164,9 +164,11 @@ static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static struct dirent *skel_readdir(vfs_handle_struct *handle,
-				   DIR *dirp, SMB_STRUCT_STAT *sbuf)
+				   struct files_struct *dirfsp,
+				   DIR *dirp,
+				   SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
+	return SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
 }
 
 static void skel_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)

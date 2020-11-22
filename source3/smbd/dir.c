@@ -1490,7 +1490,7 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 	/* A real offset, seek to it. */
 	SeekDir(dir_hnd, *poffset);
 
-	while ((n = vfs_readdirname(conn, dir_hnd->dir, sbuf, &talloced))) {
+	while ((n = vfs_readdirname(conn, dir_hnd->fsp, dir_hnd->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {

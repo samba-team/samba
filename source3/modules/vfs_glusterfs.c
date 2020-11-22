@@ -650,7 +650,9 @@ static int vfs_gluster_closedir(struct vfs_handle_struct *handle, DIR *dirp)
 }
 
 static struct dirent *vfs_gluster_readdir(struct vfs_handle_struct *handle,
-					  DIR *dirp, SMB_STRUCT_STAT *sbuf)
+					  struct files_struct *dirfsp,
+					  DIR *dirp,
+					  SMB_STRUCT_STAT *sbuf)
 {
 	static char direntbuf[512];
 	int ret;

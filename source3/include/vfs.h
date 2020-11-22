@@ -337,6 +337,7 @@
  * Version 44 - Add 'is_fsa' flag to struct files_struct.
  * Version 44 - Add 'have_proc_fds' flag to struct connection_struct.
  * Version 44 - Add 'have_proc_fds' flag to struct files_struct.
+ * Version 44 - Add dirfsp arg to SMB_VFS_READDIR()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -919,8 +920,9 @@ struct vfs_fn_pointers {
 
 	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
-					 DIR *dirp,
-					 SMB_STRUCT_STAT *sbuf);
+				     struct files_struct *dirfsp,
+				     DIR *dirp,
+				     SMB_STRUCT_STAT *sbuf);
 	void (*seekdir_fn)(struct vfs_handle_struct *handle, DIR *dirp, long offset);
 	long (*telldir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
@@ -1432,8 +1434,9 @@ DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					const char *mask,
 					uint32_t attributes);
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
-					DIR *dirp,
-					SMB_STRUCT_STAT *sbuf);
+				    struct files_struct *dirfsp,
+				    DIR *dirp,
+				    SMB_STRUCT_STAT *sbuf);
 void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
 			  DIR *dirp, long offset);
 long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
@@ -1894,7 +1897,9 @@ NTSTATUS vfs_not_implemented_snap_delete(struct vfs_handle_struct *handle,
 DIR *vfs_not_implemented_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 				   const char *mask, uint32_t attr);
 struct dirent *vfs_not_implemented_readdir(vfs_handle_struct *handle,
-					   DIR *dirp, SMB_STRUCT_STAT *sbuf);
+					   struct files_struct *dirfsp,
+					   DIR *dirp,
+					   SMB_STRUCT_STAT *sbuf);
 void vfs_not_implemented_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset);
 long vfs_not_implemented_telldir(vfs_handle_struct *handle, DIR *dirp);
 void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp);

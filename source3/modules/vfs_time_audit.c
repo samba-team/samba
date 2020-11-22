@@ -467,15 +467,16 @@ static DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 }
 
 static struct dirent *smb_time_audit_readdir(vfs_handle_struct *handle,
-						 DIR *dirp,
-						 SMB_STRUCT_STAT *sbuf)
+					     struct files_struct *dirfsp,
+					     DIR *dirp,
+					     SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
+	result = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

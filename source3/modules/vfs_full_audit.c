@@ -1004,11 +1004,13 @@ static DIR *smb_full_audit_fdopendir(vfs_handle_struct *handle,
 }
 
 static struct dirent *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    DIR *dirp, SMB_STRUCT_STAT *sbuf)
+					     struct files_struct *dirfsp,
+					     DIR *dirp,
+					     SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
 
-	result = SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
+	result = SMB_VFS_NEXT_READDIR(handle, dirfsp, dirp, sbuf);
 
 	/* This operation has no reasonable error condition
 	 * (End of dir is also failure), so always succeed.

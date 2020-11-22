@@ -321,6 +321,7 @@ static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 }
 
 static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
+				       struct files_struct *dirfsp,
 				       DIR *dirp,
 				       SMB_STRUCT_STAT *sbuf)
 {

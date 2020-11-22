@@ -842,8 +842,11 @@ off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n)
  A vfs_readdir wrapper which just returns the file name.
 ********************************************************************/
 
-const char *vfs_readdirname(connection_struct *conn, void *p,
-			    SMB_STRUCT_STAT *sbuf, char **talloced)
+const char *vfs_readdirname(connection_struct *conn,
+			    struct files_struct *dirfsp,
+			    void *p,
+			    SMB_STRUCT_STAT *sbuf,
+			    char **talloced)
 {
 	struct dirent *ptr= NULL;
 	const char *dname;
@@ -853,7 +856,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, (DIR *)p, sbuf);
+	ptr = SMB_VFS_READDIR(conn, dirfsp, (DIR *)p, sbuf);
 	if (!ptr)
 		return(NULL);
 
@@ -1759,11 +1762,12 @@ DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 }
 
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
-					      DIR *dirp,
-					      SMB_STRUCT_STAT *sbuf)
+				    struct files_struct *dirfsp,
+				    DIR *dirp,
+				    SMB_STRUCT_STAT *sbuf)
 {
 	VFS_FIND(readdir);
-	return handle->fns->readdir_fn(handle, dirp, sbuf);
+	return handle->fns->readdir_fn(handle, dirfsp, dirp, sbuf);
 }
 
 void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,

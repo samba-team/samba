@@ -151,7 +151,9 @@ DIR *vfs_not_implemented_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 struct dirent *vfs_not_implemented_readdir(vfs_handle_struct *handle,
-					   DIR *dirp, SMB_STRUCT_STAT *sbuf)
+					   struct files_struct *dirfsp,
+					   DIR *dirp,
+					   SMB_STRUCT_STAT *sbuf)
 {
 	errno = ENOSYS;
 	return NULL;
