@@ -334,6 +334,7 @@
  * Version 44 - Add a flag 'encryption_required' to files_struct that that
  *              prevents that encrypted connections can be downgraded.
  * Version 44 - Add a flag 'is_pathref' to struct files_struct.
+ * Version 44 - Add 'is_fsa' flag to struct files_struct.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -400,6 +401,7 @@ typedef struct files_struct {
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	struct {
 		bool is_pathref : 1; /* See below */
+		bool is_fsa : 1;     /* See below */
 		bool kernel_share_modes_taken : 1;
 		bool update_write_time_triggered : 1;
 		bool update_write_time_on_close : 1;
@@ -493,8 +495,8 @@ typedef struct files_struct {
 } files_struct;
 
 /*
- * The fsp flag "is_pathref"
- * =========================
+ * The fsp flags "is_pathref" and "is_fsa"
+ * =======================================
  *
  * Summary
  * -------
@@ -502,8 +504,27 @@ typedef struct files_struct {
  * The flag "is_pathref" is a property of the low-level VFS-layer file
  * handle. If "is_pathref" is true, only a subset of VFS calls are allowed
  * on the handle and on systems that support it, the low-level fd is open
- * with O_PATH. If "is_pathref" is false, the low-level fd is a "normal" file
- * descriptor that can be used with all VFS calls.
+ * with O_PATH. If "is_pathref" is false, the low-level fd is a "normal"
+ * file descriptor that can be used with all VFS calls.
+ *
+ * The flag "is_fsa" is a property of the FSA layer in Samba. The term FSA
+ * layer refers to the parts of smbs that implement Windows NTFS semantics
+ * on-top of a POSIX filesystem. If "is_fsa" is true, the fsp was
+ * processed by the SMB_VFS_CREATE_FILE() VFS call, otherwise the fsp was
+ * created by openat_pathref_fsp() which only connected the low-level
+ * handle by calling into VFS SMB_VFS_OPENAT(), but the whole FSA layer
+ * logic is skipped.
+ *
+ * Note that only three possible combinations of "is_pathref" and "is_fsa"
+ * are possible:
+ *
+ * | is_fsa \ is_pathref | + | - |
+ * |---------------------+---+---|
+ * | +                   | + | + |
+ * | -                   | + | - |
+ *
+ * So a fsp can't be a full low-level fd (is_pathref=false) and not be
+ * processed by the FSA layer.
  *
  * Details
  * -------

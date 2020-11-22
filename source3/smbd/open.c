@@ -5663,6 +5663,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	fsp->base_fsp = base_fsp;
 
+	fsp->fsp_flags.is_fsa = true;
+
 	if ((ea_list != NULL) &&
 	    ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
 		status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
