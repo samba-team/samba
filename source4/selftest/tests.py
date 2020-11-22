@@ -578,7 +578,8 @@ if have_gnutls_crypto_policies:
     plantestsuite("samba3.wbinfo_simple.fips.%s" % t, "ad_member_fips:local", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
     plantestsuite("samba4.wbinfo_name_lookup.fips", "ad_member_fips", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_name_lookup.sh"), '$DOMAIN', '$REALM', '$DC_USERNAME'])
 
-plantestsuite_loadlist("samba4.rpc.echo against NetBIOS alias", "ad_dc_ntvfs", [valgrindify(smbtorture4), "$LISTOPT", "$LOADLIST", 'ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD', 'rpc.echo'])
+plansmbtorture4testsuite('rpc.echo', "ad_dc_ntvfs", ['ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD'], "samba4.rpc.echo against NetBIOS alias")
+
 # json tests hook into ``chgdcpass'' to make them run in contributor CI on
 # gitlab
 planpythontestsuite("chgdcpass", "samba.tests.blackbox.netads_json")
