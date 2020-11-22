@@ -396,6 +396,7 @@ sub get_cmd_env_vars
 		"OPENSSL_FORCE_FIPS_MODE",
 		"KRB5_CONFIG",
 		"KRB5_CCACHE",
+		"GNUPGHOME",
 	);
 
 	my $localenv = undef;
@@ -420,6 +421,7 @@ sub get_cmd_env_vars
 	$cmd_env .= "KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
 	$cmd_env .= "RESOLV_CONF=\"$localenv->{RESOLV_CONF}\" ";
+	$cmd_env .= "GNUPGHOME=\"$localenv->{GNUPGHOME}\" ";
 
 	return $cmd_env;
 }
@@ -589,6 +591,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{krb5_conf} = "$ctx->{etcdir}/krb5.conf";
 	$ctx->{krb5_ccache} = "$prefix_abs/krb5_ccache";
 	$ctx->{mitkdc_conf} = "$ctx->{etcdir}/mitkdc.conf";
+	$ctx->{gnupghome} = "$prefix_abs/gnupg";
 	$ctx->{privatedir} = "$prefix_abs/private";
 	$ctx->{binddnsdir} = "$prefix_abs/bind-dns";
 	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
@@ -632,6 +635,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{smb_conf_extra_options} = "";
 
 	my @provision_options = ();
+	push (@provision_options, "GNUPGHOME=\"$ctx->{gnupghome}\"");
 	push (@provision_options, "KRB5_CONFIG=\"$ctx->{krb5_conf}\"");
 	push (@provision_options, "KRB5CCNAME=\"$ctx->{krb5_ccache}\"");
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
@@ -724,6 +728,7 @@ sub provision_raw_step1($$)
 		return undef;
 	}
 
+	Samba::copy_gnupg_home($ctx);
 	Samba::prepare_keyblobs($ctx);
 	my $crlfile = "$ctx->{tlsdir}/crl.pem";
 	$crlfile = "" unless -e ${crlfile};
@@ -867,6 +872,7 @@ nogroup:x:65534:nobody
 	# Note that we have SERVER_X and DC_SERVER_X variables (which have the same
 	# value initially). In a 2 DC setup, $DC_SERVER_X will always be the PDC.
 	my $ret = {
+		GNUPGHOME => $ctx->{gnupghome},
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		KRB5_CCACHE => $ctx->{krb5_ccache},
 		MITKDC_CONFIG => $ctx->{mitkdc_conf},
