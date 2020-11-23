@@ -1249,11 +1249,10 @@ bool need_to_check_log_size(void)
  Check to see if the log has grown to be too big.
  **************************************************************************/
 
-static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
+static void do_one_check_log_size(off_t maxlog, struct debug_class *config)
 {
-	char name[strlen(logfile) + 5];
+	char name[strlen(config->logfile) + 5];
 	struct stat st;
-	int fd = *_fd;
 	int ret;
 	bool ok;
 
@@ -1261,7 +1260,7 @@ static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
 		return;
 	}
 
-	ret = fstat(fd, &st);
+	ret = fstat(config->fd, &st);
 	if (ret != 0) {
 		return;
 	}
@@ -1271,12 +1270,11 @@ static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
 
 	/* reopen_logs_internal() modifies *_fd */
 	(void)reopen_logs_internal();
-	fd = *_fd;
 
-	if (fd <= 2) {
+	if (config->fd <= 2) {
 		return;
 	}
-	ret = fstat(fd, &st);
+	ret = fstat(config->fd, &st);
 	if (ret != 0) {
 		return;
 	}
@@ -1284,16 +1282,16 @@ static void do_one_check_log_size(off_t maxlog, int *_fd, const char *logfile)
 		return;
 	}
 
-	snprintf(name, sizeof(name), "%s.old", logfile);
+	snprintf(name, sizeof(name), "%s.old", config->logfile);
 
-	(void)rename(logfile, name);
+	(void)rename(config->logfile, name);
 
 	ok = reopen_logs_internal();
 	if (ok) {
 		return;
 	}
 	/* We failed to reopen a log - continue using the old name. */
-	(void)rename(name, logfile);
+	(void)rename(name, config->logfile);
 }
 
 static void do_check_log_size(off_t maxlog)
@@ -1307,9 +1305,7 @@ static void do_check_log_size(off_t maxlog)
 		if (dbgc_config[i].logfile == NULL) {
 			continue;
 		}
-		do_one_check_log_size(maxlog,
-				      &dbgc_config[i].fd,
-				      dbgc_config[i].logfile);
+		do_one_check_log_size(maxlog, &dbgc_config[i]);
 	}
 }
 
