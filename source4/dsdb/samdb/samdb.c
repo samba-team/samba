@@ -63,6 +63,9 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 	*ldb_ret = NULL;
 	*errstring = NULL;
 
+	/* We create sam.ldb in provision, and never anywhere else */
+	flags |= LDB_FLG_DONT_CREATE_DB;
+
 	if (remote_address == NULL) {
 		ldb = ldb_wrap_find(url, ev_ctx, lp_ctx,
 				    session_info, NULL, flags);
