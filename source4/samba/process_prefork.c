@@ -115,7 +115,7 @@ static void sighup_signal_handler(struct tevent_context *ev,
 				int signum, int count, void *siginfo,
 				void *private_data)
 {
-	debug_schedule_reopen_logs();
+	reopen_logs_internal();
 }
 
 static void sigterm_signal_handler(struct tevent_context *ev,
