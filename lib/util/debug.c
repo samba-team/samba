@@ -113,6 +113,8 @@ struct debug_class {
 	 */
 	char *logfile;
 	int fd;
+	/* inode number of the logfile to detect logfile rotation */
+	ino_t ino;
 };
 
 static const char *default_classname_table[] = {
@@ -1086,7 +1088,9 @@ static bool reopen_one_log(struct debug_class *config)
 {
 	int old_fd = config->fd;
 	const char *logfile = config->logfile;
+	struct stat st;
 	int new_fd;
+	int ret;
 
 	if (logfile == NULL) {
 		debug_close_fd(old_fd);
@@ -1107,6 +1111,16 @@ static bool reopen_one_log(struct debug_class *config)
 	smb_set_close_on_exec(new_fd);
 	config->fd = new_fd;
 
+	ret = fstat(new_fd, &st);
+	if (ret != 0) {
+		log_overflow = true;
+		DBG_ERR("Unable to fstat() new log file '%s': %s\n",
+			logfile, strerror(errno));
+		log_overflow = false;
+		return false;
+	}
+
+	config->ino = st.st_ino;
 	return true;
 }
 
@@ -1254,17 +1268,26 @@ static void do_one_check_log_size(off_t maxlog, struct debug_class *config)
 	char name[strlen(config->logfile) + 5];
 	struct stat st;
 	int ret;
+	bool reopen = false;
 	bool ok;
 
 	if (maxlog == 0) {
 		return;
 	}
 
-	ret = fstat(config->fd, &st);
+	ret = stat(config->logfile, &st);
 	if (ret != 0) {
 		return;
 	}
-	if (st.st_size < maxlog ) {
+	if (st.st_size >= maxlog ) {
+		reopen = true;
+	}
+
+	if (st.st_ino != config->ino) {
+		reopen = true;
+	}
+
+	if (!reopen) {
 		return;
 	}
 
@@ -1276,8 +1299,12 @@ static void do_one_check_log_size(off_t maxlog, struct debug_class *config)
 	}
 	ret = fstat(config->fd, &st);
 	if (ret != 0) {
+		config->ino = (ino_t)0;
 		return;
 	}
+
+	config->ino = st.st_ino;
+
 	if (st.st_size < maxlog) {
 		return;
 	}
