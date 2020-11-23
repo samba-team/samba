@@ -553,6 +553,13 @@ fail:
 	return status;
 }
 
+void smb_fname_fsp_unlink(struct smb_filename *smb_fname)
+{
+	talloc_set_destructor(smb_fname, NULL);
+	smb_fname->fsp = NULL;
+	destroy_fsp_smb_fname_link(&smb_fname->fsp_link);
+}
+
 /****************************************************************************
  Close all open files for a connection.
 ****************************************************************************/
