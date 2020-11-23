@@ -81,7 +81,7 @@ void pull_file_id_24(const char *buf, struct file_id *id)
 	id->extid |= ((uint64_t)IVAL(buf,20))<<32;
 }
 
-uint64_t make_file_id_from_itime(SMB_STRUCT_STAT *st)
+uint64_t make_file_id_from_itime(const struct stat_ex *st)
 {
 	struct timespec itime = st->st_ex_itime;
 	ino_t ino = st->st_ex_ino;
