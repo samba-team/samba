@@ -15,6 +15,9 @@ uninstall:
 test:
 	$(WAF) test $(TEST_OPTIONS)
 
+testonly:
+	$(WAF) testonly $(TEST_OPTIONS)
+
 perftest:
 	$(WAF) test --perf-test $(TEST_OPTIONS)
 
