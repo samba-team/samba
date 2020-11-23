@@ -560,6 +560,35 @@ void smb_fname_fsp_unlink(struct smb_filename *smb_fname)
 	destroy_fsp_smb_fname_link(&smb_fname->fsp_link);
 }
 
+/*
+ * Move any existing embedded fsp refs from the src name to the
+ * destination. It's safe to call this on src smb_fname's that have no embedded
+ * pathref fsp.
+ */
+NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
+				 struct smb_filename *smb_fname_src)
+{
+	NTSTATUS status;
+
+	if (smb_fname_src->fsp == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	smb_fname_dst->fsp = smb_fname_src->fsp;
+	talloc_set_destructor(smb_fname_dst, smb_fname_fsp_destructor);
+
+	smb_fname_fsp_unlink(smb_fname_src);
+
+	status = fsp_smb_fname_link(smb_fname_dst->fsp,
+				    &smb_fname_dst->fsp_link,
+				    &smb_fname_dst->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Close all open files for a connection.
 ****************************************************************************/

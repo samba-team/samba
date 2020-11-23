@@ -460,6 +460,9 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 
+NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
+				 struct smb_filename *smb_fname_src);
+
 /* The following definitions come from smbd/ipc.c  */
 
 NTSTATUS nt_status_np_pipe(NTSTATUS status);
