@@ -366,10 +366,43 @@ sub get_dns_hub_env($)
 	return undef;
 }
 
+sub return_env_value
+{
+	my ($env, $overwrite, $key) = @_;
+
+	if (defined($overwrite) and defined($overwrite->{$key})) {
+		return $overwrite->{$key};
+	}
+
+	if (defined($env->{$key})) {
+		return $env->{$key};
+	}
+
+	return undef;
+}
+
 # Returns the environmental variables that we pass to samba-tool commands
 sub get_cmd_env_vars
 {
-	my ($self, $localenv) = @_;
+	my ($self, $givenenv, $overwrite) = @_;
+
+	my @keys = (
+		"NSS_WRAPPER_HOSTS",
+		"SOCKET_WRAPPER_DEFAULT_IFACE",
+		"RESOLV_CONF",
+		"RESOLV_WRAPPER_CONF",
+		"RESOLV_WRAPPER_HOSTS",
+		"GNUTLS_FORCE_FIPS_MODE",
+		"OPENSSL_FORCE_FIPS_MODE",
+		"KRB5_CONFIG",
+		"KRB5_CCACHE",
+	);
+
+	my $localenv = undef;
+	foreach my $key (@keys) {
+		my $v = return_env_value($givenenv, $overwrite, $key);
+		$localenv->{$key} = $v if defined($v);
+	}
 
 	my $cmd_env = "NSS_WRAPPER_HOSTS='$localenv->{NSS_WRAPPER_HOSTS}' ";
 	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$localenv->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
@@ -384,7 +417,7 @@ sub get_cmd_env_vars
 	if (defined($localenv->{OPENSSL_FORCE_FIPS_MODE})) {
 		$cmd_env .= "OPENSSL_FORCE_FIPS_MODE=$localenv->{OPENSSL_FORCE_FIPS_MODE} ";
 	}
-	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
+	$cmd_env .= "KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
 	$cmd_env .= "RESOLV_CONF=\"$localenv->{RESOLV_CONF}\" ";
 
@@ -1369,12 +1402,13 @@ sub provision_rpc_proxy($$$)
 		return undef;
 	}
 
+	# Prepare a context of the DC, but using the local CCACHE.
+	my $overwrite = undef;
+	$overwrite->{KRB5_CCACHE} = $ret->{KRB5_CCACHE};
+	my $dc_cmd_env = $self->get_cmd_env_vars($dcvars, $overwrite);
+
 	# Setting up delegation runs in the context of the DC for now
-	$cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
-	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
-	$cmd .= "RESOLV_CONF=\"$dcvars->{RESOLV_CONF}\" ";
+	$cmd = $dc_cmd_env;
 	$cmd .= "$samba_tool delegation for-any-protocol '$ret->{NETBIOSNAME}\$' on";
         $cmd .= " $dcvars->{CONFIGURATION}";
         print $cmd;
@@ -1385,11 +1419,7 @@ sub provision_rpc_proxy($$$)
 	}
 
 	# Setting up delegation runs in the context of the DC for now
-	$cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
-	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
-	$cmd .= "RESOLV_CONF=\"$dcvars->{RESOLV_CONF}\" ";
+	$cmd = $dc_cmd_env;
 	$cmd .= "$samba_tool delegation add-service '$ret->{NETBIOSNAME}\$' cifs/$dcvars->{SERVER}";
         $cmd .= " $dcvars->{CONFIGURATION}";
 
@@ -2948,17 +2978,10 @@ sub create_backup
 	my ($self, $env, $dcvars, $backupdir, $backup_cmd) = @_;
 
 	# get all the env variables we pass in with the samba-tool command
-	my $cmd_env = "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
-	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	if (defined($env->{RESOLV_WRAPPER_CONF})) {
-		$cmd_env .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
-	} else {
-		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
-	}
-	$cmd_env .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 	# Note: use the backupfrom-DC's krb5.conf to do the backup
-	$cmd_env .= " KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
-	$cmd_env .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+	my $overwrite = undef;
+	$overwrite->{KRB5_CONFIG} = $dcvars->{KRB5_CONFIG};
+	my $cmd_env = $self->get_cmd_env_vars($env, $overwrite);
 
 	# use samba-tool to create a backup from the 'backupfromdc' DC
 	my $cmd = "";
