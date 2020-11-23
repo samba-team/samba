@@ -1082,14 +1082,15 @@ static void debug_callback_log(const char *msg, int msg_level)
  Fix from dgibson@linuxcare.com.
 **************************************************************************/
 
-static bool reopen_one_log(int *fd, const char *logfile)
+static bool reopen_one_log(struct debug_class *config)
 {
-	int old_fd = *fd;
+	int old_fd = config->fd;
+	const char *logfile = config->logfile;
 	int new_fd;
 
 	if (logfile == NULL) {
 		debug_close_fd(old_fd);
-		*fd = -1;
+		config->fd = -1;
 		return true;
 	}
 
@@ -1104,7 +1105,7 @@ static bool reopen_one_log(int *fd, const char *logfile)
 
 	debug_close_fd(old_fd);
 	smb_set_close_on_exec(new_fd);
-	*fd = new_fd;
+	config->fd = new_fd;
 
 	return true;
 }
@@ -1164,8 +1165,7 @@ bool reopen_logs_internal(void)
 	state.reopening_logs = true;
 
 	for (i = DBGC_ALL; i < debug_num_classes; i++) {
-		ok = reopen_one_log(&dbgc_config[i].fd,
-				    dbgc_config[i].logfile);
+		ok = reopen_one_log(&dbgc_config[i]);
 		if (!ok) {
 			break;
 		}
