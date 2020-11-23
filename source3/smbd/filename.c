@@ -1970,11 +1970,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			return status;
 		}
-		*_smb_fname = smb_fname;
-		return NT_STATUS_OK;
-	}
-
-	if (!smbreq) {
+	} else if (!smbreq) {
 		status = check_name(conn, smb_fname);
 	} else {
 		status = check_name_with_privilege(conn, smbreq,
