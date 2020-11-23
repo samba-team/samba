@@ -5047,7 +5047,7 @@ static bool test_readdir_attr_illegal_ntfs(struct torture_context *tctx,
 	unsigned int count;
 	union smb_search_data *d;
 	uint64_t rfork_len;
-	int i;
+	unsigned int i;
 
 	smb2_deltree(tree, BASEDIR);
 
@@ -5780,7 +5780,7 @@ static bool test_copy_chunk_streams(struct torture_context *torture,
 		{ "src:foo", "dst:foo" },
 		{ "src" AFPRESOURCE_STREAM, "dst" AFPRESOURCE_STREAM }
 	};
-	int i;
+	size_t i;
 	TALLOC_CTX *tmp_ctx = NULL;
 	bool ok = false;
 
