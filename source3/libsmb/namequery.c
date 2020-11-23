@@ -1509,7 +1509,7 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		struct sockaddr_storage addr;
 		struct samba_sockaddr sa = {0};
 		bool ok;
-		int j;
+		size_t j;
 
 		flags = RSVAL(&nmb->answers->rdata[i*6], 0);
 		got_unique_netbios_name |= ((flags & 0x8000) == 0);
