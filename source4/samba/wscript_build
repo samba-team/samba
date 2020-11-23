@@ -17,6 +17,10 @@ bld.SAMBA_LIBRARY('process_model',
                   enabled=bld.AD_DC_BUILD_IS_ENABLED()
                   )
 
+bld.SAMBA_SUBSYSTEM('samba_server_util',
+	            source='server_util.c',
+                    deps='samba-util')
+
 bld.SAMBA_BINARY('samba',
 	source='server.c',
 	subsystem_name='service',
