@@ -160,19 +160,7 @@ sub wait_for_start($$)
 		my $max_wait = 60;
 
 		# Add hosts file for name lookups
-		my $cmd = "NSS_WRAPPER_HOSTS='$testenv_vars->{NSS_WRAPPER_HOSTS}' ";
-		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
-			$cmd .= "RESOLV_WRAPPER_CONF='$testenv_vars->{RESOLV_WRAPPER_CONF}' ";
-		} else {
-			$cmd .= "RESOLV_WRAPPER_HOSTS='$testenv_vars->{RESOLV_WRAPPER_HOSTS}' ";
-		}
-		$cmd .= "RESOLV_CONF='$testenv_vars->{RESOLV_CONF}' ";
-		if (defined($testenv_vars->{GNUTLS_FORCE_FIPS_MODE})) {
-			$cmd .= "GNUTLS_FORCE_FIPS_MODE=$testenv_vars->{GNUTLS_FORCE_FIPS_MODE} ";
-		}
-		if (defined($testenv_vars->{OPENSSL_FORCE_FIPS_MODE})) {
-			$cmd .= "OPENSSL_FORCE_FIPS_MODE=$testenv_vars->{OPENSSL_FORCE_FIPS_MODE} ";
-		}
+		my $cmd = $self->get_cmd_env_vars($testenv_vars);
 
 		$cmd .= "$ldbsearch ";
 		$cmd .= "$testenv_vars->{CONFIGURATION} ";
@@ -925,11 +913,10 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
+	my $cmd_env = $self->get_cmd_env_vars($ret);
+
 	my $testallowed_account = "testallowed";
-	my $samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	my $samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user create --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
@@ -938,10 +925,7 @@ sub provision_raw_step2($$$)
 	}
 
 	my $srv_account = "srv_account";
-	$samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user create --configfile=$ctx->{smb_conf} $srv_account $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
@@ -949,10 +933,7 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
-	$samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " spn add HOST/$srv_account --configfile=$ctx->{smb_conf} $srv_account";
 	unless (system($samba_tool_cmd) == 0) {
@@ -960,10 +941,7 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
-	my $ldbmodify = "";
-	$ldbmodify .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	my $ldbmodify = ${cmd_env};
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
 	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
 	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
@@ -994,10 +972,7 @@ servicePrincipalName: host/testallowed
 ";
 	close(LDIF);
 
-	$samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user create --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
@@ -1015,10 +990,7 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 ";
 	close(LDIF);
 
-	$samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user create --configfile=$ctx->{smb_conf} testupnspn $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
@@ -1038,10 +1010,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 ";
 	close(LDIF);
 
-	$samba_tool_cmd = "";
-	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' '$testallowed_account'";
 	unless (system($samba_tool_cmd) == 0) {
@@ -1053,11 +1022,8 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	my $user_account_array = ["alice", "bob", "jane", "joe"];
 
 	foreach my $user_account (@{$user_account_array}) {
-		my $samba_tool_cmd = "";
+		my $samba_tool_cmd = ${cmd_env};
 
-		$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-		$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-		$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 		$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 		    . " user create --configfile=$ctx->{smb_conf} $user_account Secret007";
 		unless (system($samba_tool_cmd) == 0) {
@@ -1069,10 +1035,8 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	my $group_array = ["Samba Users"];
 
 	foreach my $group (@{$group_array}) {
-		my $samba_tool_cmd = "";
+		my $samba_tool_cmd = ${cmd_env};
 
-		$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-		$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 		$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 		    . " group add --configfile=$ctx->{smb_conf} \"$group\"";
 		unless (system($samba_tool_cmd) == 0) {
@@ -1082,12 +1046,10 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Add user joe to group "Samba Users"
-	$samba_tool_cmd = "";
 	my $group = "Samba Users";
 	my $user_account = "joe";
 
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " group addmembers --configfile=$ctx->{smb_conf} \"$group\" $user_account";
 	unless (system($samba_tool_cmd) == 0) {
@@ -1095,12 +1057,10 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 		return undef;
 	}
 
-	$samba_tool_cmd = "";
 	$group = "Samba Users";
 	$user_account = "joe";
 
-	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user setprimarygroup --configfile=$ctx->{smb_conf} $user_account \"$group\"";
 	unless (system($samba_tool_cmd) == 0) {
@@ -1109,10 +1069,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Change the userPrincipalName for jane
-	$ldbmodify = "";
-	$ldbmodify .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
-	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$ldbmodify = ${cmd_env};
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
 	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
 	$base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
@@ -1827,9 +1784,7 @@ sub provision_rodc($$$)
         # This ensures deterministic behaviour for tests that want to have the 'testallowed account'
         # user password verified on the RODC
 	my $testallowed_account = "testallowed account";
-	$cmd = "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
-	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
+	$cmd = $self->get_cmd_env_vars($ret);
 	$cmd .= "$samba_tool rodc preload '$testallowed_account' $ret->{CONFIGURATION}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
@@ -2505,14 +2460,10 @@ sub setup_promoted_dc
 		# force source and replicated DC to update repsTo/repsFrom
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-		my $cmd = "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
+		my $cmd = $self->get_cmd_env_vars($env);
 		# as 'vampired' dc may add data in its local replica
 		# we need to synchronize data between DCs
 		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
@@ -2548,14 +2499,9 @@ sub setup_rodc
 	}
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-	my $cmd = "";
+	my $cmd = $self->get_cmd_env_vars($env);
 
 	my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-	$cmd .= "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-	$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-	$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 	$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
 	$cmd .= " $dc_vars->{CONFIGURATION}";
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
@@ -2860,16 +2806,7 @@ sub setup_schema_pair_dc
 						    "");
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-	my $cmd_vars = "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
-	$cmd_vars .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	if (defined($env->{RESOLV_WRAPPER_CONF})) {
-		$cmd_vars .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
-	} else {
-		$cmd_vars .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
-	}
-	$cmd_vars .= "KRB5_CONFIG=\"$env->{KRB5_CONFIG}\" ";
-	$cmd_vars .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-	$cmd_vars .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
+	my $cmd_vars = $self->get_cmd_env_vars($env);
 
 	my $join_cmd = $cmd_vars;
 	$join_cmd .= "$samba_tool domain join $env->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
