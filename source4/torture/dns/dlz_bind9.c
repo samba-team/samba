@@ -195,8 +195,13 @@ static bool test_dlz_bind9_destroy_oldest_first(struct torture_context *tctx)
 {
 	void *dbdata[NUM_DLZS_TO_CONFIGURE];
 	int i;
-
-	configure_multiple_dlzs(tctx, dbdata, NUM_DLZS_TO_CONFIGURE);
+	bool ret = configure_multiple_dlzs(tctx,
+					   dbdata,
+					   NUM_DLZS_TO_CONFIGURE);
+	if (ret == false) {
+		/* failure: has already been printed */
+		return false;
+	}
 
 	/* Reload faults are reported to happen on the first destroy */
 	dlz_destroy(dbdata[0]);
@@ -212,8 +217,13 @@ static bool test_dlz_bind9_destroy_newest_first(struct torture_context *tctx)
 {
 	void *dbdata[NUM_DLZS_TO_CONFIGURE];
 	int i;
-
-	configure_multiple_dlzs(tctx, dbdata, NUM_DLZS_TO_CONFIGURE);
+	bool ret = configure_multiple_dlzs(tctx,
+					   dbdata,
+					   NUM_DLZS_TO_CONFIGURE);
+	if (ret == false) {
+		/* failure: has already been printed */
+		return false;
+	}
 
 	for(i = NUM_DLZS_TO_CONFIGURE - 1; i >= 0; i--) {
 		dlz_destroy(dbdata[i]);
