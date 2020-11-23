@@ -42,21 +42,21 @@ testit "share and server list" $VALGRIND $smbclient -L $SERVER $CONFIGURATION  -
 testit "share and server list anonymously" $VALGRIND $smbclient -N -L $SERVER $CONFIGURATION $@ || failed=`expr $failed + 1`
 
 # Use the smbclient binary as our test file
-cat $smbclient >tmpfile
+cat $smbclient >$PREFIX/tmpfile
 
 # put that file
-runcmd "MPutting file" 'mput tmpfile' || failed=`expr $failed + 1`
+runcmd "MPutting file" "lcd $PREFIX; mput tmpfile" || failed=`expr $failed + 1`
 # check file info
 runcmd "Getting alternative name" 'altname tmpfile'|| failed=`expr $failed + 1`
 # run allinfo on that file
 runcmd "Checking info on file" 'allinfo tmpfile'|| failed=`expr $failed + 1`
 # get that file
-mv tmpfile tmpfile-old
-runcmd "MGetting file" 'mget tmpfile' || failed=`expr $failed + 1`
+mv $PREFIX/tmpfile $PREFIX/tmpfile-old
+runcmd "MGetting file" "lcd $PREFIX; mget tmpfile" || failed=`expr $failed + 1`
 # remove that file
 runcmd "Removing file" 'rm tmpfile' || failed=`expr $failed + 1`
 # compare locally
-testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
+testit "Comparing files" diff $PREFIX/tmpfile-old $PREFIX/tmpfile || failed=`expr $failed + 1`
 # create directory
 # cd to directory
 # cd to top level directory
@@ -90,21 +90,21 @@ runcmd "Getting file system info" 'fsinfo fullsize-information'|| failed=`expr $
 runcmd "Getting file system info" 'fsinfo objectid'|| failed=`expr $failed + 1`
 
 # put that file
-runcmd "Putting file" 'put tmpfile'|| failed=`expr $failed + 1`
+runcmd "Putting file" "lcd $PREFIX; put tmpfile" || failed=`expr $failed + 1`
 # get that file
-mv tmpfile tmpfile-old
-runcmd "Getting file" 'get tmpfile'|| failed=`expr $failed + 1`
+mv $PREFIX/tmpfile $PREFIX/tmpfile-old
+runcmd "Getting file" "lcd $PREFIX; get tmpfile" || failed=`expr $failed + 1`
 runcmd "Getting file EA info" 'eainfo tmpfile'|| failed=`expr $failed + 1`
 # remove that file
 runcmd "Removing file" 'rm tmpfile' || failed=`expr $failed + 1`
 # compare locally
-testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
+testit "Comparing files" diff $PREFIX/tmpfile-old $PREFIX/tmpfile || failed=`expr $failed + 1`
 # put that file
-runcmd "Putting file with different name" 'put tmpfile tmpfilex' || failed=`expr $failed + 1`
+runcmd "Putting file with different name" "lcd $PREFIX; put tmpfile tmpfilex" || failed=`expr $failed + 1`
 # get that file
-runcmd "Getting file again" 'get tmpfilex' || failed=`expr $failed + 1`
+runcmd "Getting file again" "lcd $PREFIX; get tmpfilex" || failed=`expr $failed + 1`
 # compare locally
-testit "Comparing files" diff tmpfilex tmpfile || failed=`expr $failed + 1`
+testit "Comparing files" diff $PREFIX/tmpfilex $PREFIX/tmpfile || failed=`expr $failed + 1`
 # remove that file
 runcmd "Removing file" 'rm tmpfilex'|| failed=`expr $failed + 1`
 
@@ -123,11 +123,11 @@ runcmd "Print current working directory" 'pwd'|| failed=`expr $failed + 1`
     echo "password=$PASSWORD"
     echo "username=$USERNAME"
     echo "domain=$DOMAIN"
-) > tmpauthfile
+) > $PREFIX/tmpauthfile
 
-testit "Test login with --authentication-file" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --authentication-file=tmpauthfile  || failed=`expr $failed + 1`
+testit "Test login with --authentication-file" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --authentication-file=$PREFIX/tmpauthfile  || failed=`expr $failed + 1`
 
-PASSWD_FILE="tmppassfile" 
+PASSWD_FILE="$PREFIX/tmppassfile"
 echo "$PASSWORD" > $PASSWD_FILE
 export PASSWD_FILE
 testit "Test login with PASSWD_FILE" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp -W "$DOMAIN" -U"$USERNAME" || failed=`expr $failed + 1`
@@ -149,5 +149,5 @@ unset PASSWD
 USER=$oldUSER
 export USER
 
-rm -f tmpfile tmpfile-old tmpfilex tmpauthfile tmppassfile
+rm -f $PREFIX/tmpfile $PREFIX/tmpfile-old $PREFIX/tmpfilex $PREFIX/tmpauthfile $PREFIX/tmppassfile
 exit $failed
