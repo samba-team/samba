@@ -5576,10 +5576,37 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		if (SMB_VFS_STAT(conn, smb_fname_base) == -1) {
-			DEBUG(10, ("Unable to stat stream: %s\n",
-				   smb_fname_str_dbg(smb_fname_base)));
-		} else {
+		/*
+		 * We may be creating the basefile as part of creating the
+		 * stream, so it's legal if the basefile doesn't exist at this
+		 * point, the create_file_unixpath() below will create it. But
+		 * if the basefile exists we want a handle so we can fstat() it.
+		 */
+		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_base);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
+		{
+			DBG_ERR("open_smb_fname_fsp [%s] failed: %s\n",
+				smb_fname_str_dbg(smb_fname_base),
+				nt_errstr(status));
+			TALLOC_FREE(smb_fname_base);
+			goto fail;
+		}
+
+		if (smb_fname_base->fsp != NULL) {
+			int ret;
+
+			ret = SMB_VFS_FSTAT(smb_fname_base->fsp,
+					    &smb_fname_base->st);
+			if (ret != 0) {
+				DBG_DEBUG("Unable to stat stream [%s]: %s\n",
+					  smb_fname_str_dbg(smb_fname_base),
+					  strerror(errno));
+			}
+
 			/*
 			 * https://bugzilla.samba.org/show_bug.cgi?id=10229
 			 * We need to check if the requested access mask
