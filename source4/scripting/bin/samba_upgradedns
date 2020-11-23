@@ -331,11 +331,9 @@ if __name__ == '__main__':
             serial = int(rrset[0].serial)
         except Exception as e:
             logger.warn("Error parsing DNS data from '%s' (%s)" % (paths.dns, str(e)))
-            logger.warn("DNS records will be automatically created")
             autofill = True
     else:
-        logger.info("No zone file %s" % paths.dns)
-        logger.warn("DNS records will be automatically created")
+        logger.info("No zone file %s (normal)" % paths.dns)
         autofill = True
 
     # Create DNS partitions if missing and fill DNS information
@@ -373,6 +371,9 @@ if __name__ == '__main__':
                               dnsadmins_sid, FILL_FULL)
 
         logger.info("Populating DNS partitions")
+        if autofill:
+            logger.warn("DNS records will be automatically created")
+
         fill_dns_data_partitions(ldbs.sam, domainsid, site, domaindn, forestdn,
                              dnsdomain, dnsforest, hostname, hostip, hostip6,
                              domainguid, ntdsguid, dnsadmins_sid,
