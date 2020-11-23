@@ -1196,13 +1196,21 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in)
 {
 	struct smb_filename *smb_fname_new;
+	NTSTATUS status;
 
 	smb_fname_new = cp_smb_filename(fsp, smb_fname_in);
 	if (smb_fname_new == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	TALLOC_FREE(fsp->fsp_name);
+	if (fsp->fsp_name != NULL) {
+		status = move_smb_fname_fsp_link(smb_fname_new, fsp->fsp_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		TALLOC_FREE(fsp->fsp_name);
+	}
+
 	fsp->fsp_name = smb_fname_new;
 
 	return file_name_hash(fsp->conn,
