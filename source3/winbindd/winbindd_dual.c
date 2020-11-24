@@ -1684,6 +1684,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	if (child->pid != 0) {
 		/* Parent */
 		ssize_t nread;
+		int rc;
 
 		close(fdpair[0]);
 
@@ -1714,9 +1715,15 @@ static bool fork_domain_child(struct winbindd_child *child)
 			return false;
 		}
 
+		rc = set_blocking(fdpair[1], false);
+		if (rc < 0) {
+			close(fdpair[1]);
+			return false;
+		}
+
 		child->sock = fdpair[1];
-		set_blocking(child->sock, false);
-		return True;
+
+		return true;
 	}
 
 	/* Child */
