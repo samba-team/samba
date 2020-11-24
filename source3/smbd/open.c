@@ -446,7 +446,7 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
  Handle differing symlink errno's
 ****************************************************************************/
 
-static int link_errno_convert(int err)
+static NTSTATUS link_errno_convert(int err)
 {
 #if defined(ENOTSUP) && defined(OSF1)
 	/* handle special Tru64 errno */
@@ -464,10 +464,13 @@ static int link_errno_convert(int err)
 	if (err == EMLINK) {
 		err = ELOOP;
 	}
-	return err;
+	if (err == ELOOP) {
+		return NT_STATUS_STOPPED_ON_SYMLINK;
+	}
+	return map_nt_error_from_unix(err);
 }
 
-static int non_widelink_open(const struct files_struct *dirfsp,
+static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -478,7 +481,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
  Follow a symlink in userspace.
 ****************************************************************************/
 
-static int process_symlink_open(const struct files_struct *dirfsp,
+static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -488,7 +491,6 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 	struct connection_struct *conn = dirfsp->conn;
 	const char *conn_rootdir = NULL;
 	struct smb_filename conn_rootdir_fname;
-	int fd = -1;
 	char *link_target = NULL;
 	int link_len = -1;
 	struct smb_filename *oldwd_fname = NULL;
@@ -496,13 +498,12 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 	struct smb_filename *resolved_fname = NULL;
 	char *resolved_name = NULL;
 	bool matched = false;
-	int saved_errno = 0;
 	struct smb_filename *full_fname = NULL;
+	NTSTATUS status;
 
 	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
 	if (conn_rootdir == NULL) {
-		errno = ENOMEM;
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 	conn_rootdir_fname = (struct smb_filename) {
 		.base_name = discard_const_p(char, conn_rootdir),
@@ -513,20 +514,20 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 	 */
 	link_depth++;
 	if (link_depth >= 20) {
-		errno = ELOOP;
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto out;
 	}
 
 	/* Allocate space for the link target. */
 	link_target = talloc_array(talloc_tos(), char, PATH_MAX);
 	if (link_target == NULL) {
-		errno = ENOMEM;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
 	/*
 	 * Read the link target. We do this just to verify that smb_fname indeed
-	 * points at a symbolic link and return the SMB_VFS_READLINKAT() errno
+	 * points at a symbolic link and return NT_STATUS_NOT_A_DIRECTORY
 	 * and failure in case smb_fname is NOT a symlink.
 	 *
 	 * The caller needs this piece of information to distinguish two cases
@@ -543,18 +544,21 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 				link_target,
 				PATH_MAX - 1);
 	if (link_len == -1) {
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
 	full_fname = full_path_from_dirfsp_atname(
 		talloc_tos(), dirfsp, smb_fname);
 	if (full_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
 	/* Convert to an absolute path. */
 	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), full_fname);
 	if (resolved_fname == NULL) {
+		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 	resolved_name = resolved_fname->base_name;
@@ -570,7 +574,7 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 				resolved_name,
 				rootdir_len) == 0);
 	if (!matched) {
-		errno = EACCES;
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto out;
 	}
 
@@ -586,22 +590,24 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 		smb_fname->base_name = talloc_strdup(smb_fname,
 					&resolved_name[rootdir_len+1]);
 	} else {
-		errno = EACCES;
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto out;
 	}
 
 	if (smb_fname->base_name == NULL) {
-		errno = ENOMEM;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
 	oldwd_fname = vfs_GetWd(talloc_tos(), dirfsp->conn);
 	if (oldwd_fname == NULL) {
+		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
 	/* Ensure we operate from the root of the share. */
 	if (vfs_ChDir(conn, &conn_rootdir_fname) == -1) {
+		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
@@ -610,15 +616,12 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 	 * dirfsp anymore, we pass conn->cwd_fsp as dirfsp to
 	 * non_widelink_open() to trigger the chdir(parentdir) logic.
 	 */
-	fd = non_widelink_open(conn->cwd_fsp,
+	status = non_widelink_open(conn->cwd_fsp,
 				fsp,
 				smb_fname,
 				flags,
 				mode,
 				link_depth);
-	if (fd == -1) {
-		saved_errno = errno;
-	}
 
   out:
 
@@ -631,17 +634,15 @@ static int process_symlink_open(const struct files_struct *dirfsp,
 		}
 		TALLOC_FREE(oldwd_fname);
 	}
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return fd;
+
+	return status;
 }
 
 /****************************************************************************
  Non-widelink open.
 ****************************************************************************/
 
-static int non_widelink_open(const struct files_struct *dirfsp,
+static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			     files_struct *fsp,
 			     struct smb_filename *smb_fname,
 			     int flags,
@@ -649,11 +650,11 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 			     unsigned int link_depth)
 {
 	struct connection_struct *conn = fsp->conn;
-	NTSTATUS status;
+	NTSTATUS saved_status;
+	NTSTATUS status = NT_STATUS_OK;
 	int fd = -1;
 	struct smb_filename *orig_fsp_name = fsp->fsp_name;
 	struct smb_filename *smb_fname_rel = NULL;
-	int saved_errno = 0;
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
@@ -667,7 +668,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 		if (fsp->fsp_flags.is_directory) {
 			parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
 			if (parent_dir_fname == NULL) {
-				saved_errno = errno;
+				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
 
@@ -678,7 +679,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 							    smb_fname->twrp,
 							    smb_fname->flags);
 			if (smb_fname_rel == NULL) {
-				saved_errno = errno;
+				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
 		} else {
@@ -687,25 +688,26 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 					      &parent_dir_fname,
 					      &smb_fname_rel);
 			if (!ok) {
-				saved_errno = errno;
+				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
 		}
 
 		oldwd_fname = vfs_GetWd(talloc_tos(), conn);
 		if (oldwd_fname == NULL) {
+			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
 
 		/* Pin parent directory in place. */
 		if (vfs_ChDir(conn, parent_dir_fname) == -1) {
+			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
 
 		/* Ensure the relative path is below the share. */
 		status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
 		if (!NT_STATUS_IS_OK(status)) {
-			saved_errno = map_errno_from_nt_status(status);
 			goto out;
 		}
 
@@ -727,7 +729,9 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 			    fsp,
 			    flags,
 			    mode);
-
+	if (fd == -1) {
+		status = link_errno_convert(errno);
+	}
 	fsp_set_fd(fsp, fd);
 
 	if (fd != -1 &&
@@ -748,6 +752,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 
 		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
 		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
 		fsp->fsp_name->st = orig_fsp_name->st;
@@ -758,12 +763,14 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 
 			fsp_set_fd(fsp, -1);
 			fd = -1;
-			errno = ELOOP;
+			status = NT_STATUS_STOPPED_ON_SYMLINK;
 		}
 	}
 
-	if (fd == -1) {
-		saved_errno = link_errno_convert(errno);
+	if ((fd == -1) &&
+	    (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)))
+	{
 		/*
 		 * Trying to open a symlink to a directory with O_NOFOLLOW and
 		 * O_DIRECTORY can return either of ELOOP and ENOTDIR. So
@@ -775,41 +782,33 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 		 *
 		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=12860
 		 */
-		if (saved_errno == ELOOP || saved_errno == ENOTDIR) {
-			if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-				/* Never follow symlinks on posix open. */
-				goto out;
-			}
-			if (!lp_follow_symlinks(SNUM(conn))) {
-				/* Explicitly no symlinks. */
-				goto out;
-			}
+		saved_status = status;
 
-			fsp->fsp_name = orig_fsp_name;
+		if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
+			/* Never follow symlinks on posix open. */
+			goto out;
+		}
+		if (!lp_follow_symlinks(SNUM(conn))) {
+			/* Explicitly no symlinks. */
+			goto out;
+		}
 
-			/*
-			 * We may have a symlink. Follow in userspace
-			 * to ensure it's under the share definition.
-			 */
-			fd = process_symlink_open(dirfsp,
-					fsp,
-					smb_fname_rel,
-					flags,
-					mode,
-					link_depth);
-			if (fd == -1) {
-				if (saved_errno == ENOTDIR &&
-						errno == EINVAL) {
-					/*
-					 * O_DIRECTORY on neither a directory,
-					 * nor a symlink. Just return
-					 * saved_errno from initial open()
-					 */
-					goto out;
-				}
-				saved_errno =
-					link_errno_convert(errno);
-			}
+		fsp->fsp_name = orig_fsp_name;
+
+		/*
+		 * We may have a symlink. Follow in userspace
+		 * to ensure it's under the share definition.
+		 */
+		status = process_symlink_open(dirfsp,
+					      fsp,
+					      smb_fname_rel,
+					      flags,
+					      mode,
+					      link_depth);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
+		    NT_STATUS_EQUAL(saved_status, NT_STATUS_NOT_A_DIRECTORY))
+		{
+			status = saved_status;
 		}
 	}
 
@@ -824,10 +823,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 		}
 		TALLOC_FREE(oldwd_fname);
 	}
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return fd;
+	return status;
 }
 
 /****************************************************************************
@@ -842,7 +838,6 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 {
 	struct connection_struct *conn = fsp->conn;
 	NTSTATUS status = NT_STATUS_OK;
-	int fd;
 
 	/*
 	 * Never follow symlinks on a POSIX client. The
@@ -857,11 +852,9 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 * Only follow symlinks within a share
 	 * definition.
 	 */
-	fd = non_widelink_open(dirfsp, fsp, smb_fname, flags, mode, 0);
-	if (fd == -1) {
-		int posix_errno = link_errno_convert(errno);
-		status = map_nt_error_from_unix(posix_errno);
-		if (errno == EMFILE) {
+	status = non_widelink_open(dirfsp, fsp, smb_fname, flags, mode, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_TOO_MANY_OPENED_FILES)) {
 			static time_t last_warned = 0L;
 
 			if (time((time_t *) NULL) > last_warned) {
@@ -875,12 +868,13 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 
 		DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
 			  smb_fname_str_dbg(smb_fname), flags, (int)mode,
-			  fd, strerror(errno));
+			  fsp_get_pathref_fd(fsp), nt_errstr(status));
 		return status;
 	}
 
 	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
-		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fd);
+		  smb_fname_str_dbg(smb_fname), flags, (int)mode,
+		  fsp_get_pathref_fd(fsp));
 
 	return status;
 }
