@@ -336,6 +336,7 @@
  * Version 44 - Add a flag 'is_pathref' to struct files_struct.
  * Version 44 - Add 'is_fsa' flag to struct files_struct.
  * Version 44 - Add 'have_proc_fds' flag to struct connection_struct.
+ * Version 44 - Add 'have_proc_fds' flag to struct files_struct.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -389,6 +390,7 @@ typedef struct files_struct {
 	struct {
 		bool is_pathref : 1; /* See below */
 		bool is_fsa : 1;     /* See below */
+		bool have_proc_fds : 1;
 		bool kernel_share_modes_taken : 1;
 		bool update_write_time_triggered : 1;
 		bool update_write_time_on_close : 1;
