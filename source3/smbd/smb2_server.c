@@ -231,6 +231,8 @@ bool smbd_smb2_is_compound(const struct smbd_smb2_request *req)
 static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 				     uint64_t expected_seq_low)
 {
+	int rc;
+
 	xconn->smb2.credits.seq_low = expected_seq_low;
 	xconn->smb2.credits.seq_range = 1;
 	xconn->smb2.credits.granted = 1;
@@ -259,7 +261,11 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 	tevent_fd_set_auto_close(xconn->transport.fde);
 
 	/* Ensure child is set to non-blocking mode */
-	set_blocking(xconn->transport.sock, false);
+	rc = set_blocking(xconn->transport.sock, false);
+	if (rc < 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	return NT_STATUS_OK;
 }
 
