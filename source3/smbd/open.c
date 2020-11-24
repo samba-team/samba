@@ -663,54 +663,63 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 	have_opath = true;
 #endif
 
-	if (fsp->fsp_flags.is_directory) {
-		parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
-		if (parent_dir_fname == NULL) {
-			saved_errno = errno;
+	if (dirfsp == conn->cwd_fsp) {
+		if (fsp->fsp_flags.is_directory) {
+			parent_dir_fname = cp_smb_filename(talloc_tos(), smb_fname);
+			if (parent_dir_fname == NULL) {
+				saved_errno = errno;
+				goto out;
+			}
+
+			smb_fname_rel = synthetic_smb_fname(parent_dir_fname,
+							    ".",
+							    smb_fname->stream_name,
+							    &smb_fname->st,
+							    smb_fname->twrp,
+							    smb_fname->flags);
+			if (smb_fname_rel == NULL) {
+				saved_errno = errno;
+				goto out;
+			}
+		} else {
+			ok = parent_smb_fname(talloc_tos(),
+					      smb_fname,
+					      &parent_dir_fname,
+					      &smb_fname_rel);
+			if (!ok) {
+				saved_errno = errno;
+				goto out;
+			}
+		}
+
+		oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+		if (oldwd_fname == NULL) {
 			goto out;
 		}
 
-		smb_fname_rel = synthetic_smb_fname(parent_dir_fname,
-						    ".",
-						    smb_fname->stream_name,
-						    &smb_fname->st,
-						    smb_fname->twrp,
-						    smb_fname->flags);
-		if (smb_fname_rel == NULL) {
-			saved_errno = errno;
+		/* Pin parent directory in place. */
+		if (vfs_ChDir(conn, parent_dir_fname) == -1) {
 			goto out;
 		}
+
+		/* Ensure the relative path is below the share. */
+		status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
+		if (!NT_STATUS_IS_OK(status)) {
+			saved_errno = map_errno_from_nt_status(status);
+			goto out;
+		}
+
+		/* Setup fsp->fsp_name to be relative to cwd */
+		fsp->fsp_name = smb_fname_rel;
 	} else {
-		ok = parent_smb_fname(talloc_tos(),
-				      smb_fname,
-				      &parent_dir_fname,
-				      &smb_fname_rel);
-		if (!ok) {
-			saved_errno = errno;
-			goto out;
-		}
-	}
-
-	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
-	if (oldwd_fname == NULL) {
-		goto out;
-	}
-
-	/* Pin parent directory in place. */
-	if (vfs_ChDir(conn, parent_dir_fname) == -1) {
-		goto out;
-	}
-
-	/* Ensure the relative path is below the share. */
-	status = check_reduced_name(conn, parent_dir_fname, smb_fname_rel);
-	if (!NT_STATUS_IS_OK(status)) {
-		saved_errno = map_errno_from_nt_status(status);
-		goto out;
+		/*
+		 * fsp->fsp_name is unchanged as it is already correctly
+		 * relative to conn->cwd.
+		 */
+		smb_fname_rel = smb_fname;
 	}
 
 	flags |= O_NOFOLLOW;
-
-	fsp->fsp_name = smb_fname_rel;
 
 	fd = SMB_VFS_OPENAT(conn,
 			    dirfsp,
@@ -741,6 +750,7 @@ static int non_widelink_open(const struct files_struct *dirfsp,
 		if (ret != 0) {
 			goto out;
 		}
+		fsp->fsp_name->st = orig_fsp_name->st;
 
 		if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
 			ret = SMB_VFS_CLOSE(fsp);
