@@ -515,7 +515,6 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 	if (fd == -1) {
 		return -1;
 	}
-	fsp_set_fd(fsp, fd);
 
 	if ((flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
 		return fd;
@@ -526,7 +525,9 @@ static int xattr_tdb_openat(struct vfs_handle_struct *handle,
 	 * We must have created the file.
 	 */
 
+	fsp_set_fd(fsp, fd);
 	ret = SMB_VFS_FSTAT(fsp, &sbuf);
+	fsp_set_fd(fsp, -1);
 	if (ret == -1) {
 		/* Can't happen... */
 		DBG_WARNING("SMB_VFS_FSTAT failed on file %s (%s)\n",
