@@ -345,9 +345,12 @@ static int check_for_write_behind_translator(TALLOC_CTX *mem_ctx,
 	if (write_behind_present) {
 		DBG_ERR("Write behind translator is enabled for "
 			"volume (%s), refusing to connect! "
-			"Please check the vfs_glusterfs(8) manpage for "
+			"Please turn off the write behind translator by calling "
+			"'gluster volume set %s performance.write-behind off' "
+			"on the commandline. "
+			"Check the vfs_glusterfs(8) manpage for "
 			"further details.\n",
-			volume);
+			volume, volume);
 		return -1;
 	}
 
