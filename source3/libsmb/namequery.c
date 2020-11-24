@@ -3170,7 +3170,6 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				size_t *return_count,
 				const char **resolve_order)
 {
-	const char *tok;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	size_t i;
 	size_t nc_count = 0;
@@ -3268,7 +3267,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	/* iterate through the name resolution backends */
 
 	for (i=0; resolve_order[i]; i++) {
-		tok = resolve_order[i];
+		const char *tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			status = resolve_hosts(talloc_tos(),
