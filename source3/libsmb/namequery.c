@@ -3269,7 +3269,7 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 	for (i=0; resolve_order[i]; i++) {
 		const char *tok = resolve_order[i];
 
-		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
+		if ((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			status = resolve_hosts(talloc_tos(),
 					       name,
 					       name_type,
@@ -3279,7 +3279,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				continue;
 			}
 			goto done;
-		} else if(strequal( tok, "kdc")) {
+		}
+
+		if (strequal(tok, "kdc")) {
 			/* deal with KDC_NAME_TYPE names here.
 			 * This will result in a SRV record lookup */
 			status = resolve_ads(talloc_tos(),
@@ -3295,7 +3297,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 			 * this with the KDC port. */
 			name_type = KDC_NAME_TYPE;
 			goto done;
-		} else if(strequal( tok, "ads")) {
+		}
+
+		if (strequal(tok, "ads")) {
 			/* deal with 0x1c and 0x1b names here.
 			 * This will result in a SRV record lookup */
 			status = resolve_ads(talloc_tos(),
@@ -3308,7 +3312,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				continue;
 			}
 			goto done;
-		} else if (strequal(tok, "lmhosts")) {
+		}
+
+		if (strequal(tok, "lmhosts")) {
 			status = resolve_lmhosts_file_as_sockaddr(
 				talloc_tos(),
 				get_dyn_LMHOSTSFILE(),
@@ -3320,7 +3326,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				continue;
 			}
 			goto done;
-		} else if (strequal(tok, "wins")) {
+		}
+
+		if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
 			if (name_type == 0x1D) {
 				continue;
@@ -3334,7 +3342,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				continue;
 			}
 			goto done;
-		} else if (strequal(tok, "bcast")) {
+		}
+
+		if (strequal(tok, "bcast")) {
 			status = name_resolve_bcast(
 						talloc_tos(),
 						name,
@@ -3345,10 +3355,9 @@ NTSTATUS internal_resolve_name(TALLOC_CTX *ctx,
 				continue;
 			}
 			goto done;
-		} else {
-			DBG_ERR("unknown name switch type %s\n",
-				tok);
 		}
+
+		DBG_ERR("unknown name switch type %s\n", tok);
 	}
 
 	/* All of the resolve_* functions above have returned false. */
