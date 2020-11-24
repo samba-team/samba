@@ -1656,6 +1656,8 @@ static int fruit_openat(vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
 
+	/* Prevent reopen optimisation */
+	fsp->fsp_flags.have_proc_fds = false;
 	return fd;
 }
 
