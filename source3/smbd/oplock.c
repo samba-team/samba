@@ -433,12 +433,11 @@ static void downgrade_lease_additional_trigger(struct tevent_context *ev,
 					    &state->lease_key,
 					    state->break_from,
 					    state->break_to);
-	TALLOC_FREE(state);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_disconnect_client(state->client,
 					      nt_errstr(status));
-		return;
 	}
+	TALLOC_FREE(state);
 }
 
 struct fsps_lease_update_state {
