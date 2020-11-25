@@ -576,8 +576,11 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 	for (i = 0; i < *listen_fd_size; i++) {
 		rc = listen(listen_fd[i].fd, pf_lsasd_cfg.max_allowed_clients);
 		if (rc == -1) {
-			char *ep_string = dcerpc_binding_string(
-					dce_ctx, e->ep_description);
+			char *ep_string = NULL;
+
+			e = listen_fd[i].fd_data;
+			ep_string = dcerpc_binding_string(dce_ctx,
+							  e->ep_description);
 			DBG_ERR("Failed to listen on endpoint '%s': %s\n",
 				ep_string, strerror(errno));
 			status = map_nt_error_from_unix(errno);
