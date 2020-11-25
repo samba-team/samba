@@ -1022,7 +1022,9 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 		}
 	}
 
-	*_mode = dos_mode(conn, smb_fname);
+	if (get_dosmode) {
+		*_mode = dos_mode(conn, smb_fname);
+	}
 	return true;
 }
 
