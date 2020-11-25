@@ -347,7 +347,7 @@ static NTSTATUS winexe_svc_upload(
 	int flags)
 {
 	struct cli_state *cli;
-	uint16_t fnum;
+	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 	const DATA_BLOB *binary = NULL;
 
@@ -389,7 +389,7 @@ static NTSTATUS winexe_svc_upload(
 	}
 
 	if (binary == NULL) {
-		//TODO
+		goto done;
 	}
 
 	status = cli_ntcreate(
@@ -420,16 +420,20 @@ static NTSTATUS winexe_svc_upload(
 		NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("Could not write file: %s\n", nt_errstr(status));
-		goto close_done;
+		goto done;
 	}
 
-close_done:
-	status = cli_close(cli, fnum);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("Close(%"PRIu16") failed for %s: %s\n", fnum,
-			    service_filename, nt_errstr(status));
-	}
 done:
+	if (fnum != 0xffff) {
+		status = cli_close(cli, fnum);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("Close(%"PRIu16") failed for %s: %s\n",
+				    fnum,
+				    service_filename,
+				    nt_errstr(status));
+		}
+	}
+
 	TALLOC_FREE(cli);
 	return status;
 }
