@@ -1041,13 +1041,18 @@ int
 SMBC_closedir_ctx(SMBCCTX *context,
                   SMBCFILE *dir)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 
 	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
-		TALLOC_FREE(frame);
 		return -1;
 	}
+
+	if (dir == NULL) {
+		return 0;
+	}
+
+	frame = talloc_stackframe();
 
 	if (!SMBC_dlist_contains(context->internal->files, dir)) {
 		errno = EBADF;
@@ -1060,11 +1065,8 @@ SMBC_closedir_ctx(SMBCCTX *context,
 
 	DLIST_REMOVE(context->internal->files, dir);
 
-	if (dir) {
-
-		SAFE_FREE(dir->fname);
-		SAFE_FREE(dir);    /* Free the space too */
-	}
+	SAFE_FREE(dir->fname);
+	SAFE_FREE(dir);    /* Free the space too */
 
 	TALLOC_FREE(frame);
 	return 0;
