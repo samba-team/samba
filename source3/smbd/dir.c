@@ -1135,7 +1135,8 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 	}
 
 	if (get_dosmode) {
-		*_mode = dos_mode(conn, smb_fname);
+		*_mode = fdos_mode(smb_fname->fsp);
+		smb_fname->st = smb_fname->fsp->fsp_name->st;
 	}
 	return true;
 }
