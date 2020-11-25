@@ -3064,11 +3064,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (smb_fname_cp->flags & SMB_FILENAME_POSIX_PATH) {
-			ret = SMB_VFS_LSTAT(handle->conn, smb_fname_cp);
-		} else {
-			ret = SMB_VFS_STAT(handle->conn, smb_fname_cp);
-		}
+		ret = vfs_stat(handle->conn, smb_fname_cp);
 		sbuf = smb_fname_cp->st;
 		TALLOC_FREE(smb_fname_cp);
 	}

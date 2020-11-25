@@ -226,11 +226,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	if (smb_fname_base->flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_base);
-	} else {
-		ret = SMB_VFS_STAT(handle->conn, smb_fname_base);
-	}
+	ret = vfs_stat(handle->conn, smb_fname_base);
 	*sbuf = smb_fname_base->st;
 
 	if (ret == -1) {

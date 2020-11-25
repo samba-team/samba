@@ -2952,12 +2952,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * so FILE_OPEN disposition knows the directory
 	 * exists.
 	 */
-	if (req->posix_pathnames) {
-		ret = SMB_VFS_LSTAT(conn, smb_dname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_dname);
-	}
-
+	ret = vfs_stat(conn, smb_dname);
 	if (ret == -1) {
 		ntstatus = map_nt_error_from_unix(errno);
 		reply_nterror(req, ntstatus);

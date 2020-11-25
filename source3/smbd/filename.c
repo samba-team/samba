@@ -662,11 +662,7 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(state->smb_fname));
 
-	if (state->posix_pathnames) {
-		ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(state->conn, state->smb_fname);
-	}
+	ret = vfs_stat(state->conn, state->smb_fname);
 	if (ret == 0) {
 		/*
 		 * It exists. it must either be a directory or this must
@@ -826,12 +822,7 @@ static NTSTATUS unix_convert_step_stat(struct uc_state *state)
 		 * if it exists. JRA.
 		 */
 
-		if (state->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
-		} else {
-			ret = SMB_VFS_STAT(state->conn, state->smb_fname);
-		}
-
+		ret = vfs_stat(state->conn, state->smb_fname);
 		if (ret != 0) {
 			SET_STAT_INVALID(state->smb_fname->st);
 		}
@@ -1177,12 +1168,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		 * there was one) and be done!
 		 */
 
-		if (state->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(state->conn, state->smb_fname);
-		} else {
-			ret = SMB_VFS_STAT(state->conn, state->smb_fname);
-		}
-
+		ret = vfs_stat(state->conn, state->smb_fname);
 		if (ret == 0) {
 			status = check_for_dot_component(state->smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1267,13 +1253,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 					status = NT_STATUS_NO_MEMORY;
 					goto fail;
 				}
-				if (state->posix_pathnames) {
-					ret = SMB_VFS_LSTAT(state->conn,
-							    parent_fname);
-				} else {
-					ret = SMB_VFS_STAT(state->conn,
-							   parent_fname);
-				}
+				ret = vfs_stat(state->conn, parent_fname);
 				TALLOC_FREE(parent_fname);
 				if (ret == -1) {
 					if (errno == ENOTDIR ||

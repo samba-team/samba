@@ -379,6 +379,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	connection_struct *conn = smb2req->tcon->compat;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_setinfo_state);
@@ -421,27 +422,14 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-			if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
-				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
-					DEBUG(3,("smbd_smb2_setinfo_send: "
-						 "SMB_VFS_LSTAT of %s failed "
-						 "(%s)\n", fsp_str_dbg(fsp),
-						 strerror(errno)));
-					status = map_nt_error_from_unix(errno);
-					tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
-				}
-			} else {
-				if (SMB_VFS_STAT(conn, fsp->fsp_name) != 0) {
-					DEBUG(3,("smbd_smb2_setinfo_send: "
-						 "fileinfo of %s failed (%s)\n",
-						 fsp_str_dbg(fsp),
-						 strerror(errno)));
-					status = map_nt_error_from_unix(errno);
-					tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
-				}
+			ret = vfs_stat(fsp->conn, fsp->fsp_name);
+			if (ret != 0) {
+				DBG_WARNING("vfs_stat() of %s failed (%s)\n",
+					    fsp_str_dbg(fsp),
+					    strerror(errno));
+				status = map_nt_error_from_unix(errno);
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
 			}
 		} else if (fsp->print_file) {
 			/*
@@ -586,7 +574,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		struct file_quota_information info = {0};
 		SMB_NTQUOTA_STRUCT qt = {0};
 		enum ndr_err_code err;
-		int ret;
 
 		if (!fsp->fake_file_handle) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);

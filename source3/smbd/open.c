@@ -6159,12 +6159,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			status = NT_STATUS_NOT_A_DIRECTORY;
 			goto fail;
 		}
-		if (req != NULL && req->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(conn, smb_fname);
-		} else {
-			ret = SMB_VFS_STAT(conn, smb_fname);
-		}
-
+		ret = vfs_stat(conn, smb_fname);
 		if (ret == 0 && VALID_STAT_OF_DIR(smb_fname->st)) {
 			status = NT_STATUS_FILE_IS_A_DIRECTORY;
 			goto fail;

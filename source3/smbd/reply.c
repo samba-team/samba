@@ -1826,11 +1826,7 @@ void reply_search(struct smb_request *req)
 		 * so FILE_OPEN disposition knows the directory
 		 * exists.
 		 */
-		if (req->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(conn, smb_dname);
-		} else {
-			ret = SMB_VFS_STAT(conn, smb_dname);
-		}
+		ret = vfs_stat(conn, smb_dname);
 		if (ret == -1) {
 			nt_status = map_nt_error_from_unix(errno);
 			reply_nterror(req, nt_status);
@@ -3138,7 +3134,6 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	uint32_t dirtype_orig = dirtype;
 	NTSTATUS status;
 	int ret;
-	bool posix_paths = (req != NULL && req->posix_pathnames);
 	struct smb2_create_blobs *posx = NULL;
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
@@ -3149,11 +3144,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (posix_paths) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
+	ret = vfs_stat(conn, smb_fname);
 	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -3211,7 +3202,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
-	if (posix_paths) {
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		status = make_smb2_posix_create_ctx(
 			talloc_tos(), &posx, 0777);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -7898,7 +7889,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	char *talloced = NULL;
 	long offset = 0;
 	int create_options = 0;
-	bool posix_pathnames = (req != NULL && req->posix_pathnames);
 	struct smb2_create_blobs *posx = NULL;
 	int rc;
 	bool src_has_wild = false;
@@ -7921,7 +7911,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if (req != NULL && !req->posix_pathnames) {
+	if (!(smb_fname_src->flags & SMB_FILENAME_POSIX_PATH)) {
 		/*
 		 * Check the wildcard mask *before*
 		 * unmangling. As mangling is done
@@ -7955,7 +7945,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (posix_pathnames) {
+	if (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH) {
 		status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
@@ -8017,11 +8007,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(smb_fname_src->st);
-		if (posix_pathnames) {
-			rc = SMB_VFS_LSTAT(conn, smb_fname_src);
-		} else {
-			rc = SMB_VFS_STAT(conn, smb_fname_src);
-		}
+
+		rc = vfs_stat(conn, smb_fname_src);
 		if (rc == -1) {
 			status = map_nt_error_from_unix_common(errno);
 			goto out;
@@ -8193,11 +8180,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		smb_fname_dst->base_name = destname;
 
 		ZERO_STRUCT(smb_fname_src->st);
-		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, smb_fname_src);
-		} else {
-			SMB_VFS_STAT(conn, smb_fname_src);
-		}
+		vfs_stat(conn, smb_fname_src);
 
 		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
