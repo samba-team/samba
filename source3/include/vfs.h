@@ -335,6 +335,7 @@
  *              prevents that encrypted connections can be downgraded.
  * Version 44 - Add a flag 'is_pathref' to struct files_struct.
  * Version 44 - Add 'is_fsa' flag to struct files_struct.
+ * Version 44 - Add 'have_proc_fds' flag to struct connection_struct.
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -674,6 +675,7 @@ typedef struct connection_struct {
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
+	bool have_proc_fds;
 	uint32_t share_access;
 	/* Does this filesystem honor
 	   sub second timestamps on files
