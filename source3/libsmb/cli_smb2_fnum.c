@@ -815,7 +815,7 @@ static void cli_smb2_mkdir_opened(struct tevent_req *subreq)
 	struct cli_smb2_mkdir_state *state = tevent_req_data(
 		req, struct cli_smb2_mkdir_state);
 	NTSTATUS status;
-	uint16_t fnum;
+	uint16_t fnum = 0xffff;
 
 	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
@@ -1082,7 +1082,7 @@ static void cli_smb2_unlink_opened1(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_smb2_unlink_state *state = tevent_req_data(
 		req, struct cli_smb2_unlink_state);
-	uint16_t fnum;
+	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
@@ -1135,7 +1135,7 @@ static void cli_smb2_unlink_opened2(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_smb2_unlink_state *state = tevent_req_data(
 		req, struct cli_smb2_unlink_state);
-	uint16_t fnum;
+	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 
 	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
@@ -1682,7 +1682,7 @@ static void cli_smb2_chkpath_opened(struct tevent_req *subreq)
 	struct cli_smb2_chkpath_state *state = tevent_req_data(
 		req, struct cli_smb2_chkpath_state);
 	NTSTATUS status;
-	uint16_t fnum;
+	uint16_t fnum = 0xffff;
 
 	status = cli_smb2_create_fnum_recv(subreq, &fnum, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
