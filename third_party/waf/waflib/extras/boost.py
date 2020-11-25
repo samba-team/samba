@@ -270,10 +270,12 @@ def boost_get_libs(self, *k, **kw):
 				return file
 		return None
 
+	# extensions from Tools.ccroot.lib_patterns
+	wo_ext = re.compile(r"\.(a|so|lib|dll|dylib)(\.[0-9\.]+)?$")
 	def format_lib_name(name):
 		if name.startswith('lib') and self.env.CC_NAME != 'msvc':
 			name = name[3:]
-		return name[:name.rfind('.')]
+		return wo_ext.sub("", name)
 
 	def match_libs(lib_names, is_static):
 		libs = []
@@ -522,4 +524,3 @@ def install_boost(self):
 		except:
 			continue
 install_boost.done = False
-

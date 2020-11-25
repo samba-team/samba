@@ -16,10 +16,19 @@ The following environment variables may be set:
   - URL to a cache server, for example:
     export WAFCACHE=http://localhost:8080/files/
     in that case, GET/POST requests are made to urls of the form
-    http://localhost:8080/files/000000000/0 (cache management is then up to the server)
-  - GCS or S3 bucket
-    gs://my-bucket/
-    s3://my-bucket/
+    http://localhost:8080/files/000000000/0 (cache management is delegated to the server)
+  - GCS, S3 or MINIO bucket
+    gs://my-bucket/    (uses gsutil command line tool or WAFCACHE_CMD)
+    s3://my-bucket/    (uses aws command line tool or WAFCACHE_CMD)
+    minio://my-bucket/ (uses mc command line tool or WAFCACHE_CMD)
+* WAFCACHE_CMD: bucket upload/download command, for example:
+    WAFCACHE_CMD="gsutil cp %{SRC} %{TGT}"
+  Note that the WAFCACHE bucket value is used for the source or destination
+  depending on the operation (upload or download). For example, with:
+    WAFCACHE="gs://mybucket/"
+  the following commands may be run:
+    gsutil cp build/myprogram  gs://mybucket/aa/aaaaa/1
+    gsutil cp gs://mybucket/bb/bbbbb/2 build/somefile
 * WAFCACHE_NO_PUSH: if set, disables pushing to the cache
 * WAFCACHE_VERBOSITY: if set, displays more detailed cache operations
 
@@ -30,6 +39,7 @@ File cache specific options:
 * WAFCACHE_EVICT_MAX_BYTES: maximum amount of cache size in bytes (10GB)
 * WAFCACHE_EVICT_INTERVAL_MINUTES: minimum time interval to try
                                    and trim the cache (3 minutess)
+
 Usage::
 
 	def build(bld):
@@ -41,7 +51,7 @@ To troubleshoot::
 	waf clean build --zones=wafcache
 """
 
-import atexit, base64, errno, fcntl, getpass, os, shutil, sys, time, traceback, urllib3
+import atexit, base64, errno, fcntl, getpass, os, re, shutil, sys, time, traceback, urllib3, shlex
 try:
 	import subprocess32 as subprocess
 except ImportError:
@@ -53,12 +63,15 @@ if not os.path.isdir(base_cache):
 default_wafcache_dir = os.path.join(base_cache, 'wafcache_' + getpass.getuser())
 
 CACHE_DIR = os.environ.get('WAFCACHE', default_wafcache_dir)
+WAFCACHE_CMD = os.environ.get('WAFCACHE_CMD')
 TRIM_MAX_FOLDERS = int(os.environ.get('WAFCACHE_TRIM_MAX_FOLDER', 1000000))
 EVICT_INTERVAL_MINUTES = int(os.environ.get('WAFCACHE_EVICT_INTERVAL_MINUTES', 3))
 EVICT_MAX_BYTES = int(os.environ.get('WAFCACHE_EVICT_MAX_BYTES', 10**10))
 WAFCACHE_NO_PUSH = 1 if os.environ.get('WAFCACHE_NO_PUSH') else 0
 WAFCACHE_VERBOSITY = 1 if os.environ.get('WAFCACHE_VERBOSITY') else 0
 OK = "ok"
+
+re_waf_cmd = re.compile('(?P<src>%{SRC})|(?P<tgt>%{TGT})')
 
 try:
 	import cPickle
@@ -233,8 +246,9 @@ def build(bld):
 		# already called once
 		return
 
-	for x in range(bld.jobs):
-		process_pool.append(get_process())
+	# pre-allocation
+	processes = [get_process() for x in range(bld.jobs)]
+	process_pool.extend(processes)
 
 	Task.Task.can_retrieve_cache = can_retrieve_cache
 	Task.Task.put_files_cache = put_files_cache
@@ -449,10 +463,20 @@ class fcache(object):
 
 class bucket_cache(object):
 	def bucket_copy(self, source, target):
-		if CACHE_DIR.startswith('s3://'):
+		if WAFCACHE_CMD:
+			def replacer(match):
+				if match.group('src'):
+					return source
+				elif match.group('tgt'):
+					return target
+			cmd = [re_waf_cmd.sub(replacer, x) for x in shlex.split(WAFCACHE_CMD)]
+		elif CACHE_DIR.startswith('s3://'):
 			cmd = ['aws', 's3', 'cp', source, target]
-		else:
+		elif CACHE_DIR.startswith('gs://'):
 			cmd = ['gsutil', 'cp', source, target]
+		else:
+			cmd = ['mc', 'cp', source, target]
+
 		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = proc.communicate()
 		if proc.returncode:
@@ -510,7 +534,9 @@ def loop(service):
 	sys.stdout.flush()
 
 if __name__ == '__main__':
-	if CACHE_DIR.startswith('s3://') or CACHE_DIR.startswith('gs://'):
+	if CACHE_DIR.startswith('s3://') or CACHE_DIR.startswith('gs://') or CACHE_DIR.startswith('minio://'):
+		if CACHE_DIR.startswith('minio://'):
+			CACHE_DIR = CACHE_DIR[8:]   # minio doesn't need the protocol part, uses config aliases
 		service = bucket_cache()
 	elif CACHE_DIR.startswith('http'):
 		service = netcache()

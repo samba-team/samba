@@ -56,13 +56,11 @@ class asm(Task.Task):
 	Compiles asm files by gas/nasm/yasm/...
 	"""
 	color = 'BLUE'
-	run_str = '${AS} ${ASFLAGS} ${ASMPATH_ST:INCPATHS} ${DEFINES_ST:DEFINES} ${AS_SRC_F}${SRC} ${AS_TGT_F}${TGT}'
+	run_str = '${AS} ${ASFLAGS} ${ASMPATH_ST:INCPATHS} ${ASMDEFINES_ST:DEFINES} ${AS_SRC_F}${SRC} ${AS_TGT_F}${TGT}'
 
 	def scan(self):
 		if self.env.ASM_NAME == 'gas':
 			return c_preproc.scan(self)
-			Logs.warn('There is no dependency scanner for Nasm!')
-			return  [[], []]
 		elif self.env.ASM_NAME == 'nasm':
 			Logs.warn('The Nasm dependency scanner is incomplete!')
 
@@ -106,3 +104,4 @@ class asmstlib(stlink_task):
 
 def configure(conf):
 	conf.env.ASMPATH_ST = '-I%s'
+	conf.env.ASMDEFINES_ST = '-D%s'

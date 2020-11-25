@@ -150,11 +150,25 @@ def scan(self):
 def sig_implicit_deps(self):
 	if self.env.CC_NAME not in supported_compilers:
 		return super(self.derived_msvcdeps, self).sig_implicit_deps()
+	bld = self.generator.bld
 
 	try:
-		return Task.Task.sig_implicit_deps(self)
-	except Errors.WafError:
-		return Utils.SIG_NIL
+		return self.compute_sig_implicit_deps()
+	except Errors.TaskNotReady:
+		raise ValueError("Please specify the build order precisely with msvcdeps (c/c++ tasks)")
+	except EnvironmentError:
+		# If a file is renamed, assume the dependencies are stale and must be recalculated
+		for x in bld.node_deps.get(self.uid(), []):
+			if not x.is_bld() and not x.exists():
+				try:
+					del x.parent.children[x.name]
+				except KeyError:
+					pass
+
+	key = self.uid()
+	bld.node_deps[key] = []
+	bld.raw_deps[key] = []
+	return Utils.SIG_NIL
 
 def exec_command(self, cmd, **kw):
 	if self.env.CC_NAME not in supported_compilers:
@@ -211,11 +225,14 @@ def exec_command(self, cmd, **kw):
 			# get one from the exception object
 			ret = getattr(e, 'returncode', 1)
 
+		Logs.debug('msvcdeps: Running for: %s' % self.inputs[0])
 		for line in raw_out.splitlines():
 			if line.startswith(INCLUDE_PATTERN):
-				inc_path = line[len(INCLUDE_PATTERN):].strip()
+				# Only strip whitespace after log to preserve
+				# dependency structure in debug output
+				inc_path = line[len(INCLUDE_PATTERN):]
 				Logs.debug('msvcdeps: Regex matched %s', inc_path)
-				self.msvcdeps_paths.append(inc_path)
+				self.msvcdeps_paths.append(inc_path.strip())
 			else:
 				out.append(line)
 

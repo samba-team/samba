@@ -208,10 +208,10 @@ def process_doxy(self):
 		self.bld.fatal('doxygen file %s not found' % self.doxyfile)
 
 	# the task instance
-	dsk = self.create_task('doxygen', node)
+	dsk = self.create_task('doxygen', node, always_run=getattr(self, 'always', False))
 
 	if getattr(self, 'doxy_tar', None):
-		tsk = self.create_task('tar')
+		tsk = self.create_task('tar', always_run=getattr(self, 'always', False))
 		tsk.input_tasks = [dsk]
 		tsk.set_outputs(self.path.find_or_declare(self.doxy_tar))
 		if self.doxy_tar.endswith('bz2'):

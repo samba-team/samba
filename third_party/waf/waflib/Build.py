@@ -753,10 +753,12 @@ class BuildContext(Context.Context):
 		else:
 			ln = self.launch_node()
 			if ln.is_child_of(self.bldnode):
-				Logs.warn('Building from the build directory, forcing --targets=*')
+				if Logs.verbose > 1:
+					Logs.warn('Building from the build directory, forcing --targets=*')
 				ln = self.srcnode
 			elif not ln.is_child_of(self.srcnode):
-				Logs.warn('CWD %s is not under %s, forcing --targets=* (run distclean?)', ln.abspath(), self.srcnode.abspath())
+				if Logs.verbose > 1:
+					Logs.warn('CWD %s is not under %s, forcing --targets=* (run distclean?)', ln.abspath(), self.srcnode.abspath())
 				ln = self.srcnode
 
 			def is_post(tg, ln):

@@ -20,7 +20,7 @@ def build(bld):
 
 from waflib.Node import Node
 from waflib import Utils
-from waflib.Task import Task
+from waflib import Task
 from waflib.TaskGen import feature, after_method
 
 
@@ -55,13 +55,9 @@ def build_sphinx(self):
     sphinx_build_task.set_outputs(self.path.get_bld())
 
     # the sphinx-build results are in <build + output_format> directory
-    sphinx_output_directory = self.path.get_bld().make_node(self.env.SPHINX_OUTPUT_FORMAT)
-    sphinx_output_directory.mkdir()
+    self.sphinx_output_directory = self.path.get_bld().make_node(self.env.SPHINX_OUTPUT_FORMAT)
+    self.sphinx_output_directory.mkdir()
     Utils.def_attrs(self, install_path=get_install_path(self))
-    self.add_install_files(install_to=self.install_path,
-                           install_from=sphinx_output_directory.ant_glob('**/*'),
-                           cwd=sphinx_output_directory,
-                           relative_trick=True)
 
 
 def get_install_path(tg):
@@ -73,9 +69,37 @@ def get_install_path(tg):
         return tg.env.DOCDIR
 
 
-class SphinxBuildingTask(Task):
+class SphinxBuildingTask(Task.Task):
     color = 'BOLD'
     run_str = '${SPHINX_BUILD} -M ${SPHINX_OUTPUT_FORMAT} ${SRC} ${TGT} ${SPHINX_OPTIONS}'
 
     def keyword(self):
         return 'Compiling (%s)' % self.env.SPHINX_OUTPUT_FORMAT
+
+    def runnable_status(self):
+
+        for x in self.run_after:
+            if not x.hasrun:
+                return Task.ASK_LATER
+
+        self.signature()
+        ret = Task.Task.runnable_status(self)
+        if ret == Task.SKIP_ME:
+            # in case the files were removed
+            self.add_install()
+        return ret
+
+
+    def post_run(self):
+        self.add_install()
+        return Task.Task.post_run(self)
+
+
+    def add_install(self):
+        nodes = self.generator.sphinx_output_directory.ant_glob('**/*', quiet=True)
+        self.outputs += nodes
+        self.generator.add_install_files(install_to=self.generator.install_path,
+                                         install_from=nodes,
+                                         postpone=False,
+                                         cwd=self.generator.sphinx_output_directory,
+                                         relative_trick=True)

@@ -31,7 +31,7 @@ Known issues:
 
 """
 
-import os
+import os, sys
 from waflib import Task, TaskGen, Errors
 
 def filename_c_escape(x):
@@ -95,12 +95,17 @@ class file_to_object_c(Task.Task):
 
 		name = "_binary_" + "".join(name)
 
+		def char_to_num(ch):
+			if sys.version_info[0] < 3:
+				return ord(ch)
+			return ch
+
 		data = self.inputs[0].read('rb')
 		lines, line = [], []
 		for idx_byte, byte in enumerate(data):
 			line.append(byte)
 			if len(line) > 15 or idx_byte == size-1:
-				lines.append(", ".join(("0x%02x" % ord(x)) for x in line))
+				lines.append(", ".join(("0x%02x" % char_to_num(x)) for x in line))
 				line = []
 		data = ",\n ".join(lines)
 
