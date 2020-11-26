@@ -155,6 +155,7 @@ static void prefork_reload_after_fork(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
+	force_check_log_size();
 }
 
 /*
