@@ -516,6 +516,8 @@ static void standard_new_task(struct tevent_context *ev,
 	 */
 	prctl_set_comment("%s[task]", service_name);
 
+	force_check_log_size();
+
 	/*
 	 * Set up the process context to be passed through to the terminate
 	 * and accept_connection functions
