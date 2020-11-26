@@ -946,7 +946,7 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 		return;
 	}
 
-	DBG_DEBUG("rec_index=%zu, num_recs=%"PRIu32"\n",
+	DBG_DEBUG("rec_index=%"PRIu64", num_recs=%"PRIu32"\n",
 		  log->rec_index,
 		  log->num_recs);
 
