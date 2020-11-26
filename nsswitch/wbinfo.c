@@ -507,10 +507,9 @@ static bool wbinfo_wins_byip(const char *ip)
 static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 {
 	struct wbcDomainInfo *domain_list = NULL;
-	size_t num_domains;
+	size_t i, num_domains;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	bool print_all = !list_all_domains && verbose;
-	int i;
 
 	wbc_status = wbcListTrusts(&domain_list, &num_domains);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -617,9 +616,8 @@ static bool wbinfo_show_sequence(const char *domain)
 static bool wbinfo_show_onlinestatus(const char *domain)
 {
 	struct wbcDomainInfo *domain_list = NULL;
-	size_t num_domains;
+	size_t i, num_domains;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	int i;
 
 	wbc_status = wbcListTrusts(&domain_list, &num_domains);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -1387,8 +1385,7 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	char *domain_name = NULL;
 	const char **names = NULL;
 	enum wbcSidType *types = NULL;
-	size_t i;
-	int num_rids;
+	size_t i, num_rids;
 	uint32_t *rids = NULL;
 	const char *p;
 	char *ridstr;
@@ -1704,7 +1701,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 		}
 
 		if (info) {
-			int i;
+			size_t i;
 			for (i=0; i < info->num_blobs; i++) {
 				if (strequal(info->blobs[i].name,
 					     "krb5ccname")) {
