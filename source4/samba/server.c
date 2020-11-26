@@ -46,6 +46,7 @@
 #include "lib/util/tfork.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/server_id.h"
+#include "server_util.h"
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -572,6 +573,7 @@ static int binary_smbd_main(const char *binary_name,
 	};
 	struct server_state *state = NULL;
 	struct tevent_signal *se = NULL;
+	struct samba_tevent_trace_state *samba_tevent_trace_state = NULL;
 
 	setproctitle("root process");
 
@@ -728,6 +730,21 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	talloc_set_destructor(state->event_ctx, event_ctx_destructor);
+
+	samba_tevent_trace_state = create_samba_tevent_trace_state(state);
+	if (samba_tevent_trace_state == NULL) {
+		exit_daemon("Samba failed to setup tevent tracing state",
+			    ENOTTY);
+		/*
+		 * return is never reached but is here to satisfy static
+		 * checkers
+		 */
+		return 1;
+	}
+
+	tevent_set_trace_callback(state->event_ctx,
+				  samba_tevent_trace_callback,
+				  samba_tevent_trace_state);
 
 	if (opt_interactive) {
 		/* terminate when stdin goes away */
