@@ -86,13 +86,25 @@ static void acl_check_entry(acl_entry_t acl_entry, SMB_ACL_TAG_T tag,
 		assert_int_equal(*id_p, id);
 	}
 
+#ifdef HAVE_ACL_GET_PERM_NP
+	ret = acl_get_perm_np(acl_permset, ACL_READ);
+#else
 	ret = acl_get_perm(acl_permset, ACL_READ);
+#endif
 	assert_int_equal(ret, read ? 1 : 0);
 
+#ifdef HAVE_ACL_GET_PERM_NP
+	ret = acl_get_perm_np(acl_permset, ACL_WRITE);
+#else
 	ret = acl_get_perm(acl_permset, ACL_WRITE);
+#endif
 	assert_int_equal(ret, write ? 1 : 0);
 
+#ifdef HAVE_ACL_GET_PERM_NP
+	ret = acl_get_perm_np(acl_permset, ACL_EXECUTE);
+#else
 	ret = acl_get_perm(acl_permset, ACL_EXECUTE);
+#endif
 	assert_int_equal(ret, execute ? 1 : 0);
 }
 
