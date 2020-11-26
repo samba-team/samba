@@ -1334,6 +1334,9 @@ sub setup_fileserver
 	my $tarmode_sharedir="$share_dir/tarmode";
 	push(@dirs,$tarmode_sharedir);
 
+	my $tarmode2_sharedir="$share_dir/tarmode2";
+	push(@dirs,$tarmode2_sharedir);
+
 	my $smbcacls_sharedir="$share_dir/smbcacls";
 	push(@dirs,$smbcacls_sharedir);
 
@@ -1362,6 +1365,14 @@ sub setup_fileserver
 
 	get quota command = $prefix_abs/getset_quota.py
 	set quota command = $prefix_abs/getset_quota.py
+[tarmode]
+	path = $tarmode_sharedir
+	comment = tar test share
+	xattr_tdb:file = $prefix_abs/tarmode-xattr.tdb
+[tarmode2]
+	path = $tarmode2_sharedir
+	comment = tar test share
+	xattr_tdb:file = $prefix_abs/tarmode2-xattr.tdb
 [spotlight]
 	path = $share_dir
 	spotlight = yes
