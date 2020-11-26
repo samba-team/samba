@@ -25,7 +25,8 @@ bld.SAMBA_BINARY('samba',
 	source='server.c',
 	subsystem_name='service',
 	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA
-                popt gensec registry ntvfs share cluster COMMON_SCHANNEL SECRETS''',
+                popt gensec registry ntvfs share cluster COMMON_SCHANNEL SECRETS
+                samba_server_util''',
 	pyembed=True,
 	install_path='${SBINDIR}',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
@@ -52,6 +53,6 @@ bld.SAMBA_MODULE('process_model_prefork',
                  source='process_prefork.c',
                  subsystem='process_model',
                  init_function='process_model_prefork_init',
-                 deps='MESSAGING events ldbsamba cluster samba-sockets process_model messages_dgm',
+                 deps='MESSAGING events ldbsamba cluster samba-sockets process_model messages_dgm samba_server_util',
                  internal_module=False
                  )
