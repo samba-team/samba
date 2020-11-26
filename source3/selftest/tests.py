@@ -129,19 +129,20 @@ for t in fileserver_tests:
 t = "TLDAP"
 plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
-t = "OPLOCK5"
-plantestsuite("samba3.smbtorture_s3.plain.%s" % t,
-              "fileserver_smb1",
-              [os.path.join(samba3srcdir,
-                            "script/tests/test_smbtorture_s3.sh"),
-               t,
-               '//$SERVER/tmp',
-               '$USERNAME',
-               '$PASSWORD',
-               smbtorture3,
-               "",
-               "-l $LOCAL_PATH",
-               "-mNT1"])
+if have_linux_kernel_oplocks:
+    t = "OPLOCK5"
+    plantestsuite("samba3.smbtorture_s3.plain.%s" % t,
+                  "fileserver_smb1",
+                  [os.path.join(samba3srcdir,
+                                "script/tests/test_smbtorture_s3.sh"),
+                   t,
+                   '//$SERVER/tmp',
+                   '$USERNAME',
+                   '$PASSWORD',
+                   smbtorture3,
+                   "",
+                   "-l $LOCAL_PATH",
+                   "-mNT1"])
 #
 # RENAME-ACCESS needs to run against a special share - acl_xattr_ign_sysacl_windows
 #
