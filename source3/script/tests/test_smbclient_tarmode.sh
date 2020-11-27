@@ -105,7 +105,7 @@ test_tarmode_creation() {
 
 	# Create tarfile with smbclient
 	if ! $SMBCLIENT //$SERVER/tmp $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
-			$ADDARGS -c "tarmode full" -Tc "$PREFIX/tarmode.tar" "/tarmode"; then
+			$ADDARGS -c "tarmode full" -Tc "$PREFIX/tarmode.tar" "/smbclient_tar"; then
 		echo "Couldn't create tar file with tarmode -Tc"
 		false
 		return
@@ -119,7 +119,7 @@ test_tarmode_creation() {
 	fi
 
 	# Verify data
-	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH"; then
+	if ! validate_data "$PREFIX/smbclient_tar" "$LOCAL_PATH"; then
 		echo "Data not equivalent"
 		false
 		return
@@ -146,7 +146,7 @@ test_tarmode_extraction() {
 	fi
 
 	# Create tarfile to extract on client
-	if ! tar -cf "$PREFIX/tarmode.tar" -C "$PREFIX" tarmode; then
+	if ! tar -cf "$PREFIX/tarmode.tar" -C "$PREFIX" smbclient_tar; then
 		echo "Couldn't create tar archive"
 		false
 		return
@@ -161,7 +161,7 @@ test_tarmode_extraction() {
 	fi
 
 	# Verify data
-	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH"; then
+	if ! validate_data "$PREFIX/smbclient_tar" "$LOCAL_PATH"; then
 		echo "Data not equivalent"
 		false
 		return
