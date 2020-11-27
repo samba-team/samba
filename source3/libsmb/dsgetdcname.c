@@ -601,7 +601,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		}
 
 		dclist[ret_count].hostname =
-			talloc_move(mem_ctx, &dcs[i].hostname);
+			talloc_move(dclist, &dcs[i].hostname);
 
 		/*
 		 * Pick the first IPv4 address,
