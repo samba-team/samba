@@ -94,7 +94,7 @@ test_tarmode_creation() {
 	# Clear temp data
 	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
 	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
-	rm -rf "$LOCAL_PATH" > /dev/null 2>&1
+	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 
 	# Build the test data
 	if ! create_test_data "$LOCAL_PATH"; then
@@ -136,7 +136,7 @@ test_tarmode_extraction() {
 	# Clear temp data
 	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
 	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
-	rm -rf "$LOCAL_PATH" > /dev/null 2>&1
+	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 
 	# Build the test data
 	if ! create_test_data "$PREFIX/tarmode"; then
