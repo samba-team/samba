@@ -918,7 +918,7 @@ sub reset_remote {
     # remove_tree($LOCALPATH . '/'. $DIR);
     # make_path($LOCALPATH . '/'. $DIR);
     remove_tree($LOCALPATH, {keep_root => 1});
-    make_path($LOCALPATH, {keep_root => 1});
+    make_path($LOCALPATH);
 }
 
 =head3 C<reset_tmp( )>
