@@ -171,6 +171,15 @@
 	errors and warnings if the file did not load. If the file was 
 	loaded OK, the program then dumps all known service details 
 	to stdout. </para>
+
+	<para>For certain use cases, SMB protocol requires use of
+	cryptographic algorithms which are known to be weak and already
+	broken. DES and ARCFOUR (RC4) ciphers and the SHA1 and MD5 hash
+	algorithms are considered weak but they are required for backward
+	compatibility. The testparm utility shows whether the Samba tools
+	will fall back to these weak crypto algorithms if it is not possible
+	to use strong cryptography by default.
+	In FIPS mode weak crypto cannot be enabled.</para>
 </refsect1>
 
 
