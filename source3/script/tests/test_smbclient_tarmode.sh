@@ -104,7 +104,7 @@ test_tarmode_creation() {
 	fi
 
 	# Create tarfile with smbclient
-	if ! $SMBCLIENT //$SERVER/tmp $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
+	if ! $SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
 			$ADDARGS -c "tarmode full" -Tc "$PREFIX/tarmode.tar" "/smbclient_tar"; then
 		echo "Couldn't create tar file with tarmode -Tc"
 		false
@@ -153,7 +153,7 @@ test_tarmode_extraction() {
 	fi
 
 	# Extract tarfile with smbclient
-	if ! $SMBCLIENT //$SERVER/tmp $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
+	if ! $SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 \
 			$ADDARGS -c "tarmode full" -Tx "$PREFIX/tarmode.tar"; then
 		echo "Couldn't extact tar file with tarmode -Tx"
 		false
