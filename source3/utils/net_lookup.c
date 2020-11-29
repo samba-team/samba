@@ -20,7 +20,7 @@
 #include "utils/net.h"
 #include "libsmb/namequery.h"
 #include "libads/sitename_cache.h"
-#include "../lib/addns/dnsquery.h"
+#include "lib/addns/dnsquery_srv.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "smb_krb5.h"
 #include "../libcli/security/security.h"
@@ -108,6 +108,7 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 	int ret;
 	char h_name[MAX_DNS_NAME_LENGTH];
+	char *query = NULL;
 
 	if (argc > 0)
 		domain = argv[0];
@@ -127,14 +128,17 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	if (sitename == NULL) {
 		sitename = sitename_fetch(ctx, domain);
 	}
+	query = ads_dns_query_string_dcs(ctx, domain);
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs(ctx,
-				   domain,
-				   sitename,
-				   &dcs,
-				   &numdcs);
+	status = ads_dns_query_srv(
+		ctx,
+		lp_get_async_dns_timeout(),
+		sitename,
+		query,
+		&dcs,
+		&numdcs);
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
@@ -168,11 +172,13 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs(ctx,
-				   domain,
-				   sitename,
-				   &dcs,
-				   &numdcs);
+	status = ads_dns_query_srv(
+		ctx,
+		lp_get_async_dns_timeout(),
+		sitename,
+		query,
+		&dcs,
+		&numdcs);
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
