@@ -12,8 +12,7 @@
     waiting for DNS server timeouts.
     </para>
     <para>The minimum value of this parameter is clamped
-    at 1 second.
-    zero.</para>
+    at 1 second.</para>
 </description>
 
 <value type="default">10</value>
