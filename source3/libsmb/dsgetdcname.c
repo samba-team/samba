@@ -26,7 +26,7 @@
 #include "libads/sitename_cache.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "libads/cldap.h"
-#include "../lib/addns/dnsquery.h"
+#include "lib/addns/dnsquery_srv.h"
 #include "libsmb/clidgram.h"
 #include "lib/gencache.h"
 #include "lib/util/util_net.h"
@@ -518,49 +518,36 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	size_t num_lookups_ret = 0;
 	struct samba_sockaddr *dns_addrs_ret = NULL;
 	char **dns_lookups_ret = NULL;
+	char *query = NULL;
 
 	if (flags & DS_PDC_REQUIRED) {
-		status = ads_dns_query_pdc(mem_ctx,
-					   domain_name,
-					   &dcs,
-					   &numdcs);
+		query = ads_dns_query_string_pdc(mem_ctx, domain_name);
 	} else if (flags & DS_GC_SERVER_REQUIRED) {
-		status = ads_dns_query_gcs(mem_ctx,
-					   domain_name,
-					   site_name,
-					   &dcs,
-					   &numdcs);
+		query = ads_dns_query_string_gcs(mem_ctx, domain_name);
 	} else if (flags & DS_KDC_REQUIRED) {
-		status = ads_dns_query_kdcs(mem_ctx,
-					    domain_name,
-					    site_name,
-					    &dcs,
-					    &numdcs);
+		query = ads_dns_query_string_kdcs(mem_ctx, domain_name);
 	} else if (flags & DS_DIRECTORY_SERVICE_REQUIRED) {
-		status = ads_dns_query_dcs(mem_ctx,
-					   domain_name,
-					   site_name,
-					   &dcs,
-					   &numdcs);
+		query = ads_dns_query_string_dcs(mem_ctx, domain_name);
 	} else if (domain_guid) {
-		struct GUID_txt_buf buf;
-		GUID_buf_string(domain_guid, &buf);
-
-		status = ads_dns_query_dcs_guid(mem_ctx,
-						domain_name,
-						buf.buf,
-						&dcs,
-						&numdcs);
+		query = ads_dns_query_string_dcs_guid(
+			mem_ctx, domain_guid, domain_name);
 	} else {
-		status = ads_dns_query_dcs(mem_ctx,
-					   domain_name,
-					   site_name,
-					   &dcs,
-					   &numdcs);
+		query = ads_dns_query_string_dcs(mem_ctx, domain_name);
 	}
 
+	if (query == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ads_dns_query_srv(
+		mem_ctx,
+		lp_get_async_dns_timeout(),
+		site_name,
+		query,
+		&dcs,
+		&numdcs);
+	TALLOC_FREE(query);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dcs);
 		return status;
 	}
 
