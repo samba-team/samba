@@ -2884,14 +2884,8 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	NTSTATUS  		status;
 	struct dns_rr_srv	*dcs = NULL;
 	size_t			numdcs = 0;
-	size_t			numaddrs = 0;
 	size_t num_srv_addrs = 0;
 	struct sockaddr_storage *srv_addrs = NULL;
-	size_t num_dns_addrs = 0;
-	struct samba_sockaddr *dns_addrs = NULL;
-	size_t num_dns_names = 0;
-	const char **dns_lookup_names = NULL;
-	struct sockaddr_storage *ret_addrs = NULL;
 	char *query = NULL;
 
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
@@ -2950,55 +2944,22 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	/*
-	 * Split the returned values into 2 arrays. First one
-	 * is a struct sockaddr_storage array that contains results
-	 * from the SRV record lookup that contain both hostnames
-	 * and IP addresses. We only need to copy out the IP
-	 * addresses. This is srv_addrs.
-	 *
-	 * Second array contains the results from the SRV record
-	 * lookup that only contain hostnames - no IP addresses.
-	 * We must then call dns_lookup_list() to lookup
-	 * hostnames -> IP address. This is dns_addrs.
-	 *
-	 * Finally we will merge these two arrays to create the
-	 * return sockaddr_storage array.
-	 */
-
 	/* First count the sizes of each array. */
 	for(i = 0; i < numdcs; i++) {
-		if (dcs[i].ss_s != NULL) {
-			/* IP address returned in SRV record. */
-			if (num_srv_addrs + dcs[i].num_ips < num_srv_addrs) {
-				/* Wrap check. */
-				TALLOC_FREE(dcs);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			/* Add in the number of addresses we got. */
-			num_srv_addrs += dcs[i].num_ips;
+		if (dcs[i].ss_s == NULL) {
 			/*
-			 * If we got any IP addresses zero out
-			 * the hostname so we know we've already
-			 * processed this entry and won't add it
-			 * to the dns_lookup_names array we use
-			 * to do DNS queries below.
+			 * Nothing received or timeout in A/AAAA reqs
 			 */
-			dcs[i].hostname = NULL;
-		} else {
-			/* Ensure we have a hostname to lookup. */
-			if (dcs[i].hostname == NULL) {
-				continue;
-			}
-			/* No IP address returned in SRV record. */
-			if (num_dns_names + 1 < num_dns_names) {
-				/* Wrap check. */
-				TALLOC_FREE(dcs);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			/* One more name to lookup. */
-			num_dns_names += 1;
+			continue;
 		}
+
+		if (num_srv_addrs + dcs[i].num_ips < num_srv_addrs) {
+			/* Wrap check. */
+			TALLOC_FREE(dcs);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		/* Add in the number of addresses we got. */
+		num_srv_addrs += dcs[i].num_ips;
 	}
 
 	/* Allocate the list of IP addresses we already have. */
@@ -3010,7 +2971,6 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Copy the addresses we already have. */
 	num_srv_addrs = 0;
 	for(i = 0; i < numdcs; i++) {
 		/* Copy all the IP addresses from the SRV response */
@@ -3034,96 +2994,10 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 		}
 	}
 
-	/* Allocate the array of hostnames we must look up. */
-	dns_lookup_names = talloc_zero_array(ctx,
-					const char *,
-					num_dns_names);
-	if (dns_lookup_names == NULL) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(srv_addrs);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	num_dns_names = 0;
-	for(i = 0; i < numdcs; i++) {
-		if (dcs[i].hostname == NULL) {
-			/*
-			 * Must have been a SRV return with an IP address.
-			 * We don't need to look up this hostname.
-			 */
-			continue;
-                }
-		dns_lookup_names[num_dns_names] = dcs[i].hostname;
-		num_dns_names++;
-	}
-
-	/* Lookup the addresses on the dns_lookup_list. */
-	status = dns_lookup_list_async(ctx,
-				num_dns_names,
-				dns_lookup_names,
-				&num_dns_addrs,
-				&dns_addrs,
-				NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(srv_addrs);
-		TALLOC_FREE(dns_lookup_names);
-		TALLOC_FREE(dns_addrs);
-		return status;
-	}
-
-	/*
-	 * Combine the two sockaddr_storage arrays into a talloc'ed
-	 * struct sockaddr_storage array return.
-         */
-
-	numaddrs = num_srv_addrs + num_dns_addrs;
-	/* Wrap check */
-	if (numaddrs < num_srv_addrs) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(srv_addrs);
-		TALLOC_FREE(dns_addrs);
-		TALLOC_FREE(dns_lookup_names);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (numaddrs == 0) {
-		/* Keep the same semantics for zero names. */
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(srv_addrs);
-		TALLOC_FREE(dns_addrs);
-		TALLOC_FREE(dns_lookup_names);
-		*return_addrs = NULL;
-		*return_count = 0;
-		return NT_STATUS_OK;
-	}
-
-	ret_addrs = talloc_zero_array(ctx,
-				struct sockaddr_storage,
-				numaddrs);
-	if (ret_addrs == NULL) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(srv_addrs);
-		TALLOC_FREE(dns_addrs);
-		TALLOC_FREE(dns_lookup_names);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i = 0; i < num_srv_addrs; i++) {
-		ret_addrs[i] = srv_addrs[i];
-	}
-	for (i = 0; i < num_dns_addrs; i++) {
-		ret_addrs[num_srv_addrs+i] = dns_addrs[i].u.ss;
-	}
-
 	TALLOC_FREE(dcs);
-	TALLOC_FREE(srv_addrs);
-	TALLOC_FREE(dns_addrs);
-	TALLOC_FREE(dns_lookup_names);
 
-	*return_addrs = ret_addrs;
-	*return_count = numaddrs;
+	*return_addrs = srv_addrs;
+	*return_count = num_srv_addrs;
 	return NT_STATUS_OK;
 }
 
