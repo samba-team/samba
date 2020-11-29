@@ -513,11 +513,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	size_t numdcs = 0;
 	struct ip_service_name *dclist = NULL;
 	size_t ret_count = 0;
-	size_t num_dns_lookups = 0;
-	const char **dns_lookups = NULL;
-	size_t num_lookups_ret = 0;
-	struct samba_sockaddr *dns_addrs_ret = NULL;
-	char **dns_lookups_ret = NULL;
 	char *query = NULL;
 
 	if (flags & DS_PDC_REQUIRED) {
@@ -577,16 +572,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < numdcs; i++) {
 		size_t j;
 
-		if (dcs[i].num_ips == 0) {
-			/*
-			 * No addresses returned in the SRV
-			 * reply, we must look this up via
-			 * DNS.
-			 */
-			num_dns_lookups++;
-			continue;
-		}
-
 		dclist[ret_count].hostname =
 			talloc_move(dclist, &dcs[i].hostname);
 
@@ -628,134 +613,16 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		ret_count++;
 	}
 
-	/*
-	 * Now, create an array of hostnames we
-	 * will asynchronously look up in DNS.
-	 */
-	dns_lookups = talloc_zero_array(mem_ctx,
-					const char *,
-					num_dns_lookups);
-	if (dns_lookups == NULL) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(dclist);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	num_dns_lookups = 0;
-	for (i = 0; i < numdcs; i++) {
-		if (dcs[i].num_ips != 0) {
-			/*
-			 * We already got an address
-			 * for this via SRV return.
-			 */
-			continue;
-		}
-		dns_lookups[num_dns_lookups] =
-			talloc_strdup(mem_ctx, dcs[i].hostname);
-		if (dns_lookups[num_dns_lookups] == NULL) {
-			TALLOC_FREE(dcs);
-			TALLOC_FREE(dclist);
-			TALLOC_FREE(dns_lookups);
-		}
-		num_dns_lookups++;
-	}
-
-	status = dns_lookup_list_async(mem_ctx,
-				       num_dns_lookups,
-				       dns_lookups,
-				       &num_lookups_ret,
-				       &dns_addrs_ret,
-				       &dns_lookups_ret);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(dclist);
-		TALLOC_FREE(dns_lookups);
-		return status;
-	}
-
-	/*
-	 * Remember, if we timed out or some
-	 * addresses didn't look up then
-	 * num_dns_lookups > num_lookups_ret,
-	 * so there isn't a one to one correspondence.
-	 *
-	 * The order of the requests is preserved
-	 * in the replies, but there may be requests
-	 * for which there are no replies if we
-	 * timed out.
-	 *
-	 * For example this means for looking up
-	 * names:
-	 *     NAME1
-	 *     NAME2
-	 *     NAME3
-	 *
-	 * The replies might look like:
-	 *     NAME1 -> IPv4
-	 *     NAME1 -> IPv4
-	 *     NAME1 -> IPv6
-	 *     NAME1 -> IPv6
-	 *     NAME3 -> IPv6
-	 *
-	 * But they will never be in the order:
-	 *
-	 *     NAME2
-	 *     NAME3
-	 *     NAME1
-	 *
-	 * Also in dns_lookup_list_async()
-	 * we arrange the requests/replies in
-	 * the order IPv4 followed by IPv6, so in
-	 * the replies, we can always pick the first
-	 * reply - we know it will be IPv4 if there
-	 * is an IPv4 for that name.
-	 *
-	 * Here ret_count is the index into the
-	 * next entry in dclist we must fill (may
-	 * be zero).
-	 */
-
-	for (i = 0; i < num_lookups_ret; i++) {
-		dclist[ret_count].hostname =
-			talloc_move(mem_ctx, &dns_lookups_ret[i]);
-		dclist[ret_count].sa = dns_addrs_ret[i];
-		/*
-		 * Is this a duplicate name return.
-		 * Remember we can look up both A and
-		 * AAAA records which can return multiple
-		 * addresses and the order of names
-		 * is preserved.
-		 */
-		if (ret_count > 0) {
-			if (strcmp(dclist[ret_count-1].hostname,
-				   dclist[ret_count].hostname) == 0) {
-				/*
-				 * Same name. Keep the first address
-				 * which is IPv4 by preference.
-				 */
-				continue;
-			}
-		}
-		ret_count++;
-
-		if (ret_count == numdcs) {
-			/* We've filled the return array. */
-			break;
-		}
-	}
-
-	if (ret_count > 0) {
-		TALLOC_FREE(dcs);
-		TALLOC_FREE(dns_lookups);
-		*returned_dclist = dclist;
-		*return_count = ret_count;
-		return NT_STATUS_OK;
-	}
-
 	TALLOC_FREE(dcs);
-	TALLOC_FREE(dclist);
-	TALLOC_FREE(dns_lookups);
-	return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
+	if (ret_count == 0) {
+		TALLOC_FREE(dclist);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	*returned_dclist = dclist;
+	*return_count = ret_count;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
