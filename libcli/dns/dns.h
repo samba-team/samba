@@ -20,6 +20,12 @@
 
 /* DNS query section in replies */
 
+#ifndef __LIBCLI_DNS_DNS_H__
+#define __LIBCLI_DNS_DNS_H__
+
+#include "replace.h"
+#include "system/network.h"
+
 struct dns_query {
 	const char *hostname;
 	uint16_t type;
@@ -54,3 +60,5 @@ struct dns_rr_ns {
 	const char *hostname;
 	struct sockaddr_storage ss;
 };
+
+#endif
