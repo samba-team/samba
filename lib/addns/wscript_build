@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('addns',
-                   source='dnsquery.c dnsrecord.c dnsutils.c dnssock.c dnsgss.c dnsmarshall.c error.c',
+                   source='''
+                       dnsquery.c
+                       dnsrecord.c
+                       dnsutils.c
+                       dnssock.c
+                       dnsgss.c
+                       dnsmarshall.c
+                       error.c
+                   ''',
                    public_deps='samba-util gssapi ndr resolv dns_lookup',
                    private_library=True,
                    vars=locals())
