@@ -17,8 +17,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ADS_DNS_H
-#define _ADS_DNS_H
+#ifndef __LIB_ADDNS_DNSQUERY_H__
+#define __LIB_ADDNS_DNSQUERY_H__
 
 #include "replace.h"
 #include <tevent.h>
@@ -103,4 +103,4 @@ NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 				const char *domain_guid,
 				struct dns_rr_srv **dclist,
 				size_t *numdcs );
-#endif	/* _ADS_DNS_H */
+#endif	/* __LIB_ADDNS_DNSQUERY_H__ */
