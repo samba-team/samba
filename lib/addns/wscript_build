@@ -9,6 +9,7 @@ bld.SAMBA_LIBRARY('addns',
                        dnsgss.c
                        dnsmarshall.c
                        error.c
+                       dnsquery_srv.c
                    ''',
                    public_deps='samba-util gssapi ndr resolv dns_lookup',
                    private_library=True,
