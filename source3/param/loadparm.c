@@ -4763,13 +4763,9 @@ enum samba_weak_crypto lp_weak_crypto()
 
 uint32_t lp_get_async_dns_timeout(void)
 {
-	uint32_t val = Globals.async_dns_timeout;
 	/*
 	 * Clamp minimum async dns timeout to 1 second
 	 * as per the man page.
 	 */
-	if (val < 1) {
-		val = 1;
-	}
-	return val;
+	return MAX(Globals.async_dns_timeout, 1);
 }
