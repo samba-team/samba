@@ -23,6 +23,8 @@
 #include "replace.h"
 #include <tevent.h>
 #include "libcli/dns/dns.h"
+#include "lib/util/util_net.h"
+#include "libcli/util/ntstatus.h"
 
 /* The following definitions come from libads/dns.c  */
 
