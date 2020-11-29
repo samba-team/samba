@@ -81,28 +81,4 @@ NTSTATUS ads_dns_lookup_aaaa(TALLOC_CTX *ctx,
 			struct samba_sockaddr **addrs_out);
 #endif
 
-NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
-			   const char *realm,
-			   const char *sitename,
-			   struct dns_rr_srv **dclist,
-			   size_t *numdcs );
-NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
-			   const char *realm,
-			   const char *sitename,
-			   struct dns_rr_srv **dclist,
-			   size_t *numdcs );
-NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
-			    const char *dns_forest_name,
-			    const char *sitename,
-			    struct dns_rr_srv **dclist,
-			    size_t *numdcs );
-NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
-			   const char *dns_domain_name,
-			   struct dns_rr_srv **dclist,
-			   size_t *numdcs );
-NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
-				const char *dns_forest_name,
-				const char *domain_guid,
-				struct dns_rr_srv **dclist,
-				size_t *numdcs );
 #endif	/* __LIB_ADDNS_DNSQUERY_H__ */
