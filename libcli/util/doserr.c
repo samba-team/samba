@@ -125,7 +125,7 @@ const char *win_errstr(WERROR werror)
 
 const char *get_friendly_werror_msg(WERROR werror)
 {
-	int i = 0;
+	size_t i = 0;
 
 	for (i = 0; i < ARRAY_SIZE(dos_err_strs); i++) {
 		if (W_ERROR_V(dos_err_strs[i].werror) ==

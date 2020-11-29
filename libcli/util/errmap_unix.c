@@ -142,7 +142,7 @@ static const struct {
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix_common(int unix_error)
 {
-	int i;
+	size_t i;
 
 	/* Look through list */
 	for (i=0;i<ARRAY_SIZE(unix_nt_errmap);i++) {

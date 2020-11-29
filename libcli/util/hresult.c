@@ -14676,7 +14676,7 @@ static const struct {
 const char *hresult_errstr_const(HRESULT err_code)
 {
 	const char *result = NULL;
-	int i;
+	size_t i;
 	for (i = 0; i < ARRAY_SIZE(hresult_errs); ++i) {
 		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {
 			result = hresult_errs[i].error_message;
@@ -14694,7 +14694,7 @@ const char *hresult_errstr_const(HRESULT err_code)
 const char *hresult_errstr(HRESULT err_code)
 {
 	static char msg[22];
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(hresult_errs); i++) {
 		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {
