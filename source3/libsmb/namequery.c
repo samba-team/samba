@@ -23,6 +23,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "libads/sitename_cache.h"
 #include "../lib/addns/dnsquery.h"
+#include "../lib/addns/dnsquery_srv.h"
 #include "../libcli/netlogon/netlogon.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/tsocket/tsocket.h"
@@ -2891,39 +2892,31 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	size_t num_dns_names = 0;
 	const char **dns_lookup_names = NULL;
 	struct sockaddr_storage *ret_addrs = NULL;
+	char *query = NULL;
 
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
 	    (name_type != 0x1b)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	status = NT_STATUS_OK;
+
 	switch (name_type) {
 		case 0x1b:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "PDC for %s using DNS\n", name));
-			status = ads_dns_query_pdc(ctx,
-						   name,
-						   &dcs,
-						   &numdcs);
+			query = ads_dns_query_string_pdc(ctx, name);
 			break;
 
 		case 0x1c:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "DCs for %s using DNS\n", name));
-			status = ads_dns_query_dcs(ctx,
-						   name,
-						   sitename,
-						   &dcs,
-						   &numdcs);
+			query = ads_dns_query_string_dcs(ctx, name);
 			break;
 		case KDC_NAME_TYPE:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "KDCs for %s using DNS\n", name));
-			status = ads_dns_query_kdcs(ctx,
-						    name,
-						    sitename,
-						    &dcs,
-						    &numdcs);
+			query = ads_dns_query_string_kdcs(ctx, name);
 			break;
 		default:
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -2931,7 +2924,22 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dcs);
+		return status;
+	}
+	if (query == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("SRV query for %s\n", query);
+
+	status = ads_dns_query_srv(
+		ctx,
+		lp_get_async_dns_timeout(),
+		sitename,
+		query,
+		&dcs,
+		&numdcs);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
