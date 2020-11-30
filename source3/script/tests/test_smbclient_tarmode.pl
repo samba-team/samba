@@ -303,6 +303,8 @@ sub test_creation_attr {
     @inc = grep { $_->attr('a') && !$_->attr_any('h', 's') } @all;
     smb_tar('tarmode inc nohidden nosystem', '-Tc', $TAR, $DIR);
     $err += check_tar($TAR, \@inc);
+    # adjust attr so remote files can be deleted with deltree
+    File::walk(sub { $_->set_attr(qw/n r s h/) }, File::tree($DIR));
 
     $err;
 }
@@ -398,7 +400,10 @@ sub test_creation_incremental {
     } else {
         smb_tar('', '-Tcg', $TAR, $DIR);
     }
-    return check_tar($TAR, \@files);
+    my $res = check_tar($TAR, \@files);
+    # adjust attr so remote files can be deleted with deltree
+    File::walk(sub { $_->set_attr(qw/n r s h/) }, File::tree($DIR));
+    return $res
 }
 
 
@@ -916,7 +921,7 @@ Remove all files in the server C<$DIR> (not root)
 sub reset_remote {
     # remove_tree($LOCALPATH . '/'. $DIR);
     # make_path($LOCALPATH . '/'. $DIR);
-    remove_tree($LOCALPATH, {keep_root => 1});
+    smb_client_cmd(0, '-c', "deltree ./*");
 }
 
 =head3 C<reset_tmp( )>
