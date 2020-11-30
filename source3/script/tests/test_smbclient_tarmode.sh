@@ -111,7 +111,8 @@ test_tarmode_creation() {
 		return
 	fi
 
-	# Extract data to verify
+	# Extract data to verify - this puts it into $PREFIX/smbclient_tar/
+	# but we must leave it there as it's used to verify in test_tarmode_extraction()
 	if ! tar -xf "$PREFIX/tarmode.tar" -C "$PREFIX"; then
 		echo "Couldn't extract data from created tarfile"
 		false
@@ -125,6 +126,10 @@ test_tarmode_creation() {
 		return
 	fi
 
+	# Clear temp data
+	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
 	true
 	return
 
@@ -167,6 +172,12 @@ test_tarmode_extraction() {
 		return
 	fi
 
+	# Clear temp data
+	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
+	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
+	$SMBCLIENT //$SERVER/tarmode $CONFIGURATION -U$USERNAME%$PASSWORD -c "deltree smbclient_tar"
+	# Cleanup the verification data created by test_tarmode_creation().
+	rm -rf "$PREFIX"/smbclient_tar > /dev/null 2>&1
 	true
 	return
 
