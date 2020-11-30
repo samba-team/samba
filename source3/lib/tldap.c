@@ -666,7 +666,8 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	uint8_t *inbuf;
 	ssize_t received;
 	size_t num_pending;
-	int i, err;
+	size_t i;
+	int err;
 	TLDAPRC status = TLDAP_PROTOCOL_ERROR;
 	int id;
 	uint8_t type;
