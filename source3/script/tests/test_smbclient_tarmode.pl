@@ -1118,7 +1118,9 @@ sub check_tar {
     return (@more + @less + @diff); # nb of errors
 }
 
-=head3 C<smb_client ( @args )>
+=head3 C<smb_client_cmd( $will_die, @args)>
+
+=head3 C<smb_client_cmd( 0, '-c', 'deltree', $somedir )>
 
 Run smbclient with C<@args> passed as argument and return output.
 
@@ -1129,11 +1131,12 @@ the command-line are already inserted.
 
 The output contains both the C<STDOUT> and C<STDERR>.
 
-Die if smbclient crashes or exits with an error code.
+if C<$will_die> then Die if smbclient crashes or exits with an error code.
+otherwise return output
 
 =cut
-sub smb_client {
-    my (@args) = @_;
+sub smb_client_cmd {
+    my ($will_die, @args) = @_;
 
     my $fullpath = "//$HOST/$SHARE";
     my $cmd = sprintf("%s %s %s",
@@ -1166,9 +1169,32 @@ sub smb_client {
     }
 
     if ($err) {
-        die "ERROR: $errstr";
+	if ($will_die) {
+		die "ERROR: $errstr";
+	} else {
+		say "ERROR: $errstr";
+	}
     }
     return $out;
+}
+
+=head3 C<smb_client ( @args )>
+
+Run smbclient with C<@args> passed as argument and return output.
+
+Each element of C<@args> becomes one escaped argument of smbclient.
+
+Host, share, user, password and the additionnal arguments provided on
+the command-line are already inserted.
+
+The output contains both the C<STDOUT> and C<STDERR>.
+
+Die if smbclient crashes or exits with an error code.
+
+=cut
+sub smb_client {
+    my (@args) = @_;
+    return smb_client_cmd(1, @args)
 }
 
 sub smb_cmd {
