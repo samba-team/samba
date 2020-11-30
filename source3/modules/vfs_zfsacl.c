@@ -219,8 +219,9 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 	if (must_add_empty_ace) {
 		acebuf[i].a_type = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
-		acebuf[i].a_flags = SMB_ACE4_DIRECTORY_INHERIT_ACE| \
-				    SMB_ACE4_FILE_INHERIT_ACE|ACE_EVERYONE;
+		acebuf[i].a_flags = SMB_ACE4_DIRECTORY_INHERIT_ACE |
+			SMB_ACE4_FILE_INHERIT_ACE |
+			ACE_EVERYONE;
 		acebuf[i].a_access_mask = 0;
 		i++;
 	}
