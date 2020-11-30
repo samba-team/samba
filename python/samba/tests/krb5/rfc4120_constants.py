@@ -28,6 +28,7 @@ ARCFOUR_HMAC_MD5 = int(
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
 KRB_AS_REP = int(krb5_asn1.MessageTypeValues('krb-as-rep'))
+KRB_TGS_REP = int(krb5_asn1.MessageTypeValues('krb-tgs-rep'))
 
 # PAData types
 PADATA_ENC_TIMESTAMP = int(
@@ -39,6 +40,7 @@ PADATA_ETYPE_INFO2 = int(
 KDC_ERR_C_PRINCIPAL_UNKNOWN = 6
 KDC_ERR_PREAUTH_FAILED      = 24
 KDC_ERR_PREAUTH_REQUIRED    = 25
+KDC_ERR_BADMATCH            = 36
 KDC_ERR_SKEW                = 37
 
 # Name types

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Unix SMB/CIFS implementation.
 # Copyright (C) Stefan Metzmacher 2020
 # Copyright (C) 2020 Catalyst.Net Ltd
