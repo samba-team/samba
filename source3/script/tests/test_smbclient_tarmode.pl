@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 # Unix SMB/CIFS implementation.
 # Test suite for the tar backup mode of smbclient.
 # Copyright (C) Aurélien Aptel 2013
@@ -918,7 +917,6 @@ sub reset_remote {
     # remove_tree($LOCALPATH . '/'. $DIR);
     # make_path($LOCALPATH . '/'. $DIR);
     remove_tree($LOCALPATH, {keep_root => 1});
-    make_path($LOCALPATH);
 }
 
 =head3 C<reset_tmp( )>
