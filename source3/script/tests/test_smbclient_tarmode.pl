@@ -921,7 +921,22 @@ Remove all files in the server C<$DIR> (not root)
 sub reset_remote {
     # remove_tree($LOCALPATH . '/'. $DIR);
     # make_path($LOCALPATH . '/'. $DIR);
+    my $DIR;
+    my @names;
+    my $name;
+
     smb_client_cmd(0, '-c', "deltree ./*");
+
+    # Ensure all files are gone.
+
+    opendir(DIR,$LOCALPATH) or die "Can't open $LOCALPATH\n";
+    @names = readdir(DIR) or die "Unable to read $LOCALPATH\n";
+    closedir(DIR);
+    foreach $name (@names) {
+	next if ($name eq ".");   # skip the current directory entry
+	next if ($name eq "..");  # skip the parent  directory entry
+	die "$LOCALPATH not empty\n";
+    }
 }
 
 =head3 C<reset_tmp( )>
