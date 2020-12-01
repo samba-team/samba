@@ -1008,7 +1008,7 @@ for s in signseal_options:
             [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
              "$PREFIX/ktest/krb5_ccache-3",
              binding_string,
-             "-k -c getusername",
+             "--use-krb5-ccache=$PREFIX/ktest/krb5_ccache-3 -c getusername",
              configuration])
 
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "ad_member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),

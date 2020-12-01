@@ -25,7 +25,8 @@ bld.SAMBA3_BINARY('rpcclient',
 		 ''',
                  deps='''
                  talloc
-                 popt_samba3_cmdline
+                 CMDLINE_S3
+                 cmdline_contexts
                  pdb
                  libsmb
                  smbconf

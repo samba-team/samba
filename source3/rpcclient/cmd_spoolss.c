@@ -33,9 +33,9 @@
 #include "../libcli/security/security_descriptor.h"
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
-#include "popt_common_cmdline.h"
 #include "lib/util/smb_strtox.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/cmdline/cmdline.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \
@@ -3505,6 +3505,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	struct policy_handle hPrinter1, hPrinter2;
 	NTSTATUS nt_status;
 	WERROR werror;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	if ( argc != 3 )  {
 		printf("Usage: %s <printer> <server>\n", argv[0]);
@@ -3518,8 +3519,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	nt_status = cli_full_connection_creds(&cli_server2, lp_netbios_name(), argv[2],
 				NULL, 0,
 				"IPC$", "IPC",
-				get_cmdline_auth_info_creds(
-					popt_get_cmdline_auth_info()),
+				creds,
 				CLI_FULL_CONNECTION_IPC);
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return WERR_GEN_FAILURE;

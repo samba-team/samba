@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "../libcli/auth/netlogon_creds_cli.h"
-#include "popt_common_cmdline.h"
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
@@ -37,6 +36,7 @@
 #include "messages.h"
 #include "cmdline_contexts.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
+#include "lib/cmdline/cmdline.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -1133,8 +1133,8 @@ out_free:
 	enum dcerpc_transport_t transport;
 	const char *binding_string = NULL;
 	const char *host;
-	int signing_state = SMB_SIGNING_IPC_DEFAULT;
 	struct cli_credentials *creds = NULL;
+	bool ok;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1147,6 +1147,8 @@ out_free:
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
+		POPT_LEGACY_S3
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -1156,17 +1158,26 @@ out_free:
 
 	setlinebuf(stdout);
 
-	/* the following functions are part of the Samba debugging
-	   facilities.  See lib/debug.c */
-	setup_logging("rpcclient", DEBUG_STDOUT);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+	}
 	lp_set_cmdline("log level", "0");
 
 	/* Parse options */
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    const_argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		exit(1);
+	}
 
-	pc = poptGetContext("rpcclient", argc, const_argv,
-			    long_options, 0);
-
-	poptSetOtherOptionHelp(pc, "[OPTION...] <server>\nOptions:");
+	poptSetOtherOptionHelp(pc, "[OPTION...] BINDING-STRING|HOST\nOptions:");
 
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
@@ -1200,10 +1211,10 @@ out_free:
 	}
 
 	poptFreeContext(pc);
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	rpcclient_msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
-	creds = get_cmdline_auth_info_creds(popt_get_cmdline_auth_info());
+	creds = samba_cmdline_get_creds();
 
 	/*
 	 * Get password
@@ -1246,19 +1257,7 @@ out_free:
 
 	host = dcerpc_binding_get_string_option(binding, "host");
 
-	signing_state = get_cmdline_auth_info_signing_state(
-			popt_get_cmdline_auth_info());
-	switch (signing_state) {
-	case SMB_SIGNING_OFF:
-		lp_set_cmdline("client ipc signing", "no");
-		break;
-	case SMB_SIGNING_REQUIRED:
-		lp_set_cmdline("client ipc signing", "required");
-		break;
-	}
-
-	rpcclient_netlogon_domain = get_cmdline_auth_info_domain(
-			popt_get_cmdline_auth_info());
+	rpcclient_netlogon_domain = cli_credentials_get_domain(creds);
 	if (rpcclient_netlogon_domain == NULL ||
 	    rpcclient_netlogon_domain[0] == '\0')
 	{
@@ -1274,8 +1273,7 @@ out_free:
 			opt_port,
 			"IPC$",
 			"IPC",
-			get_cmdline_auth_info_creds(
-				popt_get_cmdline_auth_info()),
+			creds,
 			flags);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1344,7 +1342,6 @@ done:
 	if (cli != NULL) {
 		cli_shutdown(cli);
 	}
-	popt_free_cmdline_auth_info();
 	netlogon_creds_cli_close_global_db();
 	TALLOC_FREE(rpcclient_msg_ctx);
 	TALLOC_FREE(frame);
