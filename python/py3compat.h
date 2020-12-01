@@ -22,13 +22,6 @@
 #include <Python.h>
 
 /* Quick docs:
- *
- * "PyStr_*" works like PyUnicode_* on Python 3, but uses bytestrings (str)
- * under Python 2.
- *
- * "PyBytes_*" work like in Python 3; on Python 2 they are aliased to their
- * PyString_* names.
- *
  * Syntax for module initialization is as in Python 3, except the entrypoint
  * function definition and declaration:
  *     PyMODINIT_FUNC PyInit_modulename(void);
@@ -44,16 +37,7 @@
  *
  * In the entrypoint, create a module using PyModule_Create and PyModuleDef,
  * and return it. See Python 3 documentation for details.
- * For Python 2 compatibility, always set PyModuleDef.m_size to -1.
- *
  */
-
-/***** Python 3 *****/
-
-/* Strings */
-
-
-/* Module init */
 
 #define MODULE_INIT_FUNC(name) \
     PyMODINIT_FUNC PyInit_ ## name(void); \
