@@ -2424,13 +2424,13 @@ def provision(logger, session_info, smbconf=None,
     return result
 
 
-def provision_become_dc(smbconf=None, targetdir=None,
-                        realm=None, rootdn=None, domaindn=None, schemadn=None, configdn=None,
-                        serverdn=None, domain=None, hostname=None, domainsid=None,
-                        adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
-                        policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
-                        dns_backend=None, root=None, nobody=None, users=None,
-                        backup=None, serverrole=None, sitename=None, debuglevel=1, use_ntvfs=False):
+def provision_become_dc(smbconf=None, targetdir=None, realm=None,
+                        rootdn=None, domaindn=None, schemadn=None,
+                        configdn=None, serverdn=None, domain=None,
+                        hostname=None, domainsid=None,
+                        machinepass=None, dnspass=None,
+                        dns_backend=None, sitename=None, debuglevel=1,
+                        use_ntvfs=False):
 
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
