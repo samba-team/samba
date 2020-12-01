@@ -867,7 +867,7 @@ fail:
  * @param cmd Command to run, as a single string.
  **/
 static NTSTATUS do_cmd(struct cli_state *cli,
-		       struct user_auth_info *auth_info,
+		       struct cli_credentials *creds,
 		       struct cmd_set *cmd_entry,
 		       struct dcerpc_binding *binding,
 		       int argc, const char **argv)
@@ -893,8 +893,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		} else {
 			enum dcerpc_AuthType auth_type;
 			enum dcerpc_AuthLevel auth_level;
-			struct cli_credentials *creds =
-				get_cmdline_auth_info_creds(auth_info);
 			enum credentials_use_kerberos krb5_state =
 				cli_credentials_get_kerberos_state(creds);
 
@@ -1060,6 +1058,8 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 	int ret;
 	int argc;
 	const char **argv = NULL;
+	struct cli_credentials *creds =
+		get_cmdline_auth_info_creds(auth_info);
 
 	if ((ret = poptParseArgvString(cmd, &argc, &argv)) != 0) {
 		fprintf(stderr, "rpcclient: %s\n", poptStrerror(ret));
@@ -1088,7 +1088,7 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 			}
 
 			result = do_cmd(
-				cli, auth_info, set, binding, argc, argv);
+				cli, creds, set, binding, argc, argv);
 			goto out_free;
 		}
 	}
