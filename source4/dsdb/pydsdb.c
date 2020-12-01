@@ -587,8 +587,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 			PyObject *item = PyList_GetItem(el_list, i);
 			if (!(PyBytes_Check(item))) {
 				PyErr_Format(PyExc_TypeError,
-					     "ldif_element type should be "
-					     PY_DESC_PY3_BYTES
+					     "ldif_element type should be bytes"
 					     );
 				talloc_free(tmp_ctx);
 				return NULL;
@@ -698,8 +697,7 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 			PyObject *item = PyList_GetItem(el_list, i);
 			if (!PyBytes_Check(item)) {
 				PyErr_Format(PyExc_TypeError,
-					     "ldif_element type should be "
-					     PY_DESC_PY3_BYTES
+					     "ldif_element type should be bytes"
 					     );
 				talloc_free(tmp_ctx);
 				return NULL;

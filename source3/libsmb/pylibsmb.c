@@ -1735,10 +1735,10 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "chkpath(dir_path) -> True or False\n\n"
 	  "\t\tReturn true if directory exists, false otherwise." },
 	{ "savefile", (PyCFunction)py_smb_savefile, METH_VARARGS,
-	  "savefile(path, str) -> None\n\n"
-	  "\t\tWrite " PY_DESC_PY3_BYTES " str to file." },
+	  "savefile(path, bytes) -> None\n\n"
+	  "\t\tWrite bytes to file." },
 	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
-	  "loadfile(path) -> file contents as a " PY_DESC_PY3_BYTES
+	  "loadfile(path) -> file contents as a bytes object"
 	  "\n\n\t\tRead contents of a file." },
 	{ "get_sd", (PyCFunction)py_smb_get_sd, METH_VARARGS,
 	  "get_sd(fnum[, security_info=0]) -> security_descriptor object\n\n"

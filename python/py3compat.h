@@ -52,8 +52,6 @@
 
 /* Strings */
 
-/* description of bytes objects */
-#define PY_DESC_PY3_BYTES "bytes"
 
 /* Module init */
 
