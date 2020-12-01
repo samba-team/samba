@@ -1048,7 +1048,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
  *
  * @returns The NTSTATUS from running the command.
  **/
-static NTSTATUS process_cmd(struct user_auth_info *auth_info,
+static NTSTATUS process_cmd(struct cli_credentials *creds,
 			    struct cli_state *cli,
 			    struct dcerpc_binding *binding,
 			    char *cmd)
@@ -1058,8 +1058,6 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 	int ret;
 	int argc;
 	const char **argv = NULL;
-	struct cli_credentials *creds =
-		get_cmdline_auth_info_creds(auth_info);
 
 	if ((ret = poptParseArgvString(cmd, &argc, &argv)) != 0) {
 		fprintf(stderr, "rpcclient: %s\n", poptStrerror(ret));
@@ -1136,6 +1134,7 @@ out_free:
 	const char *binding_string = NULL;
 	const char *host;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
+	struct cli_credentials *creds = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1204,6 +1203,7 @@ out_free:
 	popt_burn_cmdline_password(argc, argv);
 
 	rpcclient_msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
+	creds = get_cmdline_auth_info_creds(popt_get_cmdline_auth_info());
 
 	/*
 	 * Get password
@@ -1309,9 +1309,10 @@ out_free:
 		result = 0;
 
                 while((cmd=next_command(&p)) != NULL) {
-                        NTSTATUS cmd_result = process_cmd(
-						popt_get_cmdline_auth_info(),
-						cli, binding, cmd);
+                        NTSTATUS cmd_result = process_cmd(creds,
+							  cli,
+							  binding,
+							  cmd);
 			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
@@ -1332,8 +1333,10 @@ out_free:
 		}
 
 		if (line[0] != '\n')
-			process_cmd(popt_get_cmdline_auth_info(), cli,
-				binding, line);
+			process_cmd(creds,
+				    cli,
+				    binding,
+				    line);
 		SAFE_FREE(line);
 	}
 
