@@ -274,26 +274,17 @@ static int share_mode_data_nofree_destructor(struct share_mode_data *d)
 
 static struct share_mode_data *share_mode_memcache_fetch(
 	TALLOC_CTX *mem_ctx,
-	const TDB_DATA id_key,
+	struct file_id id,
 	const uint8_t *buf,
 	size_t buflen)
 {
+	const DATA_BLOB key = memcache_key(&id);
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
 	uint64_t unique_content_epoch;
 	uint16_t flags;
 	void *ptr;
-	struct file_id id;
 	struct file_id_buf idbuf;
-	DATA_BLOB key;
-
-	/* Ensure this is a locking_key record. */
-	if (id_key.dsize != sizeof(id)) {
-		return NULL;
-	}
-
-	memcpy(&id, id_key.dptr, id_key.dsize);
-	key = memcache_key(&id);
 
 	ptr = memcache_lookup_talloc(NULL,
 			SHARE_MODE_LOCK_CACHE,
@@ -592,7 +583,7 @@ static NTSTATUS locking_tdb_data_store(
 
 static struct share_mode_data *parse_share_modes(
 	TALLOC_CTX *mem_ctx,
-	const TDB_DATA key,
+	struct file_id id,
 	const uint8_t *buf,
 	size_t buflen)
 {
@@ -601,7 +592,7 @@ static struct share_mode_data *parse_share_modes(
 	DATA_BLOB blob;
 
 	/* See if we already have a cached copy of this key. */
-	d = share_mode_memcache_fetch(mem_ctx, key, buf, buflen);
+	d = share_mode_memcache_fetch(mem_ctx, id, buf, buflen);
 	if (d != NULL) {
 		return d;
 	}
@@ -786,7 +777,6 @@ static void get_static_share_mode_data_fn(
 	void *private_data)
 {
 	struct get_static_share_mode_data_state *state = private_data;
-	TDB_DATA key = locking_key(&state->id);
 	struct share_mode_data *d = NULL;
 	struct locking_tdb_data ltdb = { 0 };
 
@@ -818,7 +808,7 @@ static void get_static_share_mode_data_fn(
 	} else {
 		d = parse_share_modes(
 			lock_ctx,
-			key,
+			state->id,
 			ltdb.share_mode_data_buf,
 			ltdb.share_mode_data_len);
 		if (d == NULL) {
@@ -1324,7 +1314,7 @@ NTSTATUS share_mode_watch_recv(
 
 struct fetch_share_mode_unlocked_state {
 	TALLOC_CTX *mem_ctx;
-	TDB_DATA key;
+	struct file_id id;
 	struct share_mode_lock *lck;
 };
 
@@ -1360,7 +1350,7 @@ static void fetch_share_mode_unlocked_parser(
 
 	state->lck->data = parse_share_modes(
 		state->lck,
-		state->key,
+		state->id,
 		ltdb.share_mode_data_buf,
 		ltdb.share_mode_data_len);
 	if (state->lck->data == NULL) {
@@ -1379,12 +1369,13 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 {
 	struct fetch_share_mode_unlocked_state state = {
 		.mem_ctx = mem_ctx,
-		.key = locking_key(&id),
+		.id = id,
 	};
+	TDB_DATA key = locking_key(&id);
 	NTSTATUS status;
 
 	status = g_lock_dump(
-		lock_ctx, state.key, fetch_share_mode_unlocked_parser, &state);
+		lock_ctx, key, fetch_share_mode_unlocked_parser, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("g_lock_dump failed: %s\n", nt_errstr(status));
 		return NULL;
@@ -1497,7 +1488,7 @@ static void fetch_share_mode_fn(
 
 	state->lck->data = parse_share_modes(
 		state->lck,
-		locking_key(&state->id),
+		state->id,
 		ltdb.share_mode_data_buf,
 		ltdb.share_mode_data_len);
 	if (state->lck->data == NULL) {
@@ -1593,7 +1584,7 @@ static void share_mode_forall_dump_fn(
 
 	d = parse_share_modes(
 		talloc_tos(),
-		state->key,
+		fid,
 		ltdb.share_mode_data_buf,
 		ltdb.share_mode_data_len);
 	if (d == NULL) {
