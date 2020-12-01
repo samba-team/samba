@@ -1640,7 +1640,7 @@ bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 
 struct files_below_forall_state {
 	char *dirpath;
-	size_t dirpath_len;
+	ssize_t dirpath_len;
 	int (*fn)(struct file_id fid, const struct share_mode_data *data,
 		  void *private_data);
 	void *private_data;
@@ -1653,7 +1653,7 @@ static int files_below_forall_fn(struct file_id fid,
 	struct files_below_forall_state *state = private_data;
 	char tmpbuf[PATH_MAX];
 	char *fullpath, *to_free;
-	size_t len;
+	ssize_t len;
 
 	len = full_path_tos(data->servicepath, data->base_name,
 			    tmpbuf, sizeof(tmpbuf),
