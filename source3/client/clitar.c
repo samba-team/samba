@@ -711,7 +711,7 @@ static int tar_create(struct tar* t)
 			goto out_close;
 		}
 		DBG(5, ("tar_process do_list with mask: %s\n", mask));
-		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, true, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG(0, ("do_list fail %s\n", nt_errstr(status)));
 			err = 1;
@@ -806,7 +806,7 @@ static int tar_create_from_list(struct tar *t)
 			DBG(5, ("cd '%s' before do_list\n", base));
 			client_set_cur_dir(base);
 		}
-		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
+		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, true, true);
 		if (base != NULL) {
 			client_set_cur_dir(start_dir);
 		}
@@ -837,7 +837,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 	char *remote_name;
 	char *old_dir = NULL;
 	char *new_dir = NULL;
-	const char *initial_dir = client_get_cur_dir();
+	const char *initial_dir = dir;
 	bool skip = false;
 	bool isdir;
 	int rc;
@@ -846,7 +846,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_name = talloc_asprintf(ctx, "%s%s", initial_dir, finfo->name);
+	remote_name = talloc_asprintf(ctx, "%s\\%s", initial_dir, finfo->name);
 	if (remote_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -884,35 +884,10 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		goto out;
 	}
 
-	if (isdir) {
-		char *mask;
-		mask = talloc_asprintf(ctx, "%s*", new_dir);
-		if (mask == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		mask = client_clean_name(ctx, mask);
-		if (mask == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-
-		rc = tar_get_file(&tar_ctx, remote_name, finfo);
-		if (rc != 0) {
-			status = NT_STATUS_UNSUCCESSFUL;
-			goto out;
-		}
-
-		client_set_cur_dir(new_dir);
-		do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
-		client_set_cur_dir(old_dir);
-		tar_ctx.numdir++;
-	} else {
-		rc = tar_get_file(&tar_ctx, remote_name, finfo);
-		if (rc != 0) {
-			status = NT_STATUS_UNSUCCESSFUL;
-			goto out;
-		}
+	rc = tar_get_file(&tar_ctx, remote_name, finfo);
+	if (rc != 0) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 out:
