@@ -96,9 +96,7 @@ KRB5CCNAME_PATH="$PREFIX/ccache_client_kerberos"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 
-### CHECK -k flag
-
-### RPCCLIENT
+### RPCCLIENT (legacy)
 cmd='$samba_rpcclient ncacn_np:${SERVER} -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy ntlm" \
     test_rpc_getusername || \
@@ -127,6 +125,39 @@ testit_expect_failure "test rpcclient legacy kerberos interactive (negative test
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_rpcclient ncacn_np:${SERVER} -k --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy kerberos ccache" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+$samba_kdestroy
+
+### RPCCLIENT
+cmd='$samba_rpcclient ncacn_np:${SERVER} -U${USERNAME}%${PASSWORD} --use-kerberos=disabled --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit "test rpcclient ntlm" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='echo ${PASSWORD} | USER=${USERNAME} $samba_rpcclient ncacn_np:${SERVER} --use-kerberos=disabled --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit "test rpcclient ntlm interactive" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='echo ${PASSWORD} | $samba_rpcclient ncacn_np:${SERVER} -U${USERNAME} --use-kerberos=disabled --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit "test rpcclient ntlm interactive with -U" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='$samba_rpcclient ncacn_np:${SERVER} -U${USERNAME}%${PASSWORD} --use-kerberos=required --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit "test rpcclient kerberos" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='echo ${PASSWORD} | $samba_rpcclient ncacn_np:${SERVER} -U${USERNAME} --use-krb5-ccache=$KRB5CCNAME --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit_expect_failure "test rpcclient kerberos interactive (negative test)" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
+cmd='$samba_rpcclient ncacn_np:${SERVER} --use-krb5-ccache=$KRB5CCNAME --configfile=${CONFIGURATION} -c getusername 2>&1'
+testit "test rpcclient kerberos ccache" \
     test_rpc_getusername || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
