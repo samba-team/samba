@@ -30,7 +30,7 @@ bld.SAMBA_MODULE('ldbsamba_extensions',
                  init_function='ldb_samba_extensions_init',
                  module_init_name='ldb_init_module',
                  subsystem='ldb',
-                 deps='ldb ldbsamba POPT_SAMBA POPT_CREDENTIALS cmdline-credentials gensec',
+                 deps='ldb ldbsamba CMDLINE_S4 gensec',
                  internal_module=False)
 
 

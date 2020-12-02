@@ -62,7 +62,7 @@ all_fl_envs = ["fl2000dc", "fl2003dc", "fl2008dc", "fl2008r2dc"]
 
 # Simple tests for LDAP and CLDAP
 for auth_type in ['', '-k no', '-k yes']:
-    for auth_level in ['--option=clientldapsaslwrapping=plain', '--sign', '--encrypt']:
+    for auth_level in ['--option=clientldapsaslwrapping=plain', '--client-protection=sign', '--client-protection=encrypt']:
         creds = '-U"$USERNAME%$PASSWORD"'
         options = creds + ' ' + auth_type + ' ' + auth_level
         plantestsuite("samba4.ldb.ldap with options %r(ad_dc_default)" % options, "ad_dc_default", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
@@ -129,15 +129,15 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
 
     auth_options = [
         '--option=clientldapsaslwrapping=plain',
-        '--sign',
-        '--encrypt',
-        '-k yes --option=clientldapsaslwrapping=plain',
-        '-k yes --sign',
-        '-k yes --encrypt',
-        '-k no --option=clientldapsaslwrapping=plain',
-        '-k no --sign --option=ntlmssp_client:ldap_style_send_seal=no',
-        '-k no --sign',
-        '-k no --encrypt',
+        '--client-protection=sign',
+        '--client-protection=encrypt',
+        '--use-kerberos=required --option=clientldapsaslwrapping=plain',
+        '--use-kerberos=required --client-protection=sign',
+        '--use-kerberos=required --client-protection=encrypt',
+        '--use-kerberos=disabled --option=clientldapsaslwrapping=plain',
+        '--use-kerberos=disabled --client-protection=sign --option=ntlmssp_client:ldap_style_send_seal=no',
+        '--use-kerberos=disabled --client-protection=sign',
+        '--use-kerberos=disabled --client-protection=encrypt',
     ]
 
     for auth_option in auth_options:
