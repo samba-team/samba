@@ -26,7 +26,7 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
@@ -2752,7 +2752,7 @@ static bool _test_dhv2_pending2_vs_hold(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h1;
@@ -3582,7 +3582,7 @@ static bool _test_dhv2_pending3_vs_hold(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h1;
@@ -4772,7 +4772,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 			lpcfg_smb_ports(tctx->lp_ctx),
 			share,
 			lpcfg_resolve_context(tctx->lp_ctx),
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			&tree2,
 			tctx->ev,
 			&transport1->options,
@@ -4795,7 +4795,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			0 /* previous_session_id */);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -4994,7 +4994,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 			lpcfg_smb_ports(tctx->lp_ctx),
 			share,
 			lpcfg_resolve_context(tctx->lp_ctx),
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			&tree2,
 			tctx->ev,
 			&transport1->options,
@@ -5017,7 +5017,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			0 /* previous_session_id */);
 	CHECK_STATUS(status, NT_STATUS_OK);
 

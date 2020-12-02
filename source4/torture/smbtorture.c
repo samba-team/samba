@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
@@ -419,6 +419,8 @@ int main(int argc, const char *argv[])
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
 	      OPT_EXTRA_USER,};
 	TALLOC_CTX *mem_ctx = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	bool ok;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -457,7 +459,8 @@ int main(int argc, const char *argv[])
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{0}
+		POPT_LEGACY_S4
+		POPT_TABLEEND
 	};
 
 	setlinebuf(stdout);
@@ -473,36 +476,55 @@ int main(int argc, const char *argv[])
 	/* we are never interested in SIGPIPE */
 	BlockSignals(true, SIGPIPE);
 
-	pc = poptGetContext("smbtorture", argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Unable to init cmdline parser\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed cmdline parser\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<binding>|<unc> TEST1 TEST2 ...");
+
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_LOADFILE:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:loadfile", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "torture:loadfile", poptGetOptArg(pc));
 			break;
 		case OPT_UNCLIST:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case OPT_TIMELIMIT:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:timelimit", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "torture:timelimit", poptGetOptArg(pc));
 			break;
 		case OPT_NUMPROGS:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:nprocs", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
-			parse_dns(cmdline_lp_ctx, poptGetOptArg(pc));
+			parse_dns(lp_ctx, poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:dangerous", "Yes");
+			lpcfg_set_cmdline(lp_ctx, "torture:dangerous", "Yes");
 			break;
 		case OPT_ASYNC:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:async", "Yes");
+			lpcfg_set_cmdline(lp_ctx, "torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "smb ports", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "smb ports", poptGetOptArg(pc));
 			break;
 		case OPT_EXTRA_USER:
 			{
@@ -515,7 +537,7 @@ int main(int argc, const char *argv[])
 					talloc_free(mem_ctx);
 					exit(1);
 				}
-				lpcfg_set_cmdline(cmdline_lp_ctx, option, value);
+				lpcfg_set_cmdline(lp_ctx, option, value);
 				talloc_free(option);
 			}
 			break;
@@ -542,54 +564,54 @@ int main(int argc, const char *argv[])
 	}
 
 	if (strcmp(target, "samba3") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:samba3", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:resume_key_support", "false");
 	} else if (strcmp(target, "samba4") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:samba4", "true");
 	} else if (strcmp(target, "samba4-ntvfs") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4-ntvfs", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:samba4", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:samba4-ntvfs", "true");
 	} else if (strcmp(target, "winxp") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:winxp", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:winxp", "true");
 	} else if (strcmp(target, "w2k3") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k3", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:w2k3", "true");
 	} else if (strcmp(target, "w2k8") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx,
+		lpcfg_set_cmdline(lp_ctx, "torture:w2k8", "true");
+		lpcfg_set_cmdline(lp_ctx,
 		    "torture:invalid_lock_range_support", "false");
 	} else if (strcmp(target, "w2k12") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k12", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:w2k12", "true");
 	} else if (strcmp(target, "win7") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:win7", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:rewind_support", "false");
 
 		/* RAW-SEARCH for fails for inexplicable reasons against win7 */
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:search_ea_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:search_ea_support", "false");
 
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:hide_on_access_denied",
+		lpcfg_set_cmdline(lp_ctx, "torture:hide_on_access_denied",
 		    "true");
 	} else if (strcmp(target, "onefs") == 0) {
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
+		lpcfg_set_cmdline(lp_ctx, "torture:onefs", "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:openx_deny_dos_support",
 		    "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:range_not_locked_on_file_close", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:ea_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:smbexit_pdu_support",
+		lpcfg_set_cmdline(lp_ctx, "torture:range_not_locked_on_file_close", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:sacl_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:ea_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:smbexit_pdu_support",
 		    "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
+		lpcfg_set_cmdline(lp_ctx, "torture:smblock_pdu_support",
 		    "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",
+		lpcfg_set_cmdline(lp_ctx, "torture:2_step_break_to_none",
 		    "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:deny_dos_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:deny_fcb_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:read_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:writeclose_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:raw_search_search", "false");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:search_ea_size", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:deny_dos_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:deny_fcb_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:read_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:writeclose_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:rewind_support", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:raw_search_search", "false");
+		lpcfg_set_cmdline(lp_ctx, "torture:search_ea_size", "false");
 	}
 
 	if (max_runtime) {
@@ -622,7 +644,6 @@ int main(int argc, const char *argv[])
 		print_testsuite_list();
 		poptFreeContext(pc);
 		talloc_free(mem_ctx);
-		popt_free_cmdline_credentials();
 		return 0;
 	}
 
@@ -646,7 +667,6 @@ int main(int argc, const char *argv[])
 		}
 		poptFreeContext(pc);
 		talloc_free(mem_ctx);
-		popt_free_cmdline_credentials();
 		return 0;
 	}
 
@@ -702,7 +722,7 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	torture->lp_ctx = cmdline_lp_ctx;
+	torture->lp_ctx = lp_ctx;
 
 	gensec_init();
 
@@ -721,7 +741,7 @@ int main(int argc, const char *argv[])
 			usage(pc);
 			torture->results->returncode = 1;
 		} else if (!torture_parse_target(torture,
-					cmdline_lp_ctx, argv_new[1])) {
+					lp_ctx, argv_new[1])) {
 			/* Take the target name or binding. */
 			usage(pc);
 			torture->results->returncode = 1;
@@ -741,7 +761,6 @@ int main(int argc, const char *argv[])
 	if (torture->results->returncode && correct) {
 		poptFreeContext(pc);
 		talloc_free(mem_ctx);
-		popt_free_cmdline_credentials();
 		return(0);
 	} else {
 		poptFreeContext(pc);

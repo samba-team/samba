@@ -24,7 +24,7 @@
 
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/torture_rpc.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "param/param.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
@@ -162,7 +162,7 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 
 	status = dcerpc_pipe_connect_b(torture, &p, binding,
 				       &ndr_table_lsarpc,
-				       popt_get_cmdline_credentials(),
+				       samba_cmdline_get_creds(),
 				       torture->ev,
 				       torture->lp_ctx);
 

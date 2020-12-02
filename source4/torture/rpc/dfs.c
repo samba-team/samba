@@ -25,7 +25,7 @@
 #include "libnet/libnet.h"
 #include "torture/util.h"
 #include "libcli/libcli.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 #define SMBTORTURE_DFS_SHARENAME "smbtorture_dfs_share"
 #define SMBTORTURE_DFS_DIRNAME "\\smbtorture_dfs_dir"
@@ -56,7 +56,7 @@ static bool test_NetShareAdd(struct torture_context *tctx,
 		return false;
 	}
 
-	libnetctx->cred = popt_get_cmdline_credentials();
+	libnetctx->cred = samba_cmdline_get_creds();
 
 	i.name			= sharename;
 	i.type			= STYPE_DISKTREE;
@@ -95,7 +95,7 @@ static bool test_NetShareDel(struct torture_context *tctx,
 		return false;
 	}
 
-	libnetctx->cred = popt_get_cmdline_credentials();
+	libnetctx->cred = samba_cmdline_get_creds();
 
 	r.in.share_name		= sharename;
 	r.in.server_name	= host;

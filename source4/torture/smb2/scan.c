@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/torture.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
@@ -215,7 +215,7 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      &tree, tctx->ev, &options,
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
@@ -233,7 +233,7 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 					      lpcfg_smb_ports(tctx->lp_ctx),
 					      share,
 					      lpcfg_resolve_context(tctx->lp_ctx),
-					      popt_get_cmdline_credentials(),
+					      samba_cmdline_get_creds(),
 					      &tree, tctx->ev, &options,
 					      lpcfg_socket_options(tctx->lp_ctx),
 					      lpcfg_gensec_settings(mem_ctx, tctx->lp_ctx));

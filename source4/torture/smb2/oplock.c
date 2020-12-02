@@ -28,7 +28,7 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/smb/smbXcli_base.h"
 
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/events/events.h"
 
 #include "param/param.h"
@@ -294,7 +294,7 @@ static bool open_smb2_connection_no_level2_oplocks(struct torture_context *tctx,
 	status = smb2_connect(tctx, host,
 			      lpcfg_smb_ports(tctx->lp_ctx), share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      tree, tctx->ev, &options,
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));

@@ -23,7 +23,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 static bool test_openpolicy(struct torture_context *tctx,
 			    struct dcerpc_pipe *p)
@@ -60,7 +60,7 @@ static bool test_bind(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &p, binding,
 				      &ndr_table_lsarpc,
-				      popt_get_cmdline_credentials(),
+				      samba_cmdline_get_creds(),
 				      tctx->ev,
 				      tctx->lp_ctx),
 		"failed to connect pipe");
@@ -107,7 +107,7 @@ static bool test_assoc_group_handles_external(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &p1, binding1,
 				      &ndr_table_epmapper,
-				      popt_get_cmdline_credentials(),
+				      samba_cmdline_get_creds(),
 				      tctx->ev,
 				      tctx->lp_ctx),
 		"failed to connect first pipe");
@@ -141,7 +141,7 @@ static bool test_assoc_group_handles_external(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &p2, binding2,
 				      &ndr_table_epmapper,
-				      popt_get_cmdline_credentials(),
+				      samba_cmdline_get_creds(),
 				      tctx->ev,
 				      tctx->lp_ctx),
 		"failed to connect second pipe");
@@ -159,7 +159,7 @@ static bool test_assoc_group_handles_external(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &p2, binding2,
 				      &ndr_table_epmapper,
-				      popt_get_cmdline_credentials(),
+				      samba_cmdline_get_creds(),
 				      tctx->ev,
 				      tctx->lp_ctx),
 		"failed to connect second pipe");

@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
@@ -466,7 +466,7 @@ bool torture_userlist(struct torture_context *torture)
 	int i;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	mem_ctx = talloc_init("torture user list");

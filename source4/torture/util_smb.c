@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "../libcli/smb/smb_constants.h"
@@ -459,7 +459,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					lpcfg_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
-					popt_get_cmdline_credentials(),
+					samba_cmdline_get_creds(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
@@ -981,7 +981,7 @@ NTSTATUS torture_check_privilege(struct smbcli_state *cli,
 struct cli_credentials *torture_user2_credentials(struct torture_context *tctx,
 						  TALLOC_CTX *mem_ctx)
 {
-	struct cli_credentials *credentials1 = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials1 = samba_cmdline_get_creds();
 	const char *user1domain = cli_credentials_get_domain(credentials1);
 	const char *user2name = torture_setting_string(tctx, "user2name", NULL);
 	const char *user2domain = torture_setting_string(tctx, "user2domain", user1domain);

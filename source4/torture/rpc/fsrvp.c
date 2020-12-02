@@ -44,7 +44,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_fsrvp_c.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 #define FSHARE	"fsrvp_share"
 #define FNAME	"testfss.dat"
@@ -520,7 +520,7 @@ static bool test_fsrvp_sc_share_io(struct torture_context *tctx,
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      FSHARE,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      &tree_base,
 			      tctx->ev,
 			      &options,
@@ -551,7 +551,7 @@ static bool test_fsrvp_sc_share_io(struct torture_context *tctx,
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      sc_map->ShadowCopyShareName,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      &tree_snap,
 			      tctx->ev,
 			      &options,
@@ -644,7 +644,7 @@ static bool test_fsrvp_enum_created(struct torture_context *tctx,
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      FSHARE,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      &tree_base,
 			      tctx->ev,
 			      &options,
@@ -916,7 +916,7 @@ static bool fsrvp_rpc_setup(struct torture_context *tctx, void **data)
 	struct torture_rpc_tcase_data *tcase_data;
 
 	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
-	tcase_data->credentials = popt_get_cmdline_credentials();
+	tcase_data->credentials = samba_cmdline_get_creds();
 
 	status = torture_rpc_connection(tctx,
 				&(tcase_data->pipe),

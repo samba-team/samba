@@ -26,7 +26,7 @@
 #include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "libcli/security/security.h"
@@ -243,7 +243,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 					"oplock_level incorrect");
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -258,7 +258,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_getinfo_file failed");
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -341,7 +341,7 @@ bool test_session_reauth2(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -447,7 +447,7 @@ bool test_session_reauth3(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -574,7 +574,7 @@ bool test_session_reauth4(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -714,7 +714,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -847,7 +847,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user - again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -956,7 +956,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 	enum credentials_use_kerberos krb_state;
 
 	krb_state = cli_credentials_get_kerberos_state(
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	if (krb_state == CRED_USE_KERBEROS_REQUIRED) {
 		torture_skip(tctx,
 			     "Can't test failing session setup with kerberos.");
@@ -990,7 +990,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 	 */
 
 	broken_creds = cli_credentials_shallow_copy(mem_ctx,
-					    popt_get_cmdline_credentials());
+					    samba_cmdline_get_creds());
 	torture_assert(tctx, (broken_creds != NULL), "talloc error");
 
 	corrupted_password = talloc_asprintf(mem_ctx, "%s%s",
@@ -1054,7 +1054,7 @@ static bool test_session_expire1i(struct torture_context *tctx,
 	struct smbcli_options options;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	struct smb2_tree *tree = NULL;
 	enum credentials_use_kerberos use_kerberos;
 	char fname[256];
@@ -1219,7 +1219,7 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	struct smbcli_options options;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	struct smb2_tree *tree = NULL;
 	const char *unc = NULL;
 	struct smb2_tree *tree2 = NULL;
@@ -1602,7 +1602,7 @@ static bool test_session_expire_disconnect(struct torture_context *tctx)
 	struct smbcli_options options;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	struct smb2_tree *tree = NULL;
 	enum credentials_use_kerberos use_kerberos;
 	char fname[256];
@@ -1707,7 +1707,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	char fname[256];
@@ -1785,7 +1785,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -1824,7 +1824,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session2_1,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -1855,7 +1855,7 @@ static bool test_session_bind2(struct torture_context *tctx, struct smb2_tree *t
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	char fname1[256];
@@ -2448,7 +2448,7 @@ done:
 
 static bool test_session_bind_invalid_auth(struct torture_context *tctx, struct smb2_tree *tree1)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	struct cli_credentials *invalid_credentials = NULL;
 	bool ret = false;
 
@@ -2469,7 +2469,7 @@ static bool test_session_bind_invalid_auth(struct torture_context *tctx, struct 
 
 static bool test_session_bind_different_user(struct torture_context *tctx, struct smb2_tree *tree1)
 {
-	struct cli_credentials *credentials1 = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials1 = samba_cmdline_get_creds();
 	struct cli_credentials *credentials2 = torture_user2_credentials(tctx, tctx);
 	char *u1 = cli_credentials_get_unparsed_name(credentials1, tctx);
 	char *u2 = cli_credentials_get_unparsed_name(credentials2, tctx);
@@ -2668,7 +2668,7 @@ done:
  */
 static bool test_session_bind_negative_smb202(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;
 	struct smbcli_options options1;
@@ -2698,7 +2698,7 @@ static bool test_session_bind_negative_smb202(struct torture_context *tctx, stru
 
 static bool test_session_bind_negative_smb210(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;
 	struct smbcli_options options1;
@@ -2728,7 +2728,7 @@ static bool test_session_bind_negative_smb210(struct torture_context *tctx, stru
 
 static bool test_session_bind_negative_smb2to3(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;
 	struct smbcli_options options1;
@@ -2766,7 +2766,7 @@ static bool test_session_bind_negative_smb2to3(struct torture_context *tctx, str
 
 static bool test_session_bind_negative_smb3to2(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;
 	struct smbcli_options options1;
@@ -2804,7 +2804,7 @@ static bool test_session_bind_negative_smb3to2(struct torture_context *tctx, str
 
 static bool test_session_bind_negative_smb3to3(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;
 	struct smbcli_options options1;
@@ -2835,7 +2835,7 @@ static bool test_session_bind_negative_smb3to3(struct torture_context *tctx, str
 
 static bool test_session_bind_negative_smb3encGtoC(struct torture_context *tctx, struct smb2_tree *tree0)
 {
-	struct cli_credentials *credentials0 = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials0 = samba_cmdline_get_creds();
 	struct cli_credentials *credentials = NULL;
 	bool ret = false;
 	struct smb2_transport *transport0 = tree0->session->transport;

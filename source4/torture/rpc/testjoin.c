@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "libnet/libnet.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
@@ -159,7 +159,7 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tctx
 					     &join->p,
 					     dc_binding,
 					     &ndr_table_samr,
-					     popt_get_cmdline_credentials(),
+					     samba_cmdline_get_creds(),
 					NULL, tctx->lp_ctx);
 					     
 	} else {
@@ -553,7 +553,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	
 	tj->libnet_r = libnet_r;
 		
-	libnet_ctx->cred = popt_get_cmdline_credentials();
+	libnet_ctx->cred = samba_cmdline_get_creds();
 	libnet_r->in.binding = dcerpc_binding_string(libnet_r, binding);
 	if (libnet_r->in.binding == NULL) {
 		talloc_free(tj);
@@ -701,8 +701,8 @@ static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ldb_set_opaque(ldb_ctx, "credentials", popt_get_cmdline_credentials());
-	ldb_set_opaque(ldb_ctx, "loadparm", cmdline_lp_ctx);
+	ldb_set_opaque(ldb_ctx, "credentials", samba_cmdline_get_creds());
+	ldb_set_opaque(ldb_ctx, "loadparm", samba_cmdline_get_lp_ctx());
 
 	rtn = ldb_connect(ldb_ctx, remote_ldb_url, 0, NULL);
 	if (rtn != LDB_SUCCESS) {

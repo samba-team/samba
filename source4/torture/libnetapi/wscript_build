@@ -5,7 +5,7 @@ bld.SAMBA_MODULE('TORTURE_LIBNETAPI',
 	autoproto='proto.h',
 	subsystem='smbtorture',
 	init_function='torture_libnetapi_init',
-	deps='POPT_CREDENTIALS netapi',
+	deps='netapi',
 	internal_module=True,
 	)
 

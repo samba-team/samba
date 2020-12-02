@@ -32,7 +32,7 @@
 #include "lib/param/param.h"
 #include "lib/util/samba_util.h"
 #include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -756,16 +756,17 @@ static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
 	struct wbcAuthUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
 	wbcErr ret;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	ret = wbcAuthenticateUser(cli_credentials_get_username(
-			popt_get_cmdline_credentials()), correct_password);
+			creds), correct_password);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 		 "wbcAuthenticateUser of %s failed",
-		 cli_credentials_get_username(popt_get_cmdline_credentials()));
+		 cli_credentials_get_username(creds));
 
 	ZERO_STRUCT(params);
 	params.account_name		=
-		cli_credentials_get_username(popt_get_cmdline_credentials());
+		cli_credentials_get_username(creds);
 	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
 	params.password.plaintext	= correct_password;
 
@@ -794,15 +795,18 @@ static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
 
 static bool test_wbc_authenticate_user(struct torture_context *tctx)
 {
+	struct cli_credentials *creds = samba_cmdline_get_creds();
+
 	return test_wbc_authenticate_user_int(tctx,
-		cli_credentials_get_password(popt_get_cmdline_credentials()));
+		cli_credentials_get_password(creds));
 }
 
 static bool test_wbc_change_password(struct torture_context *tctx)
 {
 	wbcErr ret;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 	const char *oldpass =
-		cli_credentials_get_password(popt_get_cmdline_credentials());
+		cli_credentials_get_password(creds);
 	const char *newpass = "Koo8irei%$";
 
 	struct samr_CryptPassword new_nt_password;
@@ -891,9 +895,9 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 
 	params.level = WBC_CHANGE_PASSWORD_LEVEL_RESPONSE;
 	params.account_name =
-		cli_credentials_get_username(popt_get_cmdline_credentials());
+		cli_credentials_get_username(creds);
 	params.domain_name =
-		cli_credentials_get_domain(popt_get_cmdline_credentials());
+		cli_credentials_get_domain(creds);
 
 	ret = wbcChangeUserPasswordEx(&params, NULL, NULL, NULL);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
@@ -904,14 +908,14 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 	}
 
 	ret = wbcChangeUserPassword(
-		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		cli_credentials_get_username(creds),
 		newpass,
-		cli_credentials_get_password(popt_get_cmdline_credentials()));
+		cli_credentials_get_password(creds));
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcChangeUserPassword for %s failed", params.account_name);
 
 	return test_wbc_authenticate_user_int(tctx,
-		cli_credentials_get_password(popt_get_cmdline_credentials()));
+		cli_credentials_get_password(creds));
 }
 
 static bool test_wbc_logon_user(struct torture_context *tctx)
@@ -925,6 +929,7 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	enum wbcSidType sidtype;
 	char *sidstr;
 	wbcErr ret;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	ZERO_STRUCT(params);
 
@@ -934,9 +939,9 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 				 "have failed");
 
 	params.username =
-		cli_credentials_get_username(popt_get_cmdline_credentials());
+		cli_credentials_get_username(creds);
 	params.password =
-		cli_credentials_get_password(popt_get_cmdline_credentials());
+		cli_credentials_get_password(creds);
 
 	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
 			      "foo", 0, discard_const_p(uint8_t, "bar"), 4);
@@ -967,7 +972,7 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "%s", "wbcAddNamedBlob failed");
 	params.password =
-		cli_credentials_get_password(popt_get_cmdline_credentials());
+		cli_credentials_get_password(creds);
 	ret = wbcLogonUser(&params, &info, &error, &policy);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_AUTH_ERROR,
 				 "wbcLogonUser for %s should have failed with "
@@ -983,13 +988,13 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 				 "%s", "wbcInterfaceDetails failed");
 
 	ret = wbcLookupName(iface->netbios_domain,
-		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		cli_credentials_get_username(creds),
 		&sid,
 		&sidtype);
 	wbcFreeMemory(iface);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 		"wbcLookupName for %s failed",
-		cli_credentials_get_username(popt_get_cmdline_credentials()));
+		cli_credentials_get_username(creds));
 
 	ret = wbcSidToString(&sid, &sidstr);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
@@ -1002,7 +1007,7 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 				 "%s", "wbcAddNamedBlob failed");
 	wbcFreeMemory(sidstr);
 	params.password =
-		cli_credentials_get_password(popt_get_cmdline_credentials());
+		cli_credentials_get_password(creds);
 	ret = wbcLogonUser(&params, &info, &error, &policy);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcLogonUser for %s failed", params.username);
@@ -1020,14 +1025,15 @@ static bool test_wbc_getgroups(struct torture_context *tctx)
 	wbcErr ret;
 	uint32_t num_groups;
 	gid_t *groups;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	ret = wbcGetGroups(
-		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		cli_credentials_get_username(creds),
 		&num_groups,
 		&groups);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 		"wbcGetGroups for %s failed",
-		cli_credentials_get_username(popt_get_cmdline_credentials()));
+		cli_credentials_get_username(creds));
 	wbcFreeMemory(groups);
 	return true;
 }

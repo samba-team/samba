@@ -20,7 +20,7 @@
 
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
@@ -141,7 +141,7 @@ bool torture_domain_open_lsa(struct torture_context *torture)
 		return false;
 	}
 
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	ZERO_STRUCT(r);
 	r.in.type = DOMAIN_LSA;
@@ -196,11 +196,11 @@ bool torture_domain_close_lsa(struct torture_context *torture)
 		goto done;
 	}
 
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	mem_ctx = talloc_init("torture_domain_close_lsa");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_lsarpc,
-				     popt_get_cmdline_credentials(),
+				     samba_cmdline_get_creds(),
 				torture->ev, torture->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(torture, "failed to connect to server: %s\n", nt_errstr(status));
@@ -252,7 +252,7 @@ bool torture_domain_open_samr(struct torture_context *torture)
 	mem_ctx = talloc_init("test_domainopen_lsa");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	/* we're accessing domain controller so the domain name should be
 	   passed (it's going to be resolved to dc name and address) instead
@@ -323,7 +323,7 @@ bool torture_domain_close_samr(struct torture_context *torture)
 		goto done;
 	}
 
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, binding, &ndr_table_samr,
@@ -387,7 +387,7 @@ bool torture_domain_list(struct torture_context *torture)
 		goto done;
 	}
 
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	mem_ctx = talloc_init("torture_domain_close_samr");
 

@@ -21,7 +21,7 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/smbtorture.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "param/param.h"
 
 #include "system/filesys.h"
@@ -101,7 +101,7 @@ static int fork_tcon_client(struct torture_context *tctx,
 		status = smbcli_full_connection(NULL, &cli,
 				host, lpcfg_smb_ports(tctx->lp_ctx), share,
 				NULL, lpcfg_socket_options(tctx->lp_ctx),
-				popt_get_cmdline_credentials(),
+				samba_cmdline_get_creds(),
 				lpcfg_resolve_context(tctx->lp_ctx),
 				tctx->ev, &options, &session_options,
 				lpcfg_gensec_settings(tctx, tctx->lp_ctx));

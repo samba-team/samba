@@ -26,7 +26,7 @@
 #include <ldb_errors.h>
 #include "ldb_wrap.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/ldap/ldap_client.h"
 #include "torture/smbtorture.h"
@@ -35,7 +35,7 @@
 bool torture_ldap_session_expiry(struct torture_context *torture)
 {
 	const char *host = torture_setting_string(torture, "host", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	struct ldb_context *ldb = NULL;
 	const char *url = NULL;
 	bool ret = false;

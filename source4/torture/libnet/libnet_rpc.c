@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libnet/libnet.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
@@ -90,7 +90,7 @@ static bool torture_rpc_connect(struct torture_context *torture,
 	struct libnet_context *ctx;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	torture_comment(torture, "Testing connection to LSA interface\n");
 

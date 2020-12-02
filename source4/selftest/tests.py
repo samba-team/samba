@@ -623,7 +623,7 @@ for mech in [
     "-k no --option=gensec:spengo=no",
     "-k yes",
     "-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"]:
-    for signing in ["--signing=on", "--signing=required"]:
+    for signing in ["--option=clientsigning=desired", "--option=clientsigning=required"]:
         signoptions = "%s %s" % (mech, signing)
         name = "smb.signing on with %s" % signoptions
         plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], modname="samba4.%s" % name)
@@ -633,7 +633,7 @@ for mech in [
     "-k no --option=clientusespnego=no",
     "-k no --option=gensec:spengo=no",
     "-k yes"]:
-    signoptions = "%s --signing=off" % mech
+    signoptions = "%s --client-protection=off" % mech
     name = "smb.signing disabled on with %s" % signoptions
     plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
     plansmbtorture4testsuite('base.xcopy', "ad_member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
@@ -646,12 +646,12 @@ for mech in [
     "-k no",
     "-k no --option=clientusespnego=no",
     "-k no --option=gensec:spengo=no"]:
-    signoptions = "%s --signing=off" % mech
+    signoptions = "%s --client-protection=off" % mech
     plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD'], modname="samba4.smb.signing on with %s local-creds" % signoptions)
 
-plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=yes', '-U%'], modname="samba4.smb.signing --signing=yes anon")
-plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=required', '-U%'], modname="samba4.smb.signing --signing=required anon")
-plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=no', '-U%'], modname="samba4.smb.signing --signing=no anon")
+plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--option=clientsigning=desired', '-U%'], modname="samba4.smb.signing --option=clientsigning=desired anon")
+plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--option=clientsigning=required', '-U%'], modname="samba4.smb.signing --option=clientsigning=required anon")
+plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--option=clientsigning=disabled', '-U%'], modname="samba4.smb.signing --option=clientsigning=disabled anon")
 
 # Test SPNEGO without issuing an optimistic token
 opt='--option=spnego:client_no_optimistic=yes'

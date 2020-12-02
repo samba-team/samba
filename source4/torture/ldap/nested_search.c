@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "ldb.h"
 #include "ldb_wrap.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
@@ -162,7 +162,7 @@ bool test_ldap_nested_search(struct torture_context *tctx)
 	torture_comment(tctx, "Connecting to: %s\n", url);
 	sctx->ldb = ldb_wrap_connect(sctx, tctx->ev, tctx->lp_ctx, url,
 	                             NULL,
-	                             popt_get_cmdline_credentials(),
+	                             samba_cmdline_get_creds(),
 	                             0);
 	torture_assert(tctx, sctx->ldb, "Failed to create ldb connection");
 

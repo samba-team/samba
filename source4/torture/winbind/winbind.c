@@ -29,7 +29,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/kerberos/pac_utils.h"
 #include "wbclient.h"
 
@@ -211,7 +211,7 @@ static bool torture_winbind_pac(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
 
 	status = gensec_set_credentials(gensec_client_context,
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	if (sasl_mech) {

@@ -24,7 +24,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
@@ -372,7 +372,7 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 	}
 
 	status = smb2_session_setup_spnego(session,
-					   popt_get_cmdline_credentials(),
+					   samba_cmdline_get_creds(),
 					   previous_session_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "session setup failed: %s\n", nt_errstr(status));
@@ -425,7 +425,7 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 				  lpcfg_smb_ports(tctx->lp_ctx),
 				  share,
 				  lpcfg_resolve_context(tctx->lp_ctx),
-				  popt_get_cmdline_credentials(),
+				  samba_cmdline_get_creds(),
 				  previous_session_id,
 				  tree,
 				  tctx->ev,
@@ -480,7 +480,7 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 				  lpcfg_smb_ports(tctx->lp_ctx),
 				  share,
 				  lpcfg_resolve_context(tctx->lp_ctx),
-				  popt_get_cmdline_credentials(),
+				  samba_cmdline_get_creds(),
 				  0,
 				  tree,
 				  tctx->ev,

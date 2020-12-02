@@ -33,7 +33,7 @@
 
 #include "system/filesys.h"
 #include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/security.h"
 
 #include "lib/events/events.h"

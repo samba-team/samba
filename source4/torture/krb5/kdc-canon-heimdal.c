@@ -25,7 +25,7 @@
 #include "torture/smbtorture.h"
 #include "torture/krb5/proto.h"
 #include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "source4/auth/kerberos/kerberos.h"
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
@@ -1513,7 +1513,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	char *got_principal_string;
 	char *assertion_message;
 	const char *password = cli_credentials_get_password(
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	krb5_context k5_context;
 	struct torture_krb5_context *test_context;
 	bool ok;
@@ -2090,7 +2090,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
-							  popt_get_cmdline_credentials(),
+							  samba_cmdline_get_creds(),
 							  spn_real_realm,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2101,7 +2101,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
-							  popt_get_cmdline_credentials(),
+							  samba_cmdline_get_creds(),
 							  spn,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2113,7 +2113,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
-							  popt_get_cmdline_credentials(),
+							  samba_cmdline_get_creds(),
 							  principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2131,7 +2131,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
-							  popt_get_cmdline_credentials(),
+							  samba_cmdline_get_creds(),
 							  accept_expected_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2139,7 +2139,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		
 			torture_assert(tctx,
 				       test_accept_ticket(tctx,
-							  popt_get_cmdline_credentials(),
+							  samba_cmdline_get_creds(),
 							  expected_unparse_principal_string,
 							  client_to_server),
 				       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2501,13 +2501,13 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->real_realm
 			= strupper_talloc(test_data,
 				cli_credentials_get_realm(
-					popt_get_cmdline_credentials()));
+					samba_cmdline_get_creds()));
 		test_data->real_domain = cli_credentials_get_domain(
-						popt_get_cmdline_credentials());
+						samba_cmdline_get_creds());
 		test_data->username = cli_credentials_get_username(
-						popt_get_cmdline_credentials());
+						samba_cmdline_get_creds());
 		test_data->real_username = cli_credentials_get_username(
-						popt_get_cmdline_credentials());
+						samba_cmdline_get_creds());
 		test_data->canonicalize = (i & TEST_CANONICALIZE) != 0;
 		test_data->enterprise = (i & TEST_ENTERPRISE) != 0;
 		test_data->upper_realm = (i & TEST_UPPER_REALM) != 0;

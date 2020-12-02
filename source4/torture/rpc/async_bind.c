@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/rpc/torture_rpc.h"
 
 /*
@@ -63,7 +63,7 @@ bool torture_async_bind(struct torture_context *torture)
 	if (table == NULL) return false;
 	
 	/* credentials */
-	creds = popt_get_cmdline_credentials();
+	creds = samba_cmdline_get_creds();
 
 	/* send bind requests */
 	for (i = 0; i < torture_numasync; i++) {

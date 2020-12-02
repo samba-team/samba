@@ -22,7 +22,7 @@
 #include "libcli/raw/raw_proto.h"
 #include "torture/torture.h"
 #include "torture/unix/proto.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
@@ -372,7 +372,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 	struct ldb_context *ldb;
 	const char *addc, *host;
 
-	cli = connect_to_server(torture, popt_get_cmdline_credentials());
+	cli = connect_to_server(torture, samba_cmdline_get_creds());
 	torture_assert(torture, cli, "connecting to server with authenticated credentials");
 
 	/* Test basic authenticated mapping. */
@@ -389,7 +389,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 			guest ? "YES" : "NO");
 		torture_assert(torture,
 			cli_credentials_is_anonymous(
-				popt_get_cmdline_credentials()) == guest,
+				samba_cmdline_get_creds()) == guest,
 			       "login did not credentials map to guest");
 	} else {
 		torture_comment(torture, "server does not support SMB_WHOAMI_GUEST flag\n");
@@ -400,7 +400,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 	
  	if (addc) {
 		ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, talloc_asprintf(torture, "ldap://%s", addc),
-				       NULL, popt_get_cmdline_credentials(), 0);
+				       NULL, samba_cmdline_get_creds(), 0);
 		torture_assert(torture, ldb, "ldb connect failed");
 
 		/* We skip this testing if we could not contact the LDAP server */

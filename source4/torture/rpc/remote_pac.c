@@ -27,7 +27,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
@@ -234,7 +234,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 		 */
 		client_creds =
 			cli_credentials_shallow_copy(tmp_ctx,
-						     popt_get_cmdline_credentials());
+						     samba_cmdline_get_creds());
 		torture_assert(tctx,
 			       client_creds,
 			       "Failed to copy of credentials");
@@ -743,7 +743,7 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	 * we will get a new clean memory cache.
 	 */
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
-					    popt_get_cmdline_credentials());
+					    samba_cmdline_get_creds());
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
 	/* We use cli_credentials_get_ntlm_response(), so relax krb5 requirements. */
 	cli_credentials_set_kerberos_state(client_creds,
@@ -1049,7 +1049,7 @@ static bool test_S4U2Proxy(struct torture_context *tctx,
 		"Testing S4U2Proxy (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
 		secure_channel_type, test_machine_name, negotiate_flags);
 
-	impersonate_princ = cli_credentials_get_principal(popt_get_cmdline_credentials(), tctx);
+	impersonate_princ = cli_credentials_get_principal(samba_cmdline_get_creds(), tctx);
 	torture_assert_not_null(tctx, impersonate_princ, "Failed to get impersonate client name");
 
 	server_creds = cli_credentials_shallow_copy(tctx, credentials);
@@ -1178,7 +1178,7 @@ static bool setup_constrained_delegation(struct torture_context *tctx,
 	int ret;
 
 	url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
-	sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url, NULL, popt_get_cmdline_credentials(), 0);
+	sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url, NULL, samba_cmdline_get_creds(), 0);
 	torture_assert_not_null(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
 
 	server_dn_str = samdb_search_string(sam_ctx, tctx, ldb_get_default_basedn(sam_ctx), "distinguishedName",

@@ -26,7 +26,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "torture/rpc/torture_rpc.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
@@ -73,7 +73,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(popt_get_cmdline_credentials(),
+	cli_credentials_get_ntlm_username_domain(samba_cmdline_get_creds(),
 				tctx,
 				&ninfo.identity_info.account_name.string,
 				&ninfo.identity_info.domain_name.string);
@@ -87,7 +87,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 						cli_credentials_get_domain(credentials));
 
 	status = cli_credentials_get_ntlm_response(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			tctx,
 			&flags,
 			chal,
@@ -944,13 +944,13 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	s->conns = talloc_zero_array(s, struct torture_schannel_bench_conn, s->nprocs);
 
 	s->user1_creds = cli_credentials_shallow_copy(s,
-				popt_get_cmdline_credentials());
+				samba_cmdline_get_creds());
 	tmp = torture_setting_string(s->tctx, "extra_user1", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
 	}
 	s->user2_creds = cli_credentials_shallow_copy(s,
-				popt_get_cmdline_credentials());
+				samba_cmdline_get_creds());
 	tmp = torture_setting_string(s->tctx, "extra_user2", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);

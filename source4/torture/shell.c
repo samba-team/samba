@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "system/readline.h"
 #include "../libcli/smbreadline/smbreadline.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "auth/credentials/credentials.h"
 #include "torture/smbtorture.h"
 #include "param/param.h"
@@ -110,7 +110,7 @@ void torture_shell(struct torture_context *tctx)
 	 * stops the credentials system prompting when we use the "auth"
 	 * command to display the current auth parameters.
 	 */
-	cli_credentials_set_password(popt_get_cmdline_credentials(),
+	cli_credentials_set_password(samba_cmdline_get_creds(),
 			"", CRED_GUESS_ENV);
 
 	while (1) {
@@ -228,13 +228,13 @@ static void shell_auth(const struct shell_command * command,
 	    const char * principal;
 
 	    username = cli_credentials_get_username(
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	    principal = cli_credentials_get_principal(
-				popt_get_cmdline_credentials(), tctx);
-	    domain = cli_credentials_get_domain(popt_get_cmdline_credentials());
-	    realm = cli_credentials_get_realm(popt_get_cmdline_credentials());
+				samba_cmdline_get_creds(), tctx);
+	    domain = cli_credentials_get_domain(samba_cmdline_get_creds());
+	    realm = cli_credentials_get_realm(samba_cmdline_get_creds());
 	    password = cli_credentials_get_password(
-				popt_get_cmdline_credentials());
+				samba_cmdline_get_creds());
 
 	    printf("Username: %s\n", username ? username : "");
 	    printf("User Principal: %s\n", principal ? principal : "");
@@ -246,23 +246,23 @@ static void shell_auth(const struct shell_command * command,
 
 	    if (!strcmp(argv[0], "username")) {
 		    result = cli_credentials_set_username(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "principal")) {
 		    result = cli_credentials_set_principal(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "domain")) {
 		    result = cli_credentials_set_domain(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "realm")) {
 		    result = cli_credentials_set_realm(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "password")) {
 		    result = cli_credentials_set_password(
-			popt_get_cmdline_credentials(),
+			samba_cmdline_get_creds(),
 			argv[1], CRED_SPECIFIED);
 	    } else {
 		    shell_usage(command);

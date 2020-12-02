@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
 #include "dsdb/samdb/samdb.h"
@@ -92,7 +92,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	torture_assert(torture, s, "libnet_vampire_cb_state_init");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	ZERO_STRUCT(b);
 	b.in.domain_dns_name		= torture_join_dom_dns_name(tj);

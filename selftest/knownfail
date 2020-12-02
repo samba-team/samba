@@ -331,7 +331,7 @@
 ^samba.tests.dns.__main__.TestComplexQueries.test_cname_two_chain_not_matching_qtype
 # ad_dc requires signing
 #
-^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
+^samba4.smb.signing.*disabled.*client-protection=off.*\(ad_dc\)
 # fl2000dc doesn't support AES
 ^samba4.krb5.kdc.*as-req-aes.*fl2000dc
 # nt4_member and ad_member don't support ntlmv1 (not even over SMB1)

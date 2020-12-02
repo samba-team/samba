@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/cldap/cldap.h"
@@ -135,7 +135,7 @@ static struct DsGetinfoTest *test_create_context(struct torture_context *tctx)
 	}
 
 	/* ctx->admin ...*/
-	ctx->admin.credentials = popt_get_cmdline_credentials();
+	ctx->admin.credentials = samba_cmdline_get_creds();
 
 	our_bind_info28				= &ctx->admin.drsuapi.our_bind_info28;
 	our_bind_info28->supported_extensions	= 0xFFFFFFFF;

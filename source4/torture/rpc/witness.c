@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/ndr_clusapi_c.h"
 #include "param/param.h"
 #include <tevent.h>
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 struct torture_test_clusapi_state {
 	struct dcerpc_pipe *p;
@@ -538,7 +538,7 @@ static bool setup_clusapi_connection(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, &s->clusapi.p, binding,
 				      &ndr_table_clusapi,
-				      popt_get_cmdline_credentials(),
+				      samba_cmdline_get_creds(),
 				      tctx->ev, tctx->lp_ctx),
 		"failed to connect dcerpc pipe");
 

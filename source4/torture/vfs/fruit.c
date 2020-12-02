@@ -25,7 +25,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb/smb2_create_ctx.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "MacExtensions.h"

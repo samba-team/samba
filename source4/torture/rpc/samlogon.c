@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
@@ -1838,11 +1838,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 			{
 				.comment       = "domain\\user",
 				.domain        = cli_credentials_get_domain(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.username      = cli_credentials_get_username(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.password      = cli_credentials_get_password(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK,
@@ -1851,11 +1851,11 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 			{
 				.comment       = "realm\\user",
 				.domain        = cli_credentials_get_realm(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.username      = cli_credentials_get_username(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.password      = cli_credentials_get_password(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK,
@@ -1867,12 +1867,12 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.username      = talloc_asprintf(mem_ctx,
 					"%s@%s",
 					cli_credentials_get_username(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 					cli_credentials_get_domain(
-					popt_get_cmdline_credentials())
+					samba_cmdline_get_creds())
 					),
 				.password      = cli_credentials_get_password(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				.network_login = false, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK,
@@ -1884,12 +1884,12 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.username      = talloc_asprintf(mem_ctx,
 					"%s@%s",
 					cli_credentials_get_username(
-						popt_get_cmdline_credentials()),
+						samba_cmdline_get_creds()),
 					cli_credentials_get_realm(
-						popt_get_cmdline_credentials())
+						samba_cmdline_get_creds())
 					),
 				.password      = cli_credentials_get_password(
-						popt_get_cmdline_credentials()),
+						samba_cmdline_get_creds()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK,

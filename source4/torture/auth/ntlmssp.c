@@ -22,7 +22,7 @@
 #include "auth/gensec/gensec_internal.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/ntlmssp_private.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "torture/torture.h"
 #include "param/param.h"
 #include "torture/auth/proto.h"
@@ -41,7 +41,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx)),
 		"gensec client start");
 
-	gensec_set_credentials(gensec_security, popt_get_cmdline_credentials());
+	gensec_set_credentials(gensec_security, samba_cmdline_get_creds());
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
@@ -98,7 +98,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx)),
 		"Failed to start GENSEC for NTLMSSP");
 
-	gensec_set_credentials(gensec_security, popt_get_cmdline_credentials());
+	gensec_set_credentials(gensec_security, samba_cmdline_get_creds());
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);

@@ -21,7 +21,7 @@
 #include "system/dir.h"
 #include "torture/smbtorture.h"
 #include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include <libsmbclient.h>
 #include "torture/libsmbclient/proto.h"
 #include "lib/param/loadparm.h"
@@ -49,11 +49,11 @@ static void auth_callback(const char *srv,
 			  char *pw, int pwlen)
 {
 	const char *workgroup =
-		cli_credentials_get_domain(popt_get_cmdline_credentials());
+		cli_credentials_get_domain(samba_cmdline_get_creds());
 	const char *username =
-		cli_credentials_get_username(popt_get_cmdline_credentials());
+		cli_credentials_get_username(samba_cmdline_get_creds());
 	const char *password =
-		cli_credentials_get_password(popt_get_cmdline_credentials());
+		cli_credentials_get_password(samba_cmdline_get_creds());
 	ssize_t ret;
 
 	if (workgroup != NULL) {
@@ -82,9 +82,9 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				       SMBCCTX **ctx_p)
 {
 	const char *workgroup =
-		cli_credentials_get_domain(popt_get_cmdline_credentials());
+		cli_credentials_get_domain(samba_cmdline_get_creds());
 	const char *username =
-		cli_credentials_get_username(popt_get_cmdline_credentials());
+		cli_credentials_get_username(samba_cmdline_get_creds());
 	const char *client_proto =
 		torture_setting_string(tctx, "clientprotocol", NULL);
 	SMBCCTX *ctx = NULL;

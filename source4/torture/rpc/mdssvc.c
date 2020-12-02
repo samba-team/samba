@@ -23,7 +23,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_mdssvc_c.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "rpc_server/mdssvc/dalloc.h"
 #include "rpc_server/mdssvc/marshalling.h"
 

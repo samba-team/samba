@@ -37,7 +37,7 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/filesys.h"
 #include "torture/ndr/ndr.h"
 #include "torture/smb2/proto.h"
@@ -8963,7 +8963,7 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      popt_get_cmdline_credentials(),
+			      samba_cmdline_get_creds(),
 			      &tree,
 			      tctx->ev,
 			      &options,
@@ -10785,7 +10785,7 @@ static bool connect_printer_driver_share(struct torture_context *tctx,
 					lpcfg_smb_ports(tctx->lp_ctx),
 					share_name, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
-					popt_get_cmdline_credentials(),
+					samba_cmdline_get_creds(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev,
 					&smb_options,

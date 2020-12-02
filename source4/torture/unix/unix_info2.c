@@ -21,7 +21,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "torture/unix/proto.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
@@ -60,7 +60,7 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 	status = smbcli_full_connection(tctx, &cli, host, 
 					lpcfg_smb_ports(tctx->lp_ctx),
 					share, NULL, lpcfg_socket_options(tctx->lp_ctx),
-					popt_get_cmdline_credentials(),
+					samba_cmdline_get_creds(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));

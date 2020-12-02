@@ -5,7 +5,7 @@ bld.SAMBA_MODULE('TORTURE_DRS',
 	autoproto='proto.h',
 	subsystem='smbtorture',
 	init_function='torture_drs_init',
-	deps='samba-util ldb POPT_SAMBA samba-errors torture ldbsamba talloc dcerpc ndr NDR_DRSUAPI gensec samba-hostconfig RPC_NDR_DRSUAPI DSDB_MODULE_HELPERS asn1util samdb NDR_DRSBLOBS samba-credentials samdb-common LIBCLI_RESOLVE LP_RESOLVE torturemain',
+	deps='samba-util ldb samba-errors torture ldbsamba talloc dcerpc ndr NDR_DRSUAPI gensec samba-hostconfig RPC_NDR_DRSUAPI DSDB_MODULE_HELPERS asn1util samdb NDR_DRSBLOBS samba-credentials samdb-common LIBCLI_RESOLVE LP_RESOLVE torturemain',
 	internal_module=True,
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)

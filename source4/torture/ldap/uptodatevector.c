@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap_client.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -159,7 +159,7 @@ bool torture_ldap_uptodatevector(struct torture_context *torture)
 
 	ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, url,
 			       NULL,
-			       popt_get_cmdline_credentials(),
+			       samba_cmdline_get_creds(),
 			       0);
 	if (!ldb) goto failed;
 

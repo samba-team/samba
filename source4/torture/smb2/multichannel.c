@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
@@ -426,7 +426,7 @@ static bool test_multichannel_oplock_break_test1(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -609,7 +609,7 @@ static bool test_multichannel_oplock_break_test2(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -892,7 +892,7 @@ static bool test_multichannel_oplock_break_test3_windows(struct torture_context 
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct test_multichannel_oplock_break_state state = {
@@ -1090,7 +1090,7 @@ static bool test_multichannel_oplock_break_test3_specification(struct torture_co
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct test_multichannel_oplock_break_state state = {
@@ -1317,7 +1317,7 @@ static bool test_multichannel_lease_break_test1(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -1527,7 +1527,7 @@ static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -1842,7 +1842,7 @@ static bool test_multichannel_lease_break_test3(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -1972,7 +1972,7 @@ static bool test_multichannel_num_channels(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	bool ret = true;
 	struct smb2_tree **tree2 = NULL;
@@ -2066,7 +2066,7 @@ static bool test_multichannel_num_channels(struct torture_context *tctx,
 
 		torture_assert_ntstatus_equal_goto(tctx,
 			smb2_session_setup_spnego(session2[i],
-				popt_get_cmdline_credentials(),
+				samba_cmdline_get_creds(),
 				0 /* previous_session_id */),
 			expected_status,
 			ret, done,
@@ -2137,7 +2137,7 @@ static bool test_multichannel_lease_break_test4(struct torture_context *tctx,
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct test_multichannel_lease_break_state state = {

@@ -29,7 +29,7 @@
 #include "auth/session.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 /* Tests that configure multiple DLZs will use this. Increase to add stress. */
 #define NUM_DLZS_TO_CONFIGURE 4
@@ -288,7 +288,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
 
 	status = gensec_set_credentials(gensec_client_context,
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, mech);
@@ -304,7 +304,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 
 	torture_assert_int_equal(tctx, dlz_ssumatch(
 					cli_credentials_get_username(
-						popt_get_cmdline_credentials()),
+						samba_cmdline_get_creds()),
 					lpcfg_dnsdomain(tctx->lp_ctx),
 					"127.0.0.1", "type", "key",
 					client_to_server.length,
@@ -780,7 +780,7 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
 
 	status = gensec_set_credentials(gensec_client_context,
-			popt_get_cmdline_credentials());
+			samba_cmdline_get_creds());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSS-SPNEGO");
@@ -796,7 +796,7 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, dlz_ssumatch(
 				cli_credentials_get_username(
-					popt_get_cmdline_credentials()),
+					samba_cmdline_get_creds()),
 				name,
 				"127.0.0.1",
 				expected1->records[0].type,

@@ -29,7 +29,7 @@
 #include "libcli/security/security.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 #define TORTURE_USER			"torture_user"
 #define TORTURE_USER_ADMINGROUP		"torture_user_544"

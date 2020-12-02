@@ -49,7 +49,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         util.c
         ''',
 	subsystem='smbtorture',
-	deps='LIBCLI_SMB2 POPT_CREDENTIALS torture NDR_IOCTL',
+	deps='LIBCLI_SMB2 torture NDR_IOCTL',
 	internal_module=True,
 	autoproto='proto.h',
 	init_function='torture_smb2_init'

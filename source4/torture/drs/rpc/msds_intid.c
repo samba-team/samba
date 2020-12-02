@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/cldap/cldap.h"
@@ -186,7 +186,7 @@ static struct DsIntIdTestCtx *_dsintid_create_context(struct torture_context *tc
 	}
 
 	/* populate test suite context */
-	ctx->creds = popt_get_cmdline_credentials();
+	ctx->creds = samba_cmdline_get_creds();
 	ctx->dsa_bind.server_binding = server_binding;
 
 	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s",

@@ -7,7 +7,7 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                          autoproto='proto.h',
                          subsystem='smbtorture',
                          init_function='torture_krb5_init',
-                         deps='authkrb5 popt POPT_CREDENTIALS torture KERBEROS_UTIL',
+                         deps='authkrb5 torture KERBEROS_UTIL',
                          internal_module=True)
     else:
             bld.SAMBA_MODULE('TORTURE_KRB5',
@@ -15,5 +15,5 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                              autoproto='proto.h',
                              subsystem='smbtorture',
                              init_function='torture_krb5_init',
-                             deps='authkrb5 popt POPT_CREDENTIALS torture KERBEROS_UTIL',
+                             deps='authkrb5 torture KERBEROS_UTIL',
                              internal_module=True)

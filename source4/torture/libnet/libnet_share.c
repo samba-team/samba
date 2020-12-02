@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "torture/libnet/proto.h"
 
@@ -182,7 +182,7 @@ bool torture_listshares(struct torture_context *torture)
 		goto done;
 	}
 
-	libnetctx->cred = popt_get_cmdline_credentials();
+	libnetctx->cred = samba_cmdline_get_creds();
 
 	torture_comment(torture, "Testing libnet_ListShare\n");
 
@@ -263,7 +263,7 @@ bool torture_delshare(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
 	libnetctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	libnetctx->cred = popt_get_cmdline_credentials();
+	libnetctx->cred = samba_cmdline_get_creds();
 
 	status = torture_rpc_connection(torture,
 					&p,

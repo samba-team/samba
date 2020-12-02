@@ -856,7 +856,7 @@ for t in tests:
         if t == "raw.notify" or t == "raw.oplock":
             tmp_env = "nt4_dc_smb1"
         # These tests are a little slower so don't duplicate them with ad_dc
-        plansmbtorture4testsuite(t, tmp_env, '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --signing=required')
+        plansmbtorture4testsuite(t, tmp_env, '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --client-protection=sign')
     elif t == "smb2.dosmode":
         plansmbtorture4testsuite(t, "simpleserver", '//$SERVER/dosmode -U$USERNAME%$PASSWORD')
     elif t == "smb2.kernel-oplocks":
@@ -996,10 +996,10 @@ for s in signseal_options:
     e = ""
     a = "smb2"
     binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
-    options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
+    options = binding_string + " --use-krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
     plansmbtorture4testsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
 
-    options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
+    options = binding_string + " --use-krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
     plansmbtorture4testsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
 
     auth_options2 = ["krb5", "spnego,krb5"]

@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libnet/libnet.h"
 #include "libcli/libcli.h"
 #include "torture/rpc/torture_rpc.h"
@@ -39,7 +39,7 @@ bool torture_lookup(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
@@ -83,7 +83,7 @@ bool torture_lookup_host(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup_host");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
@@ -126,7 +126,7 @@ bool torture_lookup_pdc(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup_pdc");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	talloc_steal(ctx, mem_ctx);
 
@@ -171,7 +171,7 @@ bool torture_lookup_sam_name(struct torture_context *torture)
 	bool ret = true;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = popt_get_cmdline_credentials();
+	ctx->cred = samba_cmdline_get_creds();
 
 	mem_ctx = talloc_init("torture lookup sam name");
 	if (mem_ctx == NULL) return false;

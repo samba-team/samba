@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb/smbXcli_base.h"
@@ -65,7 +65,7 @@ static bool torture_smb2_con_share(struct torture_context *tctx,
                                   lpcfg_smb_ports(tctx->lp_ctx),
                                   share,
                                   lpcfg_resolve_context(tctx->lp_ctx),
-                                  popt_get_cmdline_credentials(),
+                                  samba_cmdline_get_creds(),
                                   0,
                                   tree,
                                   tctx->ev,

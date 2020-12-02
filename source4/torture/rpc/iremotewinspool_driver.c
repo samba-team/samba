@@ -38,7 +38,7 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/filesys.h"
 #include "lib/util/tftw.h"
 
@@ -65,7 +65,7 @@ static bool smb_connect_print_share(struct torture_context *tctx,
 					lpcfg_smb_ports(tctx->lp_ctx),
 					share_name, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
-					popt_get_cmdline_credentials(),
+					samba_cmdline_get_creds(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev,
 					&smb_options,
