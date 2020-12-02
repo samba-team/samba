@@ -21,7 +21,7 @@
 
 import random
 import uuid
-
+from functools import cmp_to_key
 import itertools
 from samba import unix2nttime, nttime2unix
 from samba import ldb, dsdb, drs_utils
@@ -1285,7 +1285,7 @@ class KCC(object):
         # ELSE
         #    SORT bhs in a random order
         if site.is_random_bridgehead_disabled():
-            bhs.sort(sort_dsa_by_gc_and_guid)
+            bhs.sort(key=cmp_to_key(sort_dsa_by_gc_and_guid))
         else:
             random.shuffle(bhs)
         debug.DEBUG_YELLOW(bhs)
