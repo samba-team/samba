@@ -272,7 +272,6 @@ int cmd_tarmode(void)
 {
 	const extern char *cmd_ptr;
 	char *buf;
-	int i;
 	TALLOC_CTX *ctx;
 
 	struct {
@@ -298,6 +297,7 @@ int cmd_tarmode(void)
 	}
 
 	while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		size_t i;
 		for (i = 0; i < ARRAY_SIZE(table); i++) {
 			if (strequal(table[i].cmd, buf)) {
 				*table[i].p = table[i].value;
