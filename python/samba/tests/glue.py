@@ -43,6 +43,25 @@ class GlueTests(samba.tests.TestCase):
     def test_nttime2unix(self):
         self.assertEqual(_glue.nttime2unix(116444736010000000), 1)
 
+    def test_float2nttime(self):
+        self.assertEqual(_glue.float2nttime(1.0), 116444736010000000)
+        self.assertEqual(_glue.float2nttime(1611058908.0), 132555325080000000)
+        # NTTIME has a resolution of 100ns
+        self.assertEqual(_glue.float2nttime(1611058908.1234567), 132555325081234567)
+        self.assertEqual(_glue.float2nttime(1611058908.123456789), 132555325081234567)
+
+    def test_nttime2float(self):
+        self.assertEqual(_glue.nttime2float(1), -11644473600.0)
+        self.assertEqual(_glue.nttime2float(0x7fffffffffffffff), 910692730085.4775)
+        self.assertEqual(_glue.nttime2float(0x8000000000000000), 910692730085.4775)
+        self.assertEqual(_glue.nttime2float(0xf000000000000000), 910692730085.4775)
+        self.assertEqual(_glue.nttime2float(116444736010000000), 1.0)
+        self.assertEqual(_glue.nttime2float(132555325080000000), 1611058908.0)
+        self.assertEqual(_glue.nttime2float(132555325081234567), 1611058908.1234567)
+        # NTTIME_OMIT (0) and NTTIME_FREEZE (UINT64_MAX) map to SAMBA_UTIME_OMIT (1)
+        self.assertEqual(_glue.nttime2float(0), 1.0)
+        self.assertEqual(_glue.nttime2float(0xffffffffffffffff), 1.0)
+
     def test_nttime2string(self):
         string = _glue.nttime2string(116444736010000000)
         self.assertEqual(type(string), str)

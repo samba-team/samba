@@ -134,6 +134,49 @@ static PyObject *py_nttime2unix(PyObject *self, PyObject *args)
 	return PyLong_FromLong((uint64_t)t);
 }
 
+static PyObject *py_float2nttime(PyObject *self, PyObject *args)
+{
+	double ft = 0;
+	double ft_sec = 0;
+	double ft_nsec = 0;
+	struct timespec ts;
+	NTTIME nt = 0;
+
+	if (!PyArg_ParseTuple(args, "d", &ft)) {
+		return NULL;
+	}
+
+	ft_sec = (double)(int)ft;
+	ft_nsec = (ft - ft_sec) * 1.0e+9;
+
+	ts.tv_sec = (int)ft_sec;
+	ts.tv_nsec = (int)ft_nsec;
+
+	nt = full_timespec_to_nt_time(&ts);
+
+	return PyLong_FromLongLong((uint64_t)nt);
+}
+
+static PyObject *py_nttime2float(PyObject *self, PyObject *args)
+{
+	double ft = 0;
+	struct timespec ts;
+	const struct timespec ts_zero = { .tv_sec = 0, };
+	NTTIME nt = 0;
+
+	if (!PyArg_ParseTuple(args, "K", &nt)) {
+		return NULL;
+	}
+
+	ts = nt_time_to_full_timespec(nt);
+	if (is_omit_timespec(&ts)) {
+		return PyFloat_FromDouble(1.0);
+	}
+	ft = timespec_elapsed2(&ts_zero, &ts);
+
+	return PyFloat_FromDouble(ft);
+}
+
 static PyObject *py_nttime2string(PyObject *self, PyObject *args)
 {
 	PyObject *ret;
@@ -374,6 +417,10 @@ static PyMethodDef py_misc_methods[] = {
 		"unix2nttime(timestamp) -> nttime" },
 	{ "nttime2unix", (PyCFunction)py_nttime2unix, METH_VARARGS,
 		"nttime2unix(nttime) -> timestamp" },
+	{ "float2nttime", (PyCFunction)py_float2nttime, METH_VARARGS,
+		"pytime2nttime(floattimestamp) -> nttime" },
+	{ "nttime2float", (PyCFunction)py_nttime2float, METH_VARARGS,
+		"nttime2pytime(nttime) -> floattimestamp" },
 	{ "nttime2string", (PyCFunction)py_nttime2string, METH_VARARGS,
 		"nttime2string(nttime) -> string" },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
