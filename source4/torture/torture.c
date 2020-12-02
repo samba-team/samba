@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "system/time.h"
 #include "param/param.h"
-#include "lib/cmdline/popt_common.h"
 #include "torture/smbtorture.h"
 #include "lib/util/samba_modules.h"
 
