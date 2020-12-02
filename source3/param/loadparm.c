@@ -3418,6 +3418,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	   open and fstat. Ensure this isn't a symlink link. */
 
 	if (sys_lstat(fname, &lsbuf, false) != 0) {
+		if (errno == ENOENT) {
+			/* Unknown share requested. Just ignore. */
+			goto out;
+		}
+		/* Only log messages for meaningful problems. */
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
 		goto out;
@@ -3622,6 +3627,11 @@ int load_usershare_service(const char *servicename)
 	const char *usersharepath = Globals.usershare_path;
 	int max_user_shares = Globals.usershare_max_shares;
 	int snum_template = -1;
+
+	if (servicename[0] == '\0') {
+		/* Invalid service name. */
+		return -1;
+	}
 
 	if (*usersharepath == 0 ||  max_user_shares == 0) {
 		return -1;
