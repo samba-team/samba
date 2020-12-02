@@ -74,22 +74,26 @@ static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 }
 
 #ifdef HAVE_ADS
-static void print_ldap_srvlist(struct dns_rr_srv *dclist, int numdcs )
+static void print_ldap_srvlist(struct dns_rr_srv *dclist, size_t numdcs)
 {
-	struct sockaddr_storage ss;
-	int i;
+	size_t i;
 
 	for ( i=0; i<numdcs; i++ ) {
-		if (resolve_name(dclist[i].hostname, &ss, 0x20, true) ) {
+		struct dns_rr_srv *dc = &dclist[i];
+		size_t j;
+
+		for (j=0; j<dc->num_ips; j++) {
+			struct sockaddr_storage *ss = &dc->ss_s[j];
 			char addr[INET6_ADDRSTRLEN];
-			print_sockaddr(addr, sizeof(addr), &ss);
+
+			print_sockaddr(addr, sizeof(addr), ss);
 #ifdef HAVE_IPV6
-			if (ss.ss_family == AF_INET6) {
-				d_printf("[%s]:%d\n", addr, dclist[i].port);
+			if (ss->ss_family == AF_INET6) {
+				d_printf("[%s]:%"PRIu16"\n", addr, dc->port);
 			}
 #endif
-			if (ss.ss_family == AF_INET) {
-				d_printf("%s:%d\n", addr, dclist[i].port);
+			if (ss->ss_family == AF_INET) {
+				d_printf("%s:%"PRIu16"\n", addr, dc->port);
 			}
 		}
 	}
