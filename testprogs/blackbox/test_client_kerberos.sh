@@ -38,7 +38,7 @@ if test -x ${samba_bindir}/samba4kdestroy; then
     samba_kinit=${samba_bindir}/samba4kdestroy
 fi
 
-test_rpc_getusername_legacy() {
+test_rpc_getusername() {
     eval echo "$cmd"
     out=$(eval $cmd)
     ret=$?
@@ -101,33 +101,33 @@ export KRB5CCNAME
 ### RPCCLIENT
 cmd='$samba_rpcclient ncacn_np:${SERVER} -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy ntlm" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | USER=${USERNAME} $samba_rpcclient ncacn_np:${SERVER} --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy ntlm interactive" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | $samba_rpcclient ncacn_np:${SERVER} -U${USERNAME} --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy ntlm interactive with -U" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='$samba_rpcclient ncacn_np:${SERVER} -U${USERNAME}%${PASSWORD} -k --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy kerberos" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | $samba_rpcclient ncacn_np:${SERVER} -U${USERNAME} -k --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit_expect_failure "test rpcclient legacy kerberos interactive (negative test)" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_rpcclient ncacn_np:${SERVER} -k --configfile=${CONFIGURATION} -c getusername 2>&1'
 testit "test rpcclient legacy kerberos ccache" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
 
@@ -135,30 +135,30 @@ $samba_kdestroy
 
 cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit "test smbtorture legacy default" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} -k no --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit "test smbtorture legacy ntlm (kerberos=no)" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} -k yes --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit "test smbtorture legacy kerberos=yes" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_smbtorture -k yes --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit "test smbtorture legacy kerberos=yes ccache" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
 
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_smbtorture -k no --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit_expect_failure "test smbtorture legacy kerberos=no ccache (negative test)" \
-    test_rpc_getusername_legacy || \
+    test_rpc_getusername || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
 
