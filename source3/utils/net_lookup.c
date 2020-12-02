@@ -31,7 +31,7 @@ int net_lookup_usage(struct net_context *c, int argc, const char **argv)
 {
 	d_printf(_(
 "  net lookup [host] HOSTNAME[#<type>]\n\tgives IP for a hostname\n\n"
-"  net lookup ldap [domain]\n\tgives IP of domain's ldap server\n\n"
+"  net lookup ldap [domain] [sitename]\n\tgives IP of domain's ldap server\n\n"
 "  net lookup kdc [realm]\n\tgives IP of realm's kerberos KDC\n\n"
 "  net lookup pdc [domain|realm]\n\tgives IP of realm's kerberos KDC\n\n"
 "  net lookup dc [domain]\n\tgives IP of domains Domain Controllers\n\n"
@@ -103,7 +103,7 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	struct sockaddr_storage ss;
 	struct dns_rr_srv *dcs = NULL;
 	size_t numdcs = 0;
-	char *sitename;
+	const char *sitename = NULL;
 	TALLOC_CTX *ctx;
 	NTSTATUS status;
 	int ret;
@@ -114,13 +114,19 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	else
 		domain = c->opt_target_workgroup;
 
+	if (argc > 1) {
+		sitename = argv[1];
+	}
+
 	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
 		d_fprintf(stderr,"net_lookup_ldap: talloc_init() %s!\n",
 			  _("failed"));
 		return -1;
 	}
 
-	sitename = sitename_fetch(ctx, domain);
+	if (sitename == NULL) {
+		sitename = sitename_fetch(ctx, domain);
+	}
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
