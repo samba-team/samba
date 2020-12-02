@@ -298,10 +298,7 @@ class DNSTKeyTest(DNSTest):
         # so it can be modified
         response_packet_list = [x if isinstance(x, int) else ord(x) for x in response_packet]
         del response_packet_list[-tsig_record_len:]
-        if isinstance(response_packet_list[11], int):
-            response_packet_list[11] = 0
-        else:
-            response_packet_list[11] = chr(0)
+        response_packet_list[11] = 0
 
         # convert modified list (of string char or int) to str/bytes
         response_packet_wo_tsig = bytes(response_packet_list)
