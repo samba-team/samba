@@ -162,7 +162,7 @@ testit "test rpcclient kerberos ccache" \
     failed=$(expr $failed + 1)
 $samba_kdestroy
 
-### SMBTORTURE
+### SMBTORTURE (legacy)
 
 cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit "test smbtorture legacy default" \
@@ -189,6 +189,37 @@ $samba_kdestroy
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
 cmd='$samba_smbtorture -k no --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
 testit_expect_failure "test smbtorture legacy kerberos=no ccache (negative test)" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+$samba_kdestroy
+
+### SMBTORTURE
+
+cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
+testit "test smbtorture default" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} --use-kerberos=disabled --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
+testit "test smbtorture ntlm (kerberos=no)" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+cmd='$samba_smbtorture -U${USERNAME}%${PASSWORD} --use-kerberos=required --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
+testit "test smbtorture kerberos=yes" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+
+kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
+cmd='$samba_smbtorture --use-krb5-ccache=$KRB5CCNAME --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
+testit "test smbtorture kerberos=yes ccache" \
+    test_rpc_getusername || \
+    failed=$(expr $failed + 1)
+$samba_kdestroy
+
+kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
+cmd='$samba_smbtorture --use-kerbers=required --configfile=${CONFIGURATION} --maximum-runtime=30 --basedir=$PREFIX --option=torture:progress=no --target=samba4 ncacn_np:${SERVER} rpc.lsa-getuser 2>&1'
+testit_expect_failure "test smbtorture kerberos=no ccache (negative test)" \
     test_rpc_getusername || \
     failed=$(expr $failed + 1)
 $samba_kdestroy
