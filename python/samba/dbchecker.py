@@ -537,7 +537,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Normalised attribute %s" % attrname)
 
     def err_duplicate_values(self, dn, attrname, dup_values, values):
-        '''fix attribute normalisation errors'''
+        '''fix duplicate attribute values'''
         self.report("ERROR: Duplicate values for attribute '%s' in '%s'" % (attrname, dn))
         self.report("Values contain a duplicate: [%s]/[%s]!" % (','.join(dump_attr_values(dup_values)), ','.join(dump_attr_values(values))))
         if not self.confirm_all("Fix duplicates for '%s' from '%s'?" % (attrname, dn), 'fix_all_duplicates'):
