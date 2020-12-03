@@ -34,6 +34,7 @@ from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
 from samba.common import get_bytes, cmp
 from samba.dcerpc import security
+from samba import is_ad_dc_built
 import binascii
 
 __docformat__ = "restructuredText"
@@ -1368,6 +1369,10 @@ schemaUpdateNow: 1
                                    tombstone_lifetime=None):
         '''garbage_collect_tombstones(lp, samdb, [dn], current_time, tombstone_lifetime)
         -> (num_objects_expunged, num_links_expunged)'''
+
+        if not is_ad_dc_built():
+            raise SamDBError('Cannot garbage collect tombstones: ' \
+                'AD DC was not built')
 
         if tombstone_lifetime is None:
             return dsdb._dsdb_garbage_collect_tombstones(self, dn,
