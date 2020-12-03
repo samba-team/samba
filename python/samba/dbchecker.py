@@ -2226,18 +2226,22 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             # make a local copy to modify
             attrs = list(attrs)
-        if "dn" in map(str.lower, attrs):
+
+        lc_attrs = set(x.lower() for x in attrs)
+
+        if ("dn" in lc_attrs or
+            "distinguishedname" in lc_attrs or
+            dn.get_rdn_name().lower() in lc_attrs):
             attrs.append("name")
-        if "distinguishedname" in map(str.lower, attrs):
-            attrs.append("name")
-        if str(dn.get_rdn_name()).lower() in map(str.lower, attrs):
-            attrs.append("name")
-        if 'name' in map(str.lower, attrs):
+            lc_attrs.add('name')
+
+        if 'name' in lc_attrs:
             attrs.append(dn.get_rdn_name())
             attrs.append("isDeleted")
             attrs.append("systemFlags")
+
         need_replPropertyMetaData = False
-        if '*' in attrs:
+        if '*' in lc_attrs:
             need_replPropertyMetaData = True
         else:
             for a in attrs:
@@ -2251,6 +2255,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if need_replPropertyMetaData:
             attrs.append("replPropertyMetaData")
         attrs.append("objectGUID")
+
+        # recalculate lc_attrs, becuase we might have added some
+        lc_attrs = set(x.lower() for x in attrs)
 
         try:
             sd_flags = 0
@@ -2517,11 +2524,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     self.err_wrong_instancetype(obj, calculated_instancetype)
 
-        if not got_objectclass and ("*" in attrs or "objectclass" in map(str.lower, attrs)):
+        if not got_objectclass and ("*" in lc_attrs or "objectclass" in lc_attrs):
             error_count += 1
             self.err_missing_objectclass(dn)
 
-        if ("*" in attrs or "name" in map(str.lower, attrs)):
+        if ("*" in lc_attrs or "name" in lc_attrs):
             if name_val is None:
                 error_count += 1
                 self.report("ERROR: Not fixing missing 'name' on '%s'" % (str(obj.dn)))
@@ -2583,7 +2590,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.fix_metadata(obj, att)
 
         if self.is_fsmo_role(dn):
-            if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
+            if "fSMORoleOwner" not in obj and ("*" in lc_attrs or "fsmoroleowner" in lc_attrs):
                 self.err_no_fsmoRoleOwner(obj)
                 error_count += 1
 
@@ -2604,7 +2611,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             else:
                 raise
 
-        if dn in self.deleted_objects_containers and '*' in attrs:
+        if dn in self.deleted_objects_containers and '*' in lc_attrs:
             if self.is_deleted_deleted_objects(obj):
                 self.err_deleted_deleted_objects(obj)
                 error_count += 1
@@ -2632,7 +2639,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         if dn == self.server_ref_dn:
             # Check we have a valid RID Set
-            if "*" in attrs or "ridsetreferences" in map(str.lower, attrs):
+            if "*" in lc_attrs or "ridsetreferences" in lc_attrs:
                 if "rIDSetReferences" not in obj:
                     # NO RID SET reference
                     # We are RID master, allocate it.
