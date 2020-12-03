@@ -1007,7 +1007,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Corrected psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn))
 
     def err_doubled_userParameters(self, obj, attrname, value):
-        '''handle a wrong userParameters'''
+        '''handle a userParameters that has been utf-16 encoded twice'''
         self.report("ERROR: wrongly formatted userParameters on %s, should not be double UTF16 encoded" % (obj.dn))
         if not self.confirm_all('Convert userParameters from doubled UTF-16 encoding on %s?' % (obj.dn), 'fix_doubled_userparameters'):
             self.report('Not changing userParameters from doubled UTF-16 encoding on %s' % (obj.dn))
