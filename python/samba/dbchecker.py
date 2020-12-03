@@ -720,7 +720,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
     def err_dn_string_component_old(self, dn, attrname, val, dsdb_dn, correct_dn):
-        """handle a DN string being incorrect"""
+        """handle a DN string being incorrect due to a rename or delete"""
         self.report("NOTE: old (due to rename or delete) DN string component for %s in object %s - %s" % (attrname, dn, val))
         dsdb_dn.dn = correct_dn
 
@@ -755,7 +755,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed incorrect DN %s on attribute %s" % (mismatch_type, attrname))
 
     def err_dn_component_missing_target_sid(self, dn, attrname, val, dsdb_dn, target_sid_blob):
-        """handle a DN string being incorrect"""
+        """fix missing <SID=...> on linked attributes"""
         self.report("ERROR: missing DN SID component for %s in object %s - %s" % (attrname, dn, val))
 
         if len(dsdb_dn.prefix) != 0:
