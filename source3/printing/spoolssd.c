@@ -586,7 +586,7 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 	int fd = -1;
 	int rc;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
-	uint32_t i;
+	int i;
 	struct dcesrv_endpoint *e = NULL;
 
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
