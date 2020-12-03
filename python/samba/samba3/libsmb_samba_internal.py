@@ -31,11 +31,75 @@ class Conn(LibsmbCConn):
         security.SECINFO_DACL | \
         security.SECINFO_SACL
 
+    def required_access_for_get_secinfo(self, secinfo):
+        access = 0
+
+        #
+        # This is based on MS-FSA
+        # 2.1.5.13 Server Requests a Query of Security Information
+        #
+        # Note that MS-SMB2 3.3.5.20.3 Handling SMB2_0_INFO_SECURITY
+        # doesn't specify any extra checks
+        #
+
+        if secinfo & security.SECINFO_OWNER:
+            access |= security.SEC_STD_READ_CONTROL
+        if secinfo & security.SECINFO_GROUP:
+            access |= security.SEC_STD_READ_CONTROL
+        if secinfo & security.SECINFO_DACL:
+            access |= security.SEC_STD_READ_CONTROL
+        if secinfo & security.SECINFO_SACL:
+            access |= security.SEC_FLAG_SYSTEM_SECURITY
+
+        if secinfo & security.SECINFO_LABEL:
+            access |= security.SEC_STD_READ_CONTROL
+
+        return access
+
+    def required_access_for_set_secinfo(self, secinfo):
+        access = 0
+
+        #
+        # This is based on MS-FSA
+        # 2.1.5.16 Server Requests Setting of Security Information
+        # and additional constraints from
+        # MS-SMB2 3.3.5.21.3 Handling SMB2_0_INFO_SECURITY
+        #
+
+        if secinfo & security.SECINFO_OWNER:
+            access |= security.SEC_STD_WRITE_OWNER
+        if secinfo & security.SECINFO_GROUP:
+            access |= security.SEC_STD_WRITE_OWNER
+        if secinfo & security.SECINFO_DACL:
+            access |= security.SEC_STD_WRITE_DAC
+        if secinfo & security.SECINFO_SACL:
+            access |= security.SEC_FLAG_SYSTEM_SECURITY
+
+        if secinfo & security.SECINFO_LABEL:
+            access |= security.SEC_STD_WRITE_OWNER
+
+        if secinfo & security.SECINFO_ATTRIBUTE:
+            access |= security.SEC_STD_WRITE_DAC
+
+        if secinfo & security.SECINFO_SCOPE:
+            access |= security.SEC_FLAG_SYSTEM_SECURITY
+
+        if secinfo & security.SECINFO_BACKUP:
+            access |= security.SEC_STD_WRITE_OWNER
+            access |= security.SEC_STD_WRITE_DAC
+            access |= security.SEC_FLAG_SYSTEM_SECURITY
+
+        return access
+
     def get_acl(self,
                 filename,
-                sinfo = SECINFO_DEFAULT_FLAGS,
-                access_mask = security.SEC_FLAG_MAXIMUM_ALLOWED):
+                sinfo=None,
+                access_mask=None):
         """Get security descriptor for file."""
+        if sinfo is None:
+            sinfo = self.SECINFO_DEFAULT_FLAGS
+        if access_mask is None:
+            access_mask = self.required_access_for_get_secinfo(sinfo)
         fnum = self.create(
             Name=filename,
             DesiredAccess=access_mask,
@@ -49,11 +113,16 @@ class Conn(LibsmbCConn):
     def set_acl(self,
                 filename,
                 sd,
-                sinfo = SECINFO_DEFAULT_FLAGS):
+                sinfo=None,
+                access_mask=None):
         """Set security descriptor for file."""
+        if sinfo is None:
+            sinfo = self.SECINFO_DEFAULT_FLAGS
+        if access_mask is None:
+            access_mask = self.required_access_for_set_secinfo(sinfo)
         fnum = self.create(
             Name=filename,
-            DesiredAccess=security.SEC_FLAG_MAXIMUM_ALLOWED,
+            DesiredAccess=access_mask,
             ShareAccess=(FILE_SHARE_READ|FILE_SHARE_WRITE))
         try:
             self.set_sd(fnum, sd, sinfo)
