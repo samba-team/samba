@@ -97,7 +97,6 @@ class dbcheck(object):
         self.fix_replmetadata_wrong_attid = False
         self.fix_replmetadata_unsorted_attid = False
         self.fix_deleted_deleted_objects = False
-        self.fix_incorrect_deleted_objects = False
         self.fix_dn = False
         self.fix_base64_userparameters = False
         self.fix_utf8_userparameters = False
