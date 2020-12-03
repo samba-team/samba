@@ -977,7 +977,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         self.report("ERROR: incorrect userParameters value on object %s.  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def err_base64_userParameters(self, obj, attrname, value):
-        '''handle a wrong userParameters'''
+        '''handle a userParameters that is wrongly base64 encoded'''
         self.report("ERROR: wrongly formatted userParameters %s on %s, should not be base64-encoded" % (value, obj.dn))
         if not self.confirm_all('Convert userParameters from base64 encoding on %s?' % (obj.dn), 'fix_base64_userparameters'):
             self.report('Not changing userParameters from base64 encoding on %s' % (obj.dn))
