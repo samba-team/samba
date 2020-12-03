@@ -5,13 +5,13 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This controls whether the client is allowed or required to use SMB signing. Possible values 
-    are <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis> 
+    are <emphasis>desired</emphasis>, <emphasis>required</emphasis> 
     and <emphasis>disabled</emphasis>. 
     </para>
 
-    <para>When set to auto or default, SMB signing is offered, but not enforced.</para>
+    <para>When set to desired or default, SMB signing is offered, but not enforced.</para>
 
-    <para>When set to mandatory, SMB signing is required and if set
+    <para>When set to required, SMB signing is mandatory and if set
     to disabled, SMB signing is not offered either.</para>
 
     <para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
