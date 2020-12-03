@@ -988,17 +988,9 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		 */
 		share_mode_memcache_store(static_share_mode_data);
 		static_share_mode_data = NULL;
-	} else {
-		/*
-		 * The next opener of this file will find an empty
-		 * locking.tdb record. Don't store the share_mode_data
-		 * in the memcache, fresh_share_mode_lock() will
-		 * generate a fresh seqnum anyway, obsoleting the
-		 * cache entry.
-		 */
-		TALLOC_FREE(static_share_mode_data);
 	}
 
+	TALLOC_FREE(static_share_mode_data);
 	return 0;
 }
 
