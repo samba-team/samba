@@ -620,14 +620,6 @@ static struct share_mode_data *parse_share_modes(
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	/*
-	 * We have a non-zero locking.tdb record that was correctly
-	 * parsed. This means a share_entries.tdb entry exists,
-	 * otherwise we'd have paniced before in
-	 * share_mode_data_store()
-	 */
-	d->have_share_modes = true;
-
 	return d;
 fail:
 	TALLOC_FREE(d);
@@ -1875,7 +1867,6 @@ bool set_share_mode(struct share_mode_lock *lck,
 		/*
 		 * Storing a fresh record with just one share entry
 		 */
-		d->have_share_modes = true;
 		d->modified = true;
 	}
 
@@ -2069,9 +2060,9 @@ bool share_mode_forall_entries(
 
 	if ((ltdb->num_share_entries != 0 ) && (num_share_entries == 0)) {
 		/*
-		 * This routine wiped all share entries
+		 * This routine wiped all share entries, let
+		 * share_mode_data_store() delete the record
 		 */
-		d->have_share_modes = false;
 		d->modified = true;
 	}
 
@@ -2521,7 +2512,6 @@ bool reset_share_mode_entry(
 		goto done;
 	}
 
-	d->have_share_modes = true;
 	d->modified = true;
 	ret = true;
 done:

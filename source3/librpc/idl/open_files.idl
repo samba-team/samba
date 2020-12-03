@@ -64,7 +64,6 @@ interface open_files
 		NTTIME changed_write_time;
 		[skip] boolean8 fresh;
 		[skip] boolean8 modified;
-		[skip] boolean8 have_share_modes;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
 	} share_mode_data;
 
