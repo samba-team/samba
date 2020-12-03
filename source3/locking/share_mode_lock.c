@@ -638,7 +638,8 @@ fail:
  If modified, store the share_mode_data back into the database.
 ********************************************************************/
 
-static NTSTATUS share_mode_data_store(struct share_mode_data *d)
+static NTSTATUS share_mode_data_store(
+	struct share_mode_data *d, bool *have_share_entries)
 {
 	TDB_DATA key = locking_key(&d->id);
 	struct locking_tdb_data *ltdb = NULL;
@@ -676,6 +677,8 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 			TALLOC_FREE(ltdb);
 			return ndr_map_error2ntstatus(ndr_err);
 		}
+
+		*have_share_entries = true;
 	}
 
 	ltdb->share_mode_data_buf = blob.data;
@@ -947,6 +950,7 @@ fail:
 
 static int share_mode_lock_destructor(struct share_mode_lock *lck)
 {
+	bool have_share_entries = false;
 	NTSTATUS status;
 
 	SMB_ASSERT(static_share_mode_data_refcount > 0);
@@ -956,7 +960,8 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		return 0;
 	}
 
-	status = share_mode_data_store(static_share_mode_data);
+	status = share_mode_data_store(
+		static_share_mode_data, &have_share_entries);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_data_store failed: %s\n",
 			nt_errstr(status));
@@ -975,7 +980,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		}
 	}
 
-	if (static_share_mode_data->have_share_modes) {
+	if (have_share_entries) {
 		/*
 		 * This is worth keeping. Without share modes,
 		 * share_mode_data_store above has left nothing in the
