@@ -436,7 +436,7 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
         return True
 
     def do_rename(self, from_dn, to_rdn, to_base, controls, msg):
-        '''perform a modify with optional verbose output'''
+        '''perform a rename with optional verbose output'''
         if self.verbose:
             self.report("""dn: %s
 changeType: modrdn
