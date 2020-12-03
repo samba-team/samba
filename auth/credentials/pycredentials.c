@@ -22,7 +22,6 @@
 #include "python/modules.h"
 #include "pycredentials.h"
 #include "param/param.h"
-#include "lib/cmdline/credentials.h"
 #include "auth/credentials/credentials_internal.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 #include "librpc/gen_ndr/netlogon.h"
@@ -474,7 +473,7 @@ static PyObject *py_creds_set_cmdline_callbacks(PyObject *self, PyObject *unused
 		PyErr_Format(PyExc_TypeError, "Credentials expected");
 		return NULL;
 	}
-        return PyBool_FromLong(s4_cli_credentials_set_cmdline_callbacks(creds));
+        return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(creds));
 }
 
 static PyObject *py_creds_parse_string(PyObject *self, PyObject *args)
