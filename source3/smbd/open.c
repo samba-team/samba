@@ -1761,7 +1761,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32_t share_access)
 {
 	struct open_mode_check_state state;
-	bool ok, conflict, have_share_entries;
+	bool ok, conflict;
 	bool modified = false;
 
 	if (is_oplock_stat_open(access_mask)) {
@@ -1786,15 +1786,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 		SMB_ASSERT(ok);
 	}
 #endif
-
-	have_share_entries = share_mode_have_entries(lck);
-	if (!have_share_entries) {
-		/*
-		 * This is a fresh share mode lock where no conflicts
-		 * can happen.
-		 */
-		return NT_STATUS_OK;
-	}
 
 	share_mode_flags_get(
 		lck, &state.access_mask, &state.share_access, NULL);
