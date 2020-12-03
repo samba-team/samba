@@ -991,8 +991,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Corrected base64-encoded userParameters on %s by converting from base64" % (obj.dn))
 
     def err_utf8_userParameters(self, obj, attrname, value):
-        '''handle a wrong userParameters'''
-        self.report("ERROR: wrongly formatted userParameters on %s, should not be psudo-UTF8 encoded" % (obj.dn))
+        '''handle a userParameters that is wrongly utf-8 encoded'''
+        self.report("ERROR: wrongly formatted userParameters on %s, "
+                    "should not be pseudo-UTF8 encoded" % (obj.dn))
         if not self.confirm_all('Convert userParameters from UTF8 encoding on %s?' % (obj.dn), 'fix_utf8_userparameters'):
             self.report('Not changing userParameters from UTF8 encoding on %s' % (obj.dn))
             return
