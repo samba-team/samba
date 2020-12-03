@@ -35,25 +35,20 @@ from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
 
-# vals is a sequence of ldb.bytes objects which are a subclass
-# of 'byte' type in python3 and just a str type in python2, to
-# display as string these need to be converted to string via (str)
-# function in python3 but that may generate a UnicodeDecode error,
-# if so use repr instead.  We need to at least try to get the 'str'
-# value if possible to allow some tests which check the strings
-# outputted to pass, these tests compare attr values logged to stdout
-# against those in various results files.
 
 def dump_attr_values(vals):
-    result = ""
+    """Stringify a value list, using utf-8 if possible (which some tests
+    want), or the python bytes representation otherwise (with leading
+    'b' and escapes like b'\x00').
+    """
+    result = []
     for value in vals:
-        if len(result):
-            result = "," + result
         try:
-            result = result + str(value)
+            result.append(value.decode('utf-8'))
         except UnicodeDecodeError:
-            result = result + repr(value)
-    return result
+            result.append(repr(value))
+    return ','.join(result)
+
 
 class dbcheck(object):
     """check a SAM database for errors"""
