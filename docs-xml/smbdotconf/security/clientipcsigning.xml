@@ -7,13 +7,13 @@
 <description>
     <para>This controls whether the client is allowed or required to use SMB signing for IPC$
     connections as DCERPC transport. Possible values
-    are <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis>
+    are <emphasis>desired</emphasis>, <emphasis>required</emphasis>
     and <emphasis>disabled</emphasis>.
     </para>
 
-    <para>When set to mandatory or default, SMB signing is required.</para>
+    <para>When set to required or default, SMB signing is mandatory.</para>
 
-    <para>When set to auto, SMB signing is offered, but not enforced and if set
+    <para>When set to desired, SMB signing is offered, but not enforced and if set
     to disabled, SMB signing is not offered either.</para>
 
     <para>Connections from winbindd to Active Directory Domain Controllers
