@@ -29,11 +29,7 @@ class Conn(LibsmbCConn):
         security.SECINFO_OWNER | \
         security.SECINFO_GROUP | \
         security.SECINFO_DACL | \
-        security.SECINFO_PROTECTED_DACL | \
-        security.SECINFO_UNPROTECTED_DACL | \
-        security.SECINFO_SACL | \
-        security.SECINFO_PROTECTED_SACL | \
-        security.SECINFO_UNPROTECTED_SACL
+        security.SECINFO_SACL
 
     def get_acl(self,
                 filename,
