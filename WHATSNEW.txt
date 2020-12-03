@@ -1,4 +1,52 @@
                    ===============================
+                   Release Notes for Samba 4.11.17
+                          December 03, 2020
+                   ===============================
+
+
+This is an extraordinary release of the Samba 4.11 release series to fix a
+regression introduced with Samba 4.11.16.
+
+
+Changes since 4.11.16
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14486: s3: vfs_glusterfs: Fix the error in preventing talloc leaks from
+     a function.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14486: s3-vfs_glusterfs: Always disable write-behind translator.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 14486: manpages/vfs_glusterfs: Mention silent skipping of write-behind
+     translator.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.11.16
                           November 04, 2020
                    ===============================
@@ -67,8 +115,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ===============================
                    Release Notes for Samba 4.11.15
