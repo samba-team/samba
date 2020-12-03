@@ -1033,7 +1033,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Corrected doubled-UTF16 encoded userParameters on %s by converting" % (obj.dn))
 
     def err_odd_userParameters(self, obj, attrname):
-        # This is a truncated userParameters due to a pre 4.1 replication bug
+        """Fix a truncated userParameters due to a pre 4.1 replication bug"""
         self.report("ERROR: incorrect userParameters value on object %s (odd length).  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def find_revealed_link(self, dn, attrname, guid):
