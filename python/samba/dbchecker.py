@@ -480,7 +480,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Removed empty attribute %s" % attrname)
 
     def err_normalise_mismatch(self, dn, attrname, values):
-        '''fix attribute normalisation errors'''
+        '''fix attribute normalisation errors, without altering sort order'''
         self.report("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
         for val in values:
@@ -511,7 +511,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Normalised attribute %s" % attrname)
 
     def err_normalise_mismatch_replace(self, dn, attrname, values):
-        '''fix attribute normalisation errors'''
+        '''fix attribute normalisation and/or sort errors'''
         normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, values)
         self.report("ERROR: Normalisation error for attribute '%s' in '%s'" % (attrname, dn))
         self.report("Values/Order of values do/does not match: %s/%s!" % (values, list(normalised)))
