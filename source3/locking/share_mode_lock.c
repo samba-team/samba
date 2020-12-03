@@ -1107,11 +1107,6 @@ NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
 }
 
-bool share_mode_have_entries(struct share_mode_lock *lck)
-{
-	return lck->data->have_share_modes;
-}
-
 NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
 {
 	return lck->data->changed_write_time;

@@ -94,7 +94,6 @@ bool share_mode_forall_entries(
 		   bool *modified,
 		   void *private_data),
 	void *private_data);
-bool share_mode_have_entries(struct share_mode_lock *lck);
 
 NTTIME share_mode_changed_write_time(struct share_mode_lock *lck);
 const char *share_mode_servicepath(struct share_mode_lock *lck);
