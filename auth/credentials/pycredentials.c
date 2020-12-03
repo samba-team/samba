@@ -30,7 +30,6 @@
 #include "param/pyparam.h"
 #include <tevent.h>
 #include "libcli/auth/libcli_auth.h"
-#include "auth/credentials/credentials_internal.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "libcli/smb/smb_constants.h"
