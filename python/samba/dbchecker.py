@@ -2236,9 +2236,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             lc_attrs.add('name')
 
         if 'name' in lc_attrs:
-            attrs.append(dn.get_rdn_name())
-            attrs.append("isDeleted")
-            attrs.append("systemFlags")
+            for a in (dn.get_rdn_name(),
+                      "isDeleted",
+                      "systemFlags"):
+                if a.lower() not in lc_attrs:
+                    attrs.append(a)
 
         need_replPropertyMetaData = False
         if '*' in lc_attrs:
