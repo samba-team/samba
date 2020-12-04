@@ -69,7 +69,9 @@ Administration of Samba policy requires that a Samba ADMX template be uploaded
 to the SYSVOL share. The samba-tool command `samba-tool gpo admxload` is
 provided as a convenient method for adding this policy. Once uploaded, policies
 can be modified in the Group Policy Management Editor under Computer
-Configuration/Policies/Administrative Templates.
+Configuration/Policies/Administrative Templates. Alternatively, Samba policy
+may be managed using the `samba-tool gpo manage` command. This tool does not
+require the admx templates to be installed.
 
 CTDB CHANGES
 ============
