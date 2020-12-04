@@ -2229,6 +2229,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         lc_attrs = set(x.lower() for x in attrs)
 
+        def add_attr(a):
+            if a.lower() not in lc_attrs:
+                attrs.append(a)
+                lc_attrs.add(a.lower())
+
         if ("dn" in lc_attrs or
             "distinguishedname" in lc_attrs or
             dn.get_rdn_name().lower() in lc_attrs):
@@ -2239,8 +2244,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             for a in (dn.get_rdn_name(),
                       "isDeleted",
                       "systemFlags"):
-                if a.lower() not in lc_attrs:
-                    attrs.append(a)
+                add_attr(a)
 
         need_replPropertyMetaData = False
         if '*' in lc_attrs:
@@ -2255,11 +2259,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 need_replPropertyMetaData = True
                 break
         if need_replPropertyMetaData:
-            attrs.append("replPropertyMetaData")
-        attrs.append("objectGUID")
+            add_attr("replPropertyMetaData")
 
-        # recalculate lc_attrs, becuase we might have added some
-        lc_attrs = set(x.lower() for x in attrs)
+        add_attr("objectGUID")
 
         try:
             sd_flags = 0
