@@ -2632,7 +2632,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         if dn == self.server_ref_dn:
             # Check we have a valid RID Set
-            if "*" in attrs or "rIDSetReferences" in attrs:
+            if "*" in attrs or "ridsetreferences" in map(str.lower, attrs):
                 if "rIDSetReferences" not in obj:
                     # NO RID SET reference
                     # We are RID master, allocate it.
