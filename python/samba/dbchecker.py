@@ -2217,10 +2217,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         raise KeyError
 
-    def check_object(self, dn, attrs=None):
-        '''check one object'''
-        if self.verbose:
-            self.report("Checking object %s" % dn)
+    def find_checkable_attrs(self, dn, attrs):
+        """A helper function for check_object() that calculates the list of
+        attributes that need to be checked, and returns that as a list
+        in the original case, and a set normalised to lowercase (for
+        easy existence checks).
+        """
         if attrs is None:
             attrs = ['*']
         else:
@@ -2263,6 +2265,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         add_attr("objectGUID")
 
+        return attrs, lc_attrs
+
+    def check_object(self, dn, attrs=None):
+        '''check one object'''
+        if self.verbose:
+            self.report("Checking object %s" % dn)
+
+        # search attrs are used to find the attributes, lc_attrs are
+        # used for existence checks
+        search_attrs, lc_attrs = self.find_checkable_attrs(dn, attrs)
+
         try:
             sd_flags = 0
             sd_flags |= security.SECINFO_OWNER
@@ -2278,7 +2291,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                         "sd_flags:1:%d" % sd_flags,
                                         "reveal_internals:0",
                                     ],
-                                    attrs=attrs)
+                                    attrs=search_attrs)
         except ldb.LdbError as e10:
             (enum, estr) = e10.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
