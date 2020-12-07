@@ -673,6 +673,24 @@ static PyObject *py_cli_settimeout(struct py_cli_state *self, PyObject *args)
 	return PyLong_FromLong(omsecs);
 }
 
+static PyObject *py_cli_echo(struct py_cli_state *self,
+			     PyObject *Py_UNUSED(ignored))
+{
+	DATA_BLOB data = data_blob_string_const("keepalive");
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+
+	req = cli_echo_send(NULL, self->ev, self->cli, 1, data);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_echo_recv(req);
+	TALLOC_FREE(req);
+	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 			       PyObject *kwds)
 {
@@ -1432,6 +1450,8 @@ static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
+	{ "echo", (PyCFunction)py_cli_echo, METH_NOARGS,
+	  "Ping the server connection" },
 	{ "create", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create),
 		METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
