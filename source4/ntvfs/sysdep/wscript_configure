@@ -10,5 +10,4 @@ if host_os.rfind('sunos') == -1:
     if (conf.CONFIG_SET('HAVE_SYS_INOTIFY_H')):
         conf.DEFINE('HAVE_LINUX_INOTIFY', 1)
 
-conf.CHECK_DECLS('F_SETLEASE', headers='linux/fcntl.h', reverse=True)
 conf.CHECK_DECLS('SA_SIGINFO', headers='signal.h', reverse=True)

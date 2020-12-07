@@ -166,21 +166,8 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
            conf.DEFINE('HAVE_INOTIFY', 1)
 
     # Check for Linux kernel oplocks
-    conf.CHECK_CODE('''
-#include <sys/types.h>
-#include <fcntl.h>
-#include <signal.h>
-#ifndef F_GETLEASE
-#define F_GETLEASE 1025
-#endif
-int main() {
-	const char *fname="/tmp/oplock-test.txt";
-	int fd = open(fname, O_RDWR|O_CREAT, 0644);
-	int ret = fcntl(fd, F_SETLEASE, F_WRLCK);
-	unlink(fname);
-	return (ret == -1) ? 1 : 0;
-}''', 'HAVE_KERNEL_OPLOCKS_LINUX', addmain=False, execute=True,
-        msg="Checking for Linux kernel oplocks")
+    if conf.CHECK_DECLS('F_SETLEASE', headers='linux/fcntl.h', reverse=True):
+        conf.DEFINE('HAVE_KERNEL_OPLOCKS_LINUX', 1)
 
     # Check for kernel share modes
     conf.CHECK_CODE('''
