@@ -165,17 +165,6 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
         if conf.env.HAVE_SYS_INOTIFY_H:
            conf.DEFINE('HAVE_INOTIFY', 1)
 
-    # Check for kernel change notify support
-    conf.CHECK_CODE('''
-#ifndef F_NOTIFY
-#define F_NOTIFY 1026
-#endif
-main() {
-        exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
-}''', 'HAVE_KERNEL_CHANGE_NOTIFY', addmain=False, execute=True,
-        headers='fcntl.h signal.h',
-        msg="Checking for kernel change notify support")
-
     # Check for Linux kernel oplocks
     conf.CHECK_CODE('''
 #include <sys/types.h>
