@@ -5079,16 +5079,8 @@ done:
 
 #ifdef HAVE_KERNEL_OPLOCKS_LINUX
 
-#ifndef F_SETLEASE
-#define F_SETLEASE      1024
-#endif
-
 #ifndef RT_SIGNAL_LEASE
 #define RT_SIGNAL_LEASE (SIGRTMIN+1)
-#endif
-
-#ifndef F_SETSIG
-#define F_SETSIG 10
 #endif
 
 static int got_break;
