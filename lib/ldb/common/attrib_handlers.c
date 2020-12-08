@@ -76,7 +76,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 	
 	/* remove leading spaces if any */
 	if (*s == ' ') {
-		for (t = s; *s == ' '; s++) ;
+		for (t = s; *s == ' '; s++, l--) ;
 
 		/* remove leading spaces by moving down the string */
 		memmove(t, s, l);
