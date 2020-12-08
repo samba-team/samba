@@ -183,6 +183,8 @@ static void test_wildcard_match(void **state)
 	struct wildcard_test tests[] = {
 		TEST_ENTRY("                     1  0", "1*0*", true, true),
 		TEST_ENTRY("                     1  0", "1 *0", true, true),
+		TEST_ENTRY("                     1  0", "*1 0", true, true),
+		TEST_ENTRY("1    0", "*1 0", true, true),
 		TEST_ENTRY("The value.......end", "*end", true, true),
 		TEST_ENTRY("The value.......end", "*fend", false, true),
 		TEST_ENTRY("The value.......end", "*eel", false, true),
