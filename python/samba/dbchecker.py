@@ -2325,14 +2325,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         repl_meta_data_val = None
 
         for attrname in obj:
-            if str(attrname).lower() == 'isdeleted':
+            if attrname.lower() == 'isdeleted':
                 if str(obj[attrname][0]) != "FALSE":
                     isDeleted = True
 
-            if str(attrname).lower() == 'systemflags':
+            if attrname.lower() == 'systemflags':
                 systemFlags = int(obj[attrname][0])
 
-            if str(attrname).lower() == 'replpropertymetadata':
+            if attrname.lower() == 'replpropertymetadata':
                 repl_meta_data_val = obj[attrname][0]
 
         if isDeleted and repl_meta_data_val:
@@ -2347,10 +2347,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if attrname == 'dn' or attrname == "distinguishedName":
                 continue
 
-            if str(attrname).lower() == 'objectclass':
+            if attrname.lower() == 'objectclass':
                 got_objectclass = True
 
-            if str(attrname).lower() == "name":
+            if attrname.lower() == "name":
                 if len(obj[attrname]) != 1:
                     error_count += 1
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
@@ -2358,7 +2358,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 else:
                     name_val = str(obj[attrname][0])
 
-            if str(attrname).lower() == str(obj.dn.get_rdn_name()).lower():
+            if attrname.lower() == str(obj.dn.get_rdn_name()).lower():
                 object_rdn_attr = attrname
                 if len(obj[attrname]) != 1:
                     error_count += 1
@@ -2367,7 +2367,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 else:
                     object_rdn_val = str(obj[attrname][0])
 
-            if str(attrname).lower() == 'replpropertymetadata':
+            if attrname.lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname][0]):
                     error_count += 1
                     self.err_replmetadata_zero_invocationid(dn, attrname, obj[attrname][0])
@@ -2398,7 +2398,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 continue
 
-            if str(attrname).lower() == 'ntsecuritydescriptor':
+            if attrname.lower() == 'ntsecuritydescriptor':
                 (sd, sd_broken) = self.process_sd(dn, obj)
                 if sd_broken is not None:
                     self.err_wrong_sd(dn, sd, sd_broken)
@@ -2426,7 +2426,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         continue
                 continue
 
-            if str(attrname).lower() == 'objectclass':
+            if attrname.lower() == 'objectclass':
                 normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, obj[attrname])
                 # Do not consider the attribute incorrect if:
                 #  - The sorted (alphabetically) list is the same, inclding case
@@ -2445,7 +2445,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                 continue
 
-            if str(attrname).lower() == 'userparameters':
+            if attrname.lower() == 'userparameters':
                 if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == b'\x20'[0]:
                     error_count += 1
                     self.err_short_userParameters(obj, attrname, obj[attrname])
@@ -2510,7 +2510,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if (not flag & dsdb.DS_FLAG_ATTR_NOT_REPLICATED
                 and not flag & dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED
                 and not linkID):
-                set_attrs_seen.add(str(attrname).lower())
+                set_attrs_seen.add(attrname.lower())
 
             if syntax_oid in [dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                               dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN]:
@@ -2534,7 +2534,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     break
 
-            if str(attrname).lower() == "instancetype":
+            if attrname.lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)
                 if len(obj["instanceType"]) != 1 or int(obj["instanceType"][0]) != calculated_instancetype:
                     error_count += 1
