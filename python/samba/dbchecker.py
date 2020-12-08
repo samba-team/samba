@@ -250,7 +250,7 @@ class dbcheck(object):
 
         for object in res:
             self.dn_set.add(str(object.dn))
-            error_count += self.check_object(object.dn, attrs=attrs)
+            error_count += self.check_object(object.dn, requested_attrs=attrs)
 
         if DN is None:
             error_count += self.check_rootdse()
@@ -2217,17 +2217,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         raise KeyError
 
-    def find_checkable_attrs(self, dn, attrs):
+    def find_checkable_attrs(self, dn, requested_attrs):
         """A helper function for check_object() that calculates the list of
         attributes that need to be checked, and returns that as a list
         in the original case, and a set normalised to lowercase (for
         easy existence checks).
         """
-        if attrs is None:
+        if requested_attrs is None:
             attrs = ['*']
         else:
-            # make a local copy to modify
-            attrs = list(attrs)
+            attrs = list(requested_attrs)
 
         lc_attrs = set(x.lower() for x in attrs)
 
@@ -2267,14 +2266,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return attrs, lc_attrs
 
-    def check_object(self, dn, attrs=None):
+    def check_object(self, dn, requested_attrs=None):
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
 
         # search attrs are used to find the attributes, lc_attrs are
         # used for existence checks
-        search_attrs, lc_attrs = self.find_checkable_attrs(dn, attrs)
+        search_attrs, lc_attrs = self.find_checkable_attrs(dn, requested_attrs)
 
         try:
             sd_flags = 0
