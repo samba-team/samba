@@ -1962,9 +1962,8 @@ static bool write_stream(struct smb2_tree *tree,
 		if (value == NULL) {
 			return true;
 		} else {
-			torture_comment(tctx, "Unable to open stream %s\n",
-			    full_name);
-			sleep(10000000);
+			torture_comment(tctx, "Unable to open stream %s: %s\n",
+			    full_name, nt_errstr(status));
 			return false;
 		}
 	}
