@@ -3616,8 +3616,11 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 
 	DEBUG(3,("smbd_do_qfsinfo: level = %d\n", info_level));
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = discard_const_p(char, filename);
+	smb_fname = (struct smb_filename) {
+		.base_name = discard_const_p(char, filename),
+		.flags = fname ? fname->flags : 0,
+		.twrp = fname ? fname->twrp : 0,
+	};
 
 	if(info_level != SMB_FS_QUOTA_INFORMATION
 	   && SMB_VFS_STAT(conn, &smb_fname) != 0) {
