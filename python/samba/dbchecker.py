@@ -2446,35 +2446,36 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             if attrname.lower() == 'userparameters':
-                if len(obj[attrname][0]) == 1 and obj[attrname][0][0] == b'\x20'[0]:
+                userparams = obj[attrname][0]
+                if len(userparams) == 1 and userparams[0] == b'\x20'[0]:
                     error_count += 1
                     self.err_short_userParameters(obj, attrname, obj[attrname])
                     continue
 
-                elif obj[attrname][0][:16] == b'\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
+                elif userparams[:16] == b'\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00\x20\x00':
                     # This is the correct, normal prefix
                     continue
 
-                elif obj[attrname][0][:20] == b'IAAgACAAIAAgACAAIAAg':
+                elif userparams[:20] == b'IAAgACAAIAAgACAAIAAg':
                     # this is the typical prefix from a windows migration
                     error_count += 1
                     self.err_base64_userParameters(obj, attrname, obj[attrname])
                     continue
 
                 #43:00:00:00:74:00:00:00:78
-                elif obj[attrname][0][1] != b'\x00'[0] and obj[attrname][0][3] != b'\x00'[0] and obj[attrname][0][5] != b'\x00'[0] and obj[attrname][0][7] != b'\x00'[0] and obj[attrname][0][9] != b'\x00'[0]:
+                elif userparams[1] != b'\x00'[0] and userparams[3] != b'\x00'[0] and userparams[5] != b'\x00'[0] and userparams[7] != b'\x00'[0] and userparams[9] != b'\x00'[0]:
                     # This is a prefix that is not in UTF-16 format for the space or munged dialback prefix
                     error_count += 1
                     self.err_utf8_userParameters(obj, attrname, obj[attrname])
                     continue
 
-                elif len(obj[attrname][0]) % 2 != 0:
+                elif len(userparams) % 2 != 0:
                     # This is a value that isn't even in length
                     error_count += 1
                     self.err_odd_userParameters(obj, attrname)
                     continue
 
-                elif obj[attrname][0][1] == b'\x00'[0] and obj[attrname][0][2] == b'\x00'[0] and obj[attrname][0][3] == b'\x00'[0] and obj[attrname][0][4] != b'\x00'[0] and obj[attrname][0][5] == b'\x00'[0]:
+                elif userparams[1] == b'\x00'[0] and userparams[2] == b'\x00'[0] and userparams[3] == b'\x00'[0] and userparams[4] != b'\x00'[0] and userparams[5] == b'\x00'[0]:
                     # This is a prefix that would happen if a SAMR-written value was replicated from a Samba 4.1 server to a working server
                     error_count += 1
                     self.err_doubled_userParameters(obj, attrname, obj[attrname])
