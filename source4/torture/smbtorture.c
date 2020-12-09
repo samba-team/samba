@@ -521,7 +521,9 @@ int main(int argc, const char *argv[])
 			break;
 		default:
 			if (opt < 0) {
-				printf("bad command line option %d\n", opt);
+				printf("Invalid command line option %s (%d)\n",
+				       poptBadOption(pc, 0),
+				       opt);
 				talloc_free(mem_ctx);
 				exit(1);
 			}
