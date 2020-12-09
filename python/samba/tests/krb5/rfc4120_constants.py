@@ -47,3 +47,17 @@ NT_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-PRINCIPAL'))
 NT_SRV_INST  = int(krb5_asn1.NameTypeValues('kRB5-NT-SRV-INST'))
 NT_ENTERPRISE_PRINCIPAL = int(krb5_asn1.NameTypeValues(
     'kRB5-NT-ENTERPRISE-PRINCIPAL'))
+
+# Authorization data ad-type values
+
+AD_IF_RELEVANT                    = 1
+AD_INTENDED_FOR_SERVER            = 2
+AD_INTENDED_FOR_APPLICATION_CLASS = 3
+AD_KDC_ISSUED                     = 4
+AD_AND_OR                         = 5
+AD_MANDATORY_TICKET_EXTENSIONS    = 6
+AD_IN_TICKET_EXTENSIONS           = 7
+AD_MANDATORY_FOR_KDC              = 8
+AD_INITIAL_VERIFIED_CAS           = 9
+AD_WIN2K_PAC                      = 128
+AD_SIGNTICKET                     = 512
