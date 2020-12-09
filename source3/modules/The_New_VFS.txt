@@ -1,0 +1,619 @@
+		     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+			     THE NEW SAMBA VFS
+
+		      Ralph Böhme, SerNet, Samba Team
+		     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+				 2021-01-14
+
+
+Table of Contents
+─────────────────
+
+1. The new VFS
+.. 1. Summary
+.. 2. Samba and O_PATH
+..... 1. Background
+..... 2. Usecases for O_PATH in Samba
+..... 3. When to open with O_PATH
+..... 4. Fallback on systems without O_PATH support
+..... 5. When to use fsp_get_io_fd() or fsp_get_pathref_fd()
+2. VFS status quo and remaining work
+.. 1. VFS Functions Tables [2]
+..... 1. Existing VFS Functions
+..... 2. New VFS Functions
+.. 2. VFS functions by category
+..... 1. Disk operations
+..... 2. Handle based VFS functions
+..... 3. Namespace changing VFS functions
+..... 4. Path based VFS functions
+..... 5. AT VFS functions that can't be based on handles
+..... 6. AT VFS functions needed for directory enumeration
+..... 7. Handle based VFS functions not allowed on O_PATH opened handles
+..... 8. Pure path to path translation
+..... 9. Special cases
+
+
+1 The new VFS
+═════════════
+
+1.1 Summary
+───────────
+
+  The effort to modernize Samba's VFS interface has reached a major
+  milestone with the next release Samba 4.14.
+
+  Starting with version 4.14 Samba provides core infrastructure code that
+  allows basing all access to the server's filesystem on file handles and
+  not on paths. An example of this is using `fstat()' instead of `stat()',
+  or `SMB_VFS_FSTAT()' instead of `SMB_VFS_STAT()' in Samba parlance.
+
+  Historically Samba's fileserver code had to deal a lot with processing
+  path based SMB requests. While the SMB protocol itself has been
+  streamlined to be purely handle based starting with SMB2, large parts of
+  infrastructure code remains in place that will "degrade" handle based SMB2
+  requests to path based filesystem access.
+
+  In order to fully leverage the handle based nature of the SMB2 protocol we
+  came up with a straight forward way to convert this infrastructure code.
+
+  At the core, we introduced a helper function that opens a file handle that
+  only serves as a path reference and hence can not be used for any sort of
+  access to file data.
+
+  Samba's internal file handle structure is of type `struct files_struct'
+  and all variable pointing to objects of such type are typically called
+  `fsp'. Until very recently the only function that would open such a file
+  handle and return an fsp was `SMB_VFS_CREATE_FILE()'.
+
+  Internally `SMB_VFS_CREATE_FILE()' consisted of processing through Samba's
+  VFS open function to open the low level file and then going through
+  Samba's Windows NTFS emulation code.
+
+  The key point of the new helper function which is called
+  `openat_pathref_fsp()' is that it skips the NTFS emulation
+  logic. Additionally, the handle is restricted internally to be only usable
+  as a path reference but not for any sort of IO. On Linux this is achieved
+  by using the `O_PATH' `open()' flag, on systems without `O_PATH' support
+  other mechanisms are used described in more detail below.
+
+  Path processing in Samba typically means processing client supplied paths
+  by Samba's core path processing function `filename_convert()' which returs
+  a pointer to an object of type `struct smb_filename'. Pointers to such
+  objects are then passed around, often passing many layers of code.
+
+  By attaching an `fsp' file handle returned from `openat_pathref_fsp()' to
+  all `struct smb_filename' objects returned from `filename_convert()', the
+  whole infrastructure code has immediate access to a file handle and so the
+  large infrastructure codebase can be converted to use handle based VFS
+  functions whenever VFS access is done in a piecemeal fashion.
+
+
+1.2 Samba and O_PATH
+────────────────────
+
+1.2.1 Background
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  On Linux the `O_PATH' flag to `open()' can be used to open a filehandle on
+  a file or directory with interesting properties: [1]
+
+  • the file-handle indicates a location in the filesystem tree,
+
+  • no permission checks are done by the kernel on the filesystem object and
+
+  • only operations that act purely at the file descriptor level are
+    allowed.
+
+  The file itself is not opened, and other file operations (e.g., `read(2)',
+  `write(2)', `fchmod(2)', `fchown(2)', `fgetxattr(2)', `ioctl(2)',
+  `mmap(2)') fail with the error `EBADF'.
+
+  The following subset of operations that is relevant to Samba is allowed:
+
+  • `close(2)',
+
+  • `fchdir(2)', if the file descriptor refers to a directory,
+
+  • `fstat(2)',
+
+  • `fstatfs(2)' and
+
+  • passing the file descriptor as the dirfd argument of `openat()' and the
+    other "*at()" system calls. This includes `linkat(2)' with AT_EMPTY_PATH
+    (or via procfs using AT_SYMLINK_FOLLOW) even if the file is not a
+    directory.
+
+  Opening a file or directory with the `O_PATH' flag requires no permissions
+  on the object itself (but does require execute permission on the
+  directories in the path prefix). By contrast, obtaining a reference to a
+  filesystem object by opening it with the `O_RDONLY' flag requires that the
+  caller have read permission on the object, even when the subsequent
+  operation (e.g., `fchdir(2)', `fstat(2)') does not require read permis‐
+  sion on the object.
+
+  If for example Samba receives an SMB request to open a file requesting
+  `SEC_FILE_READ_ATTRIBUTE' access rights because the client wants to read
+  the file's metadata from the handle, Samba will have to call `open()' with
+  at least `O_RDONLY' access rights.
+
+
+1.2.2 Usecases for O_PATH in Samba
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  The `O_PATH' flag is currently not used in Samba. By leveraging this Linux
+  specific flags we can avoid permission mismatches as described above.
+
+  Additionally `O_PATH' allows basing all filesystem accesses done by the
+  fileserver on handle based syscalls by opening all client pathnames with
+  `O_PATH' and consistently using for example `fstat()' instead of `stat()'
+  throughout the codebase.
+
+  Subsequent parts of this document will call such file-handles opened with
+  O_PATH *path referencing file-handles* or *pathref*s for short.
+
+
+1.2.3 When to open with O_PATH
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  In Samba the decision whether to call POSIX `open()' on a client pathname
+  or whether to leave the low-level handle at -1 (what we call a stat-open)
+  is based on the client requested SMB acccess mask.
+
+  The set of access rights that trigger an `open()' includes
+  `READ_CONTROL_ACCESS'. As a result, the open() will be done with at least
+  `O_RDONLY'. If the filesystem supports NT style ACLs natively (like GPFS
+  or ZFS), the filesystem may grant the user requested right
+  `READ_CONTROL_ACCESS', but it may not grant `READ_DATA' (`O_RDONLY').
+
+  Currently the full set of access rights that trigger opening a file is:
+
+  • FILE_READ_DATA
+  • FILE_WRITE_DATA
+  • FILE_APPEND_DATA
+  • FILE_EXECUTE
+  • WRITE_DAC_ACCESS
+  • WRITE_OWNER_ACCESS
+  • SEC_FLAG_SYSTEM_SECURITY
+  • READ_CONTROL_ACCESS
+
+  In the future we can remove the following rights from the list on systems
+  that support O_PATH:
+
+  • WRITE_DAC_ACCESS
+  • WRITE_OWNER_ACCESS
+  • SEC_FLAG_SYSTEM_SECURITY
+  • READ_CONTROL_ACCESS
+
+
+1.2.4 Fallback on systems without O_PATH support
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  The code of higher level file-handle consumers must be kept simple and
+  streamlined, avoiding special casing the handling of the file-handles
+  opened with or without `O_PATH'. To achieve this, a fallback that allows
+  opening a file-handle with the same higher level semantics even if the
+  system doesn't support `O_PATH' is needed.
+
+  The way this is implemented on such systems is impersonating the root user
+  for the `open()' syscall. In order to avoid privelege escalations security
+  issues, we must carefully control the use these file-handles.
+
+  The low level filehandle is stored in a public struct `struct file_handle'
+  that is part of the widely used `struct files_struct'. Consumers used to
+  simply access the fd directly by derefencing pointers to `struct
+  files_struct'.
+
+  In order to guard access to such file-handles we do two things:
+
+  • tag the pathref file-handles and
+
+  • control access to the file-handle by making the structure `struct
+       file_handle' private, only allowing access with accessor functions
+       that implement a security boundary.
+
+  In order to avoid bypassing restrictive permissions on intermediate
+  directories of a client path, the root user is only impersonated after
+  changing directory to the parent directory of the client requested
+  pathname.
+
+  Two functions can then be used to fetch the low-level system file-handle
+  from a `struct files_struct':
+
+  • `fsp_get_io_fd(fsp)': enforces fsp is NOT a pathref file-handle and
+
+  • `fsp_get_pathref_fd(fsp)': allows fsp to be either a pathref file-handle
+    or a traditional POSIX file-handle opened with O_RDONLY or any other
+    POSIX open flag.
+
+  Note that the name `fsp_get_pathref_fd()' may sound confusing at first
+  given that the fsp can be either a pathref fsp or a "normal/full" fsp, but
+  as any full file-handle can be used for IO and as path reference, the name
+  correctly reflects the intended usage of the caller.
+
+
+1.2.5 When to use fsp_get_io_fd() or fsp_get_pathref_fd()
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  The general guideline is:
+
+  • if you do something like `fstat(fd)', use `fsp_get_pathref_fd()',
+
+  • if you do something like `*at(dirfd, ...)', use `fsp_get_pathref_fd()',
+
+  • if you want to print the fd for example in `DEBUG' messages, use
+    `fsp_get_pathref_fd()',
+
+  • if you want to call `close(fd)', use `fsp_get_pathref_fd()',
+
+  • if you're doing a logical comparison of fd values, use
+    `fsp_get_pathref_fd()'.
+
+  In any other case use `fsp_get_io_fd()'.
+
+
+2 VFS status quo and remaining work
+═══════════════════════════════════
+
+2.1 VFS Functions Tables [2]
+────────────────────────────
+
+2.1.1 Existing VFS Functions
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VFS Function                       Group       Status
+  ───────────────────────────────────────────────────────
+   SMB_VFS_AIO_FORCE()                [fsp]       -
+   SMB_VFS_AUDIT_FILE()               [Special]   -
+   SMB_VFS_BRL_LOCK_WINDOWS()         [fsp]       -
+   SMB_VFS_BRL_UNLOCK_WINDOWS()       [fsp]       -
+   SMB_VFS_CHDIR()                    [Path]      Todo
+   SMB_VFS_CHFLAGS()                  [Path]      Todo
+   SMB_VFS_CHMOD()                    [Path]      Todo
+   SMB_VFS_CLOSE()                    [fsp]       -
+   SMB_VFS_CLOSEDIR()                 [fsp]       -
+   SMB_VFS_CONNECT()                  [Disk]      -
+   SMB_VFS_CONNECTPATH()              [P2px]      -
+   SMB_VFS_CREATE_DFS_PATHAT()        [NsC]       Todo
+   SMB_VFS_CREATE_FILE()              [NsC]       -
+   SMB_VFS_DISCONNECT()               [Disk]      -
+   SMB_VFS_DISK_FREE()                [Disk]      -
+   SMB_VFS_DURABLE_COOKIE()           [fsp]       -
+   SMB_VFS_DURABLE_DISCONNECT()       [fsp]       -
+   SMB_VFS_DURABLE_RECONNECT()        [fsp]       -
+   SMB_VFS_FALLOCATE()                [fsp]       -
+   SMB_VFS_FCHMOD()                   [fsp]       -
+   SMB_VFS_FCHOWN()                   [fsp]       -
+   SMB_VFS_FCNTL()                    [fsp]       -
+   SMB_VFS_FDOPENDIR()                [fsp]       -
+   SMB_VFS_FGET_COMPRESSION()         [fsp]       -
+   SMB_VFS_FGET_DOS_ATTRIBUTES()      [fsp]       -
+   SMB_VFS_FGET_NT_ACL()              [fsp]       -
+   SMB_VFS_FGETXATTR()                [xpathref]  -
+   SMB_VFS_FILE_ID_CREATE()           [Special]   -
+   SMB_VFS_FLISTXATTR()               [xpathref]  -
+   SMB_VFS_FREMOVEXATTR()             [xpathref]  -
+   SMB_VFS_FS_CAPABILITIES()          [Disk]      -
+   SMB_VFS_FSCTL()                    [fsp]       -
+   SMB_VFS_FSET_DOS_ATTRIBUTES()      [fsp]       -
+   SMB_VFS_FSET_NT_ACL()              [fsp]       -
+   SMB_VFS_FSETXATTR()                [xpathref]  -
+   SMB_VFS_FS_FILE_ID()               [Special]   -
+   SMB_VFS_FSTAT()                    [fsp]       -
+   SMB_VFS_FSYNC()                    [fsp]       -
+   SMB_VFS_FSYNC_SEND()               [fsp]       -
+   SMB_VFS_FTRUNCATE()                [fsp]       -
+   SMB_VFS_GET_ALLOC_SIZE()           [fsp]       -
+   SMB_VFS_GET_DFS_REFERRALS()        [Disk]      -
+   SMB_VFS_GET_DOS_ATTRIBUTES_RECV()  [Enum]      -
+   SMB_VFS_GET_DOS_ATTRIBUTES_SEND()  [Enum]      -
+   SMB_VFS_GETLOCK()                  [fsp]       -
+   SMB_VFS_GET_NT_ACL_AT()            [Path]      Todo
+   SMB_VFS_GET_QUOTA()                [Special]   -
+   SMB_VFS_GET_REAL_FILENAME()        [P2px]      -
+   SMB_VFS_GET_SHADOW_COPY_DATA()     [fsp]       -
+   SMB_VFS_GETWD()                    [Special]   -
+   SMB_VFS_GETXATTR()                 [Path]      Todo
+   SMB_VFS_GETXATTRAT_RECV()          [Enum]      -
+   SMB_VFS_GETXATTRAT_SEND()          [Enum]      -
+   SMB_VFS_KERNEL_FLOCK()             [fsp]       -
+   SMB_VFS_LCHOWN()                   [Path]      Todo
+   SMB_VFS_LINKAT()                   [NsC]       Todo
+   SMB_VFS_LINUX_SETLEASE()           [fsp]       -
+   SMB_VFS_LISTXATTR()                [Path]      Todo
+   SMB_VFS_LOCK()                     [fsp]       -
+   SMB_VFS_LSEEK()                    [fsp]       -
+   SMB_VFS_LSTAT()                    [Path]      Todo
+   SMB_VFS_MKDIRAT()                  [NsC]       Todo
+   SMB_VFS_MKNODAT()                  [NsC]       Todo
+   SMB_VFS_NTIMES()                   [Path]      Todo
+   SMB_VFS_OFFLOAD_READ_RECV()        [fsp]       -
+   SMB_VFS_OFFLOAD_READ_SEND()        [fsp]       -
+   SMB_VFS_OFFLOAD_WRITE_RECV()       [fsp]       -
+   SMB_VFS_OFFLOAD_WRITE_SEND()       [fsp]       -
+   SMB_VFS_OPENAT()                   [NsC]       -
+   SMB_VFS_PREAD()                    [fsp]       -
+   SMB_VFS_PREAD_SEND()               [fsp]       -
+   SMB_VFS_PWRITE()                   [fsp]       -
+   SMB_VFS_PWRITE_SEND()              [fsp]       -
+   SMB_VFS_READ_DFS_PATHAT()          [Symlink]   Todo
+   SMB_VFS_READDIR()                  [fsp]       -
+   SMB_VFS_READDIR_ATTR()             [Path]      Todo
+   SMB_VFS_READLINKAT()               [Symlink]   Todo
+   SMB_VFS_REALPATH()                 [P2px]      -
+   SMB_VFS_RECVFILE()                 [fsp]       -
+   SMB_VFS_REMOVEXATTR()              [Path]      Todo
+   SMB_VFS_RENAMEAT()                 [Path]      Todo
+   SMB_VFS_REWINDDIR()                [fsp]       -
+   SMB_VFS_SEEKDIR()                  [fsp]       -
+   SMB_VFS_SENDFILE()                 [fsp]       -
+   SMB_VFS_SET_COMPRESSION()          [fsp]       -
+   SMB_VFS_SET_DOS_ATTRIBUTES()       [Path]      -
+   SMB_VFS_SET_QUOTA()                [Special]   -
+   SMB_VFS_SETXATTR()                 [Path]      Todo
+   SMB_VFS_SNAP_CHECK_PATH()          [Disk]      -
+   SMB_VFS_SNAP_CREATE()              [Disk]      -
+   SMB_VFS_SNAP_DELETE()              [Disk]      -
+   SMB_VFS_STAT()                     [Path]      Todo
+   SMB_VFS_STATVFS()                  [Disk]      -
+   SMB_VFS_STREAMINFO()               [Path]      Todo
+   SMB_VFS_STRICT_LOCK_CHECK()        [fsp]       -
+   SMB_VFS_SYMLINKAT()                [NsC]       Todo
+   SMB_VFS_SYS_ACL_BLOB_GET_FD()      [xpathref]  -
+   SMB_VFS_SYS_ACL_BLOB_GET_FILE()    [Path]      Todo
+   SMB_VFS_SYS_ACL_DELETE_DEF_FILE()  [Path]      Todo
+   SMB_VFS_SYS_ACL_GET_FD()           [xpathref]  -
+   SMB_VFS_SYS_ACL_GET_FILE()         [Path]      Todo
+   SMB_VFS_SYS_ACL_SET_FD()           [xpathref]  -
+   SMB_VFS_TELLDIR()                  [fsp]       -
+   SMB_VFS_TRANSLATE_NAME()           [P2px]      -
+   SMB_VFS_UNLINKAT()                 [NsC]       Todo
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+[fsp] See section 2.2.2
+
+[Special] See section 2.2.9
+
+[Path] See section 2.2.4
+
+[Disk] See section 2.2.1
+
+[P2px] See section 2.2.8
+
+[NsC] See section 2.2.3
+
+[xpathref] See section 2.2.7
+
+[Enum] See section 2.2.6
+
+[Symlink] See section 2.2.5
+
+
+2.1.2 New VFS Functions
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VFS Function                     Group       Status
+  ─────────────────────────────────────────────────────
+   SMB_VFS_SYS_ACL_DELETE_DEF_FD()  [xpathref]  Todo
+   SMB_VFS_READDIR_ATTRAT()         [Enum]      Todo
+   SMB_VFS_STATX()                  [Enum]      Todo
+   SMB_VFS_FUTIMENS()               [fsp]       Todo
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+[xpathref] See section 2.2.7
+
+[Enum] See section 2.2.6
+
+[fsp] See section 2.2.2
+
+
+2.2 VFS functions by category
+─────────────────────────────
+
+2.2.1 Disk operations
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_CONNECT()
+  • SMB_VFS_DISCONNECT()
+  • SMB_VFS_DISK_FREE()
+  • SMB_VFS_FS_CAPABILITIES()
+  • SMB_VFS_GET_DFS_REFERRALS()
+  • SMB_VFS_SNAP_CHECK_PATH()
+  • SMB_VFS_SNAP_CREATE()
+  • SMB_VFS_SNAP_DELETE()
+  • SMB_VFS_STATVFS()
+
+  No changes needed.
+
+
+2.2.2 Handle based VFS functions
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_AIO_FORCE()
+  • SMB_VFS_BRL_LOCK_WINDOWS()
+  • SMB_VFS_BRL_UNLOCK_WINDOWS()
+  • SMB_VFS_CLOSE()
+  • SMB_VFS_CLOSEDIR()
+  • SMB_VFS_DURABLE_COOKIE()
+  • SMB_VFS_DURABLE_DISCONNECT()
+  • SMB_VFS_FALLOCATE()
+  • SMB_VFS_FCHMOD()
+  • SMB_VFS_FCHOWN()
+  • SMB_VFS_FCNTL()
+  • SMB_VFS_FDOPENDIR()
+  • SMB_VFS_FGET_DOS_ATTRIBUTES()
+  • SMB_VFS_FGET_NT_ACL()
+  • SMB_VFS_FSCTL()
+  • SMB_VFS_FSET_DOS_ATTRIBUTES()
+  • SMB_VFS_FSET_NT_ACL()
+  • SMB_VFS_FSTAT()
+  • SMB_VFS_FSYNC()
+  • SMB_VFS_FSYNC_SEND()
+  • SMB_VFS_FTRUNCATE()
+  • SMB_VFS_GETLOCK()
+  • SMB_VFS_GET_ALLOC_SIZE()
+  • SMB_VFS_GET_SHADOW_COPY_DATA()
+  • SMB_VFS_KERNEL_FLOCK()
+  • SMB_VFS_LINUX_SETLEASE()
+  • SMB_VFS_LOCK()
+  • SMB_VFS_LSEEK()
+  • SMB_VFS_OFFLOAD_READ_SEND()
+  • SMB_VFS_OFFLOAD_WRITE_SEND()
+  • SMB_VFS_PREAD()
+  • SMB_VFS_PREAD_SEND()
+  • SMB_VFS_PWRITE()
+  • SMB_VFS_PWRITE_SEND()
+  • SMB_VFS_READDIR()
+  • SMB_VFS_RECVFILE()
+  • SMB_VFS_REWINDDIR()
+  • SMB_VFS_SEEKDIR()
+  • SMB_VFS_SENDFILE()
+  • SMB_VFS_SET_COMPRESSION()
+  • SMB_VFS_STRICT_LOCK_CHECK()
+  • SMB_VFS_TELLDIR()
+
+  If an fsp is provided by the SMB layer we use that, otherwise we use the
+  pathref fsp `smb_fname->fsp' provided by `filename_convert()'.
+
+
+2.2.3 Namespace changing VFS functions
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_CREATE_FILE()
+
+  All intermediate VFS calls within `SMB_VFS_CREATE_FILE()' will be based on
+  `smb_fname->fsp' if the requested path exists. When creating a file we
+  rely on `non_widelink_open()' which doesn't depend on a dirfsp.
+
+  • SMB_VFS_MKDIRAT()
+
+  Needs a real dirfsp (done).
+
+  • SMB_VFS_OPENAT()
+
+  Is only called from within `non_widelink_open()' with a dirfsp equivalent
+  of `AT_FDCWD' and so doesn't need a real dirfsp.
+
+  The following operations need a real dirfsp:
+
+  • SMB_VFS_LINKAT()
+  • SMB_VFS_MKNODAT()
+  • SMB_VFS_RENAMEAT()
+  • SMB_VFS_SYMLINKAT()
+  • SMB_VFS_UNLINKAT()
+
+  Callers use `openat_pathref_fsp()' to open a fsp on the parent directory.
+
+
+2.2.4 Path based VFS functions
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  All path based VFS functtions will be replaced by handle based variants
+  using the `smb_fname->fsp' provided by `filename_convert()'.
+
+  • SMB_VFS_CHDIR()
+  • SMB_VFS_CHFLAGS()
+  • SMB_VFS_CHMOD()
+  • SMB_VFS_DURABLE_RECONNECT()
+  • SMB_VFS_GETXATTR()
+  • SMB_VFS_GET_COMPRESSION()
+  • SMB_VFS_GET_DOS_ATTRIBUTES()
+  • SMB_VFS_GET_NT_ACL_AT()
+  • SMB_VFS_LCHOWN()
+  • SMB_VFS_LISTXATTR()
+  • SMB_VFS_LSTAT()
+  • SMB_VFS_NTIMES()
+  • SMB_VFS_REMOVEXATTR()
+  • SMB_VFS_SETXATTR()
+  • SMB_VFS_SET_DOS_ATTRIBUTES()
+  • SMB_VFS_STAT()
+  • SMB_VFS_STREAMINFO()
+  • SMB_VFS_SYS_ACL_BLOB_GET_FILE()
+  • SMB_VFS_SYS_ACL_DELETE_DEF_FILE()
+  • SMB_VFS_SYS_ACL_GET_FILE()
+  • SMB_VFS_SYS_ACL_SET_FILE()
+
+  Replace with corresponding handle based VFS calls.
+
+
+2.2.5 AT VFS functions that can't be based on handles
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_CREATE_DFS_PATHAT()
+  • SMB_VFS_READ_DFS_PATHAT()
+  • SMB_VFS_READLINKAT()
+
+  As the DFS link implementation is based on symlinks, we have to use *AT
+  based functions with real dirfsps.
+
+
+2.2.6 AT VFS functions needed for directory enumeration
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_GET_DOS_ATTRIBUTES_SEND()
+  • SMB_VFS_GETXATTRAT_SEND()
+  • SMB_VFS_READDIR_ATTRAT() (NEW)
+  • SMB_VFS_STATX() (NEW)
+
+  We can't open file-handles on all directory children for performance
+  reasons. Therefor we need *AT based VFS functions for all metadata VFS
+  queries done in the directory enumeration loop.
+
+
+2.2.7 Handle based VFS functions not allowed on O_PATH opened handles
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_FGETXATTR()
+  • SMB_VFS_FLISTXATTR()
+  • SMB_VFS_FREMOVEXATTR()
+  • SMB_VFS_FSETXATTR()
+  • SMB_VFS_SYS_ACL_BLOB_GET_FD()
+  • SMB_VFS_SYS_ACL_GET_FD()
+  • SMB_VFS_SYS_ACL_DELETE_DEF_FD() (NEW)
+  • SMB_VFS_SYS_ACL_SET_FD()
+
+  Based upon securely opening a full fd based on `/proc/self/fd/%d' as in
+  the case of xattrs, pathref handles can't be used for xattr IO, and in the
+  case of ACLs pathref handles can't be used to access default ACEs.
+
+
+2.2.8 Pure path to path translation
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_CONNECTPATH()
+  • SMB_VFS_GET_REAL_FILENAME()
+  • SMB_VFS_REALPATH()
+  • SMB_VFS_TRANSLATE_NAME()
+
+  No changes needed.
+
+
+2.2.9 Special cases
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+  • SMB_VFS_FILE_ID_CREATE()
+  • SMB_VFS_FS_FILE_ID()
+  • SMB_VFS_GET_QUOTA()
+  • SMB_VFS_GETWD()
+  • SMB_VFS_SET_QUOTA()
+
+  No changes needed.
+
+  • SMB_VFS_AUDIT_FILE()
+
+  This is currently unused.
+
+
+
+Footnotes
+─────────
+
+[1] parts of the following sections copied from man open(2)
+
+[2] `grep 'SMB_VFS_*' source3/include/vfs_macros.h | grep -v NEXT_ | sed
+'s|.*\(SMB_VFS_.*\)(.*|\1()|' | sort'
