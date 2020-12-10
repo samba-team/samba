@@ -1,19 +1,19 @@
 Checking 232 objects
-SKIPING: object CN=fred\0ADEL:2301a64c-1122-5566-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=fred\0ADEL:2301a64c-1122-5566-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3746 (local=3746) at Wed Jun 29 04:36:39 2016
-SKIPING: object CN=fred\0ADEL:2301a64c-5b42-4ca8-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=fred\0ADEL:2301a64c-5b42-4ca8-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3746 (local=3746) at Wed Jun 29 04:36:39 2016
-SKIPING: object CN=dsg\0ADEL:6d66d0ef-cad7-4e5d-b1b6-4a233a21c269,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=dsg\0ADEL:6d66d0ef-cad7-4e5d-b1b6-4a233a21c269,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3734 (local=3734) at Wed Jun 29 04:34:32 2016
-SKIPING: object CN=udg\0ADEL:7cff5537-51b1-4d26-a295-0225dbea8525,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=udg\0ADEL:7cff5537-51b1-4d26-a295-0225dbea8525,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3739 (local=3739) at Wed Jun 29 04:34:34 2016
-SKIPING: object CN=usg\0ADEL:d012e8f5-a4bd-40ea-a2a1-68ff2508847d,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=usg\0ADEL:d012e8f5-a4bd-40ea-a2a1-68ff2508847d,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3736 (local=3736) at Wed Jun 29 04:34:33 2016
-SKIPING: object CN=ddg\0ADEL:fb8c2fe3-5448-43de-99f9-e1d3b9357cfc,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=ddg\0ADEL:fb8c2fe3-5448-43de-99f9-e1d3b9357cfc,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3737 (local=3737) at Wed Jun 29 04:34:34 2016
-SKIPING: object CN=gsg\0ADEL:91aa85cc-fc19-4b8c-9fc7-aaba425439c7,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=gsg\0ADEL:91aa85cc-fc19-4b8c-9fc7-aaba425439c7,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3735 (local=3735) at Wed Jun 29 04:34:33 2016
-SKIPING: object CN=gdg\0ADEL:e0f581e7-14ee-4fc2-839c-8f46f581c72a,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
+SKIPPING: object CN=gdg\0ADEL:e0f581e7-14ee-4fc2-839c-8f46f581c72a,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp is an expired tombstone
 isDeleted: attid=0x00020030 version=1 invocation=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d usn=3738 (local=3738) at Wed Jun 29 04:34:34 2016
 NOTICE: found 8 expired tombstones, 'samba' will remove them daily, 'samba-tool domain tombstones expunge' would do that immediately.
 Checked 232 objects (0 errors)
