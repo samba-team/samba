@@ -374,8 +374,8 @@ class KDCBaseTest(RawKerberosTest):
                         account_name = (
                             pac.info.info.info3.base.account_name)
                         user_sid = (
-                            str(pac.info.info.info3.base.domain_sid) +
-                            "-" + str(pac.info.info.info3.base.rid))
+                            str(pac.info.info.info3.base.domain_sid)
+                            + "-" + str(pac.info.info.info3.base.rid))
                     elif pac.type == self.PAC_LOGON_NAME:
                         logon_name = pac.info.account_name
                     elif pac.type == self.PAC_UPN_DNS_INFO:

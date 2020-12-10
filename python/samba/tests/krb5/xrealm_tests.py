@@ -34,6 +34,7 @@ import samba.tests
 global_asn1_print = False
 global_hexdump = False
 
+
 class XrealmKerberosTests(RawKerberosTest):
 
     def setUp(self):
@@ -54,7 +55,7 @@ class XrealmKerberosTests(RawKerberosTest):
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = None
 
-        etypes=(18,17,23)
+        etypes = (18, 17, 23)
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),
@@ -75,14 +76,16 @@ class XrealmKerberosTests(RawKerberosTest):
 
         self.assertEqual(rep['msg-type'], 30)
         self.assertEqual(rep['error-code'], 25)
-        rep_padata = self.der_decode(rep['e-data'], asn1Spec=krb5_asn1.METHOD_DATA())
+        rep_padata = self.der_decode(
+            rep['e-data'], asn1Spec=krb5_asn1.METHOD_DATA())
 
         for pa in rep_padata:
             if pa['padata-type'] == 19:
                 etype_info2 = pa['padata-value']
                 break
 
-        etype_info2 = self.der_decode(etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
+        etype_info2 = self.der_decode(
+            etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
 
         key = self.PasswordKey_from_etype_info2(user_creds, etype_info2[0])
 
@@ -120,15 +123,19 @@ class XrealmKerberosTests(RawKerberosTest):
 
         enc_part2 = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
 
-        # MIT KDC encodes both EncASRepPart and EncTGSRepPart with application tag 26
+        # MIT KDC encodes both EncASRepPart and EncTGSRepPart with
+        # application tag 26
         try:
-            enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
+            enc_part2 = self.der_decode(
+                enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
         except Exception:
-            enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
+            enc_part2 = self.der_decode(
+                enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         # TGS Request (for cross-realm TGT)
         trust_realm = samba.tests.env_get_var_value('TRUST_REALM')
-        sname = self.PrincipalName_create(name_type=2, names=["krbtgt", trust_realm])
+        sname = self.PrincipalName_create(
+            name_type=2, names=["krbtgt", trust_realm])
 
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         till = self.get_KerberosTime(offset=36000)
@@ -167,10 +174,11 @@ class XrealmKerberosTests(RawKerberosTest):
 
         enc_part2 = subkey.decrypt(
             KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
-        enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
+        enc_part2 = self.der_decode(
+            enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         # Check the forwardable flag
-        fwd_pos = len(tuple(krb5_asn1.TicketFlags('forwardable'))) -1
+        fwd_pos = len(tuple(krb5_asn1.TicketFlags('forwardable'))) - 1
         assert(krb5_asn1.TicketFlags(enc_part2['flags'])[fwd_pos])
 
         return
