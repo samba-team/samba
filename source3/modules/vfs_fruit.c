@@ -194,6 +194,18 @@ struct fio {
  * Helper functions
  *****************************************************************************/
 
+static struct fio *fruit_get_complete_fio(vfs_handle_struct *handle,
+					  files_struct *fsp)
+{
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (fio == NULL) {
+		return NULL;
+	}
+
+	return fio;
+}
+
 /**
  * Initialize config struct from our smb.conf config parameters
  **/
@@ -1662,7 +1674,7 @@ static int fruit_openat(vfs_handle_struct *handle,
 static int fruit_close_meta(vfs_handle_struct *handle,
 			    files_struct *fsp)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int ret;
 	struct fruit_config_data *config = NULL;
 
@@ -2133,7 +2145,7 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 				       files_struct *fsp, void *data,
 				       size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nread;
 	int ret;
 
@@ -2210,7 +2222,7 @@ static ssize_t fruit_pread_meta(vfs_handle_struct *handle,
 				files_struct *fsp, void *data,
 				size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nread;
 	ssize_t to_return;
 
@@ -2308,7 +2320,7 @@ static ssize_t fruit_pread_rsrc(vfs_handle_struct *handle,
 				files_struct *fsp, void *data,
 				size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nread;
 
 	if (fio == NULL) {
@@ -2341,7 +2353,7 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 			   files_struct *fsp, void *data,
 			   size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nread;
 
 	DBG_DEBUG("Path [%s] offset=%"PRIdMAX", size=%zd\n",
@@ -2398,7 +2410,7 @@ static struct tevent_req *fruit_pread_send(
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct fruit_pread_state *state = NULL;
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct fruit_pread_state);
@@ -2462,7 +2474,7 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 					files_struct *fsp, const void *data,
 					size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	AfpInfo *ai = NULL;
 	size_t nwritten;
 	int ret;
@@ -2609,7 +2621,7 @@ static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
 				 files_struct *fsp, const void *data,
 				 size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nwritten;
 	uint8_t buf[AFP_INFO_SIZE];
 	size_t to_write;
@@ -2744,7 +2756,7 @@ static ssize_t fruit_pwrite_rsrc(vfs_handle_struct *handle,
 				 files_struct *fsp, const void *data,
 				 size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nwritten;
 
 	if (fio == NULL) {
@@ -2777,7 +2789,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 			    files_struct *fsp, const void *data,
 			    size_t n, off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	ssize_t nwritten;
 
 	DBG_DEBUG("Path [%s] offset=%"PRIdMAX", size=%zd\n",
@@ -2815,7 +2827,7 @@ static struct tevent_req *fruit_pwrite_send(
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct fruit_pwrite_state *state = NULL;
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct fruit_pwrite_state);
@@ -3174,7 +3186,7 @@ static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
 				   files_struct *fsp,
 				   SMB_STRUCT_STAT *sbuf)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	struct smb_filename smb_fname;
 	ino_t ino;
 	int ret;
@@ -3335,7 +3347,7 @@ static int fruit_fstat_rsrc(vfs_handle_struct *handle, files_struct *fsp,
 static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_STRUCT_STAT *sbuf)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int rc;
 
 	if (fio == NULL) {
@@ -3788,7 +3800,7 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 			   off_t offset,
 			   off_t len)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 
 	if (fio == NULL) {
 		return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
@@ -3857,7 +3869,7 @@ static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int ret;
 
 	if (fio == NULL) {
@@ -3909,7 +3921,7 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
 			   off_t offset)
 {
-	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = fruit_get_complete_fio(handle, fsp);
 	int ret;
 
 	DBG_DEBUG("Path [%s] offset [%"PRIdMAX"]\n", fsp_str_dbg(fsp),
