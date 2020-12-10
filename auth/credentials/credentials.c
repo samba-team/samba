@@ -1459,6 +1459,167 @@ _PUBLIC_ bool cli_credentials_set_smb_encryption(struct cli_credentials *creds,
 	return false;
 }
 
+static const char *obtained_to_str(enum credentials_obtained obtained)
+{
+	switch (obtained) {
+	case CRED_UNINITIALISED:
+		return "CRED_UNINITIALISED";
+	case CRED_SMB_CONF:
+		return "CRED_SMB_CONF";
+	case CRED_CALLBACK:
+		return "CRED_CALLBACK";
+	case CRED_GUESS_ENV:
+		return "CRED_GUESS_ENV";
+	case CRED_GUESS_FILE:
+		return "CRED_GUESS_FILE";
+	case CRED_CALLBACK_RESULT:
+		return "CRED_CALLBACK_RESULT";
+	case CRED_SPECIFIED:
+		return "CRED_SPECIFIED";
+	}
+
+	/* Never reached */
+	return "";
+}
+
+static const char *krb5_state_to_str(enum credentials_use_kerberos krb5_state)
+{
+	switch (krb5_state) {
+	case CRED_USE_KERBEROS_DISABLED:
+		return "CRED_USE_KERBEROS_DISABLED";
+	case CRED_USE_KERBEROS_DESIRED:
+		return "CRED_USE_KERBEROS_DESIRED";
+	case CRED_USE_KERBEROS_REQUIRED:
+		return "CRED_USE_KERBEROS_REQUIRED";
+	}
+
+	/* Never reached */
+	return "";
+}
+
+static const char *krb5_fwd_to_str(enum credentials_krb_forwardable krb5_fwd)
+{
+	switch (krb5_fwd) {
+	case CRED_AUTO_KRB_FORWARDABLE:
+		return "CRED_AUTO_KRB_FORWARDABLE";
+	case CRED_NO_KRB_FORWARDABLE:
+		return "CRED_NO_KRB_FORWARDABLE";
+	case CRED_FORCE_KRB_FORWARDABLE:
+		return "CRED_FORCE_KRB_FORWARDABLE";
+	}
+
+	/* Never reached */
+	return "";
+}
+
+static const char *signing_state_to_str(enum smb_signing_setting signing_state)
+{
+	switch(signing_state) {
+	case SMB_SIGNING_IPC_DEFAULT:
+		return "SMB_SIGNING_IPC_DEFAULT";
+	case SMB_SIGNING_DEFAULT:
+		return "SMB_SIGNING_DEFAULT";
+	case SMB_SIGNING_OFF:
+		return "SMB_SIGNING_OFF";
+	case SMB_SIGNING_IF_REQUIRED:
+		return "SMB_SIGNING_IF_REQUIRED";
+	case SMB_SIGNING_DESIRED:
+		return "SMB_SIGNING_DESIRED";
+	case SMB_SIGNING_REQUIRED:
+		return "SMB_SIGNING_REQUIRED";
+	}
+
+	/* Never reached */
+	return "";
+}
+
+static const char *encryption_state_to_str(enum smb_encryption_setting encryption_state)
+{
+	switch(encryption_state) {
+	case SMB_ENCRYPTION_DEFAULT:
+		return "SMB_ENCRYPTION_DEFAULT";
+	case SMB_ENCRYPTION_OFF:
+		return "SMB_ENCRYPTION_OFF";
+	case SMB_ENCRYPTION_IF_REQUIRED:
+		return "SMB_ENCRYPTION_IF_REQUIRED";
+	case SMB_ENCRYPTION_DESIRED:
+		return "SMB_ENCRYPTION_DESIRED";
+	case SMB_ENCRYPTION_REQUIRED:
+		return "SMB_ENCRYPTION_REQUIRED";
+	}
+
+	/* Never reached */
+	return "";
+}
+
+_PUBLIC_ void cli_credentials_dump(struct cli_credentials *creds)
+{
+	DBG_ERR("CLI_CREDENTIALS:\n");
+	DBG_ERR("\n");
+	DBG_ERR("  Username: %s - %s\n",
+		creds->username,
+		obtained_to_str(creds->username_obtained));
+	DBG_ERR("  Workstation: %s - %s\n",
+		creds->workstation,
+		obtained_to_str(creds->workstation_obtained));
+	DBG_ERR("  Domain: %s - %s\n",
+		creds->domain,
+		obtained_to_str(creds->domain_obtained));
+	DBG_ERR("  Password: %s - %s\n",
+		creds->password != NULL ? "*SECRET*" : "NULL",
+		obtained_to_str(creds->password_obtained));
+	DBG_ERR("  Old password: %s\n",
+		creds->old_password != NULL ? "*SECRET*" : "NULL");
+	DBG_ERR("  Password tries: %u\n",
+		creds->password_tries);
+	DBG_ERR("  Realm: %s - %s\n",
+		creds->realm,
+		obtained_to_str(creds->realm_obtained));
+	DBG_ERR("  Principal: %s - %s\n",
+		creds->principal,
+		obtained_to_str(creds->principal_obtained));
+	DBG_ERR("  Salt principal: %s\n",
+		creds->salt_principal);
+	DBG_ERR("  Impersonate principal: %s\n",
+		creds->impersonate_principal);
+	DBG_ERR("  Self service: %s\n",
+		creds->self_service);
+	DBG_ERR("  Target service: %s\n",
+		creds->target_service);
+	DBG_ERR("  Kerberos state: %s\n",
+		krb5_state_to_str(creds->use_kerberos));
+	DBG_ERR("  Kerberos forwardable ticket: %s\n",
+		krb5_fwd_to_str(creds->krb_forwardable));
+	DBG_ERR("  Signing state: %s - %s\n",
+		signing_state_to_str(creds->signing_state),
+		obtained_to_str(creds->signing_state_obtained));
+	DBG_ERR("  IPC signing state: %s - %s\n",
+		signing_state_to_str(creds->ipc_signing_state),
+		obtained_to_str(creds->ipc_signing_state_obtained));
+	DBG_ERR("  Encryption state: %s - %s\n",
+		encryption_state_to_str(creds->encryption_state),
+		obtained_to_str(creds->encryption_state_obtained));
+	DBG_ERR("  Gensec features: %#X\n",
+		creds->gensec_features);
+	DBG_ERR("  Forced sasl mech: %s\n",
+		creds->forced_sasl_mech);
+	DBG_ERR("  CCACHE: %p - %s\n",
+		creds->ccache,
+		obtained_to_str(creds->ccache_obtained));
+	DBG_ERR("  CLIENT_GSS_CREDS: %p - %s\n",
+		creds->client_gss_creds,
+		obtained_to_str(creds->client_gss_creds_obtained));
+	DBG_ERR("  SERVER_GSS_CREDS: %p - %s\n",
+		creds->server_gss_creds,
+		obtained_to_str(creds->server_gss_creds_obtained));
+	DBG_ERR("  KEYTAB: %p - %s\n",
+		creds->keytab,
+		obtained_to_str(creds->keytab_obtained));
+	DBG_ERR("  KVNO: %u\n",
+		creds->kvno);
+	DBG_ERR("\n");
+}
+
 /**
  * @brief Obtain the SMB encryption state from a credentials structure.
  *

@@ -315,6 +315,8 @@ bool cli_credentials_set_smb_encryption(struct cli_credentials *cred,
 enum smb_encryption_setting
 cli_credentials_get_smb_encryption(struct cli_credentials *cred);
 
+void cli_credentials_dump(struct cli_credentials *creds);
+
 /**
  * Return attached NETLOGON credentials 
  */

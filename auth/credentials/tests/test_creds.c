@@ -78,6 +78,9 @@ static void torture_creds_init(void **state)
 	assert_int_equal(creds->password_obtained, CRED_SPECIFIED);
 	password = cli_credentials_get_password(creds);
 	assert_string_equal(password, "SECRET");
+
+	/* Run dump to check it works */
+	cli_credentials_dump(creds);
 }
 
 static void torture_creds_init_anonymous(void **state)
