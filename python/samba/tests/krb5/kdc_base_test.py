@@ -41,6 +41,10 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_AS_REP,
     KRB_TGS_REP,
     KRB_ERROR,
+    KU_AS_REP_ENC_PART,
+    KU_PA_ENC_TIMESTAMP,
+    KU_TGS_REP_ENC_PART_SUB_KEY,
+    KU_TICKET,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO2,
 )
@@ -196,8 +200,7 @@ class KDCBaseTest(RawKerberosTest):
         padata = self.PA_ENC_TS_ENC_create(patime, pausec)
         padata = self.der_encode(padata, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
 
-        usage = 1
-        padata = self.EncryptedData_create(key, usage, padata)
+        padata = self.EncryptedData_create(key, KU_PA_ENC_TIMESTAMP, padata)
         padata = self.der_encode(padata, asn1Spec=krb5_asn1.EncryptedData())
 
         padata = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, padata)
@@ -207,8 +210,7 @@ class KDCBaseTest(RawKerberosTest):
     def get_as_rep_enc_data(self, key, rep):
         ''' Decrypt and Decode the encrypted data in an AS-REP
         '''
-        usage = 3
-        enc_part = key.decrypt(usage, rep['enc-part']['cipher'])
+        enc_part = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
         # MIT KDC encodes both EncASRepPart and EncTGSRepPart with
         # application tag 26
         try:
@@ -303,7 +305,6 @@ class KDCBaseTest(RawKerberosTest):
         padata = []
 
         subkey = self.RandomKey(key.etype)
-        subkey_usage = 9
 
         (ctime, cusec) = self.get_KerberosTimeWithUsec()
 
@@ -332,7 +333,8 @@ class KDCBaseTest(RawKerberosTest):
         msg_type = rep['msg-type']
         enc_part = None
         if msg_type == KRB_TGS_REP:
-            enc_part = subkey.decrypt(subkey_usage, rep['enc-part']['cipher'])
+            enc_part = subkey.decrypt(
+                KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
             enc_part = self.der_decode(
                 enc_part, asn1Spec=krb5_asn1.EncTGSRepPart())
         return (rep, enc_part)
@@ -403,7 +405,7 @@ class KDCBaseTest(RawKerberosTest):
             salt,
             ticket['enc-part']['kvno'])
 
-        enc_part = key.decrypt(2, ticket['enc-part']['cipher'])
+        enc_part = key.decrypt(KU_TICKET, ticket['enc-part']['cipher'])
         enc_ticket_part = self.der_decode(
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
         return enc_ticket_part

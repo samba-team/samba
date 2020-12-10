@@ -25,6 +25,11 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 from samba.tests import env_get_var_value
 from samba.tests.krb5.kcrypto import Cksumtype
 from samba.tests.krb5.raw_testcase import RawKerberosTest
+from samba.tests.krb5.rfc4120_constants import (
+    KU_PA_ENC_TIMESTAMP,
+    KU_AS_REP_ENC_PART,
+    KU_TGS_REP_ENC_PART_SUB_KEY,
+)
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
 global_asn1_print = False
@@ -86,8 +91,7 @@ class S4UKerberosTests(RawKerberosTest):
         pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
 
-        enc_pa_ts_usage = 1
-        pa_ts = self.EncryptedData_create(key, enc_pa_ts_usage, pa_ts)
+        pa_ts = self.EncryptedData_create(key, KU_PA_ENC_TIMESTAMP, pa_ts)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
 
         pa_ts = self.PA_DATA_create(2, pa_ts)
@@ -115,8 +119,7 @@ class S4UKerberosTests(RawKerberosTest):
         msg_type = rep['msg-type']
         self.assertEqual(msg_type, 11)
 
-        usage = 3
-        enc_part2 = key.decrypt(usage, rep['enc-part']['cipher'])
+        enc_part2 = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
         enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
 
         # S4U2Self Request
@@ -135,7 +138,6 @@ class S4UKerberosTests(RawKerberosTest):
         padata = [pa_s4u]
 
         subkey = self.RandomKey(ticket_session_key.etype)
-        subkey_usage = 9
 
         (ctime, cusec) = self.get_KerberosTimeWithUsec()
 
@@ -163,7 +165,8 @@ class S4UKerberosTests(RawKerberosTest):
 
         msg_type = rep['msg-type']
         if msg_type == 13:
-            enc_part2 = subkey.decrypt(subkey_usage, rep['enc-part']['cipher'])
+            enc_part2 = subkey.decrypt(
+                KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
             enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         return msg_type

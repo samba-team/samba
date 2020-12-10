@@ -91,8 +91,7 @@ class KdcTests(RawKerberosTest):
         pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
 
-        enc_pa_ts_usage = 1
-        pa_ts = self.EncryptedData_create(key, enc_pa_ts_usage, pa_ts)
+        pa_ts = self.EncryptedData_create(key, KU_PA_ENC_TIMESTAMP, pa_ts)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
 
         pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)

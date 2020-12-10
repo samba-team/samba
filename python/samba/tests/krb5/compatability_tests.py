@@ -178,8 +178,7 @@ class SimpleKerberosTests(RawKerberosTest):
         pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
 
-        enc_pa_ts_usage = 1
-        pa_ts = self.EncryptedData_create(key, enc_pa_ts_usage, pa_ts)
+        pa_ts = self.EncryptedData_create(key, KU_PA_ENC_TIMESTAMP, pa_ts)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
 
         pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
@@ -207,9 +206,9 @@ class SimpleKerberosTests(RawKerberosTest):
         msg_type = rep['msg-type']
         self.assertEqual(msg_type, KRB_AS_REP)
 
-        usage = 3
         enc_part = rep['enc-part']
-        enc_as_rep_part = key.decrypt(usage, rep['enc-part']['cipher'])
+        enc_as_rep_part = key.decrypt(
+            KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
         return (enc_as_rep_part, enc_part)
 
 
