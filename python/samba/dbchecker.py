@@ -1816,6 +1816,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             # old static provision dumps
             return False
 
+        if dn in self.deleted_objects_containers:
+            # The Deleted Objects container will look like an expired
+            # tombstone
+            return False
+
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, repl_val)
 
         isDeleted = self.find_repl_attid(repl, drsuapi.DRSUAPI_ATTID_isDeleted)
@@ -1829,7 +1834,25 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if delta <= tombstone_delta:
             return False
 
-        self.report("SKIPING: object %s is an expired tombstone" % dn)
+        expunge_time = delete_time + tombstone_delta
+
+        delta_days = delta / (24 * 60 * 60)
+
+        if delta_days <= 2:
+            self.report("SKIPPING additional checks on object "
+                        "%s which very recently "
+                        "became an expired tombstone (normal)" % dn)
+            self.report("INFO: it is expected this will be expunged "
+                        "by the next daily task some time after %s, "
+                        "%d hours ago"
+                        % (time.ctime(expunge_time), delta // (60 * 60)))
+        else:
+            self.report("SKIPPING: object %s is an expired tombstone" % dn)
+            self.report("INFO: it was expected this object would have "
+                        "been expunged soon after"
+                        "%s, %d days ago"
+                        % (time.ctime(expunge_time), delta_days))
+
         self.report("isDeleted: attid=0x%08x version=%d invocation=%s usn=%s (local=%s) at %s" % (
                     isDeleted.attid,
                     isDeleted.version,
