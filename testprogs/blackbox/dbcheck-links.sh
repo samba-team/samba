@@ -42,7 +42,7 @@ dbcheck() {
     if [ "$?" != "$2" ]; then
 	return 1
     fi
-    sort $tmpfile > $tmpfile.sorted
+    sort $tmpfile | grep -v "^INFO:" > $tmpfile.sorted
     sort $release_dir/expected-dbcheck-link-output${1}.txt > $tmpfile.expected
     diff -u $tmpfile.sorted $tmpfile.expected
     if [ "$?" != "0" ]; then
