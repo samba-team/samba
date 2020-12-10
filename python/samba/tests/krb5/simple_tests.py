@@ -23,6 +23,11 @@ sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests.krb5.raw_testcase import RawKerberosTest
+from samba.tests.krb5.rfc4120_constants import (
+    KU_AS_REP_ENC_PART,
+    KU_PA_ENC_TIMESTAMP,
+    KU_TGS_REP_ENC_PART_SUB_KEY,
+)
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
 global_asn1_print = False
@@ -84,8 +89,7 @@ class SimpleKerberosTests(RawKerberosTest):
         pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
 
-        enc_pa_ts_usage = 1
-        pa_ts = self.EncryptedData_create(key, enc_pa_ts_usage, pa_ts)
+        pa_ts = self.EncryptedData_create(key, KU_PA_ENC_TIMESTAMP, pa_ts)
         pa_ts = self.der_encode(pa_ts, asn1Spec=krb5_asn1.EncryptedData())
 
         pa_ts = self.PA_DATA_create(2, pa_ts)
@@ -113,8 +117,7 @@ class SimpleKerberosTests(RawKerberosTest):
         msg_type = rep['msg-type']
         self.assertEqual(msg_type, 11)
 
-        usage = 3
-        enc_part2 = key.decrypt(usage, rep['enc-part']['cipher'])
+        enc_part2 = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
 
         # MIT KDC encodes both EncASRepPart and EncTGSRepPart with application tag 26
         try:
@@ -134,7 +137,6 @@ class SimpleKerberosTests(RawKerberosTest):
         padata = []
 
         subkey = self.RandomKey(ticket_session_key.etype)
-        subkey_usage = 9
 
         (ctime, cusec) = self.get_KerberosTimeWithUsec()
 
@@ -163,7 +165,8 @@ class SimpleKerberosTests(RawKerberosTest):
         msg_type = rep['msg-type']
         self.assertEqual(msg_type, 13)
 
-        enc_part2 = subkey.decrypt(subkey_usage, rep['enc-part']['cipher'])
+        enc_part2 = subkey.decrypt(
+            KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
         enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         return
