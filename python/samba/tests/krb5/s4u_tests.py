@@ -35,6 +35,7 @@ import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 global_asn1_print = False
 global_hexdump = False
 
+
 class S4UKerberosTests(RawKerberosTest):
 
     def setUp(self):
@@ -55,7 +56,7 @@ class S4UKerberosTests(RawKerberosTest):
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = None
 
-        etypes=(18,17,23)
+        etypes = (18, 17, 23)
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),
@@ -76,14 +77,16 @@ class S4UKerberosTests(RawKerberosTest):
 
         self.assertEqual(rep['msg-type'], 30)
         self.assertEqual(rep['error-code'], 25)
-        rep_padata = self.der_decode(rep['e-data'], asn1Spec=krb5_asn1.METHOD_DATA())
+        rep_padata = self.der_decode(
+            rep['e-data'], asn1Spec=krb5_asn1.METHOD_DATA())
 
         for pa in rep_padata:
             if pa['padata-type'] == 19:
                 etype_info2 = pa['padata-value']
                 break
 
-        etype_info2 = self.der_decode(etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
+        etype_info2 = self.der_decode(
+            etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
 
         key = self.PasswordKey_from_etype_info2(service_creds, etype_info2[0])
 
@@ -120,7 +123,8 @@ class S4UKerberosTests(RawKerberosTest):
         self.assertEqual(msg_type, 11)
 
         enc_part2 = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
-        enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
+        enc_part2 = self.der_decode(
+            enc_part2, asn1Spec=krb5_asn1.EncASRepPart())
 
         # S4U2Self Request
         sname = cname
@@ -167,11 +171,13 @@ class S4UKerberosTests(RawKerberosTest):
         if msg_type == 13:
             enc_part2 = subkey.decrypt(
                 KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
-            enc_part2 = self.der_decode(enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
+            enc_part2 = self.der_decode(
+                enc_part2, asn1Spec=krb5_asn1.EncTGSRepPart())
 
         return msg_type
 
-    # Using the checksum type from the tgt_session_key happens to work everywhere
+    # Using the checksum type from the tgt_session_key happens to work
+    # everywhere
     def test_s4u2self(self):
         msg_type = self._test_s4u2self()
         self.assertEqual(msg_type, 13)
@@ -192,6 +198,7 @@ class S4UKerberosTests(RawKerberosTest):
     def test_s4u2self_crc32_unkeyed_checksum(self):
         msg_type = self._test_s4u2self(pa_s4u2self_ctype=Cksumtype.CRC32)
         self.assertEqual(msg_type, 30)
+
 
 if __name__ == "__main__":
     global_asn1_print = True

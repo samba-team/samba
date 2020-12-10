@@ -25,7 +25,20 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests.krb5.raw_testcase import RawKerberosTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
-from samba.tests.krb5.rfc4120_constants import *
+from samba.tests.krb5.rfc4120_constants import (
+    AES128_CTS_HMAC_SHA1_96,
+    AES256_CTS_HMAC_SHA1_96,
+    ARCFOUR_HMAC_MD5,
+    KDC_ERR_PREAUTH_REQUIRED,
+    KRB_AS_REP,
+    KRB_ERROR,
+    KU_AS_REP_ENC_PART,
+    KU_PA_ENC_TIMESTAMP,
+    PADATA_ENC_TIMESTAMP,
+    PADATA_ETYPE_INFO2,
+    NT_PRINCIPAL,
+    NT_SRV_INST,
+)
 
 global_asn1_print = False
 global_hexdump = False
@@ -112,17 +125,16 @@ class SimpleKerberosTests(RawKerberosTest):
         realm = creds.get_realm()
 
         cname = self.PrincipalName_create(
-                name_type=NT_PRINCIPAL,
-                names=[user])
+            name_type=NT_PRINCIPAL,
+            names=[user])
         sname = self.PrincipalName_create(
-                name_type=NT_SRV_INST,
-                names=["krbtgt", realm])
+            name_type=NT_SRV_INST,
+            names=["krbtgt", realm])
 
         till = self.get_KerberosTime(offset=36000)
 
         kdc_options = krb5_asn1.KDCOptions('forwardable')
         padata = None
-
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),

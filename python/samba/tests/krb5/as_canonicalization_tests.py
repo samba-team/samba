@@ -31,8 +31,6 @@ import samba
 from samba.auth import system_session
 from samba.credentials import (
     Credentials,
-    CLI_CRED_NTLMv2_AUTH,
-    CLI_CRED_NTLM_AUTH,
     DONT_USE_KERBEROS)
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dsdb import (
@@ -41,7 +39,20 @@ from samba.dsdb import (
     UF_NORMAL_ACCOUNT)
 from samba.samdb import SamDB
 from samba.tests import delete_force, DynamicTestCase
-from samba.tests.krb5.rfc4120_constants import *
+from samba.tests.krb5.rfc4120_constants import (
+    AES256_CTS_HMAC_SHA1_96,
+    AES128_CTS_HMAC_SHA1_96,
+    ARCFOUR_HMAC_MD5,
+    KDC_ERR_PREAUTH_REQUIRED,
+    KRB_AS_REP,
+    KU_AS_REP_ENC_PART,
+    KRB_ERROR,
+    KU_PA_ENC_TIMESTAMP,
+    PADATA_ENC_TIMESTAMP,
+    NT_ENTERPRISE_PRINCIPAL,
+    NT_PRINCIPAL,
+    NT_SRV_INST,
+)
 
 global_asn1_print = False
 global_hexdump = False
@@ -49,15 +60,15 @@ global_hexdump = False
 
 @unique
 class TestOptions(Enum):
-    Canonicalize  =   1
-    Enterprise    =   2
-    UpperRealm    =   4
-    UpperUserName =   8
-    NetbiosRealm  =  16
-    UPN           =  32
-    RemoveDollar  =  64
-    AsReqSelf     = 128
-    Last          = 256
+    Canonicalize = 1
+    Enterprise = 2
+    UpperRealm = 4
+    UpperUserName = 8
+    NetbiosRealm = 16
+    UPN = 32
+    RemoveDollar = 64
+    AsReqSelf = 128
+    Last = 256
 
     def is_set(self, x):
         return self.value & x
@@ -65,7 +76,7 @@ class TestOptions(Enum):
 
 @unique
 class CredentialsType(Enum):
-    User    = 1
+    User = 1
     Machine = 2
 
     def is_set(self, x):
@@ -126,7 +137,8 @@ class TestData:
 
 
 MACHINE_NAME = "tstkrb5cnnmch"
-USER_NAME    = "tstkrb5cnnusr"
+USER_NAME = "tstkrb5cnnusr"
+
 
 @DynamicTestCase
 class KerberosASCanonicalizationTests(RawKerberosTest):
@@ -160,21 +172,21 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
 
     @classmethod
     def setUpClass(cls):
-        cls.lp       = cls.get_loadparm(cls)
+        cls.lp = cls.get_loadparm(cls)
         cls.username = os.environ["USERNAME"]
         cls.password = os.environ["PASSWORD"]
-        cls.host     = os.environ["SERVER"]
+        cls.host = os.environ["SERVER"]
 
         c = Credentials()
         c.set_username(cls.username)
         c.set_password(cls.password)
         try:
-            realm    = os.environ["REALM"]
+            realm = os.environ["REALM"]
             c.set_realm(realm)
         except KeyError:
             pass
         try:
-            domain    = os.environ["DOMAIN"]
+            domain = os.environ["DOMAIN"]
             c.set_domain(domain)
         except KeyError:
             pass
@@ -200,7 +212,7 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
     def setUp(self):
         super(KerberosASCanonicalizationTests, self).setUp()
         self.do_asn1_print = global_asn1_print
-        self.do_hexdump    = global_hexdump
+        self.do_hexdump = global_hexdump
 
     #
     # Create a test user account
@@ -340,7 +352,7 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         #
         # Check the protocol version, should be 5
         self.assertEqual(
-                rep['pvno'], 5, "Data {0}".format(str(data)))
+            rep['pvno'], 5, "Data {0}".format(str(data)))
 
         self.assertEqual(
             rep['msg-type'], KRB_ERROR, "Data {0}".format(str(data)))
@@ -397,7 +409,7 @@ class KerberosASCanonicalizationTests(RawKerberosTest):
         #
         # Check the protocol version, should be 5
         self.assertEqual(
-                rep['pvno'], 5, "Data {0}".format(str(data)))
+            rep['pvno'], 5, "Data {0}".format(str(data)))
 
         msg_type = rep['msg-type']
         # Should not have got an error.

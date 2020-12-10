@@ -25,7 +25,20 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests.krb5.raw_testcase import RawKerberosTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
-from samba.tests.krb5.rfc4120_constants import *
+from samba.tests.krb5.rfc4120_constants import (
+    AES256_CTS_HMAC_SHA1_96,
+    ARCFOUR_HMAC_MD5,
+    KDC_ERR_PREAUTH_FAILED,
+    KDC_ERR_PREAUTH_REQUIRED,
+    KDC_ERR_SKEW,
+    KRB_AS_REP,
+    KRB_ERROR,
+    KU_PA_ENC_TIMESTAMP,
+    PADATA_ENC_TIMESTAMP,
+    PADATA_ETYPE_INFO2,
+    NT_PRINCIPAL,
+    NT_SRV_INST,
+)
 
 global_asn1_print = False
 global_hexdump = False
@@ -83,7 +96,7 @@ class KdcTests(RawKerberosTest):
                 break
 
         etype_info2 = self.der_decode(
-                etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
+            etype_info2, asn1Spec=krb5_asn1.ETYPE_INFO2())
 
         key = self.PasswordKey_from_etype_info2(creds, etype_info2[0])
 
