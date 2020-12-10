@@ -63,3 +63,53 @@ AD_MANDATORY_FOR_KDC              = 8
 AD_INITIAL_VERIFIED_CAS           = 9
 AD_WIN2K_PAC                      = 128
 AD_SIGNTICKET                     = 512
+
+# Key usage numbers
+# RFC 4120 Section 7.5.1.  Key Usage Numbers
+KU_PA_ENC_TIMESTAMP = 1
+''' AS-REQ PA-ENC-TIMESTAMP padata timestamp, encrypted with the
+    client key (section 5.2.7.2) '''
+KU_TICKET = 2
+''' AS-REP Ticket and TGS-REP Ticket (includes tgs session key or
+    application session key), encrypted with the service key
+    (section 5.3) '''
+KU_AS_REP_ENC_PART = 3
+''' AS-REP encrypted part (includes tgs session key or application
+    session key), encrypted with the client key (section 5.4.2) '''
+KU_TGS_REQ_AUTH_DAT_SESSION = 4
+''' TGS-REQ KDC-REQ-BODY AuthorizationData, encrypted with the tgs
+    session key (section 5.4.1) '''
+KU_TGS_REQ_AUTH_DAT_SUBKEY = 5
+''' TGS-REQ KDC-REQ-BODY AuthorizationData, encrypted with the tgs
+    authenticator subkey (section 5.4.1) '''
+KU_TGS_REQ_AUTH_CKSUM = 6
+''' TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator cksum, keyed
+    with the tgs session key (section 5.5.1) '''
+KU_TGS_REQ_AUTH = 7
+''' TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator (includes tgs
+    authenticator subkey), encrypted with the tgs session key
+    (section 5.5.1) '''
+KU_TGS_REP_ENC_PART_SESSION = 8
+''' TGS-REP encrypted part (includes application session key),
+    encrypted with the tgs session key (section 5.4.2) '''
+KU_TGS_REP_ENC_PART_SUB_KEY = 9
+''' TGS-REP encrypted part (includes application session key),
+    encrypted with the tgs authenticator subkey (section 5.4.2) '''
+KU_AP_REQ_AUTH_CKSUM = 10
+''' AP-REQ Authenticator cksum, keyed with the application session
+    key (section 5.5.1) '''
+KU_AP_REQ_AUTH = 11
+''' AP-REQ Authenticator (includes application authenticator
+    subkey), encrypted with the application session key (section 5.5.1) '''
+KU_AP_REQ_ENC_PART = 12
+''' AP-REP encrypted part (includes application session subkey),
+    encrypted with the application session key (section 5.5.2) '''
+KU_KRB_PRIV = 13
+''' KRB-PRIV encrypted part, encrypted with a key chosen by the
+    application (section 5.7.1) '''
+KU_KRB_CRED = 14
+''' KRB-CRED encrypted part, encrypted with a key chosen by the
+    application (section 5.8.1) '''
+KU_KRB_SAFE_CKSUM = 15
+''' KRB-SAFE cksum, keyed with a key chosen by the application
+    (section 5.6.1) '''
