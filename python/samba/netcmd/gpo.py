@@ -1986,6 +1986,8 @@ PasswordComplexity      Password must meet complexity requirements
             inf_data.set(section, policy, value)
         else:
             inf_data.remove_option(section, policy)
+            if len(inf_data.options(section)) == 0:
+                inf_data.remove_section(section)
 
         out = StringIO()
         inf_data.write(out)
