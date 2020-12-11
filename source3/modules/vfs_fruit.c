@@ -1661,6 +1661,7 @@ static int fruit_openat(vfs_handle_struct *handle,
 static int fruit_close_meta(vfs_handle_struct *handle,
 			    files_struct *fsp)
 {
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int ret;
 	struct fruit_config_data *config = NULL;
 
@@ -1669,7 +1670,12 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
-		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		if (fio->fake_fd) {
+			ret = vfs_fake_fd_close(fsp_get_pathref_fd(fsp));
+			fsp_set_fd(fsp, -1);
+		} else {
+			ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		}
 		break;
 
 	case FRUIT_META_NETATALK:
@@ -2465,9 +2471,9 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 	}
 
 	if (fio->fake_fd) {
-		int fd;
+		int fd = fsp_get_pathref_fd(fsp);
 
-		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
+		ret = vfs_fake_fd_close(fd);
 		fsp_set_fd(fsp, -1);
 		if (ret != 0) {
 			DBG_ERR("Close [%s] failed: %s\n",
