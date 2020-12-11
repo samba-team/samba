@@ -12,8 +12,8 @@ A pure python3 module with CLI to bootstrap Samba envs for multiple distribution
 
 ## Supported Distributions
 
-deb: Debian 7|8|9|10, Ubuntu 1404|1604|1804
-rpm: CentOS 6|7, Fedora 28|29, openSUSE Leap 15.0|15.1
+deb: Debian 10, Ubuntu 1604|1804|2004
+rpm: CentOS 7|8, Fedora 32|33, openSUSE Leap 15.1|15.2
 
 Easy to add more.
 
@@ -86,14 +86,14 @@ With Vagrant:
 
  cd bootstrap/generated-dists/
  vagrant up   # start all
- vagrant up debian9  # start one
- vagrant ssh debian9
- vagrant destroy debian9  # destroy one
+ vagrant up debian10  # start one
+ vagrant ssh debian10
+ vagrant destroy debian10  # destroy one
  vagrant destroy  # destroy all
 
 Or a remote/cloud machine:
 
- scp bootstrap/generated-dists/fedora30/bootstrap.sh USER@IP:
+ scp bootstrap/generated-dists/fedora33/bootstrap.sh USER@IP:
  ssh USER@IP
  sudo bash ./bootstrap.sh
 
