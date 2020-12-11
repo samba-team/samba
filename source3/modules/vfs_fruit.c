@@ -178,9 +178,6 @@ struct fio {
 	/* Denote stream type, meta or rsrc */
 	adouble_type_t type;
 
-	/* Whether the create created the stream */
-	bool created;
-
 	/*
 	 * AFP_AfpInfo stream created, but not written yet, thus still a fake
 	 * pipe fd. This is set to true in fruit_open_meta if there was no
@@ -2251,7 +2248,7 @@ static ssize_t fruit_pread_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (nread == -1 && fio->created) {
+	if (nread == -1 && fio->fake_fd) {
 		AfpInfo *ai = NULL;
 		char afpinfo_buf[AFP_INFO_SIZE];
 
@@ -3954,7 +3951,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct fruit_config_data *config = NULL;
 	files_struct *fsp = NULL;
-	struct fio *fio = NULL;
 	bool internal_open = (oplock_request & INTERNAL_OPEN_ONLY);
 	int ret;
 
@@ -4025,11 +4021,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	{
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto fail;
-	}
-
-	fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	if (fio != NULL && pinfo != NULL && *pinfo == FILE_WAS_CREATED) {
-		fio->created = true;
 	}
 
 	if (is_named_stream(smb_fname) || fsp->fsp_flags.is_directory) {
