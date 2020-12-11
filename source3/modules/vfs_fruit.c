@@ -2122,8 +2122,13 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 				       files_struct *fsp, void *data,
 				       size_t n, off_t offset)
 {
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nread;
 	int ret;
+
+	if (fio->fake_fd) {
+		return -1;
+	}
 
 	nread = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	if (nread == -1 || nread == n) {
