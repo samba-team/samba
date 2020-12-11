@@ -297,6 +297,17 @@ dbcheck_objectclass() {
     fi
 }
 
+# This should 'fail', because it returns the number of wrong records, which it must if we did not skip the deleted objects
+dbcheck_deleted_objects() {
+    if [ x$RELEASE = x"alpha13" ]; then
+	basedn=$($ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b "" defaultNamingContext| grep -i defaultNamingContext| cut -d\  -f 2)
+
+	$PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb "cn=deleted objects,$basedn" --scope base $@
+    else
+	return 1
+    fi
+}
+
 # This should 'fail', because it returns the number of modified records
 dbcheck() {
        $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
@@ -488,6 +499,7 @@ testit $RELEASE undump || failed=`expr $failed + 1`
 testit "reindex" reindex || failed=`expr $failed + 1`
 testit "current_version_mod" do_current_version_mod || failed=`expr $failed + 1`
 testit "check_expected_before_values" check_expected_before_values || failed=`expr $failed + 1`
+testit_expect_failure "dbcheck_deleted_objects" dbcheck_deleted_objects || failed=`expr $failed + 1`
 testit_expect_failure "dbcheck_objectclass" dbcheck_objectclass || failed=`expr $failed + 1`
 testit_expect_failure "dbcheck" dbcheck || failed=`expr $failed + 1`
 testit "check_expected_after_values" check_expected_after_values || failed=`expr $failed + 1`
