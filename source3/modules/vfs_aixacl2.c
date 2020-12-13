@@ -529,7 +529,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	acl_aixc = aixacl_smb_to_aixacl(SMB_ACL_TYPE_ACCESS, theacl);
+	acl_aixc = aixacl_smb_to_aixacl(type, theacl);
 	if (!acl_aixc)
 		return -1;
 
