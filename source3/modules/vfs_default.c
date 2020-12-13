@@ -3236,7 +3236,40 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle,
 				  SMB_ACL_TYPE_T type,
 				  SMB_ACL_T theacl)
 {
-	return sys_acl_set_fd(handle, fsp, theacl);
+	if (!fsp->fsp_flags.is_pathref &&
+	    type == SMB_ACL_TYPE_ACCESS)
+	{
+		return sys_acl_set_fd(handle, fsp, theacl);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		struct smb_filename smb_fname;
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		smb_fname = (struct smb_filename) {
+			.base_name = buf,
+		};
+
+		return sys_acl_set_file(handle,
+					&smb_fname,
+					type,
+					theacl);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return sys_acl_set_file(handle,
+				fsp->fsp_name,
+				type,
+				theacl);
 }
 
 static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,
