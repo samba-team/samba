@@ -357,7 +357,7 @@ static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle,
 				    SMB_ACL_T theacl)
 {
 	int ret;
-	const char *name = FAKE_ACL_ACCESS_XATTR;
+	const char *name = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB blob = fake_acls_acl2blob(frame, theacl);
 	if (!blob.data) {
@@ -366,6 +366,19 @@ static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle,
 		errno = EINVAL;
 		return -1;
 	}
+
+	switch (type) {
+	case SMB_ACL_TYPE_ACCESS:
+		name = FAKE_ACL_ACCESS_XATTR;
+		break;
+	case SMB_ACL_TYPE_DEFAULT:
+		name = FAKE_ACL_DEFAULT_XATTR;
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
 	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, blob.data, blob.length, 0);
 	TALLOC_FREE(frame);
 	return ret;
