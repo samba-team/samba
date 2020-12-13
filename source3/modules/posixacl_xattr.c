@@ -483,9 +483,19 @@ int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,
 			      SMB_ACL_TYPE_T type,
 			      SMB_ACL_T theacl)
 {
+	const char *name = NULL;
 	char *buf;
 	ssize_t size;
 	int ret;
+
+	if (type == SMB_ACL_TYPE_ACCESS) {
+		name = ACL_EA_ACCESS;
+	} else if (type == SMB_ACL_TYPE_DEFAULT) {
+		name = ACL_EA_DEFAULT;
+	} else {
+		errno = EINVAL;
+		return -1;
+	}
 
 	size = smb_acl_to_posixacl_xattr(theacl, NULL, 0);
 	buf = alloca(size);
@@ -499,7 +509,7 @@ int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return SMB_VFS_FSETXATTR(fsp, ACL_EA_ACCESS, buf, size, 0);
+	return SMB_VFS_FSETXATTR(fsp, name, buf, size, 0);
 }
 
 int posixacl_xattr_acl_delete_def_file(vfs_handle_struct *handle,
