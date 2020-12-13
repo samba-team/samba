@@ -1356,8 +1356,11 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 	}
 
+	/*
+	 * This is no longer a handle based call.
+	 */
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name,
-					SMB_ACL_TYPE_ACCESS, theacl);
+					type, theacl);
 }
 
 static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
