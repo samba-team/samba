@@ -2869,6 +2869,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
 	bool needs_mask = False;
 	mode_t mask_perms = 0;
+	int sret;
 
 	/* Use the psbuf that was passed in. */
 	if (psbuf != &fsp->fsp_name->st) {
@@ -3020,81 +3021,35 @@ static bool set_canon_ace_list(files_struct *fsp,
 	/*
 	 * Finally apply it to the file or directory.
 	 */
+	sret = SMB_VFS_SYS_ACL_SET_FD(fsp, the_acl_type, the_acl);
+	if (sret == -1) {
+		/*
+		 * Some systems allow all the above calls and only fail with no ACL support
+		 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
+		 */
+		if (no_acl_syscall_error(errno)) {
+			*pacl_set_support = false;
+		}
 
-	if (default_ace || fsp->fsp_flags.is_directory || fsp_get_io_fd(fsp) == -1) {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name,
-					     the_acl_type, the_acl) == -1) {
-			/*
-			 * Some systems allow all the above calls and only fail with no ACL support
-			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
-			 */
-			if (no_acl_syscall_error(errno)) {
-				*pacl_set_support = False;
-			}
+		if (acl_group_override(conn, fsp->fsp_name)) {
+			DBG_DEBUG("acl group control on and current user in "
+				  "file [%s] primary group.\n",
+				  fsp_str_dbg(fsp));
 
-			if (acl_group_override(conn, fsp->fsp_name)) {
-				int sret;
-
-				DEBUG(5,("set_canon_ace_list: acl group "
-					 "control on and current user in file "
-					 "%s primary group.\n",
-					 fsp_str_dbg(fsp)));
-
-				become_root();
-				sret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-				    fsp->fsp_name, the_acl_type,
-				    the_acl);
-				unbecome_root();
-				if (sret == 0) {
-					ret = True;	
-				}
-			}
-
-			if (ret == False) {
-				DEBUG(2,("set_canon_ace_list: "
-					 "sys_acl_set_file type %s failed for "
-					 "file %s (%s).\n",
-					 the_acl_type == SMB_ACL_TYPE_DEFAULT ?
-					 "directory default" : "file",
-					 fsp_str_dbg(fsp), strerror(errno)));
-				goto fail;
+			become_root();
+			sret = SMB_VFS_SYS_ACL_SET_FD(fsp,
+						      the_acl_type,
+						      the_acl);
+			unbecome_root();
+			if (sret == 0) {
+				ret = true;
 			}
 		}
-	} else {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, SMB_ACL_TYPE_ACCESS, the_acl) == -1) {
-			/*
-			 * Some systems allow all the above calls and only fail with no ACL support
-			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
-			 */
-			if (no_acl_syscall_error(errno)) {
-				*pacl_set_support = False;
-			}
 
-			if (acl_group_override(conn, fsp->fsp_name)) {
-				int sret;
-
-				DEBUG(5,("set_canon_ace_list: acl group "
-					 "control on and current user in file "
-					 "%s primary group.\n",
-					 fsp_str_dbg(fsp)));
-
-				become_root();
-				sret = SMB_VFS_SYS_ACL_SET_FD(fsp,
-							      SMB_ACL_TYPE_ACCESS,
-							      the_acl);
-				unbecome_root();
-				if (sret == 0) {
-					ret = True;
-				}
-			}
-
-			if (ret == False) {
-				DEBUG(2,("set_canon_ace_list: "
-					 "sys_acl_set_file failed for file %s "
-					 "(%s).\n",
-					 fsp_str_dbg(fsp), strerror(errno)));
-				goto fail;
-			}
+		if (ret == false) {
+			DBG_WARNING("sys_acl_set_file on file [%s]: (%s)\n",
+				    fsp_str_dbg(fsp), strerror(errno));
+			goto fail;
 		}
 	}
 
