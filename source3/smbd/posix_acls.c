@@ -4340,10 +4340,9 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-					fsp->fsp_name,
-					SMB_ACL_TYPE_DEFAULT,
-					def_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp,
+				     SMB_ACL_TYPE_DEFAULT,
+				     def_acl);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("acl_set_file failed on directory %s (%s)\n",
