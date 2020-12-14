@@ -64,7 +64,7 @@
 		<emphasis>/var/run/savdi/sssp.sock</emphasis>.</para>
 		<para>For the <emphasis>fsav</emphasis> backend the default is
 		<emphasis>/tmp/.fsav-0</emphasis>.</para>
-		<para>For the <emphasis>fsav</emphasis> backend the default is
+		<para>For the <emphasis>clamav</emphasis> backend the default is
 		<emphasis>/var/run/clamav/clamd.ctl</emphasis>.</para>
 		</listitem>
 		</varlistentry>
