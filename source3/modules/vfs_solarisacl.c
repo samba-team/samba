@@ -241,8 +241,10 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      SMB_ACL_T theacl)
 {
 	SOLARIS_ACL_T solaris_acl = NULL;
-	SOLARIS_ACL_T default_acl = NULL;
-	int count, default_count;
+	int count;
+	SOLARIS_ACL_T other_acl = NULL;
+	int other_count;
+	SMB_ACL_TYPE_T other_type;
 	int ret = -1;
 
 	DEBUG(10, ("entering solarisacl_sys_acl_set_fd\n"));
@@ -255,19 +257,24 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	 * concatenate it with the access acl provided.
 	 */
 	if (!smb_acl_to_solaris_acl(theacl, &solaris_acl, &count, 
-				    SMB_ACL_TYPE_ACCESS))
+				    type))
 	{
 		DEBUG(10, ("conversion smb_acl -> solaris_acl failed (%s).\n",
 			   strerror(errno)));
 		goto done;
 	}
-	if (!solaris_acl_get_fd(fsp_get_io_fd(fsp), &default_acl, &default_count)) {
+	if (!solaris_acl_get_fd(fsp_get_io_fd(fsp), &other_acl, &other_count)) {
 		DEBUG(10, ("error getting (default) acl from fd\n"));
 		goto done;
 	}
+
+	other_type = (type == SMB_ACL_TYPE_ACCESS)
+		? SMB_ACL_TYPE_DEFAULT
+		: SMB_ACL_TYPE_ACCESS;
+
 	if (!solaris_add_to_acl(&solaris_acl, &count,
-				default_acl, default_count,
-				SMB_ACL_TYPE_DEFAULT))
+				other_acl, other_count,
+				other_type))
 	{
 		DEBUG(10, ("error adding default acl to solaris acl\n"));
 		goto done;
