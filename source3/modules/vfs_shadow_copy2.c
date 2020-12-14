@@ -2194,15 +2194,25 @@ static int shadow_copy2_mkdirat(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				mode_t mode)
 {
+	struct smb_filename *full_fname = NULL;
 	time_t timestamp = 0;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
-					smb_fname,
+					full_fname,
 					&timestamp,
 					NULL)) {
 		return -1;
 	}
+	TALLOC_FREE(full_fname);
 	if (timestamp != 0) {
 		errno = EROFS;
 		return -1;
