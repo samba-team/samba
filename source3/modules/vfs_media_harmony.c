@@ -997,6 +997,7 @@ static int mh_mkdirat(vfs_handle_struct *handle,
 	int status;
 	struct smb_filename *clientFname = NULL;
 	const char *path = smb_fname->base_name;
+	struct smb_filename *full_fname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
@@ -1008,19 +1009,27 @@ static int mh_mkdirat(vfs_handle_struct *handle,
 		goto out;
 	}
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	status = alloc_get_client_smb_fname(handle,
 				talloc_tos(),
-				smb_fname,
+				full_fname,
 				&clientFname);
 	if (status != 0) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_MKDIRAT(handle,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			clientFname,
 			mode);
 err:
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(clientFname);
 out:
 	DEBUG(MH_INFO_DEBUG, ("Leaving with path '%s'\n", path));
