@@ -785,14 +785,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	if (fsp) {
-		posix_pathnames =
-			(fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
-	} else {
-		posix_pathnames = (smb_fname->flags & SMB_FILENAME_POSIX_PATH);
-	}
+	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
-	status = refuse_symlink(conn, fsp, smb_fname);
+	status = refuse_symlink(conn, fsp, fsp->fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -803,7 +798,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 	}
 
 	/* Setting EAs on streams isn't supported. */
-	if (is_ntfs_stream_smb_fname(smb_fname)) {
+	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -825,7 +820,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		canonicalize_ea_name(conn,
 				fsp,
-				smb_fname,
+				fsp->fsp_name,
 				unix_ea_name);
 
 		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, (unsigned int)ea_list->ea.value.length));
@@ -837,8 +832,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
-			if (fsp &&
-			    !fsp->fsp_flags.is_pathref &&
+			if (!fsp->fsp_flags.is_pathref &&
 			    fsp_get_io_fd(fsp) != -1)
 			{
 				DEBUG(10,("set_ea: deleting ea name %s on "
@@ -847,9 +841,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 				ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
-					unix_ea_name, smb_fname->base_name));
+					unix_ea_name, fsp->fsp_name->base_name));
 				ret = SMB_VFS_REMOVEXATTR(conn,
-						smb_fname,
+						fsp->fsp_name,
 						unix_ea_name);
 			}
 #ifdef ENOATTR
@@ -861,8 +855,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 			}
 #endif
 		} else {
-			if (fsp &&
-			    !fsp->fsp_flags.is_pathref &&
+			if (!fsp->fsp_flags.is_pathref &&
 			    fsp_get_io_fd(fsp) != -1)
 			{
 				DEBUG(10,("set_ea: setting ea name %s on file "
@@ -872,9 +865,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
 				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
-					unix_ea_name, smb_fname->base_name));
+					unix_ea_name, fsp->fsp_name->base_name));
 				ret = SMB_VFS_SETXATTR(conn,
-						smb_fname,
+						fsp->fsp_name,
 						unix_ea_name,
 						ea_list->ea.value.data,
 						ea_list->ea.value.length,
