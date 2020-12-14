@@ -130,8 +130,8 @@ static int set_sys_acl_conn(const char *fname,
 {
 	int ret;
 	struct smb_filename *smb_fname = NULL;
-
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	smb_fname = synthetic_smb_fname_split(frame,
 					fname,
@@ -141,7 +141,14 @@ static int set_sys_acl_conn(const char *fname,
 		return -1;
 	}
 
-	ret = SMB_VFS_SYS_ACL_SET_FILE( conn, smb_fname, acltype, theacl);
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_SYS_ACL_SET_FD(smb_fname->fsp, acltype, theacl);
 
 	TALLOC_FREE(frame);
 	return ret;
