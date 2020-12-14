@@ -545,9 +545,18 @@ static int smb_time_audit_mkdirat(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				mode_t mode)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_MKDIRAT(handle,
@@ -560,8 +569,10 @@ static int smb_time_audit_mkdirat(vfs_handle_struct *handle,
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_smb_fname("mkdirat",
 			timediff,
-			smb_fname);
+			full_fname);
 	}
+
+	TALLOC_FREE(full_fname);
 
 	return result;
 }
