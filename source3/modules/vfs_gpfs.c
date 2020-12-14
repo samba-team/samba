@@ -1897,8 +1897,9 @@ static int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
 	rc = gpfswrap_set_times_path(path, flags, gpfs_times);
 
 	if (rc != 0 && errno != ENOSYS) {
-		DEBUG(1,("gpfs_set_times() returned with error %s\n",
-			strerror(errno)));
+		DBG_WARNING("gpfs_set_times() returned with error %s for %s\n",
+			    strerror(errno),
+			    path);
 	}
 
 	return rc;
