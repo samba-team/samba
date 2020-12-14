@@ -492,7 +492,7 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 {
 
 	if (vxfs_compare(fsp->conn, fsp->fsp_name, theacl,
-			 SMB_ACL_TYPE_ACCESS)) {
+			 type)) {
 		return 0;
 	}
 
