@@ -6820,6 +6820,27 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp == NULL) {
+		/*
+		 * The only way fsp can be NULL here is if
+		 * smb_fname points at a symlink and
+		 * and we're in POSIX context.
+		 * Ensure this is the case.
+		 *
+		 * There is still a race condition in that
+		 * the symlink could be changed after we
+		 * checked it, so ensure we only operate
+		 * EA setting on a file handle.
+		 */
+		SMB_ASSERT(smb_fname->flags & SMB_FILENAME_POSIX_PATH);
+		if (!(smb_fname->flags & SMB_FILENAME_POSIX_PATH)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		status = refuse_symlink(conn, NULL, smb_fname);
+		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	status = set_ea(conn, fsp, smb_fname, ea_list);
 
 	return status;
