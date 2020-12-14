@@ -46,7 +46,14 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 		return mkdir_res;
 	}
 
-	ok = parent_smb_fname(talloc_tos(), smb_fname, &dname, NULL);
+	fname = full_path_from_dirfsp_atname(talloc_tos(),
+					     dirfsp,
+					     smb_fname);
+	if (fname == NULL) {
+		return -1;
+	}
+
+	ok = parent_smb_fname(talloc_tos(), fname, &dname, NULL);
 	if (!ok) {
 		DBG_WARNING("parent_smb_fname() failed\n");
 		/* return success, we did the mkdir */
@@ -68,13 +75,6 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 		return mkdir_res;
 	}
 	TALLOC_FREE(dname);
-
-	fname = cp_smb_filename(talloc_tos(), smb_fname);
-	if (fname == NULL) {
-		DBG_WARNING("cp_smb_filename() failed\n");
-		/* return success, we did the mkdir */
-		return mkdir_res;
-	}
 
 	res = SMB_VFS_NEXT_STAT(handle, fname);
 	if (res == -1) {
