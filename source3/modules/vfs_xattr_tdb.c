@@ -561,7 +561,7 @@ static int xattr_tdb_mkdirat(vfs_handle_struct *handle,
 	TALLOC_CTX *frame = NULL;
 	struct file_id fileid;
 	int ret;
-	struct smb_filename *smb_fname_tmp = NULL;
+	struct smb_filename *full_fname = NULL;
 
 	ret = SMB_VFS_NEXT_MKDIRAT(handle,
 				dirfsp,
@@ -572,27 +572,29 @@ static int xattr_tdb_mkdirat(vfs_handle_struct *handle,
 	}
 
 	frame = talloc_stackframe();
-	smb_fname_tmp = cp_smb_filename(frame, smb_fname);
-	if (smb_fname_tmp == NULL) {
-		TALLOC_FREE(frame);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
 
 	/* Always use LSTAT here - we just created the directory. */
-	ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
+	ret = SMB_VFS_LSTAT(handle->conn, full_fname);
 	if (ret == -1) {
 		/* Rename race. Let upper level take care of it. */
 		TALLOC_FREE(frame);
 		return -1;
 	}
-	if (!S_ISDIR(smb_fname_tmp->st.st_ex_mode)) {
+	if (!S_ISDIR(full_fname->st.st_ex_mode)) {
 		/* Rename race. Let upper level take care of it. */
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	fileid = SMB_VFS_FILE_ID_CREATE(handle->conn, &smb_fname_tmp->st);
+	fileid = SMB_VFS_FILE_ID_CREATE(handle->conn, &full_fname->st);
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 				if (!xattr_tdb_init(-1, frame, &db))
