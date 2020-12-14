@@ -140,10 +140,24 @@ int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
 {
         int res;
         acl_t tru64_acl = smb_acl_to_tru64_acl(theacl);
+        acl_type_t the_acl_type;
+
+        switch(type) {
+        case SMB_ACL_TYPE_ACCESS:
+                the_acl_type = ACL_TYPE_ACCESS;
+                break;
+        case SMB_ACL_TYPE_DEFAULT:
+                the_acl_type = ACL_TYPE_DEFAULT;
+                break;
+        default:
+                errno = EINVAL;
+                return -1;
+        }
+
         if (tru64_acl == NULL) {
                 return -1;
         }
-        res =  acl_set_fd(fsp_get_io_fd(fsp), ACL_TYPE_ACCESS, tru64_acl);
+        res =  acl_set_fd(fsp_get_io_fd(fsp), the_acl_type, tru64_acl);
         acl_free(tru64_acl);
         return res;
 
