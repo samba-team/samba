@@ -714,11 +714,22 @@ static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
+	struct smb_filename *full_fname = NULL;
 	int ret;
 
 	START_PROFILE(syscall_mkdirat);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-	ret = glfs_mkdir(handle->data, smb_fname->base_name, mode);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	ret = glfs_mkdir(handle->data, full_fname->base_name, mode);
+
+	TALLOC_FREE(full_fname);
+
 	END_PROFILE(syscall_mkdirat);
 
 	return ret;
