@@ -156,6 +156,7 @@ int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
+			    SMB_ACL_TYPE_T type,
 			    SMB_ACL_T theacl)
 {
 	struct acl *file_acl = NULL;

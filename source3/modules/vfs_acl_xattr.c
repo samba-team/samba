@@ -250,10 +250,12 @@ static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
 
 static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
                             files_struct *fsp,
+			    SMB_ACL_TYPE_T type,
                             SMB_ACL_T theacl)
 {
 	int ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle,
 						fsp,
+					        type,
 						theacl);
 	if (ret == -1) {
 		return -1;

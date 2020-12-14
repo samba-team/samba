@@ -2776,10 +2776,12 @@ int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
-				struct files_struct *fsp, SMB_ACL_T theacl)
+				struct files_struct *fsp,
+				SMB_ACL_TYPE_T type,
+				SMB_ACL_T theacl)
 {
 	VFS_FIND(sys_acl_set_fd);
-	return handle->fns->sys_acl_set_fd_fn(handle, fsp, theacl);
+	return handle->fns->sys_acl_set_fd_fn(handle, fsp, type, theacl);
 }
 
 int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,

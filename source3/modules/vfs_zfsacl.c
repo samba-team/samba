@@ -545,6 +545,7 @@ static int zfsacl_fail__sys_acl_set_file(vfs_handle_struct *handle,
 
 static int zfsacl_fail__sys_acl_set_fd(vfs_handle_struct *handle,
 				       files_struct *fsp,
+				       SMB_ACL_TYPE_T type,
 				       SMB_ACL_T theacl)
 {
 	return -1;

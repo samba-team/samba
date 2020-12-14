@@ -513,10 +513,10 @@
 #define SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname, acltype, theacl) \
 	smb_vfs_call_sys_acl_set_file((handle)->next, (smb_fname), (acltype), (theacl))
 
-#define SMB_VFS_SYS_ACL_SET_FD(fsp, theacl) \
-	smb_vfs_call_sys_acl_set_fd((fsp)->conn->vfs_handles, (fsp), (theacl))
-#define SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl) \
-	smb_vfs_call_sys_acl_set_fd((handle)->next, (fsp), (theacl))
+#define SMB_VFS_SYS_ACL_SET_FD(fsp, type, theacl) \
+	smb_vfs_call_sys_acl_set_fd((fsp)->conn->vfs_handles, (fsp), (type), (theacl))
+#define SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl) \
+	smb_vfs_call_sys_acl_set_fd((handle)->next, (fsp), (type), (theacl))
 
 #define SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname) \
 	smb_vfs_call_sys_acl_delete_def_file((conn)->vfs_handles, (smb_fname))

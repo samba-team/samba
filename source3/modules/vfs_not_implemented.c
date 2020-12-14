@@ -852,7 +852,9 @@ int vfs_not_implemented_sys_acl_set_file(vfs_handle_struct *handle,
 	return -1;
 }
 
-int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       SMB_ACL_TYPE_T type,
 				       SMB_ACL_T theacl)
 {
 	errno = ENOSYS;

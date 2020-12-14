@@ -1409,13 +1409,14 @@ static SMB_ACL_T streams_xattr_sys_acl_get_fd(vfs_handle_struct *handle,
 
 static int streams_xattr_sys_acl_set_fd(vfs_handle_struct *handle,
 					files_struct *fsp,
+					SMB_ACL_TYPE_T type,
 					SMB_ACL_T theacl)
 {
 	struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
 	if (sio == NULL) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 	}
 
 	return 0;

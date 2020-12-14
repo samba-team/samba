@@ -2409,6 +2409,7 @@ static int smb_time_audit_sys_acl_set_file(vfs_handle_struct *handle,
 
 static int smb_time_audit_sys_acl_set_fd(vfs_handle_struct *handle,
 					 files_struct *fsp,
+					 SMB_ACL_TYPE_T type,
 					 SMB_ACL_T theacl)
 {
 	int result;
@@ -2416,7 +2417,7 @@ static int smb_time_audit_sys_acl_set_fd(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

@@ -340,6 +340,7 @@
  * Version 44 - Add dirfsp arg to SMB_VFS_READDIR()
  * Version 44 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  * Version 44 - Replace SMB_VFS_GET_COMPRESSION() with SMB_VFS_FGET_COMPRESSION()
+ * Version 44 - Add type argument to SMB_VFS_SYS_ACL_SET_FD()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -1219,7 +1220,10 @@ struct vfs_fn_pointers {
 					const struct smb_filename *smb_fname,
 					SMB_ACL_TYPE_T acltype,
 					SMB_ACL_T theacl);
-	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
+	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 SMB_ACL_TYPE_T type,
+				 SMB_ACL_T theacl);
 	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname);
 
@@ -1746,7 +1750,9 @@ int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
 				SMB_ACL_TYPE_T acltype,
 				SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
-				struct files_struct *fsp, SMB_ACL_T theacl);
+				struct files_struct *fsp,
+				SMB_ACL_TYPE_T type,
+				SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname);
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
@@ -2164,7 +2170,9 @@ int vfs_not_implemented_sys_acl_set_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T acltype,
 				SMB_ACL_T theacl);
-int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       SMB_ACL_TYPE_T type,
 				       SMB_ACL_T theacl);
 int vfs_not_implemented_sys_acl_delete_def_file(vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname);

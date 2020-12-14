@@ -1343,6 +1343,7 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 				  files_struct *fsp,
+				  SMB_ACL_TYPE_T type,
 				  SMB_ACL_T theacl)
 {
 	struct gpfs_config_data *config;
@@ -1352,7 +1353,7 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 	}
 
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name,

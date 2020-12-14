@@ -416,6 +416,7 @@ fail:
 
 static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
                             files_struct *fsp,
+			    SMB_ACL_TYPE_T type,
                             SMB_ACL_T theacl)
 {
 	struct db_context *db = acl_db;
@@ -428,8 +429,9 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 	}
 
 	ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle,
-						fsp,
-						theacl);
+					  fsp,
+					  type,
+					  theacl);
 	if (ret == -1) {
 		return -1;
 	}

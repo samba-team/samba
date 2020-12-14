@@ -351,7 +351,10 @@ static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, SMB_ACL_T theacl)
+static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    SMB_ACL_TYPE_T type,
+				    SMB_ACL_T theacl)
 {
 	int ret;
 	const char *name = FAKE_ACL_ACCESS_XATTR;
@@ -703,6 +706,7 @@ static int fake_acls_fchmod(vfs_handle_struct *handle,
 	}
 	ret = fake_acls_sys_acl_set_fd(handle,
 				fsp,
+				SMB_ACL_TYPE_ACCESS,
 				the_acl);
 	TALLOC_FREE(frame);
 	return ret;

@@ -1673,6 +1673,7 @@ static int catia_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 
 static int catia_sys_acl_set_fd(vfs_handle_struct *handle,
 				files_struct *fsp,
+				SMB_ACL_TYPE_T type,
 				SMB_ACL_T theacl)
 {
 	struct catia_cache *cc = NULL;
@@ -1683,7 +1684,7 @@ static int catia_sys_acl_set_fd(vfs_handle_struct *handle,
 		return ret;
 	}
 
-	ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 
 	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 

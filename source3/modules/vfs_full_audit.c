@@ -2576,12 +2576,14 @@ static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-				SMB_ACL_T theacl)
+static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 SMB_ACL_TYPE_T type,
+					 SMB_ACL_T theacl)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_FD, (result >= 0), handle,
 	       "%s", fsp_str_do_log(fsp));

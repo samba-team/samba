@@ -387,7 +387,7 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
 {
-	return posixacl_sys_acl_set_fd(handle, fsp, acl_d);
+	return posixacl_sys_acl_set_fd(handle, fsp, SMB_ACL_TYPE_ACCESS, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,

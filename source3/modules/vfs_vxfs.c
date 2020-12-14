@@ -485,7 +485,9 @@ out:
 	return ret;
 }
 
-static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
+			       struct files_struct *fsp,
+			       SMB_ACL_TYPE_T type,
 			       SMB_ACL_T theacl)
 {
 
@@ -494,7 +496,7 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		return 0;
 	}
 
-	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 }
 
 static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,
