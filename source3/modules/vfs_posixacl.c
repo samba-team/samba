@@ -148,7 +148,7 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (!fsp->fsp_flags.is_pathref) {
+	if (!fsp->fsp_flags.is_pathref && type == SMB_ACL_TYPE_ACCESS) {
 		res = acl_set_fd(fd, acl);
 	} else if (fsp->fsp_flags.have_proc_fds) {
 		const char *proc_fd_path = NULL;
@@ -158,13 +158,13 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		if (proc_fd_path == NULL) {
 			return -1;
 		}
-		res = acl_set_file(proc_fd_path, ACL_TYPE_ACCESS, acl);
+		res = acl_set_file(proc_fd_path, type, acl);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
 		res = acl_set_file(fsp->fsp_name->base_name,
-				   ACL_TYPE_ACCESS,
+				   type,
 				   acl);
 	}
 
