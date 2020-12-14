@@ -776,7 +776,7 @@ static void canonicalize_ea_name(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
-		const struct smb_filename *smb_fname, struct ea_list *ea_list)
+		struct ea_list *ea_list)
 {
 	NTSTATUS status;
 	bool posix_pathnames = false;
@@ -6834,7 +6834,7 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = set_ea(conn, fsp, smb_fname, ea_list);
+	status = set_ea(conn, fsp, ea_list);
 
 	return status;
 }
@@ -6877,7 +6877,7 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
+	status = set_ea(conn, fsp, ea_list);
 
 	DEBUG(10, ("smb_set_file_full_ea_info on file %s returned %s\n",
 		smb_fname_str_dbg(fsp->fsp_name),
@@ -9702,7 +9702,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	/* Try and set any given EA. */
 	if (ea_list) {
-		status = set_ea(conn, fsp, smb_dname, ea_list);
+		status = set_ea(conn, fsp, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
