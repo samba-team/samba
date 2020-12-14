@@ -471,46 +471,6 @@ NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint3
 	return aixjfs2_set_nt_acl_common(handle, fsp, security_info_sent, psd);
 }
 
-int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				SMB_ACL_T theacl)
-{
-	struct acl	*acl_aixc;
-	acl_type_t	acl_type_info;
-	int	rc;
-
-	DEBUG(10, ("aixjfs2_sys_acl_set_file invoked for %s",
-		   smb_fname->base_name));
-
-	rc = aixjfs2_query_acl_support((char *)smb_fname->base_name,
-			ACL_AIXC, &acl_type_info);
-	if (rc) {
-		DEBUG(8, ("jfs2_set_nt_acl: AIXC support not found\n"));
-		return -1;
-	}
-
-	acl_aixc = aixacl_smb_to_aixacl(type, theacl);
-	if (!acl_aixc)
-		return -1;
-
-	rc = aclx_put(
-		(char *)smb_fname->base_name,
-		SET_ACL, /* set only the ACL, not mode bits */
-		acl_type_info,
-		acl_aixc,
-		acl_aixc->acl_len,
-		0
-	);
-	if (rc) {
-		DEBUG(2, ("aclx_put failed with %s for %s\n",
-			strerror(errno), smb_fname->base_name));
-		return -1;
-	}
-
-	return 0;
-}
-
 int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    SMB_ACL_TYPE_T type,
@@ -579,7 +539,6 @@ static struct vfs_fn_pointers vfs_aixacl2_fns = {
 	.sys_acl_get_fd_fn = aixjfs2_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = aixjfs2_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = aixjfs2_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = aixjfs2_sys_acl_set_file,
 	.sys_acl_set_fd_fn = aixjfs2_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = aixjfs2_sys_acl_delete_def_file
 };

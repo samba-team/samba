@@ -223,31 +223,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
  Remove a Windows ACL - we're setting the underlying POSIX ACL.
 *********************************************************************/
 
-static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				SMB_ACL_T theacl)
-{
-	int ret = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle,
-						smb_fname,
-						type,
-						theacl);
-	if (ret == -1) {
-		return -1;
-	}
-
-	become_root();
-	SMB_VFS_REMOVEXATTR(handle->conn, smb_fname,
-			XATTR_NTACL_NAME);
-	unbecome_root();
-
-	return ret;
-}
-
-/*********************************************************************
- Remove a Windows ACL - we're setting the underlying POSIX ACL.
-*********************************************************************/
-
 static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
                             files_struct *fsp,
 			    SMB_ACL_TYPE_T type,
@@ -408,7 +383,6 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.fget_nt_acl_fn = acl_xattr_fget_nt_acl,
 	.get_nt_acl_at_fn = acl_xattr_get_nt_acl_at,
 	.fset_nt_acl_fn = acl_xattr_fset_nt_acl,
-	.sys_acl_set_file_fn = sys_acl_set_file_xattr,
 	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr
 };
 

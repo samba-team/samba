@@ -499,20 +499,6 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 }
 
-static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T acltype,
-				SMB_ACL_T theacl)
-{
-	if (vxfs_compare(handle->conn, smb_fname,
-			theacl, acltype)) {
-		return 0;
-	}
-
-	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
-			acltype, theacl);
-}
-
 static int vxfs_set_xattr(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname_in,
 			const char *name,
@@ -937,7 +923,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.connect_fn = vfs_vxfs_connect,
 
 #ifdef VXFS_ACL_SHARE
-	.sys_acl_set_file_fn = vxfs_sys_acl_set_file,
 	.sys_acl_set_fd_fn = vxfs_sys_acl_set_fd,
 #endif
 

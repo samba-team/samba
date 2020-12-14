@@ -620,14 +620,6 @@ static SMB_ACL_T nfs4acl_xattr_fail__sys_acl_get_fd(vfs_handle_struct *handle,
 	return (SMB_ACL_T)NULL;
 }
 
-static int nfs4acl_xattr_fail__sys_acl_set_file(vfs_handle_struct *handle,
-					 const struct smb_filename *smb_fname,
-					 SMB_ACL_TYPE_T type,
-					 SMB_ACL_T theacl)
-{
-	return -1;
-}
-
 static int nfs4acl_xattr_fail__sys_acl_set_fd(vfs_handle_struct *handle,
 				       files_struct *fsp,
 				       SMB_ACL_TYPE_T type,
@@ -668,7 +660,6 @@ static struct vfs_fn_pointers nfs4acl_xattr_fns = {
 	.sys_acl_get_fd_fn = nfs4acl_xattr_fail__sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = nfs4acl_xattr_fail__sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = nfs4acl_xattr_fail__sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = nfs4acl_xattr_fail__sys_acl_set_file,
 	.sys_acl_set_fd_fn = nfs4acl_xattr_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = nfs4acl_xattr_fail__sys_acl_delete_def_file,
 };

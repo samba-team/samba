@@ -740,44 +740,6 @@ static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int cap_sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T acltype,
-			SMB_ACL_T theacl)
-{
-	struct smb_filename *cap_smb_fname = NULL;
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
-	int ret;
-	int saved_errno = 0;
-
-	if (!cappath) {
-		errno = ENOMEM;
-		return -1;
-	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					cappath,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(cappath);
-		errno = ENOMEM;
-		return -1;
-	}
-	ret =  SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, cap_smb_fname,
-				acltype, theacl);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(cappath);
-	TALLOC_FREE(cap_smb_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int cap_sys_acl_delete_def_file(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
@@ -1102,7 +1064,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.mknodat_fn = cap_mknodat,
 	.realpath_fn = cap_realpath,
 	.sys_acl_get_file_fn = cap_sys_acl_get_file,
-	.sys_acl_set_file_fn = cap_sys_acl_set_file,
 	.sys_acl_delete_def_file_fn = cap_sys_acl_delete_def_file,
 	.getxattr_fn = cap_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,

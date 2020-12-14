@@ -341,6 +341,7 @@
  * Version 44 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  * Version 44 - Replace SMB_VFS_GET_COMPRESSION() with SMB_VFS_FGET_COMPRESSION()
  * Version 44 - Add type argument to SMB_VFS_SYS_ACL_SET_FD()
+ * Version 44 - Remove SMB_VFS_SYS_ACL_SET_FILE()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 44
@@ -1216,10 +1217,6 @@ struct vfs_fn_pointers {
 	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx, char **blob_description,
 				      DATA_BLOB *blob);
-	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					SMB_ACL_TYPE_T acltype,
-					SMB_ACL_T theacl);
 	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 SMB_ACL_TYPE_T type,
@@ -1745,10 +1742,6 @@ int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
 				     TALLOC_CTX *mem_ctx,
 				     char **blob_description,
 				     DATA_BLOB *blob);
-int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T acltype,
-				SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				SMB_ACL_TYPE_T type,
@@ -2166,10 +2159,6 @@ int vfs_not_implemented_sys_acl_blob_get_file(vfs_handle_struct *handle,
 int vfs_not_implemented_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 				files_struct *fsp, TALLOC_CTX *mem_ctx,
 				char **blob_description, DATA_BLOB *blob);
-int vfs_not_implemented_sys_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T acltype,
-				SMB_ACL_T theacl);
 int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       SMB_ACL_TYPE_T type,

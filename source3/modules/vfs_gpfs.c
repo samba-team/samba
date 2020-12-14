@@ -1310,43 +1310,14 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 	return result;
 }
 
-static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
-				    const struct smb_filename *smb_fname,
-				    SMB_ACL_TYPE_T type,
-				    SMB_ACL_T theacl)
-{
-	struct gpfs_acl *gpfs_acl;
-	int result;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
-				type, theacl);
-	}
-
-	gpfs_acl = smb2gpfs_acl(theacl, type);
-	if (gpfs_acl == NULL) {
-		return -1;
-	}
-
-	result = gpfswrap_putacl(smb_fname->base_name,
-				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA,
-				 gpfs_acl);
-
-	SAFE_FREE(gpfs_acl);
-	return result;
-}
-
 static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  SMB_ACL_TYPE_T type,
 				  SMB_ACL_T theacl)
 {
 	struct gpfs_config_data *config;
+	struct gpfs_acl *gpfs_acl = NULL;
+	int result;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
@@ -1356,11 +1327,19 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 	}
 
+	gpfs_acl = smb2gpfs_acl(theacl, type);
+	if (gpfs_acl == NULL) {
+		return -1;
+	}
+
 	/*
 	 * This is no longer a handle based call.
 	 */
-	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name,
-					type, theacl);
+	result = gpfswrap_putacl(fsp->fsp_name->base_name,
+				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA,
+				 gpfs_acl);
+	SAFE_FREE(gpfs_acl);
+	return result;
 }
 
 static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -2648,7 +2627,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sys_acl_get_fd_fn = gpfsacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = gpfsacl_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = gpfsacl_sys_acl_set_file,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = gpfsacl_sys_acl_delete_def_file,
 	.chmod_fn = vfs_gpfs_chmod,

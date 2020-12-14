@@ -145,7 +145,6 @@
         <member>sys_acl_get_fd</member>
         <member>sys_acl_get_file</member>
         <member>sys_acl_set_fd</member>
-        <member>sys_acl_set_file</member>
         <member>telldir</member>
         <member>translate_name</member>
         <member>unlinkat</member>

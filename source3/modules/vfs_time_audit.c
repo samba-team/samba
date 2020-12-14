@@ -2395,29 +2395,6 @@ static int smb_time_audit_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_sys_acl_set_file(vfs_handle_struct *handle,
-					   const struct smb_filename *smb_fname,
-					   SMB_ACL_TYPE_T acltype,
-					   SMB_ACL_T theacl)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname, acltype,
-					       theacl);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("sys_acl_set_file", timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_sys_acl_set_fd(vfs_handle_struct *handle,
 					 files_struct *fsp,
 					 SMB_ACL_TYPE_T type,
@@ -2916,7 +2893,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.sys_acl_get_fd_fn = smb_time_audit_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = smb_time_audit_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = smb_time_audit_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = smb_time_audit_sys_acl_set_file,
 	.sys_acl_set_fd_fn = smb_time_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = smb_time_audit_sys_acl_delete_def_file,
 	.getxattr_fn = smb_time_audit_getxattr,

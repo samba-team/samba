@@ -839,15 +839,6 @@ static int skel_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_sys_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T acltype,
-				SMB_ACL_T theacl)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_sys_acl_set_fd(vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       SMB_ACL_TYPE_T type,
@@ -1140,7 +1131,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.sys_acl_get_fd_fn = skel_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = skel_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = skel_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = skel_sys_acl_set_file,
 	.sys_acl_set_fd_fn = skel_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = skel_sys_acl_delete_def_file,
 

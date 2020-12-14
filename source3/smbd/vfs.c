@@ -2765,16 +2765,6 @@ int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
 	return handle->fns->sys_acl_blob_get_fd_fn(handle, fsp, mem_ctx, blob_description, blob);
 }
 
-int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T acltype,
-				SMB_ACL_T theacl)
-{
-	VFS_FIND(sys_acl_set_file);
-	return handle->fns->sys_acl_set_file_fn(handle, smb_fname,
-				acltype, theacl);
-}
-
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				SMB_ACL_TYPE_T type,

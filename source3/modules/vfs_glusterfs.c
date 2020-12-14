@@ -2280,7 +2280,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.sys_acl_get_fd_fn = posixacl_xattr_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = posixacl_xattr_acl_set_file,
 	.sys_acl_set_fd_fn = posixacl_xattr_acl_set_fd,
 	.sys_acl_delete_def_file_fn = posixacl_xattr_acl_delete_def_file,
 

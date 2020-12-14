@@ -133,27 +133,6 @@ SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	return NULL;*/
 }
 
-int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T theacl)
-{
-	struct acl *file_acl = NULL;
-	unsigned int rc;
-	
-	file_acl = aixacl_smb_to_aixacl(type, theacl);
-	if (!file_acl)
-		return -1;
-
-	rc = chacl((char *)smb_fname->base_name,file_acl,file_acl->acl_len);
-	DEBUG(10,("errno is %d\n",errno));
-	DEBUG(10,("return code is %d\n",rc));
-	SAFE_FREE(file_acl);
-	DEBUG(10,("Exiting the aixacl_sys_acl_set_file\n"));
-
-	return rc;
-}
-
 int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    SMB_ACL_TYPE_T type,
@@ -195,7 +174,6 @@ static struct vfs_fn_pointers vfs_aixacl_fns = {
 	.sys_acl_get_fd_fn = aixacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
-	.sys_acl_set_file_fn = aixacl_sys_acl_set_file,
 	.sys_acl_set_fd_fn = aixacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = aixacl_sys_acl_delete_def_file,
 };
