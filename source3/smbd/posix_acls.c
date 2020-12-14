@@ -4095,7 +4095,7 @@ static int copy_access_posix_acl(connection_struct *conn,
 	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname_to,
+	ret = SMB_VFS_SYS_ACL_SET_FD(smb_fname_to->fsp,
 			SMB_ACL_TYPE_ACCESS, posix_acl);
 
  done:
