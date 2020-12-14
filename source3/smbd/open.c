@@ -4364,6 +4364,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
+	if (lp_inherit_acls(SNUM(conn))) {
+		if (directory_has_default_acl(conn,
+					      conn->cwd_fsp,
+					      parent_dir_fname)) {
+			mode = (0777 & lp_directory_mask(SNUM(conn)));
+		}
+	}
+
 	ret = SMB_VFS_MKDIRAT(conn,
 			      conn->cwd_fsp,
 			      smb_dname,

@@ -670,24 +670,10 @@ static int vfswrap_mkdirat(vfs_handle_struct *handle,
 			mode_t mode)
 {
 	int result;
-	struct smb_filename *parent = NULL;
-	bool ok;
 
 	START_PROFILE(syscall_mkdirat);
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
-	if (lp_inherit_acls(SNUM(handle->conn))) {
-		ok = parent_smb_fname(talloc_tos(), smb_fname, &parent, NULL);
-		if (ok && directory_has_default_acl(handle->conn,
-				dirfsp,
-				parent))
-		{
-			mode = (0777 & lp_directory_mask(SNUM(handle->conn)));
-		}
-	}
-
-	TALLOC_FREE(parent);
 
 	result = mkdirat(fsp_get_pathref_fd(dirfsp), smb_fname->base_name, mode);
 
