@@ -2068,7 +2068,8 @@ struct smb_filename *full_path_from_dirfsp_atname(
 	char *path = NULL;
 
 	if (dirfsp == dirfsp->conn->cwd_fsp ||
-	    ISDOT(dirfsp->fsp_name->base_name))
+	    ISDOT(dirfsp->fsp_name->base_name) ||
+	    atname->base_name[0] == '/')
 	{
 		path = talloc_strdup(mem_ctx, atname->base_name);
 	} else {
