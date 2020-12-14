@@ -673,8 +673,6 @@ static int vfswrap_mkdirat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_mkdirat);
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	result = mkdirat(fsp_get_pathref_fd(dirfsp), smb_fname->base_name, mode);
 
 	END_PROFILE(syscall_mkdirat);
