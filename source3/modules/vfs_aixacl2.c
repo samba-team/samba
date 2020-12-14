@@ -533,6 +533,18 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 	if (!acl_aixc)
 		return -1;
 
+	if (fsp->fsp_flags.is_pathref) {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		return aclx_put(fsp->fsp_name->base_name,
+				SET_ACL,
+				acl_type_info,
+				acl_aixc,
+				acl_aixc->acl_len,
+				0);
+	}
+
 	rc = aclx_fput(
 		fsp_get_io_fd(fsp),
 		SET_ACL, /* set only the ACL, not mode bits */
