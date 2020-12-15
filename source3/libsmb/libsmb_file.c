@@ -136,8 +136,8 @@ SMBC_open_ctx(SMBCCTX *context,
 			/* Handle the error ... */
 
 			SAFE_FREE(file);
-			errno = SMBC_errno(context, targetcli);
 			TALLOC_FREE(frame);
+			errno = cli_status_to_errno(status);
 			return NULL;
 		}
 
