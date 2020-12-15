@@ -281,8 +281,8 @@ SMBC_read_ctx(SMBCCTX *context,
 	status = cli_read(file->targetcli, file->cli_fd, (char *)buf, offset,
 			  count, &ret);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = SMBC_errno(context, file->targetcli);
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
