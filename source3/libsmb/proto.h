@@ -203,6 +203,7 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 NTSTATUS cli_nt_error(struct cli_state *cli);
 void cli_dos_error(struct cli_state *cli, uint8_t *eclass, uint32_t *ecode);
+int cli_status_to_errno(NTSTATUS status);
 int cli_errno(struct cli_state *cli);
 bool cli_is_error(struct cli_state *cli);
 bool cli_is_nt_error(struct cli_state *cli);

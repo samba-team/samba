@@ -66,39 +66,48 @@ void cli_dos_error(struct cli_state *cli, uint8_t *eclass, uint32_t *ecode)
 	*ecode = NT_STATUS_DOS_CODE(cli->raw_status);
 }
 
+int cli_status_to_errno(NTSTATUS status)
+{
+	int err;
+
+	if (NT_STATUS_IS_DOS(status)) {
+                uint8_t eclass = NT_STATUS_DOS_CLASS(status);
+                uint32_t ecode = NT_STATUS_DOS_CODE(status);
+		status = dos_to_ntstatus(eclass, ecode);
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
+		/*
+		 * Legacy code from cli_errno, see Samba up to 4.13: A
+		 * special case for this Vista error. Since its
+		 * high-order byte isn't 0xc0, it won't match
+		 * correctly in map_errno_from_nt_status().
+		 */
+		err = EACCES;
+	} else {
+		err = map_errno_from_nt_status(status);
+	}
+
+	DBG_NOTICE("0x%"PRIx32" -> %d\n", NT_STATUS_V(status), err);
+
+	return err;
+}
 
 /* Return a UNIX errno appropriate for the error received in the last
    packet. */
 
 int cli_errno(struct cli_state *cli)
 {
-	NTSTATUS status;
+	bool connected;
+	int err;
 
-	if (cli_is_nt_error(cli)) {
-		status = cli_nt_error(cli);
-		return map_errno_from_nt_status(status);
+	connected = cli_state_is_connected(cli);
+	if (!connected) {
+		return EPIPE;
 	}
 
-        if (cli_is_dos_error(cli)) {
-                uint8_t eclass;
-                uint32_t ecode;
-
-                cli_dos_error(cli, &eclass, &ecode);
-		status = dos_to_ntstatus(eclass, ecode);
-		return map_errno_from_nt_status(status);
-        }
-
-        /*
-         * Yuck!  A special case for this Vista error.  Since its high-order
-         * byte isn't 0xc0, it doesn't match cli_is_nt_error() above.
-         */
-        status = cli_nt_error(cli);
-        if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INACCESSIBLE_SYSTEM_SHORTCUT)) {
-            return EACCES;
-        }
-
-	/* for other cases */
-	return EINVAL;
+	err = cli_status_to_errno(cli->raw_status);
+	return err;
 }
 
 /* Return true if the last packet was in error */
