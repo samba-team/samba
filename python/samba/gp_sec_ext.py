@@ -102,7 +102,8 @@ class gp_krb_ext(gp_inf_ext):
             inf_conf = self.parse(path)
             if not inf_conf:
                 return output
-            for section in inf_conf.sections():
+            if str(self) in inf_conf.sections():
+                section = str(self)
                 output[section] = {k: v for k, v in inf_conf.items(section) \
                                       if gp_krb_ext.apply_map.get(k)}
         return output
@@ -210,7 +211,8 @@ class gp_access_ext(gp_inf_ext):
             inf_conf = self.parse(path)
             if not inf_conf:
                 return output
-            for section in inf_conf.sections():
+            if str(self) in inf_conf.sections():
+                section = str(self)
                 output[section] = {k: v for k, v in inf_conf.items(section) \
                                       if gp_access_ext.apply_map.get(k)}
         return output
