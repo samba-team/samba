@@ -2698,19 +2698,17 @@ SMBC_notify_ctx(SMBCCTX *context, SMBCFILE *dir, smbc_bool recursive,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN, 0, 0, &fnum, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		int err = SMBC_errno(context, cli);
 		TALLOC_FREE(frame);
-		errno = err;
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
 	status = smbc_notify_cb(cli, fnum, recursive != 0, completion_filter,
 				callback_timeout_ms, cb, private_data);
 	if (!NT_STATUS_IS_OK(status)) {
-		int err = SMBC_errno(context, cli);
 		cli_close(cli, fnum);
 		TALLOC_FREE(frame);
-		errno = err;
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
