@@ -2048,9 +2048,10 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	if ((newmode & S_IXGRP) && lp_map_system(-1)) attr |= FILE_ATTRIBUTE_SYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) attr |= FILE_ATTRIBUTE_HIDDEN;
 
-	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, attr, 0))) {
-		errno = SMBC_errno(context, targetcli);
+	status = cli_setatr(targetcli, targetpath, attr, 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
