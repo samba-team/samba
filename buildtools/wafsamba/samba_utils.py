@@ -459,7 +459,14 @@ def RECURSE(ctx, directory):
         return
     visited_dirs.add(key)
     relpath = os.path.relpath(abspath, ctx.path.abspath())
-    if ctxclass in ['tmp', 'OptionsContext', 'ConfigurationContext', 'BuildContext', 'ClangDbContext']:
+    if ctxclass in ['OptionsContext',
+                    'ConfigurationContext',
+                    'BuildContext',
+                    'CleanContext',
+                    'InstallContext',
+                    'UninstallContext',
+                    'ListContext',
+                    'ClangDbContext']:
         return ctx.recurse(relpath)
     if 'waflib.extras.compat15' in sys.modules:
         return ctx.recurse(relpath)

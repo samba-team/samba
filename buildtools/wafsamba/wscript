@@ -132,6 +132,9 @@ def options(opt):
         action="store_true",
         dest='undefined_sanitizer',
         default=False)
+    gr.add_option('--enable-clangdb',
+                   help=("Enable use of clang_compilation_database"),
+                   action="store_true", dest='enable_clangdb', default=False)
     gr.add_option('--enable-libfuzzer',
                   help=("Build fuzzing binaries (use ADDITIONAL_CFLAGS to specify compiler options for libFuzzer or use CC=honggfuzz/hfuzz-cc)"),
                   action="store_true", dest='enable_libfuzzer', default=False)
@@ -657,12 +660,13 @@ struct foo bar = { .y = 'X', .x = 1 };
         conf.DEFINE('FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION', 1)
         conf.env.FUZZ_TARGET_LDFLAGS = Options.options.FUZZ_TARGET_LDFLAGS
 
-    conf.load('clang_compilation_database')
-
-    # Create a symlink of the compile db for clangd
-    symlink(os.path.join(conf.bldnode.abspath(), 'default/compile_commands.json'),
-            os.path.join(conf.srcnode.abspath(), 'compile_commands.json'),
-            force=True)
+    conf.env.enable_clangdb = Options.options.enable_clangdb
+    if conf.env.enable_clangdb:
+        conf.load('clang_compilation_database')
+        # Create a symlink of the compile db for clangd
+        symlink(os.path.join(conf.bldnode.abspath(), 'default/compile_commands.json'),
+                os.path.join(conf.srcnode.abspath(), 'compile_commands.json'),
+                force=True)
 
     conf.SAMBA_BUILD_ENV()
 

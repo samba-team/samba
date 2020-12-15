@@ -5,7 +5,6 @@ from waflib import Build, Configure, Node, Utils, Options, Logs, TaskGen
 from waflib import ConfigSet
 from waflib.TaskGen import feature, after
 from waflib.Configure import conf, ConfigurationContext
-from waflib.extras import clang_compilation_database
 
 from waflib.Tools.flex import decide_ext
 
@@ -37,10 +36,11 @@ TaskGen.declare_chain(
     decider = decide_ext,
 )
 
-
-for y in (Build.BuildContext, Build.CleanContext, Build.InstallContext, Build.UninstallContext, Build.ListContext, clang_compilation_database.ClangDbContext):
-    class tmp(y):
-        variant = 'default'
+Build.BuildContext.variant = 'default'
+Build.CleanContext.variant = 'default'
+Build.InstallContext.variant = 'default'
+Build.UninstallContext.variant = 'default'
+Build.ListContext.variant = 'default'
 
 def abspath(self, env=None):
     if env and hasattr(self, 'children'):
