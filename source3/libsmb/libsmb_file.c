@@ -329,8 +329,8 @@ SMBC_splice_ctx(SMBCCTX *context,
 			    count, srcfile->offset, dstfile->offset, &written,
 			    splice_cb, priv);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = SMBC_errno(context, srcfile->targetcli);
 		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
 		return -1;
 	}
 
