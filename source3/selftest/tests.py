@@ -20,6 +20,7 @@
 
 import os
 import sys
+import re
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 import selftesthelpers
 from selftesthelpers import bindir, srcdir, scriptdir, binpath
@@ -46,6 +47,15 @@ def plansmbtorture4testsuite(name, env, options, description=''):
     selftesthelpers.plansmbtorture4testsuite(
         name, env, options, target='samba3', modname=modname)
 
+def compare_versions(version1, version2):
+    for i in range(max(len(version1),len(version2))):
+         v1 = version1[i] if i < len(version1) else 0
+         v2 = version2[i] if i < len(version2) else 0
+         if v1 > v2:
+            return 1
+         elif v1 <v2:
+            return -1
+    return 0
 
 # find config.h
 try:
@@ -65,7 +75,16 @@ try:
 finally:
     f.close()
 
-have_linux_kernel_oplocks = ("HAVE_KERNEL_OPLOCKS_LINUX" in config_hash)
+if config_hash["SYSTEM_UNAME_SYSNAME"] == '"Linux"':
+    m = re.search(r'(\d+).(\d+).(\d+)', config_hash["SYSTEM_UNAME_RELEASE"])
+    if m:
+        linux_kernel_version = [int(m.group(1)), int(m.group(2)), int(m.group(3))]
+
+have_linux_kernel_oplocks = False
+if "HAVE_KERNEL_OPLOCKS_LINUX" in config_hash:
+    if compare_versions(linux_kernel_version, [5,3,1]) >= 0:
+        have_linux_kernel_oplocks = True
+
 have_inotify = ("HAVE_INOTIFY" in config_hash)
 have_ldwrap = ("HAVE_LDWRAP" in config_hash)
 with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
