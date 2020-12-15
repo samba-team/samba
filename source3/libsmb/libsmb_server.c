@@ -854,9 +854,9 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         &ipc_srv->pol);
 
                 if (!NT_STATUS_IS_OK(nt_status)) {
-                        errno = SMBC_errno(context, ipc_srv->cli);
                         cli_shutdown(ipc_srv->cli);
                         free(ipc_srv);
+			errno = cli_status_to_errno(nt_status);
                         return NULL;
                 }
 
