@@ -4320,6 +4320,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		loadparm_s3_global_substitution();
 	mode_t mode;
 	struct smb_filename *parent_dir_fname = NULL;
+	struct smb_filename *base_name = NULL;
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
@@ -4336,9 +4337,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	ok = parent_smb_fname(talloc_tos(),
 			      smb_dname,
 			      &parent_dir_fname,
-			      NULL);
+			      &base_name);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, parent_dir_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
@@ -4361,6 +4367,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			smb_fname_str_dbg(parent_dir_fname),
 			smb_dname->base_name,
 			nt_errstr(status) ));
+		TALLOC_FREE(parent_dir_fname);
 		return status;
 	}
 
@@ -4377,6 +4384,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			      smb_dname,
 			      mode);
 	if (ret != 0) {
+		TALLOC_FREE(parent_dir_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -4386,12 +4394,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), strerror(errno)));
+		TALLOC_FREE(parent_dir_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
 		DEBUG(0, ("Directory '%s' just created is not a directory !\n",
 			  smb_fname_str_dbg(smb_dname)));
+		TALLOC_FREE(parent_dir_fname);
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
@@ -4442,6 +4452,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 					   &smb_dname->st);
 		need_re_stat = true;
 	}
+
+	TALLOC_FREE(parent_dir_fname);
 
 	if (need_re_stat) {
 		if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
