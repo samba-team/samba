@@ -1235,7 +1235,10 @@ NTSTATUS file_name_hash(connection_struct *conn,
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in)
 {
-	struct smb_filename *smb_fname_new;
+	struct smb_filename *smb_fname_old = fsp->fsp_name;
+	struct smb_filename *smb_fname_new = NULL;
+	const char *name_str = NULL;
+	uint32_t name_hash = 0;
 	NTSTATUS status;
 
 	smb_fname_new = cp_smb_filename(fsp, smb_fname_in);
@@ -1243,19 +1246,37 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (fsp->fsp_name != NULL) {
-		status = move_smb_fname_fsp_link(smb_fname_new, fsp->fsp_name);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		TALLOC_FREE(fsp->fsp_name);
+	name_str = smb_fname_str_dbg(smb_fname_new);
+	if (name_str == NULL) {
+		TALLOC_FREE(smb_fname_new);
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	status = file_name_hash(fsp->conn,
+				name_str,
+				&name_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname_new);
+		return status;
+	}
+
+	status = fsp_smb_fname_link(fsp,
+				    &smb_fname_new->fsp_link,
+				    &smb_fname_new->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname_new);
+		return status;
+	}
+
+	fsp->name_hash = name_hash;
 	fsp->fsp_name = smb_fname_new;
 
-	return file_name_hash(fsp->conn,
-			smb_fname_str_dbg(fsp->fsp_name),
-			&fsp->name_hash);
+	if (smb_fname_old != NULL) {
+		smb_fname_fsp_unlink(smb_fname_old);
+		TALLOC_FREE(smb_fname_old);
+	}
+
+	return NT_STATUS_OK;
 }
 
 size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
