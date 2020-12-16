@@ -299,6 +299,9 @@ static NTSTATUS fsp_smb_fname_link(struct files_struct *fsp,
 {
 	struct fsp_smb_fname_link *link = NULL;
 
+	SMB_ASSERT(*smb_fname_link == NULL);
+	SMB_ASSERT(*smb_fname_fsp == NULL);
+
 	link = talloc_zero(fsp, struct fsp_smb_fname_link);
 	if (link == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -307,6 +310,7 @@ static NTSTATUS fsp_smb_fname_link(struct files_struct *fsp,
 	link->smb_fname_link = smb_fname_link;
 	link->smb_fname_fsp = smb_fname_fsp;
 	*smb_fname_link = link;
+	*smb_fname_fsp = fsp;
 
 	talloc_set_destructor(link, fsp_smb_fname_link_destructor);
 	return NT_STATUS_OK;
@@ -525,9 +529,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
-	fsp->fsp_name->fsp = fsp;
-	smb_fname->fsp = fsp;
-
 	status = fsp_smb_fname_link(fsp,
 				    &smb_fname->fsp_link,
 				    &smb_fname->fsp);
@@ -581,13 +582,17 @@ NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 {
 	NTSTATUS status;
 
+	/*
+	 * The target should always not be linked yet!
+	 */
+	SMB_ASSERT(smb_fname_dst->fsp == NULL);
+	SMB_ASSERT(smb_fname_dst->fsp_link == NULL);
+
 	if (smb_fname_src->fsp == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	smb_fname_dst->fsp = smb_fname_src->fsp;
-
-	status = fsp_smb_fname_link(smb_fname_dst->fsp,
+	status = fsp_smb_fname_link(smb_fname_src->fsp,
 				    &smb_fname_dst->fsp_link,
 				    &smb_fname_dst->fsp);
 	if (!NT_STATUS_IS_OK(status)) {
