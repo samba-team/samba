@@ -396,9 +396,7 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 	}
 
 	fsp->base_fsp = smb_fname_base->fsp;
-	smb_fname_base->fsp = NULL;
-	talloc_set_destructor(smb_fname_base->fsp_link, NULL);
-	talloc_set_destructor(smb_fname_base, NULL);
+	smb_fname_fsp_unlink(smb_fname_base);
 	TALLOC_FREE(smb_fname_base);
 
 	return NT_STATUS_OK;
