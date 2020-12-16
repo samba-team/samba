@@ -703,6 +703,10 @@ static bool test_S4U2Self(struct torture_context *tctx,
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
 					    popt_get_cmdline_credentials());
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
+	/* We use cli_credentials_get_ntlm_response(), so relax krb5 requirements. */
+	cli_credentials_set_kerberos_state(client_creds,
+					   CRED_USE_KERBEROS_DESIRED,
+					   CRED_SPECIFIED);
 
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
