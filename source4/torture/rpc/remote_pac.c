@@ -162,7 +162,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	bool ok;
-	bool pkinit_in_use = torture_setting_bool(tctx, "pkinit_in_use", false);
+	const char *pkinit_ccache = torture_setting_string(tctx, "pkinit_ccache", NULL);
+	bool pkinit_in_use = pkinit_ccache != NULL;
 	bool expect_pac_upn_dns_info = torture_setting_bool(tctx, "expect_pac_upn_dns_info", true);
 	size_t num_pac_buffers;
 	struct gensec_security *gensec_client_context;
@@ -186,19 +187,60 @@ static bool test_PACVerify(struct torture_context *tctx,
 		"Testing PAC Verify (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
 		secure_channel_type, test_machine_name, negotiate_flags);
 
-	/*
-	 * Copy the credentials in order to use a different MEMORY krb5 ccache
-	 * for each client/server setup. The MEMORY cache identifier is a
-	 * pointer to the creds container. If we copy it the pointer changes and
-	 * we will get a new clean memory cache.
-	 */
-	client_creds = cli_credentials_shallow_copy(tmp_ctx,
-					    popt_get_cmdline_credentials());
-	torture_assert(tctx, client_creds, "Failed to copy of credentials");
-	if (!pkinit_in_use) {
-		/* Invalidate the gss creds container to allocate a new MEMORY ccache */
+	if (pkinit_in_use) {
+		struct cli_credentials *tmp_creds = NULL;
+		const char *error_string = NULL;
+		int rc;
+
+		torture_comment(tctx,
+				"Using pkinit_ccache=%s\n",
+				pkinit_ccache);
+
+		tmp_creds = cli_credentials_init(tctx);
+		torture_assert(tctx, tmp_creds, "Failed to create credentials");
+
+		rc = cli_credentials_set_ccache(tmp_creds,
+						tctx->lp_ctx,
+						pkinit_ccache,
+						CRED_SPECIFIED,
+						&error_string);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 0,
+					 "cli_credentials_set_ccache failed");
+		cli_credentials_set_kerberos_state(tmp_creds,
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
+
+		/*
+		 * Copy the credentials in order to use a different MEMORY krb5
+		 * ccache for each client/server setup. The MEMORY cache
+		 * identifier is a pointer to the creds container. If we copy
+		 * it the pointer changes and we will get a new clean memory
+		 * cache.
+		 */
+		client_creds =
+			cli_credentials_shallow_copy(tmp_ctx, tmp_creds);
+		torture_assert(tctx,
+			       client_creds,
+			       "Failed to copy of credentials");
+	} else {
+		/*
+		 * Copy the credentials in order to use a different MEMORY krb5
+		 * ccache for each client/server setup. The MEMORY cache
+		 * identifier is a pointer to the creds container. If we copy
+		 * it the pointer changes and we will get a new clean memory
+		 * cache.
+		 */
+		client_creds =
+			cli_credentials_shallow_copy(tmp_ctx,
+						     popt_get_cmdline_credentials());
+		torture_assert(tctx,
+			       client_creds,
+			       "Failed to copy of credentials");
 		cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
 	}
+
 
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
