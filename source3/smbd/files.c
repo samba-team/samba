@@ -26,6 +26,9 @@
 
 #define FILE_HANDLE_OFFSET 0x1000
 
+static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
+				     struct smb_filename **_smb_fname);
+
 /**
  * create new fsp to be used for file_new or a durable handle reconnect
  */
@@ -457,11 +460,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		full_fname->stream_name = NULL;
 	}
 
-	fsp->fsp_name = full_fname;
-
-	status = file_name_hash(fsp->conn,
-				smb_fname_str_dbg(fsp->fsp_name),
-				&fsp->name_hash);
+	status = fsp_attach_smb_fname(fsp, &full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -532,13 +531,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	status = fsp_smb_fname_link(fsp,
 				    &smb_fname->fsp_link,
 				    &smb_fname->fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = fsp_smb_fname_link(fsp,
-				    &fsp->fsp_name->fsp_link,
-				    &fsp->fsp_name->fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
