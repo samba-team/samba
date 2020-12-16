@@ -374,6 +374,8 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 			    SMB_ACL_TYPE_T type,
                             SMB_ACL_T theacl)
 {
+	struct acl_common_fsp_ext *ext = (struct acl_common_fsp_ext *)
+		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct db_context *db = acl_db;
 	NTSTATUS status;
 	int ret;
@@ -389,6 +391,10 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 					  theacl);
 	if (ret == -1) {
 		return -1;
+	}
+
+	if (ext != NULL && ext->setting_nt_acl) {
+		return 0;
 	}
 
 	acl_tdb_delete(handle, db, &fsp->fsp_name->st);
