@@ -1034,6 +1034,7 @@ NTSTATUS fset_nt_acl_common(
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ignore_file_system_acl = lp_parm_bool(
 	    SNUM(handle->conn), module_name, "ignore system acls", false);
+	struct acl_common_fsp_ext *ext = NULL;
 
 	if (DEBUGLEVEL >= 10) {
 		DBG_DEBUG("incoming sd for file %s\n", fsp_str_dbg(fsp));
@@ -1089,6 +1090,12 @@ NTSTATUS fset_nt_acl_common(
 		psd->sacl = orig_psd->sacl;
 		psd->type |= SEC_DESC_SACL_PRESENT;
 	}
+
+	ext = VFS_ADD_FSP_EXTENSION(handle,
+				    fsp,
+				    struct acl_common_fsp_ext,
+				    NULL);
+	ext->setting_nt_acl = true;
 
 	if (ignore_file_system_acl) {
 		if (chown_needed) {
@@ -1174,6 +1181,7 @@ NTSTATUS fset_nt_acl_common(
 	status = store_acl_blob_fsp_fn(handle, fsp, &blob);
 
 done:
+	VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 	TALLOC_FREE(frame);
 	return status;
 }

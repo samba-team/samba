@@ -29,6 +29,10 @@ struct acl_common_config {
 	enum default_acl_style default_acl_style;
 };
 
+struct acl_common_fsp_ext {
+	bool setting_nt_acl;
+};
+
 bool init_acl_common_config(vfs_handle_struct *handle,
 			    const char *module_name);
 
