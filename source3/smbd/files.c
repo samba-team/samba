@@ -445,7 +445,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		open_flags |= O_DIRECTORY;
 	}
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+	full_fname = full_path_from_dirfsp_atname(fsp,
 						  dirfsp,
 						  smb_fname);
 	if (full_fname == NULL) {
@@ -453,11 +453,11 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		goto fail;
 	}
 
-	fsp->fsp_name = talloc_move(fsp, &full_fname);
-
-	if (is_ntfs_default_stream_smb_fname(fsp->fsp_name)) {
-		fsp->fsp_name->stream_name = NULL;
+	if (is_ntfs_default_stream_smb_fname(full_fname)) {
+		full_fname->stream_name = NULL;
 	}
+
+	fsp->fsp_name = full_fname;
 
 	status = file_name_hash(fsp->conn,
 				smb_fname_str_dbg(fsp->fsp_name),
