@@ -4381,8 +4381,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	ret = SMB_VFS_MKDIRAT(conn,
-			      conn->cwd_fsp,
-			      smb_dname,
+			      parent_dir_fname->fsp,
+			      base_name,
 			      mode);
 	if (ret != 0) {
 		TALLOC_FREE(parent_dir_fname);
