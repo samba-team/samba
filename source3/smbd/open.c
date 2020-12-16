@@ -4389,10 +4389,22 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
+	/*
+	 * Make this a pathref fsp for now. open_directory() will reopen as a
+	 * full fsp.
+	 */
+	fsp->fsp_flags.is_pathref = true;
+
+	status = fd_openat(conn->cwd_fsp, smb_dname, fsp, O_RDONLY | O_DIRECTORY, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(parent_dir_fname);
+		return status;
+	}
+
 	/* Ensure we're checking for a symlink here.... */
 	/* We don't want to get caught by a symlink racer. */
 
-	if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
+	if (SMB_VFS_FSTAT(fsp, &smb_dname->st) == -1) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), strerror(errno)));
 		TALLOC_FREE(parent_dir_fname);
@@ -4439,7 +4451,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		 */
 		if ((mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)) &&
 		    (mode & ~smb_dname->st.st_ex_mode)) {
-			SMB_VFS_CHMOD(conn, smb_dname,
+			SMB_VFS_FCHMOD(fsp,
 				      (smb_dname->st.st_ex_mode |
 					  (mode & ~smb_dname->st.st_ex_mode)));
 			need_re_stat = true;
@@ -4457,7 +4469,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	TALLOC_FREE(parent_dir_fname);
 
 	if (need_re_stat) {
-		if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &smb_dname->st) == -1) {
 			DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), strerror(errno)));
 			return map_nt_error_from_unix(errno);
