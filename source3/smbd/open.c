@@ -6091,7 +6091,13 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			 */
 			base_fsp = NULL;
 		}
-		close_file(req, fsp, ERROR_CLOSE);
+		if (!fsp->fsp_flags.is_fsa) {
+			/* Open wasn't completed. */
+			fd_close(fsp);
+			file_free(req, fsp);
+		} else {
+			close_file(req, fsp, ERROR_CLOSE);
+		}
 		fsp = NULL;
 	}
 	if (base_fsp != NULL) {
