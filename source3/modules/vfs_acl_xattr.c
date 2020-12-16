@@ -228,6 +228,8 @@ static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
 				SMB_ACL_TYPE_T type,
 				SMB_ACL_T theacl)
 {
+	struct acl_common_fsp_ext *ext = (struct acl_common_fsp_ext *)
+		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int ret;
 
 	ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle,
@@ -238,11 +240,15 @@ static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (ext != NULL && ext->setting_nt_acl) {
+		return 0;
+	}
+
 	become_root();
 	SMB_VFS_FREMOVEXATTR(fsp, XATTR_NTACL_NAME);
 	unbecome_root();
 
-	return ret;
+	return 0;
 }
 
 static int connect_acl_xattr(struct vfs_handle_struct *handle,
