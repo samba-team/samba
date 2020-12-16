@@ -1229,6 +1229,39 @@ NTSTATUS file_name_hash(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fsp_attach_smb_fname(struct files_struct *fsp,
+				     struct smb_filename **_smb_fname)
+{
+	struct smb_filename *smb_fname_new = *_smb_fname;
+	const char *name_str = NULL;
+	uint32_t name_hash = 0;
+	NTSTATUS status;
+
+	name_str = smb_fname_str_dbg(smb_fname_new);
+	if (name_str == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = file_name_hash(fsp->conn,
+				name_str,
+				&name_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fsp_smb_fname_link(fsp,
+				    &smb_fname_new->fsp_link,
+				    &smb_fname_new->fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fsp->name_hash = name_hash;
+	fsp->fsp_name = smb_fname_new;
+	*_smb_fname = NULL;
+	return NT_STATUS_OK;
+}
+
 /**
  * The only way that the fsp->fsp_name field should ever be set.
  */
@@ -1237,8 +1270,6 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 {
 	struct smb_filename *smb_fname_old = fsp->fsp_name;
 	struct smb_filename *smb_fname_new = NULL;
-	const char *name_str = NULL;
-	uint32_t name_hash = 0;
 	NTSTATUS status;
 
 	smb_fname_new = cp_smb_filename(fsp, smb_fname_in);
@@ -1246,30 +1277,11 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_str = smb_fname_str_dbg(smb_fname_new);
-	if (name_str == NULL) {
-		TALLOC_FREE(smb_fname_new);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = file_name_hash(fsp->conn,
-				name_str,
-				&name_hash);
+	status = fsp_attach_smb_fname(fsp, &smb_fname_new);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(smb_fname_new);
 		return status;
 	}
-
-	status = fsp_smb_fname_link(fsp,
-				    &smb_fname_new->fsp_link,
-				    &smb_fname_new->fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname_new);
-		return status;
-	}
-
-	fsp->name_hash = name_hash;
-	fsp->fsp_name = smb_fname_new;
 
 	if (smb_fname_old != NULL) {
 		smb_fname_fsp_unlink(smb_fname_old);
