@@ -1097,23 +1097,19 @@ NTSTATUS fset_nt_acl_common(
 			status = set_underlying_acl(handle, fsp, psd,
 						    security_info_sent, true);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(frame);
-				return status;
+				goto done;
 			}
 		}
 		ZERO_ARRAY(hash);
 		status = store_v3_blob(store_acl_blob_fsp_fn, handle, fsp, psd,
 				       NULL, hash);
-
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	status = set_underlying_acl(handle, fsp, psd, security_info_sent,
 				    chown_needed);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	/* Get the full underlying sd, then hash. */
@@ -1124,14 +1120,12 @@ NTSTATUS fset_nt_acl_common(
 					  &pdesc_next);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	status = hash_sd_sha256(pdesc_next, hash);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	/* Get the full underlying sd, then hash. */
@@ -1147,14 +1141,12 @@ NTSTATUS fset_nt_acl_common(
 		status = store_v3_blob(store_acl_blob_fsp_fn, handle, fsp, psd,
 				       pdesc_next, hash);
 
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	status = hash_blob_sha256(sys_acl_blob, sys_acl_hash);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	if (DEBUGLEVEL >= 10) {
@@ -1176,12 +1168,12 @@ NTSTATUS fset_nt_acl_common(
 				     sys_acl_description, sys_acl_hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("create_sys_acl_blob failed\n");
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
 
 	status = store_acl_blob_fsp_fn(handle, fsp, &blob);
 
+done:
 	TALLOC_FREE(frame);
 	return status;
 }
