@@ -34,31 +34,231 @@ enum ldb_cmdline_options { CMDLINE_RELAX=1 };
 
 static struct poptOption builtin_popt_options[] = {
 	POPT_AUTOHELP
-	{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
-	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
-	{ "editor",    'e', POPT_ARG_STRING, &options.editor, 0, "external editor", "PROGRAM" },
-	{ "scope",     's', POPT_ARG_STRING, NULL, 's', "search scope", "SCOPE" },
-	{ "verbose",   'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL },
-	{ "trace",     0,   POPT_ARG_NONE, &options.tracing, 0, "enable tracing", NULL },
-	{ "interactive", 'i', POPT_ARG_NONE, &options.interactive, 0, "input from stdin", NULL },
-	{ "recursive", 'r', POPT_ARG_NONE, &options.recursive, 0, "recursive delete", NULL },
-	{ "modules-path", 0, POPT_ARG_STRING, &options.modules_path, 0, "modules path", "PATH" },
-	{ "num-searches", 0, POPT_ARG_INT, &options.num_searches, 0, "number of test searches", NULL },
-	{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
-	{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "(|(objectClass=*)(distinguishedName=*))", NULL },
-	{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
-	{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
-	{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
-	{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
-	{ "show-binary", 0, POPT_ARG_NONE, &options.show_binary, 0, "display binary LDIF", NULL },
-	{ "paged", 0, POPT_ARG_NONE, NULL, 'P', "use a paged search", NULL },
-	{ "show-deleted", 0, POPT_ARG_NONE, NULL, 'D', "show deleted objects", NULL },
-	{ "show-recycled", 0, POPT_ARG_NONE, NULL, 'R', "show recycled objects", NULL },
-	{ "show-deactivated-link", 0, POPT_ARG_NONE, NULL, 'd', "show deactivated links", NULL },
-	{ "reveal", 0, POPT_ARG_NONE, NULL, 'r', "reveal ldb internals", NULL },
-	{ "relax", 0, POPT_ARG_NONE, NULL, CMDLINE_RELAX, "pass relax control", NULL },
-	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
-	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
+	{
+		.longName   = "url",
+		.shortName  = 'H',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &options.url,
+		.val        = 0,
+		.descrip    = "database URL",
+		.argDescrip = "URL"
+	},
+	{
+		.longName   = "basedn",
+		.shortName  = 'b',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &options.basedn,
+		.val        = 0,
+		.descrip    = "base DN",
+		.argDescrip = "DN"
+	},
+	{
+		.longName   = "editor",
+		.shortName  = 'e',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &options.editor,
+		.val        = 0,
+		.descrip    = "external editor",
+		.argDescrip = "PROGRAM"
+	},
+	{
+		.longName   = "scope",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = NULL,
+		.val        = 's',
+		.descrip    = "search scope",
+		.argDescrip = "SCOPE"
+	},
+	{
+		.longName   = "verbose",
+		.shortName  = 'v',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'v',
+		.descrip    = "increase verbosity",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "trace",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.tracing,
+		.val        = 0,
+		.descrip    = "enable tracing",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "interactive",
+		.shortName  = 'i',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.interactive,
+		.val        = 0,
+		.descrip    = "input from stdin",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "recursive",
+		.shortName  = 'r',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.recursive,
+		.val        = 0,
+		.descrip    = "recursive delete",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "modules-path",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = &options.modules_path,
+		.val        = 0,
+		.descrip    = "modules path",
+		.argDescrip = "PATH"
+	},
+	{
+		.longName   = "num-searches",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_INT,
+		.arg        = &options.num_searches,
+		.val        = 0,
+		.descrip    = "number of test searches",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "num-records",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_INT,
+		.arg        = &options.num_records,
+		.val        = 0,
+		.descrip    = "number of test records",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "all",
+		.shortName  = 'a',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.all_records,
+		.val        = 0,
+		.descrip    = "(|(objectClass=*)(distinguishedName=*))",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "nosync",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.nosync,
+		.val        = 0,
+		.descrip    = "non-synchronous transactions",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "sorted",
+		.shortName  = 'S',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.sorted,
+		.val        = 0,
+		.descrip    = "sort attributes",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = NULL,
+		.shortName  = 'o',
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = NULL,
+		.val        = 'o',
+		.descrip    = "ldb_connect option",
+		.argDescrip = "OPTION"
+	},
+	{
+		.longName   = "controls",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_STRING,
+		.arg        = NULL,
+		.val        = 'c',
+		.descrip    = "controls",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "show-binary",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = &options.show_binary,
+		.val        = 0,
+		.descrip    = "display binary LDIF",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "paged",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'P',
+		.descrip    = "use a paged search",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "show-deleted",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'D',
+		.descrip    = "show deleted objects",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "show-recycled",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'R',
+		.descrip    = "show recycled objects",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "show-deactivated-link",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'd',
+		.descrip    = "show deactivated links",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "reveal",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'r',
+		.descrip    = "reveal ldb internals",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "relax",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = CMDLINE_RELAX,
+		.descrip    = "pass relax control",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "cross-ncs",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'N',
+		.descrip    = "search across NC boundaries",
+		.argDescrip = NULL
+	},
+	{
+		.longName   = "extended-dn",
+		.shortName  = 0,
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = 'E',
+		.descrip    = "show extended DNs",
+		.argDescrip = NULL
+	},
 	{0}
 };
 
