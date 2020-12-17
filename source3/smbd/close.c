@@ -788,13 +788,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		fsp->op->global->durable = false;
 	}
 
-	if (fsp->print_file) {
-		/* FIXME: return spool errors */
-		print_spool_end(fsp, close_type);
-		file_free(req, fsp);
-		return NT_STATUS_OK;
-	}
-
 	/* If this is an old DOS or FCB open and we have multiple opens on
 	   the same handle we only have one share mode. Ensure we only remove
 	   the share mode on the last close. */
@@ -1306,6 +1299,11 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		status = close_directory(req, fsp, close_type);
 	} else if (fsp->fake_file_handle != NULL) {
 		status = close_fake_file(req, fsp);
+	} else if (fsp->print_file != NULL) {
+		/* FIXME: return spool errors */
+		print_spool_end(fsp, close_type);
+		file_free(req, fsp);
+		status = NT_STATUS_OK;
 	} else {
 		status = close_normal_file(req, fsp, close_type);
 	}
