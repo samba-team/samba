@@ -487,13 +487,13 @@ for env in ["fileserver"]:
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
                    '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tarmode2',
                    '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode2',
-                   '-d', '$PREFIX', '-b', smbclient3,
+                   '-d', 'smbclient_tar.NT1', '-b', smbclient3,
                    '--subunit', '--', configuration, '-mNT1'])
     plantestsuite("samba3.blackbox.smbclient_tar.SMB3", env,
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_tarmode.pl"),
                    '-n', '$SERVER', '-i', '$SERVER_IP', '-s', 'tarmode2',
                    '-u', '$USERNAME', '-p', '$PASSWORD', '-l', '$LOCAL_PATH/tarmode2',
-                   '-d', '$PREFIX', '-b', smbclient3,
+                   '-d', 'smbclient_tar.SMB3', '-b', smbclient3,
                    '--subunit', '--', configuration, '-mSMB3'])
 
 for env in ["fileserver:local"]:
