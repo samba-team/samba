@@ -1291,13 +1291,11 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status;
 	struct files_struct *base_fsp = fsp->base_fsp;
 
-	if (fsp->fsp_flags.is_dirfsp) {
-		/*
-		 * The typical way to get here is via file_close_[conn|user]()
-		 * and this is taken care of below.
-		 */
-		return NT_STATUS_OK;
-	}
+	/*
+	 * This fsp can never be an internal dirfsp. They must
+	 * be explicitly closed by TALLOC_FREE of the dir handle.
+	 */
+	SMB_ASSERT(!fsp->fsp_flags.is_dirfsp);
 
 	if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
