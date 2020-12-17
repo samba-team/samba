@@ -34,15 +34,32 @@
 #include "popt.h"
 
 
+static bool is_popt_table_end(const struct poptOption *o)
+{
+	if (o->longName == NULL &&
+	    o->shortName =='\0' &&
+	    o->arg == NULL) {
+		return true;
+	}
+
+	return false;
+}
 
 /*
   work out the length of a popt array
  */
-static unsigned calculate_popt_array_length(struct poptOption *opts)
+static size_t calculate_popt_array_length(struct poptOption *opts)
 {
-	unsigned i;
-	struct poptOption zero_opt = { 0 };
-	for (i=0; memcmp(&zero_opt, &opts[i], sizeof(zero_opt)) != 0; i++) ;
+	size_t i = 0;
+
+	for (i = 0; i < UINT32_MAX; i++) {
+		struct poptOption *o = &(opts[i]);
+
+		if (is_popt_table_end(o)) {
+			break;
+		}
+	}
+
 	return i;
 }
 
@@ -61,7 +78,7 @@ static int extensions_hook(struct ldb_context *ldb, enum ldb_module_hook_type t)
 {
 	switch (t) {
 	case LDB_MODULE_HOOK_CMDLINE_OPTIONS: {
-		unsigned len1, len2;
+		size_t len1, len2;
 		struct poptOption **popt_options = ldb_module_popt_options(ldb);
 		struct poptOption *new_array;
 

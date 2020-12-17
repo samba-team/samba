@@ -259,7 +259,7 @@ static struct poptOption builtin_popt_options[] = {
 		.descrip    = "show extended DNs",
 		.argDescrip = NULL
 	},
-	{0}
+	POPT_TABLEEND
 };
 
 void ldb_cmdline_help(struct ldb_context *ldb, const char *cmdname, FILE *f)
