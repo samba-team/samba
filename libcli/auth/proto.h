@@ -11,7 +11,7 @@
  * used outside this particular subsystem! */
 
 
-/* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/credentials.c  */
+/* The following definitions come from libcli/auth/credentials.c  */
 
 bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge);
 void netlogon_creds_random_challenge(struct netr_Credential *challenge);
@@ -91,7 +91,7 @@ union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 					enum netr_LogonInfoClass level,
 					const union netr_LogonLevel *in);
 
-/* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/session.c  */
+/* The following definitions come from libcli/auth/session.c  */
 
 int sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
 		    enum samba_gnutls_direction encrypt);
@@ -102,7 +102,7 @@ DATA_BLOB sess_encrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob_in, const DATA_
 NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DATA_BLOB *session_key,
 			   DATA_BLOB *ret);
 
-/* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/smbencrypt.c  */
+/* The following definitions come from libcli/auth/smbencrypt.c  */
 
 int SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24]);
 bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24]);
@@ -275,7 +275,7 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key,
 					  char **pwd);
 
-/* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/smbdes.c  */
+/* The following definitions come from libcli/auth/smbdes.c  */
 
 int des_crypt56_gnutls(uint8_t out[8], const uint8_t in[8], const uint8_t key[7],
 		       enum samba_gnutls_direction encrypt);

@@ -30,7 +30,7 @@
  * used outside this particular subsystem! */
 
 
-/* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/msrpc_parse.c  */
+/* The following definitions come from libcli/auth/msrpc_parse.c  */
 
 NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx, 
 	       DATA_BLOB *blob,
