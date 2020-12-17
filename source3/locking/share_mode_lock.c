@@ -2170,7 +2170,6 @@ static bool share_mode_entry_do(
 	bool modified = false;
 	struct share_mode_entry e;
 	uint8_t *e_ptr = NULL;
-	bool had_share_entries, have_share_entries;
 	NTSTATUS status;
 	bool ret = false;
 
@@ -2181,8 +2180,6 @@ static bool share_mode_entry_do(
 		return false;
 	}
 	DBG_DEBUG("num_share_modes=%zu\n", ltdb->num_share_entries);
-
-	had_share_entries = (ltdb->num_share_entries != 0);
 
 	idx = share_mode_entry_find(
 		ltdb->share_entries,
@@ -2229,6 +2226,14 @@ static bool share_mode_entry_do(
 		}
 		ltdb->num_share_entries -= 1;
 
+		if (ltdb->num_share_entries == 0) {
+			/*
+			 * Tell share_mode_lock_destructor() to delete
+			 * the whole record
+			 */
+			d->modified = true;
+		}
+
 		if (DEBUGLEVEL>=10) {
 			DBG_DEBUG("share_mode_entry:\n");
 			NDR_PRINT_DEBUG(share_mode_entry, &e);
@@ -2258,15 +2263,6 @@ static bool share_mode_entry_do(
 		DBG_DEBUG("locking_tdb_data_store failed: %s\n",
 			  nt_errstr(status));
 		goto done;
-	}
-
-	have_share_entries = (ltdb->num_share_entries != 0);
-	if (had_share_entries != have_share_entries) {
-		/*
-		 * Make share_mode_data_store do the right thing wrt
-		 * possibly deleting the locking.tdb record
-		 */
-		d->modified = true;
 	}
 
 	ret = true;
