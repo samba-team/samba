@@ -187,14 +187,12 @@ struct server_id server_id_from_string(uint32_t local_vnn,
  */
 void server_id_set_disconnected(struct server_id *id)
 {
-	SMB_ASSERT(id != NULL);
-
-	id->pid = UINT64_MAX;
-	id->task_id = UINT32_MAX;
-	id->vnn = NONCLUSTER_VNN;
-	id->unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
-
-	return;
+	*id = (struct server_id) {
+		.pid = UINT64_MAX,
+		.task_id = UINT32_MAX,
+		.vnn = NONCLUSTER_VNN,
+		.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY,
+	};
 }
 
 /**
