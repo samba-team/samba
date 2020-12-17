@@ -558,7 +558,11 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	int argc_new, i;
 	char **argv_new;
-	enum {OPT_UNCLIST=1000};
+	enum {
+		OPT_UNCLIST=1000,
+		OPT_USER1,
+		OPT_USER2,
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"seed",	  0, POPT_ARG_INT,  &seed, 	0,	"Seed to use for randomizer", 	NULL},
@@ -573,7 +577,8 @@ int main(int argc, const char *argv[])
 		{"zerozero",      0, POPT_ARG_NONE, &zero_zero,    0,      "do zero/zero lock", NULL},
 		{"exacterrors",   0, POPT_ARG_NONE, &exact_error_codes,0,"use exact error codes", NULL},
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
-		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"user1",         0, POPT_ARG_STRING, NULL, OPT_USER1, "Set first network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"user2",         0, POPT_ARG_STRING, NULL, OPT_USER2, "Set second network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -608,13 +613,16 @@ int main(int argc, const char *argv[])
 		case OPT_UNCLIST:
 			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
-		case 'U':
-			if (username_count == 2) {
-				usage(pc);
-				talloc_free(mem_ctx);
-				exit(1);
-			}
-			cli_credentials_parse_string(servers[username_count], poptGetOptArg(pc), CRED_SPECIFIED);
+		case OPT_USER1:
+			cli_credentials_parse_string(servers[0],
+						     poptGetOptArg(pc),
+						     CRED_SPECIFIED);
+			username_count++;
+			break;
+		case OPT_USER2:
+			cli_credentials_parse_string(servers[1],
+						     poptGetOptArg(pc),
+						     CRED_SPECIFIED);
 			username_count++;
 			break;
 		}
