@@ -54,6 +54,7 @@ parser = OptionParser()
 parser.add_option("--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("--keeplogs", help="keep logs", default=False, action="store_true")
 parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
+parser.add_option("--skip-dependencies", help="skip to run task dependency tasks", default=False, action="store_true")
 parser.add_option("--testbase", help="base directory to run tests in (default %s)" % def_testbase,
                   default=def_testbase)
 parser.add_option("--full-testbase", help="full base directory to run tests in (default %s/b$PID)" % def_testbase,
@@ -160,7 +161,7 @@ def format_option(name, value=None):
 
 
 def make_test(
-        cmd='make test',
+        cmd='make testonly',
         FAIL_IMMEDIATELY=1,
         INJECT_SELFTEST_PREFIX=1,
         TESTS='',
@@ -954,6 +955,8 @@ class builder(object):
         self.git_clone_required = False
         if "git-clone-required" in definition:
             self.git_clone_required = bool(definition["git-clone-required"])
+        self.proc = None
+        self.done = False
         self.next = 0
         self.stdout_path = "%s/%s.stdout" % (gitroot, self.tag)
         self.stderr_path = "%s/%s.stderr" % (gitroot, self.tag)
@@ -969,22 +972,57 @@ class builder(object):
         self.cwd = "%s/%s" % (self.builder_dir, self.dir)
         self.selftest_prefix = "%s/bin/ab" % (self.cwd)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
+        self.consumers = []
+        self.producer = None
+
+        if self.git_clone_required:
+            assert "dependency" not in definition
+
+    def mark_existing(self):
+        do_print('%s: Mark as existing dependency' % self.name)
+        self.next = len(self.sequence)
+        self.done = True
+
+    def add_consumer(self, consumer):
+        do_print("%s: add consumer: %s" % (self.name, consumer.name))
+        consumer.producer = self
+        consumer.test_source_dir = self.test_source_dir
+        self.consumers.append(consumer)
 
     def start_next(self):
+        if self.producer is not None:
+            if not self.producer.done:
+                do_print("%s: Waiting for producer: %s" % (self.name, self.producer.name))
+                return
+
         if self.next == 0:
             rmdir_force(self.builder_dir)
             rmdir_force(self.prefix)
-            if not self.git_clone_required:
+            if self.producer is not None:
+                run_cmd("mkdir %s" % (self.builder_dir), dir=test_master, show=True)
+            elif not self.git_clone_required:
                 run_cmd("cp -R -a -l %s %s" % (test_master, self.builder_dir), dir=test_master, show=True)
             else:
                 run_cmd("git clone --recursive --shared %s %s" % (test_master, self.builder_dir), dir=test_master, show=True)
 
         if self.next == len(self.sequence):
-            if not options.nocleanup:
+            if not self.done:
+                do_print('%s: Completed OK' % self.name)
+                self.done = True
+            if not options.nocleanup and len(self.consumers) == 0:
+                do_print('%s: Cleaning up' % self.name)
                 rmdir_force(self.builder_dir)
                 rmdir_force(self.prefix)
-            do_print('%s: Completed OK' % self.name)
-            self.done = True
+            for consumer in self.consumers:
+                if consumer.next != 0:
+                    continue
+                do_print('%s: Starting consumer %s' % (self.name, consumer.name))
+                consumer.start_next()
+            if self.producer is not None:
+                self.producer.consumers.remove(self)
+                assert self.producer.done
+                self.producer.start_next()
+            do_print('%s: Remaining consumers %u' % (self.name, len(self.consumers)))
             return
         (self.stage, self.cmd) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(plat_specific=1, standard_lib=0, prefix=self.prefix))
@@ -1002,6 +1040,18 @@ class builder(object):
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
         self.next += 1
 
+def expand_dependencies(n):
+    deps = list()
+    if "dependency" in tasks[n]:
+        depname = tasks[n]["dependency"]
+        assert depname in tasks
+        sdeps = expand_dependencies(depname)
+        assert n not in sdeps
+        for sdep in sdeps:
+            deps.append(sdep)
+        deps.append(depname)
+    return deps
+
 
 class buildlist(object):
     '''handle build of multiple directories'''
@@ -1015,6 +1065,22 @@ class buildlist(object):
             else:
                 tasknames = defaulttasks
 
+        given_tasknames = tasknames.copy()
+        implicit_tasknames = []
+        for n in given_tasknames:
+            deps = expand_dependencies(n)
+            for dep in deps:
+                if dep in given_tasknames:
+                    continue
+                if dep in implicit_tasknames:
+                    continue
+                implicit_tasknames.append(dep)
+
+        tasknames = implicit_tasknames.copy()
+        tasknames.extend(given_tasknames)
+        do_print("given_tasknames: %s" % given_tasknames)
+        do_print("implicit_tasknames: %s" % implicit_tasknames)
+        do_print("tasknames: %s" % tasknames)
         self.tlist = [builder(n, tasks[n]) for n in tasknames]
 
         if options.retry:
@@ -1043,6 +1109,21 @@ class buildlist(object):
 
             self.retry = builder('retry', retry_task)
             self.need_retry = False
+
+        if options.skip_dependencies:
+            for b in self.tlist:
+                if b.name in implicit_tasknames:
+                    b.mark_existing()
+
+        for b in self.tlist:
+            do_print("b.name=%s" % b.name)
+            if "dependency" not in b.definition:
+                continue
+            depname = b.definition["dependency"]
+            do_print("b.name=%s: dependency:%s" % (b.name, depname))
+            for p in self.tlist:
+                if p.name == depname:
+                    p.add_consumer(b)
 
     def kill_kids(self):
         if self.tail_proc is not None:
@@ -1377,7 +1458,10 @@ The top commit for the tree that was built was:
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
 
 try:
-    os.makedirs(testbase)
+    if options.skip_dependencies:
+        run_cmd("stat %s" % testbase, dir=testbase, output=True)
+    else:
+        os.makedirs(testbase)
 except Exception as reason:
     raise Exception("Unable to create %s : %s" % (testbase, reason))
 cleanup_list.append(testbase)
@@ -1402,7 +1486,10 @@ while True:
                                           ".directory-is-not-empty"), show=True)
         run_cmd("stat %s" % test_tmpdir, show=True)
         run_cmd("stat %s" % testbase, show=True)
-        run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
+        if options.skip_dependencies:
+            run_cmd("stat %s" % test_master, dir=testbase, output=True)
+        else:
+            run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
         raise
