@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/events/events.h"
 #include "system/time.h"
 #include "system/filesys.h"
@@ -3323,9 +3323,11 @@ int main(int argc, const char *argv[])
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{0}
+		POPT_LEGACY_S4
+		POPT_TABLEEND
 	};
 	TALLOC_CTX *mem_ctx = NULL;
+	bool ok;
 
 	memset(&bad_smb2_handle, 0xFF, sizeof(bad_smb2_handle));
 
@@ -3341,12 +3343,29 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	pc = poptGetContext("gentest", argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
 
-	lp_ctx = cmdline_lp_ctx;
+	lp_ctx = samba_cmdline_get_lp_ctx();
 	servers[0].credentials = cli_credentials_init(mem_ctx);
 	servers[1].credentials = cli_credentials_init(mem_ctx);
 	cli_credentials_guess(servers[0].credentials, lp_ctx);
@@ -3355,7 +3374,7 @@ int main(int argc, const char *argv[])
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_UNCLIST:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case OPT_USER1:
 			cli_credentials_parse_string(servers[0].credentials,

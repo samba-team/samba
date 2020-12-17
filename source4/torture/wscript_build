@@ -331,7 +331,7 @@ bld.SAMBA_BINARY('smbtorture',
 bld.SAMBA_BINARY('gentest',
 	source='gentest.c',
 	manpages='man/gentest.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB smbclient-raw param_options'
+	deps='samba-hostconfig samba-util popt CMDLINE_S4 LIBCLI_SMB smbclient-raw param_options'
 	)
 
 
