@@ -414,6 +414,13 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
 
+	if (smb_fname->fsp != NULL) {
+		/* We already have one for this name. */
+		DBG_DEBUG("smb_fname [%s] already has a pathref fsp.\n",
+			smb_fname_str_dbg(smb_fname));
+		return NT_STATUS_OK;
+	}
+
 	if (file_existed && S_ISLNK(smb_fname->st.st_ex_mode)) {
 		return NT_STATUS_STOPPED_ON_SYMLINK;
 	}
