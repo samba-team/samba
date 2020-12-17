@@ -706,6 +706,8 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 	bool is_durable = false;
 
+	SMB_ASSERT(fsp->fsp_flags.is_fsa);
+
 	assert_no_pending_aio(fsp, close_type);
 
 	while (talloc_array_length(fsp->blocked_smb1_lock_reqs) != 0) {
@@ -1148,6 +1150,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	const struct security_token *del_nt_token = NULL;
 	const struct security_unix_token *del_token = NULL;
 	NTSTATUS notify_status;
+
+	SMB_ASSERT(fsp->fsp_flags.is_fsa);
 
 	if (fsp->conn->sconn->using_smb2) {
 		notify_status = NT_STATUS_NOTIFY_CLEANUP;
