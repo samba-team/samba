@@ -964,23 +964,24 @@ class builder(object):
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
-        self.test_source_dir = "%s/%s" % (testbase, self.tag)
-        self.cwd = "%s/%s" % (self.test_source_dir, self.dir)
+        self.builder_dir = "%s/%s" % (testbase, self.tag)
+        self.test_source_dir = self.builder_dir
+        self.cwd = "%s/%s" % (self.builder_dir, self.dir)
         self.selftest_prefix = "%s/bin/ab" % (self.cwd)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
 
     def start_next(self):
         if self.next == 0:
-            rmdir_force(self.test_source_dir)
+            rmdir_force(self.builder_dir)
             rmdir_force(self.prefix)
             if not self.git_clone_required:
-                run_cmd("cp -R -a -l %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
+                run_cmd("cp -R -a -l %s %s" % (test_master, self.builder_dir), dir=test_master, show=True)
             else:
-                run_cmd("git clone --recursive --shared %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
+                run_cmd("git clone --recursive --shared %s %s" % (test_master, self.builder_dir), dir=test_master, show=True)
 
         if self.next == len(self.sequence):
             if not options.nocleanup:
-                rmdir_force(self.test_source_dir)
+                rmdir_force(self.builder_dir)
                 rmdir_force(self.prefix)
             do_print('%s: Completed OK' % self.name)
             self.done = True
