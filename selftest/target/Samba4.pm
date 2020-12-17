@@ -17,7 +17,6 @@ use SocketWrapper;
 use target::Samba;
 use target::Samba3;
 use Archive::Tar;
-use File::Path 'make_path';
 
 sub new($$$$$) {
 	my ($classname, $SambaCtx, $bindir, $srcdir, $server_maxtime) = @_;
@@ -281,7 +280,7 @@ sub setup_dns_hub_internal($$$)
 	my ($self, $hostname, $prefix) = @_;
 	my $STDIN_READER;
 
-	unless(-d $prefix or make_path($prefix, 0777)) {
+	unless(-d $prefix or mkdir($prefix, 0777)) {
 		warn("Unable to create $prefix");
 		return undef;
 	}
@@ -356,6 +355,10 @@ sub setup_dns_hub
 
 	my $hostname = "rootdnsforwarder";
 
+	unless(-d $prefix or mkdir($prefix, 0777)) {
+		warn("Unable to create $prefix");
+		return undef;
+	}
 	my $env = $self->setup_dns_hub_internal("$hostname", "$prefix/$hostname");
 
 	$self->{dns_hub_env} = $env;
