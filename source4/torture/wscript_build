@@ -349,7 +349,7 @@ bld.SAMBA_BINARY('locktest',
 	#cflags='--coverage',
 	# GCOV='1',
 	manpages='man/locktest.1',
-	deps='popt POPT_SAMBA POPT_CREDENTIALS samba-util LIBCLI_SMB samba-hostconfig param_options',
+	deps='popt CMDLINE_S4 samba-util LIBCLI_SMB samba-hostconfig param_options',
 	)
 
 bld.SAMBA_MODULE('TORTURE_DSDB',
