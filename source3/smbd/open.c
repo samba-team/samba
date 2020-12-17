@@ -4639,11 +4639,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		}
 	}
 
-	status = fd_close(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/*
 	 * Setup the files_struct for it.
 	 */
