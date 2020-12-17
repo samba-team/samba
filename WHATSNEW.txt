@@ -46,7 +46,67 @@ NEW FEATURES/CHANGES
   In order to be accepted, the request must be issued by a client
   that is in the allow list and NOT in the deny list.
 
+Improved command line user experience
+-------------------------------------
 
+Samba utilities did not consistently implement their command line interface. A
+number of options were requiring to specify values in one tool and not in the
+other, some options meant different in different tools.
+
+These should be stories of the past now. A new command line parser has been
+implemented with sanity checking. Also the command line interface has been
+simplified and provides better control for encryption, singing and kerberos.
+
+Also several command line options have a smb.conf variable to control the
+default now.
+
+All tools are logging to stderr by default. You can use --debug-stdout to
+change the behavior.
+
+### Common parser:
+
+Options added:
+--client-protection=off|sign|encrypt
+
+Options renamed:
+--kerberos       ->    --use-kerberos=required|desired|off
+--krb5-ccache    ->    --use-krb5-ccache=CCACHE
+--scope          ->    --netbios-scope=SCOPE
+--use-ccache     ->    --use-winbind-ccache
+
+Options removed:
+-e|--encrypt
+-C removed from --use-winbind-ccache
+-i removed from --netbios-scope
+-S|--signing
+
+
+### Duplicates in command line utils
+
+ldbadd/ldbsearch/ldbdel/ldbmodify/ldbrename:
+-e is not available for --editor anymore
+-s is not used for --configfile anymore
+
+ndrdump:
+-l is not available for --load-dso anymore
+
+net:
+-l is not available for --long anymore
+
+sharesec:
+-V is not available for --viewsddl anymore
+
+smbcquotas:
+--user        ->    --quota-user
+
+nmbd:
+--log-stdout  ->    --debug-stdout
+
+smbd:
+--log-stdout  ->    --debug-stdout
+
+winbindd:
+--log-stdout  ->    --debug-stdout
 
 
 REMOVED FEATURES
@@ -66,6 +126,8 @@ smb.conf changes
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
+  client use kerberos                New                        desired
+  client protection                  New                        default
 
 
 KNOWN ISSUES
