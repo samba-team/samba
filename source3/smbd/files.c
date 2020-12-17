@@ -1176,6 +1176,10 @@ NTSTATUS dup_file_fsp(
 	to->fsp_flags.modified = from->fsp_flags.modified;
 	to->fsp_flags.is_directory = from->fsp_flags.is_directory;
 	to->fsp_flags.aio_write_behind = from->fsp_flags.aio_write_behind;
+	to->fsp_flags.is_fsa = from->fsp_flags.is_fsa;
+	to->fsp_flags.is_pathref = from->fsp_flags.is_pathref;
+	to->fsp_flags.have_proc_fds = from->fsp_flags.have_proc_fds;
+	to->fsp_flags.is_dirfsp = from->fsp_flags.is_dirfsp;
 
 	return fsp_set_smb_fname(to, from->fsp_name);
 }
