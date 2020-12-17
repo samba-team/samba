@@ -124,10 +124,10 @@ checkone() {
     count=$1
     base="$2"
     expression="$3"
-    n=`$VALGRIND ldbsearch -s one -b "$base" "$expression" | grep '^dn' | wc -l`
+    n=`$VALGRIND ldbsearch --scope=one -b "$base" "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
-	$VALGRIND ldbsearch -s one -b "$base" "$expression"
+	$VALGRIND ldbsearch --scope=one -b "$base" "$expression"
 	exit 1
     fi
     echo "OK: $count $expression"

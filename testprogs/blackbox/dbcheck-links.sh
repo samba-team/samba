@@ -36,7 +36,7 @@ dbcheck() {
     tmpfile=$PREFIX_ABS/$RELEASE/expected-dbcheck-link-output${1}.txt.tmp
     tmpldif1=$PREFIX_ABS/$RELEASE/expected-dbcheck-output${1}2.txt.tmp1
 
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif1
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpldif1
 
     $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $3 --fix --yes > $tmpfile
     if [ "$?" != "$2" ]; then
@@ -50,7 +50,7 @@ dbcheck() {
     fi
 
     tmpldif2=$PREFIX_ABS/$RELEASE/expected-dbcheck-output${1}2.txt.tmp2
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpldif2
 
     diff -u $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
@@ -71,14 +71,14 @@ dbcheck_one_way() {
 dbcheck_clean() {
     tmpldif1=$PREFIX_ABS/$RELEASE/expected-dbcheck-output2.txt.tmp1
 
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif1
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpldif1
 
     $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb
     if [ "$?" != "0" ]; then
 	return 1
     fi
     tmpldif2=$PREFIX_ABS/$RELEASE/expected-dbcheck-output2.txt.tmp2
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpldif2
 
     diff -u $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
@@ -88,7 +88,7 @@ dbcheck_clean() {
 
 check_expected_after_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-link-dbcheck.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted member > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted member > $tmpldif
     diff -u $tmpldif $release_dir/expected-links-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -97,7 +97,7 @@ check_expected_after_links() {
 
 check_expected_after_deleted_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-deleted-links-after-link-dbcheck.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
     diff -u $tmpldif $release_dir/expected-deleted-links-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -106,7 +106,7 @@ check_expected_after_deleted_links() {
 
 check_expected_after_objects() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-objects-after-link-dbcheck.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(samaccountname=fred)(samaccountname=ddg)(samaccountname=usg)(samaccountname=user1)(samaccountname=user1x)(samaccountname=user2))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted samAccountName | grep sAMAccountName > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(samaccountname=fred)(samaccountname=ddg)(samaccountname=usg)(samaccountname=user1)(samaccountname=user1x)(samaccountname=user2))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted samAccountName | grep sAMAccountName > $tmpldif
     diff -u $tmpldif $release_dir/expected-objects-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -116,7 +116,7 @@ check_expected_after_objects() {
 duplicate_member() {
     # We use an existing group so we have a stable GUID in the
     # dbcheck output
-    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn member)
+    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' --scope=base --reveal --extended-dn member)
     DN=$(echo "${LDIF1}" | grep '^dn: ')
     MSG=$(echo "${LDIF1}" | grep -v '^dn: ' | grep -v '^#' | grep -v '^$')
     ldif=$PREFIX_ABS/${RELEASE}/duplicate-member-multi.ldif
@@ -141,7 +141,7 @@ dbcheck_duplicate_member() {
 
 check_expected_after_duplicate_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-duplicates-after-link-dbcheck.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=administrator)(cn=enterprise admins))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=administrator)(cn=enterprise admins))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
     diff -u $tmpldif $release_dir/expected-duplicates-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -224,7 +224,7 @@ EOF
     #
     # Step5: remove the SIDS from the links
     #
-    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=missingsidg3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn --show-binary member)
+    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=missingsidg3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' --scope=base --reveal --extended-dn --show-binary member)
     DN=$(echo "${LDIF1}" | grep '^dn: ')
     MSG=$(echo "${LDIF1}" | grep -v '^dn: ' | grep -v '^#' | grep -v '^$')
     ldif=$PREFIX_ABS/${RELEASE}/missing_link_sid_corruption5.ldif
@@ -575,7 +575,7 @@ forward_link_corruption() {
     # Step1: add a duplicate forward link from
     # "CN=Enterprise Admins" to "CN=Administrator"
     #
-    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn member)
+    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' --scope=base --reveal --extended-dn member)
     DN=$(echo "${LDIF1}" | grep '^dn: ')
     MSG=$(echo "${LDIF1}" | grep -v '^dn: ' | grep -v '^#' | grep -v '^$')
     ldif=$PREFIX_ABS/${RELEASE}/forward_link_corruption1.ldif
@@ -637,7 +637,7 @@ dbcheck_forward_link_corruption() {
 
 check_expected_after_dbcheck_forward_link_corruption() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-forward-link-corruption.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=dangling)(cn=enterprise admins))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=dangling)(cn=enterprise admins))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
     diff -u $tmpldif $release_dir/expected-after-dbcheck-forward-link-corruption.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -698,7 +698,7 @@ dbcheck_oneway_link_corruption() {
 
 check_expected_after_dbcheck_oneway_link_corruption() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-oneway-link-corruption.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(ou=dangling-ou)(ou=dangling-ou2)(ou=dangling-from))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted seeAlso > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(ou=dangling-ou)(ou=dangling-ou2)(ou=dangling-from))' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted seeAlso > $tmpldif
     diff -u $tmpldif $release_dir/expected-after-dbcheck-oneway-link-corruption.ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -714,12 +714,12 @@ dbcheck_dangling_multi_valued() {
 }
 
 dangling_multi_valued_check_missing() {
-    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi2)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi2)' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
     if [ $WORDS -ne 4 ]; then
         echo Got only $WORDS links for dangling-multi2
 	return 1
     fi
-    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi3)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi3)' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
     if [ $WORDS -ne 4 ]; then
         echo Got only $WORDS links for dangling-multi3
 	return 1
@@ -727,20 +727,20 @@ dangling_multi_valued_check_missing() {
 }
 
 dangling_multi_valued_check_equal_or_too_many() {
-    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi1)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi1)' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
     if [ $WORDS -ne 4 ]; then
         echo Got $WORDS links for dangling-multi1
 	return 1
     fi
 
-    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi5)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi5)' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
 
     if [ $WORDS -ne 0 ]; then
         echo Got $WORDS links for dangling-multi5
 	return 1
     fi
 
-    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=Administrator)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=Administrator)' --scope=sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
 
     if [ $WORDS -ne 2 ]; then
         echo Got $WORDS links for Administrator

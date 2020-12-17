@@ -70,7 +70,7 @@ testit "The name $NAME.$REALM $IP6ADDRESS should not be there any longer" dig @$
 # This should be an expect_failure test ...
 testit "Adding an unprivileged user" $VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
-BASEDN=$($VALGRIND $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -b '' -s base defaultNamingContext | grep defaultNamingContext | sed -e 's!^defaultNamingContext: !!')
+BASEDN=$($VALGRIND $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -b '' --scope=base defaultNamingContext | grep defaultNamingContext | sed -e 's!^defaultNamingContext: !!')
 
 LDIF="dn: CN=$UNPRIVUSER,CN=users,${BASEDN}+changetype: modify+replace: userAccountControl+userAccountControl: 512"
 

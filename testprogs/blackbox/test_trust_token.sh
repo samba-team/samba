@@ -38,7 +38,7 @@ test_token()
 	auth_args="${1}"
 	auth_sid="${2-}"
 
-	out=$($VALGRIND $ldbsearch -H ldap://$SERVER.$REALM -U$TRUST_REALM\\$TRUST_USERNAME%$TRUST_PASSWORD -b '' -s base -k ${auth_args} tokenGroups 2>&1)
+	out=$($VALGRIND $ldbsearch -H ldap://$SERVER.$REALM -U$TRUST_REALM\\$TRUST_USERNAME%$TRUST_PASSWORD -b '' --scope=base -k ${auth_args} tokenGroups 2>&1)
 	ret=$?
 	test x"$ret" = x"0" || {
 		echo "$out"

@@ -86,7 +86,7 @@ echo $USERPASS > $PREFIX/tmpuserpassfile
 testit "add user with kerberos ccache" $VALGRIND $PYTHON $samba_tool user create nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
-BASEDN=`$ldbsearch $options --basedn='' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
+BASEDN=`$ldbsearch $options --basedn='' -H ldap://$SERVER --scope=base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
 
 cat > $PREFIX/tmpldbmodify <<EOF
 dn: cn=nettestuser,cn=users,$BASEDN

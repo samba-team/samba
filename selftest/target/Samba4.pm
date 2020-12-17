@@ -166,7 +166,7 @@ sub wait_for_start($$)
 		$cmd .= "$testenv_vars->{CONFIGURATION} ";
 		$cmd .= "-H ldap://$testenv_vars->{SERVER} ";
 		$cmd .= "-U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} ";
-		$cmd .= "-s base ";
+		$cmd .= "--scope base ";
 		$cmd .= "-b '$search_dn' ";
 		while (system("$cmd >/dev/null") != 0) {
 			$count++;

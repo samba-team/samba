@@ -229,7 +229,7 @@ EOF
 check_expected_userparameters() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-userParameters-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb userParameters=* -s sub -b DC=release-4-1-0rc3,DC=samba,DC=corp userParameters --sorted | grep -v \# > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb userParameters=* --scope=sub -b DC=release-4-1-0rc3,DC=samba,DC=corp userParameters --sorted | grep -v \# > $tmpldif
 	diff -u $tmpldif $release_dir/expected-userParameters-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
@@ -256,13 +256,13 @@ do_current_version_mod() {
 check_expected_before_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
 
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
 
 	# Here we remove originating_change_time and whenChanged as
 	# these are time-dependent, caused by the ldbmodify above.
@@ -272,14 +272,14 @@ check_expected_before_values() {
 	    return 1
 	fi
 
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck3.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
     elif [ x$RELEASE = x"release-4-5-0-pre1" ]; then
         tmpldif=$PREFIX_ABS/$RELEASE/rootdse-version.initial.txt.tmp
-        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif
+        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpldif
         diff -u $tmpldif $release_dir/rootdse-version.initial.txt
         if [ "$?" != "0" ]; then
             return 1
@@ -300,7 +300,7 @@ dbcheck_objectclass() {
 # This should 'fail', because it returns the number of wrong records, which it must if we did not skip the deleted objects
 dbcheck_deleted_objects() {
     if [ x$RELEASE = x"alpha13" ]; then
-	basedn=$($ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b "" defaultNamingContext| grep -i defaultNamingContext| cut -d\  -f 2)
+	basedn=$($ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope base -b "" defaultNamingContext| grep -i defaultNamingContext| cut -d\  -f 2)
 
 	$PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb "cn=deleted objects,$basedn" --scope base $@
     else
@@ -316,30 +316,30 @@ dbcheck() {
 check_expected_after_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck2.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 --scope=one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck3.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
 	# Check DomainDNS partition for replica locations
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-replica-locations-after-dbcheck.ldif.tmp
-	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=49a69498-9a85-48af-9be4-aa0b3e0054f9 -s one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
+	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=49a69498-9a85-48af-9be4-aa0b3e0054f9 --scope=one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replica-locations-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
 	# Check ForestDNS partition for replica locations
-	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=7d2a15af-c0d4-487c-847e-e036292bcc65 -s one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
+	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=7d2a15af-c0d4-487c-847e-e036292bcc65 --scope=one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
 	diff -u $tmpldif $release_dir/expected-replica-locations-after-dbcheck2.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
@@ -356,7 +356,7 @@ check_expected_after_values() {
 	# If in the future dbcheck has to make a change recorded in replPropertyMetadata,
 	# this test will fail and can be removed.
         tmpversion=$PREFIX_ABS/$RELEASE/rootdse-version.final.txt.tmp
-        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpversion
+        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --scope=base -b '' | grep highestCommittedUSN > $tmpversion
         diff -u $tmpversion $release_dir/rootdse-version.final.txt
         if [ "$?" != "0" ]; then
             return 1
@@ -389,7 +389,7 @@ dbcheck_after_dup() {
 check_expected_after_dup_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-otherphone-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator -s base -b cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp otherHomePhone --sorted --show-binary | grep -v \# | sort > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator --scope=base -b cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp otherHomePhone --sorted --show-binary | grep -v \# | sort > $tmpldif
 	diff -u $tmpldif $release_dir/expected-otherphone-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
@@ -463,7 +463,7 @@ dbcheck_clean3() {
 check_expected_after_deleted_objects() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-deleted_objects-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=deleted\ objects -s base -b cn=deleted\ objects,DC=release-4-1-0rc3,DC=samba,DC=corp objectClass description isDeleted isCriticalSystemObject objectGUID showInAdvancedViewOnly systemFlags --sorted --show-binary --show-deleted | grep -v \# | sort > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=deleted\ objects --scope=base -b cn=deleted\ objects,DC=release-4-1-0rc3,DC=samba,DC=corp objectClass description isDeleted isCriticalSystemObject objectGUID showInAdvancedViewOnly systemFlags --sorted --show-binary --show-deleted | grep -v \# | sort > $tmpldif
 	diff -u $tmpldif $release_dir/expected-deleted_objects-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1

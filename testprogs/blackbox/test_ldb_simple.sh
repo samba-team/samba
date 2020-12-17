@@ -36,6 +36,6 @@ export PATH="$BINDIR:$PATH"
 
 ldbsearch="$VALGRIND ldbsearch"
 
-check "currentTime" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base currentTime || failed=`expr $failed + 1`
+check "currentTime" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base currentTime || failed=`expr $failed + 1`
 
 exit $failed

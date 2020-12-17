@@ -9,11 +9,11 @@
 LDB="$1"
 ZFILE="$2"
 
-dnshostname=$(bin/ldbsearch -H $LDB -s base -b '' dnsHostname | grep ^dns | cut -d' ' -f2)
+dnshostname=$(bin/ldbsearch -H $LDB --scope=base -b '' dnsHostname | grep ^dns | cut -d' ' -f2)
 host=$(echo $dnshostname | cut -d. -f1)
 realm=$(echo $dnshostname | cut -d. -f2-)
 GUIDs=$(bin/ldbsearch -H $LDB objectclass=ntdsdsa objectguid --cross-ncs|grep ^objectGUID| cut -d' ' -f2)
-DOMAINGUID=$(bin/ldbsearch -H $LDB -s base objectguid |grep ^objectGUID| cut -d' ' -f2)
+DOMAINGUID=$(bin/ldbsearch -H $LDB --scope=base objectguid |grep ^objectGUID| cut -d' ' -f2)
 
 dcname() {
     GUID=$1

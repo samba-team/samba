@@ -35,13 +35,13 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-BASE_DN=$($ldbsearch -H ldap://$DC_SERVER -b "" -s base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
+BASE_DN=$($ldbsearch -H ldap://$DC_SERVER -b "" --scope=base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
 if [ $? -ne 0 ] ; then
     echo "Could not find base DN" | subunit_fail_test "test_idmap_ad"
     exit 1
 fi
 
-TRUST_BASE_DN=$($ldbsearch -H ldap://$TRUST_SERVER -b "" -s base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
+TRUST_BASE_DN=$($ldbsearch -H ldap://$TRUST_SERVER -b "" --scope=base defaultNamingContext | awk '/^defaultNamingContext/ {print $2}')
 if [ $? -ne 0 ] ; then
     echo "Could not find trusted base DN" | subunit_fail_test "test_idmap_ad"
     exit 1

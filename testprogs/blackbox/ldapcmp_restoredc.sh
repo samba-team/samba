@@ -17,7 +17,7 @@ shift 2
 
 basedn() {
     SAMDB_PATH=$1
-    $BINDIR/ldbsearch -H $SAMDB_PATH --basedn='' -s base defaultNamingContext | grep defaultNamingContext | awk '{print $2}'
+    $BINDIR/ldbsearch -H $SAMDB_PATH --basedn='' --scope=base defaultNamingContext | grep defaultNamingContext | awk '{print $2}'
 }
 
 ldapcmp_with_orig() {

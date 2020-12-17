@@ -36,15 +36,15 @@ export PATH="$BINDIR:$PATH"
 
 ldbsearch="$VALGRIND ldbsearch"
 
-check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
-check "RootDSE (full)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' || failed=`expr $failed + 1`
-check "RootDSE (extended)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' --extended-dn || failed=`expr $failed + 1`
+check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
+check "RootDSE (full)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base '(objectClass=*)' || failed=`expr $failed + 1`
+check "RootDSE (extended)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base '(objectClass=*)' --extended-dn || failed=`expr $failed + 1`
 if [ x$p = x"ldaps" ]; then
-   testit_expect_failure "RootDSE over SSLv3 should fail" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN --option='tlspriority=NONE:+VERS-SSL3.0:+MAC-ALL:+CIPHER-ALL:+RSA:+SIGN-ALL:+COMP-NULL' && failed=`expr $failed + 1`
+   testit_expect_failure "RootDSE over SSLv3 should fail" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base DUMMY=x dnsHostName highestCommittedUSN --option='tlspriority=NONE:+VERS-SSL3.0:+MAC-ALL:+CIPHER-ALL:+RSA:+SIGN-ALL:+COMP-NULL' && failed=`expr $failed + 1`
 fi
 
 echo "Getting defaultNamingContext"
-BASEDN=`$ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
+BASEDN=`$ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER --scope=base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
 echo "BASEDN is $BASEDN"
 
 check "Listing Users" $ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
@@ -61,7 +61,7 @@ failed=`expr $failed + 1`
 fi
 
 echo "Check rootDSE for Controls"
-nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER -s base -b "" '(objectclass=*)' | grep -i supportedControl | wc -l`
+nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER --scope=base -b "" '(objectclass=*)' | grep -i supportedControl | wc -l`
 if [ $nentries -lt 4 ]; then
 echo "Should have found at least 4 entries"
 failed=`expr $failed + 1`
@@ -106,7 +106,7 @@ failed=`expr $failed + 1`
 fi
 
 echo "Test Attribute Scope Query Control"
-nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=asq:1:member -s base -b "CN=Administrators,CN=Builtin,$BASEDN" | grep sAMAccountName | wc -l`
+nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=asq:1:member --scope=base -b "CN=Administrators,CN=Builtin,$BASEDN" | grep sAMAccountName | wc -l`
 if [ $nentries -lt 1 ]; then
 echo "Attribute Scope Query test returned 0 items"
 failed=`expr $failed + 1`
@@ -186,18 +186,18 @@ if [ x"$st" != x"0" ]; then
 fi
 
 echo "Getting HEX GUID/SID of $BASEDN"
-HEXDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:0 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
+HEXDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER --scope=base "(objectClass=*)" --controls=extended_dn:1:0 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
 HEXGUID=`echo "$HEXDN" | cut -d ';' -f1`
 echo "HEXGUID[$HEXGUID]"
 
 echo "Getting STR GUID/SID of $BASEDN"
-STRDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:1 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
+STRDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER --scope=base "(objectClass=*)" --controls=extended_dn:1:1 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
 echo "STRDN: $STRDN"
 STRGUID=`echo "$STRDN" | cut -d ';' -f1`
 echo "STRGUID[$STRGUID]"
 
 echo "Getting STR GUID/SID of $BASEDN"
-STRDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:1 | grep 'dn: ' | cut -d ' ' -f2-`
+STRDN=`$ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER --scope=base "(objectClass=*)" --controls=extended_dn:1:1 | grep 'dn: ' | cut -d ' ' -f2-`
 echo "STRDN: $STRDN"
 STRSID=`echo "$STRDN" | cut -d ';' -f2`
 echo "STRSID[$STRSID]"
@@ -205,7 +205,7 @@ echo "STRSID[$STRSID]"
 SPECIALDNS="$HEXGUID $STRGUID $STRSID"
 for SPDN in $SPECIALDNS; do
 	echo "Search for $SPDN"
-	nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER -s base -b "$SPDN" '(objectClass=*)' | grep "dn: $BASEDN"  | wc -l`
+	nentries=`$ldbsearch $options $CONFIGURATION -H $p://$SERVER --scope=base -b "$SPDN" '(objectClass=*)' | grep "dn: $BASEDN"  | wc -l`
 	if [ $nentries -lt 1 ]; then
 		echo "Special search returned 0 items"
 		failed=`expr $failed + 1`

@@ -86,7 +86,7 @@ $VALGRIND ldbsearch '(&(uid=uham)(title=foo\blah))' uid && exit 1
 # to see if the first argument is an expression or not
 $VALGRIND ldbsearch '((' uid || exit 1
 $VALGRIND ldbsearch '(objectclass=)' uid || exit 1
-$VALGRIND ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' -s base "" sn || exit 1
+$VALGRIND ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' --scope=base "" sn || exit 1
 
 echo "Test wildcard match"
 $VALGRIND ldbadd $LDBDIR/tests/test-wildcard.ldif  || exit 1
@@ -101,7 +101,7 @@ echo "Starting ldbtest indexed"
 $VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
 
 echo "Testing one level search"
-count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep '^dn' | wc -l`
+count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' --scope=one 'objectclass=*' none |grep '^dn' | wc -l`
 if [ $count != 3 ]; then
     echo returned $count records - expected 3
     exit 1
@@ -141,7 +141,7 @@ checkcount() {
     scope=$2
     basedn=$3
     expression="$4"
-    n=`$VALGRIND ldbsearch -s "$scope" -b "$basedn" "$expression" | grep '^dn' | wc -l`
+    n=`$VALGRIND ldbsearch --scope="$scope" -b "$basedn" "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
 	exit 1

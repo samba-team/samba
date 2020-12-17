@@ -50,14 +50,14 @@ check_baseschema() {
 	    ldbsearch="$BINDIR/ldbsearch"
 	fi
 
-	base=$($ldbsearch -H $PREFIX/$1/private/sam.ldb -s base dn)
+	base=$($ldbsearch -H $PREFIX/$1/private/sam.ldb --scope=base dn)
 	dom=$(echo "$base" | grep "dn: " | cut -d " " -f 2);
 
 	if [ -z "$dom" ]; then
 		echo "Unexpected ldbsearch output: $base";
 	fi
 
-	version=$($ldbsearch -H $PREFIX/$1/private/sam.ldb -s base \
+	version=$($ldbsearch -H $PREFIX/$1/private/sam.ldb --scope=base \
 		  "objectVersion" -b "CN=SCHEMA,CN=CONFIGURATION,$dom");
 	version_num=$(echo "$version" | grep "objectVersion: " | cut -d " " -f 2);
 
