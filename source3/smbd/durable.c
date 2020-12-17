@@ -930,6 +930,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 
 	TALLOC_FREE(lck);
 
+	fsp->fsp_flags.is_fsa = true;
+
 	*result = fsp;
 	*new_cookie = new_cookie_blob;
 
