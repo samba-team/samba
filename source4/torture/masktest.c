@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "libcli/libcli.h"
@@ -83,6 +83,7 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 	struct smbcli_state *c;
 	char *server;
 	NTSTATUS status;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
 	server = talloc_strdup(mem_ctx, share+2);
 	share = strchr_m(server,'\\');
@@ -90,7 +91,7 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 	*share = 0;
 	share++;
 
-	cli_credentials_set_workstation(popt_get_cmdline_credentials(),
+	cli_credentials_set_workstation(creds,
 			"masktest", CRED_SPECIFIED);
 
 	status = smbcli_full_connection(NULL, &c,
@@ -98,7 +99,7 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					ports,
 					share, NULL,
 					socket_options,
-					popt_get_cmdline_credentials(),
+					creds,
 					resolve_ctx, ev,
 					options, session_options,
 					gensec_settings);
@@ -317,8 +318,10 @@ int main(int argc, const char *argv[])
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{0}
+		POPT_LEGACY_S4
+		POPT_TABLEEND
 	};
+	bool ok;
 
 	setlinebuf(stdout);
 	seed = time(NULL);
@@ -328,15 +331,34 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	pc = poptGetContext("locktest", argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<unc>");
+
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_UNCLIST:
-			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx,
+					  "torture:unclist",
+					  poptGetOptArg(pc));
 			break;
 		}
 	}
@@ -361,8 +383,6 @@ int main(int argc, const char *argv[])
 	share = argv_new[1];
 
 	all_string_sub(share,"/","\\",0);
-
-	lp_ctx = cmdline_lp_ctx;
 
 	ev = s4_event_context_init(mem_ctx);
 

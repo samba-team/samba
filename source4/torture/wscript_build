@@ -338,7 +338,7 @@ bld.SAMBA_BINARY('gentest',
 bld.SAMBA_BINARY('masktest',
 	source='masktest.c',
 	manpages='man/masktest.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB param_options'
+	deps='samba-hostconfig samba-util popt CMDLINE_S4 LIBCLI_SMB param_options'
 	)
 
 
