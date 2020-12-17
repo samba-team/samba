@@ -68,6 +68,9 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 
 	conn->num_files_open++;
 
+	DBG_INFO("allocated files structure (%u used)\n",
+		(unsigned int)sconn->num_files);
+
 	*result = fsp;
 	return NT_STATUS_OK;
 
@@ -167,8 +170,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(5,("allocated file structure %s (%u used)\n",
-		 fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
+	DBG_INFO("new file %s\n", fsp_fnum_dbg(fsp));
 
 	/* A new fsp invalidates the positive and
 	  negative fsp_fi_cache as the new fsp is pushed
