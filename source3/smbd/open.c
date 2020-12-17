@@ -4314,7 +4314,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *smb_dname,
-			       uint32_t file_attributes)
+			       uint32_t file_attributes,
+			       struct files_struct *fsp)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -4563,7 +4564,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 			status = mkdir_internal(conn,
 						smb_dname,
-						file_attributes);
+						file_attributes,
+						fsp);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("open_directory: unable to create "
@@ -4588,7 +4590,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 			} else {
 				status = mkdir_internal(conn,
 							smb_dname,
-							file_attributes);
+							file_attributes,
+							fsp);
 
 				if (NT_STATUS_IS_OK(status)) {
 					info = FILE_WAS_CREATED;
