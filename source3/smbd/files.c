@@ -586,9 +586,6 @@ NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 	}
 
 	smb_fname_dst->fsp = smb_fname_src->fsp;
-	talloc_set_destructor(smb_fname_dst, smb_fname_fsp_destructor);
-
-	smb_fname_fsp_unlink(smb_fname_src);
 
 	status = fsp_smb_fname_link(smb_fname_dst->fsp,
 				    &smb_fname_dst->fsp_link,
@@ -596,6 +593,10 @@ NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	talloc_set_destructor(smb_fname_dst, smb_fname_fsp_destructor);
+
+	smb_fname_fsp_unlink(smb_fname_src);
 
 	return NT_STATUS_OK;
 }
