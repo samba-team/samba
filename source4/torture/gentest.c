@@ -3292,7 +3292,11 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	int argc_new;
 	char **argv_new;
-	enum {OPT_UNCLIST=1000};
+	enum {
+		OPT_UNCLIST=1000,
+		OPT_USER1,
+		OPT_USER2,
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"smb2",          0, POPT_ARG_NONE, &options.smb2, 0,	"use SMB2 protocol", 	NULL},
@@ -3308,7 +3312,8 @@ int main(int argc, const char *argv[])
 		{"fast",          0, POPT_ARG_NONE, &options.fast_reconnect,    0,      "use fast reconnect", NULL},
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
-		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"user1",         0, POPT_ARG_STRING, NULL, OPT_USER1, "Set first network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		{"user2",         0, POPT_ARG_STRING, NULL, OPT_USER2, "Set second network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
 		{"maskindexing",  0, POPT_ARG_NONE,  &options.mask_indexing, 0,	"mask out the indexed file attrib", 	NULL},
 		{"noeas",  0, POPT_ARG_NONE,  &options.no_eas, 0,	"don't use extended attributes", 	NULL},
 		{"noacls",  0, POPT_ARG_NONE,  &options.no_acls, 0,	"don't use ACLs", 	NULL},
@@ -3352,13 +3357,16 @@ int main(int argc, const char *argv[])
 		case OPT_UNCLIST:
 			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
-		case 'U':
-			if (username_count == 2) {
-				usage(pc);
-				talloc_free(mem_ctx);
-				exit(1);
-			}
-			cli_credentials_parse_string(servers[username_count].credentials, poptGetOptArg(pc), CRED_SPECIFIED);
+		case OPT_USER1:
+			cli_credentials_parse_string(servers[0].credentials,
+						     poptGetOptArg(pc),
+						     CRED_SPECIFIED);
+			username_count++;
+			break;
+		case OPT_USER2:
+			cli_credentials_parse_string(servers[1].credentials,
+						     poptGetOptArg(pc),
+						     CRED_SPECIFIED);
 			username_count++;
 			break;
 		}
