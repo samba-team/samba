@@ -84,7 +84,9 @@ static int extensions_hook(struct ldb_context *ldb, enum ldb_module_hook_type t)
 
 		len1 = calculate_popt_array_length(*popt_options);
 		len2 = calculate_popt_array_length(cmdline_extensions);
-		new_array = talloc_array(NULL, struct poptOption, len1+len2+1);
+		new_array = talloc_array(ldb,
+					 struct poptOption,
+					 len1 + len2 + 1);
 		if (NULL == new_array) {
 			return ldb_oom(ldb);
 		}
