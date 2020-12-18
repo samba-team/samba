@@ -1093,18 +1093,6 @@ int ldb_global_init(void);
 */
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
-typedef void (*ldb_async_timeout_fn) (void *);
-typedef bool (*ldb_async_callback_fn) (void *);
-typedef int (*ldb_async_ctx_add_op_fn)(void *, time_t, void *, ldb_async_timeout_fn, ldb_async_callback_fn);
-typedef int (*ldb_async_ctx_wait_op_fn)(void *);
-
-void ldb_async_ctx_set_private_data(struct ldb_context *ldb,
-					void *private_data);
-void ldb_async_ctx_set_add_op(struct ldb_context *ldb,
-				ldb_async_ctx_add_op_fn add_op);
-void ldb_async_ctx_set_wait_op(struct ldb_context *ldb,
-				ldb_async_ctx_wait_op_fn wait_op);
-
 /**
    Connect to a database.
 
