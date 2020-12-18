@@ -1610,6 +1610,15 @@ int vfs_fake_fd(void)
 }
 
 /*
+ * This is just a helper to make
+ * users of vfs_fake_fd() more symetric
+ */
+int vfs_fake_fd_close(int fd)
+{
+	return close(fd);
+}
+
+/*
   generate a file_id from a stat structure
  */
 struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf)
