@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/events/events.h"
 #include "system/time.h"
 #include "../libcli/smbreadline/smbreadline.h"
@@ -554,56 +554,95 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
+	const char **argv_const = discard_const_p(const char *, argv);
 	int opt;
 	const char *file = NULL;
 	poptContext pc;
 	const char *remote = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
 	struct regshell_context *ctx;
 	struct tevent_context *ev_ctx;
 	bool ret = true;
+	bool ok;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"file", 'F', POPT_ARG_STRING, &file, 0, "open hive file", NULL },
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		POPT_LEGACY_S4
 		POPT_COMMON_VERSION
-		{0}
+		POPT_TABLEEND
 	};
 
-	pc = poptGetContext(argv[0], argc, argv, long_options,0);
+	mem_ctx = talloc_init("regshell.c/main");
+	if (mem_ctx == NULL) {
+		exit(ENOMEM);
+	}
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	ctx = talloc_zero(NULL, struct regshell_context);
+	poptFreeContext(pc);
+	samba_cmdline_burn(argc, argv);
+
+	ctx = talloc_zero(mem_ctx, struct regshell_context);
 
 	ev_ctx = s4_event_context_init(ctx);
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	creds = samba_cmdline_get_creds();
 
 	if (remote != NULL) {
 		ctx->registry = reg_common_open_remote(remote, ev_ctx,
-					 cmdline_lp_ctx,
-					popt_get_cmdline_credentials());
+						       lp_ctx,
+						       creds);
 	} else if (file != NULL) {
 		ctx->current = reg_common_open_file(file, ev_ctx,
-					cmdline_lp_ctx,
-					popt_get_cmdline_credentials());
-		if (ctx->current == NULL)
-			return 1;
+						    lp_ctx,
+						    creds);
+		if (ctx->current == NULL) {
+			TALLOC_FREE(mem_ctx);
+			exit(1);
+		}
 		ctx->registry = ctx->current->context;
 		ctx->path = talloc_strdup(ctx, "");
 		ctx->predef = NULL;
 		ctx->root = ctx->current;
 	} else {
-		ctx->registry = reg_common_open_local(
-					popt_get_cmdline_credentials(),
-					ev_ctx, cmdline_lp_ctx);
+		ctx->registry = reg_common_open_local(creds,
+						      ev_ctx,
+						      lp_ctx);
 	}
 
-	if (ctx->registry == NULL)
-		return 1;
+	if (ctx->registry == NULL) {
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	if (ctx->current == NULL) {
 		unsigned int i;
@@ -629,10 +668,9 @@ int main(int argc, const char **argv)
 
 	if (ctx->current == NULL) {
 		fprintf(stderr, "Unable to access any of the predefined keys\n");
-		return 1;
+		TALLOC_FREE(mem_ctx);
+		exit(1);
 	}
-
-	poptFreeContext(pc);
 
 	while (true) {
 		char *line, *prompt;
@@ -658,7 +696,7 @@ int main(int argc, const char **argv)
 		free(line);
 		free(prompt);
 	}
-	talloc_free(ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return (ret?0:1);
 }

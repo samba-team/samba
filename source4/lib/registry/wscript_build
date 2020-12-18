@@ -42,7 +42,7 @@ bld.SAMBA_BINARY('regpatch',
 bld.SAMBA_BINARY('regshell',
 	source='tools/regshell.c',
 	manpages='man/regshell.1',
-	deps='samba-hostconfig popt registry POPT_SAMBA POPT_CREDENTIALS SMBREADLINE registry_common'
+	deps='samba-hostconfig popt registry CMDLINE_S4 SMBREADLINE registry_common'
 	)
 
 
