@@ -1647,7 +1647,7 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_META_NETATALK:
-		ret = close(fsp->fh->fd);
+		ret = vfs_fake_fd_close(fsp->fh->fd);
 		fsp->fh->fd = -1;
 		break;
 
@@ -1676,7 +1676,7 @@ static int fruit_close_rsrc(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_RSRC_XATTR:
-		ret = close(fsp->fh->fd);
+		ret = vfs_fake_fd_close(fsp->fh->fd);
 		fsp->fh->fd = -1;
 		break;
 
