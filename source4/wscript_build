@@ -9,5 +9,5 @@ bld.SAMBA_BINARY('client/smbclient'  + bld.env.suffix4,
 
 bld.SAMBA_BINARY('client/cifsdd',
 	source='client/cifsdd.c client/cifsddio.c',
-	deps='samba-hostconfig LIBCLI_SMB popt POPT_SAMBA POPT_CREDENTIALS param_options'
+	deps='samba-hostconfig LIBCLI_SMB popt CMDLINE_S4 param_options'
 	)

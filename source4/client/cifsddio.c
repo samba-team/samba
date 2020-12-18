@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "libcli/libcli.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 #include "cifsdd.h"
 
@@ -238,7 +238,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
 				NULL /* devtype */,
 				socket_options,
-				popt_get_cmdline_credentials(),
+				samba_cmdline_get_creds(),
 				resolve_ctx,
 				ev, options,
 				session_options,

@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "auth/gensec/gensec.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/raw/libcliraw.h"
 #include "lib/events/events.h"
@@ -606,11 +606,15 @@ struct poptOption cifsddHelpOptions[] = {
 	POPT_TABLEEND
 };
 
-int main(int argc, const char ** argv)
+int main(int argc, char *argv[])
 {
+	const char **const_argv = discard_const_p(const char *, argv);
 	int i;
 	const char ** dd_args;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct loadparm_context *lp_ctx = NULL;
 	struct tevent_context *ev;
+	bool ok;
 	int rc;
 
 	poptContext pctx;
@@ -621,8 +625,9 @@ int main(int argc, const char ** argv)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
+		POPT_LEGACY_S4
 		POPT_COMMON_VERSION
-		{0}
+		POPT_TABLEEND
 	};
 
 	/* Block sizes. */
@@ -641,7 +646,28 @@ int main(int argc, const char ** argv)
 	set_arg_val("sync", false);
 	set_arg_val("oplock", false);
 
-	pctx = poptGetContext(PROGNAME, argc, argv, poptions, 0);
+	mem_ctx = talloc_init("cifsdd.c/main");
+	if (mem_ctx == NULL) {
+		d_printf("Not enough memory\n");
+		exit(1);
+	}
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pctx = samba_popt_get_context(getprogname(), argc, const_argv, poptions, 0);
+	if (pctx == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
 	while ((i = poptGetNextOpt(pctx)) != -1) {
 		;
 	}
@@ -662,7 +688,11 @@ int main(int argc, const char ** argv)
 		}
 	}
 
-	ev = s4_event_context_init(NULL);
+	poptFreeContext(pctx);
+	samba_cmdline_burn(argc, argv);
+
+	ev = s4_event_context_init(mem_ctx);
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
 	gensec_init();
 	dump_args();
@@ -670,28 +700,27 @@ int main(int argc, const char ** argv)
 	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("obs") == 0) {
 		fprintf(stderr, "%s: block sizes must be greater that zero\n",
 				PROGNAME);
-		talloc_free(ev);
+		talloc_free(mem_ctx);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	if (check_arg_pathname("if") == NULL) {
 		fprintf(stderr, "%s: missing input filename\n", PROGNAME);
-		talloc_free(ev);
+		talloc_free(mem_ctx);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	if (check_arg_pathname("of") == NULL) {
 		fprintf(stderr, "%s: missing output filename\n", PROGNAME);
-		talloc_free(ev);
+		talloc_free(mem_ctx);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	CatchSignal(SIGINT, dd_handle_signal);
 	CatchSignal(SIGUSR1, dd_handle_signal);
-	rc = copy_files(ev, cmdline_lp_ctx);
+	rc = copy_files(ev, lp_ctx);
 
-	poptFreeContext(pctx);
-	talloc_free(ev);
+	talloc_free(mem_ctx);
 	return rc;
 }
 
