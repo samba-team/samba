@@ -1496,7 +1496,9 @@ static void fetch_share_mode_fn(
 		ltdb.share_mode_data_len);
 	if (state->lck->data == NULL) {
 		DBG_DEBUG("parse_share_modes failed\n");
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		TALLOC_FREE(state->lck);
+		return;
 	}
 }
 
