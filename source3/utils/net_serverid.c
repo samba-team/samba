@@ -436,63 +436,89 @@ done:
 	return status;
 }
 
+struct wipedbs_delete_state {
+	struct wipedbs_record_marker *cur;
+	bool verbose;
+	bool dry_run;
+	size_t total;
+	size_t num;
+};
+
+static void wipedbs_delete_fn(
+	struct db_record *rec, TDB_DATA value, void *private_data)
+{
+	struct db_context *db = dbwrap_record_get_db(rec);
+	struct wipedbs_delete_state *state = private_data;
+	struct wipedbs_record_marker *cur = state->cur;
+	NTSTATUS status = NT_STATUS_OK;
+
+	state->total += 1;
+
+	if (!tdb_data_equal(value, cur->val)) {
+		DBG_ERR("Warning: record <%s> from %s changed,"
+			"skip record!\n",
+			cur->desc, dbwrap_name(db));
+		return;
+	}
+
+	if (state->verbose) {
+		d_printf("deleting %s\n", cur->desc);
+	}
+
+	if (!state->dry_run) {
+		status = dbwrap_record_delete(rec);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to delete record <%s> from %s: %s\n",
+			cur->desc,
+			dbwrap_name(db),
+			nt_errstr(status));
+		return;
+	}
+
+	state->num += 1;
+}
+
 static int wipedbs_delete_records(struct db_context *db,
 				  struct wipedbs_record_marker *records,
 				  bool dry_run, bool verbose, int *count)
 {
-	struct wipedbs_record_marker *cur;
-	struct db_record *rec;
-	TDB_DATA val;
-	NTSTATUS status;
-	unsigned num=0, total=0;
+	struct wipedbs_delete_state state = {
+		.verbose = verbose, .dry_run = dry_run,
+	};
 
 	if (db == NULL) {
 		return 0;
 	}
 
-	for (cur = records; cur != NULL; cur = cur->next) {
-		total++;
-		rec = dbwrap_fetch_locked(db, talloc_tos(), cur->key);
-		if (rec == NULL) {
-			DEBUG(0, ("Failed to fetch record <%s> from %s",
-				  cur->desc, dbwrap_name(db)));
-			continue;
+	for (state.cur = records;
+	     state.cur != NULL;
+	     state.cur = state.cur->next) {
+
+		NTSTATUS status = dbwrap_do_locked(
+			db, state.cur->key, wipedbs_delete_fn, &state);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("dbwrap_do_locked failed for record <%s> "
+				"from %s\n",
+				state.cur->desc,
+				dbwrap_name(db));
 		}
-		val = dbwrap_record_get_value(rec);
-		if (tdb_data_equal(val, cur->val)) {
-			if (dry_run) {
-				status = NT_STATUS_OK;
-			} else {
-				status = dbwrap_record_delete(rec);
-			}
-			if (NT_STATUS_IS_OK(status)) {
-				num ++;
-			} else {
-				DEBUG(0, ("Failed to delete record <%s> from %s"
-					  ": %s\n", cur->desc, dbwrap_name(db),
-					  nt_errstr(status)));
-			}
-		} else {
-			DEBUG(0, ("Warning: record <%s> from %s changed"
-				  ", skip record!\n",
-				  cur->desc, dbwrap_name(db)));
-		}
-		if (verbose) {
-			d_printf("deleting %s\n", cur->desc);
-		}
-		TALLOC_FREE(rec);
 	}
 
 	if (verbose) {
-		d_printf("Deleted %u of %u records from %s\n",
-			 num, total, dbwrap_name(db));
+		d_printf("Deleted %zu of %zu records from %s\n",
+			 state.num,
+			 state.total,
+			 dbwrap_name(db));
 	}
 
 	if (count) {
-		*count += total;
+		*count += state.total;
 	}
 
-	return total - num;
+	return state.total - state.num;
 }
 
 static int wipedbs_traverse_server_data(struct db_record *rec,
