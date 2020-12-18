@@ -490,7 +490,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 
  fail:
 	if (fakefd >= 0) {
-		close(fakefd);
+		vfs_fake_fd_close(fakefd);
 		fakefd = -1;
 	}
 
@@ -512,7 +512,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_CLOSE(handle, fsp);
 	}
 
-	ret = close(fd);
+	ret = vfs_fake_fd_close(fd);
 	fsp->fh->fd = -1;
 
 	return ret;
