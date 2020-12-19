@@ -1238,6 +1238,7 @@ static char *tldap_get_val(TALLOC_CTX *memctx,
 	while (*s) {
 		s = strchr(s, ')');
 		if (s && (*(s - 1) == '\\')) {
+			s++;
 			continue;
 		}
 		break;
