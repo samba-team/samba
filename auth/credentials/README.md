@@ -1505,7 +1505,10 @@ _PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
 	} else if (state->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		status = netlogon_creds_arcfour_crypt(state,
 						      data.data,
-						      data.length);
+				smb level |  ntfsa |  ntfsa_posix level
+        smbXsrv_session -> ntfsa_context -> users_struct
+        smbXsrv_tcon -> ntfsa_context -> connections_struct
+        smbXsrv_open -> ntfsa_open -> files_struct		      data.length);
 	} else {
 		DBG_ERR("Unsupported encryption option negotiated");
 		status = NT_STATUS_NOT_SUPPORTED;
