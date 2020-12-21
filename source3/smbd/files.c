@@ -915,7 +915,7 @@ bool file_find_subpath(files_struct *dir_fsp)
  Free up a fsp.
 ****************************************************************************/
 
-void fsp_free(files_struct *fsp)
+static void fsp_free(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
