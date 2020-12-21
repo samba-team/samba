@@ -1264,24 +1264,6 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 	return fetch_locked_internal(ctx, mem_ctx, key, false);
 }
 
-static struct db_record *db_ctdb_try_fetch_locked(struct db_context *db,
-						  TALLOC_CTX *mem_ctx,
-						  TDB_DATA key)
-{
-	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
-							struct db_ctdb_ctx);
-
-	if (ctx->transaction != NULL) {
-		return db_ctdb_fetch_locked_transaction(ctx, mem_ctx, key);
-	}
-
-	if (db->persistent) {
-		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
-	}
-
-	return fetch_locked_internal(ctx, mem_ctx, key, true);
-}
-
 struct db_ctdb_parse_record_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data);
 	void *private_data;
@@ -1988,7 +1970,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	result->private_data = (void *)db_ctdb;
 	result->fetch_locked = db_ctdb_fetch_locked;
-	result->try_fetch_locked = db_ctdb_try_fetch_locked;
 	result->parse_record = db_ctdb_parse_record;
 	result->parse_record_send = db_ctdb_parse_record_send;
 	result->parse_record_recv = db_ctdb_parse_record_recv;
