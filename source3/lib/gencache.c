@@ -124,7 +124,7 @@ static bool gencache_init(void)
 			return false;
 		}
 
-		ok = directory_create_or_exist(cache_dname, 0700);
+		ok = directory_create_or_exists_recursive(cache_dname, 0700);
 		if (!ok) {
 			DBG_ERR("Failed to create directory: %s - %s\n",
 				cache_dname, strerror(errno));
