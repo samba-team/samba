@@ -5820,9 +5820,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 
 		if (fsp->base_fsp != NULL) {
-			fd_close(fsp->base_fsp);
-			file_free(NULL, fsp->base_fsp);
-			fsp->base_fsp = NULL;
+			struct files_struct *tmp_base_fsp = fsp->base_fsp;
+
+			fsp_set_base_fsp(fsp, NULL);
+
+			fd_close(tmp_base_fsp);
+			file_free(NULL, tmp_base_fsp);
 		}
 	}
 
@@ -5845,7 +5848,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * base_fsp we already opened. Set up the
 		 * base_fsp pointer.
 		 */
-		fsp->base_fsp = base_fsp;
+		fsp_set_base_fsp(fsp, base_fsp);
 	}
 
 	/*
@@ -5942,7 +5945,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * We have to reset the already set base_fsp
 		 * in order to close it in the error cleanup
 		 */
-		fsp->base_fsp = NULL;
+		fsp_set_base_fsp(fsp, NULL);
 		goto fail;
 	}
 

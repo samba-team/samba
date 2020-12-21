@@ -366,10 +366,13 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	}
 
 	if (fsp->base_fsp != NULL) {
-		status = fd_close(fsp->base_fsp);
+		struct files_struct *tmp_base_fsp = fsp->base_fsp;
+
+		fsp_set_base_fsp(fsp, NULL);
+
+		status = fd_close(tmp_base_fsp);
 		SMB_ASSERT(NT_STATUS_IS_OK(status));
-		file_free(NULL, fsp->base_fsp);
-		fsp->base_fsp = NULL;
+		file_free(NULL, tmp_base_fsp);
 	}
 
 	status = fd_close(fsp);
@@ -411,7 +414,7 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	fsp->base_fsp = smb_fname_base->fsp;
+	fsp_set_base_fsp(fsp, smb_fname_base->fsp);
 	smb_fname_fsp_unlink(smb_fname_base);
 	TALLOC_FREE(smb_fname_base);
 
@@ -495,9 +498,12 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			  nt_errstr(status));
 
 		if (fsp->base_fsp != NULL) {
-			fd_close(fsp->base_fsp);
-			file_free(NULL, fsp->base_fsp);
-			fsp->base_fsp = NULL;
+			struct files_struct *tmp_base_fsp = fsp->base_fsp;
+
+			fsp_set_base_fsp(fsp, NULL);
+
+			fd_close(tmp_base_fsp);
+			file_free(NULL, tmp_base_fsp);
 		}
 		file_free(NULL, fsp);
 		fsp = NULL;
@@ -563,9 +569,12 @@ fail:
 		return status;
 	}
 	if (fsp->base_fsp != NULL) {
-		fd_close(fsp->base_fsp);
-		file_free(NULL, fsp->base_fsp);
-		fsp->base_fsp = NULL;
+		struct files_struct *tmp_base_fsp = fsp->base_fsp;
+
+		fsp_set_base_fsp(fsp, NULL);
+
+		fd_close(tmp_base_fsp);
+		file_free(NULL, tmp_base_fsp);
 	}
 	fd_close(fsp);
 	file_free(NULL, fsp);
