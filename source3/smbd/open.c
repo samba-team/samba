@@ -5941,11 +5941,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * We have to reset the already set base_fsp
-		 * in order to close it in the error cleanup
-		 */
-		fsp_set_base_fsp(fsp, NULL);
 		goto fail;
 	}
 
@@ -6056,20 +6051,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
-		if (base_fsp && fsp->base_fsp == base_fsp) {
-			/*
-			 * The close_file below will close
-			 * fsp->base_fsp.
-			 */
-			base_fsp = NULL;
-		}
-		if (!fsp->fsp_flags.is_fsa) {
-			/* Open wasn't completed. */
-			fd_close(fsp);
-			file_free(req, fsp);
-		} else {
-			close_file(req, fsp, ERROR_CLOSE);
-		}
+		/*
+		 * The close_file below will close
+		 * fsp->base_fsp.
+		 */
+		base_fsp = NULL;
+		close_file(req, fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
 	if (base_fsp != NULL) {
