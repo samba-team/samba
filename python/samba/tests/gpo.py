@@ -484,7 +484,11 @@ class GPOTests(tests.TestCase):
         principal = etree.Element('principal')
         principal.text = 'fakeu'
         principal.attrib['type'] = 'user'
+        group = etree.Element('principal')
+        group.text = 'fakeg'
+        group.attrib['type'] = 'group'
         principal_list.append(principal)
+        principal_list.append(group)
         sudoers_entry.append(principal_list)
         data.append(sudoers_entry)
         policysetting.append(data)
@@ -492,7 +496,7 @@ class GPOTests(tests.TestCase):
         self.assertTrue(ret, 'Could not create the target %s' % manifest)
 
         # Process all gpos, with temp output directory
-        data = 'fakeu ALL=(ALL) NOPASSWD: ALL'
+        data = 'fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL'
         with TemporaryDirectory() as dname:
             ext.process_group_policy([], gpos, dname)
             sudoers = os.listdir(dname)
