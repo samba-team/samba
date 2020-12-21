@@ -479,10 +479,10 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			  nt_errstr(status));
 
 		if (fsp->base_fsp != NULL) {
+			fd_close(fsp->base_fsp);
 			file_free(NULL, fsp->base_fsp);
 			fsp->base_fsp = NULL;
 		}
-		fd_close(fsp);
 		file_free(NULL, fsp);
 		fsp = NULL;
 
@@ -547,6 +547,7 @@ fail:
 		return status;
 	}
 	if (fsp->base_fsp != NULL) {
+		fd_close(fsp->base_fsp);
 		file_free(NULL, fsp->base_fsp);
 		fsp->base_fsp = NULL;
 	}
