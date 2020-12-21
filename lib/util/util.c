@@ -35,6 +35,7 @@
 #include "debug.h"
 #include "samba_util.h"
 #include "lib/util/select.h"
+#include <libgen.h>
 
 #undef malloc
 #undef strcasecmp
@@ -392,6 +393,45 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
 	}
 
 	return true;
+}
+
+_PUBLIC_ bool directory_create_or_exists_recursive(
+		const char *dname,
+		mode_t dir_perms)
+{
+	bool ok;
+
+	ok = directory_create_or_exist(dname, dir_perms);
+	if (!ok) {
+		if (!directory_exist(dname)) {
+			char tmp[PATH_MAX] = {0};
+			char *parent = NULL;
+			size_t n;
+
+			/* Use the null context */
+			n = strlcpy(tmp, dname, sizeof(tmp));
+			if (n < strlen(dname)) {
+				DBG_ERR("Path too long!\n");
+				return false;
+			}
+
+			parent = dirname(tmp);
+			if (parent == NULL) {
+				DBG_ERR("Failed to create dirname!\n");
+				return false;
+			}
+
+			ok = directory_create_or_exists_recursive(parent,
+								  dir_perms);
+			if (!ok) {
+				return false;
+			}
+
+			ok = directory_create_or_exist(dname, dir_perms);
+		}
+	}
+
+	return ok;
 }
 
 /**

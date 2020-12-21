@@ -4,6 +4,7 @@
  *  Unit test for util.c
  *
  *  Copyright (C) Christof Schmitt 2020
+ *  Copyright (C) Andreas Schneider 2020
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,13 +20,22 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "lib/util/util.c"
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <setjmp.h>
 #include <cmocka.h>
+
+#include "lib/replace/replace.h"
+#include "system/dir.h"
+
+#include "lib/util/util.c"
 
 struct test_paths {
 	char testdir[PATH_MAX];
 	char none[PATH_MAX];
 	char dir[PATH_MAX];
+	char dir_recursive[PATH_MAX];
 	mode_t dir_mode;
 	char file[PATH_MAX];
 	mode_t file_mode;
@@ -59,6 +69,12 @@ static int group_setup(void **state)
 	ret = mkdir(paths->dir, paths->dir_mode);
 	assert_return_code(ret, errno);
 
+	strlcpy(paths->dir_recursive, testdir, sizeof(paths->dir));
+	strlcat(paths->dir_recursive, "/dir_recursive", sizeof(paths->dir));
+	paths->dir_mode = 0750;
+	ret = mkdir(paths->dir_recursive, paths->dir_mode);
+	assert_return_code(ret, errno);
+
 	strlcpy(paths->file, testdir, sizeof(paths->file));
 	strlcat(paths->file, "/file", sizeof(paths->file));
 	paths->file_mode = 0640;
@@ -89,15 +105,78 @@ static int group_setup(void **state)
 	return 0;
 }
 
+static int torture_rmdirs(const char *path)
+{
+	DIR *d;
+	struct dirent *dp;
+	struct stat sb;
+	char *fname;
+
+	if ((d = opendir(path)) != NULL) {
+		while(stat(path, &sb) == 0) {
+			/* if we can remove the directory we're done */
+			if (rmdir(path) == 0) {
+				break;
+			}
+			switch (errno) {
+				case ENOTEMPTY:
+				case EEXIST:
+				case EBADF:
+					break; /* continue */
+				default:
+					closedir(d);
+					return 0;
+			}
+
+			while ((dp = readdir(d)) != NULL) {
+				size_t len;
+				/* skip '.' and '..' */
+				if (dp->d_name[0] == '.' &&
+						(dp->d_name[1] == '\0' ||
+						 (dp->d_name[1] == '.' && dp->d_name[2] == '\0'))) {
+					continue;
+				}
+
+				len = strlen(path) + strlen(dp->d_name) + 2;
+				fname = malloc(len);
+				if (fname == NULL) {
+					closedir(d);
+					return -1;
+				}
+				snprintf(fname, len, "%s/%s", path, dp->d_name);
+
+				/* stat the file */
+				if (lstat(fname, &sb) != -1) {
+					if (S_ISDIR(sb.st_mode) && !S_ISLNK(sb.st_mode)) {
+						if (rmdir(fname) < 0) { /* can't be deleted */
+							if (errno == EACCES) {
+								closedir(d);
+								SAFE_FREE(fname);
+								return -1;
+							}
+							torture_rmdirs(fname);
+						}
+					} else {
+						unlink(fname);
+					}
+				} /* lstat */
+				SAFE_FREE(fname);
+			} /* readdir */
+
+			rewinddir(d);
+		}
+	} else {
+		return -1;
+	}
+
+	closedir(d);
+	return 0;
+}
+
 static int group_teardown(void **state)
 {
 	struct test_paths *paths = *state;
 	int ret;
-
-	return 0;
-
-	ret = rmdir(paths->dir);
-	assert_return_code(ret, errno);
 
 	ret = unlink(paths->file);
 	assert_return_code(ret, errno);
@@ -111,7 +190,7 @@ static int group_teardown(void **state)
 	ret = unlink(paths->symlink_file);
 	assert_return_code(ret, errno);
 
-	ret = unlink(paths->testdir);
+	ret = torture_rmdirs(paths->testdir);
 	assert_return_code(ret, errno);
 
 	free(paths);
@@ -217,6 +296,30 @@ static void test_directory_create_or_exists_symlink_file(void **state)
 	assert_true(S_ISLNK(sbuf.st_mode));
 }
 
+static void test_directory_create_or_exists_recursive(void **state)
+{
+	struct test_paths *paths = *state;
+	char recursive_testdir[PATH_MAX] = {0};
+	struct stat sbuf = {0};
+	bool ok;
+	int ret;
+
+	ret = snprintf(recursive_testdir,
+		       sizeof(recursive_testdir),
+		       "%s/wurst/brot",
+		       paths->dir_recursive);
+	assert_int_not_equal(ret, -1);
+
+	ok = directory_create_or_exists_recursive(recursive_testdir,
+						  0700);
+	assert_true(ok);
+
+	ret = lstat(recursive_testdir, &sbuf);
+	assert_return_code(ret, errno);
+	assert_int_equal(sbuf.st_mode & 0777, 0700);
+	assert_true(S_ISDIR(sbuf.st_mode));
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -226,6 +329,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_directory_create_or_exists_symlink_none),
 		cmocka_unit_test(test_directory_create_or_exists_symlink_dir),
 		cmocka_unit_test(test_directory_create_or_exists_symlink_file),
+		cmocka_unit_test(test_directory_create_or_exists_recursive),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
