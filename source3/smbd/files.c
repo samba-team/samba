@@ -1319,3 +1319,12 @@ size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 
 	return len;
 }
+
+void fsp_set_base_fsp(struct files_struct *fsp, struct files_struct *base_fsp)
+{
+	if (base_fsp != NULL) {
+		SMB_ASSERT(base_fsp->base_fsp == NULL);
+	}
+
+	fsp->base_fsp = base_fsp;
+}
