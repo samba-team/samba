@@ -1071,8 +1071,7 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 					       TALLOC_CTX *mem_ctx,
-					       TDB_DATA key,
-					       bool tryonly)
+					       TDB_DATA key)
 {
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
@@ -1129,9 +1128,7 @@ again:
 	}
 
 	GetTimeOfDay(&chainlock_start);
-	lockret = tryonly
-		? tdb_chainlock_nonblock(ctx->wtdb->tdb, key)
-		: tdb_chainlock(ctx->wtdb->tdb, key);
+	lockret = tdb_chainlock(ctx->wtdb->tdb, key);
 	chainlock_time += timeval_elapsed(&chainlock_start);
 
 	if (lockret != 0) {
@@ -1155,12 +1152,6 @@ again:
 		SAFE_FREE(ctdb_data.dptr);
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
-
-		if (tryonly && (migrate_attempts != 0)) {
-			DEBUG(5, ("record migrated away again\n"));
-			TALLOC_FREE(result);
-			return NULL;
-		}
 
 		migrate_attempts += 1;
 
@@ -1261,7 +1252,7 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
 	}
 
-	return fetch_locked_internal(ctx, mem_ctx, key, false);
+	return fetch_locked_internal(ctx, mem_ctx, key);
 }
 
 struct db_ctdb_parse_record_state {
