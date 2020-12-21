@@ -5816,8 +5816,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		status = fsp_bind_smb(fsp, req);
 		if (!NT_STATUS_IS_OK(status)) {
-			file_free(req, fsp);
-			return status;
+			goto fail;
 		}
 
 		if (fsp->base_fsp != NULL) {
@@ -5939,8 +5938,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		file_free(req, fsp);
-		fsp = NULL;
+		/*
+		 * We have to reset the already set base_fsp
+		 * in order to close it in the error cleanup
+		 */
+		fsp->base_fsp = NULL;
 		goto fail;
 	}
 
