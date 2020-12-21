@@ -1770,7 +1770,54 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_xml = '\\'.join([realm.lower(), 'Policies', gpo,
+                                'MACHINE\\VGP\\VTLA\\Sudo',
+                                'SudoersConfiguration\\manifest.xml'])
+        try:
+            xml_data = ET.fromstring(conn.loadfile(vgp_xml))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                return # The file doesn't exist, so there is nothing to list
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
+
+        policy = xml_data.find('policysetting')
+        data = policy.find('data')
+        for entry in data.findall('sudoers_entry'):
+            command = entry.find('command').text
+            user = entry.find('user').text
+            principals = entry.find('listelement').findall('principal')
+            if len(principals) > 0:
+                uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                    else '%s%%' % u.text for u in principals])
+            else:
+                uname = 'ALL'
+            nopassword = entry.find('password') == None
+            np_entry = ' NOPASSWD:' if nopassword else ''
+            p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
+            self.outf.write('%s\n' % p)
 
 class cmd_remove_sudoers(Command):
     """Removes a Samba Sudoers Group Policy from the sysvol
