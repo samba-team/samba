@@ -478,6 +478,20 @@ _PUBLIC_ bool file_check_permissions(const char *fname,
  */
 _PUBLIC_ bool directory_create_or_exist(const char *dname, mode_t dir_perms);
 
+/**
+ * @brief Try to create a specified directory and the parent directory if they
+ *        don't exist.
+ *
+ * @param[in]  dname     The directory path to create.
+ *
+ * @param[in]  dir_perms The permission of the directories.
+ *
+ * @return true on success, false otherwise.
+ */
+_PUBLIC_ bool directory_create_or_exists_recursive(
+		const char *dname,
+		mode_t dir_perms);
+
 _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 					       uid_t uid,
 					       mode_t dir_perms);
