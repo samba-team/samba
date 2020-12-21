@@ -783,32 +783,48 @@ class GpoCmdTestCase(SambaToolCmdTest):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
         local_path = lp.get('path', 'sysvol')
-        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
-                               self.gpo_guid, 'Machine/Registry.pol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/Sudo',
+                               'SudoersConfiguration/manifest.xml')
 
-        # Stage the Registry.pol file with test data
-        stage = preg.file()
-        e = preg.entry()
-        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
-        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
-        e.type = 1
-        e.data = b'fakeu  ALL=(ALL) NOPASSWD: ALL'
-        stage.num_entries = 1
-        stage.entries = [e]
-        ret = stage_file(reg_pol, ndr_pack(stage))
-        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Sudo Policy'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Sudoers File Configuration Policy'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'merge'
+        data = etree.SubElement(policysetting, 'data')
+        load_plugin = etree.SubElement(data, 'load_plugin')
+        load_plugin.text = 'true'
+        sudoers_entry = etree.SubElement(data, 'sudoers_entry')
+        command = etree.SubElement(sudoers_entry, 'command')
+        command.text = 'ALL'
+        user = etree.SubElement(sudoers_entry, 'user')
+        user.text = 'ALL'
+        listelement = etree.SubElement(sudoers_entry, 'listelement')
+        principal = etree.SubElement(listelement, 'principal')
+        principal.text = 'fakeu'
+        principal.attrib['type'] = 'user'
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
 
-        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "sudoers",
-                                                 "list"), self.gpo_guid,
-                                                 "-H", "ldap://%s" %
+        sudoer = 'fakeu ALL=(ALL) NOPASSWD: ALL'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
                                                  os.environ["SERVER"],
                                                  "-U%s%%%s" %
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
-        self.assertIn(e.data, out, 'The test entry was not found!')
+        self.assertIn(sudoer, out, 'The test entry was not found!')
 
-        # Unstage the Registry.pol file
-        unstage_file(reg_pol)
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
 
     def test_symlink_list(self):
         lp = LoadParm()
