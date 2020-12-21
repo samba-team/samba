@@ -719,7 +719,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		if (!GUID_equal(fsp_client_guid(fsp),
 				&e.client_guid)) {
 			TALLOC_FREE(lck);
-			fsp_free(fsp);
+			file_free(smb1req, fsp);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
@@ -735,7 +735,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 			&epoch); /* epoch */
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(lck);
-			fsp_free(fsp);
+			file_free(smb1req, fsp);
 			return status;
 		}
 
@@ -747,7 +747,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 			epoch);
 		if (fsp->lease == NULL) {
 			TALLOC_FREE(lck);
-			fsp_free(fsp);
+			file_free(smb1req, fsp);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -765,7 +765,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
-		fsp_free(fsp);
+		file_free(smb1req, fsp);
 		DEBUG(0, ("vfs_default_durable_reconnect: "
 			  "fsp_set_smb_fname failed: %s\n",
 			  nt_errstr(status)));
@@ -786,7 +786,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		DBG_DEBUG("Could not set new share_mode_entry values\n");
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -798,7 +799,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 			  nt_errstr(status)));
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return status;
 	}
 
@@ -819,7 +821,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		DEBUG(1, ("vfs_default_durable_reconnect: failed to open "
 			  "file: %s\n", nt_errstr(status)));
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return status;
 	}
 
@@ -846,7 +849,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return status;
 	}
 
@@ -859,7 +863,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -873,7 +878,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -891,7 +897,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -907,7 +914,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return status;
 	}
 
@@ -918,7 +926,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 			  "vfs_default_durable_cookie - %s\n",
 			  nt_errstr(status)));
 		op->compat = NULL;
-		fsp_free(fsp);
+		fsp->op = NULL;
+		file_free(smb1req, fsp);
 		return status;
 	}
 
