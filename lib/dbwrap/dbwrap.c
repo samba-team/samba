@@ -266,16 +266,6 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 					    db->fetch_locked);
 }
 
-struct db_record *dbwrap_try_fetch_locked(struct db_context *db,
-				      TALLOC_CTX *mem_ctx,
-				      TDB_DATA key)
-{
-	return dbwrap_fetch_locked_internal(
-		db, mem_ctx, key,
-		db->try_fetch_locked
-		? db->try_fetch_locked : db->fetch_locked);
-}
-
 struct db_context *dbwrap_record_get_db(struct db_record *rec)
 {
 	return rec->db;
