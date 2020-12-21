@@ -49,10 +49,15 @@ class vgp_sudoers_ext(gp_xml_ext):
                 for entry in data.findall('sudoers_entry'):
                     command = entry.find('command').text
                     user = entry.find('user').text
-                    principals = [p.text for p in entry.find('listelement').findall('principal')]
+                    principals = entry.find('listelement').findall('principal')
+                    if len(principals) > 0:
+                        uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                            else '%s%%' % u.text for u in principals])
+                    else:
+                        uname = 'ALL'
                     nopassword = entry.find('password') == None
                     np_entry = ' NOPASSWD:' if nopassword else ''
-                    p = '%s ALL=(%s)%s %s' % (','.join(principals), user, np_entry, command)
+                    p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
                     attribute = b64encode(p.encode()).decode()
                     old_val = self.gp_db.retrieve(str(self), attribute)
                     if not old_val:
@@ -91,10 +96,15 @@ class vgp_sudoers_ext(gp_xml_ext):
             for entry in data.findall('sudoers_entry'):
                 command = entry.find('command').text
                 user = entry.find('user').text
-                principals = [p.text for p in entry.find('listelement').findall('principal')]
+                principals = entry.find('listelement').findall('principal')
+                if len(principals) > 0:
+                    uname = ','.join([u.text if u.attrib['type'] == 'user' \
+                        else '%s%%' % u.text for u in principals])
+                else:
+                    uname = 'ALL'
                 nopassword = entry.find('password') == None
                 np_entry = ' NOPASSWD:' if nopassword else ''
-                p = '%s ALL=(%s)%s %s' % (','.join(principals), user, np_entry, command)
+                p = '%s ALL=(%s)%s %s' % (uname, user, np_entry, command)
                 if str(self) not in output.keys():
                     output[str(self)] = []
                 output[str(self)].append(p)
