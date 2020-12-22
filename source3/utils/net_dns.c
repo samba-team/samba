@@ -207,48 +207,4 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 	return count;
 }
 
-DNS_ERROR do_gethostbyname(const char *server, const char *host)
-{
-	struct dns_connection *conn = NULL;
-	struct dns_request *req, *resp;
-	DNS_ERROR err;
-	int ans = 0;
-
-	err = dns_open_connection(server, DNS_UDP, NULL, &conn);
-	if (!ERR_DNS_IS_OK(err)) {
-		goto error;
-	}
-
-	err = dns_create_query(conn, host, QTYPE_A, DNS_CLASS_IN, &req);
-	if (!ERR_DNS_IS_OK(err)) {
-		goto error;
-	}
-
-	err = dns_transaction(conn, conn, req, &resp);
-	if (!ERR_DNS_IS_OK(err)) {
-		goto error;
-	}
-
-	if (resp->num_answers == 0) {
-		printf("%s", "No answers!\n");
-		goto error;
-	}
-
-	for (ans = 0; ans < resp->num_answers; ans++) {
-		struct in_addr resp_ip;
-
-		if (ans > 0)
-			printf("%s", " ");
-
-		resp_ip.s_addr = *((uint32_t *)resp->answers[ans]->data);
-		printf("%s", inet_ntoa(resp_ip));
-	}
-
-	printf("%s", "\n");
-
- error:
-	TALLOC_FREE(conn);
-	return err;
-}
-
 #endif	/* defined(WITH_DNS_UPDATES) */

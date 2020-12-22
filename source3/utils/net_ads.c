@@ -2190,35 +2190,6 @@ static int net_ads_dns_unregister(struct net_context *c,
 #endif
 }
 
-static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char **argv)
-{
-#if defined(WITH_DNS_UPDATES)
-	DNS_ERROR err;
-
-#ifdef DEVELOPER
-	talloc_enable_leak_report();
-#endif
-
-	if (argc != 2 || c->display_usage) {
-		d_printf(  "%s\n"
-			   "    %s\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("net ads dns gethostbyname <server> <name>\n"),
-			 _("  Look up hostname from the AD\n"
-			   "    nameserver\tName server to use\n"
-			   "    hostname\tName to look up\n"));
-		return -1;
-	}
-
-	err = do_gethostbyname(argv[0], argv[1]);
-	if (!ERR_DNS_IS_OK(err)) {
-		d_printf(_("do_gethostbyname returned %s (%d)\n"),
-			dns_errstr(err), ERROR_DNS_V(err));
-	}
-#endif
-	return 0;
-}
 
 static int net_ads_dns_async(struct net_context *c, int argc, const char **argv)
 {
@@ -2312,14 +2283,6 @@ static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 			N_("Remove host dns entry from AD"),
 			N_("net ads dns unregister\n"
 			   "    Remove host dns entry from AD")
-		},
-		{
-			"gethostbyname",
-			net_ads_dns_gethostbyname,
-			NET_TRANSPORT_ADS,
-			N_("Look up host"),
-			N_("net ads dns gethostbyname\n"
-			   "    Look up host")
 		},
 		{
 			"async",

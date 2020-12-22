@@ -1393,11 +1393,6 @@ against an NT4 Domain Controller.
 <para>Remove host dns entry from Active Directory.</para>
 </refsect3>
 
-<refsect3>
-<title>ADS DNS GETHOSTBYNAME &lt;NAMESERVER|HOSTNAME&gt;</title>
-<para>Look up the hostname from Active Directory. You can either provide nameserver ie IPv4|IPv6 address or the hostname. Only one should be provided at a time.</para>
-</refsect3>
-
 </refsect2>
 
 <refsect2>
