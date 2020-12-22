@@ -24,13 +24,16 @@ net_tool="$samba4bindir/net"
 echo "Starting ..."
 
 test_async_dns() {
-	#
-	# Do the gethostbyname request. This just prints the IPv4 addr.
-	#
-	cmd_sync='$net_tool ads dns gethostbyname $SERVER $SERVER.$REALM'
+	cmd_sync='dig @$SERVER +short -t a $SERVER.$REALM'
 	eval echo "$cmd_sync"
 	ipv4_sync=$(eval $cmd_sync)
 	if [ -z "$ipv4_sync" ]; then
+		return 1
+	fi
+	cmd_sync='dig @$SERVER +short -t aaaa $SERVER.$REALM'
+	eval echo "$cmd_sync"
+	ipv6_sync=$(eval $cmd_sync)
+	if [ -z "$ipv6_sync" ]; then
 		return 1
 	fi
 
@@ -50,13 +53,19 @@ test_async_dns() {
 
 	# Drop everything but the IPv4 address.
 	ipv4_async=`echo "$out_async" | grep IPv4addr | sed -e 's/^.*IPv4addr = //'`
+	ipv6_async=`echo "$out_async" | grep IPv6addr | sed -e 's/^.*IPv6addr = //'`
 
-	if [ -z "$ipv4_async" ]; then
+	if [ -z "$ipv4_async" -o -z "$ipv6_async" ]; then
 		return 1
 	fi
 	if [ "$ipv4_sync" != "$ipv4_async" ]; then
 		echo "DNS lookup mismatch. Sync $ipv4_sync, async $ipv4_async"
 		echo "DNS commands output. out1=$ipv4_sync, out2=$out_async"
+		return 1
+	fi
+	if [ "$ipv6_sync" != "$ipv6_async" ]; then
+		echo "DNS lookup mismatch. Sync $ipv6_sync, async $ipv6_async"
+		echo "DNS commands output. out1=$ipv6_sync, out2=$out_async"
 		return 1
 	fi
 	return 0
