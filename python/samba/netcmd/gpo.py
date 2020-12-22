@@ -1888,51 +1888,7 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
     takes_args = ["gpo", "entry"]
 
     def run(self, gpo, entry, H=None, sambaopts=None, credopts=None, versionopts=None):
-        self.lp = sambaopts.get_loadparm()
-        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
-
-        # We need to know writable DC to setup SMB connection
-        if H and H.startswith('ldap://'):
-            dc_hostname = H[7:]
-            self.url = H
-        else:
-            dc_hostname = netcmd_finddc(self.lp, self.creds)
-            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
-
-        # SMB connect to DC
-        conn = smb_connection(dc_hostname,
-                              'sysvol',
-                              lp=self.lp,
-                              creds=self.creds)
-
-        realm = self.lp.get('realm')
-        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
-                                'MACHINE\\Registry.pol'])
-        try:
-            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
-        except NTSTATUSError as e:
-            if e.args[0] == 0xC0000033: # STATUS_OBJECT_NAME_INVALID
-                raise CommandError("The specified entry does not exist")
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
-                raise CommandError("The authenticated user does "
-                                   "not have sufficient privileges")
-            raise
-
-        if entry not in [e.data for e in pol_data.entries]:
-            raise CommandError("Cannot remove '%s' because it does not exist" %
-                                entry)
-
-        entries = [e for e in pol_data.entries if e.data != entry]
-        pol_data.num_entries = len(entries)
-        pol_data.entries = entries
-
-        try:
-            conn.savefile(pol_file, ndr_pack(pol_data))
-        except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
-                raise CommandError("The authenticated user does "
-                                   "not have sufficient privileges")
-            raise
+        pass
 
 class cmd_sudoers(SuperCommand):
     """Manage Sudoers Group Policy Objects"""
