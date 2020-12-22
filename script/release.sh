@@ -1053,7 +1053,7 @@ samba-rc)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6F33915B6568B7EA'
+		GPG_KEYID='AA99442FB680B620'
 	}
 
 	productbase="samba"
@@ -1074,7 +1074,7 @@ samba-stable)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6F33915B6568B7EA'
+		GPG_KEYID='AA99442FB680B620'
 	}
 
 	productbase="samba"
@@ -1096,7 +1096,7 @@ TODO-samba-security)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6F33915B6568B7EA'
+		GPG_KEYID='AA99442FB680B620'
 	}
 
 	productbase="samba"
