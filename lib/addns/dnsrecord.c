@@ -430,10 +430,10 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	/*
-	 * Delete any existing A records
+	 * Delete all existing RRsets from our name
 	 */
 
-	err = dns_create_delete_record(req, hostname, QTYPE_A, DNS_CLASS_ANY,
+	err = dns_create_delete_record(req, hostname, QTYPE_ANY, DNS_CLASS_ANY,
 				       &rec);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
