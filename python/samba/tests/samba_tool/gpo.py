@@ -757,27 +757,27 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
 
     def test_sudoers_add(self):
-        lp = LoadParm()
-        lp.load(os.environ['SERVERCONFFILE'])
-        local_path = lp.get('path', 'sysvol')
-        reg_pol = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
-                               self.gpo_guid, 'Machine/Registry.pol')
-
-        entry = 'fakeu  ALL=(ALL) NOPASSWD: ALL'
-        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "sudoers",
-                                                 "add"), self.gpo_guid, entry,
-                                                 "-H", "ldap://%s" %
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "add"),
+                                                 self.gpo_guid, 'ALL', 'ALL',
+                                                 'fakeu', 'fakeg', "-H",
+                                                 "ldap://%s" %
                                                  os.environ["SERVER"],
                                                  "-U%s%%%s" %
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Sudoers add failed')
 
-        self.assertTrue(os.path.exists(reg_pol),
-                        'The Registry.pol does not exist')
-        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
-        self.assertTrue(any([get_string(e.data) == entry for e in reg_data.entries]),
-                        'The sudoers entry was not added')
+        sudoer = 'fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(sudoer, out, 'The test entry was not found!')
 
     def test_sudoers_list(self):
         lp = LoadParm()

@@ -1674,11 +1674,22 @@ class cmd_add_sudoers(Command):
 
 This command adds a sudo rule to the sysvol for applying to winbind clients.
 
+The command argument indicates the final field in the sudo rule.
+The user argument indicates the user specified in the parentheses.
+The users and groups arguments are comma separated lists, which are combined to
+form the first field in the sudo rule.
+The --passwd argument specifies whether the sudo entry will require a password
+be specified. The default is False, meaning the NOPASSWD field will be
+specified in the sudo entry.
+
 Example:
-samba-tool gpo manage sudoers add {31B2F340-016D-11D2-945F-00C04FB984F9} 'fakeu ALL=(ALL) NOPASSWD: ALL'
+samba-tool gpo manage sudoers add {31B2F340-016D-11D2-945F-00C04FB984F9} ALL ALL fakeu fakeg
+
+The example command will generate the following sudoers entry:
+fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL
     """
 
-    synopsis = "%prog <gpo> <entry> [options]"
+    synopsis = "%prog <gpo> <command> <user> <users> [groups] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -1689,61 +1700,15 @@ samba-tool gpo manage sudoers add {31B2F340-016D-11D2-945F-00C04FB984F9} 'fakeu 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                 metavar="URL", dest="H"),
+        Option("--passwd", action='store_true', default=False,
+               help="Specify to indicate that sudo entry must provide a password")
     ]
 
-    takes_args = ["gpo", "entry"]
+    takes_args = ["gpo", "command", "user", "users", "groups?"]
 
-    def run(self, gpo, entry, H=None, sambaopts=None, credopts=None, versionopts=None):
-        self.lp = sambaopts.get_loadparm()
-        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
-
-        # We need to know writable DC to setup SMB connection
-        if H and H.startswith('ldap://'):
-            dc_hostname = H[7:]
-            self.url = H
-        else:
-            dc_hostname = netcmd_finddc(self.lp, self.creds)
-            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
-
-        # SMB connect to DC
-        conn = smb_connection(dc_hostname,
-                              'sysvol',
-                              lp=self.lp,
-                              creds=self.creds)
-
-        realm = self.lp.get('realm')
-        pol_dir = '\\'.join([realm.lower(), 'Policies', gpo, 'MACHINE'])
-        pol_file = '\\'.join([pol_dir, 'Registry.pol'])
-        try:
-            pol_data = ndr_unpack(preg.file, conn.loadfile(pol_file))
-        except NTSTATUSError as e:
-            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND
-            if e.args[0] in [0xC0000033, 0xC0000034]:
-                pol_data = preg.file() # The file doesn't exist
-            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
-                raise CommandError("The authenticated user does "
-                                   "not have sufficient privileges")
-            else:
-                raise
-
-        e = preg.entry()
-        e.keyname = b'Software\\Policies\\Samba\\Unix Settings\\Sudo Rights'
-        e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
-        e.type = 1
-        e.data = get_bytes(entry)
-        entries = list(pol_data.entries)
-        entries.append(e)
-        pol_data.entries = entries
-        pol_data.num_entries = len(entries)
-
-        try:
-            create_directory_hier(conn, pol_dir)
-            conn.savefile(pol_file, ndr_pack(pol_data))
-        except NTSTATUSError as e:
-            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
-                raise CommandError("The authenticated user does "
-                                   "not have sufficient privileges")
-            raise
+    def run(self, gpo, command, user, users, groups=None, passwd=None,
+            H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
 
 class cmd_list_sudoers(Command):
     """List Samba Sudoers Group Policy from the sysvol
