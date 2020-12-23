@@ -2831,10 +2831,40 @@ samba-tool gpo manage openssh list {31B2F340-016D-11D2-945F-00C04FB984F9}
                 self.outf.write('%s %s\n' % (kv.find('key').text,
                                              kv.find('value').text))
 
+class cmd_set_openssh(Command):
+    """Sets a VGP OpenSSH Group Policy to the sysvol
+
+This command sets an openssh setting to the sysvol for applying to winbind
+clients. Not providing a value will unset the policy.
+
+Example:
+samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} KerberosAuthentication Yes
+    """
+
+    synopsis = "%prog <gpo> <setting> [value] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "setting", "value?"]
+
+    def run(self, gpo, setting, value=None, H=None, sambaopts=None,
+            credopts=None, versionopts=None):
+        pass
+
 class cmd_openssh(SuperCommand):
     """Manage OpenSSH Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_openssh()
+    subcommands["set"] = cmd_set_openssh()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""

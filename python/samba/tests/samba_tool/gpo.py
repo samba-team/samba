@@ -1033,6 +1033,51 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_vgp_openssh_set(self):
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "openssh", "set"),
+                                                 self.gpo_guid,
+                                                 "KerberosAuthentication",
+                                                 "Yes", "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'OpenSSH set failed')
+
+        openssh = 'KerberosAuthentication Yes'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "openssh", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(openssh, out, 'The test entry was not found!')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "openssh", "set"),
+                                                 self.gpo_guid,
+                                                 "KerberosAuthentication", "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'OpenSSH unset failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "openssh", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(openssh, out, 'The test entry was still found!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
