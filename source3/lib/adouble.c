@@ -2156,6 +2156,32 @@ static NTSTATUS adouble_open_rsrc_fsp(const struct files_struct *dirfsp,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS adouble_open_from_base_fsp(const struct files_struct *dirfsp,
+				    struct files_struct *base_fsp,
+				    adouble_type_t type,
+				    int flags,
+				    mode_t mode,
+				    struct files_struct **_ad_fsp)
+{
+	*_ad_fsp = NULL;
+
+	SMB_ASSERT(base_fsp != NULL);
+	SMB_ASSERT(base_fsp->base_fsp == NULL);
+
+	switch (type) {
+	case ADOUBLE_META:
+		return NT_STATUS_INTERNAL_ERROR;
+	case ADOUBLE_RSRC:
+		return adouble_open_rsrc_fsp(dirfsp,
+					     base_fsp->fsp_name,
+					     flags,
+					     mode,
+					     _ad_fsp);
+	}
+
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
 /*
  * Here's the deal: for ADOUBLE_META we can do without an fd as we can issue
  * path based xattr calls. For ADOUBLE_RSRC however we need a full-fledged fd

@@ -164,6 +164,12 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		  struct smb_filename *smb_fname,
 		  bool *converted);
 struct adouble *ad_init(TALLOC_CTX *ctx, adouble_type_t type);
+NTSTATUS adouble_open_from_base_fsp(const struct files_struct *dirfsp,
+				    struct files_struct *base_fsp,
+				    adouble_type_t type,
+				    int flags,
+				    mode_t mode,
+				    struct files_struct **_ad_fsp);
 struct adouble *ad_get(TALLOC_CTX *ctx,
 		       vfs_handle_struct *handle,
 		       const struct smb_filename *smb_fname,
