@@ -880,8 +880,15 @@ struct share_mode_lock *get_share_mode_lock(
 
 	if (static_share_mode_data != NULL) {
 		if (!file_id_equal(&static_share_mode_data->id, &id)) {
-			DEBUG(1, ("Can not lock two share modes "
-				  "simultaneously\n"));
+			struct file_id_buf existing;
+			struct file_id_buf requested;
+
+			DBG_ERR("Can not lock two share modes "
+				"simultaneously: existing %s requested %s\n",
+				file_id_str_buf(static_share_mode_data->id, &existing),
+				file_id_str_buf(id, &requested));
+
+			smb_panic(__location__);
 			goto fail;
 		}
 		goto done;
@@ -904,6 +911,7 @@ struct share_mode_lock *get_share_mode_lock(
 	cmp = tdb_data_cmp(share_mode_lock_key, key);
 	if (cmp != 0) {
 		DBG_WARNING("Can not lock two share modes simultaneously\n");
+		smb_panic(__location__);
 		goto fail;
 	}
 
@@ -928,6 +936,15 @@ done:
 	lck->data = static_share_mode_data;
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		struct file_id_buf returned;
+
+		DBG_DEBUG("Returning %s (data_refcount=%zu key_refcount=%zu)\n",
+			  file_id_str_buf(id, &returned),
+			  static_share_mode_data_refcount,
+			  share_mode_lock_key_refcount);
+	}
 
 	return lck;
 fail:
