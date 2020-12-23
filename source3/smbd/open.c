@@ -1227,6 +1227,48 @@ static NTSTATUS reopen_from_procfd(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS reopen_from_fsp(struct files_struct *fsp,
+				int flags,
+				mode_t mode,
+				bool *p_file_created)
+{
+	bool __unused_file_created = false;
+	NTSTATUS status;
+
+	if (p_file_created == NULL) {
+		p_file_created = &__unused_file_created;
+	}
+
+	/*
+	 * TODO: should we move this to the VFS layer?
+	 *       SMB_VFS_REOPEN_FSP()?
+	 */
+
+	status = reopen_from_procfd(fsp,
+				    flags,
+				    mode);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/*
+		 * Close the existing pathref fd and set the fsp flag
+		 * is_pathref to false so we get a "normal" fd this
+		 * time.
+		 */
+		status = fd_close(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		fsp->fsp_flags.is_pathref = false;
+
+		status = fd_open_atomic(fsp,
+					flags,
+					mode,
+					p_file_created);
+	}
+
+	return status;
+}
+
 /****************************************************************************
  Open a file.
 ****************************************************************************/
@@ -1409,28 +1451,10 @@ static NTSTATUS open_file(files_struct *fsp,
 		 * Actually do the open - if O_TRUNC is needed handle it
 		 * below under the share mode lock.
 		 */
-		status = reopen_from_procfd(fsp,
-					    local_flags & ~O_TRUNC,
-					    unx_mode);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
-		{
-			/*
-			 * Close the existing pathref fd and set the fsp flag
-			 * is_pathref to false so we get a "normal" fd this
-			 * time.
-			 */
-			status = fd_close(fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-
-			fsp->fsp_flags.is_pathref = false;
-
-			status = fd_open_atomic(fsp,
-						local_flags & ~O_TRUNC,
-						unx_mode,
-						p_file_created);
-		}
+		status = reopen_from_fsp(fsp,
+					 local_flags & ~O_TRUNC,
+					 unx_mode,
+					 p_file_created);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			/*
 			 * POSIX client that hit a symlink. We don't want to
@@ -4645,28 +4669,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	flags |= O_DIRECTORY;
 #endif
 
-	status = reopen_from_procfd(fsp, flags, 0);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		bool __unused_file_created = false;
-
-		/*
-		 * Close the existing pathref fd and set the fsp flag
-		 * is_pathref to false so we get a "normal" fd this
-		 * time.
-		 */
-		status = fd_close(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		fsp->fsp_flags.is_pathref = false;
-
-		/*
-		 * Calling fd_open_atomic() without O_CREAT
-		 * is like calling fd_openat() directly.
-		 */
-		status = fd_open_atomic(fsp, flags, 0, &__unused_file_created);
-	}
+	status = reopen_from_fsp(fsp, flags, 0, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for%s (%s)\n",
 			 smb_fname_str_dbg(smb_dname),
