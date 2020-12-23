@@ -988,6 +988,51 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(target_file, out, 'The test entry was still found!')
 
+    def test_vgp_openssh_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/SshCfg',
+                               'SshD/manifest.xml')
+
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Configuration File'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Represents Unix configuration file settings'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'merge'
+        data = etree.SubElement(policysetting, 'data')
+        configfile = etree.SubElement(data, 'configfile')
+        etree.SubElement(configfile, 'filename')
+        configsection = etree.SubElement(configfile, 'configsection')
+        etree.SubElement(configsection, 'sectionname')
+        opt = etree.SubElement(configsection, 'keyvaluepair')
+        key = etree.SubElement(opt, 'key')
+        key.text = 'KerberosAuthentication'
+        value = etree.SubElement(opt, 'value')
+        value.text = 'Yes'
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
+
+        openssh = 'KerberosAuthentication Yes'
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "openssh", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(openssh, out, 'The test entry was not found!')
+
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()

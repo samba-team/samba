@@ -2763,6 +2763,38 @@ class cmd_files(SuperCommand):
     subcommands["add"] = cmd_add_files()
     subcommands["remove"] = cmd_remove_files()
 
+class cmd_list_openssh(Command):
+    """List VGP OpenSSH Group Policy from the sysvol
+
+This command lists openssh options from the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage openssh list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_openssh(SuperCommand):
+    """Manage OpenSSH Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_openssh()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
@@ -2771,6 +2803,7 @@ class cmd_manage(SuperCommand):
     subcommands["smb_conf"] = cmd_smb_conf()
     subcommands["symlink"] = cmd_symlink()
     subcommands["files"] = cmd_files()
+    subcommands["openssh"] = cmd_openssh()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
