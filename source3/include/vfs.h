@@ -446,6 +446,7 @@ typedef struct files_struct {
 	struct notify_change_buf *notify;
 
 	struct files_struct *base_fsp; /* placeholder for delete on close */
+	struct files_struct *stream_fsp; /* backlink from base_fsp */
 
 	/*
 	 * Cache of share_mode_data->flags

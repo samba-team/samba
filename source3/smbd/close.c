@@ -1290,12 +1290,52 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 {
 	NTSTATUS status;
 	struct files_struct *base_fsp = fsp->base_fsp;
+	bool close_base_fsp = false;
 
 	/*
 	 * This fsp can never be an internal dirfsp. They must
 	 * be explicitly closed by TALLOC_FREE of the dir handle.
 	 */
 	SMB_ASSERT(!fsp->fsp_flags.is_dirfsp);
+
+	if (fsp->stream_fsp != NULL) {
+		/*
+		 * fsp is the base for a stream.
+		 *
+		 * We're called with SHUTDOWN_CLOSE from files.c which walks the
+		 * complete list of files.
+		 *
+		 * We need to wait until the stream is closed.
+		 */
+		SMB_ASSERT(close_type == SHUTDOWN_CLOSE);
+		return NT_STATUS_OK;
+	}
+
+	if (base_fsp != NULL) {
+		/*
+		 * We need to remove the link in order to
+		 * recurse for the base fsp below.
+		 */
+		SMB_ASSERT(base_fsp->base_fsp == NULL);
+		SMB_ASSERT(base_fsp->stream_fsp == fsp);
+		base_fsp->stream_fsp = NULL;
+
+		if (close_type == SHUTDOWN_CLOSE) {
+			/*
+			 * We're called with SHUTDOWN_CLOSE from files.c
+			 * which walks the complete list of files.
+			 *
+			 * We may need to defer the SHUTDOWN_CLOSE
+			 * if it's the next in the linked list.
+			 *
+			 * So we only close if the base is *not* the
+			 * next in the list.
+			 */
+			close_base_fsp = (fsp->next != base_fsp);
+		} else {
+			close_base_fsp = true;
+		}
+	}
 
 	if (fsp->fsp_flags.is_directory) {
 		status = close_directory(req, fsp, close_type);
@@ -1310,18 +1350,18 @@ NTSTATUS close_file(struct smb_request *req, files_struct *fsp,
 		status = close_normal_file(req, fsp, close_type);
 	}
 
-	if ((base_fsp != NULL) && (close_type != SHUTDOWN_CLOSE)) {
+	if (close_base_fsp) {
 
 		/*
 		 * fsp was a stream, the base fsp can't be a stream as well
 		 *
-		 * For SHUTDOWN_CLOSE this is not possible here, because
+		 * For SHUTDOWN_CLOSE this is not possible here
+		 * (if the base_fsp was the next in the linked list), because
 		 * SHUTDOWN_CLOSE only happens from files.c which walks the
 		 * complete list of files. If we mess with more than one fsp
 		 * those loops will become confused.
 		 */
 
-		SMB_ASSERT(base_fsp->base_fsp == NULL);
 		close_file(req, base_fsp, close_type);
 	}
 
