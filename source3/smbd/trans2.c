@@ -2833,7 +2833,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	 * correct path.
 	 */
 	if (smb_dname->fsp != NULL) {
-		fsp_free(smb_dname->fsp);
+		file_free(req, smb_dname->fsp);
 		smb_dname->fsp = NULL;
 	}
 
