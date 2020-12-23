@@ -4649,6 +4649,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	status = reopen_from_procfd(fsp, smb_dname, flags, 0);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		bool __unused_file_created = false;
+
 		/*
 		 * Close the existing pathref fd and set the fsp flag
 		 * is_pathref to false so we get a "normal" fd this
@@ -4661,7 +4663,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 		fsp->fsp_flags.is_pathref = false;
 
-		status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, flags, 0);
+		/*
+		 * Calling fd_open_atomic() without O_CREAT
+		 * is like calling fd_openat() directly.
+		 */
+		status = fd_open_atomic(fsp, flags, 0, &__unused_file_created);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for%s (%s)\n",
