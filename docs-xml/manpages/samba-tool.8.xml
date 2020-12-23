@@ -1342,6 +1342,22 @@
 <refsect3>
 	<title>user list</title>
 	<para>List all users.</para>
+	<para>By default the user's sAMAccountNames are listed.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--full-dn</term>
+	<listitem><para>
+	List user's distinguished names instead of the sAMAccountNames.
+	</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	<term>-b BASE_DN|--base-dn=BASE_DN</term>
+	<listitem><para>
+	Specify base DN to use. Only users under the specified base DN will be
+	listed.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
 </refsect3>
 
 <refsect3>
