@@ -935,6 +935,16 @@
 <refsect3>
 	<title>group listmembers <replaceable>groupname</replaceable> [options]</title>
 	<para>List all members of the specified AD group.</para>
+	<para>By default the sAMAccountNames are listed. If no sAMAccountName
+	is available, the CN will be used instead.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--full-dn</term>
+	<listitem><para>
+	List the distinguished names instead of the sAMAccountNames.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
 </refsect3>
 
 <refsect3>
