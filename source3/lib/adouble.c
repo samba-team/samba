@@ -2440,7 +2440,11 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 	int mode;
 
 	if (fsp != NULL) {
-		smb_fname = fsp->base_fsp->fsp_name;
+		if (fsp->base_fsp != NULL) {
+			smb_fname = fsp->base_fsp->fsp_name;
+		} else {
+			smb_fname = fsp->fsp_name;
+		}
 	}
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
