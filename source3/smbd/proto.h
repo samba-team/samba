@@ -447,6 +447,9 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen);
 
+NTSTATUS create_internal_fsp(connection_struct *conn,
+			     const struct smb_filename *smb_fname,
+			     struct files_struct **_fsp);
 NTSTATUS create_internal_dirfsp(connection_struct *conn,
 				const struct smb_filename *smb_dname,
 				struct files_struct **_fsp);

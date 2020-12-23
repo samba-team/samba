@@ -186,6 +186,28 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS create_internal_fsp(connection_struct *conn,
+			     const struct smb_filename *smb_fname,
+			     struct files_struct **_fsp)
+{
+	struct files_struct *fsp = NULL;
+	NTSTATUS status;
+
+	status = file_new(NULL, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fsp_set_smb_fname(fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		file_free(NULL, fsp);
+		return status;
+	}
+
+	*_fsp = fsp;
+	return NT_STATUS_OK;
+}
+
 /*
  * Create an internal fsp for an *existing* directory.
  *
@@ -199,14 +221,8 @@ NTSTATUS create_internal_dirfsp(connection_struct *conn,
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	status = file_new(NULL, conn, &fsp);
+	status = create_internal_fsp(conn, smb_dname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = fsp_set_smb_fname(fsp, smb_dname);
-	if (!NT_STATUS_IS_OK(status)) {
-		file_free(NULL, fsp);
 		return status;
 	}
 
