@@ -2091,71 +2091,69 @@ exit:
 	return ealen;
 }
 
-static int ad_open_rsrc(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode,
-			files_struct **_fsp)
+static NTSTATUS adouble_open_rsrc_fsp(const struct files_struct *dirfsp,
+				      const struct smb_filename *smb_base_fname,
+				      int in_flags,
+				      mode_t mode,
+				      struct files_struct **_ad_fsp)
 {
-	int ret;
+	int rc = 0;
+	struct adouble *ad = NULL;
 	struct smb_filename *adp_smb_fname = NULL;
-	files_struct *fsp = NULL;
-	uint32_t access_mask;
-	uint32_t share_access;
-	uint32_t create_disposition;
+	struct files_struct *ad_fsp = NULL;
 	NTSTATUS status;
+	int flags = in_flags;
 
-	ret = adouble_path(talloc_tos(), smb_fname, &adp_smb_fname);
-	if (ret != 0) {
-		return -1;
+	rc = adouble_path(talloc_tos(),
+			  smb_base_fname,
+			  &adp_smb_fname);
+	if (rc != 0) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = SMB_VFS_STAT(handle->conn, adp_smb_fname);
-	if (ret != 0) {
-		TALLOC_FREE(adp_smb_fname);
-		return -1;
-	}
-
-	access_mask = FILE_GENERIC_READ;
-	share_access = FILE_SHARE_READ | FILE_SHARE_WRITE;
-	create_disposition = FILE_OPEN;
-
-	if (flags & O_RDWR) {
-		access_mask |= FILE_GENERIC_WRITE;
-		share_access &= ~FILE_SHARE_WRITE;
-	}
-
-	status = openat_pathref_fsp(handle->conn->cwd_fsp, adp_smb_fname);
+	status = create_internal_fsp(dirfsp->conn,
+				     adp_smb_fname,
+				     &ad_fsp);
 	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
+		return status;
 	}
 
-	status = SMB_VFS_CREATE_FILE(
-		handle->conn,			/* conn */
-		NULL,				/* req */
-		adp_smb_fname,
-		access_mask,
-		share_access,
-		create_disposition,
-		0,				/* create_options */
-		0,				/* file_attributes */
-		INTERNAL_OPEN_ONLY,		/* oplock_request */
-		NULL,				/* lease */
-		0,				/* allocation_size */
-		0,				/* private_flags */
-		NULL,				/* sd */
-		NULL,				/* ea_list */
-		&fsp,
-		NULL,				/* psbuf */
-		NULL, NULL);			/* create context */
-	TALLOC_FREE(adp_smb_fname);
+#ifdef O_PATH
+	flags &= ~(O_PATH);
+#endif
+	if (flags & (O_CREAT | O_TRUNC | O_WRONLY)) {
+		/* We always need read/write access for the metadata header too */
+		flags &= ~(O_WRONLY);
+		flags |= O_RDWR;
+	}
+
+	status = fd_openat(dirfsp,
+			   adp_smb_fname,
+			   ad_fsp,
+			   flags,
+			   mode);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
-		return -1;
+		file_free(NULL, ad_fsp);
+		return status;
 	}
 
-	*_fsp = fsp;
-	return 0;
+	if (flags & (O_CREAT | O_TRUNC)) {
+		ad = ad_init(talloc_tos(), ADOUBLE_RSRC);
+		if (ad == NULL) {
+			file_free(NULL, ad_fsp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		rc = ad_fset(ad_fsp->conn->vfs_handles, ad, ad_fsp);
+		if (rc != 0) {
+			file_free(NULL, ad_fsp);
+			return NT_STATUS_IO_DEVICE_ERROR;
+		}
+		TALLOC_FREE(ad);
+	}
+
+	*_ad_fsp = ad_fsp;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -2170,7 +2168,7 @@ static int ad_open(vfs_handle_struct *handle,
 		   int flags,
 		   mode_t mode)
 {
-	int ret;
+	NTSTATUS status;
 
 	DBG_DEBUG("Path [%s] type [%s]\n", smb_fname->base_name,
 		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc");
@@ -2185,8 +2183,13 @@ static int ad_open(vfs_handle_struct *handle,
 		return 0;
 	}
 
-	ret = ad_open_rsrc(handle, smb_fname, flags, mode, &ad->ad_fsp);
-	if (ret != 0) {
+	status = adouble_open_rsrc_fsp(handle->conn->cwd_fsp,
+				       smb_fname,
+				       flags,
+				       mode,
+				       &ad->ad_fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 	ad->ad_opened = true;
@@ -2291,11 +2294,14 @@ static int adouble_destructor(struct adouble *ad)
 
 	SMB_ASSERT(ad->ad_fsp != NULL);
 
-	status = close_file(NULL, ad->ad_fsp, NORMAL_CLOSE);
+	status = fd_close(ad->ad_fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Closing [%s] failed: %s\n",
 			fsp_str_dbg(ad->ad_fsp), nt_errstr(status));
 	}
+	file_free(NULL, ad->ad_fsp);
+	ad->ad_fsp = NULL;
+	ad->ad_opened = false;
 
 	return 0;
 }
