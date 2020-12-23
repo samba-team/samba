@@ -2858,7 +2858,97 @@ samba-tool gpo manage openssh set {31B2F340-016D-11D2-945F-00C04FB984F9} Kerbero
 
     def run(self, gpo, setting, value=None, H=None, sambaopts=None,
             credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+                             'MACHINE\\VGP\\VTLA\\SshCfg\\SshD'])
+        vgp_xml = '\\'.join([vgp_dir, 'manifest.xml'])
+        try:
+            xml_data = ET.ElementTree(ET.fromstring(conn.loadfile(vgp_xml)))
+            policy = xml_data.getroot().find('policysetting')
+            data = policy.find('data')
+            configfile = data.find('configfile')
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                # The file doesn't exist, so create the xml structure
+                xml_data = ET.ElementTree(ET.Element('vgppolicy'))
+                policysetting = ET.SubElement(xml_data.getroot(),
+                                              'policysetting')
+                pv = ET.SubElement(policysetting, 'version')
+                pv.text = '1'
+                name = ET.SubElement(policysetting, 'name')
+                name.text = 'Configuration File'
+                description = ET.SubElement(policysetting, 'description')
+                description.text = 'Represents Unix configuration file settings'
+                apply_mode = ET.SubElement(policysetting, 'apply_mode')
+                apply_mode.text = 'merge'
+                data = ET.SubElement(policysetting, 'data')
+                configfile = ET.SubElement(data, 'configfile')
+                configsection = ET.SubElement(configfile, 'configsection')
+                ET.SubElement(configsection, 'sectionname')
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        if value is not None:
+            for configsection in configfile.findall('configsection'):
+                if configsection.find('sectionname').text:
+                    continue # Ignore Quest SSH settings
+                settings = {}
+                for kv in configsection.findall('keyvaluepair'):
+                    settings[kv.find('key')] = kv
+                if setting in settings.keys():
+                    settings[setting].text = value
+                else:
+                    keyvaluepair = ET.SubElement(configsection, 'keyvaluepair')
+                    key = ET.SubElement(keyvaluepair, 'key')
+                    key.text = setting
+                    dvalue = ET.SubElement(keyvaluepair, 'value')
+                    dvalue.text = value
+        else:
+            for configsection in configfile.findall('configsection'):
+                if configsection.find('sectionname').text:
+                    continue # Ignore Quest SSH settings
+                settings = {}
+                for kv in configsection.findall('keyvaluepair'):
+                    settings[kv.find('key').text] = kv
+                if setting in settings.keys():
+                    configsection.remove(settings[setting])
+                else:
+                    raise CommandError("Cannot remove '%s' because it does " \
+                                       "not exist" % setting)
+
+        out = BytesIO()
+        xml_data.write(out, encoding='UTF-8', xml_declaration=True)
+        out.seek(0)
+        try:
+            create_directory_hier(conn, vgp_dir)
+            conn.savefile(vgp_xml, out.read())
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
 
 class cmd_openssh(SuperCommand):
     """Manage OpenSSH Group Policy Objects"""
