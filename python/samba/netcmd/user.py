@@ -466,6 +466,14 @@ class cmd_user_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--hide-expired",
+               help="Do not list expired user accounts",
+               default=False,
+               action='store_true'),
+        Option("--hide-disabled",
+               default=False,
+               action='store_true',
+               help="Do not list disabled user accounts"),
         Option("-b", "--base-dn",
                help="Specify base DN to use",
                type=str),
@@ -486,6 +494,8 @@ class cmd_user_list(Command):
             credopts=None,
             versionopts=None,
             H=None,
+            hide_expired=False,
+            hide_disabled=False,
             base_dn=None,
             full_dn=False):
         lp = sambaopts.get_loadparm()
@@ -498,10 +508,26 @@ class cmd_user_list(Command):
         if base_dn:
             search_dn = samdb.normalize_dn_in_domain(base_dn)
 
+        filter_expires = ""
+        if hide_expired is True:
+            current_nttime = samdb.get_nttime()
+            filter_expires = "(|(accountExpires=0)(accountExpires>=%u))" % (
+                current_nttime)
+
+        filter_disabled = ""
+        if hide_disabled is True:
+            filter_disabled = "(!(userAccountControl:%s:=%u))" % (
+                ldb.OID_COMPARATOR_AND, dsdb.UF_ACCOUNTDISABLE)
+
+        filter = "(&(objectClass=user)(userAccountControl:%s:=%u)%s%s)" % (
+            ldb.OID_COMPARATOR_AND,
+            dsdb.UF_NORMAL_ACCOUNT,
+            filter_disabled,
+            filter_expires)
+
         res = samdb.search(search_dn,
                            scope=ldb.SCOPE_SUBTREE,
-                           expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
-                                       % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
+                           expression=filter,
                            attrs=["samaccountname"])
         if (len(res) == 0):
             return

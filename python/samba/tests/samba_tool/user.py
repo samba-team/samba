@@ -433,6 +433,76 @@ class UserCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, name,
                                      "user '%s' not found" % name)
 
+    def test_list_hide_expired(self):
+        expire_username = "expireUser"
+        expire_user = self._randomUser({"name": expire_username})
+        self._create_user(expire_user)
+
+        (result, out, err) = self.runsubcmd(
+            "user",
+            "list",
+            "--hide-expired",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+        self.assertTrue(expire_username in out,
+                        "user '%s' not found" % expire_username)
+
+        # user will be expired one second ago
+        self.samdb.setexpiry(
+            "(sAMAccountname=%s)" % expire_username,
+            -1,
+            False)
+
+        (result, out, err) = self.runsubcmd(
+            "user",
+            "list",
+            "--hide-expired",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+        self.assertFalse(expire_username in out,
+                         "user '%s' found" % expire_username)
+
+        self.samdb.deleteuser(expire_username)
+
+    def test_list_hide_disabled(self):
+        disable_username = "disableUser"
+        disable_user = self._randomUser({"name": disable_username})
+        self._create_user(disable_user)
+
+        (result, out, err) = self.runsubcmd(
+            "user",
+            "list",
+            "--hide-disabled",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+        self.assertTrue(disable_username in out,
+                        "user '%s' not found" % disable_username)
+
+        self.samdb.disable_account("(sAMAccountname=%s)" % disable_username)
+
+        (result, out, err) = self.runsubcmd(
+            "user",
+            "list",
+            "--hide-disabled",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+        self.assertFalse(disable_username in out,
+                         "user '%s' found" % disable_username)
+
+        self.samdb.deleteuser(disable_username)
+
     def test_show(self):
         for user in self.users:
             (result, out, err) = self.runsubcmd(

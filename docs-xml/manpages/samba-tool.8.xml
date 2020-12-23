@@ -1357,6 +1357,18 @@
 	listed.
 	</para></listitem>
 	</varlistentry>
+	<varlistentry>
+	<term>--hide-expired</term>
+	<listitem><para>
+	Do not list expired user accounts.
+	</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	<term>--hide-disabled</term>
+	<listitem><para>
+	Do not list disabled user accounts.
+	</para></listitem>
+	</varlistentry>
 	</variablelist>
 </refsect3>
 

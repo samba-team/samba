@@ -984,6 +984,21 @@ accountExpires: %u
         """Get the NTDS objectGUID"""
         return dsdb._samdb_ntds_objectGUID(self)
 
+    def get_timestr(self):
+        """Get the current time as generalized time string"""
+        res = self.search(base="",
+                          scope=ldb.SCOPE_BASE,
+                          attrs=["currentTime"])
+        return str(res[0]["currentTime"][0])
+
+    def get_time(self):
+        """Get the current time as UNIX time"""
+        return ldb.string_to_time(self.get_timestr())
+
+    def get_nttime(self):
+        """Get the current time as NT time"""
+        return samba.unix2nttime(self.get_time())
+
     def server_site_name(self):
         """Get the server site name"""
         return dsdb._samdb_server_site_name(self)
