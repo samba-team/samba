@@ -239,6 +239,79 @@ class GroupCmdTestCase(SambaToolCmdTest):
             name = str(groupobj.get("samAccountName", idx=0))
             found = self.assertMatch(out, name, "group '%s' not found" % name)
 
+    def test_listmembers_hide_expired(self):
+        expire_username = "expireUser"
+        expire_user = self._random_user({"name": expire_username})
+        self._create_user(expire_user)
+
+        (result, out, err) = self.runsubcmd(
+            "group",
+            "listmembers",
+            "Domain Users",
+            "--hide-expired",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
+        self.assertTrue(expire_username in out,
+                         "user '%s' not found" % expire_username)
+
+        # user will be expired one second ago
+        self.samdb.setexpiry(
+            "(sAMAccountname=%s)" % expire_username,
+            -1,
+            False)
+
+        (result, out, err) = self.runsubcmd(
+            "group",
+            "listmembers",
+            "Domain Users",
+            "--hide-expired",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
+        self.assertFalse(expire_username in out,
+                         "user '%s' not found" % expire_username)
+
+        self.samdb.deleteuser(expire_username)
+
+    def test_listmembers_hide_disabled(self):
+        disable_username = "disableUser"
+        disable_user = self._random_user({"name": disable_username})
+        self._create_user(disable_user)
+
+        (result, out, err) = self.runsubcmd(
+            "group",
+            "listmembers",
+            "Domain Users",
+            "--hide-disabled",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
+        self.assertTrue(disable_username in out,
+                         "user '%s' not found" % disable_username)
+
+        self.samdb.disable_account("(sAMAccountname=%s)" % disable_username)
+
+        (result, out, err) = self.runsubcmd(
+            "group",
+            "listmembers",
+            "Domain Users",
+            "--hide-disabled",
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
+        self.assertFalse(disable_username in out,
+                         "user '%s' not found" % disable_username)
+
+        self.samdb.deleteuser(disable_username)
 
     def test_listmembers_full_dn(self):
         (result, out, err) = self.runsubcmd("group", "listmembers", "Domain Users",
@@ -502,3 +575,39 @@ template """
         total_groups = len(grouplist)
         self.assertTrue("Total groups: {0}".format(total_groups) in out,
                         "Total groups not reported correctly")
+
+    def _random_user(self, base={}):
+        '''
+        create a user with random attribute values, you can specify
+        base attributes
+        '''
+        user = {
+            "name": self.randomName(),
+            "password": self.random_password(16),
+            "surname": self.randomName(),
+            "given-name": self.randomName(),
+            "job-title": self.randomName(),
+            "department": self.randomName(),
+            "company": self.randomName(),
+            "description": self.randomName(count=100),
+            "createUserFn": self._create_user,
+        }
+        user.update(base)
+        return user
+
+    def _create_user(self, user):
+        return self.runsubcmd(
+            "user",
+            "add",
+            user["name"],
+            user["password"],
+            "--surname=%s" % user["surname"],
+            "--given-name=%s" % user["given-name"],
+            "--job-title=%s" % user["job-title"],
+            "--department=%s" % user["department"],
+            "--description=%s" % user["description"],
+            "--company=%s" % user["company"],
+            "-H",
+            "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))

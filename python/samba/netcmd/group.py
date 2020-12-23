@@ -33,6 +33,7 @@ from samba.dsdb import (
     GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP,
     GTYPE_DISTRIBUTION_GLOBAL_GROUP,
     GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
+    UF_ACCOUNTDISABLE,
 )
 from collections import defaultdict
 from subprocess import check_call, CalledProcessError
@@ -488,6 +489,14 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--hide-expired",
+               help="Do not list expired group members",
+               default=False,
+               action='store_true'),
+        Option("--hide-disabled",
+               default=False,
+               action='store_true',
+               help="Do not list disabled group members"),
         Option("--full-dn", dest="full_dn",
                default=False,
                action='store_true',
@@ -508,6 +517,8 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
             sambaopts=None,
             versionopts=None,
             H=None,
+            hide_expired=False,
+            hide_disabled=False,
             full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -530,10 +541,22 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
             (group_dom_sid, rid) = group_sid.split()
             group_sid_dn = "<SID=%s>" % (group_sid)
 
-            search_filter = ("(|(primaryGroupID=%s)(memberOf=%s))" %
-                             (rid, group_sid_dn))
+            filter_expires = ""
+            if hide_expired is True:
+                current_nttime = samdb.get_nttime()
+                filter_expires = \
+                "(|(accountExpires=0)(accountExpires>=%u))" % (current_nttime)
+
+            filter_disabled = ""
+            if hide_disabled is True:
+                filter_disabled = "(!(userAccountControl:%s:=%u))" % (
+                    ldb.OID_COMPARATOR_AND, UF_ACCOUNTDISABLE)
+
+            filter = "(&(|(primaryGroupID=%s)(memberOf=%s))%s%s)" % (
+                rid, group_sid_dn, filter_disabled, filter_expires)
+
             res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                               expression=(search_filter),
+                               expression=filter,
                                attrs=["samAccountName", "cn"])
 
             if (len(res) == 0):

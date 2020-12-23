@@ -944,6 +944,18 @@
 	List the distinguished names instead of the sAMAccountNames.
 	</para></listitem>
 	</varlistentry>
+	<varlistentry>
+	<term>--hide-expired</term>
+	<listitem><para>
+	Do not list expired group members.
+	</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	<term>--hide-disabled</term>
+	<listitem><para>
+	Do not list disabled group members.
+	</para></listitem>
+	</varlistentry>
 	</variablelist>
 </refsect3>
 
