@@ -934,6 +934,11 @@
 	<para>List Samba Sudoers Group Policy from the sysvol.</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage sudoers remove</title>
+	<para>Removes a Samba Sudoers Group Policy from the sysvol.</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
