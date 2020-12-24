@@ -835,6 +835,7 @@ int main(int argc, const char *argv[])
 	}
 
 done:
+	cmdline_messaging_context_free();
 	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return ret;

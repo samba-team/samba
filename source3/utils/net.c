@@ -1427,6 +1427,7 @@ static void get_credentials_file(struct net_context *c,
 
 	poptFreeContext(pc);
 
+	cmdline_messaging_context_free();
 	TALLOC_FREE(frame);
 	return rc;
 }

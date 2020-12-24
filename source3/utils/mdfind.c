@@ -251,6 +251,7 @@ int main(int argc, char **argv)
 		goto fail;
 	}
 
+	cmdline_messaging_context_free();
 	TALLOC_FREE(frame);
 	poptFreeContext(pc);
 	return 0;
