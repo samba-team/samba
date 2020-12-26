@@ -39,7 +39,7 @@ struct pf_daemon_config {
 
 void pfh_daemon_config(const char *daemon_name,
 			struct pf_daemon_config *cfg,
-			struct pf_daemon_config *default_cfg);
+			const struct pf_daemon_config *default_cfg);
 
 void pfh_manage_pool(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx,

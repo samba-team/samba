@@ -23,7 +23,7 @@
 
 void pfh_daemon_config(const char *daemon_name,
 			struct pf_daemon_config *cfg,
-			struct pf_daemon_config *default_cfg)
+			const struct pf_daemon_config *default_cfg)
 {
 	int min, max, rate, allow, life;
 
