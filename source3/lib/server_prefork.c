@@ -72,14 +72,14 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	pfp = talloc_zero(mem_ctx, struct prefork_pool);
 	if (!pfp) {
 		DEBUG(1, ("Out of memory!\n"));
-		return false;
+		goto fail;
 	}
 	pfp->listen_fd_size = listen_fd_size;
 	pfp->listen_fds = talloc_array(pfp, struct pf_listen_fd,
 				       listen_fd_size);
 	if (!pfp->listen_fds) {
 		DEBUG(1, ("Out of memory!\n"));
-		return false;
+		goto fail;
 	}
 	for (i = 0; i < listen_fd_size; i++) {
 		pfp->listen_fds[i] = listen_fds[i];
@@ -87,7 +87,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 		ret = set_blocking(listen_fds[i].fd, false);
 		if (ret < 0) {
 			DBG_WARNING("Failed to set sockets to non-blocking!\n");
-			return false;
+			goto fail;
 		}
 	}
 	pfp->main_fn = main_fn;
@@ -100,8 +100,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 		data_size);
 	if (pfp->pool == NULL) {
 		DEBUG(1, ("Failed to mmap memory for prefork pool!\n"));
-		talloc_free(pfp);
-		return false;
+		goto fail;
 	}
 	talloc_set_destructor(pfp, prefork_pool_destructor);
 
@@ -135,12 +134,14 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	ok = prefork_setup_sigchld_handler(ev_ctx, pfp);
 	if (!ok) {
 		DEBUG(1, ("Failed to setup SIGCHLD Handler!\n"));
-		talloc_free(pfp);
-		return false;
+		goto fail;
 	}
 
 	*pf_pool = pfp;
 	return true;
+fail:
+	TALLOC_FREE(pfp);
+	return false;
 }
 
 /* Provide the new max children number in new_max
