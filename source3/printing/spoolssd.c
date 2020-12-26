@@ -50,7 +50,7 @@ static struct server_id parent_id;
 static struct prefork_pool *spoolss_pool = NULL;
 static int spoolss_child_id = 0;
 
-static struct pf_daemon_config default_pf_spoolss_cfg = {
+static const struct pf_daemon_config default_pf_spoolss_cfg = {
 	.prefork_status = PFH_INIT,
 	.min_children = 5,
 	.max_children = 25,

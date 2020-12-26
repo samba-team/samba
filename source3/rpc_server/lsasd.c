@@ -54,7 +54,7 @@ static struct server_id parent_id;
 static struct prefork_pool *lsasd_pool = NULL;
 static int lsasd_child_id = 0;
 
-static struct pf_daemon_config default_pf_lsasd_cfg = {
+static const struct pf_daemon_config default_pf_lsasd_cfg = {
 	.prefork_status = PFH_INIT,
 	.min_children = 5,
 	.max_children = 25,

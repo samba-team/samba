@@ -51,7 +51,7 @@ static struct server_id parent_id;
 static struct prefork_pool *mdssd_pool = NULL;
 static int mdssd_child_id = 0;
 
-static struct pf_daemon_config default_pf_mdssd_cfg = {
+static const struct pf_daemon_config default_pf_mdssd_cfg = {
 	.prefork_status = PFH_INIT,
 	.min_children = 5,
 	.max_children = 25,
