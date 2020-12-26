@@ -2341,7 +2341,10 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 	dce_ctx->endpoint_list	= NULL;
 	dce_ctx->lp_ctx = lp_ctx;
 	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(dce_ctx->assoc_groups_idr);
+	if (dce_ctx->assoc_groups_idr == NULL) {
+		TALLOC_FREE(dce_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	dce_ctx->broken_connections = NULL;
 	if (cb != NULL) {
 		dce_ctx->callbacks = *cb;
