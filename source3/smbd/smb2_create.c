@@ -776,8 +776,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_finish(req);
 		return req;
+	}
 
-	} else if (CAN_PRINT(smb1req->conn)) {
+	if (CAN_PRINT(smb1req->conn)) {
 		if (state->dhnc != NULL || state->dh2c != NULL) {
 			/* durable handles are not supported on printers */
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -836,8 +837,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_finish(req);
 		return req;
+	}
 
-	} else if (state->do_durable_reconnect) {
+	if (state->do_durable_reconnect) {
 		DATA_BLOB new_cookie = data_blob_null;
 		NTTIME now = timeval_to_nttime(&smb2req->request_time);
 
