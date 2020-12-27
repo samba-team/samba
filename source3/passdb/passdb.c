@@ -699,7 +699,7 @@ NTSTATUS local_password_change(const char *user_name,
 	user_exists = pdb_getsampwnam(sam_pass, user_name);
 
 	/* Check delete first, we don't need to do anything else if we
-	 * are going to delete the acocunt */
+	 * are going to delete the account */
 	if (user_exists && (local_flags & LOCAL_DELETE_USER)) {
 
 		result = pdb_delete_user(tosctx, sam_pass);
