@@ -579,8 +579,8 @@ tasks = {
     },
 
     # run the backup/restore testenvs separately as they're fairly standalone
-    # (and CI seems to max out at ~8 different DCs running at once)
-    "samba-ad-dc-backup": {
+    # (and CI seems to max out at ~3 different DCs running at once)
+    "samba-ad-back1": {
         "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
@@ -588,6 +588,17 @@ tasks = {
             "backupfromdc",
             "restoredc",
             "renamedc",
+            ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+        ],
+    },
+    "samba-ad-back2": {
+        "dependency": "samba-def-build",
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
+            ("test", make_test(include_envs=[
+            "backupfromdc",
             "offlinebackupdc",
             "labdc",
             ])),

@@ -350,7 +350,10 @@ samba-fips:
     - .needs_samba-no-opath-build
     - .private_runner
 
-samba-ad-dc-backup:
+samba-ad-back1:
+  extends: .needs_samba-def-build-private
+
+samba-ad-back2:
   extends: .needs_samba-def-build-private
 
 samba-fileserver:
@@ -396,7 +399,8 @@ pages:
     - samba-ad-dc-ntvfs
     - samba-admem-mit
     - samba-ad-dc-4-mitkrb5
-    - samba-ad-dc-backup
+    - samba-ad-back1
+    - samba-ad-back2
     - samba-fileserver
     - samba-ad-dc-1
     - samba-nt4
