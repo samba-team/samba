@@ -130,6 +130,7 @@
 #
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_bronze_bit_rbcd_old_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_missing_client_checksum
+^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_no_service_pac
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_client_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_unkeyed_service_checksum
 ^samba.tests.krb5.s4u_tests.samba.tests.krb5.s4u_tests.S4UKerberosTests.test_constrained_delegation_zeroed_client_checksum
@@ -195,3 +196,8 @@
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
 ^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
+#
+# The lack of KRB5SignedPath means we no longer return
+# KRB5KRB_ERR_RESPONSE_TOO_BIG in this specific case
+#
+^samba4.krb5.kdc with machine account.as-req-pac-request.fl2000dc:local
