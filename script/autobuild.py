@@ -235,6 +235,36 @@ tasks = {
         ],
     },
 
+    "samba-nt4-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json" + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
+    "samba-h5l-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5" + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
+    "samba-no-opath-build": {
+        "git-clone-required": True,
+        "sequence": [
+            ("configure", "ADDITIONAL_CFLAGS='-DDISABLE_OPATH=1' ./configure.developer --without-ad-dc " + samba_configure_params),
+            ("make", "make -j"),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("chmod-R-a-w", "chmod -R a-w ."),
+        ],
+    },
+
     # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
     "samba": {
         "sequence": [
@@ -364,10 +394,9 @@ tasks = {
     },
 
     "samba-nt4": {
+        "dependency": "samba-nt4-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "nt4_dc",
             "nt4_dc_smb1",
@@ -378,15 +407,13 @@ tasks = {
             ])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
-            ("clean", "make clean"),
         ],
     },
 
     "samba-fileserver": {
+        "dependency": "samba-h5l-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5" + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(include_envs=[
             "fileserver",
             "fileserver_smb1",
@@ -416,10 +443,9 @@ tasks = {
     },
 
     "samba-no-opath": {
+        "dependency": "samba-no-opath-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-DDISABLE_OPATH=1' ./configure.developer --without-ad-dc " + samba_configure_params),
-            ("make", "make -j"),
             ("test", make_test(
                 cmd="make test DISABLE_OPATH=1",
                 include_envs=[
@@ -912,7 +938,10 @@ defaulttasks = list(tasks.keys())
 defaulttasks.remove("pass")
 defaulttasks.remove("fail")
 defaulttasks.remove("samba-def-build")
+defaulttasks.remove("samba-nt4-build")
 defaulttasks.remove("samba-mit-build")
+defaulttasks.remove("samba-h5l-build")
+defaulttasks.remove("samba-no-opath-build")
 defaulttasks.remove("samba-test-only")
 defaulttasks.remove("samba-fuzz")
 defaulttasks.remove("samba-fips")
