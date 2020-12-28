@@ -43,9 +43,6 @@ EXPORTS
 	KRB-PRIV,
 	KRB-SAFE,
 	KRB-SAFE-BODY,
-	KRB5SignedPath,
-	KRB5SignedPathData,
-	KRB5SignedPathPrincipals,
 	KerberosString,
 	KerberosTime,
 	KrbCredInfo,
@@ -711,24 +708,6 @@ PA-S4U2Self ::= SEQUENCE {
         realm[1]	Realm,
         cksum[2]	Checksum,
         auth[3]		GeneralString
-}
-
--- never encoded on the wire, just used to checksum over
-KRB5SignedPathData ::= SEQUENCE {
-	client[0]	Principal OPTIONAL,
-	authtime[1]	KerberosTime,
-	delegated[2]	Principals OPTIONAL,
-	method_data[3]  METHOD-DATA OPTIONAL
-}
-
-KRB5SignedPath ::= SEQUENCE {
-	-- DERcoded KRB5SignedPathData
-	-- krbtgt key (etype), KeyUsage = XXX
-	etype[0]	ENCTYPE,
-	cksum[1]	Checksum,
-	-- srvs delegated though
-	delegated[2]	Principals OPTIONAL,
-	method_data[3]  METHOD-DATA OPTIONAL
 }
 
 AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --
