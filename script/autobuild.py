@@ -539,7 +539,7 @@ tasks = {
         "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
-            ("test", make_test(include_envs=["ad_dc_slowtests"])),
+            ("test", make_test(include_envs=["ad_dc_slowtests", "ad_dc_backup"])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
         ],
@@ -590,7 +590,6 @@ tasks = {
             "renamedc",
             "offlinebackupdc",
             "labdc",
-            "ad_dc_backup",
             ])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
