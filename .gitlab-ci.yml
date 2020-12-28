@@ -3,16 +3,22 @@
 # Stages explained
 #
 # images: Build the images with the bootstrap script
-# build_first: Build one thing first to find silly errors (fast job)
+# build_first: Build a few things first to find silly errors (fast job)
 #              (don't pay for 35 machines until something compiles)
 # build: The main parallel job
 #              (keep these to 1hour as we are billed per hour)
+# test_only: Tests using the build from prior stages, these typically
+#            have an explicit dependency defined to a specific build job,
+#            which means that start as soon as the build job finished.
+# test_private: Like test_only, but running on private runners
 # report: Code coverage reporting
 
 stages:
   - images
   - build_first
   - build
+  - test_only
+  - test_private
   - report
 
 variables:
@@ -159,7 +165,6 @@ others:
 
 .shared_template_build_only:
   extends: .shared_template
-  stage: build_first
   timeout: 45m
   artifacts:
     expire_in: 1 week
@@ -190,7 +195,7 @@ others:
 
 .shared_template_test_only:
   extends: .shared_template
-  stage: build
+  stage: test_only
   script:
     # We unpack the artifacts file created by the .shared_template_build_only
     # run we depend on
@@ -207,6 +212,7 @@ others:
 
 samba-def-build:
   extends: .shared_template_build_only
+  stage: build_first
 
 .needs_samba-def-build:
   extends: .shared_template_test_only
@@ -216,11 +222,39 @@ samba-def-build:
 
 samba-mit-build:
   extends: .shared_template_build_only
+  stage: build_first
 
 .needs_samba-mit-build:
   extends: .shared_template_test_only
   needs:
     - job: samba-mit-build
+      artifacts: true
+
+samba-h5l-build:
+  extends: .shared_template_build_only
+
+.needs_samba-h5l-build:
+  extends: .shared_template_test_only
+  needs:
+    - job: samba-h5l-build
+      artifacts: true
+
+samba-nt4-build:
+  extends: .shared_template_build_only
+
+.needs_samba-nt4-build:
+  extends: .shared_template_test_only
+  needs:
+    - job: samba-nt4-build
+      artifacts: true
+
+samba-no-opath-build:
+  extends: .shared_template_build_only
+
+.needs_samba-no-opath-build:
+  extends: .shared_template_test_only
+  needs:
+    - job: samba-no-opath-build
       artifacts: true
 
 samba:
@@ -278,8 +312,8 @@ samba-fips:
   extends: .shared_template
   image: $SAMBA_CI_CONTAINER_IMAGE_fedora33
 
-.private_template:
-  extends: .shared_template
+.private_runner:
+  stage: test_private
   tags:
     - docker
     - samba-ci-private
@@ -291,26 +325,51 @@ samba-fips:
       # settings -> CI/CD -> Environment variables
       - $SUPPORT_PRIVATE_TEST == "yes"
 
+.needs_samba-def-build-private:
+  extends:
+    - .needs_samba-def-build
+    - .private_runner
+
+.needs_samba-mit-build-private:
+  extends:
+    - .needs_samba-mit-build
+    - .private_runner
+
+.needs_samba-h5l-build-private:
+  extends:
+    - .needs_samba-h5l-build
+    - .private_runner
+
+.needs_samba-nt4-build-private:
+  extends:
+    - .needs_samba-nt4-build
+    - .private_runner
+
+.needs_samba-no-opath-build-private:
+  extends:
+    - .needs_samba-no-opath-build
+    - .private_runner
+
 samba-ad-dc-backup:
-  extends: .private_template
+  extends: .needs_samba-def-build-private
 
 samba-fileserver:
-  extends: .private_template
+  extends: .needs_samba-h5l-build-private
 
 samba-ad-dc-1:
-  extends: .private_template
+  extends: .needs_samba-def-build-private
 
 samba-nt4:
-  extends: .private_template
+  extends: .needs_samba-nt4-build-private
 
 samba-schemaupgrade:
-  extends: .private_template
+  extends: .needs_samba-def-build-private
 
 samba-ad-dc-1-mitkrb5:
-  extends: .private_template
+  extends: .needs_samba-mit-build-private
 
 samba-no-opath:
-  extends: .private_template
+  extends: .needs_samba-no-opath-build-private
 
 # 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
 pages:
