@@ -284,6 +284,15 @@ samba-ad-dc-5:
 samba-ad-dc-6:
   extends: .needs_samba-def-build
 
+samba-ad-back1:
+  extends: .needs_samba-def-build
+
+samba-ad-back2:
+  extends: .needs_samba-def-build
+
+samba-schemaupgrade:
+  extends: .needs_samba-def-build
+
 samba-libs:
   extends: .shared_template
 
@@ -350,12 +359,6 @@ samba-fips:
     - .needs_samba-no-opath-build
     - .private_runner
 
-samba-ad-back1:
-  extends: .needs_samba-def-build-private
-
-samba-ad-back2:
-  extends: .needs_samba-def-build-private
-
 samba-fileserver:
   extends: .needs_samba-h5l-build-private
 
@@ -364,9 +367,6 @@ samba-ad-dc-1:
 
 samba-nt4:
   extends: .needs_samba-nt4-build-private
-
-samba-schemaupgrade:
-  extends: .needs_samba-def-build-private
 
 samba-ad-dc-1-mitkrb5:
   extends: .needs_samba-mit-build-private
