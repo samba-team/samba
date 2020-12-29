@@ -722,7 +722,7 @@ static struct drsuapi_DsReplicaAttribute *find_drsuapi_attr(
 			const struct drsuapi_DsReplicaObjectListItemEx *cur,
 			uint32_t attid)
 {
-	int i = 0;
+	uint32_t i = 0;
 
 	for (i = 0; i < cur->object.attribute_ctr.num_attributes; i++) {
 		struct drsuapi_DsReplicaAttribute *attr;
@@ -1781,9 +1781,9 @@ static NTSTATUS parse_object(struct dssync_passdb *pctx,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	DATA_BLOB *blob;
-	int i = 0;
-	int a = 0;
 	struct drsuapi_DsReplicaAttribute *attr;
+	uint32_t i = 0;
+	size_t a = 0;
 
 	char *name = NULL;
 	uint32_t sam_type = 0;
