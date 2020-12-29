@@ -1,0 +1,52 @@
+# From https://docs.gitlab.com/ee/user/gitlab_com/#shared-runners:
+#
+#   ...
+#
+#   All your CI/CD jobs run on n1-standard-1 instances with 3.75GB of RAM, CoreOS
+#   and the latest Docker Engine installed. Instances provide 1 vCPU and 25GB of
+#   HDD disk space. The default region of the VMs is US East1. Each instance is
+#   used only for one job, this ensures any sensitive data left on the system can’t
+#   be accessed by other people their CI jobs.
+#
+#   The gitlab-shared-runners-manager-X.gitlab.com fleet of runners are dedicated
+#   for GitLab projects as well as community forks of them. They use a slightly
+#   larger machine type (n1-standard-2) and have a bigger SSD disk size. They don’t
+#   run untagged jobs and unlike the general fleet of shared runners, the instances
+#   are re-used up to 40 times.
+#
+#   ...
+#
+# The n1-standard-1 runners seem to be tagged with 'docker' together with 'gce'.
+#
+# The more powerful n1-standard-2 runners seem to be tagged with
+# 'gitlab-org-docker' or some with just 'gitlab-org'.
+#
+#
+# Our current private runner 'docker', 'samba-ci-private', 'shared' and
+# 'ubuntu1804'. It runs with an ubuntu1804 kernel and privides an ext4 filesystem
+# and similar RAM as the n1-standard-2 runners.
+#
+
+.shared_runner_build:
+  # We use n1-standard-1 shared runners by default.
+  #
+  # There are currently 5 shared runners with 'docker' and 'gce',
+  # while there are only 2 provising 'docker' together with 'shared'.
+  #
+  # We used to fallback to our private runner if the docker+shared runners
+  # were busy, but now that we use the 5 docker+gce runners, we try to only
+  # use shared runners without a fallback to our private runner!
+  # Lets see how that will work out.
+  tags:
+    - docker
+    - gce
+
+.shared_runner_test:
+  # Currently we're fine using the n1-standard-1 runners also for testing
+  extends: .shared_runner_build
+
+.private_runner_test:
+  # We use our private runner only for special tests
+  tags:
+    - docker
+    - samba-ci-private

@@ -1,2 +1,3 @@
 include:
+  - /.gitlab-ci-default-runners.yml
   - /.gitlab-ci-main.yml
