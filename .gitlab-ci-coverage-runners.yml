@@ -1,0 +1,10 @@
+include:
+  - /.gitlab-ci-default-runners.yml
+
+.shared_runner_test:
+  # We need the more powerful n1-standard-2 runners
+  # in order to handle the lcov overhead.
+  #
+  # See .gitlab-ci-default-runners.yml for more details
+  tags:
+    - gitlab-org-docker

@@ -1,0 +1,12 @@
+# This is just used for the scheduled pipelines in the
+# https://gitlab.com/samba-team/samba configuration
+#
+
+variables:
+  SAMBA_CI_FLAVOR: "coverage"
+  # "--enable-coverage" or ""
+  SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
+
+include:
+  - /.gitlab-ci-coverage-runners.yml
+  - /.gitlab-ci-main.yml
