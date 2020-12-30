@@ -811,12 +811,23 @@ tasks = {
             ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL"),
             ("allstatic-make", "make -j"),
             ("allstatic-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
-            ("lcov", LCOV_CMD),
+            ("allstatic-lcov", LCOV_CMD),
 
         # retry with nonshared smbd and smbtorture
             ("nonshared-distclean", "make distclean"),
             ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
             ("nonshared-make", "make -j"),
+            # TODO ("nonshared-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
+            # TODO ("nonshared-lcov", LCOV_CMD),
+
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("clean", "make clean"),
+        ],
+    },
+
+    "samba-nopython": {
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
 
             ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
             ("make", "make -j"),

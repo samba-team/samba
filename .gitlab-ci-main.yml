@@ -273,6 +273,9 @@ samba-mitkrb5:
 samba-minimal-smbd:
   extends: .shared_template
 
+samba-nopython:
+  extends: .shared_template
+
 samba-admem:
   extends: .needs_samba-def-build
 
@@ -400,6 +403,7 @@ pages:
     - samba-ad-dc-6
     - samba-libs
     - samba-minimal-smbd
+    - samba-nopython
     - samba-fuzz
     # - ctdb  # TODO
     - samba-ctdb
