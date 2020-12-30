@@ -1461,6 +1461,7 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	    S_ISDIR(fsp->base_fsp->fsp_name->st.st_ex_mode))
 	{
 		/* sorry, but directories don't habe a resource fork */
+		errno = EISDIR;
 		rc = -1;
 		goto exit;
 	}
