@@ -125,5 +125,7 @@ void set_socket_options(int fd, const char *options);
 
 bool sockaddr_storage_to_samba_sockaddr(
 	struct samba_sockaddr *sa, const struct sockaddr_storage *ss);
+bool samba_sockaddr_set_port(struct samba_sockaddr *sa, uint16_t port);
+bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port);
 
 #endif /* _SAMBA_UTIL_NET_H_ */
