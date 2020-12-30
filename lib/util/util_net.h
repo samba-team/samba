@@ -123,4 +123,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 
 void set_socket_options(int fd, const char *options);
 
+bool sockaddr_storage_to_samba_sockaddr(
+	struct samba_sockaddr *sa, const struct sockaddr_storage *ss);
+
 #endif /* _SAMBA_UTIL_NET_H_ */

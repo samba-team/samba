@@ -40,32 +40,6 @@
 bool global_in_nmbd = False;
 
 /*
- * Utility function that copes only with AF_INET and AF_INET6
- * as that's all we're going to get out of DNS / NetBIOS / WINS
- * name resolution functions.
- */
-
-bool sockaddr_storage_to_samba_sockaddr(struct samba_sockaddr *sa,
-					const struct sockaddr_storage *ss)
-{
-	sa->u.ss = *ss;
-
-	switch (ss->ss_family) {
-	case AF_INET:
-		sa->sa_socklen = sizeof(struct sockaddr_in);
-		break;
-#ifdef HAVE_IPV6
-	case AF_INET6:
-		sa->sa_socklen = sizeof(struct sockaddr_in6);
-		break;
-#endif
-	default:
-		return false;
-	}
-	return true;
-}
-
-/*
  * Utility function to convert from a sockaddr_storage
  * array to a struct samba_sockaddr array.
  */
