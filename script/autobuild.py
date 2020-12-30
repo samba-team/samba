@@ -442,12 +442,12 @@ tasks = {
         ],
     },
 
-    "samba-no-opath": {
+    "samba-no-opath1": {
         "dependency": "samba-no-opath-build",
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
             ("test", make_test(
-                cmd="make test DISABLE_OPATH=1",
+                cmd="make testonly DISABLE_OPATH=1",
                 include_envs=[
                 "nt4_dc",
                 "nt4_dc_smb1",
@@ -455,6 +455,19 @@ tasks = {
                 "nt4_dc_schannel",
                 "nt4_member",
                 "simpleserver",
+                ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+    },
+
+    "samba-no-opath2": {
+        "dependency": "samba-no-opath-build",
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
+            ("test", make_test(
+                cmd="make testonly DISABLE_OPATH=1",
+                include_envs=[
                 "fileserver",
                 "fileserver_smb1",
                 "fileserver_smb1_done",

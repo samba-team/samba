@@ -378,7 +378,10 @@ samba-nt4:
 samba-ad-dc-1-mitkrb5:
   extends: .needs_samba-mit-build-private
 
-samba-no-opath:
+samba-no-opath1:
+  extends: .needs_samba-no-opath-build-private
+
+samba-no-opath2:
   extends: .needs_samba-no-opath-build-private
 
 # 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
@@ -411,6 +414,8 @@ pages:
     - samba-schemaupgrade
     - samba-ad-dc-1-mitkrb5
     - samba-fips
+    - samba-no-opath1
+    - samba-no-opath2
   script:
     - ./configure.developer
     - make -j
