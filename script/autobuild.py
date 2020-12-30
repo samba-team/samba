@@ -573,7 +573,7 @@ tasks = {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=["ad_dc_fips", "ad_member_fips"])),
-            ("lcov", LCOV_CMD),
+            # TODO: This seems to generate only an empty samba-fips.info ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
         ],
     },
