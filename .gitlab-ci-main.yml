@@ -285,7 +285,10 @@ samba-ad-dc-2:
 samba-ad-dc-3:
   extends: .needs_samba-def-build
 
-samba-ad-dc-4:
+samba-ad-dc-4a:
+  extends: .needs_samba-def-build
+
+samba-ad-dc-4b:
   extends: .needs_samba-def-build
 
 samba-ad-dc-5:
@@ -323,7 +326,10 @@ samba-ad-dc-ntvfs:
 samba-admem-mit:
   extends: .needs_samba-mit-build
 
-samba-ad-dc-4-mitkrb5:
+samba-ad-dc-4a-mitkrb5:
+  extends: .needs_samba-mit-build
+
+samba-ad-dc-4b-mitkrb5:
   extends: .needs_samba-mit-build
 
 # This task is run first to ensure we compile before we start the
@@ -398,7 +404,8 @@ pages:
     - samba-admem
     - samba-ad-dc-2
     - samba-ad-dc-3
-    - samba-ad-dc-4
+    - samba-ad-dc-4a
+    - samba-ad-dc-4b
     - samba-ad-dc-5
     - samba-ad-dc-6
     - samba-libs
@@ -409,7 +416,8 @@ pages:
     - samba-ctdb
     - samba-ad-dc-ntvfs
     - samba-admem-mit
-    - samba-ad-dc-4-mitkrb5
+    - samba-ad-dc-4a-mitkrb5
+    - samba-ad-dc-4b-mitkrb5
     - samba-ad-back1
     - samba-ad-back2
     - samba-fileserver

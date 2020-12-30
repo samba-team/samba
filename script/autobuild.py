@@ -522,13 +522,23 @@ tasks = {
         ],
     },
 
-    "samba-ad-dc-4": {
+    "samba-ad-dc-4a": {
         "dependency": "samba-def-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=[
             "fl2000dc",
             "fl2003dc",
+            ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+        ],
+    },
+    "samba-ad-dc-4b": {
+        "dependency": "samba-def-build",
+        "sequence": [
+            ("random-sleep", random_sleep(1, 1)),
+            ("test", make_test(include_envs=[
             "fl2008dc",
             "fl2008r2dc",
             ])),
@@ -651,15 +661,25 @@ tasks = {
         ],
     },
 
-    "samba-ad-dc-4-mitkrb5": {
+    "samba-ad-dc-4a-mitkrb5": {
         "dependency": "samba-mit-build",
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=[
             "fl2000dc",
             "fl2003dc",
-            "fl2008dc",
-            "fl2008r2dc",
+            ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+        ],
+    },
+    "samba-ad-dc-4b-mitkrb5": {
+        "dependency": "samba-mit-build",
+        "sequence": [
+            ("random-sleep", random_sleep(1, 1)),
+            ("test", make_test(include_envs=[
+            "fl2000dc",
+            "fl2003dc",
             ])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
