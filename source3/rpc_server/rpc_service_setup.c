@@ -115,11 +115,23 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 		}
 		break;
 
-	case NCACN_IP_TCP:
-		status = dcesrv_create_ncacn_ip_tcp_sockets(e,
-							    listen_fds,
-							    listen_fds_size);
+	case NCACN_IP_TCP: {
+		int *fds = NULL;
+		size_t num_fds;
+
+		status = dcesrv_create_ncacn_ip_tcp_sockets(
+			e, talloc_tos(), &num_fds, &fds);
+		if (NT_STATUS_IS_OK(status)) {
+			size_t i;
+			for (i=0; i<num_fds; i++) {
+				listen_fds[*listen_fds_size].fd = fds[i];
+				listen_fds[*listen_fds_size].fd_data = e;
+				(*listen_fds_size)++;
+			}
+		}
+		TALLOC_FREE(fds);
 		break;
+	}
 
 	case NCACN_NP:
 		status = dcesrv_create_ncacn_np_socket(e, &out_fd);

@@ -32,7 +32,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static NTSTATUS dcesrv_open_ncacn_ip_tcp_sockets(
+NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	struct dcesrv_endpoint *e,
 	TALLOC_CTX *mem_ctx,
 	size_t *pnum_fds,
@@ -154,37 +154,6 @@ fail:
 	return status;
 }
 
-NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
-					    struct pf_listen_fd *listen_fd,
-					    int *listen_fd_size)
-{
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int *fds = NULL;
-	size_t i, num_fds = 0;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcesrv_open_ncacn_ip_tcp_sockets(e, tmp_ctx, &num_fds, &fds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	for (i=0; i<num_fds; i++) {
-		listen_fd[*listen_fd_size].fd = fds[i];
-		listen_fd[*listen_fd_size].fd_data = e;
-		*listen_fd_size += 1;
-	}
-
-	status = NT_STATUS_OK;
-done:
-	talloc_free(tmp_ctx);
-	return status;
-}
-
 NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx,
 					   struct dcesrv_context *dce_ctx,
@@ -202,7 +171,8 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcesrv_open_ncacn_ip_tcp_sockets(e, tmp_ctx, &num_fds, &fds);
+	status = dcesrv_create_ncacn_ip_tcp_sockets(
+		e, tmp_ctx, &num_fds, &fds);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
