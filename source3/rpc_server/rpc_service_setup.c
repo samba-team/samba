@@ -89,57 +89,45 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 					struct messaging_context *msg_ctx,
 					struct dcesrv_context *dce_ctx,
 					struct dcesrv_endpoint *e,
-					struct pf_listen_fd *listen_fds,
-					int *listen_fds_size)
+					TALLOC_CTX *mem_ctx,
+					size_t *pnum_fds,
+					int **pfds)
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(e->ep_description);
 	char *binding = NULL;
+	int *fds = NULL;
+	size_t num_fds;
 	NTSTATUS status;
-	int out_fd;
 
-	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	binding = dcerpc_binding_string(mem_ctx, e->ep_description);
 	if (binding == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
 	DBG_DEBUG("Creating endpoint '%s'\n", binding);
+	TALLOC_FREE(binding);
+
+	fds = talloc(mem_ctx, int);
+	if (fds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	num_fds = 1;
 
 	switch (transport) {
 	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(e, &out_fd);
-		if (NT_STATUS_IS_OK(status)) {
-			listen_fds[*listen_fds_size].fd = out_fd;
-			listen_fds[*listen_fds_size].fd_data = e;
-			(*listen_fds_size)++;
-		}
+		status = dcesrv_create_ncalrpc_socket(e, fds);
 		break;
 
 	case NCACN_IP_TCP: {
-		int *fds = NULL;
-		size_t num_fds;
+		TALLOC_FREE(fds);
 
 		status = dcesrv_create_ncacn_ip_tcp_sockets(
 			e, talloc_tos(), &num_fds, &fds);
-		if (NT_STATUS_IS_OK(status)) {
-			size_t i;
-			for (i=0; i<num_fds; i++) {
-				listen_fds[*listen_fds_size].fd = fds[i];
-				listen_fds[*listen_fds_size].fd_data = e;
-				(*listen_fds_size)++;
-			}
-		}
-		TALLOC_FREE(fds);
 		break;
 	}
 
 	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(e, &out_fd);
-		if (NT_STATUS_IS_OK(status)) {
-			listen_fds[*listen_fds_size].fd = out_fd;
-			listen_fds[*listen_fds_size].fd_data = e;
-			(*listen_fds_size)++;
-		}
+		status = dcesrv_create_ncacn_np_socket(e, fds);
 		break;
 
 	default:
@@ -149,8 +137,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	/* Build binding string again as the endpoint may have changed by
 	 * dcesrv_create_<transport>_socket functions */
-	TALLOC_FREE(binding);
-	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	binding = dcerpc_binding_string(mem_ctx, e->ep_description);
 	if (binding == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -173,6 +160,9 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 	}
 
 	TALLOC_FREE(binding);
+
+	*pnum_fds = num_fds;
+	*pfds = fds;
 
 	return status;
 }

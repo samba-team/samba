@@ -558,12 +558,16 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
 
 	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		int *fds = NULL;
+		size_t j, num_fds;
+
 		status = dcesrv_create_endpoint_sockets(ev_ctx,
 							msg_ctx,
 							dce_ctx,
 							e,
-							listen_fd,
-							listen_fd_size);
+							dce_ctx,
+							&num_fds,
+							&fds);
 		if (!NT_STATUS_IS_OK(status)) {
 			char *ep_string = dcerpc_binding_string(
 					dce_ctx, e->ep_description);
@@ -572,6 +576,12 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 			TALLOC_FREE(ep_string);
 			goto done;
 		}
+		for (j=0; j<num_fds; j++) {
+			listen_fd[*listen_fd_size].fd = fds[j];
+			listen_fd[*listen_fd_size].fd_data = e;
+			(*listen_fd_size)++;
+		}
+		TALLOC_FREE(fds);
 	}
 
 	for (i = 0; i < *listen_fd_size; i++) {
