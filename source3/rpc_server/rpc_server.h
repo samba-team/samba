@@ -91,7 +91,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  struct dcesrv_context *dce_ctx,
 					  struct dcesrv_endpoint *e,
-					  const struct sockaddr_storage *ifss,
+					  int fd,
 					  dcerpc_ncacn_termination_fn term_fn,
 					  void *term_data);
 

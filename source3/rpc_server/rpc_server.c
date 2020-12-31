@@ -337,23 +337,14 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  struct dcesrv_context *dce_ctx,
 					  struct dcesrv_endpoint *e,
-					  const struct sockaddr_storage *ifss,
+					  int fd,
 					  dcerpc_ncacn_termination_fn term_fn,
 					  void *term_data)
 {
 	struct dcerpc_ncacn_listen_state *state = NULL;
 	struct tevent_fd *fde = NULL;
-	const char *endpoint = NULL;
-	uint16_t port = 0;
-	char port_str[6];
 	int rc;
 	NTSTATUS status;
-
-	endpoint = dcerpc_binding_get_string_option(e->ep_description,
-						    "endpoint");
-	if (endpoint != NULL) {
-		port = atoi(endpoint);
-	}
 
 	/* Alloc in endpoint context. If the endpoint is freed (for example
 	 * when forked daemons reinit the dcesrv_context, the tevent_fd
@@ -364,18 +355,13 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->fd = -1;
+	state->fd = fd;
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
 	state->endpoint = e;
 	state->dce_ctx = dce_ctx;
 	state->termination_fn = term_fn;
 	state->termination_data = term_data;
-
-	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &port, &state->fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
 
 	/* ready to listen */
 	set_socket_options(state->fd, "SO_KEEPALIVE");
@@ -396,9 +382,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 		goto out;
 	}
 
-	DBG_DEBUG("Opened socket fd %d for port %u\n",
-		  state->fd, port);
-
 	errno = 0;
 	fde = tevent_add_fd(state->ev_ctx,
 			    state,
@@ -417,17 +400,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	}
 
 	tevent_fd_set_auto_close(fde);
-
-	/* Set the port in the endpoint */
-	snprintf(port_str, sizeof(port_str), "%u", port);
-
-	status = dcerpc_binding_set_string_option(e->ep_description,
-						  "endpoint", port_str);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("Failed to set binding endpoint '%s': %s\n",
-			port_str, nt_errstr(status));
-		goto out;
-	}
 
 	return NT_STATUS_OK;
 

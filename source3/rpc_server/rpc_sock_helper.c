@@ -194,71 +194,30 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
+	int *fds = NULL;
+	size_t i, num_fds = 0;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		uint32_t num_ifs = iface_count();
-		uint32_t i;
+	status = dcesrv_open_ncacn_ip_tcp_sockets(e, tmp_ctx, &num_fds, &fds);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-		/*
-		 * We have been given an interfaces line, and been told to only
-		 * bind to those interfaces. Create a socket per interface and
-		 * bind to only these.
-		 */
-
-		/* Now open a listen socket for each of the interfaces. */
-		for (i = 0; i < num_ifs; i++) {
-			const struct sockaddr_storage *ifss =
-					iface_n_sockaddr_storage(i);
-
-			status = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
-								  msg_ctx,
-								  dce_ctx,
-								  e,
-								  ifss,
-								  t_fn,
-								  t_data);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto done;
-			}
-		}
-	} else {
-		const char *sock_addr;
-		const char *sock_ptr;
-		char *sock_tok;
-
-#ifdef HAVE_IPV6
-		sock_addr = "::,0.0.0.0";
-#else
-		sock_addr = "0.0.0.0";
-#endif
-
-		for (sock_ptr = sock_addr;
-		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,");
-		    ) {
-			struct sockaddr_storage ss;
-
-			/* open an incoming socket */
-			if (!interpret_string_addr(&ss,
-						   sock_tok,
-						   AI_NUMERICHOST|AI_PASSIVE)) {
-				continue;
-			}
-
-			status = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
-								  msg_ctx,
-								  dce_ctx,
-								  e,
-								  &ss,
-								  t_fn,
-								  t_data);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto done;
-			}
+	for (i=0; i<num_fds; i++) {
+		status = dcesrv_setup_ncacn_ip_tcp_socket(
+			ev_ctx,
+			msg_ctx,
+			dce_ctx,
+			e,
+			fds[i],
+			t_fn,
+			t_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 	}
 
