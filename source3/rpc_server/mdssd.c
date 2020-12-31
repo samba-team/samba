@@ -45,7 +45,6 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 #define DAEMON_NAME "mdssd"
-#define MDSSD_MAX_SOCKETS 64
 
 static struct server_id parent_id;
 static struct prefork_pool *mdssd_pool = NULL;
@@ -496,50 +495,31 @@ static void mdssd_check_children(struct tevent_context *ev_ctx,
 static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 				     struct messaging_context *msg_ctx,
 				     struct dcesrv_context *dce_ctx,
-				     struct pf_listen_fd *listen_fd,
-				     int *listen_fd_size)
+				     TALLOC_CTX *mem_ctx,
+				     struct pf_listen_fd **plisten_fds,
+				     size_t *pnum_listen_fds)
 {
 	NTSTATUS status;
 	int fd = -1;
+	size_t i, num_fds;
+	struct pf_listen_fd *fds = NULL;
 	int rc;
-	int i;
-	struct dcesrv_endpoint *e = NULL;
+	struct dcesrv_endpoint *e = dce_ctx->endpoint_list;
 
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
 
-	for (e = dce_ctx->endpoint_list; e; e = e->next) {
-		int *fds = NULL;
-		size_t j, num_fds;
-
-		status = dcesrv_create_endpoint_sockets(ev_ctx,
-							msg_ctx,
-							dce_ctx,
-							e,
-							dce_ctx,
-							&num_fds,
-							&fds);
-		if (!NT_STATUS_IS_OK(status)) {
-			char *ep_string = dcerpc_binding_string(
-					dce_ctx, e->ep_description);
-			DBG_ERR("Failed to create endpoint '%s': %s\n",
-				ep_string, nt_errstr(status));
-			TALLOC_FREE(ep_string);
-			goto done;
-		}
-		for (j=0; j<num_fds; j++) {
-			listen_fd[*listen_fd_size].fd = fds[j];
-			listen_fd[*listen_fd_size].fd_data = e;
-			(*listen_fd_size)++;
-		}
-		TALLOC_FREE(fds);
+	status = dcesrv_create_endpoint_list_pf_listen_fds(
+		ev_ctx, msg_ctx, dce_ctx, e, mem_ctx, &num_fds, &fds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	for (i = 0; i < *listen_fd_size; i++) {
-		rc = listen(listen_fd[i].fd, pf_mdssd_cfg.max_allowed_clients);
+	for (i = 0; i < num_fds; i++) {
+		rc = listen(fds[i].fd, pf_mdssd_cfg.max_allowed_clients);
 		if (rc == -1) {
 			char *ep_string = NULL;
+			e = fds[i].fd_data;
 
-			e = listen_fd[i].fd_data;
 			ep_string = dcerpc_binding_string(dce_ctx,
 							  e->ep_description);
 			DBG_ERR("Failed to listen on endpoint '%s': %s\n",
@@ -566,6 +546,9 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 		}
 	}
 
+	*plisten_fds = fds;
+	*pnum_listen_fds = num_fds;
+
 	status = NT_STATUS_OK;
 done:
 	if (fd != -1) {
@@ -579,8 +562,8 @@ void start_mdssd(struct tevent_context *ev_ctx,
 		 struct dcesrv_context *dce_ctx)
 {
 	NTSTATUS status;
-	struct pf_listen_fd listen_fd[MDSSD_MAX_SOCKETS];
-	int listen_fd_size = 0;
+	struct pf_listen_fd *listen_fd = NULL;
+	size_t listen_fd_size = 0;
 	pid_t pid;
 	int rc;
 	bool ok;
@@ -665,7 +648,8 @@ void start_mdssd(struct tevent_context *ev_ctx,
 	status = mdssd_create_sockets(ev_ctx,
 				      msg_ctx,
 				      dce_ctx,
-				      listen_fd,
+				      dce_ctx,
+				      &listen_fd,
 				      &listen_fd_size);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
@@ -682,6 +666,7 @@ void start_mdssd(struct tevent_context *ev_ctx,
 				 &mdssd_children_main,
 				 dce_ctx,
 				 &mdssd_pool);
+	TALLOC_FREE(listen_fd);
 	if (!ok) {
 		exit(1);
 	}
