@@ -167,6 +167,83 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 	return status;
 }
 
+NTSTATUS dcesrv_create_endpoint_list_pf_listen_fds(
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	struct dcesrv_context *dce_ctx,
+	struct dcesrv_endpoint *e,
+	TALLOC_CTX *mem_ctx,
+	size_t *pnum_fds,
+	struct pf_listen_fd **pfds)
+{
+	struct pf_listen_fd *fds = NULL;
+	size_t num_fds = 0;
+	NTSTATUS status;
+
+	for (; e != NULL; e = e->next) {
+		int *ep_fds = NULL;
+		struct pf_listen_fd *tmp = NULL;
+		size_t i, num_ep_fds;
+
+		status = dcesrv_create_endpoint_sockets(
+			ev_ctx,
+			msg_ctx,
+			dce_ctx,
+			e,
+			mem_ctx,
+			&num_ep_fds,
+			&ep_fds);
+		if (!NT_STATUS_IS_OK(status)) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to create endpoint '%s': %s\n",
+				ep_string, nt_errstr(status));
+			TALLOC_FREE(ep_string);
+			goto fail;
+		}
+
+		if (num_fds + num_ep_fds < num_fds) {
+			/* overflow */
+			status = NT_STATUS_INTEGER_OVERFLOW;
+			goto fail;
+		}
+
+		tmp = talloc_realloc(
+			mem_ctx,
+			fds,
+			struct pf_listen_fd,
+			num_fds + num_ep_fds);
+		if (tmp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		fds = tmp;
+
+		for (i=0; i<num_ep_fds; i++) {
+			fds[num_fds].fd = ep_fds[i];
+			fds[num_fds].fd_data = e;
+			num_fds += 1;
+		}
+
+		TALLOC_FREE(ep_fds);
+	}
+
+	*pnum_fds = num_fds;
+	*pfds = fds;
+	return NT_STATUS_OK;
+
+fail:
+	{
+		size_t i;
+		for (i=0; i<num_fds; i++) {
+			close(fds[i].fd);
+		}
+	}
+
+	TALLOC_FREE(fds);
+	return status;
+}
+
 NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 				       struct messaging_context *msg_ctx,
 				       struct dcesrv_context *dce_ctx,
