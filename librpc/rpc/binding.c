@@ -227,9 +227,11 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 	}
 
 	if (!GUID_all_zero(&b->object)) {
+		struct GUID_txt_buf buf;
+
 		o = s;
-		s = talloc_asprintf_append_buffer(s, "%s@",
-				    GUID_string(mem_ctx, &b->object));
+		s = talloc_asprintf_append_buffer(
+			s, "%s@", GUID_buf_string(&b->object, &buf));
 		if (s == NULL) {
 			talloc_free(o);
 			return NULL;
