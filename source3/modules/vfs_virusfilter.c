@@ -200,6 +200,14 @@ static int virusfilter_vfs_connect(
 	struct virusfilter_config *config = NULL;
 	const char *exclude_files = NULL;
 	const char *temp_quarantine_dir_mode = NULL;
+	const char *infected_file_command = NULL;
+	const char *scan_error_command = NULL;
+	const char *quarantine_dir = NULL;
+	const char *quarantine_prefix = NULL;
+	const char *quarantine_suffix = NULL;
+	const char *rename_prefix = NULL;
+	const char *rename_suffix = NULL;
+	const char *socket_path = NULL;
 	char *sret = NULL;
 	char *tmp = NULL;
 	enum virusfilter_scanner_enum backend;
@@ -257,11 +265,21 @@ static int virusfilter_vfs_connect(
 		snum, "virusfilter", "infected file action",
 		virusfilter_actions, VIRUSFILTER_ACTION_DO_NOTHING);
 
-	config->infected_file_command = lp_parm_const_string(
+	infected_file_command = lp_parm_const_string(
 		snum, "virusfilter", "infected file command", NULL);
+	config->infected_file_command = talloc_strdup(config, infected_file_command);
+	if (config->infected_file_command == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
-	config->scan_error_command = lp_parm_const_string(
+	scan_error_command = lp_parm_const_string(
 		snum, "virusfilter", "scan error command", NULL);
+	config->scan_error_command = talloc_strdup(config, scan_error_command);
+	if (config->scan_error_command == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
 	config->block_access_on_error = lp_parm_bool(
 		snum, "virusfilter", "block access on error", false);
@@ -269,9 +287,14 @@ static int virusfilter_vfs_connect(
 	tmp = talloc_asprintf(config, "%s/.quarantine",
 		handle->conn->connectpath);
 
-	config->quarantine_dir = lp_parm_const_string(
+	quarantine_dir = lp_parm_const_string(
 		snum, "virusfilter", "quarantine directory",
 		tmp ? tmp : "/tmp/.quarantine");
+	config->quarantine_dir = talloc_strdup(config, quarantine_dir);
+	if (config->quarantine_dir == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
 	if (tmp != config->quarantine_dir) {
 		TALLOC_FREE(tmp);
@@ -285,13 +308,23 @@ static int virusfilter_vfs_connect(
 		config->quarantine_dir_mode = mode;
 	}
 
-	config->quarantine_prefix = lp_parm_const_string(
+	quarantine_prefix = lp_parm_const_string(
 		snum, "virusfilter", "quarantine prefix",
 		VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX);
+	config->quarantine_prefix = talloc_strdup(config, quarantine_prefix);
+	if (config->quarantine_prefix == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
-	config->quarantine_suffix = lp_parm_const_string(
+	quarantine_suffix = lp_parm_const_string(
 		snum, "virusfilter", "quarantine suffix",
 		VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX);
+	config->quarantine_suffix = talloc_strdup(config, quarantine_suffix);
+	if (config->quarantine_suffix == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
 	/*
 	 * Make sure prefixes and suffixes do not contain directory
@@ -322,13 +355,23 @@ static int virusfilter_vfs_connect(
 	config->quarantine_keep_name = lp_parm_bool(
 		snum, "virusfilter", "quarantine keep name", true);
 
-	config->rename_prefix = lp_parm_const_string(
+	rename_prefix = lp_parm_const_string(
 		snum, "virusfilter", "rename prefix",
 		VIRUSFILTER_DEFAULT_RENAME_PREFIX);
+	config->rename_prefix = talloc_strdup(config, rename_prefix);
+	if (config->rename_prefix == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
-	config->rename_suffix = lp_parm_const_string(
+	rename_suffix = lp_parm_const_string(
 		snum, "virusfilter", "rename suffix",
 		VIRUSFILTER_DEFAULT_RENAME_SUFFIX);
+	config->rename_suffix = talloc_strdup(config, rename_suffix);
+	if (config->rename_suffix == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
 	/*
 	 * Make sure prefixes and suffixes do not contain directory
@@ -365,15 +408,20 @@ static int virusfilter_vfs_connect(
 	config->scan_error_close_errno = lp_parm_int(
 		snum, "virusfilter", "scan error errno on close", 0);
 
-	config->socket_path = lp_parm_const_string(
+	socket_path = lp_parm_const_string(
 		snum, "virusfilter", "socket path", NULL);
+	config->socket_path = talloc_strdup(config, socket_path);
+	if (config->socket_path == NULL) {
+		DBG_ERR("virusfilter-vfs: out of memory!\n");
+		return -1;
+	}
 
 	/* canonicalize socket_path */
 	if (config->socket_path != NULL && config->socket_path[0] != '/') {
 		DBG_ERR("socket path must be an absolute path. "
 			"Using backend default\n");
 		config->socket_path = NULL;
-        }
+	}
 	if (config->socket_path != NULL) {
 		config->socket_path = canonicalize_absolute_path(
 			handle, config->socket_path);
