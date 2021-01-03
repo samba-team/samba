@@ -35,6 +35,7 @@
 #include "libsmb/samlogon_cache.h"
 #include "lib/util/smb_strtox.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

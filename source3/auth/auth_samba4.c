@@ -28,6 +28,7 @@
 #include "source4/lib/messaging/messaging.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

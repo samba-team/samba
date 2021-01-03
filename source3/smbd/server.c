@@ -58,6 +58,7 @@
 #include "rpc_server/lsasd.h"
 #include "rpc_server/fssd.h"
 #include "rpc_server/mdssd.h"
+#include "lib/global_contexts.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"

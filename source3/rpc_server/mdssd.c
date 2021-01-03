@@ -39,6 +39,7 @@
 
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
 #include "rpc_server/mdssd.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

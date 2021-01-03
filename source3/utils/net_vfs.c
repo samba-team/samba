@@ -36,6 +36,7 @@
 #include "lib/adouble.h"
 #include "lib/string_replace.h"
 #include "utils/net.h"
+#include "lib/global_contexts.h"
 
 #define NET_VFS_CMD_STREAM_TO_ADOUBLE "stream2adouble"
 

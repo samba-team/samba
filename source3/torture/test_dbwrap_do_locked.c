@@ -25,6 +25,7 @@
 #include "lib/dbwrap/dbwrap_watch.h"
 #include "lib/util/util_tdb.h"
 #include "source3/include/util_tdb.h"
+#include "lib/global_contexts.h"
 
 struct do_locked1_state {
 	TDB_DATA value;

@@ -39,6 +39,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "lib/server_prefork.h"
 #include "lib/server_prefork_util.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

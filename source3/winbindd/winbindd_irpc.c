@@ -31,6 +31,7 @@
 #include "passdb/lookup_sid.h" /* only for LOOKUP_NAME_NO_NSS flag */
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "lib/global_contexts.h"
 
 struct wb_irpc_forward_state {
 	struct irpc_message *msg;

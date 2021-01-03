@@ -38,6 +38,7 @@
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
 #include "serverid.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/global_contexts.h"
 
 struct smbXsrv_session_table {
 	struct {

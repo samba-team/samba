@@ -23,6 +23,7 @@
 #include "rpc_server/rpc_server.h"
 #include "lib/param/param.h"
 #include "librpc/rpc/dcesrv_core.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

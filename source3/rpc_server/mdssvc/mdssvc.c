@@ -34,6 +34,7 @@
 #ifdef HAVE_SPOTLIGHT_BACKEND_ES
 #include "mdssvc_es.h"
 #endif
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

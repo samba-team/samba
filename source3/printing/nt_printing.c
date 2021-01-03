@@ -35,6 +35,7 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_client/cli_winreg_spoolss.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 /* Map generic permissions to printer object specific permissions */
 

@@ -30,6 +30,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/msghdr.h"
 #include "smbprofile.h"
+#include "lib/global_contexts.h"
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 # error Can not pass file descriptors

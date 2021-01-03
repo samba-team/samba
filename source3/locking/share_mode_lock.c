@@ -56,6 +56,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "g_lock.h"
 #include "smbd/fd_handle.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING

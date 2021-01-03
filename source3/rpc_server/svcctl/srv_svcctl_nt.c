@@ -37,6 +37,7 @@
 #include "librpc/gen_ndr/ndr_svcctl.h"
 #include "librpc/gen_ndr/ndr_svcctl_scompat.h"
 #include "srv_svcctl_reg.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

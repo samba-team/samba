@@ -21,6 +21,7 @@
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

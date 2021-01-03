@@ -38,6 +38,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 extern userdom_struct current_user_info;
 

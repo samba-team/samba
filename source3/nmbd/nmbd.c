@@ -28,6 +28,7 @@
 #include "../lib/util/pidfile.h"
 #include "util_cluster.h"
 #include "lib/gencache.h"
+#include "lib/global_contexts.h"
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;

@@ -41,6 +41,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "serverid.h"
+#include "lib/global_contexts.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

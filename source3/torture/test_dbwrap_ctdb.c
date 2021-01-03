@@ -24,6 +24,7 @@
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "messages.h"
 #include "lib/messages_ctdb.h"
+#include "lib/global_contexts.h"
 
 bool run_local_dbwrap_ctdb1(int dummy)
 {

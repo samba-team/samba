@@ -64,6 +64,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "printing/nt_printing_migrate_internal.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

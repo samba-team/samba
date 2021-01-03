@@ -36,6 +36,7 @@
 #include "libcli/security/security.h"
 #include "lib/smbd_shim.h"
 #include "system/filesys.h"
+#include "lib/global_contexts.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {

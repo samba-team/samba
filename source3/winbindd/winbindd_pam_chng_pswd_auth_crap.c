@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "lib/global_contexts.h"
 
 struct winbindd_pam_chng_pswd_auth_crap_state {
 	struct winbindd_request *request;

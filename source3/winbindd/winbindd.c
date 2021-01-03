@@ -50,6 +50,7 @@
 #include "lib/util/tevent_req_profile.h"
 #include "lib/gencache.h"
 #include "rpc_server/rpc_config.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

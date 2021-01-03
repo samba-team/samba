@@ -33,6 +33,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "lib/tsocket/tsocket.h"
+#include "lib/global_contexts.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath

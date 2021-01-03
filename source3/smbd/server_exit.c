@@ -38,6 +38,7 @@
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "lib/gencache.h"
 #include "rpc_server/rpc_config.h"
+#include "lib/global_contexts.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)

@@ -31,6 +31,7 @@
 #include "nsswitch/winbind_client.h"
 #include "lib/winbind_util.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/global_contexts.h"
 
 /*
  * Config and connection info per domain.

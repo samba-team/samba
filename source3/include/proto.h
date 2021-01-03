@@ -708,12 +708,6 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 const char *dcname,
 			 bool force);
 
-/* The following definitions come from lib/server_contexts.c  */
-struct tevent_context *global_event_context(void);
-void global_event_context_free(void);
-struct messaging_context *global_messaging_context(void);
-void global_messaging_context_free(void);
-
 /* The following definitions come from lib/sessionid_tdb.c  */
 struct sessionid;
 NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,

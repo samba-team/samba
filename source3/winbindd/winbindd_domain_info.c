@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 struct winbindd_domain_info_state {
 	struct winbindd_domain *domain;

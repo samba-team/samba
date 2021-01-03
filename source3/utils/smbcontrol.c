@@ -37,6 +37,7 @@
 #include "serverid.h"
 #include "cmdline_contexts.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/global_contexts.h"
 
 #ifdef HAVE_LIBUNWIND_H
 #include <libunwind.h>

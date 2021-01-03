@@ -26,6 +26,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/util_tdb.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/global_contexts.h"
 
 static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct tevent_context **ev,

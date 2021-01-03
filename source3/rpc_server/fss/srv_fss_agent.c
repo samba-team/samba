@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_fsrvp.h"
 #include "rpc_server/rpc_server.h"
 #include "srv_fss_private.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

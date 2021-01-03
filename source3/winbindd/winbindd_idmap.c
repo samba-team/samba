@@ -25,6 +25,7 @@
 #include "winbindd.h"
 #include "../libcli/security/security.h"
 #include "passdb/lookup_sid.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

@@ -37,6 +37,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/util_netlogon.h"
 #include "libsmb/dsgetdcname.h"
+#include "lib/global_contexts.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {

@@ -21,6 +21,7 @@
 #include "cmdline_contexts.h"
 #include "includes.h"
 #include "messages.h"
+#include "lib/global_contexts.h"
 
 struct messaging_context *cmdline_messaging_context(const char *config_file)
 {

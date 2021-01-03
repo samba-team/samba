@@ -29,7 +29,7 @@
 #include "lib/messages_ctdb.h"
 #include "util_tdb.h"
 #include "ctdbd_conn.h"
-#include "messages.h"
+#include "global_contexts.h"
 
 bool db_is_local(const char *name)
 {

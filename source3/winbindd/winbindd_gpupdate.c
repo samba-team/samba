@@ -20,6 +20,7 @@
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "winbindd.h"
+#include "lib/global_contexts.h"
 
 /*
  * gpupdate_interval()

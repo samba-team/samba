@@ -36,6 +36,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_eventlog_scompat.h"
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
+#include "lib/global_contexts.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

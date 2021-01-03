@@ -42,6 +42,7 @@
 #include "librpc/gen_ndr/ndr_lsa_scompat.h"
 #include "librpc/gen_ndr/ndr_samr_scompat.h"
 #include "librpc/gen_ndr/ndr_netlogon_scompat.h"
+#include "lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -18,7 +18,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+
+#include "replace.h"
+#include "global_contexts.h"
+#include <tevent.h>
+#include "lib/util/fault.h"
+#include "lib/util/samba_util.h"
 #include "messages.h"
 
 static struct tevent_context *global_event_ctx = NULL;
