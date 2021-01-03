@@ -20,6 +20,8 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
+#include <talloc.h>
+
 struct loadparm_s3_helpers;
 struct loadparm_substitution;
 
