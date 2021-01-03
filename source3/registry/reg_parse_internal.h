@@ -73,7 +73,7 @@ bool srprs_hive(const char** ptr, const struct hive_info** result);
 
 
 
-const char* get_charset(const char* c);
+const char *smbreg_get_charset(const char *c);
 
 bool set_iconv(smb_iconv_t* t, const char* to, const char* from);
 

@@ -791,7 +791,7 @@ struct reg_format* reg_format_file(const void* talloc_ctx,
 			  opt.enc));
 		goto fail;
 	}
-	fmt_ctx->encoding = talloc_strdup(fmt_ctx, get_charset(opt.enc));
+	fmt_ctx->encoding = talloc_strdup(fmt_ctx, smbreg_get_charset(opt.enc));
 
 	fmt_ctx->file = fopen(filename, "w");
 	if (fmt_ctx->file == NULL) {
