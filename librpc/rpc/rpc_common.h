@@ -22,6 +22,8 @@
 #ifndef __DEFAULT_LIBRPC_RPCCOMMON_H__
 #define __DEFAULT_LIBRPC_RPCCOMMON_H__
 
+#include "lib/util/data_blob.h"
+
 #include "gen_ndr/dcerpc.h"
 #include "lib/util/attr.h"
 
