@@ -1,11 +1,22 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
-                    source='iconv.c',
+                    source='''
+                    iconv.c
+                    weird.c
+                    charset_macosxfs.c
+                    ''',
                     public_deps='iconv replace talloc ' +  bld.env['icu-libs'])
 
 bld.SAMBA_SUBSYSTEM('charset',
                     public_headers='charset.h',
-                    source='codepoints.c convert_string.c util_str.c util_unistr_w.c pull_push.c util_unistr.c weird.c charset_macosxfs.c',
+                    source='''
+                    codepoints.c
+                    convert_string.c
+                    util_str.c
+                    util_unistr_w.c
+                    pull_push.c
+                    util_unistr.c
+                    ''',
                     deps='DYNCONFIG ICONV_WRAPPER',
                     public_deps='talloc')
