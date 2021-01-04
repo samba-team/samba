@@ -168,24 +168,25 @@ EOF
 '
 	_db="locking.tdb.${FAKE_CTDB_PNN}"
 
-	_pids=''
+	if [ -n "$_helper_lock" ] ; then
+		read -r _ _ _ _ _pid _ _start _end <<EOF
+$_helper_lock
+EOF
+		_out="Waiter:${_nl}"
+		_out="${_out}${_pid} ctdb_lock_helpe ${_db} ${_start} ${_end}"
+	fi
+
 	# fake lock info
+	_pids=''
+	_out="${_out:+${_out}${_nl}}Lock holders:"
 	while read -r _ _ _  _pid _ _start _end ; do
 		_comm="smbd"
-		_out="${_out:+${_out}${_nl}}"
+		_out="${_out}${_nl}"
 		_out="${_out}${_pid} smbd ${_db} ${_start} ${_end}"
 		_pids="${_pids:+${_pids} }${_pid}"
 	done <<EOF
 $_holder_lock
 EOF
-
-	if [ -n "$_helper_lock" ] ; then
-		read -r _ _ _ _ _pid _ _start _end <<EOF
-$_helper_lock
-EOF
-		_out="${_out}${_nl}"
-		_out="${_out}${_pid} ctdb_lock_helpe ${_db} ${_start} ${_end} W"
-	fi
 
 	# fake stack traces
 	for _pid in $_pids ; do

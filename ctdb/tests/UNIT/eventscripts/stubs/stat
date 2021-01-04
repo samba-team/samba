@@ -16,6 +16,19 @@ while getopts "c:h:?" opt ; do
 done
 shift $((OPTIND - 1))
 
+fake_device_id ()
+{
+	_path="$1"
+
+	_t=$(echo "$FAKE_FILE_ID_MAP" |
+	     awk -v path="${_path}" '$1 == path { print $2 }')
+	_major_minor="${_t%:*}"
+	_major="0x${_major_minor%:*}"
+	_minor="0x${_major_minor#*:}"
+	_device_id=$((_major * 256 + _minor))
+	echo "$_device_id"
+}
+
 fake_inode ()
 {
 	_path="$1"
@@ -39,6 +52,11 @@ if [ -n "$format" ] ; then
 		"s#[0-9a-f]*:[0-9a-f]*:%i #%n #")
 			inode=$(fake_inode "$path")
 			echo "s#[0-9a-f]*:[0-9a-f]*:${inode} #${f} #"
+			;;
+		"%d:%i")
+			device_id=$(fake_device_id "$path")
+			inode=$(fake_inode "$path")
+			echo "${device_id}:${inode}"
 			;;
 		*)
 			echo "Unsupported format \"${format}\""
