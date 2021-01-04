@@ -49,6 +49,15 @@ libraries called from Samba VFS modules as "based on" and/or creating a
 Accordingly, we do not require such libraries be licensed under the GNU GPL
 or a GNU GPL compatible license.
 
+
+Printing
+--------
+
+Publishing printers in AD is more reliable and more printer features are
+added to the published information in AD. Samba now also supports Windows
+drivers for the ARM64 architecture.
+
+
 Client Group Policy
 -------------------
 This release extends Samba to support Group Policy functionality for Winbind
