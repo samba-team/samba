@@ -62,29 +62,7 @@ static int read_linehead(FILE *f)
 	return num_bytes;
 }
 
-static int read_hex(void) {
-	int c;
-	c = getchar();
-	if (c == EOF) {
-		fprintf(stderr, "Unexpected EOF in data\n");
-		return -1;
-	} else if (c == '"') {
-		fprintf(stderr, "Unexpected \\\" sequence\n");
-		return -1;
-	} else if ('0' <= c && c <= '9')  {
-		return c - '0';
-	} else if ('A' <= c && c <= 'F')  {
-		return c - 'A' + 10;
-	} else if ('a' <= c && c <= 'f')  {
-		return c - 'a' + 10;
-	} else {
-		fprintf(stderr, "Invalid hex: %c\n", c);
-		return -1;
-	}
-}
-
 static int read_data(FILE *f, TDB_DATA *d, size_t size) {
-	int c, low, high;
 	size_t i;
 
 	d->dptr = (unsigned char *)malloc(size);
@@ -94,25 +72,26 @@ static int read_data(FILE *f, TDB_DATA *d, size_t size) {
 	d->dsize = size;
 
 	for (i=0; i<size; i++) {
-		c = getc(f);
+		int c = getc(f);
 		if (c == EOF) {
 			fprintf(stderr, "Unexpected EOF in data\n");
 			return 1;
 		} else if (c == '"') {
 			return 0;
 		} else if (c == '\\') {
-			high = read_hex();
-			if (high < 0) {
+			char in[3] = {0};
+			size_t n;
+			bool ok;
+
+			n = fread(in, 1, 2, stdin);
+			if (n != 2) {
 				return -1;
 			}
-			high = high << 4;
-			assert(high == (high & 0xf0));
-			low = read_hex();
-			if (low < 0) {
+			ok = hex_byte(in, &d->dptr[i]);
+			if (!ok) {
+				fprintf(stderr, "Invalid hex: %s\n", in);
 				return -1;
 			}
-			assert(low == (low & 0x0f));
-			d->dptr[i] = (low|high);
 		} else {
 			d->dptr[i] = c;
 		}
