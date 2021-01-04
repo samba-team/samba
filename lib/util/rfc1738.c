@@ -46,7 +46,6 @@
 #include "replace.h"
 #include <talloc.h>
 #include "lib/util/samba_util.h"
-#include "lib/util/util_str_hex.h"
 
 #define RFC1738_ENCODE 1
 #define RFC1738_RESERVED 2
@@ -179,16 +178,17 @@ rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url)
 _PUBLIC_ char *rfc1738_unescape(char *s)
 {
 	size_t i, j;	    /* i is write, j is read */
-	uint64_t x;
-	NTSTATUS status;
 	for (i = 0, j = 0; s[j] != '\0'; i++, j++) {
 		if (s[j] == '%') {
-			status = read_hex_bytes(&s[j + 1], 2, &x);
-			if (! NT_STATUS_IS_OK(status)) {
+			uint8_t v;
+			bool ok;
+
+			ok = hex_byte(&s[j+1], &v);
+			if (!ok) {
 				return NULL;
 			}
-			j += 2; /* OK; read_hex_bytes() has checked ahead */
-			s[i] = (unsigned char)x;
+			j += 2; /* OK; hex_byte() has checked ahead */
+			s[i] = (unsigned char)v;
 		} else {
 			s[i] = s[j];
 		}
