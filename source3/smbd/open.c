@@ -5946,8 +5946,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
-	fsp->base_fsp = base_fsp;
-
 	fsp->fsp_flags.is_fsa = true;
 
 	if ((ea_list != NULL) &&
