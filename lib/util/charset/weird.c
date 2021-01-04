@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "charset_proto.h"
 
 #ifdef DEVELOPER
@@ -54,19 +54,17 @@ size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 				    weird_table[i].to, 
 				    weird_table[i].len) == 0) {
 				if (*inbytesleft < weird_table[i].len) {
-					DEBUG(0,("ERROR: truncated weird string\n"));
-					/* smb_panic("weird_pull"); */
-
-				} else {
-					(*outbuf)[0] = weird_table[i].from;
-					(*outbuf)[1] = 0;
-					(*inbytesleft)  -= weird_table[i].len;
-					(*outbytesleft) -= 2;
-					(*inbuf)  += weird_table[i].len;
-					(*outbuf) += 2;
-					done = 1;
-					break;
+					abort();
 				}
+
+				(*outbuf)[0] = weird_table[i].from;
+				(*outbuf)[1] = 0;
+				(*inbytesleft)  -= weird_table[i].len;
+				(*outbytesleft) -= 2;
+				(*inbuf)  += weird_table[i].len;
+				(*outbuf) += 2;
+				done = 1;
+				break;
 			}
 		}
 		if (done) continue;
@@ -98,18 +96,17 @@ size_t weird_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			if ((*inbuf)[0] == weird_table[i].from &&
 			    (*inbuf)[1] == 0) {
 				if (*outbytesleft < weird_table[i].len) {
-					DEBUG(0,("No room for weird character\n"));
-					/* smb_panic("weird_push"); */
-				} else {
-					memcpy(*outbuf, weird_table[i].to, 
-					       weird_table[i].len);
-					(*inbytesleft)  -= 2;
-					(*outbytesleft) -= weird_table[i].len;
-					(*inbuf)  += 2;
-					(*outbuf) += weird_table[i].len;
-					done = 1;
-					break;
+					abort();
 				}
+				memcpy(*outbuf,
+				       weird_table[i].to,
+				       weird_table[i].len);
+				(*inbytesleft)  -= 2;
+				(*outbytesleft) -= weird_table[i].len;
+				(*inbuf)  += 2;
+				(*outbuf) += weird_table[i].len;
+				done = 1;
+				break;
 			}
 		}
 		if (done) continue;
