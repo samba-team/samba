@@ -180,6 +180,14 @@ _PUBLIC_ size_t count_chars_m(const char *s, char c)
 	return count;
 }
 
+size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+{
+	if (flags & (STR_NOALIGN|STR_ASCII)) {
+		return 0;
+	}
+	return PTR_DIFF(p, base_ptr) & 1;
+}
+
 
 /**
  * Copy a string from a char* unix src to a dos codepage string destination.

@@ -41,7 +41,6 @@ const char *audit_policy_str(TALLOC_CTX *mem_ctx, uint32_t policy);
 /* The following definitions come from lib/charcnv.c  */
 
 void gfree_charcnv(void);
-size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags);
 size_t push_ascii_fstring(void *dest, const char *src);
 size_t push_ascii_nstring(void *dest, const char *src);

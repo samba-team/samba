@@ -324,7 +324,6 @@ the result includes the null termination
 limited by 'n' bytes
 **/
 _PUBLIC_ size_t utf16_len_n(const void *src, size_t n);
-_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 
 /**
  * @brief Constant time compare to memory regions.

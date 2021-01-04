@@ -93,6 +93,8 @@ typedef struct smb_iconv_s {
 struct loadparm_context;
 struct smb_iconv_handle;
 
+size_t ucs2_align(const void *base_ptr, const void *p, int flags);
+
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
