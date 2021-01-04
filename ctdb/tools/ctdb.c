@@ -591,17 +591,6 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return true;
 }
 
-static int h2i(char h)
-{
-	if (h >= 'a' && h <= 'f') {
-		return h - 'a' + 10;
-	}
-	if (h >= 'A' && h <= 'F') {
-		return h - 'A' + 10;
-	}
-	return h - '0';
-}
-
 static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 		       TDB_DATA *out)
 {
@@ -621,7 +610,11 @@ static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<data.dsize; i++) {
-		data.dptr[i] = h2i(str[i*2]) << 4 | h2i(str[i*2+1]);
+		bool ok = hex_byte(&str[i*2], &data.dptr[i]);
+		if (!ok) {
+			fprintf(stderr, "Invalid hex: %s\n", &str[i*2]);
+			return EINVAL;
+		}
 	}
 
 	*out = data;
