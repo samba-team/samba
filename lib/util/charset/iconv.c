@@ -25,8 +25,6 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/charset/charset.h"
 #include "lib/util/charset/charset_proto.h"
-#include "libcli/util/ntstatus.h"
-#include "lib/util/util_str_hex.h"
 
 #ifdef HAVE_ICU_I18N
 #include <unicode/ustring.h>
@@ -675,8 +673,9 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		uint64_t v;
-		NTSTATUS status;
+		uint8_t hi = 0, lo = 0;
+		bool ok;
+
 		if ((*inbuf)[0] != '@') {
 			/* seven bit ascii case */
 			(*outbuf)[0] = (*inbuf)[0];
@@ -692,15 +691,15 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			errno = EINVAL;
 			return -1;
 		}
-		status = read_hex_bytes(&(*inbuf)[1], 4, &v);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		ok = hex_byte(&(*inbuf)[1], &hi) && hex_byte(&(*inbuf)[3], &lo);
+		if (!ok) {
 			errno = EILSEQ;
 			return -1;
 		}
 
-		(*outbuf)[0] = v&0xff;
-		(*outbuf)[1] = v>>8;
+		(*outbuf)[0] = lo;
+		(*outbuf)[1] = hi;
 		(*inbytesleft)  -= 5;
 		(*outbytesleft) -= 2;
 		(*inbuf)  += 5;
