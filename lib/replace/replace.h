@@ -977,6 +977,22 @@ bool nss_wrapper_hosts_enabled(void);
 bool socket_wrapper_enabled(void);
 bool uid_wrapper_enabled(void);
 
+static inline bool _hexcharval(char c, uint8_t *val)
+{
+	if ((c >= '0') && (c <= '9')) { *val = c - '0';      return true; }
+	if ((c >= 'a') && (c <= 'f')) {	*val = c - 'a' + 10; return true; }
+	if ((c >= 'A') && (c <= 'F')) { *val = c - 'A' + 10; return true; }
+	return false;
+}
+
+static inline bool hex_byte(const char *in, uint8_t *out)
+{
+	uint8_t hi=0, lo=0;
+	bool ok = _hexcharval(in[0], &hi) && _hexcharval(in[1], &lo);
+	*out = (hi<<4)+lo;
+	return ok;
+}
+
 /* Needed for Solaris atomic_add_XX functions. */
 #if defined(HAVE_SYS_ATOMIC_H)
 #include <sys/atomic.h>
