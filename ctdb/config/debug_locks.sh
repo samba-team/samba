@@ -33,10 +33,8 @@ dump_stack ()
 	_pid="$1"
 
 	echo "----- Stack trace for PID=${_pid} -----"
-	# x is intentionally ignored
-	# shellcheck disable=SC2034
-	read x x state x <"/proc/${_pid}/stat"
-	if [ "$state" = "D" ] ; then
+	_state=$(ps -p "$_pid" -o state= | cut -c 1)
+	if [ "$_state" = "D" ] ; then
 		# Don't run gstack on a process in D state since
 		# gstack will hang until the process exits D state.
 		# Although it is possible for a process to transition
@@ -47,7 +45,7 @@ dump_stack ()
 		# deadlock... but it will probably give us someone to
 		# blame!
 		echo "----- Process in D state, printing kernel stack only"
-		cat "/proc/${_pid}/stack"
+		get_proc "${_pid}/stack"
 	else
 		gstack "$_pid"
 	fi
@@ -81,10 +79,11 @@ dump_stacks ()
 
     # Parse /proc/locks and extract following information
     #    pid process_name tdb_name offsets [W]
-    out=$( grep -F "POSIX  ADVISORY  WRITE" /proc/locks |
+    out=$( get_proc "locks" |
+    grep -F "POSIX  ADVISORY  WRITE" |
     awk '{ if($2 == "->") { print $6, $7, $8, $9, "W" } else { print $5, $6, $7, $8 } }' |
     while read pid rest ; do
-	pname=$(readlink "/proc/${pid}/exe")
+	pname=$(ps -p "$pid" -o comm=)
 	echo "$pid $pname $rest"
     done | sed -e "$sed_cmd" | grep '\.tdb' )
 
