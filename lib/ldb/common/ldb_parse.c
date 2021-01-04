@@ -53,26 +53,6 @@
  */
 #define LDB_MAX_PARSE_TREE_DEPTH 128
 
-static int ldb_parse_hex2char(const char *x)
-{
-	if (isxdigit(x[0]) && isxdigit(x[1])) {
-		const char h1 = x[0], h2 = x[1];
-		int c = 0;
-
-		if (h1 >= 'a') c = h1 - (int)'a' + 10;
-		else if (h1 >= 'A') c = h1 - (int)'A' + 10;
-		else if (h1 >= '0') c = h1 - (int)'0';
-		c = c << 4;
-		if (h2 >= 'a') c += h2 - (int)'a' + 10;
-		else if (h2 >= 'A') c += h2 - (int)'A' + 10;
-		else if (h2 >= '0') c += h2 - (int)'0';
-
-		return c;
-	}
-
-	return -1;
-}
-
 /*
 a filter is defined by:
                <filter> ::= '(' <filtercomp> ')'
@@ -101,10 +81,11 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
 
 	for (i=j=0;i<slen;i++) {
 		if (str[i] == '\\') {
-			int c;
+			uint8_t c;
+			bool ok;
 
-			c = ldb_parse_hex2char(&str[i+1]);
-			if (c == -1) {
+			ok = hex_byte(&str[i+1], &c);
+			if (!ok) {
 				talloc_free(ret.data);
 				memset(&ret, 0, sizeof(ret));
 				return ret;
