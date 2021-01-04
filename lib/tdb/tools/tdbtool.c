@@ -349,23 +349,6 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 	}
 }
 
-static bool hexchar(char c, uint8_t *v)
-{
-	if ((c >= '0') && (c <= '9')) {
-		*v = (c - '0');
-		return true;
-	}
-	if ((c >= 'A') && (c <= 'F')) {
-		*v = (c - 'A' + 10);
-		return true;
-	}
-	if ((c >= 'a') && (c <= 'f')) {
-		*v = (c - 'a' + 10);
-		return true;
-	}
-	return false;
-}
-
 static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
 {
 	size_t i=0;
@@ -375,14 +358,11 @@ static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
 	}
 
 	while (i<srclen) {
-		bool ok;
-		uint8_t hi,lo;
-
-		ok = (hexchar(src[i++], &hi) && hexchar(src[i++], &lo));
+		bool ok = hex_byte(src, dst);
 		if (!ok) {
 			return false;
 		}
-		*dst = (hi<<4)|lo;
+		src += 2;
 		dst += 1;
 	}
 
