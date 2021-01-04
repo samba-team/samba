@@ -27,19 +27,6 @@
 #include "libsmb_internal.h"
 
 
-/* Used by urldecode_talloc() */
-static int
-hex2int( unsigned int _char )
-{
-        if ( _char >= 'A' && _char <='F')
-                return _char - 'A' + 10;
-        if ( _char >= 'a' && _char <='f')
-                return _char - 'a' + 10;
-        if ( _char >= '0' && _char <='9')
-                return _char - '0';
-        return -1;
-}
-
 /*
  * smbc_urldecode()
  * and urldecode_talloc() (internal fn.)
@@ -70,13 +57,10 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 		unsigned char character = src[i++];
 
 		if (character == '%') {
-			int a = i+1 < old_length ? hex2int(src[i]) : -1;
-			int b = i+1 < old_length ? hex2int(src[i+1]) : -1;
-
-			/* Replace valid sequence */
-			if (a != -1 && b != -1) {
-				/* Replace valid %xx sequence with %dd */
-				character = (a * 16) + b;
+			uint8_t v;
+			bool ok = hex_byte(&src[i], &v);
+			if (ok) {
+				character = v;
 				if (character == '\0') {
 					break; /* Stop at %00 */
 				}
@@ -98,20 +82,17 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
                 unsigned char character = src[i++];
 
                 if (character == '%') {
-                        int a = i+1 < old_length ? hex2int(src[i]) : -1;
-                        int b = i+1 < old_length ? hex2int(src[i+1]) : -1;
-
-                        /* Replace valid sequence */
-                        if (a != -1 && b != -1) {
-                                /* Replace valid %xx sequence with %dd */
-                                character = (a * 16) + b;
-                                if (character == '\0') {
-                                        break; /* Stop at %00 */
-                                }
-                                i += 2;
-                        } else {
-                                err_count++;
-                        }
+			uint8_t v;
+			bool ok = hex_byte(&src[i], &v);
+			if (ok) {
+				character = v;
+				if (character == '\0') {
+					break; /* Stop at %00 */
+				}
+				i += 2;
+			} else {
+				err_count++;
+			}
                 }
                 *p++ = character;
         }
