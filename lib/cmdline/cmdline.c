@@ -437,6 +437,28 @@ static void popt_samba_callback(poptContext popt_ctx,
 	}
 }
 
+static struct poptOption popt_common_debug[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Set debug level",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "debug-stdout",
+		.argInfo    = POPT_ARG_NONE,
+		.val        = OPT_DEBUG_STDOUT,
+		.descrip    = "Send debug output to standard output",
+	},
+	POPT_TABLEEND
+};
+
 static struct poptOption popt_common_samba[] = {
 	{
 		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
@@ -1193,6 +1215,9 @@ static struct poptOption popt_legacy_s4[] = {
 struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 {
 	switch (opt) {
+	case SAMBA_CMDLINE_POPT_OPT_DEBUG_ONLY:
+		return popt_common_debug;
+		break;
 	case SAMBA_CMDLINE_POPT_OPT_SAMBA:
 		return popt_common_samba;
 		break;

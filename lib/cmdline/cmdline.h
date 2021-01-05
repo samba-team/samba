@@ -38,7 +38,8 @@ enum samba_cmdline_config_type {
 };
 
 enum smb_cmdline_popt_options {
-	SAMBA_CMDLINE_POPT_OPT_SAMBA = 1,
+	SAMBA_CMDLINE_POPT_OPT_DEBUG_ONLY = 1,
+	SAMBA_CMDLINE_POPT_OPT_SAMBA,
 	SAMBA_CMDLINE_POPT_OPT_CONNECTION,
 	SAMBA_CMDLINE_POPT_OPT_CREDENTIALS,
 	SAMBA_CMDLINE_POPT_OPT_VERSION,
@@ -138,6 +139,18 @@ poptContext samba_popt_get_context(const char * name,
 				   int argc, const char ** argv,
 				   const struct poptOption * options,
 				   unsigned int flags);
+
+/**
+ * @brief A popt structure for common debug options only.
+ */
+#define POPT_COMMON_DEBUG_ONLY { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_DEBUG_ONLY), \
+	.val        = 0, \
+	.descrip    = "Common debug options:", \
+	.argDescrip = NULL },
 
 /**
  * @brief A popt structure for common samba options.
