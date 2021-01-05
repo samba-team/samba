@@ -215,10 +215,11 @@ static void auth_check_password_next(struct tevent_req *req);
  *
  * @param ev The tevent context the request should operate on
  *
- * @param auth_ctx Supplies the challenges and some other data. 
- *                  Must be created with make_auth_context(), and the challenges should be 
- *                  filled in, either at creation or by calling the challenge geneation 
- *                  function auth_get_challenge().  
+ * @param auth_ctx Supplies the challenges and some other data.  Must
+ *                 be created with make_auth_context(), and the
+ *                 challenges should be filled in, either at creation
+ *                 or by calling the challenge geneation function
+ *                 auth_get_challenge().
  *
  * @param user_info Contains the user supplied components, including the passwords.
  *
