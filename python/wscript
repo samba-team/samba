@@ -7,7 +7,7 @@ from waflib import Options, Errors
 selftest_pkgs = {
     'iso8601': 'python3-iso8601',
     'cryptography': 'python3-cryptography',
-    'pyasn1': 'python3-asn1'
+    'pyasn1': 'python3-pyasn1'
 }
 
 ad_dc_pkgs = {
