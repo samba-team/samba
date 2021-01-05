@@ -95,6 +95,19 @@ struct smb_iconv_handle;
 
 size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+size_t utf16_len(const void *buf);
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t utf16_len_n(const void *src, size_t n);
+
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the

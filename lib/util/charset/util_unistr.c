@@ -188,6 +188,36 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 	return PTR_DIFF(p, base_ptr) & 1;
 }
 
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+size_t utf16_len(const void *buf)
+{
+	size_t len;
+
+	for (len = 0; SVAL(buf,len); len += 2) ;
+
+	return len + 2;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t utf16_len_n(const void *src, size_t n)
+{
+	size_t len;
+
+	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
+
+	if (len+2 <= n) {
+		len += 2;
+	}
+
+	return len;
+}
 
 /**
  * Copy a string from a char* unix src to a dos codepage string destination.

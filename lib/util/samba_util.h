@@ -313,19 +313,6 @@ _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val);
 _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val);
 
 /**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-**/
-_PUBLIC_ size_t utf16_len(const void *buf);
-
-/**
-return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
-limited by 'n' bytes
-**/
-_PUBLIC_ size_t utf16_len_n(const void *src, size_t n);
-
-/**
  * @brief Constant time compare to memory regions.
  *
  * @param[in]  s1  The first memory region to compare.
