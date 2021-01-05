@@ -35,6 +35,6 @@ bld.SAMBA3_BINARY('nmbd',
                  tevent
                  smbconf
                  libsmb
-                 popt_samba3
+                 CMDLINE_S3
                  ''',
                  install_path='${SBINDIR}')
