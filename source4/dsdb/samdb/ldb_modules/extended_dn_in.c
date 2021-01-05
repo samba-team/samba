@@ -511,7 +511,7 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 
 /*
   fix the parse tree to change any extended DN components to their
-  caconical form
+  canonical form
  */
 static int extended_dn_fix_filter(struct ldb_module *module,
 				  struct ldb_request *req,
