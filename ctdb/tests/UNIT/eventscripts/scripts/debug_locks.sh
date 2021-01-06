@@ -52,6 +52,7 @@ do_test ()
 	_holder_scope="$1"
 	_holder_state="$2"
 	_helper_scope="$3"
+	_lock_type="${4:-FCNTL}"
 
 	_lock_helper_pid="4132032"
 
@@ -98,16 +99,24 @@ EOF
 
 	_holder_lock=""
 	if [ "$_holder_scope" = "DB" ] ; then
-		_holder_lock=$(cat <<EOF
+		if [  "$_lock_type" = "FCNTL" ] ; then
+			_holder_lock=$(cat <<EOF
 POSIX  ADVISORY  WRITE 4131931 ${_locking_tdb_id} 168 EOF
 EOF
-		  )
-	elif [ "$_holder_scope" = "RECORD" ] ; then
+				    )
+		elif [ "$_lock_type" = "MUTEX" ] ; then
+			_holder_lock=$(cat <<EOF
+POSIX  ADVISORY  WRITE 4131931 ${_locking_tdb_id} 400172 EOF
+EOF
+				    )
+		fi
+	elif [ "$_holder_scope" = "RECORD" ] && \
+	     [ "$_lock_type" = "FCNTL" ] ; then
 		_holder_lock=$(cat <<EOF
 POSIX  ADVISORY  WRITE 2345678 ${_locking_tdb_id} 112736 112736
 POSIX  ADVISORY  WRITE 4131931 ${_locking_tdb_id} 225472 225472
 EOF
-		  )
+			    )
 	fi
 
 	_t=$(cat <<EOF
@@ -117,12 +126,14 @@ EOF
 	  )
 
 	_helper_lock=""
-	if [ "$_helper_scope" = "DB" ] ; then
+	if [ "$_helper_scope" = "DB" ] && \
+	   [ "$_lock_type" = "FCNTL" ] ; then
 		_helper_lock=$(cat <<EOF
 -> POSIX  ADVISORY  WRITE ${_lock_helper_pid} ${_locking_tdb_id} 168 170
 EOF
 			    )
-	elif [ "$_helper_scope" = "RECORD" ] ; then
+	elif [ "$_helper_scope" = "RECORD" ]  && \
+	     [ "$_lock_type" = "FCNTL" ] ; then
 		_helper_lock=$(cat <<EOF
 -> POSIX  ADVISORY  WRITE ${_lock_helper_pid} ${_locking_tdb_id} 112736 112736
 EOF
@@ -140,7 +151,8 @@ $_t
 POSIX  ADVISORY  READ 4131931 ${_locking_tdb_id} 4 4
 EOF
 		  )
-	elif [ "$_holder_scope" = "RECORD" ] ; then
+	elif [ "$_holder_scope" = "RECORD" ]  && \
+	     [ "$_lock_type" = "FCNTL" ] ; then
 		_t=$(cat <<EOF
 $_t
 POSIX  ADVISORY  READ 2345678 ${_locking_tdb_id} 4 4
@@ -163,6 +175,20 @@ EOF
 	FAKE_PROC_LOCKS=$(echo "$_t" | awk '{ printf "%d: %s\n", NR, $0 }')
 	export FAKE_PROC_LOCKS
 
+	_holder_mutex_lock=""
+	if [ "$_lock_type" = "MUTEX" ] ; then
+		if [ "$_holder_scope" = "RECORD" ] ; then
+			_holder_mutex_lock=$(cat <<EOF
+2345678 28142
+4131931 56284
+EOF
+					  )
+		fi
+	fi
+
+	FAKE_TDB_MUTEX_CHECK="$_holder_mutex_lock"
+	export FAKE_TDB_MUTEX_CHECK
+
 	_out=''
 	_nl='
 '
@@ -179,14 +205,25 @@ EOF
 	# fake lock info
 	_pids=''
 	_out="${_out:+${_out}${_nl}}Lock holders:"
-	while read -r _ _ _  _pid _ _start _end ; do
-		_comm="smbd"
-		_out="${_out}${_nl}"
-		_out="${_out}${_pid} smbd ${_db} ${_start} ${_end}"
-		_pids="${_pids:+${_pids} }${_pid}"
-	done <<EOF
+	if [ -n "$_holder_mutex_lock" ] ; then
+		while read -r _pid _chain ; do
+			_comm="smbd"
+			_out="${_out}${_nl}"
+			_out="${_out}${_pid} smbd ${_db} ${_chain}"
+			_pids="${_pids:+${_pids} }${_pid}"
+		done <<EOF
+$_holder_mutex_lock
+EOF
+	else
+		while read -r _ _ _  _pid _ _start _end ; do
+			_comm="smbd"
+			_out="${_out}${_nl}"
+			_out="${_out}${_pid} smbd ${_db} ${_start} ${_end}"
+			_pids="${_pids:+${_pids} }${_pid}"
+		done <<EOF
 $_holder_lock
 EOF
+	fi
 
 	# fake stack traces
 	for _pid in $_pids ; do
@@ -213,6 +250,6 @@ EOF
 		    "$_lock_helper_pid" \
 		    "$_helper_scope" \
 		    "$_path" \
-		    "fcntl"
+		    "$_lock_type"
 
 }
