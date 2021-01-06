@@ -5420,6 +5420,18 @@ static void smb2cli_validate_negotiate_info_done(struct tevent_req *subreq)
 				    &state->out_input_buffer,
 				    &state->out_output_buffer);
 	TALLOC_FREE(subreq);
+
+	/*
+	 * This response must be signed correctly for
+	 * these "normal" error codes to be processed.
+	 * If the packet wasn't signed correctly we will get
+	 * NT_STATUS_ACCESS_DENIED or NT_STATUS_HMAC_NOT_SUPPORTED,
+	 * or NT_STATUS_INVALID_NETWORK_RESPONSE
+	 * from smb2_signing_check_pdu().
+	 *
+	 * We must never ignore the above errors here.
+	 */
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		/*
 		 * The response was signed, but not supported
@@ -5460,6 +5472,19 @@ static void smb2cli_validate_negotiate_info_done(struct tevent_req *subreq)
 		 * See
 		 *
 		 * https://blogs.msdn.microsoft.com/openspecification/2012/06/28/smb3-secure-dialect-negotiation/
+		 *
+		 */
+		tevent_req_done(req);
+		return;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/*
+		 * The response was signed, but not supported
+		 *
+		 * This might be returned by NetApp Ontap 7.3.7 SMB server
+		 * implementations.
+		 *
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14607
 		 *
 		 */
 		tevent_req_done(req);
