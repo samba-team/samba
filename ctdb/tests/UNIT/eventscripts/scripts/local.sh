@@ -36,6 +36,7 @@ else
 fi
 
 setup_ctdb_base "$CTDB_TEST_TMP_DIR" "etc-ctdb" \
+		debug_locks.sh \
 		functions \
 		nfs-checks.d \
 		nfs-linux-kernel-callout \
@@ -475,6 +476,7 @@ define_test ()
 		;;
 	*)
 		script="${_f%.*}"
+		script="$_f"
 		unset event
 		script_dir="${CTDB_BASE}"
 	esac
@@ -483,7 +485,11 @@ define_test ()
 	[ -r "$_s" ] || \
 		die "Internal error - unable to find script \"${_s}\""
 
-	script_short="${script%.script}"
+	case "$script" in
+	*.script) script_short="${script%.script}" ;;
+	*.sh) script_short="${script%.sh}" ;;
+	*) script_short="$script" ;;
+	esac
 
 	printf "%-17s %-10s %-4s - %s\n\n" \
 	       "$script_short" "$event" "$_num" "$desc"

@@ -46,6 +46,9 @@ get_proc ()
 	meminfo)
 	    echo "$FAKE_PROC_MEMINFO"
 	    ;;
+	locks)
+	    echo "$FAKE_PROC_LOCKS"
+	    ;;
 	*)
 	    echo "get_proc: \"$1\" not implemented"
 	    exit 1
@@ -56,6 +59,11 @@ get_proc ()
 background_with_logging ()
 {
     "$@" 2>&1 </dev/null | sed -e 's@^@\&@'
+}
+
+script_log ()
+{
+	cat
 }
 
 CTDB_INIT_STYLE="${EVENTSCRIPT_TESTS_INIT_STYLE:-redhat}"

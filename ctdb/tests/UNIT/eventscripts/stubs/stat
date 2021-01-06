@@ -1,0 +1,53 @@
+#!/bin/sh
+
+usage ()
+{
+	echo "stat -c FMT FILE ..."
+	exit 1
+}
+
+format=""
+
+while getopts "c:h:?" opt ; do
+	case "$opt" in
+	c) format="$OPTARG" ;;
+	\?|h) usage ;;
+	esac
+done
+shift $((OPTIND - 1))
+
+fake_inode ()
+{
+	_path="$1"
+
+	_t=$(echo "$FAKE_FILE_ID_MAP" |
+	     awk -v path="${_path}" '$1 == path { print $2 }')
+	echo "${_t##*:}"
+}
+
+if [ -n "$format" ] ; then
+	for f ; do
+		if [ ! -e "$f" ] ; then
+			continue
+		fi
+		case "$f" in
+		/*) path="$f" ;;
+		*) path="${PWD}/${f}" ;;
+		esac
+
+		case "$format" in
+		"s#[0-9a-f]*:[0-9a-f]*:%i #%n #")
+			inode=$(fake_inode "$path")
+			echo "s#[0-9a-f]*:[0-9a-f]*:${inode} #${f} #"
+			;;
+		*)
+			echo "Unsupported format \"${format}\""
+			usage
+			;;
+		esac
+	done
+
+	exit
+fi
+
+usage

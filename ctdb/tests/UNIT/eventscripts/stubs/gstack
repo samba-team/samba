@@ -1,0 +1,19 @@
+#!/bin/sh
+
+pid="$1"
+
+if [ -n "$FAKE_PS_MAP" ] ; then
+	command=$(echo "$FAKE_PS_MAP" |
+		  awk -v pid="$pid" '$1 == pid { print $2 }')
+fi
+
+if [ -z "$command" ] ; then
+	command="smbd"
+fi
+
+cat <<EOF
+Thread 1 (Thread 0x7f688fbfb180 (LWP ${pid}) "${command}"):
+#0  0x00007f688ff7a076 in open (FAKE ARGS...) at FAKE PLACE
+....
+#3  0x000055cd368ead72 in main (argc=<optimized out>, argv=<optimized out>) at ${command}.c
+EOF
