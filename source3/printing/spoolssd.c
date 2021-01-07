@@ -585,7 +585,6 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 		size_t *pnum_listen_fds)
 {
 	NTSTATUS status;
-	int fd = -1;
 	int rc;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	size_t i, num_fds;
@@ -640,10 +639,6 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 
 	status = NT_STATUS_OK;
 done:
-	if (fd != -1) {
-		close(fd);
-	}
-
 	return status;
 }
 

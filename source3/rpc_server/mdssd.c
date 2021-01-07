@@ -500,7 +500,6 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 				     size_t *pnum_listen_fds)
 {
 	NTSTATUS status;
-	int fd = -1;
 	size_t i, num_fds;
 	struct pf_listen_fd *fds = NULL;
 	int rc;
@@ -551,9 +550,6 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 
 	status = NT_STATUS_OK;
 done:
-	if (fd != -1) {
-		close(fd);
-	}
 	return status;
 }
 
