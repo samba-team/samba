@@ -127,7 +127,7 @@ rpc_mdssvc_sources = '''
                      mdssvc/mdssvc_noindex.c
                      mdssvc/srv_mdssvc_nt.c
                      '''
-rpc_mdssvc_deps = 'mdssvc samba-util '
+rpc_mdssvc_deps = 'mdssvc samba-util smbd_base '
 
 if bld.env.spotlight_backend_tracker:
     rpc_mdssvc_sources += '''
@@ -152,7 +152,6 @@ if bld.env.spotlight_backend_es:
 
 bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   subsystem='rpc',
-                  allow_undefined_symbols=True,
                   source=rpc_mdssvc_sources,
                   init_function='',
                   deps=rpc_mdssvc_deps,
