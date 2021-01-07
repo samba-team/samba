@@ -3822,6 +3822,13 @@ This command expunges tombstones from the database."""
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
+        if current_time_string is None and tombstone_lifetime is None:
+            print("Note: without --current-time or --tombstone-lifetime "
+                  "only tombstones already scheduled for deletion will "
+                  "be deleted.", file=self.outf)
+            print("To remove all tombstones, use --tombstone-lifetime=0.",
+                  file=self.outf)
+
         if current_time_string is not None:
             current_time_obj = time.strptime(current_time_string, "%Y-%m-%d")
             current_time = int(time.mktime(current_time_obj))
