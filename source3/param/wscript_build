@@ -40,5 +40,5 @@ bld.SAMBA3_BINARY('test_lp_load',
                  deps='''
                  talloc
                  smbconf
-                 popt_samba3''',
+                 CMDLINE_S3''',
                  install=False)
