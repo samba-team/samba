@@ -1038,6 +1038,11 @@ static void debug_close_fd(int fd)
 	}
 }
 
+enum debug_logtype debug_get_log_type(void)
+{
+	return state.logtype;
+}
+
 bool debug_get_output_is_stderr(void)
 {
 	return (state.logtype == DEBUG_DEFAULT_STDERR) || (state.logtype == DEBUG_STDERR);
