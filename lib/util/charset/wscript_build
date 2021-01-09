@@ -18,5 +18,5 @@ bld.SAMBA_SUBSYSTEM('charset',
                     pull_push.c
                     util_unistr.c
                     ''',
-                    deps='DYNCONFIG ICONV_WRAPPER',
+                    deps='DYNCONFIG ICONV_WRAPPER smb-panic samba-debug',
                     public_deps='talloc')
