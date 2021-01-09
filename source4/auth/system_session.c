@@ -121,7 +121,7 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 	/* This returns a pointer to a struct dom_sid, which is the
 	 * same as a 1 element list of struct dom_sid */
 	user_info_dc->num_sids = 1;
-	user_info_dc->sids = dom_sid_parse_talloc(user_info_dc, SID_NT_SYSTEM);
+	user_info_dc->sids = dom_sid_dup(user_info_dc, &global_sid_System);
 	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
 	/* annoying, but the Anonymous really does have a session key, 
