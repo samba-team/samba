@@ -21,8 +21,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#include "includes.h"
+#include "replace.h"
 #include "system/iconv.h"
+#include "charset.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 
 /**
  * @file

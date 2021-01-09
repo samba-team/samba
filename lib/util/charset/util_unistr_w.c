@@ -19,7 +19,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "charset.h"
+#include "lib/util/byteorder.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((const unsigned char *)(src))[0],\

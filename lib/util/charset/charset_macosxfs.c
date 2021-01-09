@@ -29,7 +29,8 @@
  * source.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include "charset.h"
 #include "charset_proto.h"
 #undef realloc
 

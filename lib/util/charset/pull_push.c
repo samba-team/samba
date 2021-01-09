@@ -21,8 +21,9 @@
 
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/locale.h"
+#include "charset.h"
 
 /**
  * Copy a string from a unix char* src to a UCS2 destination,

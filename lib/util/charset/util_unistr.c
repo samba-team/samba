@@ -18,8 +18,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/locale.h"
+#include "charset.h"
+#include "lib/util/byteorder.h"
+#include "lib/util/fault.h"
 
 /**
  String replace.
