@@ -528,14 +528,13 @@ _PUBLIC_ bool strhasupper(const char *string)
 
 char *strstr_m(const char *src, const char *findstr)
 {
+	TALLOC_CTX *mem_ctx = NULL;
 	smb_ucs2_t *p;
 	smb_ucs2_t *src_w, *find_w;
 	const char *s;
 	char *s2;
-	char *retp;
+	char *retp = NULL;
 	size_t converted_size, findstr_len = 0;
-
-	TALLOC_CTX *frame; /* Only set up in the iconv case */
 
 	/* for correctness */
 	if (!findstr[0]) {
@@ -571,31 +570,36 @@ char *strstr_m(const char *src, const char *findstr)
 	s = src;
 #endif
 
-	frame = talloc_stackframe();
-
-	if (!push_ucs2_talloc(frame, &src_w, src, &converted_size)) {
-		TALLOC_FREE(frame);
+	/*
+	 * Use get_iconv_handle() just as a non-NULL talloc ctx. In
+	 * case we leak memory, this should then be more obvious in
+	 * the talloc report.
+	 */
+	mem_ctx = talloc_new(get_iconv_handle());
+	if (mem_ctx == NULL) {
 		return NULL;
 	}
 
-	if (!push_ucs2_talloc(frame, &find_w, findstr, &converted_size)) {
-		TALLOC_FREE(frame);
-		return NULL;
+	if (!push_ucs2_talloc(mem_ctx, &src_w, src, &converted_size)) {
+		goto done;
+	}
+
+	if (!push_ucs2_talloc(mem_ctx, &find_w, findstr, &converted_size)) {
+		goto done;
 	}
 
 	p = strstr_w(src_w, find_w);
 
 	if (!p) {
-		TALLOC_FREE(frame);
-		return NULL;
+		goto done;
 	}
 
 	*p = 0;
-	if (!pull_ucs2_talloc(frame, &s2, src_w, &converted_size)) {
-		TALLOC_FREE(frame);
-		return NULL;
+	if (!pull_ucs2_talloc(mem_ctx, &s2, src_w, &converted_size)) {
+		goto done;
 	}
 	retp = discard_const_p(char, (s+strlen(s2)));
-	TALLOC_FREE(frame);
+done:
+	TALLOC_FREE(mem_ctx);
 	return retp;
 }
