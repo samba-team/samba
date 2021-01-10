@@ -322,6 +322,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		/* add mgmt interface */
 		ifl = talloc_zero(ep, struct dcesrv_if_list);
 		if (!ifl) {
+			TALLOC_FREE(ep);
 			return NT_STATUS_NO_MEMORY;
 		}
 
