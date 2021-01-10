@@ -315,7 +315,6 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ZERO_STRUCTP(ep);
 		ep->ep_description = talloc_move(ep, &binding);
 		ep->ep_2nd_description = talloc_move(ep, &binding2);
 		add_ep = true;
