@@ -227,7 +227,6 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	transport = dcerpc_binding_get_transport(binding);
 	if (transport == NCACN_IP_TCP) {
 		int port;
-		char port_str[6];
 
 		/*
 		 * First check if there is already a port specified, eg
@@ -250,6 +249,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				port = lpcfg_rpc_server_port(dce_ctx->lp_ctx);
 			}
 			if (port != 0) {
+				char port_str[6];
 				snprintf(port_str, sizeof(port_str), "%u", port);
 				status = dcerpc_binding_set_string_option(binding,
 									  "endpoint",
