@@ -2965,8 +2965,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
 		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
 			  strerror(errno)));
+		status = map_nt_error_from_unix(errno);
 		close(fd);
-		return map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = rpc_transport_sock_init(result, fd, &result->transport);
