@@ -2921,10 +2921,17 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 			       struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct sockaddr_un addr;
+	struct sockaddr_un addr = { .sun_family = AF_UNIX };
+	socklen_t salen = sizeof(addr);
+	size_t pathlen;
 	NTSTATUS status;
 	int fd;
-	socklen_t salen;
+
+	pathlen = strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+	if (pathlen >= sizeof(addr.sun_path)) {
+		DBG_DEBUG("socket_path %s too long\n", socket_path);
+		return NT_STATUS_NAME_TOO_LONG;
+	}
 
 	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
@@ -2954,11 +2961,6 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
-
-	ZERO_STRUCT(addr);
-	addr.sun_family = AF_UNIX;
-	strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
-	salen = sizeof(struct sockaddr_un);
 
 	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
 		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
