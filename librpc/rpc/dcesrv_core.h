@@ -349,7 +349,7 @@ struct dcesrv_endpoint_server {
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
-	 * - iface must be reference to an already existeng struct !
+	 * - iface must be reference to an already existing struct !
 	 */
 	bool (*interface_by_name)(struct dcesrv_interface *iface, const char *);
 };
