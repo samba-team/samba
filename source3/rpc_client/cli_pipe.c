@@ -2925,7 +2925,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	socklen_t salen = sizeof(addr);
 	size_t pathlen;
 	NTSTATUS status;
-	int fd;
+	int fd = -1;
 
 	pathlen = strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
 	if (pathlen >= sizeof(addr.sun_path)) {
@@ -2966,15 +2966,14 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
 			  strerror(errno)));
 		status = map_nt_error_from_unix(errno);
-		close(fd);
 		goto fail;
 	}
 
 	status = rpc_transport_sock_init(result, fd, &result->transport);
 	if (!NT_STATUS_IS_OK(status)) {
-		close(fd);
 		goto fail;
 	}
+	fd = -1;
 
 	result->transport->transport = NCALRPC;
 
@@ -2988,6 +2987,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	return NT_STATUS_OK;
 
  fail:
+	if (fd != -1) {
+		close(fd);
+	}
 	TALLOC_FREE(result);
 	return status;
 }
