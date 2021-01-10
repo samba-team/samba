@@ -2980,8 +2980,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->binding_handle = rpccli_bh_create(result, NULL, table);
 	if (result->binding_handle == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	*presult = result;
