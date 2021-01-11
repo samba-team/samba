@@ -435,6 +435,9 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
 
 	fsp->fsp_flags.is_pathref = true;
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		fsp->fsp_flags.is_directory = true;
+	}
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
 						  dirfsp,
@@ -519,9 +522,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	}
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
-	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		fsp->fsp_flags.is_directory = true;
-	}
 
 	fsp->fsp_name->fsp = fsp;
 	smb_fname->fsp = fsp;
