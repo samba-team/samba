@@ -127,7 +127,7 @@ typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
 * @return True if it was successful, False otherwise.
 *
 * NOTE: each listen_fd is forced to non-blocking mode once handed over.
-* You should not toush listen_fds once you hand the to the prefork library.
+* You should not touch listen_fds once you hand them to the prefork library.
 */
 bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 			 struct tevent_context *ev_ctx,
@@ -227,7 +227,7 @@ void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max);
 void prefork_decrease_allowed_clients(struct prefork_pool *pfp);
 
 /**
-* @brief Reset the maximum allowd clients per child to 1.
+* @brief Reset the maximum allowed clients per child to 1.
 *	 Does not reduce the number of clients actually beeing served by
 *	 any given child, but prevents children from overcommitting from
 *	 now on.
@@ -271,7 +271,7 @@ void prefork_set_sigchld_callback(struct prefork_pool *pfp,
 
 /**
 * @brief Try to listen and accept on one of the listening sockets.
-*	 Asynchronusly tries to grab the lock and perform an accept.
+*	 Asynchronously tries to grab the lock and perform an accept.
 *	 Will automatically update the 'status' of the child and handle
 *	 all the locking/unlocking/timingout as necessary.
 *	 Changes behavior depending on whether the child already has other
