@@ -587,8 +587,8 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	struct tevent_req *req = ctx->req;
 	struct pf_listen_state *state = tevent_req_data(
 		ctx->req, struct pf_listen_state);
-	struct sockaddr_storage addr;
-	socklen_t addrlen;
+	struct sockaddr_storage addr = { .ss_family = 0 };
+	socklen_t addrlen = sizeof(addr);
 	int soerr = 0;
 	socklen_t solen = sizeof(soerr);
 	int sd = -1;
@@ -616,8 +616,6 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 		goto done;
 	}
 
-	ZERO_STRUCT(addr);
-	addrlen = sizeof(addr);
 	sd = accept(ctx->listen_fd, (struct sockaddr *)&addr, &addrlen);
 	if (sd == -1) {
 		state->error = errno;
