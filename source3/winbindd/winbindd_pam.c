@@ -2843,6 +2843,14 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		goto done;
 	}
 
+	if (!is_allowed_domain(domain)) {
+		DBG_NOTICE("Authentication failed for user [%s] "
+			   "from firewalled domain [%s]\n",
+			   user, domain);
+		result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		goto done;
+	}
+
 	/* Change password */
 
 	oldpass = state->request->data.chauthtok.oldpass;
