@@ -38,32 +38,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-/* Creates a pipes_struct and initializes it with the information
- * sent from the client */
-int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
-			     struct messaging_context *msg_ctx,
-			     const char *pipe_name,
-			     enum dcerpc_transport_t transport,
-			     const struct tsocket_address *remote_address,
-			     const struct tsocket_address *local_address,
-			     struct pipes_struct **_p,
-			     int *perrno)
-{
-	struct pipes_struct *p;
-	int ret;
-
-	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
-				     transport,
-				     remote_address, local_address, &p);
-	if (ret) {
-		*perrno = ret;
-		return -1;
-	}
-
-	*_p = p;
-	return 0;
-}
-
 /* Start listening on the appropriate unix socket and setup all is needed to
  * dispatch requests to the pipes rpc implementation */
 

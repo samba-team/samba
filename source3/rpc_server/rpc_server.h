@@ -65,15 +65,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				void *termination_data,
 				struct dcerpc_ncacn_conn **out);
 
-int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
-			     struct messaging_context *msg_ctx,
-			     const char *pipe_name,
-			     enum dcerpc_transport_t transport,
-			     const struct tsocket_address *remote_address,
-			     const struct tsocket_address *local_address,
-			     struct pipes_struct **_p,
-			     int *perrno);
-
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 NTSTATUS dcesrv_create_ncacn_np_socket(struct dcesrv_endpoint *e, int *out_fd);
