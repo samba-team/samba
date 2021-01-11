@@ -62,6 +62,9 @@ static NTSTATUS s3fs_task_init(struct task_server *task)
 	task_server_set_title(task, "task[s3fs_parent]");
 
 	smbd_path = talloc_asprintf(task, "%s/smbd", dyn_SBINDIR);
+	if (smbd_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	smbd_cmd[0] = smbd_path;
 
 	/* the child should be able to call through nss_winbind */
