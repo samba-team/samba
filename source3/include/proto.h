@@ -304,6 +304,7 @@ struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 /* The following definitions come from lib/util_names.c  */
 const char *get_global_sam_name(void);
 const char *my_sam_name(void);
+bool is_allowed_domain(const char *domain_name);
 
 /* The following definitions come from lib/util.c  */
 
