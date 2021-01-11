@@ -410,6 +410,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	struct smb_filename *full_fname = NULL;
 	bool file_existed = VALID_STAT(smb_fname->st);
 	struct files_struct *fsp = NULL;
+	int open_flags = O_RDONLY;
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
@@ -437,6 +438,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	fsp->fsp_flags.is_pathref = true;
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		fsp->fsp_flags.is_directory = true;
+		open_flags |= O_DIRECTORY;
 	}
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
@@ -469,7 +471,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		}
 	}
 
-	status = fd_openat(dirfsp, smb_fname, fsp, O_RDONLY, 0);
+	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("Could not open fd for [%s]: %s\n",
 			  fsp_str_dbg(fsp),
