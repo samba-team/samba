@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
 #include "nsswitch/wb_reqtrans.h"
@@ -1643,6 +1643,7 @@ int main(int argc, const char **argv)
 			.descrip    = "Disable caching",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	const struct loadparm_substitution *lp_sub =
@@ -1669,7 +1670,7 @@ int main(int argc, const char **argv)
 	 */
 	umask(0);
 
-	setup_logging("winbindd", DEBUG_DEFAULT_STDOUT);
+	smb_init_locale();
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
@@ -1677,28 +1678,21 @@ int main(int argc, const char **argv)
  	CatchSignal(SIGUSR1, SIG_IGN);
  	CatchSignal(SIGUSR2, SIG_IGN);
 
-	fault_setup();
-	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
-
-	smb_init_locale();
-
-	/* Initialise for running in non-root mode */
-
-	sec_init();
-
-	set_remote_machine_name("winbindd", False);
-
-	/* Set environment variable so we don't recursively call ourselves.
-	   This may also be useful interactively. */
-
-	if ( !winbind_off() ) {
-		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_SERVER,
+				true /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to setup cmdline parser\n");
+		TALLOC_FREE(frame);
 		exit(1);
 	}
 
-	/* Initialise samba/rpc client stuff */
-
-	pc = poptGetContext("winbindd", argc, argv, long_options, 0);
+	pc = samba_popt_get_context(getprogname(), argc, argv, long_options, 0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -1731,13 +1725,18 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	/* We call dump_core_setup one more time because the command line can
-	 * set the log file or the log-basename and this will influence where
-	 * cores are stored. Without this call get_dyn_LOGFILEBASE will be
-	 * the default value derived from build's prefix. For EOM this value
-	 * is often not related to the path where winbindd is actually run
-	 * in production.
-	 */
+	/* Set environment variable so we don't recursively call ourselves.
+	   This may also be useful interactively. */
+	if ( !winbind_off() ) {
+		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
+		exit(1);
+	}
+
+	/* Initialise for running in non-root mode */
+	sec_init();
+
+	set_remote_machine_name("winbindd", False);
+
 	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
 	if (is_daemon && interactive) {
 		d_fprintf(stderr,"\nERROR: "
@@ -1774,10 +1773,6 @@ int main(int argc, const char **argv)
 	DEBUG(0,("winbindd version %s started.\n", samba_version_string()));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
-	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
-		DEBUG(0, ("error opening config file '%s'\n", get_dyn_CONFIGFILE()));
-		exit(1);
-	}
 	/* After parsing the configuration file we setup the core path one more time
 	 * as the log file might have been set in the configuration and cores's
 	 * path is by default basename(lp_logfile()).
