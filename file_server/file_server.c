@@ -58,6 +58,7 @@ static NTSTATUS s3fs_task_init(struct task_server *task)
 	struct tevent_req *subreq;
 	const char *smbd_path;
 	const char *smbd_cmd[2] = { NULL, NULL };
+	const char *config_file = "";
 
 	task_server_set_title(task, "task[s3fs_parent]");
 
@@ -67,6 +68,15 @@ static NTSTATUS s3fs_task_init(struct task_server *task)
 	}
 	smbd_cmd[0] = smbd_path;
 
+	if (!is_default_dyn_CONFIGFILE()) {
+		config_file = talloc_asprintf(task,
+					      "--configfile=%s",
+					      get_dyn_CONFIGFILE());
+		if (config_file == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	/* the child should be able to call through nss_winbind */
 	(void)winbind_on();
 	/* start it as a child process */
@@ -75,6 +85,7 @@ static NTSTATUS s3fs_task_init(struct task_server *task)
 				"-D",
 				"--option=server role check:inhibit=yes",
 				"--foreground",
+				config_file,
 				debug_get_output_is_stdout()?"--log-stdout":NULL,
 				NULL);
 	/* the parent should not be able to call through nss_winbind */
