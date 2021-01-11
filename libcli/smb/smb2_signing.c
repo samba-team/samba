@@ -189,13 +189,8 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 	static const uint8_t zero_sig[16] = { 0, };
 	int i;
 
-	if (count < 2) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (vector[0].iov_len != SMB2_HDR_BODY) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	SMB_ASSERT(count >= 2);
+	SMB_ASSERT(vector[0].iov_len == SMB2_HDR_BODY);
 
 	hdr = (const uint8_t *)vector[0].iov_base;
 
