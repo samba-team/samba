@@ -742,6 +742,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 			      int flags,
 			      mode_t mode)
 {
+	struct smb_filename *name = NULL;
 	bool became_root = false;
 	glfs_fd_t *glfd;
 	glfs_fd_t **p_tmp;
@@ -751,10 +752,19 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 	/*
 	 * Looks like glfs API doesn't have openat().
 	 */
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
+	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+		name = full_path_from_dirfsp_atname(talloc_tos(),
+						    dirfsp,
+						    smb_fname);
+		if (name == NULL) {
+			return -1;
+		}
+		smb_fname = name;
+	}
 
 	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
 	if (p_tmp == NULL) {
+		TALLOC_FREE(name);
 		END_PROFILE(syscall_openat);
 		errno = ENOMEM;
 		return -1;
@@ -785,6 +795,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 	fsp->fsp_flags.have_proc_fds = false;
 
 	if (glfd == NULL) {
+		TALLOC_FREE(name);
 		END_PROFILE(syscall_openat);
 		/* no extension destroy_fn, so no need to save errno */
 		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
@@ -793,6 +804,7 @@ static int vfs_gluster_openat(struct vfs_handle_struct *handle,
 
 	*p_tmp = glfd;
 
+	TALLOC_FREE(name);
 	END_PROFILE(syscall_openat);
 	/* An arbitrary value for error reporting, so you know its us. */
 	return 13371337;
