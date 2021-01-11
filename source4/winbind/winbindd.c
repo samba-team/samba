@@ -63,6 +63,9 @@ static NTSTATUS winbindd_task_init(struct task_server *task)
 	task_server_set_title(task, "task[winbindd_parent]");
 
 	winbindd_path = talloc_asprintf(task, "%s/winbindd", dyn_SBINDIR);
+	if (winbindd_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	winbindd_cmd[0] = winbindd_path;
 
 	/* start it as a child process */
