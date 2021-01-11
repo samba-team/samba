@@ -896,7 +896,6 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	uid_t uid;
 	gid_t gid;
 	int rc;
-	int sys_errno;
 	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
 			ncacn_conn->endpoint->ep_description);
 	const char *endpoint = dcerpc_binding_get_string_option(
@@ -973,18 +972,17 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 		}
 	}
 
-	rc = make_server_pipes_struct(ncacn_conn,
-				      ncacn_conn->msg_ctx,
-				      pipe_name,
-				      transport,
-				      ncacn_conn->remote_client_addr,
-				      ncacn_conn->local_server_addr,
-				      &ncacn_conn->p,
-				      &sys_errno);
-	if (rc < 0) {
-		DBG_ERR("Failed to create pipe struct: %s",
-			strerror(sys_errno));
-		ncacn_terminate_connection(ncacn_conn, strerror(sys_errno));
+	rc = make_base_pipes_struct(ncacn_conn,
+				    ncacn_conn->msg_ctx,
+				    pipe_name,
+				    transport,
+				    ncacn_conn->remote_client_addr,
+				    ncacn_conn->local_server_addr,
+				    &ncacn_conn->p);
+	if (rc != 0) {
+		const char *errstr = strerror(rc);
+		DBG_ERR("Failed to create pipe struct: %s\n", errstr);
+		ncacn_terminate_connection(ncacn_conn, errstr);
 		return;
 	}
 
