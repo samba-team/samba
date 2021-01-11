@@ -74,15 +74,50 @@ bld.SAMBA_LIBRARY('talloc_report_printf',
                   private_library=True
                   )
 
+bld.SAMBA_SUBSYSTEM('smb-panic',
+                    source='''
+                    fault.c
+                    signal.c
+                    ''',
+                    deps='''
+                    replace
+                    samba-debug
+                    LIBUNWIND
+                    ''',
+                    local_include=False)
+
 bld.SAMBA_SUBSYSTEM('samba-util-core',
-                    source='''data_blob.c util_file.c sys_popen.c time.c
-                              signal.c util.c idtree.c fault.c
-                              substitute.c util_process.c util_strlist.c
-                              strv_util.c bitmap.c select.c pidfile.c
-                              become_daemon.c mkdir_p.c''',
-                    deps='''time-basic samba-debug socket-blocking talloc
-                            tevent execinfo pthread strv tini smb_strtox''',
-                    public_deps='systemd systemd-daemon sys_rw LIBUNWIND',
+                    source='''
+                    data_blob.c
+                    util_file.c
+                    sys_popen.c
+                    time.c
+                    util.c
+                    idtree.c
+                    substitute.c
+                    util_process.c
+                    util_strlist.c
+                    strv_util.c
+                    bitmap.c
+                    select.c
+                    pidfile.c
+                    become_daemon.c
+                    mkdir_p.c
+                    ''',
+                    deps='''
+                    time-basic
+                    samba-debug
+                    socket-blocking
+                    talloc
+                    tevent
+                    execinfo
+                    pthread
+                    strv
+                    tini
+                    smb_strtox
+                    smb-panic
+                    ''',
+                    public_deps='systemd systemd-daemon sys_rw',
                     local_include=False)
 
 bld.SAMBA_SUBSYSTEM('smb_strtox',
