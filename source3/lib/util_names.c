@@ -182,3 +182,23 @@ const char *my_sam_name(void)
 
 	return lp_workgroup();
 }
+
+bool is_allowed_domain(const char *domain_name)
+{
+	const char **ignored_domains = NULL;
+	const char **dom = NULL;
+
+	ignored_domains = lp_parm_string_list(-1,
+					      "winbind",
+					      "ignore domains",
+					      NULL);
+
+	for (dom = ignored_domains; dom != NULL && *dom != NULL; dom++) {
+		if (gen_fnmatch(*dom, domain_name) == 0) {
+			DBG_NOTICE("Ignoring domain '%s'\n", domain_name);
+			return false;
+		}
+	}
+
+	return true;
+}
