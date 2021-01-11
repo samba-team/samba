@@ -85,7 +85,7 @@ static NTSTATUS winbindd_task_init(struct task_server *task)
 				"--option=server role check:inhibit=yes",
 				"--foreground",
 				config_file,
-				debug_get_output_is_stdout()?"--stdout":NULL,
+				debug_get_output_is_stdout()?"--debug-stdout":NULL,
 				NULL);
 	if (subreq == NULL) {
 		DEBUG(0, ("Failed to start winbindd as child daemon\n"));

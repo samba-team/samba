@@ -1555,7 +1555,6 @@ extern void build_options(bool screen);
 		OPT_INTERACTIVE,
 		OPT_FORK,
 		OPT_NO_PROCESS_GROUP,
-		OPT_LOG_STDOUT
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1590,14 +1589,6 @@ extern void build_options(bool screen);
 			.arg        = NULL,
 			.val        = OPT_NO_PROCESS_GROUP,
 			.descrip    = "Don't create a new process group" ,
-		},
-		{
-			.longName   = "log-stdout",
-			.shortName  = 'S',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_LOG_STDOUT,
-			.descrip    = "Log to stdout" ,
 		},
 		{
 			.longName   = "build-options",
@@ -1707,9 +1698,6 @@ extern void build_options(bool screen);
 		case OPT_NO_PROCESS_GROUP:
 			no_process_group = true;
 			break;
-		case OPT_LOG_STDOUT:
-			log_stdout = true;
-			break;
 		case 'b':
 			print_build_options = True;
 			break;
@@ -1722,14 +1710,14 @@ extern void build_options(bool screen);
 	}
 	poptFreeContext(pc);
 
+	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
+
 	if (interactive) {
 		Fork = False;
 		log_stdout = True;
 	}
 
-	if (log_stdout) {
-		setup_logging(argv[0], DEBUG_STDOUT);
-	} else {
+	if (!log_stdout) {
 		setup_logging(argv[0], DEBUG_FILE);
 	}
 

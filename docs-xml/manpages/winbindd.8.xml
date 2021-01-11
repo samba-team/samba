@@ -22,7 +22,6 @@
 		<command>winbindd</command>
 		<arg choice="opt">-D|--daemon</arg>
 		<arg choice="opt">-F|--foreground</arg>
-		<arg choice="opt">-S|--stdout</arg>
 		<arg choice="opt">-i|--interactive</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
@@ -158,13 +157,6 @@ hosts:		files wins
 		from Daniel J. Bernstein's <command>daemontools</command>
 		package, or the AIX process monitor.
 		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-S|--stdout</term>
-		<listitem><para>If specified, this parameter causes
-		<command>winbindd</command> to log to standard output rather
-		than a file.</para></listitem>
 		</varlistentry>
 
 		&stdarg.server.debug;

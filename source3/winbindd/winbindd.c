@@ -1589,19 +1589,10 @@ int main(int argc, const char **argv)
 	enum {
 		OPT_DAEMON = 1000,
 		OPT_FORK,
-		OPT_NO_PROCESS_GROUP,
-		OPT_LOG_STDOUT
+		OPT_NO_PROCESS_GROUP
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{
-			.longName   = "stdout",
-			.shortName  = 'S',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_LOG_STDOUT,
-			.descrip    = "Log to stdout",
-		},
 		{
 			.longName   = "foreground",
 			.shortName  = 'F',
@@ -1702,17 +1693,12 @@ int main(int argc, const char **argv)
 			break;
 		case 'i':
 			interactive = True;
-			log_stdout = True;
-			Fork = False;
 			break;
                 case OPT_FORK:
 			Fork = false;
 			break;
 		case OPT_NO_PROCESS_GROUP:
 			no_process_group = true;
-			break;
-		case OPT_LOG_STDOUT:
-			log_stdout = true;
 			break;
 		case 'n':
 			opt_nocache = true;
@@ -1743,6 +1729,12 @@ int main(int argc, const char **argv)
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
+	}
+
+	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
+	if (interactive) {
+		Fork = true;
+		log_stdout = true;
 	}
 
 	if (log_stdout && Fork) {

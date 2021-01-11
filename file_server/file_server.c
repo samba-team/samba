@@ -86,7 +86,7 @@ static NTSTATUS s3fs_task_init(struct task_server *task)
 				"--option=server role check:inhibit=yes",
 				"--foreground",
 				config_file,
-				debug_get_output_is_stdout()?"--log-stdout":NULL,
+				debug_get_output_is_stdout()?"--debug-stdout":NULL,
 				NULL);
 	/* the parent should not be able to call through nss_winbind */
 	if (!winbind_off()) {

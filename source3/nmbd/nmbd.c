@@ -784,8 +784,7 @@ static bool open_sockets(bool isdaemon, int port)
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
 		OPT_FORK,
-		OPT_NO_PROCESS_GROUP,
-		OPT_LOG_STDOUT
+		OPT_NO_PROCESS_GROUP
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -821,14 +820,6 @@ static bool open_sockets(bool isdaemon, int port)
 			.arg        = NULL,
 			.val        = OPT_NO_PROCESS_GROUP,
 			.descrip    = "Don't create a new process group",
-		},
-		{
-			.longName   = "log-stdout",
-			.shortName  = 'S',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_LOG_STDOUT,
-			.descrip    = "Log to stdout",
 		},
 		{
 			.longName   = "hosts",
@@ -906,9 +897,6 @@ static bool open_sockets(bool isdaemon, int port)
 		case OPT_NO_PROCESS_GROUP:
 			no_process_group = true;
 			break;
-		case OPT_LOG_STDOUT:
-			log_stdout = true;
-			break;
 		default:
 			d_fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				  poptBadOption(pc, 0), poptStrerror(opt));
@@ -954,6 +942,7 @@ static bool open_sockets(bool isdaemon, int port)
 	/* Ignore children - no zombies. */
 	CatchChild();
 
+	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 	if ( opt_interactive ) {
 		Fork = False;
 		log_stdout = True;
@@ -964,9 +953,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	if (log_stdout) {
-		setup_logging(argv[0], DEBUG_STDOUT);
-	} else {
+	if (!log_stdout) {
 		setup_logging( argv[0], DEBUG_FILE);
 	}
 

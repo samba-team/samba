@@ -1847,7 +1847,7 @@ sub make_bin_cmd
 		    "-l", $env_vars->{LOGDIR});
 
 	if (not defined($dont_log_stdout)) {
-		push(@args, "--log-stdout");
+		push(@args, "--debug-stdout");
 	}
 	return (@preargs, $binary, @args, @optargs);
 }
@@ -1895,11 +1895,9 @@ sub check_or_start($$) {
 
 	$binary = Samba::bindir_path($self, "winbindd");
 	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
-					 $ENV{WINBINDD_OPTIONS}, $ENV{WINBINDD_VALGRIND}, "N/A");
-
-	if (not defined($ENV{WINBINDD_DONT_LOG_STDOUT})) {
-		push(@full_cmd, "--stdout");
-	}
+					 $ENV{WINBINDD_OPTIONS},
+					 $ENV{WINBINDD_VALGRIND},
+					 $ENV{WINBINDD_DONT_LOG_STDOUT});
 
 	# fork and exec() winbindd in the child process
 	$daemon_ctx = {
