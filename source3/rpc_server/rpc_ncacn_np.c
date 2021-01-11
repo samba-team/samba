@@ -99,7 +99,6 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct npa_state *npa;
 	NTSTATUS status;
-	int error;
 	int rc;
 	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
 			endpoint->ep_description);
@@ -176,16 +175,15 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 		goto out;
 	}
 
-	rc = make_server_pipes_struct(ncacn_conn,
-				      ncacn_conn->msg_ctx,
-				      pipe_name,
-				      transport,
-				      ncacn_conn->remote_client_addr,
-				      ncacn_conn->local_server_addr,
-				      &ncacn_conn->p,
-				      &error);
-	if (rc == -1) {
-		status = map_nt_error_from_unix(error);
+	rc = make_base_pipes_struct(ncacn_conn,
+				    ncacn_conn->msg_ctx,
+				    pipe_name,
+				    transport,
+				    ncacn_conn->remote_client_addr,
+				    ncacn_conn->local_server_addr,
+				    &ncacn_conn->p);
+	if (rc != 0) {
+		status = map_nt_error_from_unix(rc);
 		goto out;
 	}
 
