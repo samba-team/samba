@@ -35,7 +35,6 @@
 
 #include "debug.h"
 #include "lib/util/signal.h" /* Avoid /usr/include/signal.h */
-#include "substitute.h"
 #include "fault.h"
 
 static struct {
@@ -134,8 +133,22 @@ static void smb_panic_default(const char *why)
 		if (strlcpy(cmdstring, panic_action, sizeof(cmdstring)) < sizeof(cmdstring)) {
 			int result;
 			char pidstr[20];
+			char subst[200];
+			char *p = NULL;
 			snprintf(pidstr, sizeof(pidstr), "%d", (int) getpid());
-			all_string_sub(cmdstring, "%d", pidstr, sizeof(cmdstring));
+
+			p = strstr(cmdstring, "%d");
+			if (p != NULL) {
+				snprintf(subst,
+					 sizeof(subst),
+					 "%.*s%s%s",
+					 (int)(p-cmdstring),
+					 cmdstring,
+					 pidstr,
+					 p+2);
+				strlcpy(cmdstring, subst, sizeof(cmdstring));
+			}
+
 			DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmdstring));
 			result = system(cmdstring);
 
