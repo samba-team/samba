@@ -153,22 +153,23 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(
 	 * pipes_struct if the handle type does not match
 	 */
 	h = dcesrv_handle_lookup(p->dce_call, hnd, DCESRV_HANDLE_ANY);
-	if (h != NULL) {
-		if (handle_type != DCESRV_HANDLE_ANY &&
-			h->wire_handle.handle_type != handle_type) {
-			/* Just return NULL, do not set a fault
-			 * state in pipes_struct */
-			return NULL;
-		}
-		if (data_p) {
-			*data_p = h->data;
-		}
-		return h;
+	if (h == NULL) {
+		p->fault_state = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return NULL;
 	}
 
-	p->fault_state = DCERPC_FAULT_CONTEXT_MISMATCH;
+	if (handle_type != DCESRV_HANDLE_ANY &&
+	    h->wire_handle.handle_type != handle_type) {
+		/* Just return NULL, do not set a fault
+		 * state in pipes_struct */
+		return NULL;
+	}
 
-	return NULL;
+	if (data_p) {
+		*data_p = h->data;
+	}
+
+	return h;
 }
 
 /****************************************************************************
