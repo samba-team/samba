@@ -59,6 +59,7 @@ static NTSTATUS winbindd_task_init(struct task_server *task)
 	struct tevent_req *subreq;
 	const char *winbindd_path;
 	const char *winbindd_cmd[2] = { NULL, NULL };
+	const char *config_file = "";
 
 	task_server_set_title(task, "task[winbindd_parent]");
 
@@ -68,12 +69,22 @@ static NTSTATUS winbindd_task_init(struct task_server *task)
 	}
 	winbindd_cmd[0] = winbindd_path;
 
+	if (!is_default_dyn_CONFIGFILE()) {
+		config_file = talloc_asprintf(task,
+					      "--configfile=%s",
+					      get_dyn_CONFIGFILE());
+		if (config_file == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	/* start it as a child process */
 	subreq = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
 				winbindd_cmd,
 				"-D",
 				"--option=server role check:inhibit=yes",
 				"--foreground",
+				config_file,
 				debug_get_output_is_stdout()?"--stdout":NULL,
 				NULL);
 	if (subreq == NULL) {
