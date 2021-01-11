@@ -3106,6 +3106,15 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		fstrcpy(domain,lp_workgroup());
 	}
 
+	if (!is_allowed_domain(domain)) {
+		DBG_NOTICE("Authentication failed for user [%s] "
+			   "from firewalled domain [%s]\n",
+			   state->request->data.chng_pswd_auth_crap.user,
+			   domain);
+		result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		goto done;
+	}
+
 	if(!*user) {
 		fstrcpy(user, state->request->data.chng_pswd_auth_crap.user);
 	}
