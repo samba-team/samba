@@ -82,21 +82,6 @@ Configuration/Policies/Administrative Templates. Alternatively, Samba policy
 may be managed using the `samba-tool gpo manage` command. This tool does not
 require the admx templates to be installed.
 
-CTDB CHANGES
-============
-
-* The NAT gateway and LVS features now uses the term "leader" to refer
-  to the main node in a group through which traffic is routed and
-  "follower" for other members of a group.  The command for
-  determining the leader has changed to "ctdb natgw leader" (from
-  "ctdb natgw master").  The configuration keyword for indicating that
-  a node can not be the leader of a group has changed to
-  "follower-only" (from "slave-only").  Identical changes were made
-  for LVS.
-
-* Remove "ctdb isnotrecmaster" command.  It isn't used by CTDB's
-  scripts and can be checked by users with "ctdb pnn" and "ctdb
-  recmaster".
 
 Python 3.6 or later required
 ----------------------------
@@ -119,16 +104,36 @@ Sites using Samba as a Domain Controller should upgrade from the
 NT4-like 'classic' Domain Controller to a Samba Active Directory DC
 to ensure full operation with modern windows clients.
 
+
 SMBv1 only protocol options deprecated
 --------------------------------------
 
 A number of smb.conf parameters for less-secure authentication methods
 which are only possible over SMBv1 are deprecated in this release.
 
+
+CTDB CHANGES
+============
+
+* The NAT gateway and LVS features now uses the term "leader" to refer
+  to the main node in a group through which traffic is routed and
+  "follower" for other members of a group.  The command for
+  determining the leader has changed to "ctdb natgw leader" (from
+  "ctdb natgw master").  The configuration keyword for indicating that
+  a node can not be the leader of a group has changed to
+  "follower-only" (from "slave-only").  Identical changes were made
+  for LVS.
+
+* Remove "ctdb isnotrecmaster" command.  It isn't used by CTDB's
+  scripts and can be checked by users with "ctdb pnn" and "ctdb
+  recmaster".
+
+
 REMOVED FEATURES
 ================
 
 The deprecated "ldap ssl ads" smb.conf option has been removed.
+
 
 smb.conf changes
 ================
@@ -148,7 +153,6 @@ smb.conf changes
   honor change notify privilege      New                        No
   smbd force process locks           New                        No
   server smb encrypt                 New                        default
-
 
 
 KNOWN ISSUES
