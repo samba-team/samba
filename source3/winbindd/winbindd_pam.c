@@ -2765,6 +2765,16 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
+		if (!is_allowed_domain(info3->base.logon_domain.string)) {
+			DBG_NOTICE("Authentication failed for user [%s] "
+				   "from firewalled domain [%s]\n",
+				   info3->base.account_name.string,
+				   info3->base.logon_domain.string);
+			state->response->data.auth.authoritative = true;
+			result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+			goto done;
+		}
+
 		result = append_auth_data(state->mem_ctx, state->response,
 					  state->request->flags,
 					  validation_level,
