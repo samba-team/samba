@@ -1205,6 +1205,7 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	NTSTATUS status;
 	int saved_errno = 0;
 	int cmp;
+	int rc;
 
 	cmp = memcmp(ad->ad_filler, AD_FILLER_TAG_OSX, ADEDLEN_FILLER);
 	if (cmp != 0) {
@@ -1248,6 +1249,11 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
+
+	rc = vfs_stat(handle->conn, stream_name);
+	if (rc == -1 && errno != ENOENT) {
+		return false;
+	}
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
 	if (!NT_STATUS_IS_OK(status) &&
