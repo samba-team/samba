@@ -89,7 +89,7 @@ static int read_data(FILE *f, TDB_DATA *d, size_t size) {
 			}
 			ok = hex_byte(in, &d->dptr[i]);
 			if (!ok) {
-				fprintf(stderr, "Invalid hex: %s\n", in);
+				fprintf(stderr, "Invalid hex: .2%s\n", in);
 				return -1;
 			}
 		} else {
