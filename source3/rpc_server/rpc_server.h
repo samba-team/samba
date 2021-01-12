@@ -93,6 +93,17 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				     struct dcesrv_endpoint *e,
 				     dcerpc_ncacn_termination_fn term_fn,
 				     void *termination_data);
+struct dcerpc_ncacn_listen_state;
+int dcesrv_setup_ncacn_listener(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_context *dce_ctx,
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	struct dcesrv_endpoint *e,
+	int *fd,
+	dcerpc_ncacn_termination_fn term_fn,
+	void *termination_data,
+	struct dcerpc_ncacn_listen_state **listen_state);
 
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,

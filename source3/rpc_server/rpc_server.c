@@ -667,6 +667,142 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 			    state->termination_data);
 }
 
+static void dcesrv_ncacn_listener(
+	struct tevent_context *ev,
+	struct tevent_fd *fde,
+	uint16_t flags,
+	void *private_data);
+
+int dcesrv_setup_ncacn_listener(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_context *dce_ctx,
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	struct dcesrv_endpoint *e,
+	int *fd,
+	dcerpc_ncacn_termination_fn term_fn,
+	void *termination_data,
+	struct dcerpc_ncacn_listen_state **listen_state)
+{
+	struct dcerpc_ncacn_listen_state *state = NULL;
+	struct tevent_fd *fde = NULL;
+	int rc, err = ENOMEM;
+
+	state = talloc_zero(mem_ctx, struct dcerpc_ncacn_listen_state);
+	if (state == NULL) {
+		DBG_ERR("Out of memory\n");
+		return ENOMEM;
+	}
+
+	state->fd = *fd;
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+	state->dce_ctx = dce_ctx;
+	state->endpoint = e;
+	state->termination_fn = term_fn;
+	state->termination_data = termination_data;
+
+	rc = listen(state->fd, SMBD_LISTEN_BACKLOG);
+	if (rc < 0) {
+		err = errno;
+		DBG_ERR("listen(%d) failed: %s\n",
+			state->fd,
+			strerror(err));
+		goto fail;
+	}
+
+	/* Set server socket to non-blocking for the accept. */
+	rc = set_blocking(state->fd, false);
+	if (rc < 0) {
+		err = errno;
+		goto fail;
+	}
+
+	fde = tevent_add_fd(
+		state->ev_ctx,
+		state,
+		state->fd,
+		TEVENT_FD_READ,
+		dcesrv_ncacn_listener,
+		state);
+	if (fde == NULL) {
+		err = errno;
+		DBG_ERR("tevent_add_fd for %d failed: %s\n",
+			state->fd,
+			strerror(err));
+		goto fail;
+	}
+	tevent_fd_set_auto_close(fde);
+	*fd = -1;
+
+	*listen_state = state;
+
+	return 0;
+
+fail:
+	TALLOC_FREE(state);
+	return err;
+}
+
+static void dcesrv_ncacn_listener(
+	struct tevent_context *ev,
+	struct tevent_fd *fde,
+	uint16_t flags,
+	void *private_data)
+{
+	struct dcerpc_ncacn_listen_state *state = talloc_get_type_abort(
+		private_data, struct dcerpc_ncacn_listen_state);
+	struct tsocket_address *cli_addr = NULL, *srv_addr = NULL;
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct samba_sockaddr),
+	};
+	int sd = -1;
+	int rc;
+
+	sd = accept(state->fd, &addr.u.sa, &addr.sa_socklen);
+	if (sd == -1) {
+		if (errno != EINTR) {
+			DBG_ERR("Failed to accept: %s\n", strerror(errno));
+		}
+		return;
+	}
+	smb_set_close_on_exec(sd);
+
+	rc = tsocket_address_bsd_from_samba_sockaddr(state, &addr, &cli_addr);
+	if (rc < 0) {
+		goto fail;
+	}
+
+	rc = getsockname(sd, &addr.u.sa, &addr.sa_socklen);
+	if (rc < 0) {
+		goto fail;
+	}
+
+	rc = tsocket_address_bsd_from_samba_sockaddr(state, &addr, &srv_addr);
+	if (rc < 0) {
+		goto fail;
+	}
+
+	dcerpc_ncacn_accept(
+		state->ev_ctx,
+		state->msg_ctx,
+		state->dce_ctx,
+		state->endpoint,
+		&cli_addr,
+		&srv_addr,
+		sd,
+		state->termination_fn,
+		state->termination_data);
+	return;
+
+fail:
+	TALLOC_FREE(cli_addr);
+	TALLOC_FREE(srv_addr);
+	if (sd != -1) {
+		close(sd);
+	}
+}
+
 static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn = talloc_get_type_abort(
