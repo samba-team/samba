@@ -1668,6 +1668,10 @@ static int fruit_close_meta(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
+	if (fio == NULL) {
+		return -1;
+	}
+
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
 		if (fio->fake_fd) {
