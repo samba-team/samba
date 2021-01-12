@@ -3,7 +3,7 @@ Basic design of the tsocket abstraction
 =======================================
 
 The tsocket abstraction is split into two
-different kinds of communitation interfaces.
+different kinds of communication interfaces.
 
 There is the "tstream_context" interface which abstracts
 the communication through a bidirectional
@@ -30,12 +30,12 @@ Constructors are described in later sections of this document.
 A function to get the string representation of an endpoint for debugging is
 available but callers SHOULD NOT try to parse this string. To get more
 details, callers should use getter methods of the specific tsocket_address
-implemention.
+implementation.
 
   char *tsocket_address_string(const struct tsocket_address *addr,
       TALLOC_CTX *mem_ctx);
 
-A function to create a copy of the tsocket_address is also avilable.
+A function to create a copy of the tsocket_address is also available.
 This is useful before doing modifications to a socket
 via additional methods of the specific tsocket_address implementation.
 
