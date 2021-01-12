@@ -839,13 +839,11 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 {
+	struct dcerpc_ncacn_conn *ncacn_conn = tevent_req_callback_data(
+		subreq, struct dcerpc_ncacn_conn);
 	struct auth_session_info_transport *session_info_transport = NULL;
-	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
 	int error;
 	int ret;
-
-	ncacn_conn = tevent_req_callback_data(subreq,
-					      struct dcerpc_ncacn_conn);
 
 	ret = tstream_npa_accept_existing_recv(subreq, &error, ncacn_conn,
 					       &ncacn_conn->tstream,
