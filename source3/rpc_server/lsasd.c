@@ -439,8 +439,8 @@ static void lsasd_handle_client(struct tevent_req *req)
 			    data->msg_ctx,
 			    data->dce_ctx,
 			    ep,
-			    cli_addr,
-			    srv_addr,
+			    &cli_addr,
+			    &srv_addr,
 			    sd,
 			    term_fn,
 			    term_fn_data);

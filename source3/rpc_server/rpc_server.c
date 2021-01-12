@@ -435,8 +435,8 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 			    state->msg_ctx,
 			    state->dce_ctx,
 			    state->endpoint,
-			    cli_addr,
-			    srv_addr,
+			    &cli_addr,
+			    &srv_addr,
 			    s,
 			    state->termination_fn,
 			    state->termination_data);
@@ -660,7 +660,9 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 			    state->msg_ctx,
 			    state->dce_ctx,
 			    state->endpoint,
-			    cli_addr, srv_addr, sd,
+			    &cli_addr,
+			    &srv_addr,
+			    sd,
 			    state->termination_fn,
 			    state->termination_data);
 }
@@ -717,8 +719,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
 			 struct dcesrv_context *dce_ctx,
 			 struct dcesrv_endpoint *e,
-			 struct tsocket_address *cli_addr,
-			 struct tsocket_address *srv_addr,
+			 struct tsocket_address **cli_addr,
+			 struct tsocket_address **srv_addr,
 			 int s,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data)
@@ -748,8 +750,9 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	ncacn_conn->sock = s;
 
-	if (cli_addr != NULL) {
-		ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
+	if ((cli_addr != NULL) && (*cli_addr != NULL)) {
+		ncacn_conn->remote_client_addr = talloc_move(
+			ncacn_conn, cli_addr);
 
 		if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {
 			ncacn_conn->remote_client_name =
@@ -769,8 +772,9 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		}
 	}
 
-	if (srv_addr != NULL) {
-		ncacn_conn->local_server_addr = talloc_move(ncacn_conn, &srv_addr);
+	if ((srv_addr != NULL) && (*srv_addr != NULL))  {
+		ncacn_conn->local_server_addr = talloc_move(
+			ncacn_conn, srv_addr);
 
 		if (tsocket_address_is_inet(ncacn_conn->local_server_addr, "ip")) {
 			ncacn_conn->local_server_name =
