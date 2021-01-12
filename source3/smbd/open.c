@@ -4298,6 +4298,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ret = vfs_stat(conn, parent_dir_fname);
+	if (ret == -1) {
+		TALLOC_FREE(parent_dir_fname);
+		return map_nt_error_from_unix(errno);
+	}
+
 	status = openat_pathref_fsp(conn->cwd_fsp, parent_dir_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
