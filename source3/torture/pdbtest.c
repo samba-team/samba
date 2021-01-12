@@ -22,7 +22,7 @@
 
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "passdb.h"
 
 #include "../librpc/gen_ndr/drsblobs.h"
@@ -563,11 +563,13 @@ int main(int argc, const char **argv)
 	poptContext pc;
 	static const char *backend = NULL;
 	static const char *unix_user = "nobody";
+	bool ok;
 	struct poptOption long_options[] = {
 		{"username", 'u', POPT_ARG_STRING, &unix_user, 0, "Unix user to use for testing", "USERNAME" },
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "Backend to use if not default", "BACKEND[:SETTINGS]" },
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -575,17 +577,25 @@ int main(int argc, const char **argv)
 
 	smb_init_locale();
 
-	pc = poptGetContext("pdbtest", argc, argv, long_options, 0);
+	ok = samba_cmdline_init(ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				true /* require_smbconf */);
+	if (!ok) {
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(), argc, argv, long_options, 0);
+	if (pc == NULL) {
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "backend[:settings] username");
 
 	while(poptGetNextOpt(pc) != -1);
 
 	poptFreeContext(pc);
-
-	/* Load configuration */
-	lp_load_global(get_dyn_CONFIGFILE());
-	setup_logging("pdbtest", DEBUG_STDOUT);
 
 	if (backend == NULL) {
 		backend = lp_passdb_backend();
