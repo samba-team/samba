@@ -154,47 +154,4 @@ fail:
 	return status;
 }
 
-NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
-					   struct messaging_context *msg_ctx,
-					   struct dcesrv_context *dce_ctx,
-					   struct dcesrv_endpoint *e,
-					   dcerpc_ncacn_termination_fn t_fn,
-					   void *t_data)
-{
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
-	int *fds = NULL;
-	size_t i, num_fds = 0;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcesrv_create_ncacn_ip_tcp_sockets(
-		e, tmp_ctx, &num_fds, &fds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	for (i=0; i<num_fds; i++) {
-		status = dcesrv_setup_ncacn_ip_tcp_socket(
-			ev_ctx,
-			msg_ctx,
-			dce_ctx,
-			e,
-			fds[i],
-			t_fn,
-			t_data);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-	}
-
-	status = NT_STATUS_OK;
-done:
-	talloc_free(tmp_ctx);
-	return status;
-}
-
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

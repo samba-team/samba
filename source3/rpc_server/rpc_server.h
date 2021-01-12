@@ -68,31 +68,13 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 NTSTATUS dcesrv_create_ncacn_np_socket(struct dcesrv_endpoint *e, int *out_fd);
-NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
-				      struct messaging_context *msg_ctx,
-				      struct dcesrv_context *dce_ctx,
-				      struct dcesrv_endpoint *e,
-				      dcerpc_ncacn_termination_fn term_fn,
-				      void *term_data);
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 					   uint16_t *port,
 					   int *out_fd);
-NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
-					  struct messaging_context *msg_ctx,
-					  struct dcesrv_context *dce_ctx,
-					  struct dcesrv_endpoint *e,
-					  int fd,
-					  dcerpc_ncacn_termination_fn term_fn,
-					  void *term_data);
 
 NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *fd);
-NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
-				     struct messaging_context *msg_ctx,
-				     struct dcesrv_context *dce_ctx,
-				     struct dcesrv_endpoint *e,
-				     dcerpc_ncacn_termination_fn term_fn,
-				     void *termination_data);
+
 struct dcerpc_ncacn_listen_state;
 int dcesrv_setup_ncacn_listener(
 	TALLOC_CTX *mem_ctx,
