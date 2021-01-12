@@ -1250,7 +1250,7 @@ bld.SAMBA3_BINARY('smbconftort',
                  deps='''
                       talloc
                       smbconf
-                      popt_samba3
+                      CMDLINE_S3
                       ''',
                  for_selftest=True)
 

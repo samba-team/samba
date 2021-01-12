@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
@@ -293,25 +293,33 @@ int main(int argc, const char **argv)
 
 	struct poptOption long_options[] = {
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
 	smb_init_locale();
-	setup_logging(argv[0], DEBUG_STDERR);
+
+	ret = samba_cmdline_init(mem_ctx,
+				 SAMBA_CMDLINE_CONFIG_CLIENT,
+				 true /* require_smbconf */);
+	if (!ret) {
+		goto done;
+	}
 
 	/* parse options */
-	pc = poptGetContext("smbconftort", argc, (const char **)argv,
-			    long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    (const char **)argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		ret = false;
+		goto done;
+	}
 
 	while(poptGetNextOpt(pc) != -1) { }
 
 	poptFreeContext(pc);
-
-	ret = lp_load_global(get_dyn_CONFIGFILE());
-	if (!ret) {
-		printf("failure: error loading the configuration\n");
-		goto done;
-	}
 
 	ret = torture_smbconf();
 
