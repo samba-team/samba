@@ -141,6 +141,12 @@ static int set_sys_acl_conn(const char *fname,
 		return -1;
 	}
 
+	ret = vfs_stat(conn, smb_fname);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
