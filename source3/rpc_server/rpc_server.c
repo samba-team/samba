@@ -300,6 +300,10 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	/* ready to listen */
+	set_socket_options(fd, "SO_KEEPALIVE");
+	set_socket_options(fd, lp_socket_options());
+
 	DBG_DEBUG("Opened ncacn_ip_tcp socket fd %d for port %u\n", fd, *port);
 
 	*out_fd = fd;
@@ -336,10 +340,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	state->dce_ctx = dce_ctx;
 	state->termination_fn = term_fn;
 	state->termination_data = term_data;
-
-	/* ready to listen */
-	set_socket_options(state->fd, "SO_KEEPALIVE");
-	set_socket_options(state->fd, lp_socket_options());
 
 	/* Set server socket to non-blocking for the accept. */
 	rc = set_blocking(state->fd, false);
