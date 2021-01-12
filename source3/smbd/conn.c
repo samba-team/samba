@@ -228,3 +228,22 @@ void conn_free(connection_struct *conn)
 
 	conn_free_internal(conn);
 }
+
+/*
+ * Correctly initialize a share with case options.
+ */
+void conn_setup_case_options(connection_struct *conn)
+{
+	int snum = conn->params->service;
+
+	if (lp_case_sensitive(snum) == Auto) {
+		/* We will be setting this per packet. Set to be case
+		* insensitive for now. */
+		conn->case_sensitive = false;
+	} else {
+		conn->case_sensitive = (bool)lp_case_sensitive(snum);
+	}
+
+	conn->case_preserve = lp_preserve_case(snum);
+	conn->short_case_preserve = lp_short_preserve_case(snum);
+}
