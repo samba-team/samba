@@ -11,7 +11,7 @@ bld.SAMBA3_BINARY('profiles',
                  source='profiles.c',
                  deps='''
                  talloc
-                 popt_samba3
+                 CMDLINE_S3
                  smbconf
                  REGFIO''')
 

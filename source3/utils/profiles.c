@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "registry/reg_objects.h"
 #include "registry/regfio.h"
 #include "../libcli/security/security.h"
@@ -248,15 +248,29 @@ int main( int argc, const char *argv[] )
 		POPT_TABLEEND
 	};
 	poptContext pc;
+	bool ok;
 
 	smb_init_locale();
 
-	/* setup logging options */
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	setup_logging( "profiles", DEBUG_STDERR);
-
-	pc = poptGetContext("profiles", argc, argv, long_options,
-		POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<profilefile>");
 
