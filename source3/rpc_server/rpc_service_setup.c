@@ -251,44 +251,36 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 				       dcerpc_ncacn_termination_fn term_fn,
 				       void *term_data)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(e->ep_description);
 	char *binding = NULL;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct dcesrv_if_list *iface = NULL;
+	int fd = -1;
+	int *fds = &fd;
+	size_t i, num_fds = 1;
+	struct dcerpc_ncacn_listen_state **listen_states = NULL;
 
-	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	binding = dcerpc_binding_string(frame, e->ep_description);
 	if (binding == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	DBG_DEBUG("Setting up endpoint '%s'\n", binding);
 
 	switch (transport) {
 	case NCALRPC:
-		status = dcesrv_setup_ncalrpc_socket(ev_ctx,
-						     msg_ctx,
-						     dce_ctx,
-						     e,
-						     term_fn,
-						     term_data);
+		status = dcesrv_create_ncalrpc_socket(e, &fd);
 		break;
 
 	case NCACN_IP_TCP:
-		status = dcesrv_setup_ncacn_ip_tcp_sockets(ev_ctx,
-							   msg_ctx,
-							   dce_ctx,
-							   e,
-							   term_fn,
-							   term_data);
+		status = dcesrv_create_ncacn_ip_tcp_sockets(
+			e, frame, &num_fds, &fds);
 		break;
 
 	case NCACN_NP:
-		status = dcesrv_setup_ncacn_np_socket(ev_ctx,
-						      msg_ctx,
-						      dce_ctx,
-						      e,
-						      term_fn,
-						      term_data);
+		status = dcesrv_create_ncacn_np_socket(e, &fd);
 		break;
 
 	default:
@@ -299,30 +291,83 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 	/* Build binding string again as the endpoint may have changed by
 	 * dcesrv_create_<transport>_socket functions */
 	TALLOC_FREE(binding);
-	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	binding = dcerpc_binding_string(frame, e->ep_description);
 	if (binding == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		struct dcesrv_if_list *iface = NULL;
 		DBG_ERR("Failed to setup '%s' sockets for ", binding);
 		for (iface = e->interface_list; iface; iface = iface->next) {
 			DEBUGADD(DBGLVL_ERR, ("'%s' ", iface->iface->name));
 		}
 		DEBUGADD(DBGLVL_ERR, (": %s\n", nt_errstr(status)));
-		return status;
-	} else {
-		struct dcesrv_if_list *iface = NULL;
-		DBG_INFO("Successfully listening on '%s' for ", binding);
-		for (iface = e->interface_list; iface; iface = iface->next) {
-			DEBUGADD(DBGLVL_INFO, ("'%s' ", iface->iface->name));
-		}
-		DEBUGADD(DBGLVL_INFO, ("\n"));
+		goto fail;
 	}
 
-	TALLOC_FREE(binding);
+	listen_states = talloc_array(
+		frame, struct dcerpc_ncacn_listen_state *, num_fds);
+	if (listen_states == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
+	for (i=0; i<num_fds; i++) {
+		int ret = dcesrv_setup_ncacn_listener(
+			listen_states,
+			dce_ctx,
+			ev_ctx,
+			msg_ctx,
+			e,
+			&fds[i],
+			term_fn,
+			term_data,
+			&listen_states[i]);
+		if (ret != 0) {
+			DBG_ERR("dcesrv_setup_ncacn_listener failed for "
+				"socket %d: %s\n",
+				fds[i],
+				strerror(ret));
+			break;
+		}
+	}
+
+	if (i < num_fds) {
+		goto fail;
+	}
+
+	for (i=0; i<num_fds; i++) {
+		/*
+		 * Make the listener states including the tevent_fd's
+		 * talloc children of the endpoint. If the endpoint is
+		 * freed (for example when forked daemons reinit) the
+		 * dcesrv_context, the tevent_fd listener will be
+		 * stopped and the socket closed.
+		 *
+		 * Do this in a loop separate from the one doing the
+		 * dcesrv_setup_ncacn_listener() that can't fail
+		 * anymore.
+		 */
+		talloc_move(e, &listen_states[i]);
+	}
+
+	DBG_INFO("Successfully listening on '%s' for ", binding);
+	for (iface = e->interface_list; iface; iface = iface->next) {
+		DEBUGADD(DBGLVL_INFO, ("'%s' ", iface->iface->name));
+	}
+	DEBUGADD(DBGLVL_INFO, ("\n"));
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+
+fail:
+	for (i=0; i<num_fds; i++) {
+		if (fds[i] != -1) {
+			close(fds[i]);
+		}
+	}
+	TALLOC_FREE(frame);
 	return status;
 }
 
