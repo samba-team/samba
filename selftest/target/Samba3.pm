@@ -27,7 +27,7 @@ sub return_alias_env
 sub have_ads($) {
         my ($self) = @_;
 	my $found_ads = 0;
-        my $smbd_build_options = Samba::bindir_path($self, "smbd") . " -b|";
+        my $smbd_build_options = Samba::bindir_path($self, "smbd") . " --configfile=/dev/null -b|";
         open(IN, $smbd_build_options) or die("Unable to run $smbd_build_options: $!");
 
         while (<IN>) {

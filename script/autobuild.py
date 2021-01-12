@@ -761,7 +761,7 @@ tasks = {
          "--without-ad-dc "
          "--bundled-libraries=!tdb"),
             ("samba-make", "make"),
-            ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT"),
+            ("samba-check", "./bin/smbd --configfile=/dev/null -b | grep CLUSTER_SUPPORT"),
             ("samba-install", "make install"),
             ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
 
