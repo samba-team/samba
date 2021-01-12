@@ -2833,6 +2833,11 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	 * correct path.
 	 */
 	if (smb_dname->fsp != NULL) {
+		ntstatus = fd_close(smb_dname->fsp);
+		if (!NT_STATUS_IS_OK(ntstatus)) {
+			reply_nterror(req, ntstatus);
+			goto out;
+		}
 		/*
 		 * The pathref fsp link destructor will set smb_dname->fsp to
 		 * NULL. Turning this into an assert to give a hint at readers
