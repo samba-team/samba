@@ -442,7 +442,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		/*
 		 * NTTIME uses 100ns units
 		 */
-		allowed_period = allowed_period_mins * 60 * 1000*1000*10;
+		allowed_period = (NTTIME) allowed_period_mins *
+				 60 * 1000*1000*10;
 		pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
 		tv_now = timeval_current();
 		now = timeval_to_nttime(&tv_now);
