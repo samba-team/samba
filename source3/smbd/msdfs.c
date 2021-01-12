@@ -318,6 +318,8 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		vfs_user = get_current_username();
 	}
 
+	conn_setup_case_options(conn);
+
 	set_conn_connectpath(conn, connpath);
 
 	/*
