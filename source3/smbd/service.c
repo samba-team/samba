@@ -556,16 +556,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		      ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
 
 	/* Case options for the share. */
-	if (lp_case_sensitive(snum) == Auto) {
-		/* We will be setting this per packet. Set to be case
-		 * insensitive for now. */
-		conn->case_sensitive = False;
-	} else {
-		conn->case_sensitive = (bool)lp_case_sensitive(snum);
-	}
-
-	conn->case_preserve = lp_preserve_case(snum);
-	conn->short_case_preserve = lp_short_preserve_case(snum);
+	conn_setup_case_options(conn);
 
 	conn->encrypt_level = lp_smb_encrypt(snum);
 	if (conn->encrypt_level > SMB_SIGNING_OFF) {
