@@ -45,7 +45,7 @@ touch $UNIX_FILE || exit 1
 # test "translate" unix-to-windows
 test_vfstest() 
 {
-    cmd='$VFSTEST -f $TESTBASE/vfstest.cmd $MYARGS1 $MYARGS2 $ADDARGS '
+    cmd='$VFSTEST --debug-stdout -f $TESTBASE/vfstest.cmd $MYARGS1 $MYARGS2 $ADDARGS '
     out=`eval $cmd`
     ret=$?
 

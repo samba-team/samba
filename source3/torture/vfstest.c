@@ -27,7 +27,7 @@
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "vfstest.h"
 #include "../libcli/smbreadline/smbreadline.h"
 #include "auth.h"
@@ -475,6 +475,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	bool ok;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -503,6 +504,7 @@ int main(int argc, const char *argv[])
 			.descrip    = "Report memory left on talloc stackframe after each command",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	static const struct smbd_shim vfstest_shim_fns =
@@ -515,7 +517,19 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
-	pc = poptGetContext("vfstest", argc, argv, long_options, 0);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_SERVER,
+				true /* require_smbconf */);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context("vfstest", argc, argv, long_options, 0);
+	if (pc == NULL) {
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while(poptGetNextOpt(pc) != -1);
 
@@ -526,14 +540,8 @@ int main(int argc, const char *argv[])
 	   so set our umask to 0 */
 	umask(0);
 
-	lp_load_initial_only(get_dyn_CONFIGFILE());
-
 	/* TODO: check output */
 	reload_services(NULL, NULL, false);
-
-	/* the following functions are part of the Samba debugging
-	   facilities.  See lib/debug.c */
-	setup_logging("vfstest", DEBUG_STDOUT);
 
 	per_thread_cwd_check();
 
