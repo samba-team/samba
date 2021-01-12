@@ -2132,7 +2132,7 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 	ssize_t nread;
 	int ret;
 
-	if (fio->fake_fd) {
+	if ((fio == NULL) || fio->fake_fd) {
 		return -1;
 	}
 
