@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/util/debug.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "param.h"
 /*
  * glib uses TRUE and FALSE which was redefined by "includes.h" to be
@@ -205,6 +205,7 @@ int main(int argc, const char **argv)
 	struct test_state *state = NULL;
 	int c;
 	poptContext pc;
+	bool ok;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -222,6 +223,7 @@ int main(int argc, const char **argv)
 			.descrip   = "Use glib loop",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -237,17 +239,25 @@ int main(int argc, const char **argv)
 
 	state->loop_type = TEVENT_LOOP;
 
-	setup_logging(argv[0], DEBUG_STDERR);
 	smb_init_locale();
 
-	if (!lp_load_client(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "ERROR: Can't load %s\n",
-			get_dyn_CONFIGFILE());
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				true /* require_smbconf */);
+	if (!ok) {
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 
-	pc = poptGetContext(NULL, argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while ((c = poptGetNextOpt(pc)) != -1) {
 		switch (c) {

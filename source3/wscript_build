@@ -1404,7 +1404,7 @@ bld.SAMBA3_BINARY('tevent_glib_tracker',
                  deps='''
                  talloc
                  libsmb
-                 popt_samba3
+                 CMDLINE_S3
                  tevent-glib-glue ''' + bld.env['libtracker'],
                  enabled=bld.CONFIG_SET('HAVE_TRACKER') and bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
                  install=False)
