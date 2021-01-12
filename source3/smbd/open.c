@@ -5716,13 +5716,15 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		smb_fname_base = synthetic_smb_fname(talloc_tos(),
 						smb_fname->base_name,
 						NULL,
-						NULL,
+						&smb_fname->st,
 						smb_fname->twrp,
 						smb_fname->flags);
 		if (smb_fname_base == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
+
+		SET_STAT_INVALID(smb_fname_base->st);
 
 		/*
 		 * We may be creating the basefile as part of creating the
