@@ -1291,7 +1291,7 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  smbconf
                  jansson
                  cmocka
-                 popt_samba3_cmdline
+                 CMDLINE_S3
                  ''',
                  enabled=bld.env.spotlight_backend_es,
                  for_selftest=True)

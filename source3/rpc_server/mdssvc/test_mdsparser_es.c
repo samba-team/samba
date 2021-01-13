@@ -21,8 +21,7 @@
 #include <cmocka.h>
 #include <jansson.h>
 #include <talloc.h>
-#include "popt.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "libcli/util/ntstatus.h"
 #include "lib/util/samba_util.h"
 #include "lib/torture/torture.h"
@@ -199,7 +198,6 @@ static void test_mdsparser_es(void **state)
 
 int main(int argc, const char *argv[])
 {
-	const char **argv_const = discard_const_p(const char *, argv);
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_mdsparser_es),
 	};
@@ -210,12 +208,31 @@ int main(int argc, const char *argv[])
 	};
 	poptContext pc;
 	int opt;
+	bool ok;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	smb_init_locale();
-	setup_logging(argv[0], DEBUG_STDERR);
+
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	lp_set_cmdline("log level", "1");
 
-	pc = poptGetContext(argv[0], argc, argv_const, long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
@@ -224,8 +241,6 @@ int main(int argc, const char *argv[])
 			    exit(1);
 		}
 	}
-
-	lp_load_global(get_dyn_CONFIGFILE());
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
 
