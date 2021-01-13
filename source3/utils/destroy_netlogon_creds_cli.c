@@ -23,7 +23,6 @@
 #include <tevent.h>
 #include "messages.h"
 #include "lib/util/talloc_stack.h"
-#include "popt_common.h"
 #include "lib/param/loadparm.h"
 #include "lib/param/param.h"
 #include "libcli/auth/netlogon_creds_cli.h"
