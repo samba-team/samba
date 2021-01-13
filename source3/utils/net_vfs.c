@@ -23,7 +23,6 @@
 #include <ftw.h>
 #include "system/filesys.h"
 #include "system/passwd.h"
-#include "popt_common.h"
 #include "lib/param/loadparm.h"
 #include "lib/param/param.h"
 #include "libcli/security/security.h"
