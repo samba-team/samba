@@ -20,7 +20,7 @@
 
 #include "source3/include/includes.h"
 #include "popt.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "client.h"
 #include "libsmb/proto.h"
 #include "clifuse.h"
@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
 	char *unc, *mountpoint, *server, *share;
 	struct cli_state *cli;
 	struct cli_credentials *creds = NULL;
+	bool ok;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -68,14 +69,29 @@ int main(int argc, char *argv[])
 	};
 
 	smb_init_locale();
-	setup_logging(argv[0], DEBUG_STDERR);
+
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	lp_set_cmdline("client min protocol", "SMB2");
 	lp_set_cmdline("client max protocol", "SMB3_11");
 
-	lp_load_global(get_dyn_CONFIGFILE());
-	load_interfaces();
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	pc = poptGetContext("smb2mount", argc, argv_const, long_options, 0);
 	poptSetOtherOptionHelp(pc, "//server1/share1 mountpoint");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
@@ -108,7 +124,7 @@ int main(int argc, char *argv[])
 	}
 
 	poptFreeContext(pc);
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	server = talloc_strdup(frame, unc+2);
 	if (!server) {
@@ -136,7 +152,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	popt_free_cmdline_auth_info();
 	TALLOC_FREE(frame);
 	return 0;
 }
