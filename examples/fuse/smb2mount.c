@@ -25,7 +25,7 @@
 #include "libsmb/proto.h"
 #include "clifuse.h"
 
-static struct cli_state *connect_one(const struct user_auth_info *auth_info,
+static struct cli_state *connect_one(struct cli_credentials *creds,
 				     const char *server, int port,
 				     const char *share)
 {
@@ -36,7 +36,7 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 				NULL, port,
 				share, "?????",
-				get_cmdline_auth_info_creds(auth_info),
+				creds,
 				flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_ERR("cli_full_connection failed! (%s)\n",
@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 	int port = 0;
 	char *unc, *mountpoint, *server, *share;
 	struct cli_state *cli;
+	struct cli_credentials *creds = NULL;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -122,7 +123,9 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
-	cli = connect_one(popt_get_cmdline_auth_info(), server, port, share);
+	creds = samba_cmdline_get_creds();
+
+	cli = connect_one(creds, server, port, share);
 	if (cli == NULL) {
 		return -1;
 	}
