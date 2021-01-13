@@ -50,7 +50,7 @@ enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP, REQUEST_INHERIT};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct cacl_callback_state {
-	struct user_auth_info *auth_info;
+	struct cli_credentials *creds;
 	struct cli_state *cli;
 	struct security_descriptor *aclsd;
 	struct security_acl *acl_to_add;
@@ -1268,7 +1268,7 @@ static NTSTATUS cacl_set_cb(struct file_info *f,
 	}
 
 	cli = cbstate->cli;
-	creds = get_cmdline_auth_info_creds(cbstate->auth_info);
+	creds = cbstate->creds;
 
 	/* Work out the directory. */
 	dir = talloc_strdup(dirctx, mask);
@@ -1504,7 +1504,7 @@ static int inheritance_cacl_set(char *filename,
 	ntstatus = cli_tree_connect_creds(cli,
 			  save_share,
 			  "?????",
-			  get_cmdline_auth_info_creds(cbstate->auth_info));
+			  cbstate->creds);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_printf("error: %s processing %s\n",
@@ -1868,7 +1868,7 @@ int main(int argc, char *argv[])
 	} else if (the_acl) {
 		if (inheritance) {
 			struct cacl_callback_state cbstate = {
-				.auth_info = popt_get_cmdline_auth_info(),
+				.creds = creds,
 				.cli = targetcli,
 				.mode = mode,
 				.the_acl = the_acl,
