@@ -474,6 +474,22 @@ static struct poptOption popt_common_option[] = {
 	POPT_TABLEEND
 };
 
+static struct poptOption popt_common_config[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "configfile",
+		.shortName  = 's',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 's',
+		.descrip    = "Use alternative configuration file",
+		.argDescrip = "CONFIGFILE",
+	},
+	POPT_TABLEEND
+};
+
 static struct poptOption popt_common_samba[] = {
 	{
 		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
@@ -1235,6 +1251,9 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_OPTION_ONLY:
 		return popt_common_option;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_CONFIG_ONLY:
+		return popt_common_config;
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_SAMBA:
 		return popt_common_samba;
