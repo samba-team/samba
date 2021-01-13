@@ -59,7 +59,7 @@ bld.SAMBA3_BINARY('smbget',
                  source='smbget.c',
                  deps='''
                  talloc
-                 popt_samba3_cmdline
+                 cmdline
                  smbclient''')
 
 bld.SAMBA3_BINARY('nmblookup',

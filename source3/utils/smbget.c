@@ -18,7 +18,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "libsmbclient.h"
 #include "cmdline_contexts.h"
 
@@ -1005,7 +1005,7 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	if (smbc_init(get_auth_data, opt.debuglevel) < 0) {
 		fprintf(stderr, "Unable to initialize libsmbclient\n");
