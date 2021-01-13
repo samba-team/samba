@@ -19,7 +19,6 @@
 
 
 #include "includes.h"
-#include "popt_common.h"
 #include "utils/net.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
@@ -28,6 +27,8 @@
 #include "../libcli/smbreadline/smbreadline.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/dom_sid.h"
+
+#include <popt.h>
 
 static NTSTATUS rpc_sh_info(struct net_context *c,
 			    TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
