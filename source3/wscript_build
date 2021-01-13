@@ -464,7 +464,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                         NDR_IOCTL
 			NDR_QUOTA
                         cli_smb_common
-                        util_cmdline
                         tevent
                         ''',
                    private_library=True)

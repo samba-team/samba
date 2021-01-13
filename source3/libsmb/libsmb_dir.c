@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "libsmb/namequery.h"
 #include "libsmb/libsmb.h"
-#include "auth_info.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "rpc_client/cli_pipe.h"
@@ -948,8 +947,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				return NULL;
 			}
 
-			creds = get_cmdline_auth_info_creds(
-					context->internal->auth_info);
+			creds = context->internal->creds;
 
 			status = cli_resolve_path(
 				frame, "",
@@ -1607,7 +1605,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 
 	}
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
 	status = cli_resolve_path(frame, "",
@@ -1721,7 +1719,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 
 	}
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info),
+	creds = context->internal->creds;
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
 	status = cli_resolve_path(frame, "",
@@ -2029,7 +2027,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		return -1;  /* errno set by SMBC_server */
 	}
 	
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
 	status = cli_resolve_path(frame, "",
@@ -2227,7 +2225,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 
 	}
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
 	status = cli_resolve_path(frame, "",
@@ -2403,7 +2401,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 				    	   password1);
 
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
-	ocreds = get_cmdline_auth_info_creds(ocontext->internal->auth_info);
+	ocreds = ocontext->internal->creds;
 
 	status = cli_resolve_path(frame, "",
 				  ocreds,
@@ -2423,7 +2421,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
-	ncreds = get_cmdline_auth_info_creds(ncontext->internal->auth_info);
+	ncreds = ncontext->internal->creds;
 
 	status = cli_resolve_path(frame, "",
 				  ncreds,

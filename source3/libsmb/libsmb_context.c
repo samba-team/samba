@@ -28,6 +28,9 @@
 #include "libsmb_internal.h"
 #include "secrets.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
+#include "lib/param/param.h"
 
 /*
  * Is the logging working / configfile read ?
@@ -318,7 +321,7 @@ smbc_free_context(SMBCCTX *context,
         DEBUG(3, ("Context %p successfully freed\n", context));
 
 	/* Free any DFS auth context. */
-	TALLOC_FREE(context->internal->auth_info);
+	TALLOC_FREE(context->internal->creds);
 
 	SAFE_FREE(context->internal);
         SAFE_FREE(context);
@@ -733,17 +736,15 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 					const char *user,
 					const char *password)
 {
-	smbc_bool use_kerberos = false;
-	const char *signing_state = "off";
-	struct user_auth_info *auth_info = NULL;
-	TALLOC_CTX *frame;
+	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
+	enum credentials_use_kerberos kerberos_state =
+		CRED_USE_KERBEROS_DISABLED;
 
 	if (! context) {
 
 		return;
 	}
-
-	frame = talloc_stackframe();
 
 	if (! workgroup || ! *workgroup) {
 		workgroup = smbc_getWorkgroup(context);
@@ -757,38 +758,44 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		password = "";
 	}
 
-	auth_info = user_auth_info_init(NULL);
-
-	if (! auth_info) {
+	creds = cli_credentials_init(NULL);
+	if (creds == NULL) {
 		DEBUG(0, ("smbc_set_credentials_with_fallback: allocation fail\n"));
-		TALLOC_FREE(frame);
 		return;
 	}
 
+	lp_ctx = loadparm_init_s3(creds, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(creds);
+		return;
+	}
+
+	cli_credentials_set_conf(creds, lp_ctx);
+
 	if (smbc_getOptionUseKerberos(context)) {
-		use_kerberos = True;
+		kerberos_state = CRED_USE_KERBEROS_REQUIRED;
+
+		if (smbc_getOptionFallbackAfterKerberos(context)) {
+			kerberos_state = CRED_USE_KERBEROS_DESIRED;
+		}
 	}
 
-	if (lp_client_signing() != SMB_SIGNING_OFF) {
-		signing_state = "if_required";
+	cli_credentials_set_username(creds, user, CRED_SPECIFIED);
+	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
+	cli_credentials_set_domain(creds, workgroup, CRED_SPECIFIED);
+	cli_credentials_set_kerberos_state(creds,
+					   kerberos_state,
+					   CRED_SPECIFIED);
+	if (smbc_getOptionUseCCache(context)) {
+		uint32_t gensec_features;
+
+		gensec_features = cli_credentials_get_gensec_features(creds);
+		gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
+		cli_credentials_set_gensec_features(creds,
+						    gensec_features,
+						    CRED_SPECIFIED);
 	}
 
-	if (lp_client_signing() == SMB_SIGNING_REQUIRED) {
-		signing_state = "required";
-	}
-
-        set_cmdline_auth_info_username(auth_info, user);
-        set_cmdline_auth_info_domain(auth_info, workgroup);
-        set_cmdline_auth_info_password(auth_info, password);
-        set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
-        set_cmdline_auth_info_signing_state(auth_info, signing_state);
-	set_cmdline_auth_info_fallback_after_kerberos(auth_info,
-		smbc_getOptionFallbackAfterKerberos(context));
-	set_cmdline_auth_info_use_ccache(
-		auth_info, smbc_getOptionUseCCache(context));
-
-	TALLOC_FREE(context->internal->auth_info);
-
-        context->internal->auth_info = auth_info;
-	TALLOC_FREE(frame);
+	TALLOC_FREE(context->internal->creds);
+	context->internal->creds = creds;
 }

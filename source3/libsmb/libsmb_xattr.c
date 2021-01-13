@@ -866,8 +866,7 @@ cacl_get(SMBCCTX *context,
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
 
-		creds = get_cmdline_auth_info_creds(
-				context->internal->auth_info);
+		creds = context->internal->creds;
 
 		status = cli_resolve_path(
 			ctx, "",
@@ -1546,7 +1545,7 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	status = cli_resolve_path(ctx, "",
 				  creds,

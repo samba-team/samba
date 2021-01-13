@@ -114,8 +114,7 @@ SMBC_open_ctx(SMBCCTX *context,
 
 		ZERO_STRUCTP(file);
 
-		creds = get_cmdline_auth_info_creds(
-						context->internal->auth_info);
+		creds = context->internal->creds;
 		/*d_printf(">>>open: resolving %s\n", path);*/
 		status = cli_resolve_path(
 			frame, "",
@@ -496,7 +495,7 @@ SMBC_getatr(SMBCCTX * context,
 	}
 	DEBUG(4,("SMBC_getatr: sending qpathinfo\n"));
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	status = cli_resolve_path(frame, "",
 				  creds,

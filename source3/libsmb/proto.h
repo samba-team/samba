@@ -26,8 +26,6 @@
 #ifndef _LIBSMB_PROTO_H_
 #define _LIBSMB_PROTO_H_
 
-#include "auth_info.h"
-
 struct smb_trans_enc_state;
 struct cli_credentials;
 struct cli_state;

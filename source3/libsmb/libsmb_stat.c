@@ -292,7 +292,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
                 return -1;
         }
 
-	creds = get_cmdline_auth_info_creds(context->internal->auth_info);
+	creds = context->internal->creds;
 
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
 	status = cli_resolve_path(frame, "",
