@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "libsmb/libsmb.h"
@@ -46,24 +46,20 @@ static void get_auth_data_with_context_fn(
 	char *password,
 	int password_len)
 {
-	struct user_auth_info *auth = popt_get_cmdline_auth_info();
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 	size_t len;
 
-	if (auth == NULL) {
-		return;
-	}
-
-	len = strlcpy(domain, get_cmdline_auth_info_domain(auth), domain_len);
+	len = strlcpy(domain, cli_credentials_get_domain(creds), domain_len);
 	if ((int)len >= domain_len) {
 		return;
 	}
 	len = strlcpy(
-		user, get_cmdline_auth_info_username(auth), user_len);
+		user, cli_credentials_get_username(creds), user_len);
 	if ((int)len >= user_len) {
 		return;
 	}
 	len = strlcpy(
-		password, get_cmdline_auth_info_password(auth), password_len);
+		password, cli_credentials_get_password(creds), password_len);
 	if ((int)len >= password_len) {
 		/* pointless, but what can you do... */
 		return;
@@ -97,6 +93,7 @@ int main(int argc, char *argv[])
 		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	poptContext pc;
@@ -112,14 +109,28 @@ int main(int argc, char *argv[])
 
 	setlinebuf(stdout);
 
-	setup_logging(argv[0], DEBUG_STDERR);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	popt_common_credentials_set_ignore_missing_conf();
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	pc = poptGetContext("smbtree", argc, argv_const, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	debuglevel = DEBUGLEVEL;
 
@@ -253,8 +264,6 @@ int main(int argc, char *argv[])
 		perror("smbc_closedir");
 		goto fail;
 	}
-
-	popt_free_cmdline_auth_info();
 
 	result = 0;
 fail:

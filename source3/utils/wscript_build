@@ -31,7 +31,7 @@ bld.SAMBA3_BINARY('smbtree',
                  smbconf
                  smbclient
                  msrpc3
-                 popt_samba3_cmdline
+                 CMDLINE_S3
                  RPC_NDR_SRVSVC''')
 
 bld.SAMBA3_BINARY('smbpasswd',
