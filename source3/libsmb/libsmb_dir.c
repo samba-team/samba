@@ -564,7 +564,6 @@ SMBC_opendir_ctx(SMBCCTX *context,
                 size_t max_lmb_count;
                 struct sockaddr_storage *ip_list;
                 struct sockaddr_storage server_addr;
-                struct user_auth_info *u_info;
 		struct cli_credentials *creds = NULL;
 		NTSTATUS status;
 
@@ -584,8 +583,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                  ? INT_MAX
                                  : smbc_getOptionBrowseMaxLmbCount(context));
 
-		u_info = user_auth_info_init(frame);
-		if (u_info == NULL) {
+		creds = cli_credentials_init(frame);
+		if (creds == NULL) {
 			if (dir) {
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
@@ -594,10 +593,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			errno = ENOMEM;
 			return NULL;
 		}
-		set_cmdline_auth_info_username(u_info, user);
-		set_cmdline_auth_info_password(u_info, password);
 
-		creds = get_cmdline_auth_info_creds(u_info);
+		(void)cli_credentials_set_username(creds, user, CRED_SPECIFIED);
+		(void)cli_credentials_set_password(creds, password, CRED_SPECIFIED);
 
 		/*
                  * We have server and share and path empty but options
