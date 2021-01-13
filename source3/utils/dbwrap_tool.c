@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
@@ -382,6 +382,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	int ret = 1;
+	bool ok;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -393,6 +394,7 @@ int main(int argc, const char **argv)
 		{ "persistent", 0, POPT_ARG_NONE, &persistent, 0,
 		  "treat the database as persistent",
 		  NULL },
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	int opt;
@@ -401,10 +403,29 @@ int main(int argc, const char **argv)
 	poptContext pc;
 
 	smb_init_locale();
-	lp_set_cmdline("log level", "0");
-	setup_logging(argv[0], DEBUG_STDERR);
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
+	setup_logging(argv[0], DEBUG_DEFAULT_STDERR);
+	lp_set_cmdline("log level", "0");
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    popt_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (!ok) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -421,8 +442,6 @@ int main(int argc, const char **argv)
 		extra_argv++;
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
-
-	lp_load_global(get_dyn_CONFIGFILE());
 
 	if ((extra_argc < 2) || (extra_argc > 5)) {
 		d_fprintf(stderr,
