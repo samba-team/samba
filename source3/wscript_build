@@ -267,11 +267,6 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                          tdb-wrap3
                          ''')
 
-bld.SAMBA3_LIBRARY('util_cmdline',
-                   source='lib/util_cmdline.c',
-                   deps='secrets3 samba-credentials cli_smb_common',
-                   private_library=True)
-
 bld.SAMBA3_LIBRARY('cmdline_contexts',
                    source='lib/cmdline_contexts.c',
                    deps='samba3core',
