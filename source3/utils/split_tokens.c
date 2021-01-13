@@ -24,15 +24,15 @@
  */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 int main(int argc, const char *argv[])
 {
-	const char *config_file = get_dyn_CONFIGFILE();
 	const char *sequence = "";
 	poptContext pc;
 	char *buff;
 	TALLOC_CTX *ctx = talloc_stackframe();
+	bool ok;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -42,13 +42,29 @@ int main(int argc, const char *argv[])
 
 	smb_init_locale();
 
-	pc = poptGetContext(NULL, argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	ok = samba_cmdline_init(ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
+
 	poptSetOtherOptionHelp(pc, "[OPTION...] <sequence-string>");
 
 	while(poptGetNextOpt(pc) != -1);
-
-	setup_logging(poptGetArg(pc), DEBUG_STDERR);
 
 	sequence = poptGetArg(pc);
 
@@ -58,11 +74,6 @@ int main(int argc, const char *argv[])
 	}
 
 	lp_set_cmdline("log level", "0");
-
-	if (!lp_load_global(config_file)) {
-		fprintf(stderr,"Error loading services.\n");
-		return 1;
-	}
 
 	while(next_token_talloc(ctx, &sequence, &buff, NULL)) {
 		printf("[%s]\n", buff);
