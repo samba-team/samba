@@ -560,7 +560,7 @@ int main(int argc, char *argv[])
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
-			.longName   = "user",
+			.longName   = "quota-user",
 			.shortName  = 'u',
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = NULL,
