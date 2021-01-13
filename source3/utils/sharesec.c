@@ -24,7 +24,7 @@
 struct cli_state;
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "util_sd.h"
@@ -335,6 +335,7 @@ int main(int argc, const char *argv[])
 	int snum;
 	poptContext pc;
 	bool initialize_sid = False;
+	bool ok;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -430,6 +431,7 @@ int main(int argc, const char *argv[])
 			.argDescrip = "ACLS",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -438,14 +440,29 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	/* set default debug level to 1 regardless of what smb.conf sets */
-	setup_logging( "sharesec", DEBUG_STDERR);
-
 	smb_init_locale();
 
+	ok = samba_cmdline_init(ctx,
+				SAMBA_CMDLINE_CONFIG_NONE,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
+	/* set default debug level to 1 regardless of what smb.conf sets */
 	lp_set_cmdline("log level", "1");
 
-	pc = poptGetContext("sharesec", argc, argv, long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "sharename\n");
 
