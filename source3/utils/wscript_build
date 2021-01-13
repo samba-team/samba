@@ -279,7 +279,8 @@ bld.SAMBA3_BINARY('mvxattr',
                  source='mvxattr.c',
                  deps='''
                  talloc
-                 popt_samba3
+                 popt
+                 samba-util
                  ''',
                  enabled=bld.env.build_mvxattr)
 
