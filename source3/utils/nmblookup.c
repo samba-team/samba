@@ -227,6 +227,10 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 /****************************************************************************
   main program
 ****************************************************************************/
+enum nmblookup_cmdline_options {
+	CMDLINE_RECURSIVE = 1,
+};
+
 int main(int argc, const char *argv[])
 {
 	int opt;
@@ -275,10 +279,10 @@ int main(int argc, const char *argv[])
 		},
 		{
 			.longName   = "recursion",
-			.shortName  = 'R',
+			.shortName  = 0,
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = NULL,
-			.val        = 'R',
+			.val        = CMDLINE_RECURSIVE,
 			.descrip    = "Set recursion desired in package",
 		},
 		{
@@ -337,7 +341,7 @@ int main(int argc, const char *argv[])
 		case 'M':
 			find_master = true;
 			break;
-		case 'R':
+		case CMDLINE_RECURSIVE:
 			recursion_desired = true;
 			break;
 		case 'S':
