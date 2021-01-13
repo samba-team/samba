@@ -115,7 +115,7 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      uint16_t *max_xmit, uint16_t *tid);
 struct cli_state *get_ipc_connect(char *server,
 				struct sockaddr_storage *server_ss,
-				const struct user_auth_info *user_info);
+				struct cli_credentials *creds);
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct sockaddr_storage *mb_ip,
 				const struct user_auth_info *user_info,

@@ -3844,7 +3844,7 @@ fail:
 
 struct cli_state *get_ipc_connect(char *server,
 				struct sockaddr_storage *server_ss,
-				const struct user_auth_info *user_info)
+				struct cli_credentials *creds)
 {
         struct cli_state *cli;
 	NTSTATUS nt_status;
@@ -3854,7 +3854,7 @@ struct cli_state *get_ipc_connect(char *server,
 	flags |= CLI_FULL_CONNECTION_IPC;
 
 	nt_status = cli_full_connection_creds(&cli, NULL, server, server_ss, 0, "IPC$", "IPC",
-					get_cmdline_auth_info_creds(user_info),
+					      creds,
 					flags);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -3865,7 +3865,7 @@ struct cli_state *get_ipc_connect(char *server,
 	    fstring remote_name;
 
 	    if (name_status_find("*", 0, 0, server_ss, remote_name)) {
-		cli = get_ipc_connect(remote_name, server_ss, user_info);
+		cli = get_ipc_connect(remote_name, server_ss, creds);
 		if (cli)
 		    return cli;
 	    }
@@ -3894,6 +3894,7 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
         fstring name;
 	struct cli_state *cli;
 	struct sockaddr_storage server_ss;
+	struct cli_credentials *creds = get_cmdline_auth_info_creds(user_info);
 
 	*pp_workgroup_out = NULL;
 
@@ -3930,7 +3931,7 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 	DEBUG(4, ("found master browser %s, %s\n", name, addr));
 
 	print_sockaddr(addr, sizeof(addr), &server_ss);
-	cli = get_ipc_connect(addr, &server_ss, user_info);
+	cli = get_ipc_connect(addr, &server_ss, creds);
 
 	return cli;
 }
