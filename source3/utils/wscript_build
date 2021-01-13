@@ -242,7 +242,8 @@ bld.SAMBA3_BINARY('net',
                  netapi
                  addns
                  samba_intl
-                 popt_samba3_cmdline
+                 CMDLINE_S3
+                 cmdline_contexts
                  pdb
                  libsmb
                  smbconf

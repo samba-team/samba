@@ -41,7 +41,7 @@
 /*****************************************************/
 
 #include "includes.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "utils/net.h"
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
@@ -953,6 +953,7 @@ static void get_credentials_file(struct net_context *c,
 	poptContext pc;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct net_context *c = talloc_zero(frame, struct net_context);
+	bool ok;
 
 	struct poptOption long_options[] = {
 		{
@@ -1282,6 +1283,7 @@ static void get_credentials_file(struct net_context *c,
 			.descrip    = "follow symlinks",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -1289,8 +1291,6 @@ static void get_credentials_file(struct net_context *c,
 	BlockSignals(True, SIGPIPE);
 
 	zero_sockaddr(&c->opt_dest_ip);
-
-	setup_logging(argv[0], DEBUG_STDERR);
 
 	smb_init_locale();
 
@@ -1302,12 +1302,28 @@ static void get_credentials_file(struct net_context *c,
 	textdomain(MODULE_NAME);
 #endif
 
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	lp_set_cmdline("log level", "0");
 	c->private_data = net_func;
 
-	pc = poptGetContext(NULL, argc, argv_const, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -1346,12 +1362,6 @@ static void get_credentials_file(struct net_context *c,
 	}
 
 	c->msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
-
-	if (!lp_load_global(get_dyn_CONFIGFILE())) {
-		d_fprintf(stderr, "Can't load %s - run testparm to debug it\n",
-			  get_dyn_CONFIGFILE());
-		exit(1);
-	}
 
 #if defined(HAVE_BIND_TEXTDOMAIN_CODESET)
 	/* Bind our gettext results to 'unix charset'
@@ -1410,7 +1420,7 @@ static void get_credentials_file(struct net_context *c,
 		c->opt_password = getenv("PASSWD");
 	}
 
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
