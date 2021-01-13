@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
@@ -525,8 +525,7 @@ static struct cli_state *connect_one(const char *share)
 	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 					    NULL, 0,
 					    share, "?????",
-					    get_cmdline_auth_info_creds(
-						popt_get_cmdline_auth_info()),
+					    samba_cmdline_get_creds(),
 					    flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
@@ -557,6 +556,9 @@ int main(int argc, char *argv[])
 	SMB_NTQUOTA_STRUCT qt;
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
+	struct cli_credentials *creds = NULL;
+	bool ok;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -632,6 +634,8 @@ int main(int argc, char *argv[])
 		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		POPT_LEGACY_S3
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -639,15 +643,28 @@ int main(int argc, char *argv[])
 
 	ZERO_STRUCT(qt);
 
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	/* set default debug level to 1 regardless of what smb.conf sets */
-	setup_logging( "smbcquotas", DEBUG_STDERR);
 	lp_set_cmdline("log level", "1");
 
 	setlinebuf(stdout);
 
-	fault_setup();
-
-	pc = poptGetContext("smbcquotas", argc, argv_const, long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options, 0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "//server1/share1");
 
@@ -709,13 +726,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	creds = samba_cmdline_get_creds();
+
 	if (todo == 0)
 		todo = USER_QUOTA;
 
 	if (!fix_user) {
-		username_str = talloc_strdup(
-			frame, get_cmdline_auth_info_username(
-				popt_get_cmdline_auth_info()));
+		const char *user = cli_credentials_get_username(creds);
+		if (user == NULL) {
+			exit(EXIT_PARSE_ERROR);
+		}
+
+		username_str = talloc_strdup(frame, user);
 		if (!username_str) {
 			exit(EXIT_PARSE_ERROR);
 		}
@@ -734,7 +756,7 @@ int main(int argc, char *argv[])
 	}
 
 	poptFreeContext(pc);
-	popt_burn_cmdline_password(argc, argv);
+	samba_cmdline_burn(argc, argv);
 
 	string_replace(path, '/', '\\');
 
@@ -765,7 +787,6 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILED);
 		}
 	} else {
-		popt_free_cmdline_auth_info();
 		exit(EXIT_OK);
 	}
 
@@ -790,7 +811,6 @@ int main(int argc, char *argv[])
 			break;
 	}
 
-	popt_free_cmdline_auth_info();
 	talloc_free(frame);
 
 	return result;

@@ -83,7 +83,7 @@ bld.SAMBA3_BINARY('smbcquotas',
                  source='smbcquotas.c',
                  deps='''
                  talloc
-                 popt_samba3_cmdline
+                 CMDLINE_S3
                  libsmb
                  msrpc3
                  libcli_lsa3''')
