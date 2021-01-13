@@ -1136,7 +1136,6 @@ bld.SAMBA3_BINARY('smbspool',
                  source='client/smbspool.c',
                  deps='''
                       talloc
-                      popt_samba3
                       smbconf
                       libsmb
                       samba3core
