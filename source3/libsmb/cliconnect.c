@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/namequery.h"
-#include "auth_info.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
@@ -3887,14 +3886,13 @@ struct cli_state *get_ipc_connect(char *server,
 
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct sockaddr_storage *mb_ip,
-				const struct user_auth_info *user_info,
+				struct cli_credentials *creds,
 				char **pp_workgroup_out)
 {
 	char addr[INET6_ADDRSTRLEN];
         fstring name;
 	struct cli_state *cli;
 	struct sockaddr_storage server_ss;
-	struct cli_credentials *creds = get_cmdline_auth_info_creds(user_info);
 
 	*pp_workgroup_out = NULL;
 

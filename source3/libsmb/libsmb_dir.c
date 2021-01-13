@@ -565,6 +565,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                 struct sockaddr_storage *ip_list;
                 struct sockaddr_storage server_addr;
                 struct user_auth_info *u_info;
+		struct cli_credentials *creds = NULL;
 		NTSTATUS status;
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
@@ -595,6 +596,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
 		}
 		set_cmdline_auth_info_username(u_info, user);
 		set_cmdline_auth_info_password(u_info, password);
+
+		creds = get_cmdline_auth_info_creds(u_info);
 
 		/*
                  * We have server and share and path empty but options
@@ -654,7 +657,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
                         cli = get_ipc_connect_master_ip(talloc_tos(),
 							&ip_list[i],
-                                                        u_info,
+							creds,
 							&wg_ptr);
 			/* cli == NULL is the master browser refused to talk or
 			   could not be found */

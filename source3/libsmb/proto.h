@@ -118,7 +118,7 @@ struct cli_state *get_ipc_connect(char *server,
 				struct cli_credentials *creds);
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct sockaddr_storage *mb_ip,
-				const struct user_auth_info *user_info,
+				struct cli_credentials *creds,
 				char **pp_workgroup_out);
 
 /* The following definitions come from libsmb/clidfs.c  */
