@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "popt_common_cmdline.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/util/data_blob.h"
 #include "lib/registry/registry.h"
 #include "regedit.h"
@@ -755,14 +755,16 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	endwin();
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
+	const char **argv_const = discard_const_p(const char *, argv);
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		/* ... */
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	int opt;
@@ -770,25 +772,46 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *frame;
 	struct registry_context *ctx;
 	WERROR rv;
+	bool ok;
 
 	frame = talloc_stackframe();
 
-	setup_logging("regedit", DEBUG_DEFAULT_STDERR);
+	smb_init_locale();
+
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	lp_set_cmdline("log level", "0");
 
 	/* process options */
-	pc = poptGetContext("regedit", argc, argv, long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		/* TODO */
 	}
+
+	poptFreeContext(pc);
+	samba_cmdline_burn(argc, argv);
 
 	rv = reg_open_samba3(frame, &ctx);
 	if (!W_ERROR_IS_OK(rv)) {
 		fprintf(stderr, "Unable to open registry: %s\n",
 			win_errstr(rv));
 		TALLOC_FREE(frame);
-		poptFreeContext(pc);
 
 		return 1;
 	}
@@ -796,7 +819,6 @@ int main(int argc, const char **argv)
 	display_window(frame, ctx);
 
 	TALLOC_FREE(frame);
-	poptFreeContext(pc);
 
 	return 0;
 }
