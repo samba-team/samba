@@ -143,7 +143,7 @@ NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
 	 * for all interfaces on the endpoint.
 	 *
 	 * This means that where NETLOGON
-	 * shares an endpoint (such as ncalrpc or of 'lsa over
+	 * shares an endpoint (such as ncalrpc or if 'lsa over
 	 * netlogon' is set) we will still check association groups.
 	 *
 	 */
