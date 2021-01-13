@@ -459,6 +459,21 @@ static struct poptOption popt_common_debug[] = {
 	POPT_TABLEEND
 };
 
+static struct poptOption popt_common_option[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_samba_callback,
+	},
+	{
+		.longName   = "option",
+		.argInfo    = POPT_ARG_STRING,
+		.val        = OPT_OPTION,
+		.descrip    = "Set smb.conf option from command line",
+		.argDescrip = "name=value",
+	},
+	POPT_TABLEEND
+};
+
 static struct poptOption popt_common_samba[] = {
 	{
 		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
@@ -1217,6 +1232,9 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 	switch (opt) {
 	case SAMBA_CMDLINE_POPT_OPT_DEBUG_ONLY:
 		return popt_common_debug;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_OPTION_ONLY:
+		return popt_common_option;
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_SAMBA:
 		return popt_common_samba;
