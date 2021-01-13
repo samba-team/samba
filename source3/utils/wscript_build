@@ -74,7 +74,7 @@ bld.SAMBA3_BINARY('smbcacls',
                  source='smbcacls.c ../lib/util_sd.c',
                  deps='''
                  talloc
-                 popt_samba3_cmdline
+                 CMDLINE_S3
                  msrpc3
                  libcli_lsa3
                  krb5samba''')
