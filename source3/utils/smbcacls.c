@@ -863,7 +863,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 /*****************************************************
  Return a connection to a server.
 *******************************************************/
-static struct cli_state *connect_one(const struct user_auth_info *auth_info,
+static struct cli_state *connect_one(struct cli_credentials *creds,
 				     const char *server, const char *share)
 {
 	struct cli_state *c = NULL;
@@ -873,7 +873,7 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 				NULL, 0,
 				share, "?????",
-				get_cmdline_auth_info_creds(auth_info),
+				creds,
 				flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
@@ -1824,9 +1824,11 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
+	creds = get_cmdline_auth_info_creds(popt_get_cmdline_auth_info());
+
 	/* Make connection to server */
 	if (!test_args) {
-		cli = connect_one(popt_get_cmdline_auth_info(), server, share);
+		cli = connect_one(creds, server, share);
 		if (!cli) {
 			exit(EXIT_FAILED);
 		}
@@ -1844,8 +1846,6 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 	}
-
-	creds = get_cmdline_auth_info_creds(popt_get_cmdline_auth_info()),
 
 	status = local_cli_resolve_path(frame,
 				  "",
