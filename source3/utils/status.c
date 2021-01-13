@@ -34,7 +34,7 @@
 #include "lib/util/server_id.h"
 #include "smbd/globals.h"
 #include "system/filesys.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
@@ -638,6 +638,7 @@ int main(int argc, const char *argv[])
 			.descrip    = "Try to resolve UIDs to usernames"
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -646,27 +647,28 @@ int main(int argc, const char *argv[])
 	char *db_path;
 	bool ok;
 
-	sec_init();
 	smb_init_locale();
 
-	setup_logging(argv[0], DEBUG_STDERR);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 	lp_set_cmdline("log level", "0");
 
-	if (getuid() != geteuid()) {
-		d_printf("smbstatus should not be run setuid\n");
-		ret = 1;
-		goto done;
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
 	}
-
-	if (getuid() != 0) {
-		d_printf("smbstatus only works as root!\n");
-		ret = 1;
-		goto done;
-	}
-
-
-	pc = poptGetContext(NULL, argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
 
 	while ((c = poptGetNextOpt(pc)) != -1) {
 		switch (c) {
@@ -710,6 +712,20 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	sec_init();
+
+	if (getuid() != geteuid()) {
+		d_printf("smbstatus should not be run setuid\n");
+		ret = 1;
+		goto done;
+	}
+
+	if (getuid() != 0) {
+		d_printf("smbstatus only works as root!\n");
+		ret = 1;
+		goto done;
+	}
+
 	/* setup the flags based on the possible combincations */
 
 	show_processes = !(shares_only || locks_only || profile_only) || processes_only;
@@ -726,13 +742,6 @@ int main(int argc, const char *argv[])
 	msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
 	if (msg_ctx == NULL) {
 		fprintf(stderr, "Could not initialize messaging, not root?\n");
-		ret = -1;
-		goto done;
-	}
-
-	if (!lp_load_global(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
-			get_dyn_CONFIGFILE());
 		ret = -1;
 		goto done;
 	}

@@ -300,7 +300,7 @@ bld.SAMBA3_BINARY('smbstatus',
                  deps='''
                       talloc
                       smbconf
-                      popt_samba3
+                      CMDLINE_S3
                       cmdline_contexts
                       smbd_base
                       LOCKING
