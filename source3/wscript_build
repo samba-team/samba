@@ -267,16 +267,6 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                          tdb-wrap3
                          ''')
 
-bld.SAMBA3_LIBRARY('popt_samba3',
-                   source='lib/popt_common.c',
-                   deps='popt samba-util smbconf',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('popt_samba3_cmdline',
-                   source='lib/popt_common_cmdline.c',
-                   deps='popt_samba3 util_cmdline cmdline_contexts',
-                   private_library=True)
-
 bld.SAMBA3_LIBRARY('util_cmdline',
                    source='lib/util_cmdline.c',
                    deps='secrets3 samba-credentials cli_smb_common',
