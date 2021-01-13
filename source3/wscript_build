@@ -1379,7 +1379,6 @@ bld.SAMBA3_BINARY('tevent_glib_glue_test',
                  deps='''
                  talloc
                  libsmb
-                 popt_samba3
                  tevent-glib-glue''',
                  enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
                  for_selftest=True)
