@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "libsmb/nmblib.h"
 #include "libsmb/namequery.h"
 #include "lib/util/string_wrappers.h"
@@ -241,6 +241,7 @@ int main(int argc, const char *argv[])
 	poptContext pc = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	int rc = 0;
+	bool ok;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -319,6 +320,7 @@ int main(int argc, const char *argv[])
 		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -326,10 +328,25 @@ int main(int argc, const char *argv[])
 
 	smb_init_locale();
 
-	setup_logging(argv[0], DEBUG_STDOUT);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	pc = poptGetContext("nmblookup", argc, argv,
-			long_options, POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<NODE> ...");
 
@@ -383,12 +400,6 @@ int main(int argc, const char *argv[])
 		goto out;
 	}
 
-	if (!lp_load_global(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
-				get_dyn_CONFIGFILE());
-	}
-
-	load_interfaces();
 	if (!open_sockets()) {
 		rc = 1;
 		goto out;

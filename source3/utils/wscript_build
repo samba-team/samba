@@ -67,7 +67,7 @@ bld.SAMBA3_BINARY('nmblookup',
                  deps='''
                  talloc
                  smbconf
-                 popt_samba3
+                 CMDLINE_S3
                  LIBNMB''')
 
 bld.SAMBA3_BINARY('smbcacls',
