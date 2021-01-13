@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
@@ -1069,6 +1069,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	poptContext pc;
+	bool ok;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"list",	'L', POPT_ARG_NONE, &list_users, 0, "list all users", NULL},
@@ -1105,6 +1106,7 @@ int main(int argc, const char **argv)
 		{"kickoff-time", 'K', POPT_ARG_STRING, &kickoff_time, 0, "set the kickoff time", NULL},
 		{"set-nt-hash", 0, POPT_ARG_STRING, &str_hex_pwd, 0, "set password from nt-hash", NULL},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -1112,10 +1114,25 @@ int main(int argc, const char **argv)
 
 	smb_init_locale();
 
-	setup_logging("pdbedit", DEBUG_STDOUT);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
-	pc = poptGetContext(NULL, argc, argv, long_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(frame);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -1129,11 +1146,6 @@ int main(int argc, const char **argv)
 
 	if (user_name == NULL)
 		user_name = poptGetArg(pc);
-
-	if (!lp_load_global(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
-		exit(1);
-	}
 
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
