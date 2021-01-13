@@ -127,7 +127,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
                  krb5samba
                  tiniparser
                  libsmb
-                 popt_samba3
+                 CMDLINE_S3
                  cmdline_contexts
                  gse gensec''')
 
