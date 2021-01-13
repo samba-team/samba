@@ -1042,7 +1042,6 @@ static void get_credentials_file(struct net_context *c,
 		},
 		{
 			.longName   = "long",
-			.shortName  = 'l',
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = &c->opt_long_list_entries,
 		},
