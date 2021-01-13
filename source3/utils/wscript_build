@@ -314,8 +314,8 @@ bld.SAMBA3_BINARY('mdsearch',
                  talloc
                  tevent
                  smbconf
-                 popt_samba3
-                 popt_samba3_cmdline
+                 CMDLINE_S3
+                 cmdline_contexts
                  libsmb
                  msrpc3
                  RPCCLI_MDSSVC
