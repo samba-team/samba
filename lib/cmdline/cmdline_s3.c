@@ -50,6 +50,8 @@ static bool _samba_cmdline_load_config_s3(void)
 	config_file = get_dyn_CONFIGFILE();
 
 	switch (_config_type) {
+	case SAMBA_CMDLINE_CONFIG_NONE:
+		return true;
 	case SAMBA_CMDLINE_CONFIG_CLIENT:
 		ok = lp_load_client(config_file);
 		break;
