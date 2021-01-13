@@ -143,7 +143,9 @@ bld.SAMBA3_BINARY('dbwrap_torture',
                  source='dbwrap_torture.c',
                  deps='''
                  talloc
-                 popt_samba3''',
+                 CMDLINE_S3
+                 smbconf
+                 ''',
                  install=False)
 
 bld.SAMBA3_BINARY('split_tokens',

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
@@ -243,6 +243,7 @@ int main(int argc, const char *argv[])
 		{ "db-name", 'N', POPT_ARG_STRING, &db_name, 0, "name of the test db", "NAME" },
 		{ "no-trans", 'n', POPT_ARG_NONE, &no_trans, 0, "use fetch_lock/record store instead of transactions", NULL },
 		{ "unsafe-writes", 'u', POPT_ARG_NONE, &unsafe_writes, 0, "do not use tdb transactions when writing", NULL },
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 	int opt;
@@ -250,7 +251,7 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	poptContext pc;
 	int tdb_flags;
-
+	bool ok;
 	int ret = 1;
 
 	mem_ctx = talloc_stackframe();
@@ -263,10 +264,26 @@ int main(int argc, const char *argv[])
 
 	smb_init_locale();
 
-	setup_logging(argv[0], DEBUG_STDERR);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 	lp_set_cmdline("log level", "0");
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    popt_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -283,8 +300,6 @@ int main(int argc, const char *argv[])
 		extra_argv++;
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
-
-	lp_load_global(get_dyn_CONFIGFILE());
 
 	ev_ctx = samba_tevent_context_init(mem_ctx);
 	if (ev_ctx == NULL) {
