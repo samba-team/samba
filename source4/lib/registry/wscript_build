@@ -49,7 +49,7 @@ bld.SAMBA_BINARY('regshell',
 bld.SAMBA_BINARY('regtree',
 	source='tools/regtree.c',
 	manpages='man/regtree.1',
-	deps='samba-hostconfig popt registry POPT_SAMBA POPT_CREDENTIALS registry_common'
+	deps='samba-hostconfig popt registry CMDLINE_S4 registry_common'
 	)
 
 

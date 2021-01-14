@@ -22,7 +22,7 @@
 #include "lib/registry/registry.h"
 #include "lib/registry/tools/common.h"
 #include "lib/events/events.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "param/param.h"
 
 /**
@@ -99,8 +99,11 @@ static void print_tree(unsigned int level, struct registry_key *p,
 	talloc_free(mem_ctx);
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
+	const char **argv_const = discard_const_p(const char *, argv);
+	bool ok;
+	TALLOC_CTX *mem_ctx = NULL;
 	int opt;
 	unsigned int i;
 	const char *file = NULL;
@@ -109,6 +112,8 @@ int main(int argc, const char **argv)
 	struct registry_context *h = NULL;
 	struct registry_key *start_key = NULL;
 	struct tevent_context *ev_ctx;
+	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
 	WERROR error;
 	bool fullpath = false, no_values = false;
 	struct poptOption long_options[] = {
@@ -120,31 +125,56 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
-		{0}
+		POPT_TABLEEND
 	};
 
-	pc = poptGetContext(argv[0], argc, argv, long_options,0);
+	mem_ctx = talloc_init("regtree.c/main");
+	if (mem_ctx == NULL) {
+		exit(ENOMEM);
+	}
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
+	poptFreeContext(pc);
+	samba_cmdline_burn(argc, argv);
+
 	ev_ctx = s4_event_context_init(NULL);
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	creds = samba_cmdline_get_creds();
 
 	if (remote != NULL) {
-		h = reg_common_open_remote(remote, ev_ctx, cmdline_lp_ctx,
-				popt_get_cmdline_credentials());
+		h = reg_common_open_remote(remote, ev_ctx, lp_ctx, creds);
 	} else if (file != NULL) {
-		start_key = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx,
-				popt_get_cmdline_credentials());
+		start_key = reg_common_open_file(file, ev_ctx, lp_ctx, creds);
 	} else {
-		h = reg_common_open_local(popt_get_cmdline_credentials(),
-				ev_ctx, cmdline_lp_ctx);
+		h = reg_common_open_local(creds, ev_ctx, lp_ctx);
 	}
 
-	if (h == NULL && start_key == NULL)
+	if (h == NULL && start_key == NULL) {
+		TALLOC_FREE(mem_ctx);
 		return 1;
-
-	poptFreeContext(pc);
+	}
 
 	error = WERR_OK;
 
@@ -167,5 +197,6 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	TALLOC_FREE(mem_ctx);
 	return 0;
 }
