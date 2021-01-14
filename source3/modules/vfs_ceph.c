@@ -1111,11 +1111,22 @@ static int cephwrap_mknodat(struct vfs_handle_struct *handle,
 		mode_t mode,
 		SMB_DEV_T dev)
 {
+	struct smb_filename *full_fname = NULL;
 	int result = -1;
-	DBG_DEBUG("[CEPH] mknodat(%p, %s)\n", handle, smb_fname->base_name);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-	result = ceph_mknod(handle->data, smb_fname->base_name, mode, dev);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	DBG_DEBUG("[CEPH] mknodat(%p, %s)\n", handle, full_fname->base_name);
+	result = ceph_mknod(handle->data, full_fname->base_name, mode, dev);
 	DBG_DEBUG("[CEPH] mknodat(...) = %d\n", result);
+
+	TALLOC_FREE(full_fname);
+
 	WRAP_RETURN(result);
 }
 
