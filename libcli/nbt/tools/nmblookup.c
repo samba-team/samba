@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "system/network.h"
@@ -288,6 +288,9 @@ int main(int argc, const char *argv[])
 	struct tevent_context *ev;
 	poptContext pc;
 	int opt;
+	struct loadparm_context *lp_ctx = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	bool ok;
 	enum {
 		OPT_BROADCAST_ADDRESS	= 1000,
 		OPT_UNICAST_ADDRESS,
@@ -373,11 +376,34 @@ int main(int argc, const char *argv[])
 			.argDescrip = NULL
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
-	pc = poptGetContext("nmblookup", argc, argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
+	mem_ctx = talloc_init("nmblookup.c/main");
+	if (mem_ctx == NULL) {
+		exit(ENOMEM);
+	}
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "<NODE> ...");
 
@@ -415,24 +441,28 @@ int main(int argc, const char *argv[])
 
 	if(!poptPeekArg(pc)) { 
 		poptPrintUsage(pc, stderr, 0);
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 
-	load_interface_list(NULL, cmdline_lp_ctx, &ifaces);
+	lp_ctx = samba_cmdline_get_lp_ctx();
 
-	ev = s4_event_context_init(NULL);
+	load_interface_list(mem_ctx, lp_ctx, &ifaces);
+
+	ev = s4_event_context_init(mem_ctx);
 
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(cmdline_lp_ctx, ev, ifaces, name, lpcfg_nbt_port(cmdline_lp_ctx));
+		ret &= process_one(lp_ctx,
+				   ev,
+				   ifaces,
+				   name,
+				   lpcfg_nbt_port(lp_ctx));
 	}
 
-	talloc_free(ev);
-
-	talloc_free(ifaces);
-
 	poptFreeContext(pc);
+	TALLOC_FREE(mem_ctx);
 
 	if (!ret) {
 		return 1;
