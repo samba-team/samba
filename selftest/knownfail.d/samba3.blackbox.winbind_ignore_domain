@@ -1,2 +1,0 @@
-^samba3.blackbox.winbind_ignore_domain.test_winbind_ignore_domains_fail_ntlm_fqdn\(ad_member_idmap_ad:local\)
-^samba3.blackbox.winbind_ignore_domain.test_winbind_ignore_domains_fail_krb5\(ad_member_idmap_ad:local\)

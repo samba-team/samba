@@ -3325,6 +3325,14 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 		return result;
 	}
 
+	if (!is_allowed_domain(info6->base.logon_domain.string)) {
+		DBG_NOTICE("Authentication failed for user [%s] "
+			   "from firewalled domain [%s]\n",
+			   info6->base.account_name.string,
+			   info6->base.logon_domain.string);
+		return NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+	}
+
 	result = map_info6_to_validation(state->mem_ctx,
 					 info6,
 					 &validation_level,
