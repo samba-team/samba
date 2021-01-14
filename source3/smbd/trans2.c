@@ -8113,6 +8113,8 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	NTSTATUS status;
 	mode_t unixmode;
 	int ret;
+	struct smb_filename *parent_fname = NULL;
+	bool ok;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8169,6 +8171,14 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		  "%.0f mode 0%o for file %s\n", (double)dev,
 		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
 
+	ok = parent_smb_fname(talloc_tos(),
+			      smb_fname,
+			      &parent_fname,
+			      NULL);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Ok - do the mknod. */
 	ret = SMB_VFS_MKNODAT(conn,
 			conn->cwd_fsp,
@@ -8177,6 +8187,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 			dev);
 
 	if (ret != 0) {
+		TALLOC_FREE(parent_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -8185,22 +8196,12 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
  	 */
 
 	if (lp_inherit_permissions(SNUM(conn))) {
-		struct smb_filename *parent_fname = NULL;
-		bool ok;
-
-		ok = parent_smb_fname(talloc_tos(),
-				      smb_fname,
-				      &parent_fname,
-				      NULL);
-		if (!ok) {
-			return NT_STATUS_NO_MEMORY;
-		}
 		inherit_access_posix_acl(conn,
 					 parent_fname,
 					 smb_fname,
 					 unixmode);
-		TALLOC_FREE(parent_fname);
 	}
+	TALLOC_FREE(parent_fname);
 
 	return NT_STATUS_OK;
 }
