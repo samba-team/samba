@@ -364,14 +364,23 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n",
-		  handle, smb_fname_str_dbg(smb_fname));
+		  handle, smb_fname_str_dbg(full_fname));
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	result = ceph_mkdir(handle->data, full_fname->base_name, mode);
 
-	result = ceph_mkdir(handle->data, smb_fname->base_name, mode);
+	TALLOC_FREE(full_fname);
+
 	return WRAP_RETURN(result);
 }
 
