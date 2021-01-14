@@ -428,8 +428,9 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	char *tok;
 	struct security_descriptor *ret = NULL;
 	size_t sd_size;
-	struct dom_sid *group_sid=NULL;
-        struct dom_sid *owner_sid=NULL;
+	struct dom_sid owner_sid = { .num_auths = 0 };
+	struct dom_sid group_sid = { .num_auths = 0 };
+	bool have_owner = false, have_group = false;
 	struct security_acl *dacl=NULL;
 	int revision=1;
 
@@ -441,66 +442,62 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (strncasecmp_m(tok,"OWNER:", 6) == 0) {
-			if (owner_sid) {
+			if (have_owner) {
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!owner_sid ||
-			    !convert_string_to_sid(ipc_cli, pol,
+			if (!convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
-                                                   owner_sid, tok+6)) {
+                                                   &owner_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
 				goto done;
 			}
+			have_owner = true;
 			continue;
 		}
 
 		if (strncasecmp_m(tok,"OWNER+:", 7) == 0) {
-			if (owner_sid) {
+			if (have_owner) {
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!owner_sid ||
-			    !convert_string_to_sid(ipc_cli, pol,
+			if (!convert_string_to_sid(ipc_cli, pol,
                                                    False,
-                                                   owner_sid, tok+7)) {
+                                                   &owner_sid, tok+7)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
 				goto done;
 			}
+			have_owner = true;
 			continue;
 		}
 
 		if (strncasecmp_m(tok,"GROUP:", 6) == 0) {
-			if (group_sid) {
+			if (have_group) {
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
 			}
-			group_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!group_sid ||
-			    !convert_string_to_sid(ipc_cli, pol,
+			if (!convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
-                                                   group_sid, tok+6)) {
+                                                   &group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
+			have_group = true;
 			continue;
 		}
 
 		if (strncasecmp_m(tok,"GROUP+:", 7) == 0) {
-			if (group_sid) {
+			if (have_group) {
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
 			}
-			group_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!group_sid ||
-			    !convert_string_to_sid(ipc_cli, pol,
+			if (!convert_string_to_sid(ipc_cli, pol,
                                                    False,
-                                                   group_sid, tok+6)) {
+                                                   &group_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
 				goto done;
 			}
+			have_group = true;
 			continue;
 		}
 
@@ -534,12 +531,17 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
-			    owner_sid, group_sid, NULL, dacl, &sd_size);
+	ret = make_sec_desc(
+		ctx,
+		revision,
+		SEC_DESC_SELF_RELATIVE,
+		have_owner ? &owner_sid : NULL,
+		have_group ? &group_sid : NULL,
+		NULL,
+		dacl,
+		&sd_size);
 
 done:
-	SAFE_FREE(group_sid);
-	SAFE_FREE(owner_sid);
 	return ret;
 }
 
