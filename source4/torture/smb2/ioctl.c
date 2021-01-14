@@ -6795,6 +6795,57 @@ static bool test_ioctl_dup_extents_dest_lck(struct torture_context *tctx,
 }
 
 /*
+   basic regression test for BUG 14607
+   https://bugzilla.samba.org/show_bug.cgi?id=14607
+*/
+static bool test_ioctl_bug14607(struct torture_context *torture,
+				struct smb2_tree *tree)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	uint32_t timeout_msec;
+	NTSTATUS status;
+	DATA_BLOB out_input_buffer = data_blob_null;
+	DATA_BLOB out_output_buffer = data_blob_null;
+
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+
+	status = smb2cli_ioctl(tree->session->transport->conn,
+			       timeout_msec,
+			       tree->session->smbXcli,
+			       tree->smbXcli,
+			       UINT64_MAX, /* in_fid_persistent */
+			       UINT64_MAX, /* in_fid_volatile */
+			       FSCTL_SMBTORTURE_IOCTL_RESPONSE_BODY_PADDING8,
+			       0, /* in_max_input_length */
+			       NULL, /* in_input_buffer */
+			       1, /* in_max_output_length */
+			       NULL, /* in_output_buffer */
+			       SMB2_IOCTL_FLAG_IS_FSCTL,
+			       tmp_ctx,
+			       &out_input_buffer,
+			       &out_output_buffer);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FS_DRIVER_REQUIRED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST))
+	{
+		torture_comment(torture,
+				"FSCTL_SMBTORTURE_IOCTL_RESPONSE_BODY_PADDING8: %s\n",
+				nt_errstr(status));
+		torture_skip(torture, "server doesn't support FSCTL_SMBTORTURE_IOCTL_RESPONSE_BODY_PADDING8\n");
+	}
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SMBTORTURE_IOCTL_RESPONSE_BODY_PADDING8");
+
+	torture_assert_int_equal(torture, out_output_buffer.length, 1,
+				 "output length");
+	torture_assert_int_equal(torture, out_output_buffer.data[0], 8,
+				 "output buffer byte should be 8");
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+/*
  * testing of SMB2 ioctls
  */
 struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
@@ -6939,6 +6990,8 @@ struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 				     test_ioctl_dup_extents_src_lck);
 	torture_suite_add_1smb2_test(suite, "dup_extents_dest_lock",
 				     test_ioctl_dup_extents_dest_lck);
+	torture_suite_add_1smb2_test(suite, "bug14607",
+				     test_ioctl_bug14607);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
