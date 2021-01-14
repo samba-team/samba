@@ -24,7 +24,7 @@ bld.SAMBA_SUBSYSTEM('samba_server_util',
 bld.SAMBA_BINARY('samba',
 	source='server.c',
 	subsystem_name='service',
-	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA
+	deps='''events process_model service samba-hostconfig samba-util CMDLINE_S4
                 popt gensec registry ntvfs share cluster COMMON_SCHANNEL SECRETS
                 samba_server_util''',
 	pyembed=True,

@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "version.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "auth/gensec/gensec.h"
@@ -290,6 +290,7 @@ static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup
 	struct ldb_context *ldb_ctx = NULL;
 	struct ldb_context *pdb = NULL;
 	static const char *attrs[] = { "backupDate", NULL };
+	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
 	const char *msg = NULL;
 	int ret;
 	TALLOC_CTX *db_context = talloc_new(event_ctx);
@@ -303,8 +304,8 @@ static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup
 	 * re-used in ldb_wrap_connect() */
 	ldb_ctx = samdb_connect(db_context,
 				event_ctx,
-				cmdline_lp_ctx,
-				system_session(cmdline_lp_ctx),
+				lp_ctx,
+				system_session(lp_ctx),
 				NULL,
 				0);
 	if (ldb_ctx == NULL) {
@@ -318,7 +319,7 @@ static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup
 		return ret;
 	}
 
-	pdb = privilege_connect(db_context, cmdline_lp_ctx);
+	pdb = privilege_connect(db_context, lp_ctx);
 	if (pdb == NULL) {
 		talloc_free(db_context);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -588,10 +589,32 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	struct server_state *state = NULL;
 	struct tevent_signal *se = NULL;
 	struct samba_tevent_trace_state *samba_tevent_trace_state = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	bool log_stdout = false;
+	bool ok;
 
 	setproctitle("root process");
 
-	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_SERVER,
+				true /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(binary_name,
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
 		case OPT_DAEMON:
@@ -633,9 +656,20 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	poptFreeContext(pc);
 
+	lp_ctx = samba_cmdline_get_lp_ctx();
+
 	talloc_enable_null_tracking();
 
-	setup_logging(binary_name, opt_interactive?DEBUG_STDOUT:DEBUG_FILE);
+	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
+	if (opt_interactive) {
+		log_stdout = true;
+	}
+
+	if (log_stdout) {
+		setup_logging(binary_name, DEBUG_STDOUT);
+	} else {
+		setup_logging(binary_name, DEBUG_FILE);
+	}
 	setup_signals();
 
 	/* we want total control over the permissions on created files,
@@ -680,21 +714,21 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	};
 	state->binary_name = binary_name;
 
-	cleanup_tmp_files(cmdline_lp_ctx);
+	cleanup_tmp_files(lp_ctx);
 
-	if (!directory_exist(lpcfg_lock_directory(cmdline_lp_ctx))) {
-		mkdir(lpcfg_lock_directory(cmdline_lp_ctx), 0755);
+	if (!directory_exist(lpcfg_lock_directory(lp_ctx))) {
+		mkdir(lpcfg_lock_directory(lp_ctx), 0755);
 	}
 
-	if (!directory_exist(lpcfg_pid_directory(cmdline_lp_ctx))) {
-		mkdir(lpcfg_pid_directory(cmdline_lp_ctx), 0755);
+	if (!directory_exist(lpcfg_pid_directory(lp_ctx))) {
+		mkdir(lpcfg_pid_directory(lp_ctx), 0755);
 	}
 
-	pidfile_create(lpcfg_pid_directory(cmdline_lp_ctx), binary_name);
+	pidfile_create(lpcfg_pid_directory(lp_ctx), binary_name);
 
-	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
+	if (lpcfg_server_role(lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
 		if (!open_schannel_session_store(state,
-				cmdline_lp_ctx)) {
+				lp_ctx)) {
 			TALLOC_FREE(state);
 			exit_daemon("Samba cannot open schannel store "
 				"for secured NETLOGON operations.", EACCES);
@@ -720,7 +754,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	gensec_init(); /* FIXME: */
 
-	process_model_init(cmdline_lp_ctx);
+	process_model_init(lp_ctx);
 
 	shared_init = load_samba_modules(mem_ctx, "service");
 
@@ -864,13 +898,13 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
-	    && !lpcfg_parm_bool(cmdline_lp_ctx, NULL,
+	if (lpcfg_server_role(lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
+	    && !lpcfg_parm_bool(lp_ctx, NULL,
 			"server role check", "inhibit", false)
-	    && !str_list_check_ci(lpcfg_server_services(cmdline_lp_ctx), "smb")
-	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx),
+	    && !str_list_check_ci(lpcfg_server_services(lp_ctx), "smb")
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(lp_ctx),
 			"remote")
-	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx),
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(lp_ctx),
 			"mapiproxy")) {
 		DEBUG(0, ("At this time the 'samba' binary should only be used "
 			"for either:\n"));
@@ -906,7 +940,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	status = setup_parent_messaging(state, cmdline_lp_ctx);
+	status = setup_parent_messaging(state, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state);
 		exit_daemon("Samba failed to setup parent messaging",
@@ -964,8 +998,8 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 #endif
 		if (start_services) {
 			status = server_service_startup(
-				state->event_ctx, cmdline_lp_ctx, model,
-				lpcfg_server_services(cmdline_lp_ctx),
+				state->event_ctx, lp_ctx, model,
+				lpcfg_server_services(lp_ctx),
 				child_pipe[0]);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(state);

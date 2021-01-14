@@ -34,7 +34,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "ntvfs/ntvfs.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
+
 /*
   open the smb server sockets
 */
@@ -96,13 +97,14 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(TALLOC_CTX *ctx)
 {
+	struct loadparm_context *lp_ctx = samba_cmdline_get_lp_ctx();
 	static const struct service_details details = {
 		.inhibit_fork_on_accept = true,
 		.inhibit_pre_fork = true,
 		.task_init = smbsrv_task_init,
 		.post_fork = NULL
 	};
-	ntvfs_init(cmdline_lp_ctx);
+	ntvfs_init(lp_ctx);
 	share_init();
 	return register_server_service(ctx, "smb", &details);
 }
