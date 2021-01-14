@@ -75,7 +75,6 @@ bld.RECURSE('source4/lib/tls')
 bld.RECURSE('source4/lib/registry')
 bld.RECURSE('source4/lib/messaging')
 bld.RECURSE('source4/lib/events')
-bld.RECURSE('source4/lib/cmdline')
 if bld.CHECK_FOR_THIRD_PARTY():
     bld.RECURSE('third_party')
 bld.RECURSE('source4/lib/stream')
