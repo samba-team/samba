@@ -1532,23 +1532,16 @@ static int vfs_gluster_chdir(struct vfs_handle_struct *handle,
 static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 				TALLOC_CTX *ctx)
 {
-	char *cwd;
+	char cwd[PATH_MAX] = { '\0' };
 	char *ret;
 	struct smb_filename *smb_fname = NULL;
 
 	START_PROFILE(syscall_getwd);
 
-	cwd = SMB_CALLOC_ARRAY(char, PATH_MAX);
-	if (cwd == NULL) {
-		END_PROFILE(syscall_getwd);
-		return NULL;
-	}
-
 	ret = glfs_getcwd(handle->data, cwd, PATH_MAX - 1);
 	END_PROFILE(syscall_getwd);
 
 	if (ret == NULL) {
-		SAFE_FREE(cwd);
 		return NULL;
 	}
 	smb_fname = synthetic_smb_fname(ctx,
@@ -1557,7 +1550,6 @@ static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 					NULL,
 					0,
 					0);
-	SAFE_FREE(cwd);
 	return smb_fname;
 }
 
