@@ -761,6 +761,7 @@ sub provision_ad_member
 	my $ret = $self->provision(
 	    prefix => $prefix,
 	    domain => $dcvars->{DOMAIN},
+	    realm => $dcvars->{REALM},
 	    server => "LOCALADMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
@@ -911,6 +912,7 @@ sub setup_ad_member_rfc2307
 	my $ret = $self->provision(
 	    prefix => $prefix,
 	    domain => $dcvars->{DOMAIN},
+	    realm => $dcvars->{REALM},
 	    server => "RFC2307MEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
@@ -1008,6 +1010,7 @@ sub setup_ad_member_idmap_rid
 	my $ret = $self->provision(
 	    prefix => $prefix,
 	    domain => $dcvars->{DOMAIN},
+	    realm => $dcvars->{REALM},
 	    server => "IDMAPRIDMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
@@ -1107,6 +1110,7 @@ sub setup_ad_member_idmap_ad
 	my $ret = $self->provision(
 	    prefix => $prefix,
 	    domain => $dcvars->{DOMAIN},
+	    realm => $dcvars->{REALM},
 	    server => "IDMAPADMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
@@ -1965,6 +1969,7 @@ sub provision($$)
 
 	my $prefix = $args{prefix};
 	my $domain = $args{domain};
+	my $realm = $args{realm};
 	my $server = $args{server};
 	my $password = $args{password};
 	my $extra_options = $args{extra_options};
@@ -1982,6 +1987,12 @@ sub provision($$)
 	my %createuser_env = ();
 	my $server_ip = Samba::get_ipv4_addr($server);
 	my $server_ipv6 = Samba::get_ipv6_addr($server);
+	my $dns_domain;
+	if (defined($realm)) {
+	    $dns_domain = lc($realm);
+	} else {
+	    $dns_domain = "samba.example.com";
+	}
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
 	chomp $unix_name;
@@ -2987,8 +2998,8 @@ force_user:x:$gid_force_user:
 		warn("Unable to open $nss_wrapper_hosts");
 		return undef;
 	}
-	print HOSTS "${server_ip} ${hostname}.samba.example.com ${hostname}\n";
-	print HOSTS "${server_ipv6} ${hostname}.samba.example.com ${hostname}\n";
+	print HOSTS "${server_ip} ${hostname}.${dns_domain} ${hostname}\n";
+	print HOSTS "${server_ipv6} ${hostname}.${dns_domain} ${hostname}\n";
 	close(HOSTS);
 
 	$resolv_conf = "$privatedir/no_resolv.conf" unless defined($resolv_conf);
