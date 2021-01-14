@@ -143,5 +143,5 @@ bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
 
 bld.SAMBA_BINARY('wbinfo',
 	source='wbinfo.c',
-	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA wbclient LIBAFS_SETTOKEN'
+	deps='samba-util LIBCLI_AUTH popt cmdline wbclient LIBAFS_SETTOKEN'
 	)

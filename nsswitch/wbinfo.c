@@ -25,7 +25,7 @@
 #include "winbind_client.h"
 #include "libwbclient/wbclient.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/afs/afs_settoken.h"
 #include "lib/util/smb_strtox.h"
 #include "lib/util/string_wrappers.h"
@@ -2812,8 +2812,15 @@ int main(int argc, const char **argv, char **envp)
 
 	/* Parse options */
 
-	pc = poptGetContext("wbinfo", argc, argv,
-			    long_options, 0);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		exit(1);
+	}
 
 	/* Parse command line options */
 
