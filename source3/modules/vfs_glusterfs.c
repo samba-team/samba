@@ -1900,11 +1900,23 @@ static int vfs_gluster_mknodat(struct vfs_handle_struct *handle,
 				mode_t mode,
 				SMB_DEV_T dev)
 {
+	struct smb_filename *full_fname = NULL;
 	int ret;
 
 	START_PROFILE(syscall_mknodat);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-	ret = glfs_mknod(handle->data, smb_fname->base_name, mode, dev);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_mknodat);
+		return -1;
+	}
+
+	ret = glfs_mknod(handle->data, full_fname->base_name, mode, dev);
+
+	TALLOC_FREE(full_fname);
+
 	END_PROFILE(syscall_mknodat);
 
 	return ret;
