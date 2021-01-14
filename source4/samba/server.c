@@ -499,9 +499,10 @@ static void atfork_child(void) {
 /*
  main server.
 */
-static int binary_smbd_main(const char *binary_name,
-				int argc,
-				const char *argv[])
+static int binary_smbd_main(TALLOC_CTX *mem_ctx,
+			    const char *binary_name,
+			    int argc,
+			    const char *argv[])
 {
 	bool opt_daemon = false;
 	bool opt_fork = true;
@@ -668,7 +669,7 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	/* Create the memory context to hang everything off. */
-	state = talloc_zero(NULL, struct server_state);
+	state = talloc_zero(mem_ctx, struct server_state);
 	if (state == NULL) {
 		exit_daemon("Samba cannot create server state", ENOMEM);
 		/*
@@ -721,12 +722,12 @@ static int binary_smbd_main(const char *binary_name,
 
 	process_model_init(cmdline_lp_ctx);
 
-	shared_init = load_samba_modules(NULL, "service");
+	shared_init = load_samba_modules(mem_ctx, "service");
 
-	run_init_functions(NULL, static_init);
-	run_init_functions(NULL, shared_init);
+	run_init_functions(mem_ctx, static_init);
+	run_init_functions(mem_ctx, shared_init);
 
-	talloc_free(shared_init);
+	TALLOC_FREE(shared_init);
 
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
@@ -996,7 +997,18 @@ static int binary_smbd_main(const char *binary_name,
 
 int main(int argc, const char *argv[])
 {
+	TALLOC_CTX *mem_ctx = NULL;
+	int rc;
+
+	mem_ctx = talloc_init("samba/server.c#main");
+	if (mem_ctx == NULL) {
+		exit(ENOMEM);
+	}
+
 	setproctitle_init(argc, discard_const(argv), environ);
 
-	return binary_smbd_main("samba", argc, argv);
+	rc = binary_smbd_main(mem_ctx, "samba", argc, argv);
+
+	TALLOC_FREE(mem_ctx);
+	return rc;
 }
