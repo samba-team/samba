@@ -723,6 +723,7 @@ static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 						  dirfsp,
 						  smb_fname);
 	if (full_fname == NULL) {
+		END_PROFILE(syscall_mkdirat);
 		return -1;
 	}
 
