@@ -21,13 +21,16 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/registry/registry.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/registry/tools/common.h"
 #include "param/param.h"
 #include "events/events.h"
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
+	const char **argv_const = discard_const_p(const char *, argv);
+	bool ok;
+	TALLOC_CTX *mem_ctx = NULL;
   	int opt;
 	poptContext pc;
 	const char *patch;
@@ -35,42 +38,75 @@ int main(int argc, const char **argv)
 	const char *file = NULL;
 	const char *remote = NULL;
 	struct tevent_context *ev_ctx;
+	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
 		{"file", 'F', POPT_ARG_STRING, &file, 0, "file path", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
-		{0}
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
 	};
 
-	pc = poptGetContext(argv[0], argc, argv, long_options,0);
+	mem_ctx = talloc_init("regtree.c/main");
+	if (mem_ctx == NULL) {
+		exit(ENOMEM);
+	}
+
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv_const,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
 	ev_ctx = s4_event_context_init(NULL);
+	lp_ctx = samba_cmdline_get_lp_ctx();
+	creds = samba_cmdline_get_creds();
 
 	if (remote) {
-		h = reg_common_open_remote (remote, ev_ctx, cmdline_lp_ctx,
-				popt_get_cmdline_credentials());
+		h = reg_common_open_remote (remote, ev_ctx, lp_ctx, creds);
 	} else {
-		h = reg_common_open_local (popt_get_cmdline_credentials(),
-				ev_ctx, cmdline_lp_ctx);
+		h = reg_common_open_local (creds, ev_ctx, lp_ctx);
 	}
 
-	if (h == NULL)
+	if (h == NULL) {
+		TALLOC_FREE(mem_ctx);
 		return 1;
+	}
 
 	patch = poptGetArg(pc);
 	if (patch == NULL) {
 		poptPrintUsage(pc, stderr, 0);
+		TALLOC_FREE(mem_ctx);
 		return 1;
 	}
 
 	poptFreeContext(pc);
+	samba_cmdline_burn(argc, argv);
 
 	reg_diff_apply(h, patch);
+
+	TALLOC_FREE(mem_ctx);
 
 	return 0;
 }

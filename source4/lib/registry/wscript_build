@@ -35,7 +35,7 @@ bld.SAMBA_BINARY('regdiff',
 bld.SAMBA_BINARY('regpatch',
 	source='tools/regpatch.c',
 	manpages='man/regpatch.1',
-	deps='samba-hostconfig registry popt POPT_SAMBA POPT_CREDENTIALS registry_common'
+	deps='samba-hostconfig registry popt CMDLINE_S4 registry_common'
 	)
 
 
