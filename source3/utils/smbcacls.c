@@ -225,7 +225,10 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 	char *tok;
 	struct security_descriptor *ret = NULL;
 	size_t sd_size;
-	struct dom_sid *grp_sid=NULL, *owner_sid=NULL;
+	struct dom_sid owner_sid = { .num_auths = 0 };
+	bool have_owner = false;
+	struct dom_sid group_sid = { .num_auths = 0 };
+	bool have_group = false;
 	struct security_acl *dacl=NULL;
 	int revision=1;
 
@@ -236,30 +239,28 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
-			if (owner_sid) {
+			if (have_owner) {
 				printf("Only specify owner once\n");
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!owner_sid ||
-			    !StringToSid(cli, owner_sid, tok+6)) {
+			if (!StringToSid(cli, &owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
 				goto done;
 			}
+			have_owner = true;
 			continue;
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
-			if (grp_sid) {
+			if (have_group) {
 				printf("Only specify group once\n");
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
-			if (!grp_sid ||
-			    !StringToSid(cli, grp_sid, tok+6)) {
+			if (!StringToSid(cli, &group_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
 				goto done;
 			}
+			have_group = true;
 			continue;
 		}
 
@@ -279,13 +280,17 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 		goto done;
 	}
 
-	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid,
-			    NULL, dacl, &sd_size);
+	ret = make_sec_desc(
+		ctx,
+		revision,
+		SEC_DESC_SELF_RELATIVE,
+		have_owner ? &owner_sid : NULL,
+		have_group ? &group_sid : NULL,
+		NULL,
+		dacl,
+		&sd_size);
 
-  done:
-	SAFE_FREE(grp_sid);
-	SAFE_FREE(owner_sid);
-
+done:
 	return ret;
 }
 
