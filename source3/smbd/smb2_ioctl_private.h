@@ -28,6 +28,7 @@ struct smbd_smb2_ioctl_state {
 	DATA_BLOB in_input;
 	uint32_t in_max_output;
 	DATA_BLOB out_output;
+	uint8_t body_padding;
 	bool disconnect;
 };
 
