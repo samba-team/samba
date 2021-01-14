@@ -191,8 +191,25 @@ static NTSTATUS smb2cli_ioctl_parse_buffer(uint32_t dyn_offset,
 		return NT_STATUS_OK;
 	}
 
+	if ((buffer_offset % 8) != 0) {
+		/*
+		 * The offset needs to be 8 byte aligned.
+		 */
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	/*
+	 * We used to enforce buffer_offset to be
+	 * an exact match of the expected minimum,
+	 * but the NetApp Ontap 7.3.7 SMB server
+	 * gets the padding wrong and aligns the
+	 * input_buffer_offset by a value of 8.
+	 *
+	 * So we just enforce that the offset is
+	 * not lower than the expected value.
+	 */
 	SMB_ASSERT(min_offset >= dyn_offset);
-	if (buffer_offset != min_offset) {
+	if (buffer_offset < min_offset) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
