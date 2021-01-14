@@ -920,6 +920,7 @@ static void dcesrv_bind_done(struct tevent_req *subreq);
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
 	struct dcesrv_connection *conn = call->conn;
+	struct dcesrv_context *dce_ctx = conn->dce_ctx;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	NTSTATUS status;
 	uint32_t extra_flags = 0;
@@ -966,7 +967,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	conn->max_recv_frag = max_rep;
 	conn->max_xmit_frag = max_rep;
 
-	status = conn->dce_ctx->callbacks.assoc_group.find(call);
+	status = dce_ctx->callbacks.assoc_group.find(call);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
 			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));
@@ -1097,7 +1098,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(dce_ctx->lp_ctx));
 	pkt->auth_length = 0;
 	pkt->call_id = call->pkt.call_id;
 	pkt->ptype = DCERPC_PKT_BIND_ACK;
