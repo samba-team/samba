@@ -958,15 +958,15 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 * via ncacn_ip_tcp on port 135.
 	 */
 	max_req = MAX(2048, max_req);
-	max_rep = MIN(max_req, call->conn->max_recv_frag);
+	max_rep = MIN(max_req, conn->max_recv_frag);
 	/* They are truncated to an 8 byte boundary. */
 	max_rep &= 0xFFF8;
 
 	/* max_recv_frag and max_xmit_frag result always in the same value! */
-	call->conn->max_recv_frag = max_rep;
-	call->conn->max_xmit_frag = max_rep;
+	conn->max_recv_frag = max_rep;
+	conn->max_xmit_frag = max_rep;
 
-	status = call->conn->dce_ctx->callbacks.assoc_group.find(call);
+	status = conn->dce_ctx->callbacks.assoc_group.find(call);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
 			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));
@@ -1022,7 +1022,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		a->result = DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK;
 		a->reason.negotiate = 0;
 		if (features & DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING) {
-			if (call->conn->max_auth_states != 0) {
+			if (conn->max_auth_states != 0) {
 				a->reason.negotiate |=
 				DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING;
 			}
@@ -1032,7 +1032,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 				DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN;
 		}
 
-		call->conn->assoc_group->bind_time_features = a->reason.negotiate;
+		conn->assoc_group->bind_time_features = a->reason.negotiate;
 	}
 
 	/*
@@ -1070,7 +1070,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
-		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
+		conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	}
 
 	/*
@@ -1097,18 +1097,18 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(conn->dce_ctx->lp_ctx));
 	pkt->auth_length = 0;
 	pkt->call_id = call->pkt.call_id;
 	pkt->ptype = DCERPC_PKT_BIND_ACK;
 	pkt->pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt->u.bind_ack.max_xmit_frag = call->conn->max_xmit_frag;
-	pkt->u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
-	pkt->u.bind_ack.assoc_group_id = call->conn->assoc_group->id;
+	pkt->u.bind_ack.max_xmit_frag = conn->max_xmit_frag;
+	pkt->u.bind_ack.max_recv_frag = conn->max_recv_frag;
+	pkt->u.bind_ack.assoc_group_id = conn->assoc_group->id;
 
-	ep_2nd_description = call->conn->endpoint->ep_2nd_description;
+	ep_2nd_description = conn->endpoint->ep_2nd_description;
 	if (ep_2nd_description == NULL) {
-		ep_2nd_description = call->conn->endpoint->ep_description;
+		ep_2nd_description = conn->endpoint->ep_description;
 	}
 
 	endpoint = dcerpc_binding_get_string_option(
