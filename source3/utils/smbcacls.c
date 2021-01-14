@@ -190,26 +190,24 @@ static struct dom_sid *get_domain_sid(struct cli_state *cli)
 
 /* add an ACE to a list of ACEs in a struct security_acl */
 static bool add_ace_with_ctx(TALLOC_CTX *ctx, struct security_acl **the_acl,
-			     struct security_ace *ace)
+			     const struct security_ace *ace)
 
 {
-	struct security_acl *new_ace;
-	struct security_ace *aces;
-	if (! *the_acl) {
-		return (((*the_acl) = make_sec_acl(ctx, 3, 1, ace))
-			!= NULL);
+	struct security_acl *acl = *the_acl;
+
+	if (acl == NULL) {
+		acl = make_sec_acl(ctx, 3, 0, NULL);
+		if (acl == NULL) {
+			return false;
+		}
 	}
 
-	if (!(aces = SMB_CALLOC_ARRAY(struct security_ace, 1+(*the_acl)->num_aces))) {
-		return False;
+	if (acl->num_aces == UINT32_MAX) {
+		return false;
 	}
-	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(struct
-	security_ace));
-	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(struct security_ace));
-	new_ace = make_sec_acl(ctx, (*the_acl)->revision,
-			       1+(*the_acl)->num_aces, aces);
-	SAFE_FREE(aces);
-	(*the_acl) = new_ace;
+	ADD_TO_ARRAY(
+		acl, struct security_ace, *ace, &acl->aces, &acl->num_aces);
+	*the_acl = acl;
 	return True;
 }
 
