@@ -33,7 +33,7 @@
 
 #include "includes.h"
 #include "./lib.h"
-#include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 
 static struct options {
 	const char *basedn;
@@ -41,27 +41,11 @@ static struct options {
 	const char *output;
 } options;
 
-static struct poptOption popt_options[] = {
-	POPT_AUTOHELP
-	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
-	{ "input", 'I', POPT_ARG_STRING, &options.input, 0,
-	  "inputfile of OpenLDAP style schema otherwise STDIN", "inputfile"},
-	{ "output", 'O', POPT_ARG_STRING, &options.output, 0,
-	  "outputfile otherwise STDOUT", "outputfile"},
-	POPT_COMMON_VERSION
-	{0}
-};
-
-
 static void usage(void)
 {
-	poptContext pc;
-	printf("Usage: oLschema2ldif <options>\n");
+	printf("Usage: oLschema2ldif [OPTIONS]\n");
 	printf("\nConvert OpenLDAP schema to AD-like LDIF format\n\n");
 	printf("Converts records from an openLdap formatted schema to an ldif schema\n\n");
-	pc = poptGetContext("oLschema2ldif", 0, NULL, popt_options,
-			    POPT_CONTEXT_KEEP_FIRST);
-	poptPrintHelp(pc, stdout, 0);
 	exit(1);
 }
 
@@ -74,12 +58,34 @@ static void usage(void)
 	struct conv_options copt;
 	int opt;
 
+	struct poptOption popt_options[] = {
+		POPT_AUTOHELP
+		{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
+		{ "input", 'I', POPT_ARG_STRING, &options.input, 0,
+		  "inputfile of OpenLDAP style schema otherwise STDIN", "inputfile"},
+		{ "output", 'O', POPT_ARG_STRING, &options.output, 0,
+		  "outputfile otherwise STDOUT", "outputfile"},
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
+	};
+
 	ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		exit(ENOMEM);
+	}
 
 	setenv("LDB_URL", "NONE", 1);
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options,
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    popt_options,
+				    POPT_CONTEXT_KEEP_FIRST);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(ctx);
+		exit(1);
+	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		fprintf(stderr, "Invalid option %s: %s\n",

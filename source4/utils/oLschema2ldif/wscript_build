@@ -8,7 +8,7 @@ bld.SAMBA_SUBSYSTEM('oLschema2ldif-lib',
 bld.SAMBA_BINARY('oLschema2ldif',
 	source='main.c',
 	manpages='oLschema2ldif.1',
-	deps='oLschema2ldif-lib POPT_SAMBA',
+	deps='oLschema2ldif-lib cmdline',
 	)
 
 bld.SAMBA_BINARY('test_oLschema2ldif',
