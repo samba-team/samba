@@ -8114,6 +8114,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	mode_t unixmode;
 	int ret;
 	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *base_name = NULL;
 	bool ok;
 
 	if (total_data < 100) {
@@ -8174,15 +8175,29 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	ok = parent_smb_fname(talloc_tos(),
 			      smb_fname,
 			      &parent_fname,
-			      NULL);
+			      &base_name);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ret = vfs_stat(conn, parent_fname);
+	if (ret == -1) {
+		TALLOC_FREE(parent_fname);
+		return map_nt_error_from_unix(errno);
+	}
+	status = openat_pathref_fsp(conn->cwd_fsp, parent_fname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(parent_fname);
+		return status;
+	}
+
 	/* Ok - do the mknod. */
 	ret = SMB_VFS_MKNODAT(conn,
-			conn->cwd_fsp,
-			smb_fname,
+			parent_fname->fsp,
+			base_name,
 			unixmode,
 			dev);
 
