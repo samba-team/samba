@@ -879,42 +879,21 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
 {
 	size_t i = 0;
 	size_t num_chars = 0;
-	uint8_t   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1 = NULL, *p2 = NULL;
 
 	/* skip leading 0x prefix */
 	if (strncasecmp(strhex, "0x", 2) == 0) {
 		i += 2; /* skip two chars */
 	}
 
-	for (; i+1 < strhex_len && strhex[i] != 0 && strhex[i+1] != 0; i++) {
-		p1 = strchr(hexchars, toupper((unsigned char)strhex[i]));
-		if (p1 == NULL) {
+	while ((i < strhex_len) && (num_chars < p_len)) {
+		bool ok = hex_byte(&strhex[i], (uint8_t *)&p[num_chars]);
+		if (!ok) {
 			break;
 		}
-
-		i++; /* next hex digit */
-
-		p2 = strchr(hexchars, toupper((unsigned char)strhex[i]));
-		if (p2 == NULL) {
-			break;
-		}
-
-		/* get the two nybbles */
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		if (num_chars >= p_len) {
-			break;
-		}
-
-		p[num_chars] = (hinybble << 4) | lonybble;
-		num_chars++;
-
-		p1 = NULL;
-		p2 = NULL;
+		i += 2;
+		num_chars += 1;
 	}
+
 	return num_chars;
 }
 
