@@ -1,4 +1,91 @@
                    ===============================
+                   Release Notes for Samba 4.12.11
+                          January 14, 2021
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+
+
+Changes since 4.12.10
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14210: libcli: smb2: Never print length if smb2_signing_key_valid()
+     fails for crypto blob.
+   * BUG 14486: s3: modules: gluster. Fix the error I made in preventing talloc
+     leaks from a function.
+   * BUG 14515: s3: smbd: Don't overwrite contents of fsp->aio_requests[0] with
+     NULL via TALLOC_FREE().
+   * BUG 14568: s3: spoolss: Make parameters in call to user_ok_token() match
+     all other uses.
+   * BUG 14590: s3: smbd: Quiet log messages from usershares for an unknown
+     share.
+
+o  Dimitry Andric <dimitry@andric.com>
+   * BUG 14605: lib: Avoid declaring zero-length VLAs in various messaging
+     functions.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14579: Do not create an empty DB when accessing a sam.ldb.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14248: samba process does not honor "max log size".
+   * BUG 14587: vfs_zfsacl: add missing inherited flag on hidden "magic"
+     everyone@ ACE.
+   * BUG 14596: vfs_fruit may close wrong backend fd.
+   * BUG 14596: TODO
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14486: s3-vfs_glusterfs: always disable write-behind translator.
+
+o  Arne Kreddig <arne@kreddig.net>
+   * BUG 14606: vfs_virusfilter: Allocate separate memory for config char*.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14596: vfs_fruit may close wrong backend fd.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 14486: manpages/vfs_glusterfs: Mention silent skipping of write-behind
+     translator.
+   * BUG 14573: vfs_shadow_copy2: Preserve all open flags assuming ROFS.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14601: s3:lib: Create the cache path of user gencache recursively.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14594: Be more flexible with repository names in CentOS 8 test
+     environments.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 14514: interface: Fix if_index is not parsed correctly.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ===============================
                    Release Notes for Samba 4.12.10
                           November 05, 2020
                    ===============================
@@ -90,8 +177,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.12.9
@@ -547,7 +634,7 @@ o  Andrew Bartlett <abartlet@samba.org>
 o  Gary Lockyer <gary@catalyst.net.nz>
    * BUG 14364: CVE-2020-10730: NULL de-reference in AD DC LDAP server when ASQ
      and VLV combined, ldb: Bump version to 2.1.4.
-   
+
 
 #######################################
 Reporting bugs & Development Discussion
