@@ -3,5 +3,5 @@
 bld.SAMBA_BINARY('ndrdump',
 	source='ndrdump.c',
 	manpages='ndrdump.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA ndr-table samba-errors NDR_DCERPC'
+	deps='samba-hostconfig samba-util popt CMDLINE_S4 ndr-table samba-errors NDR_DCERPC'
 	)
