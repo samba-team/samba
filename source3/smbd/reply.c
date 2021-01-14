@@ -3686,13 +3686,7 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 	nread -= headersize;
 
 	if (nread < smb_maxcnt) {
-		char *buf = SMB_CALLOC_ARRAY(char, SHORT_SEND_BUFSIZE);
-		if (!buf) {
-			DEBUG(0,("sendfile_short_send: malloc failed "
-				"for file %s (%s). Terminating\n",
-				fsp_str_dbg(fsp), strerror(errno)));
-			return -1;
-		}
+		char buf[SHORT_SEND_BUFSIZE] = { 0 };
 
 		DEBUG(0,("sendfile_short_send: filling truncated file %s "
 			"with zeros !\n", fsp_str_dbg(fsp)));
@@ -3732,7 +3726,6 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 			}
 			nread += to_write;
 		}
-		SAFE_FREE(buf);
 	}
 
 	return 0;
