@@ -25,9 +25,11 @@
   log
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
 #include <tevent.h>
+#include "lib/util/samba_util.h"
+#include "lib/util/debug.h"
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/tfork.h"
 #include "../lib/util/sys_rw.h"
