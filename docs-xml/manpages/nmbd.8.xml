@@ -21,15 +21,20 @@
 	<cmdsynopsis>
 		<command>nmbd</command>
 		<arg choice="opt">-D|--daemon</arg>
-		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">-i|--interactive</arg>
-		<arg choice="opt">-V</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-H|--hosts &lt;lmhosts file&gt;</arg>
-		<arg choice="opt">-l &lt;log directory&gt;</arg>
-		<arg choice="opt">-p|--port &lt;port number&gt;</arg>
-		<arg choice="opt">-s &lt;configuration file&gt;</arg>
+		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">--no-process-group</arg>
+		<arg choice="opt">-b|--build-options</arg>
+		<arg choice="opt">-p &lt;port number(s)&gt;</arg>
+		<arg choice="opt">-P &lt;profiling level&gt;</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=&lt;configuration file&gt;</arg>
+		<arg choice="opt">--option=&lt;name&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -115,8 +120,6 @@
 		given. </para></listitem>
 		</varlistentry>
 
-		&popt.autohelp;
-		
 		<varlistentry>
 		<term>-H|--hosts &lt;filename&gt;</term>
 		<listitem><para>NetBIOS lmhosts file.  The lmhosts 
@@ -138,9 +141,6 @@
 	<manvolnum>5</manvolnum></citerefentry> man page for details on the contents of this file.</para></listitem>
 		</varlistentry>
 
-		&stdarg.server.debug;
-		&popt.common.samba;
-		
 		<varlistentry>
 		<term>-p|--port &lt;UDP port number&gt;</term>
 		<listitem><para>UDP port number is a positive integer value.
@@ -156,6 +156,8 @@
 		</para></listitem>
 		</varlistentry>
 
+		&cmdline.common.samba.server;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
