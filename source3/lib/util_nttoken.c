@@ -74,7 +74,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 {
 	struct security_token *token = NULL;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (!token_1 || !token_2 || !token_out) {
 		return NT_STATUS_INVALID_PARAMETER;
