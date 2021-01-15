@@ -21,12 +21,18 @@
 	<cmdsynopsis>
 		<command>winbindd</command>
 		<arg choice="opt">-D|--daemon</arg>
-		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">-i|--interactive</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-n|--no-caching</arg>
+		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">--no-process-group</arg>
+		<arg choice="opt">-n|--no-caching</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=&lt;configuration file&gt;</arg>
+		<arg choice="opt">--option=&lt;name&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -145,6 +151,17 @@ hosts:		files wins
 		</varlistentry>
 
 		<varlistentry>
+		<term>-i|--interactive</term>
+		<listitem><para>Tells <command>winbindd</command> to not
+		become a daemon and detach from the current terminal. This
+		option is used by developers when interactive debugging
+		of <command>winbindd</command> is required.
+		<command>winbindd</command> also logs to standard output,
+		as if the <command>-S</command> parameter had been given.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-F|--foreground</term>
 		<listitem><para>If specified, this parameter causes
 		the main <command>winbindd</command> process to not daemonize,
@@ -159,18 +176,9 @@ hosts:		files wins
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.server.debug;
-		&popt.common.samba;
-		&popt.autohelp;
-
 		<varlistentry>
-		<term>-i|--interactive</term>
-		<listitem><para>Tells <command>winbindd</command> to not
-		become a daemon and detach from the current terminal. This
-		option is used by developers when interactive debugging
-		of <command>winbindd</command> is required.
-		<command>winbindd</command> also logs to standard output,
-		as if the <command>-S</command> parameter had been given.
+		<term>--no-process-group</term>
+		<listitem><para>Do not create a new process group for winbindd.
 		</para></listitem>
 		</varlistentry>
 
@@ -187,11 +195,8 @@ hosts:		files wins
 		</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>--no-process-group</term>
-		<listitem><para>Do not create a new process group for winbindd.
-		</para></listitem>
-		</varlistentry>
+		&cmdline.common.samba.server;
+		&popt.autohelp;
 
 	</variablelist>
 </refsect1>
