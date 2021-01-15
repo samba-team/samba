@@ -1052,16 +1052,24 @@ static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *new_smb_fname)
 {
+	struct smb_filename *full_fname = NULL;
 	int result = -1;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						new_smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle,
 			link_target->base_name,
-			new_smb_fname->base_name);
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+			full_fname->base_name);
 
 	result = ceph_symlink(handle->data,
 			link_target->base_name,
-			new_smb_fname->base_name);
+			full_fname->base_name);
+	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
