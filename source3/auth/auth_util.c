@@ -485,6 +485,14 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	if (!is_allowed_domain(server_info->info3->base.logon_domain.string)) {
+		DBG_NOTICE("Authentication failed for user [%s] "
+			   "from firewalled domain [%s]\n",
+			   server_info->info3->base.account_name.string,
+			   server_info->info3->base.logon_domain.string);
+		return NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+	}
+
 	if (server_info->cached_session_info != NULL) {
 		session_info = copy_session_info(mem_ctx,
 				server_info->cached_session_info);
