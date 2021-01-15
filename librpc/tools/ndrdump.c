@@ -306,7 +306,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
 		{"validate", 0, POPT_ARG_NONE, NULL, OPT_VALIDATE, "try to validate the data", NULL },	
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },	
-		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
+		{"load-dso", 0, POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
 		{"base64-input", 0, POPT_ARG_NONE, NULL, OPT_BASE64_INPUT, "Read the input file in as a base64 string", NULL },
