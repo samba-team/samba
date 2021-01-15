@@ -20,16 +20,20 @@
 	<cmdsynopsis>
 		<command>smbd</command>
 		<arg choice="opt">-D|--daemon</arg>
-		<arg choice="opt">-F|--foreground</arg>
 		<arg choice="opt">-i|--interactive</arg>
-		<arg choice="opt">-V</arg>
+		<arg choice="opt">-F|--foreground</arg>
+		<arg choice="opt">--no-process-group</arg>
 		<arg choice="opt">-b|--build-options</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number(s)&gt;</arg>
 		<arg choice="opt">-P &lt;profiling level&gt;</arg>
-		<arg choice="opt">-s &lt;configuration file&gt;</arg>
-		<arg choice="opt">--no-process-group</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=&lt;configuration file&gt;</arg>
+		<arg choice="opt">--option=&lt;name&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">-l|--log-basename &lt;log directory&gt;</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -99,6 +103,18 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>-i|--interactive</term>
+		<listitem><para>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit daemon mode when run from the
+		command line. <command>smbd</command> will only accept one
+		connection and terminate. It will also log to standard output,
+		as if the <command>-S</command> parameter had been given.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-F|--foreground</term>
 		<listitem><para>If specified, this parameter causes
 		the main <command>smbd</command> process to not daemonize,
@@ -112,22 +128,6 @@
 		package, or the AIX process monitor.
 		</para></listitem>
 		</varlistentry>
-
-		<varlistentry>
-		<term>-i|--interactive</term>
-		<listitem><para>If this parameter is specified it causes the
-		server to run "interactively", not as a daemon, even if the
-		server is executed on the command line of a shell. Setting this
-		parameter negates the implicit daemon mode when run from the
-		command line. <command>smbd</command> will only accept one
-		connection and terminate. It will also log to standard output,
-		as if the <command>-S</command> parameter had been given.
-		</para></listitem>
-		</varlistentry>
-
-		&stdarg.server.debug;
-		&popt.common.samba;
-		&popt.autohelp;
 
 		<varlistentry>
 		<term>--no-process-group</term>
@@ -160,6 +160,10 @@
 		2 turns on complete profiling, and 3 resets all profiling data.
 		</para></listitem>
 		</varlistentry>
+
+		&cmdline.common.samba.server;
+		&popt.autohelp;
+
 	</variablelist>
 </refsect1>
 
