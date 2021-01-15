@@ -1844,13 +1844,25 @@ static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *new_smb_fname)
 {
+	struct smb_filename *full_fname = NULL;
 	int ret;
 
 	START_PROFILE(syscall_symlinkat);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						new_smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_symlinkat);
+		return -1;
+	}
+
 	ret = glfs_symlink(handle->data,
 			link_target->base_name,
-			new_smb_fname->base_name);
+			full_fname->base_name);
+
+	TALLOC_FREE(full_fname);
+
 	END_PROFILE(syscall_symlinkat);
 
 	return ret;
