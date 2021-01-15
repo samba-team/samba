@@ -258,7 +258,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_LOCK()                    | [[fsp][fsp]]      | -      |
 | SMB_VFS_LSEEK()                   | [[fsp][fsp]]      | -      |
 | SMB_VFS_LSTAT()                   | [[Path][Path]]     | Todo   |
-| SMB_VFS_MKDIRAT()                 | [[NsC][NsC]]      | Todo   |
+| SMB_VFS_MKDIRAT()                 | [[NsC][NsC]]      | -      |
 | SMB_VFS_MKNODAT()                 | [[NsC][NsC]]      | -      |
 | SMB_VFS_NTIMES()                  | [[Path][Path]]     | Todo   |
 | SMB_VFS_OFFLOAD_READ_RECV()       | [[fsp][fsp]]      | -      |

@@ -326,7 +326,7 @@ Table of Contents
    SMB_VFS_LOCK()                     [fsp]       -
    SMB_VFS_LSEEK()                    [fsp]       -
    SMB_VFS_LSTAT()                    [Path]      Todo
-   SMB_VFS_MKDIRAT()                  [NsC]       Todo
+   SMB_VFS_MKDIRAT()                  [NsC]       -
    SMB_VFS_MKNODAT()                  [NsC]       -
    SMB_VFS_NTIMES()                   [Path]      Todo
    SMB_VFS_OFFLOAD_READ_RECV()        [fsp]       -
