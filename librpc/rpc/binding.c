@@ -137,7 +137,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 			status = dcerpc_floor_get_lhs_data(epm_floor, &syntax);
 			if (NT_STATUS_IS_OK(status)) {
 				/* lhs is used: UUID */
-				char *uuidstr;
+				struct GUID_txt_buf buf;
 
 				if (GUID_equal(&syntax.uuid, &ndr_transfer_syntax_ndr.uuid)) {
 					return "NDR";
@@ -147,9 +147,11 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 					return "NDR64";
 				} 
 
-				uuidstr = GUID_string(mem_ctx, &syntax.uuid);
-
-				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, syntax.if_version);
+				return talloc_asprintf(
+					mem_ctx,
+					" uuid %s/0x%02x",
+					GUID_buf_string(&syntax.uuid, &buf),
+					syntax.if_version);
 			} else { /* IPX */
 				return talloc_asprintf(mem_ctx, "IPX:%s", 
 						data_blob_hex_string_upper(mem_ctx, &epm_floor->rhs.uuid.unknown));
