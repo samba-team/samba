@@ -400,7 +400,6 @@ Table of Contents
   ─────────────────────────────────────────────────────
    SMB_VFS_SYS_ACL_DELETE_DEF_FD()  [xpathref]  Todo
    SMB_VFS_READDIR_ATTRAT()         [Enum]      Todo
-   SMB_VFS_STATX()                  [Enum]      Todo
    SMB_VFS_FUTIMENS()               [fsp]       Todo
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -558,11 +557,6 @@ Table of Contents
   • SMB_VFS_GET_DOS_ATTRIBUTES_SEND()
   • SMB_VFS_GETXATTRAT_SEND()
   • SMB_VFS_READDIR_ATTRAT() (NEW)
-  • SMB_VFS_STATX() (NEW)
-
-  We can't open file-handles on all directory children for performance
-  reasons. Therefor we need *AT based VFS functions for all metadata VFS
-  queries done in the directory enumeration loop.
 
 
 2.2.7 Handle based VFS functions not allowed on O_PATH opened handles
