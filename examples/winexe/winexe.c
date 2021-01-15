@@ -20,9 +20,9 @@
  */
 
 #include "includes.h"
-#include <tevent.h>
-#include <popt.h>
 #include "version.h"
+#include <popt.h>
+#include <tevent.h>
 #include "lib/param/param.h"
 #include "auth/credentials/credentials.h"
 #include "lib/util/talloc_stack.h"
@@ -34,6 +34,7 @@
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/util/werror.h"
 #include "lib/async_req/async_sock.h"
+#include "lib/cmdline/cmdline.h"
 #include "client.h"
 
 #define SVC_INTERACTIVE 1
@@ -68,12 +69,10 @@ struct program_options {
 
 static void parse_args(int argc, const char *argv[],
 		       TALLOC_CTX *mem_ctx,
-		       struct program_options *options,
-		       struct loadparm_context *lp_ctx)
+		       struct program_options *options)
 {
 	poptContext pc;
 	int opt, i;
-	struct cli_credentials *cred;
 
 	int argc_new;
 	char **argv_new;
@@ -87,69 +86,11 @@ static void parse_args(int argc, const char *argv[],
 	int flag_uninstall = 0;
 	int flag_help = 0;
 	int flag_version = 0;
-	int flag_nopass = 0;
-	char *opt_user = NULL;
-	char *opt_kerberos = NULL;
-	char *opt_auth_file = NULL;
-	char *opt_debuglevel = NULL;
+	bool ok;
+
 	struct poptOption long_options[] = {
+		POPT_AUTOHELP
 		{
-			.longName = "help",
-			.shortName = 'h',
-			.argInfo = POPT_ARG_NONE,
-			.arg = &flag_help,
-			.val = 0,
-			.descrip = "Display help message",
-			.argDescrip = NULL,
-		},{
-			.longName = "version",
-			.shortName = 'V',
-			.argInfo = POPT_ARG_NONE,
-			.arg = &flag_version,
-			.val = 0,
-			.descrip = "Display version number",
-			.argDescrip = NULL,
-		},{
-			.longName = "user",
-			.shortName = 'U',
-			.argInfo = POPT_ARG_STRING,
-			.arg = &opt_user,
-			.val = 0,
-			.descrip = "Set the network username",
-			.argDescrip = "[DOMAIN/]USERNAME[%PASSWORD]",
-		},{
-			.longName = "authentication-file",
-			.shortName = 'A',
-			.argInfo = POPT_ARG_STRING,
-			.arg = &opt_auth_file,
-			.val = 0,
-			.descrip = "Get the credentials from a file",
-			.argDescrip = "FILE",
-		},{
-			.longName = "no-pass",
-			.shortName = 'N',
-			.argInfo = POPT_ARG_NONE,
-			.arg = &flag_nopass,
-			.val = 0,
-			.descrip = "Do not ask for a password",
-			.argDescrip = NULL
-		},{
-			.longName = "kerberos",
-			.shortName = 'k',
-			.argInfo = POPT_ARG_STRING,
-			.arg = &opt_kerberos,
-			.val = 0,
-			.descrip = "Use Kerberos",
-			.argDescrip = "[yes|no]",
-		},{
-			.longName = "debuglevel",
-			.shortName = 'd',
-			.argInfo = POPT_ARG_STRING,
-			.arg = &opt_debuglevel,
-			.val = 0,
-			.descrip = "Set debug level",
-			.argDescrip = "DEBUGLEVEL",
-		},{
 			.longName = "uninstall",
 			.shortName = 0,
 			.argInfo = POPT_ARG_NONE,
@@ -208,13 +149,33 @@ static void parse_args(int argc, const char *argv[],
 				   " of service will be installed.",
 			.argDescrip = "0|1|2",
 		},
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
 	ZERO_STRUCTP(options);
 
-	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,
-			    0);
+	ok = samba_cmdline_init(mem_ctx,
+				SAMBA_CMDLINE_CONFIG_CLIENT,
+				false /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to init cmdline parser!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
+	pc = samba_popt_get_context(getprogname(),
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to setup popt context!\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
 
 	poptSetOtherOptionHelp(pc, "[OPTION]... //HOST[:PORT] COMMAND\nOptions:");
 
@@ -259,34 +220,7 @@ static void parse_args(int argc, const char *argv[],
 		*port_str = '\0';
 	}
 
-	if (opt_debuglevel) {
-		lp_set_cmdline("log level", opt_debuglevel);
-	}
-
-	cred = cli_credentials_init(mem_ctx);
-
-	if (opt_user) {
-		cli_credentials_parse_string(cred, opt_user, CRED_SPECIFIED);
-	} else if (opt_auth_file) {
-		cli_credentials_parse_file(cred, opt_auth_file,
-					   CRED_SPECIFIED);
-	}
-
-	cli_credentials_guess(cred, lp_ctx);
-	if (!cli_credentials_get_password(cred) && !flag_nopass) {
-		char *p = getpass("Enter password: ");
-		if (*p) {
-			cli_credentials_set_password(cred, p, CRED_SPECIFIED);
-		}
-	}
-
-	if (opt_kerberos) {
-		cli_credentials_set_kerberos_state(cred,
-		                                   strcmp(opt_kerberos, "yes")
-		                                   ? CRED_USE_KERBEROS_REQUIRED
-		                                   : CRED_USE_KERBEROS_DISABLED,
-						   CRED_SPECIFIED);
-	}
+	poptFreeContext(pc);
 
 	if (options->runas == NULL && options->runas_file != NULL) {
 		struct cli_credentials *runas_cred;
@@ -317,7 +251,7 @@ static void parse_args(int argc, const char *argv[],
 		}
 	}
 
-	options->credentials = cred;
+	options->credentials = samba_cmdline_get_creds();
 
 	options->hostname = argv_new[0] + 2;
 	options->port = port;
@@ -1868,11 +1802,11 @@ const DATA_BLOB *winexesvc32_exe_binary(void);
 const DATA_BLOB *winexesvc64_exe_binary(void);
 #endif
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const char **const_argv = discard_const_p(const char *, argv);
 	struct program_options options = {0};
-	struct loadparm_context *lp_ctx;
 	struct cli_state *cli;
 	const char *service_name = SERVICE_NAME;
 	char *service_filename = NULL;
@@ -1890,18 +1824,11 @@ int main(int argc, const char *argv[])
 	int ret = 1;
 	int return_code = 0;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		fprintf(stderr, "loadparm_init_s3 failed\n");
-		goto done;
-	}
-
 	smb_init_locale();
-	setup_logging("winexe", DEBUG_STDOUT);
 
-	lp_load_global(get_dyn_CONFIGFILE());
+	parse_args(argc, const_argv, frame, &options);
 
-	parse_args(argc, argv, frame, &options, lp_ctx);
+	samba_cmdline_burn(argc, argv);
 
 	if (options.cmd == NULL) {
 		fprintf(stderr, "no cmd given\n");

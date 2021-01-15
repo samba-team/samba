@@ -101,7 +101,7 @@ if winexesvc_binaries != '':
     bld.SAMBA3_BINARY('winexe',
                       source='winexe.c ' + winexesvc_binaries,
                       deps='''
-                          popt
+                          CMDLINE_S3
                           samba-credentials
                           LOADPARM_CTX
                           libsmb
