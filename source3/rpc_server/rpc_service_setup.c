@@ -92,14 +92,14 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 					size_t *pnum_fds,
 					int **pfds)
 {
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(e->ep_description);
+	struct dcerpc_binding *b = e->ep_description;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(b);
 	char *binding = NULL;
 	int *fds = NULL;
 	size_t num_fds;
 	NTSTATUS status;
 
-	binding = dcerpc_binding_string(mem_ctx, e->ep_description);
+	binding = dcerpc_binding_string(mem_ctx, b);
 	if (binding == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -114,19 +114,19 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(e->ep_description, fds);
+		status = dcesrv_create_ncalrpc_socket(b, fds);
 		break;
 
 	case NCACN_IP_TCP: {
 		TALLOC_FREE(fds);
 
 		status = dcesrv_create_ncacn_ip_tcp_sockets(
-			e->ep_description, talloc_tos(), &num_fds, &fds);
+			b, talloc_tos(), &num_fds, &fds);
 		break;
 	}
 
 	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(e->ep_description, fds);
+		status = dcesrv_create_ncacn_np_socket(b, fds);
 		break;
 
 	default:
@@ -136,7 +136,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	/* Build binding string again as the endpoint may have changed by
 	 * dcesrv_create_<transport>_socket functions */
-	binding = dcerpc_binding_string(mem_ctx, e->ep_description);
+	binding = dcerpc_binding_string(mem_ctx, b);
 	if (binding == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
