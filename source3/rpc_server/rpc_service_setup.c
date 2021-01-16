@@ -93,7 +93,6 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 					int **pfds)
 {
 	struct dcerpc_binding *b = e->ep_description;
-	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(b);
 	char *binding = NULL;
 	int *fds = NULL;
 	size_t num_fds;
@@ -106,33 +105,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 	DBG_DEBUG("Creating endpoint '%s'\n", binding);
 	TALLOC_FREE(binding);
 
-	fds = talloc(mem_ctx, int);
-	if (fds == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	num_fds = 1;
-
-	switch (transport) {
-	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(b, fds);
-		break;
-
-	case NCACN_IP_TCP: {
-		TALLOC_FREE(fds);
-
-		status = dcesrv_create_ncacn_ip_tcp_sockets(
-			b, talloc_tos(), &num_fds, &fds);
-		break;
-	}
-
-	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(b, fds);
-		break;
-
-	default:
-		status = NT_STATUS_NOT_SUPPORTED;
-		break;
-	}
+	status = dcesrv_create_binding_sockets(b, mem_ctx, &num_fds, &fds);
 
 	/* Build binding string again as the endpoint may have changed by
 	 * dcesrv_create_<transport>_socket functions */
@@ -250,47 +223,27 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 				       void *term_data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(e->ep_description);
+	struct dcerpc_binding *b = e->ep_description;
 	char *binding = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct dcesrv_if_list *iface = NULL;
-	int fd = -1;
-	int *fds = &fd;
-	size_t i, num_fds = 1;
+	int *fds = NULL;
+	size_t i, num_fds = 0;
 	struct dcerpc_ncacn_listen_state **listen_states = NULL;
 
-	binding = dcerpc_binding_string(frame, e->ep_description);
+	binding = dcerpc_binding_string(frame, b);
 	if (binding == NULL) {
 		goto fail;
 	}
 
 	DBG_DEBUG("Setting up endpoint '%s'\n", binding);
+	TALLOC_FREE(binding);
 
-	switch (transport) {
-	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(e->ep_description, &fd);
-		break;
-
-	case NCACN_IP_TCP:
-		status = dcesrv_create_ncacn_ip_tcp_sockets(
-			e->ep_description, frame, &num_fds, &fds);
-		break;
-
-	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(
-			e->ep_description, &fd);
-		break;
-
-	default:
-		status = NT_STATUS_NOT_SUPPORTED;
-		break;
-	}
+	status = dcesrv_create_binding_sockets(b, frame, &num_fds, &fds);
 
 	/* Build binding string again as the endpoint may have changed by
 	 * dcesrv_create_<transport>_socket functions */
-	TALLOC_FREE(binding);
-	binding = dcerpc_binding_string(frame, e->ep_description);
+	binding = dcerpc_binding_string(frame, b);
 	if (binding == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

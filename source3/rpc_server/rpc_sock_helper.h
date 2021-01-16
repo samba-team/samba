@@ -25,15 +25,11 @@
 
 #include "rpc_server.h"
 
-struct pf_listen_fd;
-
-NTSTATUS dcesrv_create_ncacn_np_socket(struct dcerpc_binding *b, int *out_fd);
-NTSTATUS dcesrv_create_ncalrpc_socket(struct dcerpc_binding *b, int *fd);
-NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
+NTSTATUS dcesrv_create_binding_sockets(
 	struct dcerpc_binding *b,
 	TALLOC_CTX *mem_ctx,
 	size_t *pnum_fds,
-	int **pfds);
+	int **fds);
 
 #endif /* _RPC_SOCK_HELPER_H_ */
 

@@ -32,7 +32,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-NTSTATUS dcesrv_create_ncacn_np_socket(struct dcerpc_binding *b, int *out_fd)
+static NTSTATUS dcesrv_create_ncacn_np_socket(
+	struct dcerpc_binding *b, int *out_fd)
 {
 	char *np_dir = NULL;
 	int fd = -1;
@@ -152,7 +153,7 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
+static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	struct dcerpc_binding *b,
 	TALLOC_CTX *mem_ctx,
 	size_t *pnum_fds,
@@ -276,7 +277,8 @@ fail:
  * Start listening on the ncalrpc socket
  ********************************************************************/
 
-NTSTATUS dcesrv_create_ncalrpc_socket(struct dcerpc_binding *b, int *out_fd)
+static NTSTATUS dcesrv_create_ncalrpc_socket(
+	struct dcerpc_binding *b, int *out_fd)
 {
 	int fd = -1;
 	const char *endpoint = NULL;
@@ -336,6 +338,50 @@ NTSTATUS dcesrv_create_ncalrpc_socket(struct dcerpc_binding *b, int *out_fd)
 
 out:
 	return status;
+}
+
+NTSTATUS dcesrv_create_binding_sockets(
+	struct dcerpc_binding *b,
+	TALLOC_CTX *mem_ctx,
+	size_t *pnum_fds,
+	int **pfds)
+{
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(b);
+	size_t num_fds = 1;
+	int *fds = NULL;
+	NTSTATUS status;
+
+	if ((transport == NCALRPC) || (transport == NCACN_NP)) {
+		fds = talloc(mem_ctx, int);
+		if (fds == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	switch(transport) {
+	case NCALRPC:
+		status = dcesrv_create_ncalrpc_socket(b, fds);
+		break;
+	case NCACN_NP:
+		status = dcesrv_create_ncacn_np_socket(b, fds);
+		break;
+	case NCACN_IP_TCP:
+		status = dcesrv_create_ncacn_ip_tcp_sockets(
+			b, talloc_tos(), &num_fds, &fds);
+		break;
+	default:
+		status = NT_STATUS_NOT_SUPPORTED;
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(fds);
+		return status;
+	}
+
+	*pfds = fds;
+	*pnum_fds = num_fds;
+	return NT_STATUS_OK;
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
