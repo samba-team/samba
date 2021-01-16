@@ -52,7 +52,7 @@ struct dcerpc_ncacn_listen_state {
 	void *termination_data;
 };
 
-NTSTATUS dcesrv_create_ncacn_np_socket(struct dcesrv_endpoint *e, int *out_fd)
+NTSTATUS dcesrv_create_ncacn_np_socket(struct dcerpc_binding *b, int *out_fd)
 {
 	char *np_dir = NULL;
 	int fd = -1;
@@ -61,8 +61,7 @@ NTSTATUS dcesrv_create_ncacn_np_socket(struct dcesrv_endpoint *e, int *out_fd)
 	char *endpoint_normalized = NULL;
 	char *p = NULL;
 
-	endpoint = dcerpc_binding_get_string_option(e->ep_description,
-						    "endpoint");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
 	if (endpoint == NULL) {
 		DBG_ERR("Endpoint mandatory for named pipes\n");
 		return NT_STATUS_INVALID_PARAMETER;

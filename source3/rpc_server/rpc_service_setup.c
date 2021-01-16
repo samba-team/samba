@@ -126,7 +126,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 	}
 
 	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(e, fds);
+		status = dcesrv_create_ncacn_np_socket(e->ep_description, fds);
 		break;
 
 	default:
@@ -278,7 +278,8 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 		break;
 
 	case NCACN_NP:
-		status = dcesrv_create_ncacn_np_socket(e, &fd);
+		status = dcesrv_create_ncacn_np_socket(
+			e->ep_description, &fd);
 		break;
 
 	default:
