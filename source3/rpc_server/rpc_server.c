@@ -178,14 +178,13 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
  * Start listening on the ncalrpc socket
  ********************************************************************/
 
-NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *out_fd)
+NTSTATUS dcesrv_create_ncalrpc_socket(struct dcerpc_binding *b, int *out_fd)
 {
 	int fd = -1;
 	const char *endpoint = NULL;
 	NTSTATUS status;
 
-	endpoint = dcerpc_binding_get_string_option(e->ep_description,
-						    "endpoint");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
 	if (endpoint == NULL) {
 		/*
 		 * No identifier specified: use DEFAULT or SMBD.
@@ -205,9 +204,8 @@ NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *out_fd)
 		} else {
 			endpoint = "DEFAULT";
 		}
-		status = dcerpc_binding_set_string_option(e->ep_description,
-							  "endpoint",
-							  endpoint);
+		status = dcerpc_binding_set_string_option(
+			b, "endpoint", endpoint);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to set ncalrpc 'endpoint' binding "
 				"string option to '%s': %s\n",

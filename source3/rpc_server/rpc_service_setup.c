@@ -114,7 +114,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(e, fds);
+		status = dcesrv_create_ncalrpc_socket(e->ep_description, fds);
 		break;
 
 	case NCACN_IP_TCP: {
@@ -269,7 +269,7 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 	case NCALRPC:
-		status = dcesrv_create_ncalrpc_socket(e, &fd);
+		status = dcesrv_create_ncalrpc_socket(e->ep_description, &fd);
 		break;
 
 	case NCACN_IP_TCP:

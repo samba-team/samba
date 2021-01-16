@@ -73,7 +73,7 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 					   uint16_t *port,
 					   int *out_fd);
 
-NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *fd);
+NTSTATUS dcesrv_create_ncalrpc_socket(struct dcerpc_binding *b, int *fd);
 
 struct dcerpc_ncacn_listen_state;
 int dcesrv_setup_ncacn_listener(
