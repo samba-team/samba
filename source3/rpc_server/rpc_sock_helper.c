@@ -33,7 +33,7 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
-	struct dcesrv_endpoint *e,
+	struct dcerpc_binding *b,
 	TALLOC_CTX *mem_ctx,
 	size_t *pnum_fds,
 	int **pfds)
@@ -47,8 +47,7 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	bool ok;
 
-	endpoint = dcerpc_binding_get_string_option(
-		e->ep_description, "endpoint");
+	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
 	if (endpoint != NULL) {
 		port = atoi(endpoint);
 	}
@@ -129,8 +128,7 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	/* Set the port in the endpoint */
 	snprintf(port_str, sizeof(port_str), "%u", port);
 
-	status = dcerpc_binding_set_string_option(
-		e->ep_description, "endpoint", port_str);
+	status = dcerpc_binding_set_string_option(b, "endpoint", port_str);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to set binding endpoint '%s': %s\n",
 			port_str, nt_errstr(status));

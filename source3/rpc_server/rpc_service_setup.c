@@ -121,7 +121,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 		TALLOC_FREE(fds);
 
 		status = dcesrv_create_ncacn_ip_tcp_sockets(
-			e, talloc_tos(), &num_fds, &fds);
+			e->ep_description, talloc_tos(), &num_fds, &fds);
 		break;
 	}
 
@@ -274,7 +274,7 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	case NCACN_IP_TCP:
 		status = dcesrv_create_ncacn_ip_tcp_sockets(
-			e, frame, &num_fds, &fds);
+			e->ep_description, frame, &num_fds, &fds);
 		break;
 
 	case NCACN_NP:
