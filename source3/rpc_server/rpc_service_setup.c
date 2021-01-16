@@ -87,7 +87,6 @@ NTSTATUS rpc_setup_embedded(struct tevent_context *ev_ctx,
 
 NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 					struct messaging_context *msg_ctx,
-					struct dcesrv_context *dce_ctx,
 					struct dcesrv_endpoint *e,
 					TALLOC_CTX *mem_ctx,
 					size_t *pnum_fds,
@@ -188,7 +187,6 @@ NTSTATUS dcesrv_create_endpoint_list_pf_listen_fds(
 		status = dcesrv_create_endpoint_sockets(
 			ev_ctx,
 			msg_ctx,
-			dce_ctx,
 			e,
 			mem_ctx,
 			&num_ep_fds,

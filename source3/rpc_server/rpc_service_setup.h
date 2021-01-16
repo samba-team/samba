@@ -40,7 +40,6 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 
 NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 					struct messaging_context *msg_ctx,
-					struct dcesrv_context *dce_ctx,
 					struct dcesrv_endpoint *e,
 					TALLOC_CTX *mem_ctx,
 					size_t *pnum_fds,
