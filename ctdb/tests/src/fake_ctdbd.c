@@ -4284,7 +4284,7 @@ static void server_new_client(struct tevent_req *subreq)
 	int client_fd;
 	int ret = 0;
 
-	client_fd = accept_recv(subreq, NULL, &ret);
+	client_fd = accept_recv(subreq, NULL, NULL, &ret);
 	TALLOC_FREE(subreq);
 	if (client_fd == -1) {
 		tevent_req_error(req, ret);

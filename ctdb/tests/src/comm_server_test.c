@@ -175,7 +175,7 @@ static void socket_process_client(struct tevent_req *subreq)
 	int client_fd;
 	int err = 0;
 
-	client_fd = accept_recv(subreq, NULL, &err);
+	client_fd = accept_recv(subreq, NULL, NULL, &err);
 	TALLOC_FREE(subreq);
 
 	state->num_clients++;

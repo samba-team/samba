@@ -767,20 +767,27 @@ static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
 }
 
 int accept_recv(struct tevent_req *req,
+		int *listen_sock,
 		struct samba_sockaddr *paddr,
 		int *perr)
 {
 	struct accept_state *state = tevent_req_data(req, struct accept_state);
+	int sock = state->sock;
 	int err;
 
 	if (tevent_req_is_unix_error(req, &err)) {
 		if (perr != NULL) {
 			*perr = err;
 		}
+		tevent_req_received(req);
 		return -1;
+	}
+	if (listen_sock != NULL) {
+		*listen_sock = state->listen_sock;
 	}
 	if (paddr != NULL) {
 		*paddr = state->addr;
 	}
-	return state->sock;
+	tevent_req_received(req);
+	return sock;
 }

@@ -371,7 +371,7 @@ static void sock_socket_start_new_client(struct tevent_req *subreq)
 	struct sock_client *client;
 	int client_fd, ret;
 
-	client_fd = accept_recv(subreq, NULL, &ret);
+	client_fd = accept_recv(subreq, NULL, NULL, &ret);
 	TALLOC_FREE(subreq);
 	if (client_fd == -1) {
 		D_ERR("failed to accept new connection\n");

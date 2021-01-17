@@ -61,6 +61,7 @@ struct samba_sockaddr;
 struct tevent_req *accept_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int listen_sock);
 int accept_recv(struct tevent_req *req,
+		int *listen_sock,
 		struct samba_sockaddr *paddr,
 		int *perr);
 
