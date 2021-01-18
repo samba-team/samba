@@ -19,26 +19,34 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>samba-regedit</command>
-		<arg choice="opt">--help</arg>
+		<arg choice="opt">-?|--help</arg>
 		<arg choice="opt">--usage</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-s &lt;configuration file&gt;</arg>
-		<arg choice="opt">-l &lt;log directory&gt;</arg>
-		<arg choice="opt">-V</arg>
-		<arg choice="opt">--option=&lt;parameter&gt;=&lt;value&gt;</arg>
-		<arg choice="opt">--socket-options=&lt;SOCKETOPTIONS&gt;</arg>
-		<arg choice="opt">--netbiosname=&lt;NETBIOSNAME&gt;</arg>
-		<arg choice="opt">--workgroup=&lt;WORKGROUP&gt;</arg>
-		<arg choice="opt">--scope=&lt;SCOPE&gt;</arg>
-		<arg choice="opt">--user=&lt;USERNAME&gt;</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-k</arg>
-		<arg choice="opt">--authentication-file=&lt;FILE&gt;</arg>
-		<arg choice="opt">--signing=[on|off|required]</arg>
-		<arg choice="opt">-P</arg>
-		<arg choice="opt">-e</arg>
-		<arg choice="opt">-C</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
 		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -55,15 +63,10 @@
 <refsect1>
 	<title>OPTIONS</title>
 	<variablelist>
-		&stdarg.help;
-		&stdarg.client.debug;
-		<varlistentry>
-		<term>--usage</term>
-		<listitem><para>Display brief usage message.</para></listitem>
-		</varlistentry>
-		&popt.common.samba;
-		&popt.common.connection;
-		&popt.common.credentials;
+		&popt.autohelp;
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
 	</variablelist>
 </refsect1>
 
