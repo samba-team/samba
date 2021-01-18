@@ -34,7 +34,6 @@ o  Ralph Boehme <slow@samba.org>
    * BUG 14587: vfs_zfsacl: add missing inherited flag on hidden "magic"
      everyone@ ACE.
    * BUG 14596: vfs_fruit may close wrong backend fd.
-   * BUG 14596: TODO
 
 o  Günther Deschner <gd@samba.org>
    * BUG 14486: s3-vfs_glusterfs: always disable write-behind translator.
