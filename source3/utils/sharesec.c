@@ -321,6 +321,7 @@ static int view_sharesec_sddl(const char *sharename)
 
 enum {
 	OPT_VIEW_ALL = 1000,
+	OPT_VIEW_SDDL,
 };
 
 int main(int argc, const char *argv[])
@@ -390,10 +391,9 @@ int main(int argc, const char *argv[])
 		},
 		{
 			.longName   = "viewsddl",
-			.shortName  = 'V',
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = the_acl,
-			.val        = 'V',
+			.val        = OPT_VIEW_SDDL,
 			.descrip    = "View the SD in sddl format",
 		},
 		{
@@ -480,7 +480,7 @@ int main(int argc, const char *argv[])
 			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			break;
 
-		case 'V':
+		case OPT_VIEW_SDDL:
 			mode = SMB_SD_VIEWSDDL;
 			break;
 
