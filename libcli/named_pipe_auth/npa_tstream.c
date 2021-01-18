@@ -1002,16 +1002,15 @@ struct tstream_npa_accept_state {
 	uint16_t device_state;
 	uint64_t alloc_size;
 
+	struct named_pipe_auth_req *pipe_request;
+
 	DATA_BLOB npa_blob;
 	struct iovec out_iov;
 
 	/* results */
 	NTSTATUS accept_status;
 	struct tsocket_address *remote_client_addr;
-	char *remote_client_name;
 	struct tsocket_address *local_server_addr;
-	char *local_server_name;
-	struct auth_session_info_transport *session_info;
 };
 
 static void tstream_npa_accept_existing_reply(struct tevent_req *subreq);
@@ -1116,6 +1115,7 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 		DEBUG(0, ("Out of memory!\n"));
 		goto reply;
 	}
+	state->pipe_request = pipe_request;
 
 	/* parse the passed credentials */
 	ndr_err = ndr_pull_struct_blob_all(
@@ -1161,9 +1161,6 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 		goto reply;
 	}
 
-	state->local_server_name = discard_const_p(char,
-						   talloc_move(state,
-							       &i4.local_server_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
 						i4.local_server_addr,
 						i4.local_server_port,
@@ -1176,9 +1173,6 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 		goto reply;
 	}
 
-	state->remote_client_name = discard_const_p(char,
-						    talloc_move(state,
-								&i4.remote_client_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
 						i4.remote_client_addr,
 						i4.remote_client_port,
@@ -1191,7 +1185,6 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 		goto reply;
 	}
 
-	state->session_info = talloc_move(state, &i4.session_info);
 reply:
 	/* create the output */
 	ndr_err = ndr_push_struct_blob(&out, state, &pipe_reply,
@@ -1256,6 +1249,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 {
 	struct tstream_npa_accept_state *state =
 			tevent_req_data(req, struct tstream_npa_accept_state);
+	struct named_pipe_auth_req_info4 *i4 = &state->pipe_request->info.info4;
 	struct tstream_npa *npas;
 	int ret;
 
@@ -1297,10 +1291,12 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	npas->file_type = state->file_type;
 
 	*remote_client_addr = talloc_move(mem_ctx, &state->remote_client_addr);
-	*_remote_client_name = talloc_move(mem_ctx, &state->remote_client_name);
+	*_remote_client_name = discard_const_p(
+		char, talloc_move(mem_ctx, &i4->remote_client_name));
 	*local_server_addr = talloc_move(mem_ctx, &state->local_server_addr);
-	*local_server_name = talloc_move(mem_ctx, &state->local_server_name);
-	*session_info = talloc_move(mem_ctx, &state->session_info);
+	*local_server_name = discard_const_p(
+		char, talloc_move(mem_ctx, &i4->local_server_name));
+	*session_info = talloc_move(mem_ctx, &i4->session_info);
 
 	tevent_req_received(req);
 	return 0;
