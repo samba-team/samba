@@ -391,20 +391,11 @@
 	</para></listitem>
 	</varlistentry>
 
-	<varlistentry>
-	<term>--configfile=&lt;configuration file&gt;</term>
-	<listitem><para>The file specified contains the
-	configuration details required by the server.  The
-	information in this file includes server-specific
-	information such as what printcap file to use, as well
-	as descriptions of all the services that the server is
-	to provide. See &smb.conf; for more information.
-	The default configuration file name is determined at
-	compile time.</para></listitem>
-	</varlistentry>
-
-	&stdarg.version;
 	&popt.autohelp;
+	&cmdline.common.debug.client;
+	&cmdline.common.config.client;
+	&cmdline.common.option;
+	&cmdline.version;
 
 	</variablelist>
 </refsect1>
