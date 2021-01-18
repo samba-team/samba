@@ -20,57 +20,94 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbclient</command>
-		<arg choice="opt">-b &lt;buffer size&gt;</arg>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-e</arg>
-		<arg choice="opt">-L &lt;netbios name&gt;</arg>
-		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-I destinationIP</arg>
-		<arg choice="opt">-M &lt;netbios name&gt;</arg>
-		<arg choice="opt">-m maxprotocol</arg>
-		<arg choice="opt">-A authfile</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-C</arg>
-		<arg choice="opt">-g</arg>
-		<arg choice="opt">-i scope</arg>
-		<arg choice="opt">-O &lt;socket options&gt;</arg>
-		<arg choice="opt">-p port</arg>
-		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
-		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-t &lt;per-operation timeout in seconds&gt;</arg>
-		<arg choice="opt">-k</arg>
-		<arg choice="opt">-P</arg>
-		<arg choice="opt">-c &lt;command&gt;</arg>
+		<arg choice="opt">-M|--message=HOST</arg>
+		<arg choice="opt">-I|--ip-address=IP</arg>
+		<arg choice="opt">-E|--stderr</arg>
+		<arg choice="opt">-L|--list=HOST</arg>
+		<arg choice="opt">-T|--tar=&lt;c|x&gt;IXFvgbNan</arg>
+		<arg choice="opt">-D|--directory=DIR</arg>
+		<arg choice="opt">-b|--send-buffer=BYTES</arg>
+		<arg choice="opt">-t|--timeout=SECONDS</arg>
+		<arg choice="opt">-p|--port=PORT</arg>
+		<arg choice="opt">-g|--grepable</arg>
+		<arg choice="opt">-q|--quiet</arg>
+		<arg choice="opt">-B|--browse</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">-s|--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME%[PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
+		<arg choice="opt">-c|--command=STRING</arg>
 	</cmdsynopsis>
 
 	<cmdsynopsis>
 		<command>smbclient</command>
 		<arg choice="req">servicename</arg>
 		<arg choice="opt">password</arg>
-		<arg choice="opt">-b &lt;buffer size&gt;</arg>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-e</arg>
-		<arg choice="opt">-D Directory</arg>
-		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-W workgroup</arg>
-		<arg choice="opt">-M &lt;netbios name&gt;</arg>
-		<arg choice="opt">-m maxprotocol</arg>
-		<arg choice="opt">-A authfile</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-C</arg>
-		<arg choice="opt">-g</arg>
-		<arg choice="opt">-l log-basename</arg>
-		<arg choice="opt">-I destinationIP</arg>
-		<arg choice="opt">-E</arg>
-		<arg choice="opt">-c &lt;command string&gt;</arg>
-		<arg choice="opt">-i scope</arg>
-		<arg choice="opt">-O &lt;socket options&gt;</arg>
-		<arg choice="opt">-p port</arg>
-		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
-		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-t &lt;per-operation timeout in seconds&gt;</arg>
-		<arg choice="opt">-T&lt;c|x&gt;IXFvgbNan</arg>
-		<arg choice="opt">-k</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-M|--message=HOST</arg>
+		<arg choice="opt">-I|--ip-address=IP</arg>
+		<arg choice="opt">-E|--stderr</arg>
+		<arg choice="opt">-L|--list=HOST</arg>
+		<arg choice="opt">-T|--tar=&lt;c|x&gt;IXFvgbNan</arg>
+		<arg choice="opt">-D|--directory=DIR</arg>
+		<arg choice="opt">-b|--send-buffer=BYTES</arg>
+		<arg choice="opt">-t|--timeout=SECONDS</arg>
+		<arg choice="opt">-p|--port=PORT</arg>
+		<arg choice="opt">-g|--grepable</arg>
+		<arg choice="opt">-q|--quiet</arg>
+		<arg choice="opt">-B|--browse</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">-s|--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME%[PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
+		<arg choice="opt">-k|--kerberos=STRING</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -114,7 +151,7 @@
 		</para>
 
 		<para>The server name is looked up according to either
-		the <parameter>-R</parameter> parameter to <command>smbclient</command> or
+		the <parameter>-R|--name-resolve</parameter> parameter to <command>smbclient</command> or
 		using the name resolve order parameter in
 		the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> file,
@@ -146,63 +183,6 @@
 		<para>Be cautious about including passwords in scripts.
 		</para></listitem>
 		</varlistentry>
-
-		<varlistentry>
-		<term>-R|--name-resolve &lt;name resolve order&gt;</term>
-		<listitem><para>This option is used by the programs in the Samba
-		suite to determine what naming services and in what order to resolve
-		host names to IP addresses. The option takes a space-separated
-		string of different name resolution options.</para>
-
-		<para>The options are :"lmhosts", "host", "wins" and "bcast". They
-		cause names to be resolved as follows:</para>
-
-		<itemizedlist>
-			<listitem><para><constant>lmhosts</constant>: Lookup an IP
-			address in the Samba lmhosts file. If the line in lmhosts has
-			no name type attached to the NetBIOS name (see
-			the <citerefentry><refentrytitle>lmhosts</refentrytitle>
-			<manvolnum>5</manvolnum></citerefentry> for details) then
-			any name type matches for lookup.</para>
-			</listitem>
-
-			<listitem><para><constant>host</constant>: Do a standard host
-			name to IP address resolution, using the system <filename>/etc/hosts
-			</filename>, NIS, or DNS lookups. This method of name resolution
-			is operating system dependent, for instance on IRIX or Solaris this
-			may be controlled by the <filename>/etc/nsswitch.conf</filename>
-			file).	Note that this method is only used if the NetBIOS name
-			type being queried is the 0x20 (server) name type, otherwise
-			it is ignored.</para>
-			</listitem>
-
-			<listitem><para><constant>wins</constant>: Query a name with
-			the IP address listed in the <parameter>wins server</parameter>
-			parameter.	If no WINS server has
-			been specified this method will be ignored.</para>
-			</listitem>
-
-			<listitem><para><constant>bcast</constant>: Do a broadcast on
-			each of the known local interfaces listed in the
-			<parameter>interfaces</parameter>
-			parameter. This is the least reliable of the name resolution
-			methods as it depends on the target host being on a locally
-			connected subnet.</para>
-			</listitem>
-		</itemizedlist>
-
-		<para>If this parameter is not set then the name resolve order
-		defined in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file parameter
-		(name resolve order) will be used. </para>
-
-		<para>The default order is lmhosts, host, wins, bcast and without
-		this parameter or any entry in the <parameter>name resolve order
-		</parameter> parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file the name resolution
-		methods will be attempted in this order. </para></listitem>
-		</varlistentry>
-
 
 		<varlistentry>
 		<term>-M|--message NetBIOS name</term>
@@ -335,12 +315,6 @@
 		</listitem>
 		</varlistentry>
 
-		&stdarg.client.debug;
-		&popt.common.samba;
-		&popt.common.credentials;
-		&popt.common.connection;
-		&popt.autohelp;
-
 		<varlistentry>
 		<term>-t|--timeout &lt;timeout-seconds&gt;</term>
 		<listitem><para>This allows the user to tune the default
@@ -432,6 +406,7 @@
 			archive bit to be reset when a file is backed up. Useful with the
 			<parameter>g</parameter> and <parameter>c</parameter> flags.
 			</para></listitem>
+
 		</itemizedlist>
 
 		<para><emphasis>Tar Long File Names</emphasis></para>
@@ -504,6 +479,10 @@
 		to the server, e.g. <command>-c 'print -'</command>. </para></listitem>
 		</varlistentry>
 
+		&popt.autohelp;
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
 	</variablelist>
 </refsect1>
 
