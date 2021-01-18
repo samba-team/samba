@@ -120,6 +120,25 @@ A number of smb.conf parameters for less-secure authentication methods
 which are only possible over SMBv1 are deprecated in this release.
 
 
+Miscellaneous samba-tool changes
+--------------------------------
+
+The samba-tool commands to manage AD objects (e.g. users, computers and
+groups) now consistently use the "add" command when adding a new object to
+the AD. The previous deprecation warnings when using the "add" commands
+have been removed. For compatibility reasons, both the "add" and "create"
+commands can be used now.
+
+Users, groups and contacts can now be renamed with the respective rename
+commands.
+
+Locked users can be unlocked with the new "samba-tool user unlock" command.
+
+The "samba-tool user list" and "samba-tool group listmembers" commands
+provide additional options to hide expired and disabled user accounts
+(--hide-expired and --hide-disabled).
+
+
 CTDB CHANGES
 ============
 
