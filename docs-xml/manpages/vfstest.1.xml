@@ -19,10 +19,19 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>vfstest</command>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-c command</arg>
-		<arg choice="opt">-l logdir</arg>
-		<arg choice="opt">-h</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-f|--file=STRING</arg>
+		<arg choice="opt">-c|--command=STRING</arg>
+		<arg choice="opt">-m|--memreport=INT</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -52,19 +61,8 @@
 		</para> </listitem>
 		</varlistentry>
 
-		&stdarg.help;
-
-		<varlistentry>
-		<term>-l|--logfile=logbasename</term>
-		<listitem><para>File name for log/debug files. The extension
-		<constant>'.client'</constant> will be appended. The log file is never removed
-		by the client.
-		</para></listitem>
-		</varlistentry>
-
-		&stdarg.server.debug;
-		&popt.common.samba;
-
+		&popt.autohelp;
+		&cmdline.common.samba.client;
 	</variablelist>
 </refsect1>
 
