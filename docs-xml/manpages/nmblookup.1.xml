@@ -21,17 +21,30 @@
 	<cmdsynopsis>
 		<command>nmblookup</command>
 		<arg choice="opt">-M|--master-browser</arg>
-		<arg choice="opt">-R|--recursion</arg>
+		<arg choice="opt">--recursion</arg>
 		<arg choice="opt">-S|--status</arg>
 		<arg choice="opt">-r|--root-port</arg>
 		<arg choice="opt">-A|--lookup-by-ip</arg>
-		<arg choice="opt">-B|--broadcast &lt;broadcast address&gt;</arg>
-		<arg choice="opt">-U|--unicast &lt;unicast address&gt;</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-i &lt;NetBIOS scope&gt;</arg>
+		<arg choice="opt">-B|--broadcast=BROADCAST-ADDRESS</arg>
+		<arg choice="opt">-U|--unicast=UNICAST-ADDRESS</arg>
 		<arg choice="opt">-T|--translate</arg>
 		<arg choice="opt">-f|--flags</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
 		<arg choice="req">name</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -66,7 +79,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-R|--recursion</term>
+		<term>--recursion</term>
 		<listitem><para>Set the recursion desired bit in the packet 
 		to do a recursive lookup. This is used when sending a name 
 		query to a machine running a WINS server and the user wishes 
@@ -107,9 +120,6 @@
 
 
 
-		&popt.common.connection;
-		&popt.autohelp;
-
 		<varlistentry>
 		<term>-B|--broadcast &lt;broadcast address&gt;</term>
 		<listitem><para>Send the query to the given broadcast address. Without 
@@ -131,9 +141,6 @@
 		(along with the <parameter>-R</parameter> option) is needed to 
 		query a WINS server.</para></listitem>
 		</varlistentry>
-		
-		&stdarg.server.debug;	
-		&popt.common.samba;
 
 		<varlistentry>
 		<term>-T|--translate</term>
@@ -165,6 +172,10 @@
 		'*', which will return all registered names within a broadcast 
 		area.</para></listitem>
 		</varlistentry>
+
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
