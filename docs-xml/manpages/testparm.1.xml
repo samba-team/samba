@@ -21,8 +21,11 @@
 	<cmdsynopsis>
 		<command>testparm</command>
 		<arg choice="opt">-s|--suppress-prompt</arg>
-		<arg choice="opt">--help</arg>
 		<arg choice="opt">-v|--verbose</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
 		<arg choice="req">config filename</arg>
 		<arg choice="opt">hostname hostIP</arg>
 	</cmdsynopsis>
@@ -68,11 +71,6 @@
 		names and before dumping the service definitions.</para></listitem>
 		</varlistentry>
 
-		&stdarg.version;
-		&stdarg.option;
-		&popt.autohelp;
-		&stdarg.client.debug;
-
 		<varlistentry>
 		<term>-v|--verbose</term>
 		<listitem><para>If this option is specified, testparm 
@@ -113,6 +111,12 @@
 				Skip the global checks.
 		</para></listitem>
 		</varlistentry>
+
+		&popt.autohelp;
+		&cmdline.common.debug.client;
+		&cmdline.common.config.client;
+		&cmdline.common.option;
+		&cmdline.version;
 
 		<varlistentry>
 		<term>configfilename</term>
