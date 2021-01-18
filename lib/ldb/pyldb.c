@@ -4279,7 +4279,7 @@ static PyMethodDef py_ldb_global_methods[] = {
 		"S.string_to_time(string) -> int\n\n"
 		"Parse a LDAP time string into a UNIX timestamp." },
 	{ "valid_attr_name", py_valid_attr_name, METH_VARARGS,
-		"S.valid_attr_name(name) -> bool\n\nn"
+		"S.valid_attr_name(name) -> bool\n\n"
 		"Check whether the supplied name is a valid attribute name." },
 	{ "binary_encode", py_binary_encode, METH_VARARGS,
 		"S.binary_encode(string) -> string\n\n"
