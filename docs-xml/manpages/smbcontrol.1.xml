@@ -19,8 +19,16 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbcontrol</command>
-		<arg>-s</arg>
-		<arg>-t|--timeout</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-t|--timeout</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
 	</cmdsynopsis>
 	
 	<cmdsynopsis>
@@ -49,8 +57,6 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
-		&popt.autohelp;
-		&popt.common.samba.client;
 		<varlistentry>
 		<term>-t|--timeout</term>
 		<listitem><para>
@@ -90,14 +96,15 @@
 		<listitem><para>Type of message to send. See 
 		the section <constant>MESSAGE-TYPES</constant> for details.
 		</para></listitem></varlistentry>
-		
 
-	
 		<varlistentry>
 		<term>parameters</term>
 		<listitem><para>any parameters required for the message-type</para>
 		</listitem>
 		</varlistentry>
+
+		&popt.autohelp;
+		&cmdline.common.samba.client;
 	</variablelist>
 	
 </refsect1>
