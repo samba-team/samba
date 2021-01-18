@@ -21,25 +21,50 @@
 		<command>smbcacls</command>
 		<arg choice="req">//server/share</arg>
 		<arg choice="req">/filename</arg>
-		<arg choice="opt">-D|--delete acl</arg>
-		<arg choice="opt">-M|--modify acl</arg>
-		<arg choice="opt">-a|--add acl</arg>
-		<arg choice="opt">-S|--set acl</arg>
-		<arg choice="opt">-C|--chown name</arg>
-		<arg choice="opt">-G|--chgrp name</arg>
-		<arg choice="opt">-I allow|remove|copy</arg>
+
+		<arg choice="opt">-D|--delete=ACL</arg>
+		<arg choice="opt">-M|--modify=ACL</arg>
+		<arg choice="opt">-a|--add=ACL</arg>
+		<arg choice="opt">-S|--set=ACLS</arg>
+		<arg choice="opt">-C|--chown=USERNAME</arg>
+		<arg choice="opt">-G|--chgrp=GROUPNAME</arg>
+		<arg choice="opt">-I|--inherit=STRING</arg>
 		<arg choice="opt">--propagate-inheritance</arg>
 		<arg choice="opt">--numeric</arg>
-		<arg choice="opt">-t</arg>
-		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-d</arg>
-		<arg choice="opt">-e</arg>
-		<arg choice="opt">-m|--max-protocol LEVEL</arg>
-		<arg choice="opt">--query-security-info FLAGS</arg>
-		<arg choice="opt">--set-security-info FLAGS</arg>
 		<arg choice="opt">--sddl</arg>
-		<arg choice="opt">--domain-sid SID</arg>
+		<arg choice="opt">--query-security-info=INT</arg>
+		<arg choice="opt">--set-security-info=INT</arg>
+		<arg choice="opt">-t|--test-args</arg>
+		<arg choice="opt">--domain-sid=SID</arg>
 		<arg choice="opt">-x|--maximum-access</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -206,11 +231,10 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.server.debug;
-		&popt.common.samba;
-		&popt.common.credentials;
-		&popt.common.connection;
 		&popt.autohelp;
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
 	</variablelist>
 </refsect1>
 
