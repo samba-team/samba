@@ -20,10 +20,19 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>profiles</command>
-		<arg choice="opt">-v</arg>
-		<arg choice="opt">-c|--change-sid SID</arg>
-		<arg choice="opt">-n|--new-sid SID</arg>
-		<arg choice="req">file</arg>
+		<arg choice="opt">-c|--change-sid=STRING</arg>
+		<arg choice="opt">-n|--new-sid=STRING</arg>
+		<arg choice="opt">-v|--verbose</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="req">FILE</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -63,9 +72,8 @@
 		</para></listitem>
 		</varlistentry>
 
-		&popt.common.samba.client;
+		&cmdline.common.samba.client;
 		&popt.autohelp;
-
 	</variablelist>
 </refsect1>
 
