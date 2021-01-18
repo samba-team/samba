@@ -19,42 +19,48 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>pdbedit</command>
-		<arg choice="opt">-a</arg>
-		<arg choice="opt">-b passdb-backend</arg>
-		<arg choice="opt">-c account-control</arg>
-		<arg choice="opt">-C value</arg>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-D drive</arg>
-		<arg choice="opt">-e passdb-backend</arg>
-		<arg choice="opt">-f fullname</arg>
-		<arg choice="opt">--force-initialized-passwords</arg>
-		<arg choice="opt">-g</arg>
-		<arg choice="opt">-h homedir</arg>
-		<arg choice="opt">-i passdb-backend</arg>
-		<arg choice="opt">-I domain</arg>
-		<arg choice="opt">-K</arg>
-		<arg choice="opt">-L </arg>
-		<arg choice="opt">-m</arg>
-		<arg choice="opt">-M SID|RID</arg>
-		<arg choice="opt">-N description</arg>
-		<arg choice="opt">-P account-policy</arg>
-		<arg choice="opt">-p profile</arg>
+		<arg choice="opt">-L|--list</arg>
+		<arg choice="opt">-v|--verbose</arg>
+		<arg choice="opt">-w|--smbpasswd-style</arg>
+		<arg choice="opt">-u|--user=USER</arg>
+		<arg choice="opt">-N|--account-desc=STRING</arg>
+		<arg choice="opt">-f|--fullname=STRING</arg>
+		<arg choice="opt">-h|--homedir=STRING</arg>
+		<arg choice="opt">-D|--drive=STRING</arg>
+		<arg choice="opt">-S|--script=STRING</arg>
+		<arg choice="opt">-p|--profile=STRING</arg>
+		<arg choice="opt">-I|--domain=STRING</arg>
+		<arg choice="opt">-U|--user SID=STRING</arg>
+		<arg choice="opt">-M|--machine SID=STRING</arg>
+		<arg choice="opt">-a|--create</arg>
+		<arg choice="opt">-r|--modify</arg>
+		<arg choice="opt">-m|--machine</arg>
+		<arg choice="opt">-x|--delete</arg>
+		<arg choice="opt">-b|--backend=STRING</arg>
+		<arg choice="opt">-i|--import=STRING</arg>
+		<arg choice="opt">-e|--export=STRING</arg>
+		<arg choice="opt">-g|--group</arg>
+		<arg choice="opt">-y|--policies</arg>
 		<arg choice="opt">--policies-reset</arg>
-		<arg choice="opt">-r</arg>
-		<arg choice="opt">-s configfile</arg>
-		<arg choice="opt">-S script</arg>
-		<arg choice="opt">--set-nt-hash</arg>
-		<arg choice="opt">-t</arg>
-		<arg choice="opt">--time-format</arg>
-		<arg choice="opt">-u username</arg>
-		<arg choice="opt">-U SID|RID</arg>
-		<arg choice="opt">-v</arg>
-		<arg choice="opt">-V</arg>
-		<arg choice="opt">-w</arg>
-		<arg choice="opt">-x</arg>
-		<arg choice="opt">-y</arg>
-		<arg choice="opt">-z</arg>
-		<arg choice="opt">-Z</arg>
+		<arg choice="opt">-P|--account-policy=STRING</arg>
+		<arg choice="opt">-C|--value=LONG</arg>
+		<arg choice="opt">-c|--account-control=STRING</arg>
+		<arg choice="opt">--force-initialized-passwords</arg>
+		<arg choice="opt">-z|--bad-password-count-reset</arg>
+		<arg choice="opt">-Z|--logon-hours-reset</arg>
+		<arg choice="opt">--time-format=STRING</arg>
+		<arg choice="opt">-t|--password-from-stdin</arg>
+		<arg choice="opt">-K|--kickoff-time=STRING</arg>
+		<arg choice="opt">--set-nt-hash=STRING</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -520,9 +526,7 @@ account policy value for bad lockout attempt is now 3
 		</varlistentry>
 
 		&popt.autohelp;
-		&stdarg.server.debug;
-		&popt.common.samba;
-
+		&cmdline.common.samba.client;
 	</variablelist>
 </refsect1>
 
