@@ -19,20 +19,28 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbstatus</command>
-		<arg choice="opt">-P</arg>
-		<arg choice="opt">-b</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-v</arg>
-		<arg choice="opt">-L</arg>
-		<arg choice="opt">-B</arg>
-		<arg choice="opt">-p</arg>
-		<arg choice="opt">-S</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-f</arg>
-		<arg choice="opt">-s &lt;configuration file&gt;</arg>
-		<arg choice="opt">-u &lt;username&gt;</arg>
-		<arg choice="opt">-n|--numeric</arg>
+		<arg choice="opt">-p|--processes</arg>
+		<arg choice="opt">-v|--verbose</arg>
+		<arg choice="opt">-L|--locks</arg>
+		<arg choice="opt">-S|--shares</arg>
+		<arg choice="opt">-N|--notify</arg>
+		<arg choice="opt">-u|--user=STRING</arg>
+		<arg choice="opt">-b|--brief</arg>
+		<arg choice="opt">-P|--profile</arg>
 		<arg choice="opt">-R|--profile-rates</arg>
+		<arg choice="opt">-B|--byterange</arg>
+		<arg choice="opt">-n|--numeric</arg>
+		<arg choice="opt">-f|--fast</arg>
+		<arg choice="opt">--resolve-uids</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -69,14 +77,10 @@
 		<listitem><para>gives brief output.</para></listitem>
 		</varlistentry>
 
-		&stdarg.server.debug;
-		&popt.common.samba;
-	
 		<varlistentry>
 		<term>-v|--verbose</term>
 		<listitem><para>gives verbose output.</para></listitem>
 		</varlistentry>
-
 
 		<varlistentry>
 		<term>-L|--locks</term>
@@ -84,13 +88,11 @@
 		</listitem>
 		</varlistentry>
 
-		
 		<varlistentry>
 		<term>-B|--byterange</term>
 		<listitem><para>causes smbstatus to include byte range locks.
 		</para></listitem>
 		</varlistentry>
-
 
 		<varlistentry>
 		<term>-p|--processes</term>
@@ -98,8 +100,7 @@
 		<manvolnum>8</manvolnum></citerefentry> processes and exit. 
 		Useful for scripting.</para></listitem>
 		</varlistentry>
-		
-		
+
 		<varlistentry>
 		<term>-S|--shares</term>
 		<listitem><para>causes smbstatus to only list shares.</para>
@@ -122,8 +123,6 @@
 		</listitem>
 		</varlistentry>
 
-		&stdarg.help;
-
 		<varlistentry>
 		<term>-u|--user=&lt;username&gt;</term>
 		<listitem><para>selects information relevant to <parameter>username</parameter> only.</para>
@@ -137,6 +136,8 @@
 		</listitem>
 		</varlistentry>
 
+		&popt.autohelp;
+		&cmdline.common.samba.client;
 	</variablelist>
 </refsect1>
 
