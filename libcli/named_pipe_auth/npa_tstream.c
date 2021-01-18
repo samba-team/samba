@@ -1348,13 +1348,25 @@ int _tstream_npa_accept_existing_recv(
 		*info4 = dst;
 	}
 
-	*remote_client_addr = talloc_move(mem_ctx, &state->remote_client_addr);
-	*_remote_client_name = discard_const_p(
-		char, talloc_move(mem_ctx, &i4->remote_client_name));
-	*local_server_addr = talloc_move(mem_ctx, &state->local_server_addr);
-	*local_server_name = discard_const_p(
-		char, talloc_move(mem_ctx, &i4->local_server_name));
-	*session_info = talloc_move(mem_ctx, &i4->session_info);
+	if (remote_client_addr != NULL) {
+		*remote_client_addr = talloc_move(
+			mem_ctx, &state->remote_client_addr);
+	}
+	if (_remote_client_name != NULL) {
+		*_remote_client_name = discard_const_p(
+			char, talloc_move(mem_ctx, &i4->remote_client_name));
+	}
+	if (local_server_addr != NULL) {
+		*local_server_addr = talloc_move(
+			mem_ctx, &state->local_server_addr);
+	}
+	if (local_server_name != NULL) {
+		*local_server_name = discard_const_p(
+			char, talloc_move(mem_ctx, &i4->local_server_name));
+	}
+	if (session_info != NULL) {
+		*session_info = talloc_move(mem_ctx, &i4->session_info);
+	}
 
 	tevent_req_received(req);
 	return 0;
