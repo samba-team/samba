@@ -106,6 +106,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 	ret = tstream_npa_accept_existing_recv(subreq, &error, tmp_ctx,
 					       &conn->tstream,
+					       NULL,
 					       &remote_client_addr,
 					       &remote_client_name,
 					       &local_server_addr,

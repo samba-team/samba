@@ -24,6 +24,7 @@ struct tevent_req;
 struct tevent_context;
 struct auth_session_info_transport;
 struct tsocket_address;
+struct named_pipe_auth_req_info4;
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -95,18 +96,21 @@ struct tevent_req *tstream_npa_accept_existing_send(TALLOC_CTX *mem_ctx,
  *
  * @return  0 if successful, -1 on failure with *perror filled.
  */
-int _tstream_npa_accept_existing_recv(struct tevent_req *req,
-				      int *perrno,
-				      TALLOC_CTX *mem_ctx,
-				      struct tstream_context **stream,
-				      struct tsocket_address **remote_client_addr,
-				      char **_remote_client_name,
-				      struct tsocket_address **local_server_addr,
-				      char **local_server_name,
-				      struct auth_session_info_transport **session_info,
-				      const char *location);
+int _tstream_npa_accept_existing_recv(
+	struct tevent_req *req,
+	int *perrno,
+	TALLOC_CTX *mem_ctx,
+	struct tstream_context **stream,
+	struct named_pipe_auth_req_info4 **info4,
+	struct tsocket_address **remote_client_addr,
+	char **_remote_client_name,
+	struct tsocket_address **local_server_addr,
+	char **local_server_name,
+	struct auth_session_info_transport **session_info,
+	const char *location);
 #define tstream_npa_accept_existing_recv(req, perrno, \
 					 mem_ctx, stream, \
+					 info4, \
 					 remote_client_addr, \
 					 remote_client_name,  \
 					 local_server_addr, \
@@ -114,6 +118,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 					 session_info) \
 	_tstream_npa_accept_existing_recv(req, perrno, \
 					  mem_ctx, stream, \
+					  info4, \
 					  remote_client_addr, \
 					  remote_client_name,  \
 					  local_server_addr, \

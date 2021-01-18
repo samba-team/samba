@@ -1236,16 +1236,58 @@ static void tstream_npa_accept_existing_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-int _tstream_npa_accept_existing_recv(struct tevent_req *req,
-				      int *perrno,
-				      TALLOC_CTX *mem_ctx,
-				      struct tstream_context **stream,
-				      struct tsocket_address **remote_client_addr,
-				      char **_remote_client_name,
-				      struct tsocket_address **local_server_addr,
-				      char **local_server_name,
-				      struct auth_session_info_transport **session_info,
-				      const char *location)
+static struct named_pipe_auth_req_info4 *copy_npa_info4(
+	TALLOC_CTX *mem_ctx, const struct named_pipe_auth_req_info4 *src)
+{
+	struct named_pipe_auth_req_info4 *dst = NULL;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+
+	dst = talloc_zero(mem_ctx, struct named_pipe_auth_req_info4);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		dst,
+		src,
+		(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req_info4);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_named_pipe_auth_req_info4 failed: %s\n",
+			    ndr_errstr(ndr_err));
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(
+		&blob,
+		dst,
+		dst,
+		(ndr_pull_flags_fn_t)ndr_pull_named_pipe_auth_req_info4);
+	TALLOC_FREE(blob.data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_named_pipe_auth_req_info4 failed: %s\n",
+			    ndr_errstr(ndr_err));
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	return dst;
+}
+
+int _tstream_npa_accept_existing_recv(
+	struct tevent_req *req,
+	int *perrno,
+	TALLOC_CTX *mem_ctx,
+	struct tstream_context **stream,
+	struct named_pipe_auth_req_info4 **info4,
+	struct tsocket_address **remote_client_addr,
+	char **_remote_client_name,
+	struct tsocket_address **local_server_addr,
+	char **local_server_name,
+	struct auth_session_info_transport **session_info,
+	const char *location)
 {
 	struct tstream_npa_accept_state *state =
 			tevent_req_data(req, struct tstream_npa_accept_state);
@@ -1289,6 +1331,22 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	ZERO_STRUCTP(npas);
 	npas->unix_stream = state->plain;
 	npas->file_type = state->file_type;
+
+	if (info4 != NULL) {
+		/*
+		 * Make a full copy of "info4" because further down we
+		 * talloc_move() away substructures from
+		 * state->pipe_request.
+		 */
+		struct named_pipe_auth_req_info4 *dst = copy_npa_info4(
+			mem_ctx, i4);
+		if (dst == NULL) {
+			*perrno = ENOMEM;
+			tevent_req_received(req);
+			return -1;
+		}
+		*info4 = dst;
+	}
 
 	*remote_client_addr = talloc_move(mem_ctx, &state->remote_client_addr);
 	*_remote_client_name = discard_const_p(
