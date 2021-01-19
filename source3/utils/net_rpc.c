@@ -207,15 +207,6 @@ int run_rpc_command(struct net_context *c,
 			}
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
-				struct cli_credentials *creds = NULL;
-
-				creds = net_context_creds(c, mem_ctx);
-				if (creds == NULL) {
-					DBG_ERR("net_rpc_ntlm_creds() failed\n");
-					nt_status = NT_STATUS_INTERNAL_ERROR;
-					goto fail;
-				}
-
 				nt_status = cli_rpc_pipe_open_with_creds(
 					cli, table,
 					(conn_flags & NET_FLAGS_TCP) ?
@@ -223,7 +214,7 @@ int run_rpc_command(struct net_context *c,
 					DCERPC_AUTH_TYPE_NTLMSSP,
 					DCERPC_AUTH_LEVEL_PRIVACY,
 					smbXcli_conn_remote_name(cli->conn),
-					creds, &pipe_hnd);
+					c->creds, &pipe_hnd);
 			} else {
 				nt_status = cli_rpc_pipe_open_noauth(
 					cli, table,
@@ -1256,7 +1247,6 @@ static int rpc_user_list(struct net_context *c, int argc, const char **argv)
 int net_rpc_user(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -1310,17 +1300,12 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -3447,7 +3432,6 @@ static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
 int net_rpc_group(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -3509,17 +3493,12 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -5440,7 +5419,6 @@ int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
 int net_rpc_share(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -5486,17 +5464,12 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -5743,7 +5716,6 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 int net_rpc_file(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -5775,17 +5747,12 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}
@@ -8201,7 +8168,6 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 int net_rpc(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -8392,17 +8358,12 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}

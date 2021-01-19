@@ -31,6 +31,7 @@
 #include "libsmb/libsmb.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
+#include "lib/cmdline/cmdline.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
@@ -108,14 +109,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 			    const char *service_type)
 {
 	NTSTATUS nt_status;
-	struct cli_credentials *creds = NULL;
 	int flags = 0;
-
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		d_fprintf(stderr, "net_context_creds() failed.\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (strequal(service_type, "IPC")) {
 		flags |= CLI_FULL_CONNECTION_IPC;
@@ -124,7 +118,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 	nt_status = cli_full_connection_creds(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
-					creds,
+					c->creds,
 					flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
@@ -268,6 +262,8 @@ int net_use_krb_machine_account(struct net_context *c)
 	}
 	c->opt_user_name = user_name;
 	c->opt_user_specified = true;
+
+	cli_credentials_set_machine_account(c->creds, c->lp_ctx);
 	return 0;
 }
 
@@ -434,157 +430,16 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
+/* TODO FIXME: Pass cli_creds via net_context and get rid of this function. */
 const char *net_prompt_pass(struct net_context *c, const char *user)
 {
-	char *prompt = NULL;
-	char pwd[256] = {0};
-	int rc;
+	struct cli_credentials *creds = samba_cmdline_get_creds();
 
-	if (c->opt_password) {
-		return c->opt_password;
+	if (c->opt_password == NULL) {
+		c->opt_password = cli_credentials_get_password(creds);
 	}
 
-	if (c->opt_machine_pass) {
-		return NULL;
-	}
-
-	if (c->opt_kerberos && !c->opt_user_specified) {
-		return NULL;
-	}
-
-	if (c->opt_ccache) {
-		return NULL;
-	}
-
-	if (asprintf(&prompt, _("Enter %s's password:"), user) == -1) {
-		return NULL;
-	}
-
-	rc = samba_getpass(prompt, pwd, sizeof(pwd), false, false);
-	SAFE_FREE(prompt);
-	if (rc < 0) {
-		return NULL;
-	}
-
-	return SMB_STRDUP(pwd);
-}
-
-struct cli_credentials *net_context_creds(struct net_context *c,
-					  TALLOC_CTX *mem_ctx)
-{
-	struct cli_credentials *creds = NULL;
-	struct loadparm_context *lp_ctx = NULL;
-
-	/*
-	 * Do not query the password if we defined we want to use the
-	 * machine account.
-	 */
-	if (c->opt_machine_pass) {
-		c->opt_password = net_prompt_pass(c, c->opt_user_name);
-	}
-
-	creds = cli_credentials_init(mem_ctx);
-	if (creds == NULL) {
-		d_printf("ERROR: Unable to allocate memory!\n");
-		exit(-1);
-	}
-
-	lp_ctx = loadparm_init_s3(creds, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		d_printf("loadparm_init_s3 failed\n");
-		exit(-1);
-	}
-
-	cli_credentials_guess(creds, lp_ctx);
-
-	if (c->opt_kerberos && c->opt_user_specified) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DESIRED,
-						   CRED_SPECIFIED);
-	} else if (c->opt_kerberos) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_REQUIRED,
-						   CRED_SPECIFIED);
-	} else {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DISABLED,
-						   CRED_SPECIFIED);
-	}
-
-	if (c->opt_ccache) {
-		uint32_t features;
-
-		features = cli_credentials_get_gensec_features(creds);
-		features |= GENSEC_FEATURE_NTLM_CCACHE;
-		cli_credentials_set_gensec_features(creds,
-						    features,
-						    CRED_SPECIFIED);
-
-		if (c->opt_password != NULL && strlen(c->opt_password) == 0) {
-			/*
-			 * some callers pass "" as no password
-			 *
-			 * GENSEC_FEATURE_NTLM_CCACHE only handles
-			 * NULL as no password.
-			 */
-			c->opt_password = NULL;
-		}
-	}
-
-	if (c->opt_user_specified) {
-		const char *default_domain =
-			cli_credentials_get_domain(creds);
-		char *username = NULL;
-		const char *domain = NULL;
-		char *tmp = NULL;
-		char *p = NULL;
-		bool is_default;
-
-		tmp = talloc_strdup(creds, c->opt_user_name);
-		if (tmp == NULL) {
-			exit(-1);
-		}
-		username = tmp;
-
-		/* allow for workgroups as part of the username */
-		if ((p = strchr_m(tmp, '\\')) ||
-		    (p = strchr_m(tmp, '/')) ||
-		    (p = strchr_m(tmp, *lp_winbind_separator()))) {
-			*p = 0;
-			username = p + 1;
-			domain = tmp;
-		}
-
-		if (domain == NULL) {
-			domain = c->opt_workgroup;
-		}
-
-		/*
-		 * Don't overwrite the value from cli_credentials_guess()
-		 * with CRED_SPECIFIED, unless we have to.
-		 */
-		is_default = strequal_m(domain, default_domain);
-		if (!is_default) {
-			cli_credentials_set_domain(creds,
-						   domain,
-						   CRED_SPECIFIED);
-		}
-
-		cli_credentials_set_username(creds,
-					     username,
-					     CRED_SPECIFIED);
-		cli_credentials_set_password(creds,
-					     c->opt_password,
-					     CRED_SPECIFIED);
-	}
-
-	if (c->smb_encrypt) {
-		cli_credentials_set_smb_encryption(creds,
-						   SMB_ENCRYPTION_REQUIRED,
-						   CRED_SPECIFIED);
-	}
-
-	return creds;
+	return c->opt_password;
 }
 
 int net_run_function(struct net_context *c, int argc, const char **argv,

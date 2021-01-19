@@ -2433,7 +2433,6 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	char *prt_dn, *srv_dn, **srv_cn;
 	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
-	struct cli_credentials *creds = NULL;
 	bool ok;
 
 	if (argc < 1 || c->display_usage) {
@@ -2471,21 +2470,14 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		return -1;
 	}
 
-	creds = net_context_creds(c, mem_ctx);
-	if (creds == NULL) {
-		d_fprintf(stderr, "net_context_creds() failed\n");
-		ads_destroy(&ads);
-		talloc_destroy(mem_ctx);
-		return -1;
-	}
-	cli_credentials_set_kerberos_state(creds,
+	cli_credentials_set_kerberos_state(c->creds,
 					   CRED_USE_KERBEROS_REQUIRED,
 					   CRED_SPECIFIED);
 
 	nt_status = cli_full_connection_creds(&cli, lp_netbios_name(), servername,
 					&server_ss, 0,
 					"IPC$", "IPC",
-					creds,
+					c->creds,
 					CLI_FULL_CONNECTION_IPC);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
@@ -2675,8 +2667,8 @@ static int net_ads_printer(struct net_context *c, int argc, const char **argv)
 static int net_ads_password(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	const char *auth_principal = c->opt_user_name;
-	const char *auth_password = c->opt_password;
+	const char *auth_principal = cli_credentials_get_username(c->creds);
+	const char *auth_password = cli_credentials_get_password(c->creds);
 	const char *realm = NULL;
 	const char *new_password = NULL;
 	char *chr, *prompt;
@@ -2693,7 +2685,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	if (c->opt_user_name == NULL || c->opt_password == NULL) {
+	if (auth_principal == NULL || auth_password == NULL) {
 		d_fprintf(stderr, _("You must supply an administrator "
 				    "username/password\n"));
 		return -1;

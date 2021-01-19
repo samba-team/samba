@@ -222,7 +222,6 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 	struct rpc_sh_ctx *ctx;
 	struct dom_sid_buf buf;
-	struct cli_credentials *creds = NULL;
 	NET_API_STATUS net_api_status;
 
 	if (argc != 0 || c->display_usage) {
@@ -230,16 +229,11 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	if (libnetapi_net_init(&c->netapi_ctx) != 0) {
 		return -1;
 	}
 
-	net_api_status = libnetapi_set_creds(c->netapi_ctx, creds);
+	net_api_status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (net_api_status != 0) {
 		return -1;
 	}

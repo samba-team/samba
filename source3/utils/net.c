@@ -52,6 +52,7 @@
 #include "lib/gencache.h"
 #include "auth/credentials/credentials.h"
 #include "source3/utils/passwd_proto.h"
+#include "auth/gensec/gensec.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
@@ -260,7 +261,6 @@ static int net_changesecretpw(struct net_context *c, int argc,
 static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 {
 	const char *password = NULL;
-	struct cli_credentials *creds = NULL;
 	bool ok;
 
 	if (!secrets_init()) {
@@ -307,14 +307,7 @@ static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 		return 1;
 	}
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		d_fprintf(stderr, _("Failed creating auth credentials\n"));
-		return 1;
-	}
-
-	ok = secrets_store_creds(creds);
-	TALLOC_FREE(creds);
+	ok = secrets_store_creds(c->creds);
 	if (!ok) {
 		d_fprintf(stderr, _("Failed storing auth user credentials\n"));
 		return 1;
@@ -919,33 +912,12 @@ static struct functable net_func[] = {
 };
 
 
-static void get_credentials_file(struct net_context *c,
-				 const char *file)
-{
-	struct cli_credentials *cred = cli_credentials_init(c);
-
-	if (cred == NULL) {
-		d_printf("ERROR: Unable to allocate memory!\n");
-		exit(-1);
-	}
-
-	if (!cli_credentials_parse_file(cred, file, CRED_GUESS_FILE)) {
-		exit(-1);
-	}
-
-	c->opt_user_name = cli_credentials_get_username(cred);
-	c->opt_user_specified = (c->opt_user_name != NULL);
-	c->opt_password = cli_credentials_get_password(cred);
-	c->opt_target_workgroup = cli_credentials_get_domain(cred);
-}
-
 /****************************************************************************
   main program
 ****************************************************************************/
  int main(int argc, char **argv)
 {
 	int opt,i;
-	char *p;
 	int rc = 0;
 	int argc_new = 0;
 	const char ** argv_new;
@@ -963,26 +935,10 @@ static void get_credentials_file(struct net_context *c,
 			.val        = 'h',
 		},
 		{
-			.longName   = "workgroup",
+			.longName   = "target-workgroup",
 			.shortName  = 'w',
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_target_workgroup,
-		},
-		{
-			.longName   = "user",
-			.shortName  = 'U',
-			.argInfo    = POPT_ARG_STRING,
-			.arg        = &c->opt_user_name,
-			.val        = 'U',
-		},
-		{
-			.longName   = "authentication-file",
-			.shortName  = 'A',
-			.argInfo    = POPT_ARG_STRING,
-			.arg        = &c->opt_user_name,
-			.val        = 'A',
-			.descrip    = "Get the credentials from a file",
-			.argDescrip = "FILE",
 		},
 		{
 			.longName   = "ipaddress",
@@ -999,7 +955,7 @@ static void get_credentials_file(struct net_context *c,
 		},
 		{
 			.longName   = "myname",
-			.shortName  = 'n',
+			.shortName  = 0,
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_requester_name,
 		},
@@ -1008,14 +964,6 @@ static void get_credentials_file(struct net_context *c,
 			.shortName  = 'S',
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_host,
-		},
-		{
-			.longName   = "encrypt",
-			.shortName  = 'e',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = 'e',
-			.descrip    = N_("Encrypt SMB transport"),
 		},
 		{
 			.longName   = "container",
@@ -1077,24 +1025,6 @@ static void get_credentials_file(struct net_context *c,
 			.arg        = &c->opt_request_timeout,
 		},
 		{
-			.longName   = "machine-pass",
-			.shortName  = 'P',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = &c->opt_machine_pass,
-		},
-		{
-			.longName   = "kerberos",
-			.shortName  = 'k',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = &c->opt_kerberos,
-		},
-		{
-			.longName   = "myworkgroup",
-			.shortName  = 'W',
-			.argInfo    = POPT_ARG_STRING,
-			.arg        = &c->opt_workgroup,
-		},
-		{
 			.longName   = "use-ccache",
 			.shortName  = 0,
 			.argInfo    = POPT_ARG_NONE,
@@ -1127,13 +1057,13 @@ static void get_credentials_file(struct net_context *c,
 		},
 		{
 			.longName   = "ntname",
-			.shortName  = 'N',
+			.shortName  = 0,
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_newntname,
 		},
 		{
 			.longName   = "rid",
-			.shortName  = 'R',
+			.shortName  = 0,
 			.argInfo    = POPT_ARG_INT,
 			.arg        = &c->opt_rid,
 		},
@@ -1283,7 +1213,10 @@ static void get_credentials_file(struct net_context *c,
 			.descrip    = "follow symlinks",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
 		POPT_COMMON_VERSION
+		POPT_LEGACY_S3
 		POPT_TABLEEND
 	};
 
@@ -1330,9 +1263,6 @@ static void get_credentials_file(struct net_context *c,
 		case 'h':
 			c->display_usage = true;
 			break;
-		case 'e':
-			c->smb_encrypt = true;
-			break;
 		case 'I':
 			if (!interpret_string_addr(&c->opt_dest_ip,
 						poptGetOptArg(pc), 0)) {
@@ -1341,24 +1271,39 @@ static void get_credentials_file(struct net_context *c,
 				c->opt_have_ip = true;
 			}
 			break;
-		case 'U':
-			c->opt_user_specified = true;
-			c->opt_user_name = talloc_strdup(c, c->opt_user_name);
-			p = strchr(c->opt_user_name,'%');
-			if (p) {
-				*p = 0;
-				c->opt_password = p+1;
-			}
-			break;
-		case 'A':
-			get_credentials_file(c, c->opt_user_name);
-			break;
 		default:
 			d_fprintf(stderr, _("\nInvalid option %s: %s\n"),
 				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_help(c, argc, argv_const);
 			exit(1);
 		}
+	}
+
+	c->creds = samba_cmdline_get_creds();
+	c->lp_ctx = samba_cmdline_get_lp_ctx();
+
+	{
+		enum credentials_obtained username_obtained =
+			CRED_UNINITIALISED;
+		enum smb_encryption_setting encrypt_state =
+			cli_credentials_get_smb_encryption(c->creds);
+		enum credentials_use_kerberos krb5_state =
+			cli_credentials_get_kerberos_state(c->creds);
+		uint32_t gensec_features;
+
+		c->opt_user_name = cli_credentials_get_username_and_obtained(
+				c->creds,
+				&username_obtained);
+		c->opt_user_specified = (username_obtained == CRED_SPECIFIED);
+
+		c->opt_workgroup = cli_credentials_get_domain(c->creds);
+
+		c->smb_encrypt = (encrypt_state == SMB_ENCRYPTION_REQUIRED);
+
+		c->opt_kerberos = (krb5_state > CRED_USE_KERBEROS_DESIRED);
+
+		gensec_features = cli_credentials_get_gensec_features(c->creds);
+		c->opt_ccache = (gensec_features & GENSEC_FEATURE_NTLM_CCACHE);
 	}
 
 	c->msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
@@ -1391,14 +1336,6 @@ static void get_credentials_file(struct net_context *c,
 		lp_set_cmdline("netbios name", c->opt_requester_name);
 	}
 
-	if (!c->opt_user_name && getenv("LOGNAME")) {
-		c->opt_user_name = getenv("LOGNAME");
-	}
-
-	if (!c->opt_workgroup) {
-		c->opt_workgroup = talloc_strdup(c, lp_workgroup());
-	}
-
 	if (!c->opt_target_workgroup) {
 		c->opt_target_workgroup = talloc_strdup(c, lp_workgroup());
 	}
@@ -1408,17 +1345,6 @@ static void get_credentials_file(struct net_context *c,
 	/* this makes sure that when we do things like call scripts,
 	   that it won't assert because we are not root */
 	sec_init();
-
-	if (c->opt_machine_pass) {
-		/* it is very useful to be able to make ads queries as the
-		   machine account for testing purposes and for domain leave */
-
-		net_use_krb_machine_account(c);
-	}
-
-	if (!c->opt_password) {
-		c->opt_password = getenv("PASSWD");
-	}
 
 	samba_cmdline_burn(argc, argv);
 

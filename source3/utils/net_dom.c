@@ -340,7 +340,6 @@ static int net_dom_renamecomputer(struct net_context *c, int argc, const char **
 int net_dom(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
-	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -375,17 +374,12 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	creds = net_context_creds(c, c);
-	if (creds == NULL) {
-		return -1;
-	}
-
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
 
-	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	status = libnetapi_set_creds(c->netapi_ctx, c->creds);
 	if (status != 0) {
 		return -1;
 	}

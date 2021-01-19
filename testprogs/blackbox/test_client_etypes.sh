@@ -48,9 +48,9 @@ net_tool="$BINDIR/net --configfile=$BASEDIR/$WORKDIR/client.conf --option=securi
 pcap_file=$BASEDIR/$WORKDIR/test.pcap
 
 export SOCKET_WRAPPER_PCAP_FILE=$pcap_file
-testit "join" $VALGRIND $net_tool ads join -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD --use-kerberos=required || failed=`expr $failed + 1`
 
-testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 #The leave command does not use the locally-generated
 #krb5.conf

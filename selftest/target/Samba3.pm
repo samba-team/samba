@@ -816,7 +816,7 @@ sub provision_ad_member
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
-	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD} -k";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD} --use-kerberos=required";
 
 	if (system($cmd) != 0) {
 	    warn("Join failed\n$cmd");

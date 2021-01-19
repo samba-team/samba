@@ -51,7 +51,7 @@ fi
 
 testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
-testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
 
@@ -81,7 +81,7 @@ testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || fail
 dedicated_keytab_file="$PREFIX_ABS/test_net_ads_dedicated_krb5.keytab"
 testit "join (dedicated keytab)" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 
-testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
 uc_netbios=$(echo $netbios | tr '[:lower:]' '[:upper:]')
@@ -179,15 +179,15 @@ fi
 
 rm -f $dedicated_keytab_file
 
-testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
-testit "join+kerberos" $VALGRIND $net_tool ads join -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+testit "join+kerberos" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD --use-kerberos=required || failed=`expr $failed + 1`
 
-testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
-testit "leave+kerberos" $VALGRIND $net_tool ads leave -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+testit "leave+kerberos" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD --use-kerberos=required || failed=`expr $failed + 1`
 
-testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 testit "join+server" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD -S$DC_SERVER || failed=`expr $failed + 1`
 

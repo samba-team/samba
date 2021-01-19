@@ -30,13 +30,13 @@ net_tool="$BINDIR/net --configfile=$BASEDIR/$WORKDIR/client.conf --option=securi
 . `dirname $0`/subunit.sh
 
 # This make sure we are able to join AD in FIPS mode with Kerberos (NTLM doesn't work in FIPS mode).
-testit "join" $VALGRIND $net_tool ads join -k -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+testit "join" $VALGRIND $net_tool ads join --use-kerberos=required -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
-testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+testit "testjoin" $VALGRIND $net_tool ads testjoin -P --use-kerberos=required || failed=`expr $failed + 1`
 
 testit "changetrustpw" $VALGRIND $net_tool ads changetrustpw || failed=`expr $failed + 1`
 
-testit "leave" $VALGRIND $net_tool ads leave -k -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+testit "leave" $VALGRIND $net_tool ads leave --use-kerberos=required -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
 rm -rf $BASEDIR/$WORKDIR
 
