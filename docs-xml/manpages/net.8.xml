@@ -23,25 +23,43 @@
 		<command>net</command>
 		<arg choice="req">&lt;ads|rap|rpc&gt;</arg>
 		<arg choice="opt">-h|--help</arg>
-		<arg choice="opt">-w|--workgroup workgroup</arg>
-		<arg choice="opt">-W|--myworkgroup myworkgroup</arg>
-		<arg choice="opt">-U|--user user</arg>
-		<arg choice="opt">-A|--authentication-file authfile</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
+		<arg choice="opt">-w|--target-workgroup workgroup</arg>
 		<arg choice="opt">-I|--ipaddress ip-address</arg>
 		<arg choice="opt">-p|--port port</arg>
-		<arg choice="opt">-n myname</arg>
-		<arg choice="opt">-s conffile</arg>
+		<arg choice="opt">--myname</arg>
 		<arg choice="opt">-S|--server server</arg>
-		<arg choice="opt">-l|--long</arg>
+		<arg choice="opt">--long</arg>
 		<arg choice="opt">-v|--verbose</arg>
 		<arg choice="opt">-f|--force</arg>
-		<arg choice="opt">-P|--machine-pass</arg>
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-V</arg>
 		<arg choice="opt">--request-timeout seconds</arg>
 		<arg choice="opt">-t|--timeout seconds</arg>
 		<arg choice="opt">-i|--stdin</arg>
-		<arg choice="opt">--tallocreport</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -66,28 +84,11 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
-		&stdarg.help;
-		&stdarg.kerberos;
-		
 		<varlistentry>
-		<term>-w|--workgroup target-workgroup</term>
+		<term>-w|--target-workgroup target-workgroup</term>
 		<listitem><para>
 		Sets target workgroup or domain. You have to specify 
 		either this option or the IP address or the name of a server.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-W|--myworkgroup workgroup</term>
-		<listitem><para>
-		Sets client workgroup or domain
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-U|--user user</term>
-		<listitem><para>
-		User name to use
 		</para></listitem>
 		</varlistentry>
 
@@ -107,8 +108,6 @@
 		Defaults to trying 445 first, then 139.
 		</para></listitem>
 		</varlistentry>
-
-		&stdarg.netbios.name;
 
 		<varlistentry>
 		<term>-S|--server server</term>
@@ -140,13 +139,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-P|--machine-pass</term>
-		<listitem><para>
-		Make queries to the external server using the machine account of the local server.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>--request-timeout 30</term>
 		<listitem><para>
 		Let client requests timeout after 30 seconds the default is 10
@@ -162,24 +154,9 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>--use-ccache</term>
-		<listitem><para>
-		Try to use the credentials cached by winbind.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>-i|--stdin</term>
 		<listitem><para>
 				Take input for net commands from standard input.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--tallocreport</term>
-		<listitem><para>
-				Generate a talloc report while processing a net
-				command.
 		</para></listitem>
 		</varlistentry>
 
@@ -202,7 +179,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-n|--myname MYNAME</term>
+		<term>--myname MYNAME</term>
 		<listitem><para>Use MYNAME as a requester name for a net subcommand.
 		</para></listitem>
 		</varlistentry>
@@ -333,7 +310,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-R|--rid RID</term>
+		<term>--rid RID</term>
 		<listitem><para>Sets the rid of a group mapping
 				(used in "net groupmap set").
 		</para></listitem>
@@ -412,9 +389,9 @@
 		directory.</para></listitem>
 		</varlistentry>
 
-		&stdarg.encrypt;
-		&popt.common.samba.client;
-
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
 	</variablelist>
 </refsect1>
 
