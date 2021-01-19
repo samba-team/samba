@@ -6469,13 +6469,15 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 
 	/* source must already exist. */
 	if (!VALID_STAT(smb_fname_old->st)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
 	}
 
 	if (VALID_STAT(smb_fname_new->st)) {
 		if (overwrite_if_exists) {
 			if (S_ISDIR(smb_fname_new->st.st_ex_mode)) {
-				return NT_STATUS_FILE_IS_A_DIRECTORY;
+				status = NT_STATUS_FILE_IS_A_DIRECTORY;
+				goto out;
 			}
 			status = unlink_internals(conn,
 						req,
@@ -6483,29 +6485,33 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 						smb_fname_new,
 						false);
 			if (!NT_STATUS_IS_OK(status)) {
-				return status;
+				goto out;
 			}
 		} else {
 			/* Disallow if newname already exists. */
-			return NT_STATUS_OBJECT_NAME_COLLISION;
+			status = NT_STATUS_OBJECT_NAME_COLLISION;
+			goto out;
 		}
 	}
 
 	/* No links from a directory. */
 	if (S_ISDIR(smb_fname_old->st.st_ex_mode)) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+		goto out;
 	}
 
 	/* Setting a hardlink to/from a stream isn't currently supported. */
 	ok = is_ntfs_stream_smb_fname(smb_fname_old);
 	if (ok) {
 		DBG_DEBUG("Old name has streams\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 	ok = is_ntfs_stream_smb_fname(smb_fname_new);
 	if (ok) {
 		DBG_DEBUG("New name has streams\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n",
@@ -6524,6 +6530,9 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 			 nt_errstr(status), smb_fname_old->base_name,
 			 smb_fname_new->base_name));
 	}
+
+  out:
+
 	return status;
 }
 
