@@ -1108,18 +1108,34 @@ static int cephwrap_linkat(struct vfs_handle_struct *handle,
 		const struct smb_filename *new_smb_fname,
 		int flags)
 {
+	struct smb_filename *full_fname_old = NULL;
+	struct smb_filename *full_fname_new = NULL;
 	int result = -1;
-	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle,
-			old_smb_fname->base_name,
-			new_smb_fname->base_name);
 
-	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
-	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
+					srcfsp,
+					old_smb_fname);
+	if (full_fname_old == NULL) {
+		return -1;
+	}
+	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
+					dstfsp,
+					new_smb_fname);
+	if (full_fname_new == NULL) {
+		TALLOC_FREE(full_fname_old);
+		return -1;
+	}
+
+	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle,
+			full_fname_old->base_name,
+			full_fname_new->base_name);
 
 	result = ceph_link(handle->data,
-				old_smb_fname->base_name,
-				new_smb_fname->base_name);
+				full_fname_old->base_name,
+				full_fname_new->base_name);
 	DBG_DEBUG("[CEPH] link(...) = %d\n", result);
+	TALLOC_FREE(full_fname_old);
+	TALLOC_FREE(full_fname_new);
 	WRAP_RETURN(result);
 }
 
