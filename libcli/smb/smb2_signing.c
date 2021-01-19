@@ -578,7 +578,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	}
 #endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 
-	DBG_INFO("Enencrypted SMB2 message\n");
+	DBG_INFO("Encrypted SMB2 message\n");
 
 	status = NT_STATUS_OK;
 out:
