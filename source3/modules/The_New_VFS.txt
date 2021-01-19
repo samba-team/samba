@@ -320,7 +320,7 @@ Table of Contents
    SMB_VFS_GETXATTRAT_SEND()          [Enum]      -
    SMB_VFS_KERNEL_FLOCK()             [fsp]       -
    SMB_VFS_LCHOWN()                   [Path]      Todo
-   SMB_VFS_LINKAT()                   [NsC]       Todo
+   SMB_VFS_LINKAT()                   [NsC]       -
    SMB_VFS_LINUX_SETLEASE()           [fsp]       -
    SMB_VFS_LISTXATTR()                [Path]      Todo
    SMB_VFS_LOCK()                     [fsp]       -

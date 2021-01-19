@@ -252,7 +252,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_GETXATTRAT_SEND()         | [[Enum][Enum]]     | -      |
 | SMB_VFS_KERNEL_FLOCK()            | [[fsp][fsp]]      | -      |
 | SMB_VFS_LCHOWN()                  | [[Path][Path]]     | Todo   |
-| SMB_VFS_LINKAT()                  | [[NsC][NsC]]      | Todo   |
+| SMB_VFS_LINKAT()                  | [[NsC][NsC]]      | -      |
 | SMB_VFS_LINUX_SETLEASE()          | [[fsp][fsp]]      | -      |
 | SMB_VFS_LISTXATTR()               | [[Path][Path]]     | Todo   |
 | SMB_VFS_LOCK()                    | [[fsp][fsp]]      | -      |
