@@ -1894,15 +1894,33 @@ static int vfs_gluster_linkat(struct vfs_handle_struct *handle,
 				int flags)
 {
 	int ret;
+	struct smb_filename *full_fname_old = NULL;
+	struct smb_filename *full_fname_new = NULL;
 
 	START_PROFILE(syscall_linkat);
 
-	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
-	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						old_smb_fname);
+	if (full_fname_old == NULL) {
+		END_PROFILE(syscall_linkat);
+		return -1;
+	}
+	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						new_smb_fname);
+	if (full_fname_new == NULL) {
+		TALLOC_FREE(full_fname_old);
+		END_PROFILE(syscall_linkat);
+		return -1;
+	}
 
 	ret = glfs_link(handle->data,
-			old_smb_fname->base_name,
-			new_smb_fname->base_name);
+			full_fname_old->base_name,
+			full_fname_new->base_name);
+
+	TALLOC_FREE(full_fname_old);
+	TALLOC_FREE(full_fname_new);
 	END_PROFILE(syscall_linkat);
 
 	return ret;
