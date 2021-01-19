@@ -5,10 +5,12 @@
 import os
 from unittest import TestCase
 import sys
+sys.path.insert(0, "bin/python")
 import gc
 import time
 import ldb
 import shutil
+import errno
 
 
 TDB_PREFIX = "tdb://"
@@ -41,9 +43,26 @@ class NoContextTests(TestCase):
         self.assertEqual("19700101000000.0Z", ldb.timestring(0))
         self.assertEqual("20071119191012.0Z", ldb.timestring(1195499412))
 
+        self.assertEqual("00000101000000.0Z", ldb.timestring(-62167219200))
+        self.assertEqual("99991231235959.0Z", ldb.timestring(253402300799))
+
+        # should result with OSError EOVERFLOW from gmtime()
+        with self.assertRaises(OSError) as err:
+            ldb.timestring(-62167219201)
+        self.assertEqual(err.exception.errno, errno.EOVERFLOW)
+        with self.assertRaises(OSError) as err:
+            ldb.timestring(253402300800)
+        self.assertEqual(err.exception.errno, errno.EOVERFLOW)
+        with self.assertRaises(OSError) as err:
+            ldb.timestring(0x7fffffffffffffff)
+        self.assertEqual(err.exception.errno, errno.EOVERFLOW)
+
     def test_string_to_time(self):
         self.assertEqual(0, ldb.string_to_time("19700101000000.0Z"))
         self.assertEqual(1195499412, ldb.string_to_time("20071119191012.0Z"))
+
+        self.assertEqual(-62167219200, ldb.string_to_time("00000101000000.0Z"))
+        self.assertEqual(253402300799, ldb.string_to_time("99991231235959.0Z"))
 
     def test_binary_encode(self):
         encoded = ldb.binary_encode(b'test\\x')

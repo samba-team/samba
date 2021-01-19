@@ -1270,6 +1270,7 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 
 	if (r != 17) {
 		talloc_free(ts);
+		errno = EOVERFLOW;
 		return NULL;
 	}
 

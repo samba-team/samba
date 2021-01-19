@@ -4192,6 +4192,13 @@ static PyObject *py_timestring(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "l", &t_val))
 		return NULL;
 	tresult = ldb_timestring(NULL, (time_t) t_val);
+	if (tresult == NULL) {
+		/*
+		 * Most likely EOVERFLOW from gmtime()
+		 */
+		PyErr_SetFromErrno(PyExc_OSError);
+		return NULL;
+	}
 	ret = PyUnicode_FromString(tresult);
 	talloc_free(tresult);
 	return ret;
