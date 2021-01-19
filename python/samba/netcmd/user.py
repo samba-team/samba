@@ -1262,7 +1262,7 @@ class GetPasswordCommand(Command):
             # Samba adds 'Primary:SambaGPG' at the end.
             # When Windows sets the password it keeps
             # 'Primary:SambaGPG' and rotates it to
-            # the begining. So we can only use the value,
+            # the beginning. So we can only use the value,
             # if it is the last one.
             #
             # In order to get more protection we verify
@@ -1525,7 +1525,7 @@ class GetPasswordCommand(Command):
                 # Samba adds 'Primary:SambaGPG' at the end.
                 # When Windows sets the password it keeps
                 # 'Primary:SambaGPG' and rotates it to
-                # the begining. So we can only use the value,
+                # the beginning. So we can only use the value,
                 # if it is the last one.
                 v = get_package("Primary:SambaGPG", min_idx=-1)
                 if v is None:
@@ -1604,7 +1604,7 @@ for which virtual attributes are supported in your environment):
                           bytes, e.g. for computer accounts.
 
    virtualClearTextUTF8:  As virtualClearTextUTF16, but converted to UTF-8
-                          (only from valid UTF-16-LE)
+                          (only from valid UTF-16-LE).
 
    virtualSSHA:           As virtualClearTextUTF8, but a salted SHA-1
                           checksum, useful for OpenLDAP's '{SSHA}' algorithm.
@@ -1616,15 +1616,15 @@ for which virtual attributes are supported in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA256;rounds=10000
                           will calculate a SHA256 hash with 10,000 rounds.
-                          non numeric values for rounds are silently ignored
+                          Non numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
-                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
-                             '--decrypt-samba-gpg'. Calculate a hash with
-                             the specified number of rounds
+                          2) If 'Primary:CLEARTEXT', or 'Primary:SambaGPG'
+                             with '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds.
                           3) Return the first CryptSHA256 value in
-                             'Primary:userPassword'
+                             'Primary:userPassword'.
 
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
@@ -1634,15 +1634,15 @@ for which virtual attributes are supported in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA512;rounds=10000
                           will calculate a SHA512 hash with 10,000 rounds.
-                          non numeric values for rounds are silently ignored
+                          Non numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
-                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
-                             '--decrypt-samba-gpg'. Calculate a hash with
-                             the specified number of rounds
+                          2) If 'Primary:CLEARTEXT', or 'Primary:SambaGPG'
+                             with '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds.
                           3) Return the first CryptSHA512 value in
-                             'Primary:userPassword'
+                             'Primary:userPassword'.
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
@@ -1650,7 +1650,7 @@ for which virtual attributes are supported in your environment):
                           NOTE: As at 22-05-2017 the documentation:
                           3.1.1.8.11.3.1 WDIGEST_CREDENTIALS Construction
                         https://msdn.microsoft.com/en-us/library/cc245680.aspx
-                          is incorrect
+                          is incorrect.
 
    virtualKerberosSalt:   This results the salt string that is used to compute
                           Kerberos keys from a UTF-8 cleartext password.
@@ -1776,7 +1776,7 @@ for supported virtual attributes in your environment):
                           bytes, e.g. for computer accounts.
 
    virtualClearTextUTF8:  As virtualClearTextUTF16, but converted to UTF-8
-                          (only from valid UTF-16-LE)
+                          (only from valid UTF-16-LE).
 
    virtualSSHA:           As virtualClearTextUTF8, but a salted SHA-1
                           checksum, useful for OpenLDAP's '{SSHA}' algorithm.
@@ -1788,15 +1788,15 @@ for supported virtual attributes in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA256;rounds=10000
                           will calculate a SHA256 hash with 10,000 rounds.
-                          non numeric values for rounds are silently ignored
+                          Non numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
-                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                          2) If 'Primary:CLEARTEXT', or 'Primary:SambaGPG' with
                              '--decrypt-samba-gpg'. Calculate a hash with
                              the specified number of rounds
                           3) Return the first CryptSHA256 value in
-                             'Primary:userPassword'
+                             'Primary:userPassword'.
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
@@ -1805,15 +1805,15 @@ for supported virtual attributes in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA512;rounds=10000
                           will calculate a SHA512 hash with 10,000 rounds.
-                          non numeric values for rounds are silently ignored
+                          Non numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
-                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                          2) If 'Primary:CLEARTEXT', or 'Primary:SambaGPG' with
                              '--decrypt-samba-gpg'. Calculate a hash with
-                             the specified number of rounds
+                             the specified number of rounds.
                           3) Return the first CryptSHA512 value in
-                             'Primary:userPassword'
+                             'Primary:userPassword'.
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
@@ -2771,7 +2771,7 @@ class cmd_user_move(Command):
     server.
 
     Example1:
-    samba-tool user move User1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \\
+    samba-tool user move User1 'OU=OrgUnit,DC=samdom,DC=example,DC=com' \\
         -H ldap://samba.samdom.example.com -U administrator
 
     Example1 shows how to move a user User1 into the 'OrgUnit' organizational
