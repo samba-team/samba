@@ -20,26 +20,41 @@
 	<cmdsynopsis>
 		<command>smbcquotas</command>
 		<arg choice="req">//server/share</arg>
-		<arg choice="opt">-u|--user user</arg>
+		<arg choice="opt">-u|--quota-user=USER</arg>
 		<arg choice="opt">-L|--list</arg>
 		<arg choice="opt">-F|--fs</arg>
-		<arg choice="opt">-S|--set QUOTA_SET_COMMAND</arg>
+		<arg choice="opt">-S|--set=SETSTRING</arg>
 		<arg choice="opt">-n|--numeric</arg>
-		<arg choice="opt">-t|--test-args</arg>
 		<arg choice="opt">-v|--verbose</arg>
-
-		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-s configfile</arg>
-		<arg choice="opt">-l logdir</arg>
-		<arg choice="opt">-V</arg>
-
-		<arg choice="opt">-U username</arg>
-		<arg choice="opt">-m|--max-protocol LEVEL</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-k</arg>
-		<arg choice="opt">-A</arg>
-
-
+		<arg choice="opt">-t|--test-args</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -61,7 +76,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-u|--user user</term>
+		<term>-u|--quota-user user</term>
 		<listitem><para> Specifies the user of whom the quotas are get or set.
 		By default the current user's username will be used.</para></listitem>
 		</varlistentry>
@@ -97,17 +112,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-m|--max-protocol PROTOCOL_NAME</term>
-		<listitem><para>This allows the user to select the
-		highest SMB protocol level that smbcquotas will use to
-		connect to the server. By default this is set to
-		NT1, which is the highest available SMB1 protocol.
-		To connect using SMB2 or SMB3 protocol, use the
-		strings SMB2 or SMB3 respectively.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>-t|--test-args</term>
 		<listitem><para>
 		Don't actually do anything, only validate the correctness of the arguments.
@@ -120,13 +124,11 @@
 		Be verbose.
 		</para></listitem>
 		</varlistentry>
-				
 
-		&stdarg.server.debug;
-		&popt.common.samba;
-		&popt.common.credentials;
 		&popt.autohelp;
-
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
 	</variablelist>
 </refsect1>
 
