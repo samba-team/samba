@@ -1089,6 +1089,13 @@ class GetPasswordCommand(Command):
         super(GetPasswordCommand, self).__init__()
         self.lp = None
 
+    def inject_virtual_attributes(self, samdb):
+        # We use sort here in order to have a predictable processing order
+        # this might not be strictly needed, but also doesn't hurt here
+        for a in sorted(virtual_attributes.keys()):
+            flags = ldb.ATTR_FLAG_HIDDEN | virtual_attributes[a].get("flags", 0)
+            samdb.schema_attribute_add(a, flags, ldb.SYNTAX_OCTET_STRING)
+
     def connect_system_samdb(self, url, allow_local=False, verbose=False):
 
         # using anonymous here, results in no authentication
@@ -1128,16 +1135,12 @@ class GetPasswordCommand(Command):
             raise CommandError("You need to specify an URL that gives privileges as SID_NT_SYSTEM(%s)" %
                                (security.SID_NT_SYSTEM))
 
-        # We use sort here in order to have a predictable processing order
-        # this might not be strictly needed, but also doesn't hurt here
-        for a in sorted(virtual_attributes.keys()):
-            flags = ldb.ATTR_FLAG_HIDDEN | virtual_attributes[a].get("flags", 0)
-            samdb.schema_attribute_add(a, flags, ldb.SYNTAX_OCTET_STRING)
+        self.inject_virtual_attributes(samdb)
 
         return samdb
 
     def get_account_attributes(self, samdb, username, basedn, filter, scope,
-                               attrs, decrypt):
+                               attrs, decrypt, support_pw_attrs=True):
 
         def get_option(opts, name):
             if not opts:
@@ -1223,13 +1226,14 @@ class GetPasswordCommand(Command):
                 implicit_attrs.append(a)
 
         if has_virtual_attrs:
-            required_attrs = [
-                "supplementalCredentials",
-                "unicodePwd",
-            ]
-            for required_attr in required_attrs:
-                a = parse_raw_attr(required_attr, is_hidden=True)
-                implicit_attrs.append(a)
+            if support_pw_attrs:
+                required_attrs = [
+                    "supplementalCredentials",
+                    "unicodePwd",
+                ]
+                for required_attr in required_attrs:
+                    a = parse_raw_attr(required_attr, is_hidden=True)
+                    implicit_attrs.append(a)
 
         for a in implicit_attrs:
             if a["attr"] in search_attrs:
@@ -2853,7 +2857,7 @@ LDAP server using the 'nano' editor.
         self.outf.write("Modified User '%s' successfully\n" % username)
 
 
-class cmd_user_show(Command):
+class cmd_user_show(GetPasswordCommand):
     """Display a user AD object.
 
 This command displays a user account and it's attributes in the Active
@@ -2864,6 +2868,29 @@ The command may be run from the root userid or another authorized userid.
 
 The -H or --URL= option can be used to execute the command against a remote
 server.
+
+The '--attributes' parameter takes a comma separated list of the requested
+attributes. Without '--attributes' or with '--attributes=*' all usually
+available attributes are selected.
+Hidden attributes in addition to all usually available attributes can be
+selected with e.g. '--attributes=*,msDS-UserPasswordExpiryTimeComputed'.
+If a specified attribute is not available on a user object it's silently
+omitted.
+
+Attributes with time values can take an additional format specifier, which
+converts the time value into the requested format. The format can be specified
+by adding ";format=formatSpecifier" to the requested attribute name, whereby
+"formatSpecifier" must be a valid specifier. The syntax looks like:
+
+  --attributes=attributeName;format=formatSpecifier
+
+The following format specifiers are available:
+  - GeneralizedTime (e.g. 20210224113259.0Z)
+  - UnixTime        (e.g. 1614166392)
+  - TimeSpec        (e.g. 161416639.267546892)
+
+Attributes with an original NTTIME value of 0 and 9223372036854775807 are
+treated as non-existing value.
 
 Example1:
 samba-tool user show User1 -H ldap://samba.samdom.example.com \\
@@ -2884,6 +2911,16 @@ Example3:
 samba-tool user show User2 --attributes=objectSid,memberOf
 
 Example3 shows how to display a users objectSid and memberOf attributes.
+
+Example4:
+samba-tool user show User2 \\
+    --attributes='pwdLastSet;format=GeneralizedTime,pwdLastSet;format=UnixTime'
+
+The result of Example 4 provides the pwdLastSet attribute values in the
+specified format:
+    dn: CN=User2,CN=Users,DC=samdom,DC=example,DC=com
+    pwdLastSet;format=GeneralizedTime: 20210120105207.0Z
+    pwdLastSet;format=UnixTime: 1611139927
 """
     synopsis = "%prog <username> [options]"
 
@@ -2892,7 +2929,9 @@ Example3 shows how to display a users objectSid and memberOf attributes.
                type=str, metavar="URL", dest="H"),
         Option("--attributes",
                help=("Comma separated list of attributes, "
-                     "which will be printed."),
+                     "which will be printed. "
+                     "Possible supported virtual attributes: "
+                     "virtualGeneralizedTime, virtualUnixTime, virtualTimeSpec."),
                type=str, dest="user_attrs"),
     ]
 
@@ -2911,26 +2950,27 @@ Example3 shows how to display a users objectSid and memberOf attributes.
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        attrs = None
+        self.inject_virtual_attributes(samdb)
+
         if user_attrs:
-            attrs = user_attrs.split(",")
+            attrs = self.parse_attributes(user_attrs)
+        else:
+            attrs = ["*"]
 
         filter = ("(&(sAMAccountType=%d)(sAMAccountName=%s))" %
                   (dsdb.ATYPE_NORMAL_ACCOUNT, ldb.binary_encode(username)))
 
         domaindn = samdb.domain_dn()
 
-        try:
-            res = samdb.search(base=domaindn, expression=filter,
-                               scope=ldb.SCOPE_SUBTREE, attrs=attrs)
-            user_dn = res[0].dn
-        except IndexError:
-            raise CommandError('Unable to find user "%s"' % (username))
-
-        for msg in res:
-            user_ldif = common.get_ldif_for_editor(samdb, msg)
-            self.outf.write(user_ldif)
-
+        obj = self.get_account_attributes(samdb, username,
+                                          basedn=domaindn,
+                                          filter=filter,
+                                          scope=ldb.SCOPE_SUBTREE,
+                                          attrs=attrs,
+                                          decrypt=False,
+                                          support_pw_attrs=False)
+        user_ldif = common.get_ldif_for_editor(samdb, obj)
+        self.outf.write(user_ldif)
 
 class cmd_user_move(Command):
     """Move a user to an organizational unit/container.
