@@ -44,6 +44,7 @@ from samba import (
     gensec,
     generate_random_password,
     Ldb,
+    nttime2float,
 )
 from samba.net import Net
 
@@ -1154,6 +1155,22 @@ class GetPasswordCommand(Command):
                 return virtual_attributes[van]
             return None
 
+        formats = [
+                "GeneralizedTime",
+                "UnixTime",
+                "TimeSpec",
+        ]
+
+        def get_virtual_format_definition(opts):
+            formatname = get_option(opts, "format")
+            if formatname is None:
+                return None
+            for fm in formats:
+                if fm.lower() != formatname.lower():
+                    continue
+                return fm
+            return None
+
         def parse_raw_attr(raw_attr, is_hidden=False):
             (attr, _, fullopts) = raw_attr.partition(';')
             if fullopts:
@@ -1165,6 +1182,7 @@ class GetPasswordCommand(Command):
             a["attr"] = attr
             a["opts"] = opts
             a["vattr"] = get_virtual_attr_definition(attr)
+            a["vformat"] = get_virtual_format_definition(opts)
             a["is_hidden"] = is_hidden
             return a
 
@@ -1183,6 +1201,13 @@ class GetPasswordCommand(Command):
         for a in requested_attrs:
             if a["vattr"] is not None:
                 has_virtual_attrs = True
+                continue
+            if a["vformat"] is not None:
+                # also add it as implicit attr,
+                # where we just do
+                # search_attrs.append(a["attr"])
+                # later on
+                implicit_attrs.append(a)
                 continue
             if a["raw_attr"] in search_attrs:
                 continue
@@ -1580,6 +1605,91 @@ class GetPasswordCommand(Command):
                 continue
             obj[a] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, a)
 
+        def get_src_attrname(srcattrg):
+            srcattrl = srcattrg.lower()
+            srcattr = None
+            for k in obj.keys():
+                if srcattrl != k.lower():
+                    continue
+                srcattr = k
+                break
+            return srcattr
+
+        def get_src_time_float(srcattr):
+            if srcattr not in obj:
+                return None
+            vstr = str(obj[srcattr][0])
+            if vstr.endswith(".0Z"):
+                vut = ldb.string_to_time(vstr)
+                vfl = float(vut)
+                return vfl
+
+            try:
+                vnt = int(vstr)
+            except ValueError as e:
+                return None
+            # 0 or 9223372036854775807 mean no value too
+            if vnt == 0:
+                return None
+            if vnt >= 0x7FFFFFFFFFFFFFFF:
+                return None
+            vfl = nttime2float(vnt)
+            return vfl
+
+        def get_generalizedtime(srcattr):
+            vfl = get_src_time_float(srcattr)
+            if vfl is None:
+                return None
+            vut = int(vfl)
+            try:
+                v = "%s" % ldb.timestring(vut)
+            except OSError as e:
+                if e.errno == errno.EOVERFLOW:
+                    return None
+                raise
+            return v
+
+        def get_unixepoch(srcattr):
+            vfl = get_src_time_float(srcattr)
+            if vfl is None:
+                return None
+            vut = int(vfl)
+            v = "%d" % vut
+            return v
+
+        def get_timespec(srcattr):
+            vfl = get_src_time_float(srcattr)
+            if vfl is None:
+                return None
+            v = "%.9f" % vfl
+            return v
+
+        generated_formats = {}
+        for fm in formats:
+            for ra in requested_attrs:
+                if ra["vformat"] is None:
+                    continue
+                if ra["vformat"] != fm:
+                    continue
+                srcattr = get_src_attrname(ra["attr"])
+                if srcattr is None:
+                    continue
+                an = "%s;format=%s" % (srcattr, fm)
+                if an in generated_formats:
+                    continue
+                generated_formats[an] = fm
+
+                v = None
+                if fm == "GeneralizedTime":
+                    v = get_generalizedtime(srcattr)
+                elif fm == "UnixTime":
+                    v = get_unixepoch(srcattr)
+                elif fm == "TimeSpec":
+                    v = get_timespec(srcattr)
+                if v is None:
+                    continue
+                obj[an] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, an)
+
         # Now filter out implicit attributes
         for delname in obj.keys():
             keep = False
@@ -1719,6 +1829,21 @@ note that you might need to set the GNUPGHOME environment variable.  If the
 decryption key has a passphrase you have to make sure that the GPG_AGENT_INFO
 environment variable has been set correctly and the passphrase is already
 known by the gpg-agent.
+
+Attributes with time values can take an additional format specifier, which
+converts the time value into the requested format. The format can be specified
+by adding ";format=formatSpecifier" to the requested attribute name, whereby
+"formatSpecifier" must be a valid specifier. The syntax looks like:
+
+  --attributes=attributeName;format=formatSpecifier
+
+The following format specifiers are available:
+  - GeneralizedTime (e.g. 20210224113259.0Z)
+  - UnixTime        (e.g. 1614166392)
+  - TimeSpec        (e.g. 161416639.267546892)
+
+Attributes with an original NTTIME value of 0 and 9223372036854775807 are
+treated as non-existing value.
 
 Example1:
 samba-tool user getpassword TestUser1 --attributes=pwdLastSet,virtualClearTextUTF8
