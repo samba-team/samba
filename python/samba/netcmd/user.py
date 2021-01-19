@@ -1232,7 +1232,7 @@ class GetPasswordCommand(Command):
         if "userPrincipalName" in obj:
             account_upn = str(obj["userPrincipalName"][0])
         else:
-            realm = self.lp.get("realm")
+            realm = samdb.domain_dns_name()
             account_upn = "%s@%s" % (account_name, realm.lower())
         if add_userPrincipalName:
             del obj["userPrincipalName"]
@@ -1544,7 +1544,7 @@ class GetPasswordCommand(Command):
                     i = int(x)
                 except ValueError:
                     continue
-                domain = self.lp.get("workgroup")
+                domain = samdb.domain_netbios_name()
                 dns_domain = samdb.domain_dns_name()
                 v = get_wDigest(i, primary_wdigest, account_name, account_upn, domain, dns_domain)
                 if v is None:
