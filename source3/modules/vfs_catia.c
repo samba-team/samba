@@ -683,6 +683,8 @@ static int catia_unlinkat(vfs_handle_struct *handle,
 	}
 
 	smb_fname_tmp->base_name = name;
+	smb_fname_tmp->fsp = smb_fname->fsp;
+
 	ret = SMB_VFS_NEXT_UNLINKAT(handle,
 			dirfsp,
 			smb_fname_tmp,
