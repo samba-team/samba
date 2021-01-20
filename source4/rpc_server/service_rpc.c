@@ -82,7 +82,7 @@ static NTSTATUS dcesrv_init_endpoints(struct task_server *task,
 	 * process operations. This is not the most elegant solution, but it is
 	 * the least ugly, and is confined to the next block of code.
 	 */
-	if (use_single_process == true) {
+	if (use_single_process) {
 		model_ops = process_model_startup("single");
 		if (model_ops == NULL) {
 			DBG_ERR("Unable to load single process model");
