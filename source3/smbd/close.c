@@ -188,15 +188,16 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 			continue;
 		}
 
-		smb_fname_stream = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					stream_info[i].name,
-					NULL,
-					smb_fname->twrp,
-					(smb_fname->flags &
-						~SMB_FILENAME_POSIX_PATH));
-
-		if (smb_fname_stream == NULL) {
+		status = synthetic_pathref(talloc_tos(),
+					   conn->cwd_fsp,
+					   smb_fname->base_name,
+					   stream_info[i].name,
+					   NULL,
+					   smb_fname->twrp,
+					   (smb_fname->flags &
+					    ~SMB_FILENAME_POSIX_PATH),
+					   &smb_fname_stream);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
