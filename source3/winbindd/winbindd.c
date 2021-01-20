@@ -118,14 +118,14 @@ bool winbindd_reload_services_file(const char *lfile)
 		TALLOC_FREE(fname);
 	}
 
+	reopen_logs();
+	ret = lp_load_global(get_dyn_CONFIGFILE());
+
 	/* if this is a child, restore the logfile to the special
 	   name - <domain>, idmap, etc. */
 	if (lfile && *lfile) {
 		lp_set_logfile(lfile);
 	}
-
-	reopen_logs();
-	ret = lp_load_global(get_dyn_CONFIGFILE());
 
 	reopen_logs();
 	load_interfaces();
