@@ -1434,15 +1434,25 @@ static int vfs_gluster_unlinkat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	int ret;
 
 	START_PROFILE(syscall_unlinkat);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-	if (flags & AT_REMOVEDIR) {
-		ret = glfs_rmdir(handle->data, smb_fname->base_name);
-	} else {
-		ret = glfs_unlink(handle->data, smb_fname->base_name);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_unlinkat);
+		return -1;
 	}
+
+	if (flags & AT_REMOVEDIR) {
+		ret = glfs_rmdir(handle->data, full_fname->base_name);
+	} else {
+		ret = glfs_unlink(handle->data, full_fname->base_name);
+	}
+	TALLOC_FREE(full_fname);
 	END_PROFILE(syscall_unlinkat);
 
 	return ret;
