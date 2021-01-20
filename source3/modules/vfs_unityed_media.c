@@ -1117,6 +1117,7 @@ static int um_unlinkat(vfs_handle_struct *handle,
 			int flags)
 {
 	int ret;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_unlinkat\n"));
@@ -1128,19 +1129,27 @@ static int um_unlinkat(vfs_handle_struct *handle,
 				flags);
 	}
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	ret = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname,
+					    full_fname,
 					    &client_fname);
 	if (ret != 0) {
 		goto err;
 	}
 
 	ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
+				dirfsp->conn->cwd_fsp,
 				client_fname,
 				flags);
 
 err:
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(client_fname);
 	return ret;
 }
