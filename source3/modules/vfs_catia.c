@@ -662,24 +662,30 @@ static int catia_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct catia_cache *cc = NULL;
 	struct smb_filename *smb_fname_tmp = NULL;
 	char *name = NULL;
 	NTSTATUS status;
 	int ret;
+
+	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, dirfsp, &cc);
+	if (ret != 0) {
+		return ret;
+	}
 
 	status = catia_string_replace_allocate(handle->conn,
 					smb_fname->base_name,
 					&name, vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
-		return -1;
+		goto out;
 	}
 
 	/* Setup temporary smb_filename structs. */
 	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
 	if (smb_fname_tmp == NULL) {
 		errno = ENOMEM;
-		return -1;
+		goto out;
 	}
 
 	smb_fname_tmp->base_name = name;
@@ -692,6 +698,8 @@ static int catia_unlinkat(vfs_handle_struct *handle,
 	TALLOC_FREE(smb_fname_tmp);
 	TALLOC_FREE(name);
 
+out:
+	CATIA_FETCH_FSP_POST_NEXT(&cc, dirfsp);
 	return ret;
 }
 
@@ -871,6 +879,8 @@ static int catia_ntimes(vfs_handle_struct *handle,
 	}
 
 	smb_fname_tmp->base_name = name;
+	smb_fname_tmp->fsp = smb_fname->fsp;
+
 	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, ft);
 	TALLOC_FREE(name);
 	TALLOC_FREE(smb_fname_tmp);
