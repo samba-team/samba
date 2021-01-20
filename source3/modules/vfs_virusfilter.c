@@ -1511,8 +1511,9 @@ static int virusfilter_vfs_unlinkat(struct vfs_handle_struct *handle,
 			smb_fname,
 			flags);
 	struct virusfilter_config *config = NULL;
+	struct smb_filename *full_fname = NULL;
 	char *fname = NULL;
-	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
+	char *cwd_fname = dirfsp->fsp_name->base_name;
 
 	if (ret != 0 && errno != ENOENT) {
 		return ret;
@@ -1525,11 +1526,19 @@ static int virusfilter_vfs_unlinkat(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	fname = smb_fname->base_name;
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	fname = full_fname->base_name;
 
 	DBG_DEBUG("Removing cache entry (if existent): fname: %s\n", fname);
 	virusfilter_cache_remove(config->cache, cwd_fname, fname);
 
+	TALLOC_FREE(full_fname);
 	return 0;
 }
 
