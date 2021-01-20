@@ -242,7 +242,7 @@ static bool spoolss__op_interface_by_name(struct dcesrv_interface *iface, const 
 
 static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
-	int i;
+	uint32_t i;
 
 	for (i=0;i<ndr_table_spoolss.endpoints->count;i++) {
 		NTSTATUS ret;
