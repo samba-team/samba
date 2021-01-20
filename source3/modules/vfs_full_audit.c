@@ -1876,7 +1876,15 @@ static int smb_full_audit_mknodat(vfs_handle_struct *handle,
 			mode_t mode,
 			SMB_DEV_T dev)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_MKNODAT(handle,
 				dirfsp,
@@ -1888,7 +1896,9 @@ static int smb_full_audit_mknodat(vfs_handle_struct *handle,
 	       (result >= 0),
 	       handle,
 	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
+	       smb_fname_str_do_log(handle->conn, full_fname));
+
+	TALLOC_FREE(full_fname);
 
 	return result;
 }
