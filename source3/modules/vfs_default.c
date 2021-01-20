@@ -2404,8 +2404,6 @@ static int vfswrap_unlinkat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_unlinkat);
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
