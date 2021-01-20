@@ -1506,9 +1506,18 @@ static int smb_time_audit_mknodat(vfs_handle_struct *handle,
 				mode_t mode,
 				SMB_DEV_T dev)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_MKNODAT(handle,
@@ -1520,9 +1529,10 @@ static int smb_time_audit_mknodat(vfs_handle_struct *handle,
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("mknodat", timediff, smb_fname);
+		smb_time_audit_log_smb_fname("mknodat", timediff, full_fname);
 	}
 
+	TALLOC_FREE(full_fname);
 	return result;
 }
 
