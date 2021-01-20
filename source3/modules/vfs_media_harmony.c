@@ -1752,11 +1752,21 @@ static int mh_mknodat(vfs_handle_struct *handle,
 		SMB_DEV_T dev)
 {
 	int status;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_mknodat\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		status = -1;
+		goto err;
+	}
+
+	if (!is_in_media_files(full_fname->base_name)) {
 		status = SMB_VFS_NEXT_MKNODAT(handle,
 				dirfsp,
 				smb_fname,
@@ -1768,13 +1778,13 @@ static int mh_mknodat(vfs_handle_struct *handle,
 	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname,
+				full_fname,
 				&clientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_MKNODAT(handle,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			clientFname,
 			mode,
 			dev);
@@ -1782,6 +1792,7 @@ static int mh_mknodat(vfs_handle_struct *handle,
 err:
 	TALLOC_FREE(clientFname);
 out:
+	TALLOC_FREE(full_fname);
 	return status;
 }
 
