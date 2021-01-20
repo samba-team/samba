@@ -155,14 +155,22 @@ static int syncops_renameat(vfs_handle_struct *handle,
 
 #define SYNCOPS_NEXT_SMB_FNAME(op, fname, args) do {   \
 	int ret; \
+	struct smb_filename *full_fname = NULL; \
 	struct syncops_config_data *config; \
 	SMB_VFS_HANDLE_GET_DATA(handle, config, \
 				struct syncops_config_data, \
 				return -1); \
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(), \
+				dirfsp, \
+				smb_fname); \
+	if (full_fname == NULL) { \
+		return -1; \
+	} \
 	ret = SMB_VFS_NEXT_ ## op args; \
 	if (ret == 0 \
 	&& config->onmeta && !config->disable \
-	&& fname) syncops_smb_fname(fname); \
+	&& fname) syncops_smb_fname(full_fname); \
+	TALLOC_FREE(full_fname); \
 	return ret; \
 } while (0)
 
@@ -265,24 +273,12 @@ static int syncops_mkdirat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
-	struct smb_filename *full_fname = NULL;
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname);
-	if (full_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
         SYNCOPS_NEXT_SMB_FNAME(MKDIRAT,
 			full_fname,
 				(handle,
 				dirfsp,
 				smb_fname,
 				mode));
-
-	TALLOC_FREE(full_fname);
 }
 
 /* close needs to be handled specially */
