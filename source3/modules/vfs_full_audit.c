@@ -1551,7 +1551,15 @@ static int smb_full_audit_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_UNLINKAT(handle,
 			dirfsp,
@@ -1559,8 +1567,9 @@ static int smb_full_audit_unlinkat(vfs_handle_struct *handle,
 			flags);
 
 	do_log(SMB_VFS_OP_UNLINKAT, (result >= 0), handle, "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
+	       smb_fname_str_do_log(handle->conn, full_fname));
 
+	TALLOC_FREE(full_fname);
 	return result;
 }
 
