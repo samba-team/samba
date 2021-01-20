@@ -381,15 +381,24 @@ static int posix_eadb_rmdir_internal(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct tdb_wrap *ea_tdb;
 	int ret;
-	const char *path = smb_fname->base_name;
+	struct smb_filename *full_fname = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, ea_tdb, struct tdb_wrap, return -1);
 
-	if (tdb_transaction_start(ea_tdb->tdb) != 0) {
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
 		return -1;
 	}
 
-	status = unlink_posix_eadb_raw(ea_tdb, path, -1);
+	if (tdb_transaction_start(ea_tdb->tdb) != 0) {
+		TALLOC_FREE(full_fname);
+		return -1;
+	}
+
+	status = unlink_posix_eadb_raw(ea_tdb, full_fname->base_name, -1);
+	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		tdb_transaction_cancel(ea_tdb->tdb);
 	}
