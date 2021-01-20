@@ -1823,8 +1823,9 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
 				   void (*destroy_fn)(void *p_data));
 void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 void vfs_remove_all_fsp_extensions(struct files_struct *fsp);
-void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
-void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
+void *vfs_memctx_fsp_extension(vfs_handle_struct *handle,
+			       const struct files_struct *fsp);
+void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, const struct files_struct *fsp);
 
 void smb_vfs_assert_all_fns(const struct vfs_fn_pointers* fns,
 			    const char *module);

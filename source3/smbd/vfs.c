@@ -291,7 +291,8 @@ void vfs_remove_all_fsp_extensions(files_struct *fsp)
 	}
 }
 
-void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+void *vfs_memctx_fsp_extension(vfs_handle_struct *handle,
+			       const struct files_struct *fsp)
 {
 	struct vfs_fsp_data *head;
 
@@ -304,7 +305,8 @@ void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 	return NULL;
 }
 
-void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+void *vfs_fetch_fsp_extension(vfs_handle_struct *handle,
+			      const struct files_struct *fsp)
 {
 	struct vfs_fsp_data *head;
 
