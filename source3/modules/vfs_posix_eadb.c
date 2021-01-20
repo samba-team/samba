@@ -426,7 +426,6 @@ static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 {
 	int ret;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	if (flags & AT_REMOVEDIR) {
 		ret = posix_eadb_rmdir_internal(handle,
 					dirfsp,
