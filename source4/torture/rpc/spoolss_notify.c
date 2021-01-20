@@ -208,7 +208,7 @@ static NTSTATUS spoolss__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
-const static struct dcesrv_interface notify_test_spoolss_interface = {
+static const struct dcesrv_interface notify_test_spoolss_interface = {
 	.name		= "spoolss",
 	.syntax_id  = {{0x12345678,0x1234,0xabcd,{0xef,0x00},{0x01,0x23,0x45,0x67,0x89,0xab}},1.0},
 	.bind		= spoolss__op_bind,
