@@ -103,7 +103,7 @@ struct imessaging_context *winbind_imessaging_context(void)
 
 /* Reload configuration */
 
-static bool reload_services_file(const char *lfile)
+bool winbindd_reload_services_file(const char *lfile)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -157,7 +157,7 @@ static void winbindd_status(void)
 
 /* Flush client cache */
 
-static void flush_caches(void)
+void winbindd_flush_caches(void)
 {
 	/* We need to invalidate cached user list entries on a SIGHUP 
            otherwise cached access denied errors due to restrict anonymous
@@ -364,7 +364,7 @@ static void winbindd_sig_hup_handler(struct tevent_context *ev,
 
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	flush_caches_noinit();
-	reload_services_file(file);
+	winbindd_reload_services_file(file);
 }
 
 bool winbindd_setup_sig_hup_handler(const char *lfile)
@@ -446,18 +446,6 @@ static bool winbindd_setup_sig_usr2_handler(void)
 	}
 
 	return true;
-}
-
-/* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(struct messaging_context *msg,
-				void *private_data,
-				uint32_t msg_type,
-				struct server_id server_id,
-				DATA_BLOB *data)
-{
-        /* Flush various caches */
-	flush_caches();
-	reload_services_file((const char *) private_data);
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
@@ -1421,7 +1409,8 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
 	messaging_register(msg_ctx, NULL,
-			   MSG_SMB_CONF_UPDATED, msg_reload_services);
+			   MSG_SMB_CONF_UPDATED,
+			   winbindd_msg_reload_services_parent);
 	messaging_register(msg_ctx, NULL,
 			   MSG_SHUTDOWN, msg_shutdown);
 
@@ -1812,7 +1801,7 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	if (!reload_services_file(NULL)) {
+	if (!winbindd_reload_services_file(NULL)) {
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
