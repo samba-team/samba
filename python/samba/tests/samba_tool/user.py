@@ -524,6 +524,138 @@ sAMAccountName: %s
                              "Unexpected show output for user '%s'" %
                              user["name"])
 
+            time_attrs = [
+                "name", # test that invalid values are just ignored
+                "whenCreated",
+                "whenChanged",
+                "accountExpires",
+                "badPasswordTime",
+                "lastLogoff",
+                "lastLogon",
+                "lastLogonTimestamp",
+                "lockoutTime",
+                "msDS-UserPasswordExpiryTimeComputed",
+                "pwdLastSet",
+                ]
+
+            attrs = []
+            for ta in time_attrs:
+                attrs.append(ta)
+                for fm in ["GeneralizedTime", "UnixTime", "TimeSpec"]:
+                    attrs.append("%s;format=%s" % (ta, fm))
+
+            (result, out, err) = self.runsubcmd(
+                "user", "show", user["name"],
+                "--attributes=%s" % ",".join(attrs),
+                "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                              os.environ["DC_PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, "Error running show")
+
+            self.assertIn(";format=GeneralizedTime", out)
+            self.assertIn(";format=UnixTime", out)
+            self.assertIn(";format=TimeSpec", out)
+
+            self.assertIn("name: ", out)
+            self.assertNotIn("name;format=GeneralizedTime: ", out)
+            self.assertNotIn("name;format=UnixTime: ", out)
+            self.assertNotIn("name;format=TimeSpec: ", out)
+
+            self.assertIn("whenCreated: 20", out)
+            self.assertIn("whenCreated;format=GeneralizedTime: 20", out)
+            self.assertIn("whenCreated;format=UnixTime: 1", out)
+            self.assertIn("whenCreated;format=TimeSpec: 1", out)
+
+            self.assertIn("whenChanged: 20", out)
+            self.assertIn("whenChanged;format=GeneralizedTime: 20", out)
+            self.assertIn("whenChanged;format=UnixTime: 1", out)
+            self.assertIn("whenChanged;format=TimeSpec: 1", out)
+
+            self.assertIn("accountExpires: 9223372036854775807", out)
+            self.assertNotIn("accountExpires;format=GeneralizedTime: ", out)
+            self.assertNotIn("accountExpires;format=UnixTime: ", out)
+            self.assertNotIn("accountExpires;format=TimeSpec: ", out)
+
+            self.assertIn("badPasswordTime: 0", out)
+            self.assertNotIn("badPasswordTime;format=GeneralizedTime: ", out)
+            self.assertNotIn("badPasswordTime;format=UnixTime: ", out)
+            self.assertNotIn("badPasswordTime;format=TimeSpec: ", out)
+
+            self.assertIn("lastLogoff: 0", out)
+            self.assertNotIn("lastLogoff;format=GeneralizedTime: ", out)
+            self.assertNotIn("lastLogoff;format=UnixTime: ", out)
+            self.assertNotIn("lastLogoff;format=TimeSpec: ", out)
+
+            self.assertIn("lastLogon: 0", out)
+            self.assertNotIn("lastLogon;format=GeneralizedTime: ", out)
+            self.assertNotIn("lastLogon;format=UnixTime: ", out)
+            self.assertNotIn("lastLogon;format=TimeSpec: ", out)
+
+            # If a specified attribute is not available on a user object
+            # it's silently omitted.
+            self.assertNotIn("lastLogonTimestamp:", out)
+            self.assertNotIn("lockoutTime:", out)
+
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed: 1", out)
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=GeneralizedTime: 20", out)
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=UnixTime: 1", out)
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=TimeSpec: 1", out)
+
+            self.assertIn("pwdLastSet: 1", out)
+            self.assertIn("pwdLastSet;format=GeneralizedTime: 20", out)
+            self.assertIn("pwdLastSet;format=UnixTime: 1", out)
+            self.assertIn("pwdLastSet;format=TimeSpec: 1", out)
+
+            out_msgs = self.samdb.parse_ldif(out)
+            out_msg = next(out_msgs)[1]
+
+            self.assertIn("whenCreated", out_msg)
+            when_created_str = str(out_msg["whenCreated"][0])
+            self.assertIn("whenCreated;format=GeneralizedTime", out_msg)
+            self.assertEqual(str(out_msg["whenCreated;format=GeneralizedTime"][0]), when_created_str)
+            when_created_time = ldb.string_to_time(when_created_str)
+            self.assertIn("whenCreated;format=UnixTime", out_msg)
+            self.assertEqual(str(out_msg["whenCreated;format=UnixTime"][0]), str(when_created_time))
+            self.assertIn("whenCreated;format=TimeSpec", out_msg)
+            self.assertEqual(str(out_msg["whenCreated;format=TimeSpec"][0]),
+                             "%d.000000000" % (when_created_time))
+
+            self.assertIn("whenChanged", out_msg)
+            when_changed_str = str(out_msg["whenChanged"][0])
+            self.assertIn("whenChanged;format=GeneralizedTime", out_msg)
+            self.assertEqual(str(out_msg["whenChanged;format=GeneralizedTime"][0]), when_changed_str)
+            when_changed_time = ldb.string_to_time(when_changed_str)
+            self.assertIn("whenChanged;format=UnixTime", out_msg)
+            self.assertEqual(str(out_msg["whenChanged;format=UnixTime"][0]), str(when_changed_time))
+            self.assertIn("whenChanged;format=TimeSpec", out_msg)
+            self.assertEqual(str(out_msg["whenChanged;format=TimeSpec"][0]),
+                             "%d.000000000" % (when_changed_time))
+
+            self.assertIn("pwdLastSet;format=GeneralizedTime", out_msg)
+            pwd_last_set_str = str(out_msg["pwdLastSet;format=GeneralizedTime"][0])
+            pwd_last_set_time = ldb.string_to_time(pwd_last_set_str)
+            self.assertIn("pwdLastSet;format=UnixTime", out_msg)
+            self.assertEqual(str(out_msg["pwdLastSet;format=UnixTime"][0]), str(pwd_last_set_time))
+            self.assertIn("pwdLastSet;format=TimeSpec", out_msg)
+            self.assertIn("%d." % pwd_last_set_time, str(out_msg["pwdLastSet;format=TimeSpec"][0]))
+            self.assertNotIn(".000000000", str(out_msg["pwdLastSet;format=TimeSpec"][0]))
+
+            # assert that the pwd has been set in the minute after user creation
+            self.assertGreaterEqual(pwd_last_set_time, when_created_time)
+            self.assertLess(pwd_last_set_time, when_created_time + 60)
+
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=GeneralizedTime", out_msg)
+            pwd_expires_str = str(out_msg["msDS-UserPasswordExpiryTimeComputed;format=GeneralizedTime"][0])
+            pwd_expires_time = ldb.string_to_time(pwd_expires_str)
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=UnixTime", out_msg)
+            self.assertEqual(str(out_msg["msDS-UserPasswordExpiryTimeComputed;format=UnixTime"][0]), str(pwd_expires_time))
+            self.assertIn("msDS-UserPasswordExpiryTimeComputed;format=TimeSpec", out_msg)
+            self.assertIn("%d." % pwd_expires_time, str(out_msg["msDS-UserPasswordExpiryTimeComputed;format=TimeSpec"][0]))
+            self.assertNotIn(".000000000", str(out_msg["msDS-UserPasswordExpiryTimeComputed;format=TimeSpec"][0]))
+
+            # assert that the pwd expires after it was set
+            self.assertGreater(pwd_expires_time, pwd_last_set_time)
+
     def test_move(self):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
         (result, out, err) = self.runsubcmd("ou", "add", full_ou_dn)
