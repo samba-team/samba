@@ -929,6 +929,21 @@ void winbind_disconnect_dc_parent(struct messaging_context *msg_ctx,
 	forall_children(winbind_msg_relay_fn, &state);
 }
 
+/* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
+void winbindd_msg_reload_services_parent(struct messaging_context *msg,
+					 void *private_data,
+					 uint32_t msg_type,
+					 struct server_id server_id,
+					 DATA_BLOB *data)
+{
+	DBG_DEBUG("Got reload-config message\n");
+
+        /* Flush various caches */
+	winbindd_flush_caches();
+
+	winbindd_reload_services_file((const char *)private_data);
+}
+
 /* Set our domains as offline and forward the offline message to our children. */
 
 struct winbind_msg_on_offline_state {
