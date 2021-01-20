@@ -539,7 +539,10 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	ret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname, xattr_name);
+	SMB_ASSERT(smb_fname->fsp != NULL);
+	SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+
+	ret = SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
