@@ -31,6 +31,8 @@ bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
 char *get_winbind_priv_pipe_dir(void);
+void winbindd_flush_caches(void);
+bool winbindd_reload_services_file(const char *lfile);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
 
@@ -341,6 +343,11 @@ void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
 				   uint32_t msg_type,
 				   struct server_id server_id,
 				   DATA_BLOB *data);
+void winbindd_msg_reload_services_parent(struct messaging_context *msg,
+					 void *private_data,
+					 uint32_t msg_type,
+					 struct server_id server_id,
+					 DATA_BLOB *data);
 NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 				    const char *logfilename);
 struct winbindd_domain *wb_child_domain(void);
