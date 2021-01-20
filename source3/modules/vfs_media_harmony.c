@@ -1436,6 +1436,7 @@ static int mh_unlinkat(vfs_handle_struct *handle,
 		int flags)
 {
 	int status;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *clientFname;
 	TALLOC_CTX *ctx;
 
@@ -1451,17 +1452,25 @@ static int mh_unlinkat(vfs_handle_struct *handle,
 	clientFname = NULL;
 	ctx = talloc_tos();
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname,
+				full_fname,
 				&clientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
+				dirfsp->conn->cwd_fsp,
 				clientFname,
 				flags);
 err:
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(clientFname);
 out:
 	return status;
