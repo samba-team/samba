@@ -629,12 +629,22 @@ static int cap_mknodat(vfs_handle_struct *handle,
 		mode_t mode,
 		SMB_DEV_T dev)
 {
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *cap_smb_fname = NULL;
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	char *cappath = NULL;
 	int ret;
 	int saved_errno = 0;
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+        if (full_fname == NULL) {
+                return -1;
+        }
+
+	cappath = capencode(talloc_tos(), full_fname->base_name);
 	if (!cappath) {
+		TALLOC_FREE(full_fname);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -645,18 +655,20 @@ static int cap_mknodat(vfs_handle_struct *handle,
 					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
 		return -1;
 	}
 	ret = SMB_VFS_NEXT_MKNODAT(handle,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			cap_smb_fname,
 			mode,
 			dev);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(cappath);
 	TALLOC_FREE(cap_smb_fname);
 	if (saved_errno != 0) {
