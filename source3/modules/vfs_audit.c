@@ -270,7 +270,15 @@ static int audit_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_UNLINKAT(handle,
 			dirfsp,
@@ -278,10 +286,11 @@ static int audit_unlinkat(vfs_handle_struct *handle,
 			flags);
 
 	syslog(audit_syslog_priority(handle), "unlinkat %s %s%s\n",
-	       smb_fname->base_name,
+	       full_fname->base_name,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 
+	TALLOC_FREE(full_fname);
 	return result;
 }
 
