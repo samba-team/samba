@@ -295,6 +295,7 @@ static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *smb_fname_tmp = NULL;
 	int ret = -1;
 
@@ -308,14 +309,26 @@ static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	/*
+	 * TODO: use SMB_VFS_STATX() once we have that.
+	 */
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		goto out;
+	}
+
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_LSTAT(handle, full_fname);
 	} else {
-		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_STAT(handle, full_fname);
 	}
 	if (ret == -1) {
 		goto out;
 	}
+	smb_fname_tmp->st = full_fname->st;
 
 	if (smb_fname_tmp->st.st_ex_nlink == 1) {
 		NTSTATUS status;
@@ -327,7 +340,9 @@ static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
 			goto out;
 		}
 
-		status = unlink_posix_eadb_raw(ea_tdb, smb_fname->base_name, -1);
+		status = unlink_posix_eadb_raw(ea_tdb,
+					       full_fname->base_name,
+					       -1);
 		if (!NT_STATUS_IS_OK(status)) {
 			tdb_transaction_cancel(ea_tdb->tdb);
 			ret = -1;
@@ -352,6 +367,7 @@ static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
 
 out:
 	TALLOC_FREE(smb_fname_tmp);
+	TALLOC_FREE(full_fname);
 	return ret;
 }
 
