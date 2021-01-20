@@ -533,14 +533,16 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				struct dcesrv_connection **_p)
 {
 	struct dcesrv_auth *auth = NULL;
-	struct dcesrv_connection *p;
+	struct dcesrv_connection *p = NULL;
 
 	if (!session_info) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	p = talloc_zero(mem_ctx, struct dcesrv_connection);
-	NT_STATUS_HAVE_NO_MEMORY(p);
+	if (p == NULL) {
+		goto nomem;
+	}
 
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
@@ -568,14 +570,12 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	auth = dcesrv_auth_create(p);
 	if (auth == NULL) {
-		talloc_free(p);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	auth->session_info = talloc_reference(auth, session_info);
 	if (auth->session_info == NULL) {
-		talloc_free(p);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	p->default_auth_state = auth;
@@ -587,6 +587,9 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	*_p = p;
 	return NT_STATUS_OK;
+nomem:
+	TALLOC_FREE(p);
+	return NT_STATUS_NO_MEMORY;
 }
 
 /*
