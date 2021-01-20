@@ -295,18 +295,28 @@ static int cap_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *smb_fname_tmp = NULL;
 	char *cappath = NULL;
 	int ret;
 
-	cappath = capencode(talloc_tos(), smb_fname->base_name);
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	cappath = capencode(talloc_tos(), full_fname->base_name);
 	if (!cappath) {
+		TALLOC_FREE(full_fname);
 		errno = ENOMEM;
 		return -1;
 	}
 
 	/* Setup temporary smb_filename structs. */
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), full_fname);
+	TALLOC_FREE(full_fname);
 	if (smb_fname_tmp == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -315,7 +325,7 @@ static int cap_unlinkat(vfs_handle_struct *handle,
 	smb_fname_tmp->base_name = cappath;
 
 	ret = SMB_VFS_NEXT_UNLINKAT(handle,
-			dirfsp,
+			dirfsp->conn->cwd_fsp,
 			smb_fname_tmp,
 			flags);
 
