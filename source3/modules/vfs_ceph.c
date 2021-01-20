@@ -829,21 +829,31 @@ static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct smb_filename *full_fname = NULL;
 	int result = -1;
 
 	DBG_DEBUG("[CEPH] unlink(%p, %s)\n",
 		handle,
 		smb_fname_str_dbg(smb_fname));
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
 	if (smb_fname->stream_name) {
 		errno = ENOENT;
 		return result;
 	}
-	if (flags & AT_REMOVEDIR) {
-		result = ceph_rmdir(handle->data, smb_fname->base_name);
-	} else {
-		result = ceph_unlink(handle->data, smb_fname->base_name);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
 	}
+
+	if (flags & AT_REMOVEDIR) {
+		result = ceph_rmdir(handle->data, full_fname->base_name);
+	} else {
+		result = ceph_unlink(handle->data, full_fname->base_name);
+	}
+	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
