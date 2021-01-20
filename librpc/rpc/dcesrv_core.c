@@ -162,7 +162,7 @@ _PUBLIC_ const struct dcesrv_interface *find_interface_by_uuid(const struct dces
 }
 
 /*
-  find the earlier parts of a fragmented call awaiting reassembily
+  find the earlier parts of a fragmented call awaiting reassembly
 */
 static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_connection *dce_conn, uint32_t call_id)
 {
