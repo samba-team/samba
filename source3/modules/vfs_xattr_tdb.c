@@ -616,6 +616,7 @@ static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
 			int flags)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
+	struct smb_filename *full_fname = NULL;
 	struct file_id id;
 	struct db_context *db;
 	int ret = -1;
@@ -635,14 +636,26 @@ static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (smb_fname_tmp->flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
+	/*
+	 * TODO: use SMB_VFS_STATX() once we have that
+	 */
+
+	full_fname = full_path_from_dirfsp_atname(frame,
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		goto out;
+	}
+
+	if (full_fname->flags & SMB_FILENAME_POSIX_PATH) {
+		ret = SMB_VFS_NEXT_LSTAT(handle, full_fname);
 	} else {
-		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_STAT(handle, full_fname);
 	}
 	if (ret == -1) {
 		goto out;
 	}
+	smb_fname_tmp->st = full_fname->st;
 
 	if (flags & AT_REMOVEDIR) {
 		/* Always remove record when removing a directory succeeds. */
