@@ -2265,7 +2265,45 @@ samba-tool gpo manage symlink list {31B2F340-016D-11D2-945F-00C04FB984F9}
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_xml = '\\'.join([realm.lower(), 'Policies', gpo,
+                                'MACHINE\\VGP\\VTLA\\Unix',
+                                'Symlink\\manifest.xml'])
+        try:
+            xml_data = ET.fromstring(conn.loadfile(vgp_xml))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                return # The file doesn't exist, so there is nothing to list
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
+
+        policy = xml_data.find('policysetting')
+        data = policy.find('data')
+        for file_properties in data.findall('file_properties'):
+            source = file_properties.find('source')
+            target = file_properties.find('target')
+            self.outf.write('ln -s %s %s\n' % (source.text, target.text))
 
 class cmd_symlink(SuperCommand):
     """Manage symlink Group Policy Objects"""

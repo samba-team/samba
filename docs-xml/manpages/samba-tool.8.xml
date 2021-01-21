@@ -884,6 +884,11 @@
 	<para>Show information for a GPO.</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage symlink list</title>
+	<para>List VGP Symbolic Link Group Policy from the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
