@@ -815,6 +815,31 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_symlink_add(self):
+        source_text = os.path.join(self.tempdir, 'test.source')
+        target_text = os.path.join(self.tempdir, 'test.target')
+        symlink = 'ln -s %s %s' % (source_text, target_text)
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "symlink", "add"),
+                                                 self.gpo_guid,
+                                                 source_text, target_text,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Symlink add failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "symlink", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(symlink, out, 'The test entry was not found!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()

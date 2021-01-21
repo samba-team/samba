@@ -2305,10 +2305,39 @@ samba-tool gpo manage symlink list {31B2F340-016D-11D2-945F-00C04FB984F9}
             target = file_properties.find('target')
             self.outf.write('ln -s %s %s\n' % (source.text, target.text))
 
+class cmd_add_symlink(Command):
+    """Adds a VGP Symbolic Link Group Policy to the sysvol
+
+This command adds a symlink setting to the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage symlink add {31B2F340-016D-11D2-945F-00C04FB984F9} /tmp/source /tmp/target
+    """
+
+    synopsis = "%prog <gpo> <source> <target> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "source", "target"]
+
+    def run(self, gpo, source, target, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        pass
+
 class cmd_symlink(SuperCommand):
     """Manage symlink Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_symlink()
+    subcommands["add"] = cmd_add_symlink()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
