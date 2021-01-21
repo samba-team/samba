@@ -2909,6 +2909,28 @@ static void dcesrv_read_fragment_done(struct tevent_req *subreq)
 		return;
 	}
 
+	dcesrv_loop_next_packet(dce_conn, pkt, buffer);
+}
+
+/**
+ * @brief Start the dcesrv loop, inducing the bind as a blob
+ *
+ * Like dcesrv_connection_loop_start() but used from connections
+ * where the caller has already read the dcerpc bind packet from
+ * the socket and is available as a DATA_BLOB.
+ *
+ * @param[in] dce_conn The connection to start
+ * @param[in] pkt The parsed bind packet
+ * @param[in] buffer The full binary bind including auth data
+ */
+void dcesrv_loop_next_packet(
+	struct dcesrv_connection *dce_conn,
+	struct ncacn_packet *pkt,
+	DATA_BLOB buffer)
+{
+	struct tevent_req *subreq = NULL;
+	NTSTATUS status;
+
 	status = dcesrv_process_ncacn_packet(dce_conn, pkt, buffer);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));

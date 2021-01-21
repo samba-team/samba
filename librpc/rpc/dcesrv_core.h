@@ -640,6 +640,11 @@ _PUBLIC_ void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 
 _PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn);
 
+_PUBLIC_ void dcesrv_loop_next_packet(
+	struct dcesrv_connection *dce_conn,
+	struct ncacn_packet *pkt,
+	DATA_BLOB buffer);
+
 _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call);
 
 _PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
