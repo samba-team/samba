@@ -28,6 +28,7 @@ from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
 from samba.gp_scripts_ext import gp_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.vgp_sudoers_ext import vgp_sudoers_ext
+from samba.vgp_symlink_ext import vgp_symlink_ext
 from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
 import logging
@@ -871,3 +872,76 @@ class GPOTests(tests.TestCase):
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
+
+    def test_vgp_symlink(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/UNIX/SYMLINK/MANIFEST.XML')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_symlink_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        with TemporaryDirectory() as dname:
+            test_source = os.path.join(dname, 'test.source')
+            test_target = os.path.join(dname, 'test.target')
+
+            # Stage the manifest.xml file with test data
+            stage = etree.Element('vgppolicy')
+            policysetting = etree.Element('policysetting')
+            stage.append(policysetting)
+            version = etree.Element('version')
+            version.text = '1'
+            policysetting.append(version)
+            data = etree.Element('data')
+            file_properties = etree.Element('file_properties')
+            source = etree.Element('source')
+            source.text = test_source
+            file_properties.append(source)
+            target = etree.Element('target')
+            target.text = test_target
+            file_properties.append(target)
+            data.append(file_properties)
+            policysetting.append(data)
+            ret = stage_file(manifest, etree.tostring(stage))
+            self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+            # Create test source
+            test_source_data = 'hello world!'
+            with open(test_source, 'w') as w:
+                w.write(test_source_data)
+
+            # Process all gpos, with temp output directory
+            ext.process_group_policy([], gpos)
+            self.assertTrue(os.path.exists(test_target),
+                            'The test symlink was not created')
+            self.assertTrue(os.path.islink(test_target),
+                            'The test file is not a symlink')
+            self.assertIn(test_source_data, open(test_target, 'r').read(),
+                          'Reading from symlink does not produce source data')
+
+            # Unapply the policy, ensure removal
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertFalse(os.path.exists(test_target),
+                            'The test symlink was not delete')
+
+            # Verify RSOP
+            ret = ext.rsop([g for g in gpos if g.name == guid][0])
+            self.assertIn('ln -s %s %s' % (test_source, test_target),
+                          list(ret.values())[0])
+
+        # Unstage the manifest.xml file
+        unstage_file(manifest)
