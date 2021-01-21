@@ -840,6 +840,27 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertIn(symlink, out, 'The test entry was not found!')
 
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "symlink", "remove"),
+                                                 self.gpo_guid,
+                                                 source_text, target_text,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Symlink remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "symlink", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(symlink, out, 'The test entry was not removed!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
