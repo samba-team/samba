@@ -889,6 +889,11 @@
 	<para>List VGP Symbolic Link Group Policy from the sysvol</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage symlink add</title>
+	<para>Adds a VGP Symbolic Link Group Policy to the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
