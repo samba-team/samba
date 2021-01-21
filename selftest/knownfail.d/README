@@ -4,5 +4,5 @@
 # "make test" will not report failures for tests listed here and will consider
 # a successful run for any of these tests an error.
 #
-# Empty lines and lines begining with '#' are ignored.
+# Empty lines and lines beginning with '#' are ignored.
 # Please don't add tests to this README!

@@ -10,5 +10,5 @@
 # It is much better to add known failing tests to 'knownfail', so the
 # test system can warn when they actually start passing.
 #
-# Empty lines and lines begining with '#' are ignored.
+# Empty lines and lines beginning with '#' are ignored.
 # Please don't add tests to this README!
