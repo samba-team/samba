@@ -3465,6 +3465,7 @@ static NTSTATUS delete_invalid_meta_stream(
 	off_t size)
 {
 	struct smb_filename *sname = NULL;
+	NTSTATUS status;
 	int ret;
 	bool ok;
 
@@ -3477,13 +3478,15 @@ static NTSTATUS delete_invalid_meta_stream(
 		return NT_STATUS_OK;
 	}
 
-	sname = synthetic_smb_fname(talloc_tos(),
-				    smb_fname->base_name,
-				    AFPINFO_STREAM_NAME,
-				    NULL,
-				    smb_fname->twrp,
-				    0);
-	if (sname == NULL) {
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   smb_fname->base_name,
+				   AFPINFO_STREAM_NAME,
+				   NULL,
+				   smb_fname->twrp,
+				   0,
+				   &sname);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
