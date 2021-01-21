@@ -2155,8 +2155,6 @@ static int fruit_unlinkat(vfs_handle_struct *handle,
 	struct smb_filename *rsrc_smb_fname = NULL;
 	int ret;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	if (flags & AT_REMOVEDIR) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
 					     dirfsp,
