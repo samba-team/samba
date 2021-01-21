@@ -2001,8 +2001,18 @@ static int fruit_unlink_rsrc_adouble(vfs_handle_struct *handle,
 	struct smb_filename *adp_smb_fname = NULL;
 
 	if (!force_unlink) {
-		ad = ad_get(talloc_tos(), handle, smb_fname,
+		struct smb_filename *full_fname = NULL;
+
+		full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+							  dirfsp,
+							  smb_fname);
+		if (full_fname == NULL) {
+			return -1;
+		}
+
+		ad = ad_get(talloc_tos(), handle, full_fname,
 			    ADOUBLE_RSRC);
+		TALLOC_FREE(full_fname);
 		if (ad == NULL) {
 			errno = ENOENT;
 			return -1;
