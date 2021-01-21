@@ -873,7 +873,6 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 			int flags)
 {
 	int ret;
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	if (flags & AT_REMOVEDIR) {
 		ret = streams_depot_rmdir_internal(handle,
 				dirfsp,
