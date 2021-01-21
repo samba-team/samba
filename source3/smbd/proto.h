@@ -477,6 +477,12 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 			   uint32_t flags,
 			   struct smb_filename **_smb_fname);
 
+NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			struct smb_filename **_parent,
+			struct smb_filename **_atname);
+
 /* The following definitions come from smbd/ipc.c  */
 
 NTSTATUS nt_status_np_pipe(NTSTATUS status);
