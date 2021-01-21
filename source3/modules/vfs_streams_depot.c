@@ -694,6 +694,7 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 				int flags)
 {
 	struct smb_filename *smb_fname_base = NULL;
+	char *dirname = NULL;
 	int ret = -1;
 
 	DEBUG(10, ("streams_depot_unlink called for %s\n",
@@ -751,30 +752,31 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 	 * check is already done in the caller. Remove the
 	 * file *after* the streams.
 	 */
-	{
-		char *dirname = stream_dir(handle, smb_fname_base,
-					   &smb_fname_base->st, false);
+	dirname = stream_dir(handle,
+			     smb_fname_base,
+			     &smb_fname_base->st,
+			     false);
+	if (dirname != NULL) {
+		struct smb_filename *smb_fname_dir = NULL;
 
-		if (dirname != NULL) {
-			struct smb_filename *smb_fname_dir =
-				synthetic_smb_fname(talloc_tos(),
-						dirname,
-						NULL,
-						NULL,
-						smb_fname->twrp,
-						smb_fname->flags);
-			if (smb_fname_dir == NULL) {
-				TALLOC_FREE(smb_fname_base);
-				TALLOC_FREE(dirname);
-				errno = ENOMEM;
-				return -1;
-			}
-			SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname_dir,
-				AT_REMOVEDIR);
-			TALLOC_FREE(smb_fname_dir);
+		smb_fname_dir = synthetic_smb_fname(talloc_tos(),
+						    dirname,
+						    NULL,
+						    NULL,
+						    smb_fname->twrp,
+						    smb_fname->flags);
+		if (smb_fname_dir == NULL) {
+			TALLOC_FREE(smb_fname_base);
+			TALLOC_FREE(dirname);
+			errno = ENOMEM;
+			return -1;
 		}
+
+		SMB_VFS_NEXT_UNLINKAT(handle,
+				      dirfsp,
+				      smb_fname_dir,
+				      AT_REMOVEDIR);
+		TALLOC_FREE(smb_fname_dir);
 		TALLOC_FREE(dirname);
 	}
 
