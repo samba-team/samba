@@ -469,6 +469,9 @@ static const struct enum_list enum_ad_functional_level[] = {
 static const struct enum_list enum_acl_claims_evaluation[] = {
 	{ACL_CLAIMS_EVALUATION_AD_DC_ONLY, "AD DC only"},
 	{ACL_CLAIMS_EVALUATION_NEVER, "never"},
+};
+static const struct enum_list enum_wsp_backend[] = {
+	{WSP_BACKEND_NONE, "none"},
 	{-1, NULL}
 };
 

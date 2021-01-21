@@ -209,6 +209,7 @@ static const struct loadparm_service _sDefault =
 	.available = true,
 	.read_only = true,
 	.spotlight = false,
+	.wsp = false,
 	.guest_only = false,
 	.administrative_share = false,
 	.guest_ok = false,

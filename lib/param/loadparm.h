@@ -268,6 +268,10 @@ enum acl_claims_evaluation {
 	ACL_CLAIMS_EVALUATION_AD_DC_ONLY,
 	ACL_CLAIMS_EVALUATION_NEVER
 };
+/* WSP backend options */
+enum wsp_backend_options {
+	WSP_BACKEND_NONE,
+};
 
 /* Controlling the protocol for netlogon ping */
 enum client_netlogon_ping_protocol {

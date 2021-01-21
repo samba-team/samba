@@ -1,0 +1,43 @@
+<samba:parameter name="wsp"
+		 context="S"
+		 type="boolean"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter controls whether Samba allows WSP
+	  queries on a share. For controlling indexing of filesystems
+	  you may also have to use the associated indexer's own
+	  configuration system or tools.
+	</para>
+
+	<para>
+	  WSP has several prerequisites:
+	</para>
+
+	<itemizedlist>
+	  <listitem><para>
+	    Samba must be configured and built with WSP support.
+	  </para></listitem>
+
+	  <listitem><para>
+	    The <emphasis>wsp</emphasis> service must be
+	    enabled, see below.
+	  </para></listitem>
+
+	  <listitem><para> The associated supported <emphasis>wsp backend
+	    </emphasis> must be setup and the share content
+	    indexed.</para></listitem>
+	</itemizedlist>
+
+	<para>For a detailed set of instructions please see <ulink
+	url="https://wiki.samba.org/index.php/WSP">https://wiki.samba.org/index.php/WSP</ulink>.
+	</para>
+
+	<para>
+	The WSP service is started automatically if global 'wsp backend'
+	is set to a supported backend (other than the default 'none')
+	</para>
+
+</description>
+<value type="default">no</value>
+</samba:parameter>
