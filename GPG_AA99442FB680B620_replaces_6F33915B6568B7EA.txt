@@ -1,0 +1,27 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+The GPG release key for Samba releases changed from:
+
+pub   dsa1024/6F33915B6568B7EA 2007-02-04 [SC] [expires: 2021-02-05]
+      Key fingerprint = 52FB C0B8 6D95 4B08 4332  4CDC 6F33 915B 6568 B7EA
+uid                 [  full  ] Samba Distribution Verification Key <samba-bugs@samba.org>
+sub   elg2048/9C6ED163DA6DFB44 2007-02-04 [E] [expires: 2021-02-05]
+
+to the following new key:
+
+pub   rsa4096/AA99442FB680B620 2020-12-21 [SC] [expires: 2022-12-21]
+      Key fingerprint = 81F5 E283 2BD2 545A 1897  B713 AA99 442F B680 B620
+uid                 [ultimate] Samba Distribution Verification Key <samba-bugs@samba.org>
+sub   rsa4096/97EF9386FBFD4002 2020-12-21 [E] [expires: 2022-12-21]
+
+Starting from Jan 21th 2021, all Samba releases will be signed with the new key.
+
+This document is signed with the old key.
+
+-----BEGIN PGP SIGNATURE-----
+
+iF0EARECAB0WIQRS+8C4bZVLCEMyTNxvM5FbZWi36gUCYAltCQAKCRBvM5FbZWi3
+6ofOAJ491tFEr36jLkf158ueIrDw9zNVtgCbBV3PgocOX5VH57s1NQdBOof+ihw=
+=wf56
+-----END PGP SIGNATURE-----
