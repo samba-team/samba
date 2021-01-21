@@ -787,21 +787,30 @@ static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
 {
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
 
-	DBG_DEBUG("called for %s\n", smb_fname->base_name);
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	DBG_DEBUG("called for %s\n", full_fname->base_name);
 
 	/*
 	 * We potentially need to delete the per-inode streams directory
 	 */
 
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-				smb_fname->base_name,
+				full_fname->base_name,
 				NULL,
 				NULL,
-				smb_fname->twrp,
-				smb_fname->flags);
+				full_fname->twrp,
+				full_fname->flags);
+	TALLOC_FREE(full_fname);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -842,7 +851,7 @@ static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 				return -1;
 			}
 			SMB_VFS_NEXT_UNLINKAT(handle,
-					dirfsp,
+					dirfsp->conn->cwd_fsp,
 					smb_fname_dir,
 					AT_REMOVEDIR);
 			TALLOC_FREE(smb_fname_dir);
@@ -852,7 +861,7 @@ static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 
 	ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				dirfsp,
-				smb_fname_base,
+				smb_fname,
 				AT_REMOVEDIR);
 	TALLOC_FREE(smb_fname_base);
 	return ret;
