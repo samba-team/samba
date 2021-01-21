@@ -622,6 +622,58 @@ NTSTATUS move_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Create an smb_fname and open smb_fname->fsp pathref
+ **/
+NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
+			   struct files_struct *dirfsp,
+			   const char *base_name,
+			   const char *stream_name,
+			   const SMB_STRUCT_STAT *psbuf,
+			   NTTIME twrp,
+			   uint32_t flags,
+			   struct smb_filename **_smb_fname)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	smb_fname = synthetic_smb_fname(mem_ctx,
+					base_name,
+					stream_name,
+					psbuf,
+					twrp,
+					flags);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!VALID_STAT(smb_fname->st)) {
+		ret = vfs_stat(dirfsp->conn, smb_fname);
+		if (ret != 0) {
+			DBG_ERR("stat [%s] failed: %s",
+				smb_fname_str_dbg(smb_fname),
+				strerror(errno));
+			TALLOC_FREE(smb_fname);
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	status = openat_pathref_fsp(dirfsp, smb_fname);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("opening [%s] failed\n",
+			smb_fname_str_dbg(smb_fname));
+		TALLOC_FREE(smb_fname);
+		return status;
+	}
+
+	*_smb_fname = smb_fname;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Close all open files for a connection.
 ****************************************************************************/
