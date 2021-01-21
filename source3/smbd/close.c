@@ -289,6 +289,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	struct file_id id;
 	const struct security_unix_token *del_token = NULL;
 	const struct security_token *del_nt_token = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *base_fname = NULL;
 	bool got_tokens = false;
 	bool normal_close;
 	int ret;
@@ -465,11 +467,21 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		fsp->fsp_flags.kernel_share_modes_taken = false;
 	}
 
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_fname,
+				&base_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	ret = SMB_VFS_UNLINKAT(conn,
-			conn->cwd_fsp,
-			fsp->fsp_name,
-			0);
+			       parent_fname->fsp,
+			       base_fname,
+			       0);
+	TALLOC_FREE(parent_fname);
+	base_fname = NULL;
 	if (ret != 0) {
 		/*
 		 * This call can potentially fail as another smbd may
