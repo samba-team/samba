@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first pre release of Samba 4.14.  This is *not*
+This is the first release candidate of Samba 4.14.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -11,6 +11,27 @@ Samba 4.14 will be the next version of the Samba suite.
 
 UPGRADING
 =========
+
+New GPG key
+-----------
+
+The GPG release key for Samba releases changed from:
+
+pub   dsa1024/6F33915B6568B7EA 2007-02-04 [SC] [expires: 2021-02-05]
+      Key fingerprint = 52FB C0B8 6D95 4B08 4332  4CDC 6F33 915B 6568 B7EA
+uid                 [  full  ] Samba Distribution Verification Key <samba-bugs@samba.org>
+sub   elg2048/9C6ED163DA6DFB44 2007-02-04 [E] [expires: 2021-02-05]
+
+to the following new key:
+
+pub   rsa4096/AA99442FB680B620 2020-12-21 [SC] [expires: 2022-12-21]
+      Key fingerprint = 81F5 E283 2BD2 545A 1897  B713 AA99 442F B680 B620
+uid                 [ultimate] Samba Distribution Verification Key <samba-bugs@samba.org>
+sub   rsa4096/97EF9386FBFD4002 2020-12-21 [E] [expires: 2022-12-21]
+
+Starting from Jan 21th 2021, all Samba releases will be signed with the new key.
+
+See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
 
 
 NEW FEATURES/CHANGES
