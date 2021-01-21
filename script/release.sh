@@ -316,7 +316,7 @@ create_release() {
 
 	echo "Signing ${tarname} => ${tarname}.asc"
 	rm -f "${tarname}.asc"
-	gpg -u "${GPG_USER}" --detach-sign --armor ${tarname} || {
+	gpg --default-key "${GPG_KEYID}" --detach-sign --armor ${tarname} || {
 		return 1
 	}
 	test -f "${tarname}.asc" || {
@@ -362,7 +362,7 @@ patch_release() {
 	echo "Signing ${patchfile} => ${patchfile}.asc"
 	rm -f "${patchfile}.asc"
 	CLEANUP_FILES="${CLEANUP_FILES} ${patchfile}.asc"
-	gpg -u "${GPG_USER}" --detach-sign --armor ${patchfile} || {
+	gpg --default-key "${GPG_KEYID}" --detach-sign --armor ${patchfile} || {
 		return 1
 	}
 	test -f "${patchfile}.asc" || {
