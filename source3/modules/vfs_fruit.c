@@ -1900,8 +1900,9 @@ static int fruit_unlink_meta_stream(vfs_handle_struct *handle,
 static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
 				      const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_REMOVEXATTR(handle->conn,
-				   smb_fname,
+	SMB_ASSERT(smb_fname->fsp != NULL);
+	SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+	return SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp,
 				   AFPINFO_EA_NETATALK);
 }
 
