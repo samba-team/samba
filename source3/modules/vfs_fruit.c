@@ -3491,12 +3491,13 @@ static NTSTATUS delete_invalid_meta_stream(
 			handle->conn->cwd_fsp,
 			sname,
 			0);
-	TALLOC_FREE(sname);
 	if (ret != 0) {
 		DBG_ERR("Removing [%s] failed\n", smb_fname_str_dbg(sname));
+		TALLOC_FREE(sname);
 		return map_nt_error_from_unix(errno);
 	}
 
+	TALLOC_FREE(sname);
 	return NT_STATUS_OK;
 }
 
