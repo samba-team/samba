@@ -31,6 +31,7 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.common import get_string
 from configparser import ConfigParser
 from io import StringIO
+import xml.etree.ElementTree as etree
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
@@ -773,6 +774,46 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
+
+    def test_symlink_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/Unix',
+                               'Symlink/manifest.xml')
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Symlink Policy'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Specifies symbolic link data'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'merge'
+        data = etree.SubElement(policysetting, 'data')
+        file_properties = etree.SubElement(data, 'file_properties')
+        source = etree.SubElement(file_properties, 'source')
+        source.text = os.path.join(self.tempdir, 'test.source')
+        target = etree.SubElement(file_properties, 'target')
+        target.text = os.path.join(self.tempdir, 'test.target')
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
+
+        symlink = 'ln -s %s %s' % (source.text, target.text)
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "symlink", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(symlink, out, 'The test entry was not found!')
+
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
 
     def setUp(self):
         """set up a temporary GPO to work with"""

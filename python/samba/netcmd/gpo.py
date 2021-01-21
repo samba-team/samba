@@ -2240,12 +2240,45 @@ class cmd_smb_conf(SuperCommand):
     subcommands["list"] = cmd_list_smb_conf()
     subcommands["set"] = cmd_set_smb_conf()
 
+class cmd_list_symlink(Command):
+    """List VGP Symbolic Link Group Policy from the sysvol
+
+This command lists symlink settings from the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage symlink list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_symlink(SuperCommand):
+    """Manage symlink Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_symlink()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
     subcommands["sudoers"] = cmd_sudoers()
     subcommands["security"] = cmd_security()
     subcommands["smb_conf"] = cmd_smb_conf()
+    subcommands["symlink"] = cmd_symlink()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
