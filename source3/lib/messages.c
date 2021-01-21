@@ -396,21 +396,16 @@ static void messaging_recv_cb(struct tevent_context *ev,
 
 	if (msg_len < MESSAGE_HDR_LENGTH) {
 		DBG_WARNING("message too short: %zu\n", msg_len);
-		goto close_fail;
+		return;
 	}
 
 	if (num_fds > INT8_MAX) {
 		DBG_WARNING("too many fds: %zu\n", num_fds);
-		goto close_fail;
+		return;
 	}
 
-	/*
-	 * "consume" the fds by copying them and setting
-	 * the original variable to -1
-	 */
 	for (i=0; i < num_fds; i++) {
 		fds64[i] = fds[i];
-		fds[i] = -1;
 	}
 
 	rec = (struct messaging_rec) {
@@ -429,15 +424,13 @@ static void messaging_recv_cb(struct tevent_context *ev,
 
 	if (server_id_same_process(&rec.src, &msg_ctx->id)) {
 		DBG_DEBUG("Ignoring self-send\n");
-		goto close_fail;
+		return;
 	}
 
 	messaging_dispatch_rec(msg_ctx, ev, &rec);
-	return;
 
-close_fail:
-	for (i=0; i < num_fds; i++) {
-		close(fds[i]);
+	for (i=0; i<num_fds; i++) {
+		fds[i] = fds64[i];
 	}
 }
 
@@ -999,7 +992,16 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 
 	result->fds = NULL;
 	if (result->num_fds > 0) {
+		size_t i;
+
 		result->fds = talloc_memdup(result, rec->fds, fds_size);
+
+		for (i=0; i<rec->num_fds; i++) {
+			/*
+			 * fd's can only exist once
+			 */
+			rec->fds[i] = -1;
+		}
 	}
 
 	return result;
@@ -1395,16 +1397,6 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			return;
 		}
 	}
-
-	/*
-	 * If the fd-array isn't used, just close it.
-	 */
-	for (i=0; i < rec->num_fds; i++) {
-		int fd = rec->fds[i];
-		close(fd);
-	}
-	rec->num_fds = 0;
-	rec->fds = NULL;
 }
 
 static int mess_parent_dgm_cleanup(void *private_data);

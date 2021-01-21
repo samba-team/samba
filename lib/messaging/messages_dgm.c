@@ -1323,6 +1323,18 @@ static int messaging_dgm_in_msg_destructor(struct messaging_dgm_in_msg *m)
 	return 0;
 }
 
+static void messaging_dgm_close_unconsumed(int *fds, size_t num_fds)
+{
+	size_t i;
+
+	for (i=0; i<num_fds; i++) {
+		if (fds[i] != -1) {
+			close(fds[i]);
+			fds[i] = -1;
+		}
+	}
+}
+
 /*
  * Deal with identification of fragmented messages and
  * re-assembly into full messages sent, then calls the
@@ -1349,6 +1361,7 @@ static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
 	if (cookie == 0) {
 		ctx->recv_cb(ev, buf, buflen, fds, num_fds,
 			     ctx->recv_cb_private_data);
+		messaging_dgm_close_unconsumed(fds, num_fds);
 		return;
 	}
 
@@ -1412,6 +1425,7 @@ static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
 
 	ctx->recv_cb(ev, msg->buf, msg->msglen, fds, num_fds,
 		     ctx->recv_cb_private_data);
+	messaging_dgm_close_unconsumed(fds, num_fds);
 
 	TALLOC_FREE(msg);
 	return;
