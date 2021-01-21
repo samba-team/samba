@@ -1903,7 +1903,7 @@ SMBC_lseekdir_ctx(SMBCCTX *context,
 
 	/* Now, check what we were passed and see if it is OK ... */
 
-	if (dirent == NULL) {  /* Seek to the begining of the list */
+	if (dirent == NULL) {  /* Seek to the beginning of the list */
 
 		dir->dir_next = dir->dir_list;
 
