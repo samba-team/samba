@@ -1366,8 +1366,8 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 	control->critical = false;
 	dsc->schema = dsdb_get_schema(ldb, dsc);
 	/*
-	 * At the begining we make the hypothesis that we will return a complete
-	 * result set
+	 * At the beginning we make the hypothesis that we will return a
+	 * complete result set.
 	 */
 
 	dsc->partial = false;
