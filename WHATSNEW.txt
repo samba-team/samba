@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.14.  This is *not*
+This is the first pre release of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.14 will be the next version of the Samba suite.
+Samba 4.15 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -37,150 +37,12 @@ See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
 NEW FEATURES/CHANGES
 ====================
 
-Here is a copy of a clarification note added to the Samba code
-in the file: VFS-License-clarification.txt.
---------------------------------------------------------------
 
-A clarification of our GNU GPL License enforcement boundary within the Samba
-Virtual File System (VFS) layer.
-
-Samba is licensed under the GNU GPL. All code committed to the Samba
-project or that creates a "modified version" or software "based on" Samba must
-be either licensed under the GNU GPL or a compatible license.
-
-Samba has several plug-in interfaces where external code may be called
-from Samba GNU GPL licensed code. The most important of these is the
-Samba VFS layer.
-
-Samba VFS modules are intimately connected by header files and API
-definitions to the part of the Samba code that provides file services,
-and as such, code that implements a plug-in Samba VFS module must be
-licensed under the GNU GPL or a compatible license.
-
-However, Samba VFS modules may themselves call third-party external
-libraries that are not part of the Samba project and are externally
-developed and maintained.
-
-As long as these third-party external libraries do not use any of the
-Samba internal structure, APIs or interface definitions created by the
-Samba project (to the extent that they would be considered subject to the GNU
-GPL), then the Samba Team will not consider such third-party external
-libraries called from Samba VFS modules as "based on" and/or creating a
-"modified version" of the Samba code for the purposes of GNU GPL.
-Accordingly, we do not require such libraries be licensed under the GNU GPL
-or a GNU GPL compatible license.
-
-VFS
----
-
-The effort to modernize Samba's VFS interface has reached a major milestone with
-the next release Samba 4.14.
-
-For details please refer to the documentation at source3/modules/The_New_VFS.txt or
-visit the <https://wiki.samba.org/index.php/The_New_VFS>.
-
-Printing
---------
-
-Publishing printers in AD is more reliable and more printer features are
-added to the published information in AD. Samba now also supports Windows
-drivers for the ARM64 architecture.
-
-
-Client Group Policy
--------------------
-This release extends Samba to support Group Policy functionality for Winbind
-clients. Active Directory Administrators can set policies that apply Sudoers
-configuration, and cron jobs to run hourly, daily, weekly or monthly.
-
-To enable the application of Group Policies on a client, set the global
-smb.conf option 'apply group policies' to 'yes'. Policies are applied on an
-interval of every 90 minutes, plus a random offset between 0 and 30 minutes.
-
-Policies applied by Samba are 'non-tattooing', meaning that changes can be
-reverted by executing the `samba-gpupdate --unapply` command. Policies can be
-re-applied using the `samba-gpupdate --force` command.
-To view what policies have been or will be applied to a system, use the
-`samba-gpupdate --rsop` command.
-
-Administration of Samba policy requires that a Samba ADMX template be uploaded
-to the SYSVOL share. The samba-tool command `samba-tool gpo admxload` is
-provided as a convenient method for adding this policy. Once uploaded, policies
-can be modified in the Group Policy Management Editor under Computer
-Configuration/Policies/Administrative Templates. Alternatively, Samba policy
-may be managed using the `samba-tool gpo manage` command. This tool does not
-require the admx templates to be installed.
-
-
-Python 3.6 or later required
-----------------------------
-
-Samba's minimum runtime requirement for python was raised to Python
-3.6 with samba 4.13.  Samba 4.14 raises this minimum version to Python
-3.6 also to build Samba. It is no longer possible to build Samba
-(even just the file server) with Python versions 2.6 and 2.7.
-
-As Python 2.7 has been End Of Life upstream since April 2020, Samba
-is dropping ALL Python 2.x support in this release.
-
-
-NT4-like 'classic' Samba domain controllers
--------------------------------------------
-
-Samba 4.13 deprecates Samba's original domain controller mode.
-
-Sites using Samba as a Domain Controller should upgrade from the
-NT4-like 'classic' Domain Controller to a Samba Active Directory DC
-to ensure full operation with modern windows clients.
-
-
-SMBv1 only protocol options deprecated
---------------------------------------
-
-A number of smb.conf parameters for less-secure authentication methods
-which are only possible over SMBv1 are deprecated in this release.
-
-
-Miscellaneous samba-tool changes
---------------------------------
-
-The samba-tool commands to manage AD objects (e.g. users, computers and
-groups) now consistently use the "add" command when adding a new object to
-the AD. The previous deprecation warnings when using the "add" commands
-have been removed. For compatibility reasons, both the "add" and "create"
-commands can be used now.
-
-Users, groups and contacts can now be renamed with the respective rename
-commands.
-
-Locked users can be unlocked with the new "samba-tool user unlock" command.
-
-The "samba-tool user list" and "samba-tool group listmembers" commands
-provide additional options to hide expired and disabled user accounts
-(--hide-expired and --hide-disabled).
-
-
-CTDB CHANGES
-============
-
-* The NAT gateway and LVS features now uses the term "leader" to refer
-  to the main node in a group through which traffic is routed and
-  "follower" for other members of a group.  The command for
-  determining the leader has changed to "ctdb natgw leader" (from
-  "ctdb natgw master").  The configuration keyword for indicating that
-  a node can not be the leader of a group has changed to
-  "follower-only" (from "slave-only").  Identical changes were made
-  for LVS.
-
-* Remove "ctdb isnotrecmaster" command.  It isn't used by CTDB's
-  scripts and can be checked by users with "ctdb pnn" and "ctdb
-  recmaster".
 
 
 REMOVED FEATURES
 ================
 
-The deprecated "ldap ssl ads" smb.conf option has been removed.
 
 
 smb.conf changes
@@ -188,25 +50,12 @@ smb.conf changes
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
-  smb encrypt                        Removed
-  ldap ssl ads                       Removed
-  client plaintext auth              Deprecated                 no
-  client NTLMv2 auth                 Deprecated                 yes
-  client lanman auth                 Deprecated                 no
-  client use spnego                  Deprecated                 yes
-  domain logons                      Deprecated                 no
-  raw NTLMv2 auth                    Deprecated                 no
-  async dns timeout                  New                        10
-  client smb encrypt                 New                        default
-  honor change notify privilege      New                        No
-  smbd force process locks           New                        No
-  server smb encrypt                 New                        default
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.14#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.15#Release_blocking_bugs
 
 
 #######################################
