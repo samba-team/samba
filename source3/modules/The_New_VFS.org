@@ -208,7 +208,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_CLOSEDIR()                | [[fsp][fsp]]      | -      |
 | SMB_VFS_CONNECT()                 | [[Disk][Disk]]     | -      |
 | SMB_VFS_CONNECTPATH()             | [[P2px][P2px]]     | -      |
-| SMB_VFS_CREATE_DFS_PATHAT()       | [[NsC][NsC]]      | Todo   |
+| SMB_VFS_CREATE_DFS_PATHAT()       | [[NsC][NsC]]      | -      |
 | SMB_VFS_CREATE_FILE()             | [[NsC][NsC]]      | -      |
 | SMB_VFS_DISCONNECT()              | [[Disk][Disk]]     | -      |
 | SMB_VFS_DISK_FREE()               | [[Disk][Disk]]     | -      |

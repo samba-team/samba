@@ -276,7 +276,7 @@ Table of Contents
    SMB_VFS_CLOSEDIR()                 [fsp]       -
    SMB_VFS_CONNECT()                  [Disk]      -
    SMB_VFS_CONNECTPATH()              [P2px]      -
-   SMB_VFS_CREATE_DFS_PATHAT()        [NsC]       Todo
+   SMB_VFS_CREATE_DFS_PATHAT()        [NsC]       -
    SMB_VFS_CREATE_FILE()              [NsC]       -
    SMB_VFS_DISCONNECT()               [Disk]      -
    SMB_VFS_DISK_FREE()                [Disk]      -
