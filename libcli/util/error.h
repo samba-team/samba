@@ -44,6 +44,11 @@ WERROR ntstatus_to_werror(NTSTATUS error);
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix_common(int unix_error);
 
+/*********************************************************************
+ Map a Unix error code from a NT error code.
+*********************************************************************/
+int map_errno_from_nt_status(NTSTATUS status);
+
 NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
 /*****************************************************************************

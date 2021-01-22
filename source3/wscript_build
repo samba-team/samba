@@ -563,7 +563,6 @@ bld.SAMBA3_LIBRARY('smbconf',
                         cap
                         charset
                         samba-hostconfig
-                        errors3
                         SMBCONF_PARAM
                         samba-util
                         talloc
