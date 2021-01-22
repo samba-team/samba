@@ -965,6 +965,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 {
 	struct connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_dname = fsp->fsp_name;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *at_fname = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	SMB_STRUCT_STAT st;
@@ -972,14 +974,30 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	char *talloced = NULL;
 	long dirpos = 0;
 	struct smb_Dir *dir_hnd = NULL;
+	struct files_struct *dirfsp = NULL;
 	int unlink_flags = 0;
+	NTSTATUS status;
 	int ret;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_fname,
+				&at_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Todo: use SMB_VFS_STATX() once it's available.
+	 */
+
 	/* Might be a symlink. */
 	ret = SMB_VFS_LSTAT(conn, smb_dname);
 	if (ret != 0) {
+		TALLOC_FREE(parent_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -987,19 +1005,23 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		/* Is what it points to a directory ? */
 		ret = SMB_VFS_STAT(conn, smb_dname);
 		if (ret != 0) {
+			TALLOC_FREE(parent_fname);
 			return map_nt_error_from_unix(errno);
 		}
 		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
+			TALLOC_FREE(parent_fname);
 			return NT_STATUS_NOT_A_DIRECTORY;
 		}
 	} else {
 		unlink_flags = AT_REMOVEDIR;
 	}
+
 	ret = SMB_VFS_UNLINKAT(conn,
-			       conn->cwd_fsp,
-			       smb_dname,
+			       parent_fname->fsp,
+			       at_fname,
 			       unlink_flags);
 	if (ret == 0) {
+		TALLOC_FREE(parent_fname);
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
 			     smb_dname->base_name);
@@ -1012,6 +1034,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
 			 "%s\n", smb_fname_str_dbg(smb_dname),
 			 strerror(errno)));
+		TALLOC_FREE(parent_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -1064,7 +1087,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 
 	/* Do a recursive delete. */
 	RewindDir(dir_hnd,&dirpos);
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced)) != NULL) {
+		struct smb_filename *direntry_fname = NULL;
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
 		bool do_break = true;
@@ -1105,6 +1131,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			goto err_break;
 		}
 
+		/*
+		 * Todo: use SMB_VFS_STATX() once that's available.
+		 */
+
 		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
 		if (ret != 0) {
 			goto err_break;
@@ -1121,9 +1151,22 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			unlink_flags = AT_REMOVEDIR;
 		}
 
+		status = synthetic_pathref(talloc_tos(),
+					   dirfsp,
+					   dname,
+					   NULL,
+					   NULL,
+					   smb_dname->twrp,
+					   smb_dname->flags,
+					   &direntry_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			goto err_break;
+		}
+
 		retval = SMB_VFS_UNLINKAT(conn,
-					  conn->cwd_fsp,
-					  smb_dname_full,
+					  dirfsp,
+					  direntry_fname,
 					  AT_REMOVEDIR);
 		if (retval != 0) {
 			goto err_break;
@@ -1136,18 +1179,22 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		TALLOC_FREE(fullname);
 		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(talloced);
+		TALLOC_FREE(direntry_fname);
 		if (do_break) {
 			break;
 		}
 	}
-	TALLOC_FREE(dir_hnd);
 
 	/* Retry the rmdir */
 	ret = SMB_VFS_UNLINKAT(conn,
-			       conn->cwd_fsp,
-			       smb_dname,
+			       dirfsp,
+			       at_fname,
 			       AT_REMOVEDIR);
+
+	TALLOC_FREE(dir_hnd);
+
   err:
+	TALLOC_FREE(parent_fname);
 
 	if (ret != 0) {
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
