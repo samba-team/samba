@@ -69,6 +69,8 @@ _PUBLIC_ bool smb_set_close_on_exec(int fd)
 			return true;
 		}
 	}
+#else
+	errno = ENOSYS;
 #endif
 	return false;
 }
