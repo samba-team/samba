@@ -648,7 +648,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
 						     const struct ndr_syntax_id *syntax)
 {
 	NTSTATUS status;
-	char *s = NULL;
+	struct ndr_syntax_id_buf buf;
 
 	if (syntax == NULL) {
 		status = dcerpc_binding_set_string_option(b, "abstract_syntax", NULL);
@@ -668,18 +668,9 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
 		return NT_STATUS_OK;
 	}
 
-	s = ndr_syntax_id_to_string(b, syntax);
-	if (s == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_binding_set_string_option(b, "abstract_syntax", s);
-	TALLOC_FREE(s);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	status = dcerpc_binding_set_string_option(
+		b, "abstract_syntax", ndr_syntax_id_buf_string(syntax, &buf));
+	return status;
 }
 
 _PUBLIC_ const char *dcerpc_binding_get_string_option(const struct dcerpc_binding *b,
