@@ -39,18 +39,24 @@ bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
 		&& (i1->if_version == i2->if_version);
 }
 
+char *ndr_syntax_id_buf_string(
+	const struct ndr_syntax_id *id, struct ndr_syntax_id_buf *dst)
+{
+	struct GUID_txt_buf guid_buf;
+
+	snprintf(dst->buf,
+		 sizeof(dst->buf),
+		 "%s/0x%08x",
+		 GUID_buf_string(&id->uuid, &guid_buf),
+		 (unsigned int)id->if_version);
+
+	return dst->buf;
+}
+
 _PUBLIC_ char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *id)
 {
-	return talloc_asprintf(mem_ctx,
-			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x/0x%08x",
-			       id->uuid.time_low, id->uuid.time_mid,
-			       id->uuid.time_hi_and_version,
-			       id->uuid.clock_seq[0],
-			       id->uuid.clock_seq[1],
-			       id->uuid.node[0], id->uuid.node[1],
-			       id->uuid.node[2], id->uuid.node[3],
-			       id->uuid.node[4], id->uuid.node[5],
-			       (unsigned)id->if_version);
+	struct ndr_syntax_id_buf buf;
+	return talloc_strdup(mem_ctx, ndr_syntax_id_buf_string(id, &buf));
 }
 
 _PUBLIC_ bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id)

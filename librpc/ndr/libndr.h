@@ -556,7 +556,12 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 void ndr_zero_memory(void *ptr, size_t len);
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2);
+
+struct ndr_syntax_id_buf { char buf[39 /*GUID*/ + 3 /* "/0x" */ + 8]; };
+char *ndr_syntax_id_buf_string(
+	const struct ndr_syntax_id *id, struct ndr_syntax_id_buf *buf);
 char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *id);
+
 bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id);
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p, ndr_push_flags_fn_t fn);
 enum ndr_err_code ndr_push_struct_into_fixed_blob(DATA_BLOB *blob,
