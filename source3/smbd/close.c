@@ -961,9 +961,9 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/
 
-static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
+static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 {
-	connection_struct *conn = fsp->conn;
+	struct connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -972,13 +972,15 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
 	/* Might be a symlink. */
-	if(SMB_VFS_LSTAT(conn, smb_dname) != 0) {
+	ret = SMB_VFS_LSTAT(conn, smb_dname);
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
 	if (S_ISLNK(smb_dname->st.st_ex_mode)) {
 		/* Is what it points to a directory ? */
-		if(SMB_VFS_STAT(conn, smb_dname) != 0) {
+		ret = SMB_VFS_STAT(conn, smb_dname);
+		if (ret != 0) {
 			return map_nt_error_from_unix(errno);
 		}
 		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
@@ -1001,7 +1003,9 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && *lp_veto_files(talloc_tos(), lp_sub, SNUM(conn))) {
+	if (((errno == ENOTEMPTY)||(errno == EEXIST)) &&
+	    *lp_veto_files(talloc_tos(), lp_sub, SNUM(conn)))
+	{
 		/*
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and
@@ -1012,30 +1016,33 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		const char *dname = NULL;
 		char *talloced = NULL;
 		long dirpos = 0;
-		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
-						  smb_dname, NULL,
-						  0);
+		struct smb_Dir *dir_hnd = NULL;
 
-		if(dir_hnd == NULL) {
+		dir_hnd = OpenDir(talloc_tos(), conn, smb_dname, NULL, 0);
+		if (dir_hnd == NULL) {
 			errno = ENOTEMPTY;
 			goto err;
 		}
 
-		while ((dname = ReadDirName(dir_hnd, &dirpos, &st,
-					    &talloced)) != NULL) {
-			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0)) {
+		while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))
+		       != NULL)
+		{
+			if ((strcmp(dname, ".") == 0) ||
+			    (strcmp(dname, "..") == 0))
+			{
 				TALLOC_FREE(talloced);
 				continue;
 			}
 			if (!is_visible_file(conn,
-						dir_hnd,
-						dname,
-						&st,
-						false)) {
+					     dir_hnd,
+					     dname,
+					     &st,
+					     false))
+			{
 				TALLOC_FREE(talloced);
 				continue;
 			}
-			if(!IS_VETO_PATH(conn, dname)) {
+			if (!IS_VETO_PATH(conn, dname)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(talloced);
 				errno = ENOTEMPTY;
@@ -1047,7 +1054,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		/* We only have veto files/directories.
 		 * Are we allowed to delete them ? */
 
-		if(!lp_delete_veto_files(SNUM(conn))) {
+		if (!lp_delete_veto_files(SNUM(conn))) {
 			TALLOC_FREE(dir_hnd);
 			errno = ENOTEMPTY;
 			goto err;
@@ -1055,8 +1062,9 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 
 		/* Do a recursive delete. */
 		RewindDir(dir_hnd,&dirpos);
-		while ((dname = ReadDirName(dir_hnd, &dirpos, &st,
-					    &talloced)) != NULL) {
+		while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))
+		       != NULL)
+		{
 			struct smb_filename *smb_dname_full = NULL;
 			char *fullname = NULL;
 			bool do_break = true;
@@ -1066,10 +1074,11 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				continue;
 			}
 			if (!is_visible_file(conn,
-						dir_hnd,
-						dname,
-						&st,
-						false)) {
+					     dir_hnd,
+					     dname,
+					     &st,
+					     false))
+			{
 				TALLOC_FREE(talloced);
 				continue;
 			}
@@ -1079,7 +1088,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 					smb_dname->base_name,
 					dname);
 
-			if(!fullname) {
+			if (fullname == NULL) {
 				errno = ENOMEM;
 				goto err_break;
 			}
@@ -1095,28 +1104,33 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				goto err_break;
 			}
 
-			if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
+			ret = SMB_VFS_LSTAT(conn, smb_dname_full);
+			if (ret != 0) {
 				goto err_break;
 			}
-			if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
+			if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
 				int retval;
-				if(!recursive_rmdir(ctx, conn,
-						    smb_dname_full)) {
+
+				if (!recursive_rmdir(ctx, conn,
+						     smb_dname_full))
+				{
 					goto err_break;
 				}
 				retval = SMB_VFS_UNLINKAT(conn,
 						conn->cwd_fsp,
 						smb_dname_full,
 						AT_REMOVEDIR);
-				if(retval != 0) {
+				if (retval != 0) {
 					goto err_break;
 				}
 			} else {
-				int retval = SMB_VFS_UNLINKAT(conn,
+				int retval;
+
+				retval = SMB_VFS_UNLINKAT(conn,
 						conn->cwd_fsp,
 						smb_dname_full,
 						0);
-				if(retval != 0) {
+				if (retval != 0) {
 					goto err_break;
 				}
 			}
@@ -1128,8 +1142,9 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
 			TALLOC_FREE(talloced);
-			if (do_break)
+			if (do_break) {
 				break;
+			}
 		}
 		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
