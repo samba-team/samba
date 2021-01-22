@@ -1374,7 +1374,10 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				uint32_t flags)
 {
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *at_fname = NULL;
 	struct smb_filename *ad_name = NULL;
+	NTSTATUS status;
 	int rc;
 
 	if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
@@ -1390,19 +1393,32 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 		return false;
 	}
 
-	rc = SMB_VFS_NEXT_UNLINKAT(handle,
-			handle->conn->cwd_fsp,
-			ad_name,
-			0);
-	if (rc != 0) {
-		DBG_ERR("Unlinking [%s] failed: %s\n",
-			smb_fname_str_dbg(ad_name), strerror(errno));
-		TALLOC_FREE(ad_name);
+	status = parent_pathref(talloc_tos(),
+				handle->conn->cwd_fsp,
+				ad_name,
+				&parent_fname,
+				&at_fname);
+	TALLOC_FREE(ad_name);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	DBG_WARNING("Unlinked [%s] after conversion\n", smb_fname_str_dbg(ad_name));
-	TALLOC_FREE(ad_name);
+	rc = SMB_VFS_NEXT_UNLINKAT(handle,
+			parent_fname->fsp,
+			at_fname,
+			0);
+	if (rc != 0) {
+		DBG_ERR("Unlinking [%s/%s] failed: %s\n",
+			smb_fname_str_dbg(parent_fname),
+			smb_fname_str_dbg(at_fname), strerror(errno));
+		TALLOC_FREE(parent_fname);
+		return false;
+	}
+
+	DBG_WARNING("Unlinked [%s/%s] after conversion\n",
+		    smb_fname_str_dbg(parent_fname),
+		    smb_fname_str_dbg(at_fname));
+	TALLOC_FREE(parent_fname);
 
 	return true;
 }
