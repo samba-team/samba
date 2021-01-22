@@ -854,7 +854,9 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 	long offset = 0;
 	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd;
+	struct files_struct *dirfsp = NULL;
 	int retval;
+	NTSTATUS status;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
@@ -862,7 +864,10 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 	if (dir_hnd == NULL)
 		return False;
 
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+
 	while ((dname = ReadDirName(dir_hnd, &offset, &st, &talloced))) {
+		struct smb_filename *atname = NULL;
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
 		bool do_break = true;
@@ -913,9 +918,23 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			}
 			unlink_flags = AT_REMOVEDIR;
 		}
+
+		status = synthetic_pathref(talloc_tos(),
+					   dirfsp,
+					   dname,
+					   NULL,
+					   NULL,
+					   smb_dname_full->twrp,
+					   smb_dname_full->flags,
+					   &atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			goto err_break;
+		}
+
 		retval = SMB_VFS_UNLINKAT(conn,
-					  conn->cwd_fsp,
-					  smb_dname_full,
+					  dirfsp,
+					  atname,
 					  unlink_flags);
 		if (retval != 0) {
 			goto err_break;
@@ -928,6 +947,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(fullname);
 		TALLOC_FREE(talloced);
+		TALLOC_FREE(atname);
 		if (do_break) {
 			ret = false;
 			break;
