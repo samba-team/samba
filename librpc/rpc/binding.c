@@ -652,20 +652,12 @@ _PUBLIC_ NTSTATUS dcerpc_binding_set_abstract_syntax(struct dcerpc_binding *b,
 
 	if (syntax == NULL) {
 		status = dcerpc_binding_set_string_option(b, "abstract_syntax", NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		return NT_STATUS_OK;
+		return status;
 	}
 
 	if (ndr_syntax_id_equal(&ndr_syntax_id_null, syntax)) {
 		status = dcerpc_binding_set_string_option(b, "abstract_syntax", NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		return NT_STATUS_OK;
+		return status;
 	}
 
 	status = dcerpc_binding_set_string_option(
