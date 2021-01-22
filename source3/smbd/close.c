@@ -866,6 +866,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
 		bool do_break = true;
+		int unlink_flags = 0;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
@@ -910,21 +911,14 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
 				goto err_break;
 			}
-			retval = SMB_VFS_UNLINKAT(conn,
-					conn->cwd_fsp,
-					smb_dname_full,
-					AT_REMOVEDIR);
-			if (retval != 0) {
-				goto err_break;
-			}
-		} else {
-			retval = SMB_VFS_UNLINKAT(conn,
-					conn->cwd_fsp,
-					smb_dname_full,
-					0);
-			if (retval != 0) {
-				goto err_break;
-			}
+			unlink_flags = AT_REMOVEDIR;
+		}
+		retval = SMB_VFS_UNLINKAT(conn,
+					  conn->cwd_fsp,
+					  smb_dname_full,
+					  unlink_flags);
+		if (retval != 0) {
+			goto err_break;
 		}
 
 		/* Successful iteration. */
