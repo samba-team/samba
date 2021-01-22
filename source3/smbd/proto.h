@@ -213,6 +213,8 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 	       char *buf1,unsigned int key);
 files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 			       char *buf,int *num);
+struct smb_Dir;
+struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
 				       int dptr_num);
 bool get_dir_entry(TALLOC_CTX *ctx,

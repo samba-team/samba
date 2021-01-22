@@ -735,6 +735,11 @@ files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 	return dptr->dir_hnd->fsp;
 }
 
+struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd)
+{
+	return dir_hnd->fsp;
+}
+
 /****************************************************************************
  Fetch the fsp associated with the dptr_num.
 ****************************************************************************/
