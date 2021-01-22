@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import os, grp, pwd
 import errno
 from samba import gpo, tests
 from samba.gpclass import register_gp_extension, list_gp_extensions, \
@@ -31,6 +31,7 @@ from samba.vgp_sudoers_ext import vgp_sudoers_ext
 from samba.vgp_symlink_ext import vgp_symlink_ext
 from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
+from samba.vgp_files_ext import vgp_files_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -945,3 +946,91 @@ class GPOTests(tests.TestCase):
 
         # Unstage the manifest.xml file
         unstage_file(manifest)
+
+    def test_vgp_files(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/UNIX/FILES/MANIFEST.XML')
+        source_file = os.path.join(os.path.dirname(manifest), 'TEST.SOURCE')
+        source_data = '#!/bin/sh\necho hello world'
+        ret = stage_file(source_file, source_data)
+        self.assertTrue(ret, 'Could not create the target %s' % source_file)
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_files_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml file with test data
+        with TemporaryDirectory() as dname:
+            stage = etree.Element('vgppolicy')
+            policysetting = etree.Element('policysetting')
+            stage.append(policysetting)
+            version = etree.Element('version')
+            version.text = '1'
+            policysetting.append(version)
+            data = etree.Element('data')
+            file_properties = etree.SubElement(data, 'file_properties')
+            source = etree.SubElement(file_properties, 'source')
+            source.text = os.path.basename(source_file).lower()
+            target = etree.SubElement(file_properties, 'target')
+            target.text = os.path.join(dname, 'test.target')
+            user = etree.SubElement(file_properties, 'user')
+            user.text = pwd.getpwuid(os.getuid()).pw_name
+            group = etree.SubElement(file_properties, 'group')
+            group.text = grp.getgrgid(os.getgid()).gr_name
+            # Request permissions of 755
+            permissions = etree.SubElement(file_properties, 'permissions')
+            permissions.set('type', 'user')
+            etree.SubElement(permissions, 'read')
+            etree.SubElement(permissions, 'write')
+            etree.SubElement(permissions, 'execute')
+            permissions = etree.SubElement(file_properties, 'permissions')
+            permissions.set('type', 'group')
+            etree.SubElement(permissions, 'read')
+            etree.SubElement(permissions, 'execute')
+            permissions = etree.SubElement(file_properties, 'permissions')
+            permissions.set('type', 'other')
+            etree.SubElement(permissions, 'read')
+            etree.SubElement(permissions, 'execute')
+            policysetting.append(data)
+            ret = stage_file(manifest, etree.tostring(stage))
+            self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+            # Process all gpos, with temp output directory
+            ext.process_group_policy([], gpos)
+            self.assertTrue(os.path.exists(target.text),
+                            'The target file does not exist')
+            self.assertEquals(os.stat(target.text).st_mode & 0o777, 0o755,
+                              'The target file permissions are incorrect')
+            self.assertEquals(open(target.text).read(), source_data,
+                              'The target file contents are incorrect')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            self.assertFalse(os.path.exists(target.text),
+                             'The target file was not removed')
+
+            # Test rsop
+            g = [g for g in gpos if g.name == guid][0]
+            ret = ext.rsop(g)
+            self.assertIn(target.text, list(ret.values())[0][0],
+                          'The target file was not listed by rsop')
+            self.assertIn('-rwxr-xr-x', list(ret.values())[0][0],
+                          'The target permissions were not listed by rsop')
+
+        # Unstage the manifest and source files
+        unstage_file(manifest)
+        unstage_file(source_file)
