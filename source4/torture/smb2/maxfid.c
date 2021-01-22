@@ -136,16 +136,6 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 	torture_comment(tctx, "Cleanup open files\n");
 
 	for (i = 0; i < maxfid; i++) {
-		union smb_setfileinfo sfinfo = { };
-
-		sfinfo.disposition_info.in.delete_on_close = 1;
-		sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
-		sfinfo.generic.in.file.handle = handles[i];
-
-		status = smb2_setinfo_file(tree, &sfinfo);
-		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-						"SETINFO failed\n");
-
 		status = smb2_util_close(tree, handles[i]);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"CLOSE failed\n");
