@@ -10,6 +10,10 @@
 	<itemizedlist>
 	<listitem><para><constant>none</constant> -
 	</para></listitem>
+	<listitem><para><constant>elasticsearch</constant> -
+	a backend that uses JSON and REST over HTTP(s) to query an
+        Elasticsearch or Opensearch server.
+	</para></listitem>
 
 	</itemizedlist>
 	</para>

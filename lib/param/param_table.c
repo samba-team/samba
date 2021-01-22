@@ -472,6 +472,7 @@ static const struct enum_list enum_acl_claims_evaluation[] = {
 };
 static const struct enum_list enum_wsp_backend[] = {
 	{WSP_BACKEND_NONE, "none"},
+	{WSP_BACKEND_ELASTIC, "elasticsearch"},
 	{-1, NULL}
 };
 

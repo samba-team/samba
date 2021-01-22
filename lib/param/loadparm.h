@@ -271,6 +271,7 @@ enum acl_claims_evaluation {
 /* WSP backend options */
 enum wsp_backend_options {
 	WSP_BACKEND_NONE,
+	WSP_BACKEND_ELASTIC,
 };
 
 /* Controlling the protocol for netlogon ping */
