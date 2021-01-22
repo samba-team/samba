@@ -347,7 +347,7 @@ NTSTATUS dcesrv_create_binding_sockets(
 	int **pfds)
 {
 	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(b);
-	size_t num_fds = 1;
+	size_t i, num_fds = 1;
 	int *fds = NULL;
 	NTSTATUS status;
 
@@ -375,6 +375,21 @@ NTSTATUS dcesrv_create_binding_sockets(
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(fds);
+		return status;
+	}
+
+	for (i=0; i<num_fds; i++) {
+		bool ok = smb_set_close_on_exec(fds[i]);
+		if (!ok) {
+			status = map_nt_error_from_unix(errno);
+			break;
+		}
+	}
+	if (i < num_fds) {
+		for (i=0; i<num_fds; i++) {
+			close(fds[i]);
+		}
 		TALLOC_FREE(fds);
 		return status;
 	}
