@@ -1189,7 +1189,6 @@ static bool dcerpc_sec_vt_bitmask_check(const uint32_t *bitmask1,
 static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pcontext,
 				     struct dcerpc_sec_vt *c)
 {
-	TALLOC_CTX *mem_ctx;
 	bool ok;
 
 	if (pcontext == NULL) {
@@ -1202,34 +1201,32 @@ static bool dcerpc_sec_vt_pctx_check(const struct dcerpc_sec_vt_pcontext *pconte
 		return true;
 	}
 
-	mem_ctx = talloc_stackframe();
 	ok = ndr_syntax_id_equal(&pcontext->abstract_syntax,
 				 &c->u.pcontext.abstract_syntax);
 	if (!ok) {
+		struct ndr_syntax_id_buf buf1, buf2;
 		DEBUG(10, ("SEC_VT check pcontext abstract_syntax failed: "
 			   "%s vs. %s\n",
-			   ndr_syntax_id_to_string(mem_ctx,
-					&pcontext->abstract_syntax),
-			   ndr_syntax_id_to_string(mem_ctx,
-					&c->u.pcontext.abstract_syntax)));
-		goto err_ctx_free;
+			   ndr_syntax_id_buf_string(
+				   &pcontext->abstract_syntax, &buf1),
+			   ndr_syntax_id_buf_string(
+				   &c->u.pcontext.abstract_syntax, &buf2)));
+		return false;
 	}
 	ok = ndr_syntax_id_equal(&pcontext->transfer_syntax,
 				 &c->u.pcontext.transfer_syntax);
 	if (!ok) {
+		struct ndr_syntax_id_buf buf1, buf2;
 		DEBUG(10, ("SEC_VT check pcontext transfer_syntax failed: "
 			   "%s vs. %s\n",
-			   ndr_syntax_id_to_string(mem_ctx,
-					&pcontext->transfer_syntax),
-			   ndr_syntax_id_to_string(mem_ctx,
-					&c->u.pcontext.transfer_syntax)));
-		goto err_ctx_free;
+			   ndr_syntax_id_buf_string(
+				   &pcontext->transfer_syntax, &buf1),
+			   ndr_syntax_id_buf_string(
+				   &c->u.pcontext.transfer_syntax, &buf2)));
+		return false;
 	}
 
-	ok = true;
-err_ctx_free:
-	talloc_free(mem_ctx);
-	return ok;
+	return true;
 }
 
 static bool dcerpc_sec_vt_hdr2_check(const struct dcerpc_sec_vt_header2 *header2,
