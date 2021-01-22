@@ -28,7 +28,8 @@
 
 _PUBLIC_ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
-	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
+	struct GUID_txt_buf buf;
+	ndr->print(ndr, "%-25s: %s", name, GUID_buf_string(guid, &buf));
 }
 
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1,
