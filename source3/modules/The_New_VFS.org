@@ -301,7 +301,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SYS_ACL_SET_FD()          | [[xpathref][xpathref]] | -      |
 | SMB_VFS_TELLDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_TRANSLATE_NAME()          | [[P2px][P2px]]     | -      |
-| SMB_VFS_UNLINKAT()                | [[NsC][NsC]]      | Todo   |
+| SMB_VFS_UNLINKAT()                | [[NsC][NsC]]      | -      |
 |-----------------------------------+----------+--------|
 
 *** New VFS Functions

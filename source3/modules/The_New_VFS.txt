@@ -369,7 +369,7 @@ Table of Contents
    SMB_VFS_SYS_ACL_SET_FD()           [xpathref]  -
    SMB_VFS_TELLDIR()                  [fsp]       -
    SMB_VFS_TRANSLATE_NAME()           [P2px]      -
-   SMB_VFS_UNLINKAT()                 [NsC]       Todo
+   SMB_VFS_UNLINKAT()                 [NsC]       -
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
