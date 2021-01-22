@@ -1480,6 +1480,9 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 
 	tower->num_floors = 2 + num_protocols;
 	tower->floors = talloc_array(mem_ctx, struct epm_floor, tower->num_floors);
+	if (tower->floors == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
