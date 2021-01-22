@@ -1421,8 +1421,8 @@ bool create_msdfs_link(const struct junction_map *jucn,
 	}
 
 	status = SMB_VFS_CREATE_DFS_PATHAT(conn,
-				conn->cwd_fsp,
-				smb_fname,
+				parent_fname->fsp,
+				at_fname,
 				jucn->referral_list,
 				jucn->referral_count);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1436,8 +1436,8 @@ bool create_msdfs_link(const struct junction_map *jucn,
 			}
 		}
 		status = SMB_VFS_CREATE_DFS_PATHAT(conn,
-				conn->cwd_fsp,
-				smb_fname,
+				parent_fname->fsp,
+				at_fname,
 				jucn->referral_list,
 				jucn->referral_count);
 		if (!NT_STATUS_IS_OK(status)) {
