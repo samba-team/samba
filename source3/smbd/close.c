@@ -967,6 +967,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	int unlink_flags = 0;
 	int ret;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
@@ -986,16 +987,13 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
 			return NT_STATUS_NOT_A_DIRECTORY;
 		}
-		ret = SMB_VFS_UNLINKAT(conn,
-				conn->cwd_fsp,
-				smb_dname,
-				0);
 	} else {
-		ret = SMB_VFS_UNLINKAT(conn,
-				conn->cwd_fsp,
-				smb_dname,
-				AT_REMOVEDIR);
+		unlink_flags = AT_REMOVEDIR;
 	}
+	ret = SMB_VFS_UNLINKAT(conn,
+			       conn->cwd_fsp,
+			       smb_dname,
+			       unlink_flags);
 	if (ret == 0) {
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
@@ -1068,6 +1066,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			struct smb_filename *smb_dname_full = NULL;
 			char *fullname = NULL;
 			bool do_break = true;
+			int retval;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				TALLOC_FREE(talloced);
@@ -1108,31 +1107,24 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			if (ret != 0) {
 				goto err_break;
 			}
-			if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-				int retval;
 
+			unlink_flags = 0;
+
+			if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
 				if (!recursive_rmdir(ctx, conn,
 						     smb_dname_full))
 				{
 					goto err_break;
 				}
-				retval = SMB_VFS_UNLINKAT(conn,
-						conn->cwd_fsp,
-						smb_dname_full,
-						AT_REMOVEDIR);
-				if (retval != 0) {
-					goto err_break;
-				}
-			} else {
-				int retval;
+				unlink_flags = AT_REMOVEDIR;
+			}
 
-				retval = SMB_VFS_UNLINKAT(conn,
-						conn->cwd_fsp,
-						smb_dname_full,
-						0);
-				if (retval != 0) {
-					goto err_break;
-				}
+			retval = SMB_VFS_UNLINKAT(conn,
+						  conn->cwd_fsp,
+						  smb_dname_full,
+						  AT_REMOVEDIR);
+			if (retval != 0) {
+				goto err_break;
 			}
 
 			/* Successful iteration. */
