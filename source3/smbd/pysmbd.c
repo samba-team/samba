@@ -648,10 +648,13 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 	connection_struct *conn;
 	int ret;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *at_fname = NULL;
 	PyObject *py_session = Py_None;
 	struct auth_session_info *session_info = NULL;
 	char *fname, *service = NULL;
 	TALLOC_CTX *frame;
+	NTSTATUS status;
 
 	frame = talloc_stackframe();
 
@@ -694,9 +697,19 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 		return PyErr_NoMemory();
 	}
 
+	status = parent_pathref(frame,
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_fname,
+				&at_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return PyErr_NoMemory();
+	}
+
 	ret = SMB_VFS_UNLINKAT(conn,
-			conn->cwd_fsp,
-			smb_fname,
+			parent_fname->fsp,
+			at_fname,
 			0);
 	if (ret != 0) {
 		TALLOC_FREE(frame);
