@@ -1380,6 +1380,8 @@ bool create_msdfs_link(const struct junction_map *jucn,
 	char *path = NULL;
 	connection_struct *conn;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *at_fname = NULL;
 	bool ok;
 	NTSTATUS status;
 	bool ret = false;
@@ -1409,6 +1411,15 @@ bool create_msdfs_link(const struct junction_map *jucn,
 		goto out;
 	}
 
+	status = parent_pathref(frame,
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_fname,
+				&at_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	status = SMB_VFS_CREATE_DFS_PATHAT(conn,
 				conn->cwd_fsp,
 				smb_fname,
@@ -1417,8 +1428,8 @@ bool create_msdfs_link(const struct junction_map *jucn,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 			int retval = SMB_VFS_UNLINKAT(conn,
-						conn->cwd_fsp,
-						smb_fname,
+						parent_fname->fsp,
+						at_fname,
 						0);
 			if (retval != 0) {
 				goto out;
