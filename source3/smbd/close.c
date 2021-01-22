@@ -859,10 +859,10 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
 	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname, NULL, 0);
-	if(dir_hnd == NULL)
+	if (dir_hnd == NULL)
 		return False;
 
-	while((dname = ReadDirName(dir_hnd, &offset, &st, &talloced))) {
+	while ((dname = ReadDirName(dir_hnd, &offset, &st, &talloced))) {
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
 		bool do_break = true;
@@ -903,12 +903,12 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			goto err_break;
 		}
 
-		if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
+		if (SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
 			goto err_break;
 		}
 
-		if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
+		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
+			if (!recursive_rmdir(ctx, conn, smb_dname_full)) {
 				goto err_break;
 			}
 			unlink_flags = AT_REMOVEDIR;
