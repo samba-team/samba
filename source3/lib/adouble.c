@@ -1371,7 +1371,6 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 
 static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 				struct adouble *ad,
-				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				uint32_t flags)
 {
@@ -1392,7 +1391,7 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 	}
 
 	rc = SMB_VFS_NEXT_UNLINKAT(handle,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			ad_name,
 			0);
 	if (rc != 0) {
@@ -1467,7 +1466,6 @@ int ad_convert(struct vfs_handle_struct *handle,
 
 	ok = ad_convert_delete_adfile(handle,
 			ad,
-			handle->conn->cwd_fsp,
 			smb_fname,
 			flags);
 	if (!ok) {
