@@ -154,7 +154,6 @@ char *ad_get_entry(const struct adouble *ad, int eid);
 int ad_getdate(const struct adouble *ad, unsigned int dateoff, uint32_t *date);
 int ad_setdate(struct adouble *ad, unsigned int dateoff, uint32_t date);
 int ad_convert(struct vfs_handle_struct *handle,
-		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
 		const char *catia_mappings,
 		uint32_t flags);

@@ -4094,7 +4094,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		}
 
 		ret = ad_convert(handle,
-				 handle->conn->cwd_fsp,
 				 smb_fname,
 				 macos_string_replace_map,
 				 conv_flags);
@@ -4203,7 +4202,6 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 	}
 
 	ret = ad_convert(handle,
-			handle->conn->cwd_fsp,
 			fname,
 			macos_string_replace_map,
 			conv_flags);
