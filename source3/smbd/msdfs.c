@@ -1464,6 +1464,9 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 	connection_struct *conn;
 	bool ret = False;
 	struct smb_filename *smb_fname;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *at_fname = NULL;
+	NTSTATUS status;
 	bool ok;
 	int retval;
 
@@ -1496,9 +1499,19 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 		return false;
 	}
 
+	status = parent_pathref(frame,
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_fname,
+				&at_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
 	retval = SMB_VFS_UNLINKAT(conn,
-			conn->cwd_fsp,
-			smb_fname,
+			parent_fname->fsp,
+			at_fname,
 			0);
 	if (retval == 0) {
 		ret = True;
