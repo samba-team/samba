@@ -27,6 +27,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
+#include "system/wait.h"
 #include <tevent.h>
 #include "lib/util/samba_util.h"
 #include "lib/util/debug.h"
