@@ -46,7 +46,6 @@
 #include "librpc/gen_ndr/irpc.h"
 #include "libds/common/flag_mapping.h"
 #include "lib/util/access.h"
-#include "lib/util/util_str_hex.h"
 #include "lib/util/sys_rw_data.h"
 #include "libcli/util/ntstatus.h"
 #include "lib/util/smb_strtox.h"
