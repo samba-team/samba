@@ -158,29 +158,13 @@ static bool endpoints_match(const struct dcerpc_binding *b1,
 		return false;
 	}
 
-	if (!ep1 && ep2) {
-		return false;
-	}
-
-	if (ep1 && !ep2) {
-		return false;
-	}
-
-	if (ep1 && ep2) {
+	if ((ep1 != NULL) || (ep2 != NULL)) {
 		if (!strequal(ep1, ep2)) {
 			return false;
 		}
 	}
 
-	if (!h1 && h2) {
-		return false;
-	}
-
-	if (h1 && !h2) {
-		return false;
-	}
-
-	if (h1 && h2) {
+	if ((h1 != NULL) || (h2 != NULL)) {
 		if (!strequal(h1, h2)) {
 			return false;
 		}
