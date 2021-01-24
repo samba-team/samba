@@ -1002,8 +1002,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	dcerpc_floor_get_lhs_data(&floors[1], &ifid);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-	    !GUID_equal(&ifid.uuid, &ndr_transfer_syntax_ndr.uuid) ||
-	    ifid.if_version != ndr_transfer_syntax_ndr.if_version) {
+	    !ndr_syntax_id_equal(&ifid, &ndr_transfer_syntax_ndr)) {
 		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 		goto done;
 	}

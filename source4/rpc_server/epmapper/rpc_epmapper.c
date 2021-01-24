@@ -221,8 +221,7 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_syntax);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-		!GUID_equal(&ndr_syntax.uuid, &ndr_transfer_syntax_ndr.uuid) ||
-	    ndr_syntax.if_version != ndr_transfer_syntax_ndr.if_version) {
+	    !ndr_syntax_id_equal(&ndr_syntax, &ndr_transfer_syntax_ndr)) {
 		goto failed;
 	}
 
