@@ -1,10 +1,5 @@
-#include "../libcli/util/ntstatus.h"
+#include "replace.h"
 
-NTSTATUS read_hex_bytes(const char *s, uint hexchars, uint64_t *dest);
-
-NTSTATUS parse_guid_string(const char *s,
-			   uint32_t *time_low,
-			   uint32_t *time_mid,
-			   uint32_t *time_hi_and_version,
-			   uint32_t clock_seq[2],
-			   uint32_t node[6]);
+bool hex_uint32(const char *in, uint32_t *out);
+struct GUID;
+bool parse_guid_string(const char *s, struct GUID *guid);

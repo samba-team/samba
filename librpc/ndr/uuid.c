@@ -77,78 +77,42 @@ _PUBLIC_ NTSTATUS GUID_from_ndr_blob(const DATA_BLOB *b, struct GUID *guid)
 */
 _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 {
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	uint32_t time_low = 0;
-	uint32_t time_mid = 0;
-	uint32_t time_hi_and_version = 0;
-	uint32_t clock_seq[2] = {0};
-	uint32_t node[6] = {0};
-	uint8_t buf16[16] = {0};
-
-	DATA_BLOB blob16 = data_blob_const(buf16, sizeof(buf16));
-	int i;
+	bool ok;
 
 	if (s->data == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	switch(s->length) {
-	case 36:
-	{
-		status = parse_guid_string((char *)s->data,
-					   &time_low,
-					   &time_mid,
-					   &time_hi_and_version,
-					   clock_seq,
-					   node);
-		break;
+	if (s->length == 36) {
+		ok = parse_guid_string((char *)s->data, guid);
+		return ok ? NT_STATUS_OK : NT_STATUS_INVALID_PARAMETER;
 	}
-	case 38:
-	{
-		if (s->data[0] != '{' || s->data[37] != '}') {
-			break;
-		}
 
-		status = parse_guid_string((char *)s->data + 1,
-					   &time_low,
-					   &time_mid,
-					   &time_hi_and_version,
-					   clock_seq,
-					   node);
-		break;
+	if (s->length == 38) {
+		if (s->data[0] != '{' || s->data[37] != '}') {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ok = parse_guid_string((char *)s->data + 1, guid);
+		return ok ? NT_STATUS_OK : NT_STATUS_INVALID_PARAMETER;
 	}
-	case 32:
-	{
+
+	if (s->length == 32) {
+		uint8_t buf16[16] = {0};
+		DATA_BLOB blob16 = { .data = buf16, .length = sizeof(buf16) };
 		size_t rlen = strhex_to_str((char *)blob16.data, blob16.length,
 					    (const char *)s->data, s->length);
 		if (rlen != blob16.length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		s = &blob16;
+		return GUID_from_ndr_blob(&blob16, guid);
+	}
+
+	if (s->length == 16) {
 		return GUID_from_ndr_blob(s, guid);
 	}
-	case 16:
-		return GUID_from_ndr_blob(s, guid);
-	default:
-		status = NT_STATUS_INVALID_PARAMETER;
-		break;
-	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	guid->time_low = time_low;
-	guid->time_mid = time_mid;
-	guid->time_hi_and_version = time_hi_and_version;
-	guid->clock_seq[0] = clock_seq[0];
-	guid->clock_seq[1] = clock_seq[1];
-	for (i=0;i<6;i++) {
-		guid->node[i] = node[i];
-	}
-
-	return NT_STATUS_OK;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /**

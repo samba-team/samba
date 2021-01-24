@@ -61,22 +61,10 @@ _PUBLIC_ char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syn
 
 _PUBLIC_ bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id)
 {
-	size_t i;
-	uint32_t time_low;
-	uint32_t time_mid, time_hi_and_version;
-	uint32_t clock_seq[2];
-	uint32_t node[6];
-	uint64_t if_version;
-	NTSTATUS status;
+	bool ok;
 
-	status =  parse_guid_string(s,
-				    &time_low,
-				    &time_mid,
-				    &time_hi_and_version,
-				    clock_seq,
-				    node);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	ok =  parse_guid_string(s, &id->uuid);
+	if (!ok) {
 		return false;
 	}
 
@@ -84,21 +72,6 @@ _PUBLIC_ bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id)
 		return false;
 	}
 
-	status = read_hex_bytes(s + 39, 8, &if_version);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	id->uuid.time_low = time_low;
-	id->uuid.time_mid = time_mid;
-	id->uuid.time_hi_and_version = time_hi_and_version;
-	id->uuid.clock_seq[0] = clock_seq[0];
-	id->uuid.clock_seq[1] = clock_seq[1];
-	for (i=0; i<6; i++) {
-		id->uuid.node[i] = node[i];
-	}
-	id->if_version = (uint32_t)if_version;
-
-	return true;
+	ok = hex_uint32(s+39, &id->if_version);
+	return ok;
 }

@@ -1,48 +1,27 @@
 #include "replace.h"
-#include "libcli/util/ntstatus.h"
 #include "util_str_hex.h"
+#include "lib/util/data_blob.h"
+#include "librpc/gen_ndr/misc.h"
 
-NTSTATUS read_hex_bytes(const char *s, uint hexchars, uint64_t *dest)
+static bool hex_uint16(const char *in, uint16_t *out)
 {
-	uint64_t x = 0;
-	uint i;
-	char c;
-
-	if ((hexchars & 1) || hexchars > 16) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	for (i = 0; i < hexchars; i++) {
-		x <<= 4;
-		c = s[i];
-		if (c >= '0' && c <= '9') {
-			x += c - '0';
-		}
-		else if (c >= 'a' && c <= 'f') {
-			x += c - 'a' + 10;
-		}
-		else if (c >= 'A' && c <= 'F') {
-			x += c - 'A' + 10;
-		}
-		else {
-			/* BAD character (including '\0') */
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-	*dest = x;
-	return NT_STATUS_OK;
+	uint8_t hi=0, lo=0;
+	bool ok = hex_byte(in, &hi) && hex_byte(in+2, &lo);
+	*out = (((uint16_t)hi)<<8) + lo;
+	return ok;
 }
 
-
-NTSTATUS parse_guid_string(const char *s,
-			   uint32_t *time_low,
-			   uint32_t *time_mid,
-			   uint32_t *time_hi_and_version,
-			   uint32_t clock_seq[2],
-			   uint32_t node[6])
+bool hex_uint32(const char *in, uint32_t *out)
 {
-	uint64_t tmp;
-	NTSTATUS status;
+	uint16_t hi=0, lo=0;
+	bool ok = hex_uint16(in, &hi) && hex_uint16(in+4, &lo);
+	*out = (((uint32_t)hi)<<16) + lo;
+	return ok;
+}
+
+bool parse_guid_string(const char *s, struct GUID *guid)
+{
+	bool ok;
 	int i;
 	/* "e12b56b6-0a95-11d1-adbb-00c04fd8d5cd"
                 |     |    |    |    |
@@ -52,49 +31,39 @@ NTSTATUS parse_guid_string(const char *s,
 		|     \_______________ time_mid
 		\_____________________ time_low
 	*/
-	status = read_hex_bytes(s, 8, &tmp);
-	if (!NT_STATUS_IS_OK(status) || s[8] != '-') {
-		return NT_STATUS_INVALID_PARAMETER;
+
+	ok = hex_uint32(s, &guid->time_low);
+	if (!ok || (s[8] != '-')) {
+		return false;
 	}
-	*time_low = tmp;
 	s += 9;
 
-	status = read_hex_bytes(s, 4, &tmp);
-	if (!NT_STATUS_IS_OK(status) || s[4] != '-') {
-		return NT_STATUS_INVALID_PARAMETER;
+	ok = hex_uint16(s, &guid->time_mid);
+	if (!ok || (s[4] != '-')) {
+		return false;
 	}
-	*time_mid = tmp;
 	s += 5;
 
-	status = read_hex_bytes(s, 4, &tmp);
-	if (!NT_STATUS_IS_OK(status) || s[4] != '-') {
-		return NT_STATUS_INVALID_PARAMETER;
+	ok = hex_uint16(s, &guid->time_hi_and_version);
+	if (!ok || (s[4] != '-')) {
+		return false;
 	}
-	*time_hi_and_version = tmp;
 	s += 5;
 
-	for (i = 0; i < 2; i++) {
-		status = read_hex_bytes(s, 2, &tmp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		clock_seq[i] = tmp;
-		s += 2;
+	ok = hex_byte(s, &guid->clock_seq[0]) &&
+		hex_byte(s+2, &guid->clock_seq[1]);
+	if (!ok || (s[4] != '-')) {
+		return false;
 	}
-	if (s[0] != '-') {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	s++;
+	s += 5;
 
 	for (i = 0; i < 6; i++) {
-		status = read_hex_bytes(s, 2, &tmp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_INVALID_PARAMETER;
+		ok = hex_byte(s, &guid->node[i]);
+		if (!ok) {
+			return false;
 		}
-		node[i] = tmp;
 		s += 2;
 	}
 
-	return NT_STATUS_OK;
+	return true;
 }
