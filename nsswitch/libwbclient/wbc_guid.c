@@ -53,10 +53,10 @@ wbcErr wbcGuidToString(const struct wbcGuid *guid,
 wbcErr wbcStringToGuid(const char *str,
 		       struct wbcGuid *guid)
 {
-	uint32_t time_low;
-	uint32_t time_mid, time_hi_and_version;
-	uint32_t clock_seq[2];
-	uint32_t node[6];
+	unsigned int time_low;
+	unsigned int time_mid, time_hi_and_version;
+	unsigned int clock_seq[2];
+	unsigned int node[6];
 	int i;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
