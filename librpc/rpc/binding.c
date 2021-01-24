@@ -265,19 +265,13 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 		}
 	}
 
-	if (b->endpoint) {
-		option_section = true;
-	} else if (target_hostname) {
-		option_section = true;
-	} else if (b->target_principal) {
-		option_section = true;
-	} else if (b->assoc_group_id != 0) {
-		option_section = true;
-	} else if (b->options) {
-		option_section = true;
-	} else if (b->flags) {
-		option_section = true;
-	}
+	option_section =
+		(b->endpoint != NULL) ||
+		(target_hostname != NULL) ||
+		(b->target_principal != NULL) ||
+		(b->assoc_group_id != 0) ||
+		(b->options != NULL) ||
+		(b->flags != 0);
 
 	if (!option_section) {
 		return s;
