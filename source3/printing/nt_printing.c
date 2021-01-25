@@ -2026,7 +2026,6 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 	struct smb_filename *smb_fname = NULL;
 	char *print_dlr_path;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	int ret;
 
 	print_dlr_path = talloc_asprintf(tmp_ctx, "%s/%d/%s",
 					 short_arch, vers, fname);
@@ -2034,26 +2033,14 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 		goto err_out;
 	}
 
-	smb_fname = synthetic_smb_fname(tmp_ctx,
-					print_dlr_path,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (smb_fname == NULL) {
-		goto err_out;
-	}
-
-	ret = vfs_stat(conn, smb_fname);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		goto err_out;
-	}
-
-	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
+	status = synthetic_pathref(tmp_ctx,
+				   conn->cwd_fsp,
+				   print_dlr_path,
+				   NULL,
+				   NULL,
+				   0,
+				   0,
+				   &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_out;
 	}
