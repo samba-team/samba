@@ -1613,12 +1613,22 @@ static int mh_symlinkat(vfs_handle_struct *handle,
 		const struct smb_filename *new_smb_fname)
 {
 	int status = -1;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *new_link_target = NULL;
 	struct smb_filename *newclientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_symlinkat\n"));
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						new_smb_fname);
+	if (full_fname == NULL) {
+		status = -1;
+		goto err;
+	}
+
 	if (!is_in_media_files(link_contents->base_name) &&
-			!is_in_media_files(new_smb_fname->base_name)) {
+			!is_in_media_files(full_fname->base_name)) {
 		status = SMB_VFS_NEXT_SYMLINKAT(handle,
 				link_contents,
 				dirfsp,
@@ -1632,19 +1642,20 @@ static int mh_symlinkat(vfs_handle_struct *handle,
 		goto err;
 	}
 	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				new_smb_fname,
+				full_fname,
 				&newclientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_SYMLINKAT(handle,
 				new_link_target,
-				dirfsp,
+				handle->conn->cwd_fsp,
 				newclientFname);
 err:
 	TALLOC_FREE(new_link_target);
 	TALLOC_FREE(newclientFname);
 out:
+	TALLOC_FREE(full_fname);
 	return status;
 }
 
