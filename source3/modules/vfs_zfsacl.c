@@ -58,7 +58,6 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 	int i;
 	struct SMB4ACL_T *pacl;
 	SMB_STRUCT_STAT sbuf;
-	SMB_ACE4PROP_T blocking_ace;
 	const SMB_STRUCT_STAT *psbuf = NULL;
 	int ret;
 	bool inherited_is_present = false;
