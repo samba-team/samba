@@ -902,26 +902,17 @@ static bool readdir_attr_meta_finderi_stream(
 	files_struct *fsp = NULL;
 	ssize_t nread;
 	NTSTATUS status;
-	int ret;
 	bool ok;
 	uint8_t buf[AFP_INFO_SIZE];
 
-	stream_name = synthetic_smb_fname(talloc_tos(),
-					  smb_fname->base_name,
-					  AFPINFO_STREAM_NAME,
-					  NULL,
-					  smb_fname->twrp,
-					  smb_fname->flags);
-	if (stream_name == NULL) {
-		return false;
-	}
-
-	ret = SMB_VFS_STAT(handle->conn, stream_name);
-	if (ret != 0) {
-		return false;
-	}
-
-	status = openat_pathref_fsp(handle->conn->cwd_fsp, stream_name);
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   smb_fname->base_name,
+				   AFPINFO_STREAM_NAME,
+				   NULL,
+				   smb_fname->twrp,
+				   smb_fname->flags,
+				   &stream_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
