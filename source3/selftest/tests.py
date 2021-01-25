@@ -1189,6 +1189,11 @@ plantestsuite(
      "bin/samba-tool",
      '$DNSNAME'])
 
+plantestsuite("samba3.blackbox.force-user-unlink",
+              "maptoguest:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_force_user_unlink.sh")])
+
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
 
