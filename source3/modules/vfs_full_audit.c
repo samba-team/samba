@@ -1804,7 +1804,15 @@ static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						new_smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_SYMLINKAT(handle,
 				link_contents,
@@ -1816,7 +1824,9 @@ static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
 	       handle,
 	       "%s|%s",
 	       link_contents->base_name,
-	       smb_fname_str_do_log(handle->conn, new_smb_fname));
+	       smb_fname_str_do_log(handle->conn, full_fname));
+
+	TALLOC_FREE(full_fname);
 
 	return result;
 }
