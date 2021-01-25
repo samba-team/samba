@@ -1,4 +1,75 @@
                    ==============================
+                   Release Notes for Samba 4.13.4
+                          January 26, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.3
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14607: Work around special SMB2 IOCTL response behavior of NetApp Ontap
+     7.3.7.
+   * BUG 14612: Temporary DFS share setup doesn't set case parameters in the
+     same way as a regular share definition does.
+
+o  Dimitry Andric <dimitry@andric.com>
+   * BUG 14605: lib: Avoid declaring zero-length VLAs in various messaging
+     functions.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14579: Do not create an empty DB when accessing a sam.ldb.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14596: vfs_fruit may close wrong backend fd.
+   * BUG 14612: Temporary DFS share setup doesn't set case parameters in the
+     same way as a regular share definition does.
+
+o  Arne Kreddig <arne@kreddig.net>
+   * BUG 14606: vfs_virusfilter: Allocate separate memory for config char*.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14596: vfs_fruit may close wrong backend fd.
+   * BUG 14607: Work around special SMB2 IOCTL response behavior of NetApp Ontap
+     7.3.7.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14601: The cache directory for the user gencache should be created
+     recursively.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14594: Be more flexible with repository names in CentOS 8 test
+     environments.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.13.3
                           December 15, 2020
                    ==============================
@@ -66,10 +137,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
-
-                   ==============================
+----------------------------------------------------------------------                   ==============================
                    Release Notes for Samba 4.13.2
                           November 03, 2020
                    ==============================
