@@ -1766,12 +1766,22 @@ $ret->{USERNAME} = KTEST\\Administrator
 sub setup_maptoguest
 {
 	my ($self, $path) = @_;
+	my $prefix_abs = abs_path($path);
+	my $libdir="$prefix_abs/lib";
+	my $share_dir="$prefix_abs/share";
+	my $errorinjectconf="$libdir/error_inject.conf";
 
 	print "PROVISIONING maptoguest...";
 
 	my $options = "
 map to guest = bad user
 ntlm auth = yes
+
+[force_user_error_inject]
+	path = $share_dir
+	vfs objects = acl_xattr fake_acls xattr_tdb error_inject
+	force user = user1
+	include = $errorinjectconf
 ";
 
 	my $vars = $self->provision(
