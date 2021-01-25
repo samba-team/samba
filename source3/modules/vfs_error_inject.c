@@ -30,6 +30,7 @@ struct unix_error_map {
 	{	"ESTALE",	ESTALE	},
 	{	"EBADF",	EBADF	},
 	{	"EINTR",	EINTR	},
+	{	"EACCES",	EACCES	},
 };
 
 static int find_unix_error_from_string(const char *err_str)
@@ -122,10 +123,46 @@ static int vfs_error_inject_openat(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, flags, mode);
 }
 
+static int vfs_error_inject_unlinkat(struct vfs_handle_struct *handle,
+				     struct files_struct *dirfsp,
+				     const struct smb_filename *smb_fname,
+				     int flags)
+{
+	struct smb_filename *parent_fname = NULL;
+	int error = inject_unix_error("unlinkat", handle);
+	int ret;
+	bool ok;
+
+	if (error == 0) {
+		return SMB_VFS_NEXT_UNLINKAT(handle, dirfsp, smb_fname, flags);
+	}
+
+	ok = parent_smb_fname(talloc_tos(), smb_fname, &parent_fname, NULL);
+	if (!ok) {
+		return -1;
+	}
+
+	ret = SMB_VFS_STAT(handle->conn, parent_fname);
+	if (ret != 0) {
+		TALLOC_FREE(parent_fname);
+		return -1;
+	}
+
+	if (parent_fname->st.st_ex_uid == get_current_uid(dirfsp->conn)) {
+		TALLOC_FREE(parent_fname);
+		return SMB_VFS_NEXT_UNLINKAT(handle, dirfsp, smb_fname, flags);
+	}
+
+	TALLOC_FREE(parent_fname);
+	errno = error;
+	return -1;
+}
+
 static struct vfs_fn_pointers vfs_error_inject_fns = {
 	.chdir_fn = vfs_error_inject_chdir,
 	.pwrite_fn = vfs_error_inject_pwrite,
 	.openat_fn = vfs_error_inject_openat,
+	.unlinkat_fn = vfs_error_inject_unlinkat,
 };
 
 static_decl_vfs;
