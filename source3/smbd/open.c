@@ -4282,7 +4282,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	bool need_re_stat = false;
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
 	int ret;
-	bool ok;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
@@ -4290,21 +4289,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ok = parent_smb_fname(talloc_tos(),
-			      smb_dname,
-			      &parent_dir_fname,
-			      &base_name);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = vfs_stat(conn, parent_dir_fname);
-	if (ret == -1) {
-		TALLOC_FREE(parent_dir_fname);
-		return map_nt_error_from_unix(errno);
-	}
-
-	status = openat_pathref_fsp(conn->cwd_fsp, parent_dir_fname);
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				smb_dname,
+				&parent_dir_fname,
+				&base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
