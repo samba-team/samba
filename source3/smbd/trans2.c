@@ -7011,7 +7011,6 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	int ret;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *base_name = NULL;
-	bool ok;
 
 	/* Set a symbolic link. */
 	/* Don't allow this if follow links is false. */
@@ -7044,25 +7043,12 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 			new_smb_fname->base_name, link_target ));
 
-	ok = parent_smb_fname(ctx,
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
 				new_smb_fname,
 				&parent_fname,
 				&base_name);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = vfs_stat(conn, parent_fname);
-	if (ret == -1) {
-		TALLOC_FREE(parent_fname);
-		return map_nt_error_from_unix(errno);
-	}
-	status = openat_pathref_fsp(conn->cwd_fsp, parent_fname);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(parent_fname);
 		return status;
 	}
 
