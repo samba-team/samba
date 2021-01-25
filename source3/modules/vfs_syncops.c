@@ -177,25 +177,14 @@ static int syncops_renameat(vfs_handle_struct *handle,
 static int syncops_symlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
-			const struct smb_filename *new_smb_fname)
+			const struct smb_filename *smb_fname)
 {
-	int ret;
-	struct syncops_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct syncops_config_data,
-				return -1);
-
-	ret = SMB_VFS_NEXT_SYMLINKAT(handle,
+	SYNCOPS_NEXT_SMB_FNAME(SYMLINKAT,
+			smb_fname,
+				(handle,
 				link_contents,
 				dirfsp,
-				new_smb_fname);
-
-	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(link_contents->base_name,
-				  new_smb_fname->base_name);
-	}
-	return ret;
+				smb_fname));
 }
 
 static int syncops_linkat(vfs_handle_struct *handle,
