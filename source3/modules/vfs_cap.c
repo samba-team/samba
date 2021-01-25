@@ -464,14 +464,29 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
+	struct smb_filename *full_fname = NULL;
 	char *capold = capencode(talloc_tos(), link_contents->base_name);
-	char *capnew = capencode(talloc_tos(), new_smb_fname->base_name);
+	char *capnew = NULL;
 	struct smb_filename *new_link_target = NULL;
 	struct smb_filename *new_cap_smb_fname = NULL;
 	int saved_errno = 0;
 	int ret;
 
 	if (!capold || !capnew) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						new_smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	capnew = capencode(talloc_tos(), full_fname->base_name);
+	if (!capnew) {
+		TALLOC_FREE(full_fname);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -483,6 +498,7 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 					      new_smb_fname->twrp,
 					      new_smb_fname->flags);
 	if (new_link_target == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(capold);
 		TALLOC_FREE(capnew);
 		errno = ENOMEM;
@@ -496,6 +512,7 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 					new_smb_fname->twrp,
 					new_smb_fname->flags);
 	if (new_cap_smb_fname == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(capold);
 		TALLOC_FREE(capnew);
 		TALLOC_FREE(new_link_target);
@@ -504,11 +521,12 @@ static int cap_symlinkat(vfs_handle_struct *handle,
 	}
 	ret = SMB_VFS_NEXT_SYMLINKAT(handle,
 			new_link_target,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			new_cap_smb_fname);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(capold);
 	TALLOC_FREE(capnew);
 	TALLOC_FREE(new_link_target);
