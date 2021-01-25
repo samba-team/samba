@@ -168,6 +168,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	bool have_special_id = false;
 	bool must_add_empty_ace = false;
 	struct zfsacl_config_data *config = NULL;
+	int fd;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct zfsacl_config_data,
@@ -234,8 +235,9 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	SMB_ASSERT(i == naces);
 
 	/* store acl */
-	if (fsp->fh->fd != -1) {
-		rv = facl(fsp->fh->fd, ACE_SETACL, naces, acebuf);
+	fd = fsp_get_io_fd(fsp);
+	if (fd != -1) {
+		rv = facl(fd, ACE_SETACL, naces, acebuf);
 	}
 	else {
 		rv = acl(fsp->fsp_name->base_name, ACE_SETACL, naces, acebuf);
@@ -318,12 +320,14 @@ static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 {
 	int naces, rv;
 	ace_t *acebuf = NULL;
+	int fd;
 
-	if (fsp->fh->fd == -1) {
+	fd = fsp_get_io_fd(fsp);
+	if (fd == -1) {
 		return get_zfsacl(mem_ctx, fsp->fsp_name, outbuf);
 	}
 
-	naces = facl(fsp->fh->fd, ACE_GETACLCNT, 0, NULL);
+	naces = facl(fd, ACE_GETACLCNT, 0, NULL);
 	if (naces == -1) {
 		int dbg_level = 10;
 
@@ -341,7 +345,7 @@ static int fget_zfsacl(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	rv = facl(fsp->fh->fd, ACE_GETACL, naces, acebuf);
+	rv = facl(fd, ACE_GETACL, naces, acebuf);
 	if (rv == -1) {
 		DBG_DEBUG("acl(ACE_GETACL, %s): %s ",
 			  fsp_str_dbg(fsp), strerror(errno));
