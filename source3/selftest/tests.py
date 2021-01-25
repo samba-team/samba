@@ -1125,6 +1125,11 @@ plantestsuite(
      "",
      "-b $PREFIX/clusteredmember_smb1/unclists/tmp.txt -N 5 -o 10"])
 
+plantestsuite("samba3.blackbox.force-user-unlink",
+              "maptoguest:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_force_user_unlink.sh")])
+
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
 
