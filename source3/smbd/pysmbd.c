@@ -1031,7 +1031,6 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 	NTSTATUS status;
 	int ret;
 	mode_t saved_umask;
-	bool ok;
 
 	if (!PyArg_ParseTupleAndKeywords(args,
 					 kwargs,
@@ -1080,21 +1079,11 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	ok = parent_smb_fname(frame,
-			      smb_fname,
-			      &parent_fname,
-			      &base_name);
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-
-	ret = vfs_stat(conn, parent_fname);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-	status = openat_pathref_fsp(conn->cwd_fsp, parent_fname);
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_fname,
+				&base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return NULL;
