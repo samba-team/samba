@@ -135,6 +135,103 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	return result;
 }
 
+int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname_in,
+				SMB_ACL_TYPE_T type,
+				SMB_ACL_T theacl)
+{
+	int ret = -1;
+	SOLARIS_ACL_T solaris_acl = NULL;
+	int count;
+	struct smb_filename *smb_fname = NULL;
+
+	smb_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname_in);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	DEBUG(10, ("solarisacl_sys_acl_set_file called for file '%s'\n",
+		   smb_fname->base_name));
+
+	if ((type != SMB_ACL_TYPE_ACCESS) && (type != SMB_ACL_TYPE_DEFAULT)) {
+		errno = EINVAL;
+		DEBUG(10, ("invalid smb acl type given (%d).\n", type));
+		goto done;
+	}
+	DEBUGADD(10, ("setting %s acl\n",
+		      ((type == SMB_ACL_TYPE_ACCESS) ? "access" : "default")));
+
+	if(!smb_acl_to_solaris_acl(theacl, &solaris_acl, &count, type)) {
+		DEBUG(10, ("conversion smb_acl -> solaris_acl failed (%s).\n",
+			   strerror(errno)));
+                goto done;
+	}
+
+	/*
+	 * if the file is a directory, there is extra work to do:
+	 * since the solaris acl call stores both the access acl and
+	 * the default acl as provided, we have to get the acl part
+	 * that has not been specified in "type" from the file first
+	 * and concatenate it with the acl provided.
+	 *
+	 * We can directly use SMB_VFS_STAT here, as if this was a
+	 * POSIX call on a symlink, we've already refused it.
+	 * For a Windows acl mapped call on a symlink, we want to follow
+	 * it.
+	 */
+	ret = SMB_VFS_STAT(handle->conn, smb_fname);
+	if (ret != 0) {
+		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
+		goto done;
+	}
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		SOLARIS_ACL_T other_acl = NULL;
+		int other_count;
+		SMB_ACL_TYPE_T other_type;
+
+		other_type = (type == SMB_ACL_TYPE_ACCESS)
+			? SMB_ACL_TYPE_DEFAULT
+			: SMB_ACL_TYPE_ACCESS;
+		DEBUGADD(10, ("getting acl from filesystem\n"));
+		if (!solaris_acl_get_file(smb_fname->base_name,
+					&other_acl, &other_count)) {
+			DEBUG(10, ("error getting acl from directory\n"));
+			goto done;
+		}
+		DEBUG(10, ("adding %s part of fs acl to given acl\n",
+			   ((other_type == SMB_ACL_TYPE_ACCESS)
+			    ? "access"
+			    : "default")));
+		if (!solaris_add_to_acl(&solaris_acl, &count, other_acl,
+					other_count, other_type))
+		{
+			DEBUG(10, ("error adding other acl.\n"));
+			SAFE_FREE(other_acl);
+			goto done;
+		}
+		SAFE_FREE(other_acl);
+	}
+	else if (type != SMB_ACL_TYPE_ACCESS) {
+		errno = EINVAL;
+		goto done;
+	}
+
+	if (!solaris_acl_sort(solaris_acl, count)) {
+		DEBUG(10, ("resulting acl is not valid!\n"));
+		goto done;
+	}
+
+	ret = acl(smb_fname->base_name, SETACL, count, solaris_acl);
+
+ done:
+	DEBUG(10, ("solarisacl_sys_acl_set_file %s.\n",
+		   ((ret != 0) ? "failed" : "succeeded")));
+	SAFE_FREE(solaris_acl);
+	TALLOC_FREE(smb_fname);
+	return ret;
+}
+
 /*
  * set the access ACL on the file referred to by a fd 
  */
