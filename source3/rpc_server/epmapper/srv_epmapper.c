@@ -953,9 +953,6 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	}
 
 	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
 
 	ZERO_STRUCTP(r->out.entry_handle);
 
