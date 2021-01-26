@@ -149,9 +149,9 @@ int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		/*
 		 * This is no longer a handle based call.
 		 */
-		return = chacl(fsp->fsp_name->base_name,
-			       file_acl,
-			       file_acl->acl_len);
+		return chacl(fsp->fsp_name->base_name,
+			     file_acl,
+			     file_acl->acl_len);
 	}
 
 	rc = fchacl(fsp_get_io_fd(fsp),file_acl,file_acl->acl_len);
