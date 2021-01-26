@@ -2795,7 +2795,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* create tower for asking the epmapper */
 
-	status = dcerpc_parse_binding(tmp_ctx, "ncacn_ip_tcp:[135]",
+	status = dcerpc_parse_binding(tmp_ctx, "ncacn_ip_tcp:",
 				      &map_binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
