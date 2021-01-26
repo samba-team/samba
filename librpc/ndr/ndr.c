@@ -37,7 +37,7 @@
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 /*
- * This value is arbitary, but designed to reduce the memory a client
+ * This value is arbitrary, but designed to reduce the memory a client
  * can allocate and the work the client can force in processing a
  * malicious packet.
  *
