@@ -105,6 +105,13 @@ static void file_ploadv_readable(struct tevent_req *subreq)
 	}
 
 	bufsize = talloc_get_size(state->buf);
+	if (bufsize > 0) {
+		/*
+		 * Last round we've added the trailing '\0'. Remove it
+		 * for this round.
+		 */
+		bufsize -= 1;
+	}
 
 	if (((bufsize + nread) < bufsize) ||
 	    ((bufsize + nread + 1) < bufsize)) {
