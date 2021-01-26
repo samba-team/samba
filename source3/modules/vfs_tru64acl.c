@@ -87,6 +87,52 @@ SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
 	return result;
 }
 
+int tru64acl_sys_acl_set_file(vfs_handle_struct *handle,
+			      const struct smb_filename *smb_fname,
+			      SMB_ACL_TYPE_T type,
+			      SMB_ACL_T theacl)
+{
+        int res;
+        acl_type_t the_acl_type;
+        acl_t tru64_acl;
+
+        DEBUG(10, ("tru64acl_sys_acl_set_file called with name %s, type %d\n",
+			smb_fname->base_name, type));
+
+        switch(type) {
+        case SMB_ACL_TYPE_ACCESS:
+		DEBUGADD(10, ("got acl type ACL_TYPE_ACCESS\n"));
+                the_acl_type = ACL_TYPE_ACCESS;
+                break;
+        case SMB_ACL_TYPE_DEFAULT:
+		DEBUGADD(10, ("got acl type ACL_TYPE_DEFAULT\n"));
+                the_acl_type = ACL_TYPE_DEFAULT;
+                break;
+        default:
+		DEBUGADD(10, ("invalid acl type\n"));
+                errno = EINVAL;
+                goto fail;
+        }
+
+	tru64_acl = smb_acl_to_tru64_acl(theacl);
+        if (tru64_acl == NULL) {
+		DEBUG(10, ("smb_acl_to_tru64_acl failed!\n"));
+                goto fail;
+        }
+	DEBUG(10, ("got tru64 acl...\n"));
+        res = acl_set_file((char *)smb_fname->base_name,
+				the_acl_type, tru64_acl);
+        acl_free(tru64_acl);
+        if (res != 0) {
+                DEBUG(10, ("acl_set_file failed: %s\n", strerror(errno)));
+		goto fail;
+        }
+        return res;
+fail:
+	DEBUG(1, ("tru64acl_sys_acl_set_file failed!\n"));
+	return -1;
+}
+
 int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    SMB_ACL_TYPE_T type,
