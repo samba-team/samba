@@ -2559,10 +2559,39 @@ samba-tool gpo manage files list {31B2F340-016D-11D2-945F-00C04FB984F9}
                     (stat_from_mode(mode), user, group, target, source)
             self.outf.write('%s\n' % p)
 
+class cmd_add_files(Command):
+    """Add VGP Files Group Policy to the sysvol
+
+This command adds files which will be copied from the sysvol and applied to winbind clients.
+
+Example:
+samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.txt /usr/share/doc/target.txt root root 600
+    """
+
+    synopsis = "%prog <gpo> <source> <target> <user> <group> <mode> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "source", "target", "user", "group", "mode"]
+
+    def run(self, gpo, source, target, user, group, mode, H=None,
+            sambaopts=None, credopts=None, versionopts=None):
+        pass
+
 class cmd_files(SuperCommand):
     """Manage Files Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_files()
+    subcommands["add"] = cmd_add_files()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""

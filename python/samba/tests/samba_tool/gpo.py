@@ -923,6 +923,50 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_files_add(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        sysvol_source = os.path.join(local_path, lp.get('realm').lower(),
+                                     'Policies', self.gpo_guid, 'Machine/VGP',
+                                     'VTLA/Unix/Files/test.source')
+        source_file = os.path.join(self.tempdir, 'test.source')
+        source_data = '#!/bin/sh\necho hello world'
+        with open(source_file, 'w') as w:
+            w.write(source_data)
+        target_file = os.path.join(self.tempdir, 'test.target')
+        user = pwd.getpwuid(os.getuid()).pw_name
+        group = grp.getgrgid(os.getgid()).gr_name
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "files", "add"),
+                                                 self.gpo_guid,
+                                                 source_file,
+                                                 target_file,
+                                                 user, group,
+                                                 '755', "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'File add failed')
+        self.assertIn(source_data, open(sysvol_source, 'r').read(),
+                      'Failed to find the source file on the sysvol')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "files", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(target_file, out, 'The test entry was not found!')
+        self.assertIn('-rwxr-xr-x', out,
+                      'The test entry permissions were not found')
+
+        os.unlink(source_file)
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
