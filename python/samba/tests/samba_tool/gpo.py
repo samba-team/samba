@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
+import os, pwd, grp
 import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
@@ -860,6 +860,68 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(symlink, out, 'The test entry was not removed!')
+
+    def test_files_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/Unix',
+                               'Files/manifest.xml')
+        source_file = os.path.join(local_path, lp.get('realm').lower(),
+                                   'Policies', self.gpo_guid, 'Machine/VGP',
+                                   'VTLA/Unix/Files/test.source')
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Files'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Represents file data to set/copy on clients'
+        data = etree.SubElement(policysetting, 'data')
+        file_properties = etree.SubElement(data, 'file_properties')
+        source = etree.SubElement(file_properties, 'source')
+        source.text = source_file
+        target = etree.SubElement(file_properties, 'target')
+        target.text = os.path.join(self.tempdir, 'test.target')
+        user = etree.SubElement(file_properties, 'user')
+        user.text = pwd.getpwuid(os.getuid()).pw_name
+        group = etree.SubElement(file_properties, 'group')
+        group.text = grp.getgrgid(os.getgid()).gr_name
+
+        # Request permissions of 755
+        permissions = etree.SubElement(file_properties, 'permissions')
+        permissions.set('type', 'user')
+        etree.SubElement(permissions, 'read')
+        etree.SubElement(permissions, 'write')
+        etree.SubElement(permissions, 'execute')
+        permissions = etree.SubElement(file_properties, 'permissions')
+        permissions.set('type', 'group')
+        etree.SubElement(permissions, 'read')
+        etree.SubElement(permissions, 'execute')
+        permissions = etree.SubElement(file_properties, 'permissions')
+        permissions.set('type', 'other')
+        etree.SubElement(permissions, 'read')
+        etree.SubElement(permissions, 'execute')
+
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "files", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(target.text, out, 'The test entry was not found!')
+        self.assertIn('-rwxr-xr-x', out,
+                      'The test entry permissions were not found')
+
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
 
     def setUp(self):
         """set up a temporary GPO to work with"""

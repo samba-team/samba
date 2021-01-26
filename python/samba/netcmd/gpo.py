@@ -2488,6 +2488,38 @@ class cmd_symlink(SuperCommand):
     subcommands["add"] = cmd_add_symlink()
     subcommands["remove"] = cmd_remove_symlink()
 
+class cmd_list_files(Command):
+    """List VGP Files Group Policy from the sysvol
+
+This command lists files which will be copied from the sysvol and applied to winbind clients.
+
+Example:
+samba-tool gpo manage files list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_files(SuperCommand):
+    """Manage Files Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_files()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
@@ -2495,6 +2527,7 @@ class cmd_manage(SuperCommand):
     subcommands["security"] = cmd_security()
     subcommands["smb_conf"] = cmd_smb_conf()
     subcommands["symlink"] = cmd_symlink()
+    subcommands["files"] = cmd_files()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""
