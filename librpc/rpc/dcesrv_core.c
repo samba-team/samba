@@ -137,16 +137,6 @@ static const struct dcesrv_interface *find_interface_by_binding(struct dcesrv_co
 }
 
 /*
-  see if a uuid and if_version match to an interface
-*/
-static bool interface_match_by_uuid(const struct dcesrv_interface *iface,
-				    const struct GUID *uuid, uint32_t if_version)
-{
-	return (iface->syntax_id.if_version == if_version &&
-			GUID_equal(&iface->syntax_id.uuid, uuid));
-}
-
-/*
   find the interface operations on an endpoint by uuid
 */
 _PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
@@ -155,10 +145,7 @@ _PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
-		if (interface_match_by_uuid(
-			    ifl->iface,
-			    &interface->uuid,
-			    interface->if_version)) {
+		if (ndr_syntax_id_equal(&ifl->iface->syntax_id, interface)) {
 			return ifl->iface;
 		}
 	}
