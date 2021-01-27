@@ -106,16 +106,6 @@ static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_conne
 }
 
 /*
-  see if a uuid and if_version match to an interface
-*/
-static bool interface_match(const struct dcesrv_interface *if1,
-							const struct dcesrv_interface *if2)
-{
-	return (if1->syntax_id.if_version == if2->syntax_id.if_version &&
-			GUID_equal(&if1->syntax_id.uuid, &if2->syntax_id.uuid));
-}
-
-/*
   find the interface operations on any endpoint with this binding
 */
 static const struct dcesrv_interface *find_interface_by_binding(struct dcesrv_context *dce_ctx,
@@ -125,11 +115,12 @@ static const struct dcesrv_interface *find_interface_by_binding(struct dcesrv_co
 	struct dcesrv_endpoint *ep;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
 		if (endpoints_match(ep->ep_description, binding)) {
-			struct dcesrv_if_list *ifl;
-			for (ifl=ep->interface_list; ifl; ifl=ifl->next) {
-				if (interface_match(ifl->iface, iface)) {
-					return ifl->iface;
-				}
+			const struct dcesrv_interface *ret = NULL;
+
+			ret = find_interface_by_syntax_id(
+				ep, &iface->syntax_id);
+			if (ret != NULL) {
+				return ret;
 			}
 		}
 	}
