@@ -61,11 +61,7 @@ struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
 		return NULL;
 	}
 	h->data = NULL;
-	h->sid = dom_sid_dup(h, sid);
-	if (h->sid == NULL) {
-		talloc_free(h);
-		return NULL;
-	}
+	sid_copy(&h->sid, sid);
 	h->min_auth_level = call->auth_state->auth_level;
 	h->assoc_group = context->conn->assoc_group;
 	h->iface = context->iface;
@@ -117,10 +113,10 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 					 p->handle_type, handle_type));
 				return NULL;
 			}
-			if (!dom_sid_equal(h->sid, sid)) {
+			if (!dom_sid_equal(&h->sid, sid)) {
 				struct dom_sid_buf buf1, buf2;
 				DBG_ERR("Attempt to use invalid sid %s - %s\n",
-					dom_sid_str_buf(h->sid, &buf1),
+					dom_sid_str_buf(&h->sid, &buf1),
 					dom_sid_str_buf(sid, &buf2));
 				return NULL;
 			}

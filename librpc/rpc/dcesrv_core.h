@@ -26,6 +26,7 @@
 
 #include "librpc/rpc/rpc_common.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/security.h"
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
@@ -191,7 +192,7 @@ struct dcesrv_handle {
 	struct dcesrv_handle *next, *prev;
 	struct dcesrv_assoc_group *assoc_group;
 	struct policy_handle wire_handle;
-	struct dom_sid *sid;
+	struct dom_sid sid;
 	enum dcerpc_AuthLevel min_auth_level;
 	const struct dcesrv_interface *iface;
 	void *data;
