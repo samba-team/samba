@@ -637,7 +637,7 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_PWD_TOO_SHORT",
 		N_("Password too short")},
 	{"NT_STATUS_PWD_TOO_RECENT",
-		N_("The password of this user is too recent to change")},
+		N_("The password was recently changed and cannot be changed again before %s")},
 	{"NT_STATUS_PWD_HISTORY_CONFLICT",
 		N_("Password is already in password history")},
 	{"NT_STATUS_PASSWORD_EXPIRED",
@@ -2049,8 +2049,11 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 			case WBC_PWD_CHANGE_NO_ERROR:
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
-					PAM_WB_REMARK_DIRECT(ctx,
-					     "NT_STATUS_PWD_TOO_RECENT");
+					time_t next_change = pwd_last_set + min_pwd_age;
+					_make_remark_format(ctx, PAM_ERROR_MSG,
+						_get_ntstatus_error_string("NT_STATUS_PWD_TOO_RECENT"),
+						ctime(&next_change));
+					goto done;
 				}
 				break;
 			case WBC_PWD_CHANGE_PASSWORD_TOO_SHORT:
