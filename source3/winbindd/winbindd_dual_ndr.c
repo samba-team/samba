@@ -433,9 +433,8 @@ static NTSTATUS make_internal_dcesrv_connection(TALLOC_CTX *mem_ctx,
 	context->conn = conn;
 	context->context_id = 0;
 	context->transfer_syntax = *(conn->preferred_transfer);
-	context->iface = find_interface_by_uuid(conn->endpoint,
-					&ndr_table->syntax_id.uuid,
-					ndr_table->syntax_id.if_version);
+	context->iface = find_interface_by_syntax_id(
+		conn->endpoint, &ndr_table->syntax_id);
 	if (context->iface == NULL) {
 		status = NT_STATUS_RPC_INTERFACE_NOT_FOUND;
 		goto fail;

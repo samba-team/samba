@@ -149,12 +149,16 @@ static bool interface_match_by_uuid(const struct dcesrv_interface *iface,
 /*
   find the interface operations on an endpoint by uuid
 */
-_PUBLIC_ const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
-						      const struct GUID *uuid, uint32_t if_version)
+_PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
+	const struct dcesrv_endpoint *endpoint,
+	const struct ndr_syntax_id *interface)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
-		if (interface_match_by_uuid(ifl->iface, uuid, if_version)) {
+		if (interface_match_by_uuid(
+			    ifl->iface,
+			    &interface->uuid,
+			    interface->if_version)) {
 			return ifl->iface;
 		}
 	}
@@ -1318,10 +1322,8 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 				bool validate_only,
 				const struct ndr_syntax_id *supported_transfer)
 {
-	uint32_t if_version;
 	struct dcesrv_connection_context *context;
 	const struct dcesrv_interface *iface;
-	struct GUID uuid;
 	NTSTATUS status;
 	const struct ndr_syntax_id *selected_transfer = NULL;
 	size_t i;
@@ -1357,10 +1359,8 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 	ack->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
 	ack->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
 
-	if_version = ctx->abstract_syntax.if_version;
-	uuid = ctx->abstract_syntax.uuid;
-
-	iface = find_interface_by_uuid(call->conn->endpoint, &uuid, if_version);
+	iface = find_interface_by_syntax_id(
+		call->conn->endpoint, &ctx->abstract_syntax);
 	if (iface == NULL) {
 		struct ndr_syntax_id_buf buf;
 		DBG_NOTICE("Request for unknown dcerpc interface %s\n",

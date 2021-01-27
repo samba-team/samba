@@ -626,9 +626,9 @@ _PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn);
 
 _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call);
 
-_PUBLIC_ const struct dcesrv_interface *find_interface_by_uuid(
-				const struct dcesrv_endpoint *endpoint,
-				const struct GUID *uuid, uint32_t if_version);
+_PUBLIC_ const struct dcesrv_interface *find_interface_by_syntax_id(
+	const struct dcesrv_endpoint *endpoint,
+	const struct ndr_syntax_id *interface);
 
 void _dcesrv_save_ndr_fuzz_seed(DATA_BLOB call_blob,
 				struct dcesrv_call_state *call,
