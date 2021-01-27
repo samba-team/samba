@@ -967,6 +967,27 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         os.unlink(source_file)
 
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "files", "remove"),
+                                                 self.gpo_guid,
+                                                 target_file, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'File remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "files", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(target_file, out, 'The test entry was still found!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()

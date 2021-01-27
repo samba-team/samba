@@ -2668,11 +2668,40 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
                                    "not have sufficient privileges")
             raise
 
+class cmd_remove_files(Command):
+    """Remove VGP Files Group Policy from the sysvol
+
+This command removes files which would be copied from the sysvol and applied to winbind clients.
+
+Example:
+samba-tool gpo manage files remove {31B2F340-016D-11D2-945F-00C04FB984F9} /usr/share/doc/target.txt
+    """
+
+    synopsis = "%prog <gpo> <target> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "target"]
+
+    def run(self, gpo, target, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        pass
+
 class cmd_files(SuperCommand):
     """Manage Files Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_files()
     subcommands["add"] = cmd_add_files()
+    subcommands["remove"] = cmd_remove_files()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
