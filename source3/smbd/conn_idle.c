@@ -273,5 +273,13 @@ static void conn_force_tdis_done(struct tevent_req *req)
 	* uid in the meantime. Ensure we're still root.
 	*/
 	change_to_root_user();
-	reload_services(sconn, conn_snum_used, true);
+	/*
+	 * Use 'false' in the last parameter (test) to force
+	 * a full reload of services. Prevents
+	 * reload_services caching the fact it's
+	 * been called multiple times in a row.
+	 * See BUG: https://bugzilla.samba.org/show_bug.cgi?id=14604
+	 * for details.
+	 */
+	reload_services(sconn, conn_snum_used, false);
 }
