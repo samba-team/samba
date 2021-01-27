@@ -31,6 +31,8 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "cluster/cluster.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -825,6 +827,177 @@ static int authsam_get_user_pso(struct ldb_context *sam_ctx,
 	return LDB_SUCCESS;
 }
 
+static struct db_context *authsam_get_bad_password_db(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_context *sam_ctx)
+{
+	struct loadparm_context *lp_ctx = NULL;
+	const char *db_name = "bad_password";
+	struct db_context *db_ctx =  NULL;
+
+	lp_ctx = ldb_get_opaque(sam_ctx, "loadparm");
+	if (lp_ctx == NULL) {
+		DBG_ERR("Unable to get loadparm_context\n");
+		return NULL;
+	}
+
+	db_ctx = cluster_db_tmp_open(mem_ctx, lp_ctx, db_name, TDB_DEFAULT);
+	if (db_ctx == NULL) {
+		DBG_ERR("Unable to open bad password attempts database\n");
+		return NULL;
+	}
+	return db_ctx;
+}
+
+static NTSTATUS get_object_sid_as_tdb_data(
+	TALLOC_CTX *mem_ctx,
+	const struct ldb_message *msg,
+	struct dom_sid_buf *buf,
+	TDB_DATA *key)
+{
+	struct dom_sid *objectsid = NULL;
+
+	/*
+	 * Convert the objectSID to a human readable form to
+	 * make debugging easier
+	 */
+	objectsid = samdb_result_dom_sid(mem_ctx, msg, "objectSID");
+	if (objectsid == NULL) {
+		DBG_ERR("Unable to extract objectSID\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	dom_sid_str_buf(objectsid, buf);
+	key->dptr = (unsigned char *)buf->buf;
+	key->dsize = strlen(buf->buf);
+
+	talloc_free(objectsid);
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Add the users objectSID to the bad password attempt database
+ * to indicate that last authentication failed due to a bad password
+ */
+static NTSTATUS authsam_set_bad_password_indicator(
+	struct ldb_context *sam_ctx,
+	TALLOC_CTX *mem_ctx,
+	const struct ldb_message *msg)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct dom_sid_buf buf;
+	TDB_DATA key = {0};
+	TDB_DATA value = {0};
+	struct db_context *db = NULL;
+
+	TALLOC_CTX *ctx = talloc_new(mem_ctx);
+	if (ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	db = authsam_get_bad_password_db(ctx, sam_ctx);
+	if (db == NULL) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto exit;
+	}
+
+	status = get_object_sid_as_tdb_data(ctx, msg, &buf, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto exit;
+	}
+
+	status = dbwrap_store(db, key, value, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Unable to store bad password indicator\n");
+	}
+exit:
+	talloc_free(ctx);
+	return status;
+}
+
+/*
+ * see if the users objectSID is in the bad password attempt database
+ */
+static NTSTATUS authsam_check_bad_password_indicator(
+	struct ldb_context *sam_ctx,
+	TALLOC_CTX *mem_ctx,
+	bool *exists,
+	const struct ldb_message *msg)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct dom_sid_buf buf;
+	TDB_DATA key = {0};
+	struct db_context *db = NULL;
+
+	TALLOC_CTX *ctx = talloc_new(mem_ctx);
+	if (ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	db = authsam_get_bad_password_db(ctx, sam_ctx);
+	if (db == NULL) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto exit;
+	}
+
+	status = get_object_sid_as_tdb_data(ctx, msg, &buf, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto exit;
+	}
+
+	*exists = dbwrap_exists(db, key);
+exit:
+	talloc_free(ctx);
+	return status;
+}
+
+/*
+ * Remove the users objectSID to the bad password attempt database
+ * to indicate that last authentication succeeded.
+ */
+static NTSTATUS authsam_clear_bad_password_indicator(
+	struct ldb_context *sam_ctx,
+	TALLOC_CTX *mem_ctx,
+	const struct ldb_message *msg)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct dom_sid_buf buf;
+	TDB_DATA key = {0};
+	struct db_context *db = NULL;
+
+	TALLOC_CTX *ctx = talloc_new(mem_ctx);
+	if (ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	db = authsam_get_bad_password_db(ctx, sam_ctx);
+	if (db == NULL) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto exit;
+	}
+
+	status = get_object_sid_as_tdb_data(ctx, msg, &buf, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto exit;
+	}
+
+	status = dbwrap_delete(db, key);
+	if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
+		/*
+		 * Ok there was no bad password indicator this is expected
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Unable to delete bad password indicator, %s %s\n",
+			nt_errstr(status),
+			get_friendly_nt_error_msg(status));
+	}
+exit:
+	talloc_free(ctx);
+	return status;
+}
+
 NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 				      struct ldb_message *msg,
 				      struct ldb_dn *domain_dn)
@@ -894,6 +1067,10 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 
 		ret = dsdb_autotransaction_request(sam_ctx, req);
 		talloc_free(req);
+
+		status = authsam_set_bad_password_indicator(
+			sam_ctx, mem_ctx, msg);
+		/* Failure is ignored for now */
 	}
 
 done:
@@ -1057,10 +1234,17 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	NTTIME now;
 	NTTIME lastLogonTimestamp;
 	bool am_rodc = false;
+	bool need_db_reread;
 
 	mem_ctx = talloc_new(msg);
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = authsam_check_bad_password_indicator(
+		sam_ctx, mem_ctx, &need_db_reread, msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
@@ -1196,6 +1380,9 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		ret = dsdb_autotransaction_request(sam_ctx, req);
 		talloc_free(req);
 	}
+
+	status = authsam_clear_bad_password_indicator(sam_ctx, mem_ctx, msg);
+	/* Failure is ignored for now */
 
 done:
 	if (ret != LDB_SUCCESS) {
