@@ -1362,9 +1362,10 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 
 	iface = find_interface_by_uuid(call->conn->endpoint, &uuid, if_version);
 	if (iface == NULL) {
-		char *uuid_str = GUID_string(call, &uuid);
-		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid_str, if_version));
-		talloc_free(uuid_str);
+		struct ndr_syntax_id_buf buf;
+		DBG_NOTICE("Request for unknown dcerpc interface %s\n",
+			   ndr_syntax_id_buf_string(
+				   &ctx->abstract_syntax, &buf));
 		/*
 		 * We report this only via ack->result
 		 */
