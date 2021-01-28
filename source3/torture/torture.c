@@ -1362,6 +1362,7 @@ static bool run_tcon_test(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		       nt_errstr(status));
+		cli_state_restore_tcon(cli, orig_tcon);
 		cli_shutdown(cli);
 		return False;
 	}
@@ -1414,6 +1415,8 @@ static bool run_tcon_test(int dummy)
 	status = cli_close(cli, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("close failed (%s)\n", nt_errstr(status));
+		cli_state_restore_tcon(cli, orig_tcon);
+		cli_shutdown(cli);
 		return False;
 	}
 
@@ -1422,6 +1425,8 @@ static bool run_tcon_test(int dummy)
 	status = cli_tdis(cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("secondary tdis failed (%s)\n", nt_errstr(status));
+		cli_state_restore_tcon(cli, orig_tcon);
+		cli_shutdown(cli);
 		return False;
 	}
 
