@@ -720,6 +720,32 @@ static bool test_compare_uuid(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_syntax_id_from_string(struct torture_context *tctx)
+{
+	struct ndr_syntax_id s, exp;
+	const char *id = "00000001-0002-0003-0405-060708090a0b/0x12345678";
+
+	exp.uuid.time_low = 1;
+	exp.uuid.time_mid = 2;
+	exp.uuid.time_hi_and_version = 3;
+	exp.uuid.clock_seq[0] = 4;
+	exp.uuid.clock_seq[1] = 5;
+	exp.uuid.node[0] = 6;
+	exp.uuid.node[1] = 7;
+	exp.uuid.node[2] = 8;
+	exp.uuid.node[3] = 9;
+	exp.uuid.node[4] = 10;
+	exp.uuid.node[5] = 11;
+	exp.if_version = 0x12345678;
+
+	torture_assert(tctx,
+		       ndr_syntax_id_from_string(id, &s),
+		       "invalid return code");
+	torture_assert(tctx, ndr_syntax_id_equal(&s, &exp),
+		       "NDR syntax id parsed incorrectly");
+	return true;
+}
+
 struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ndr");
@@ -785,6 +811,9 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "guid_into_long_blob",
 				      test_guid_into_long_blob);
+
+	torture_suite_add_simple_test(suite, "syntax_id_from_string",
+				      test_syntax_id_from_string);
 
 	return suite;
 }
