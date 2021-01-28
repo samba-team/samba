@@ -26,10 +26,18 @@
 int main(int argc, char *argv[]) {
 	int ret;
 	size_t size = 0;
+	int i;
+
+	ret = LLVMFuzzerInitialize(&argc, &argv);
+	if (ret != 0) {
+		printf("LLVMFuzzerInitialize returned %d\n", ret);
+		return ret;
+	}
+
+
 #ifdef __AFL_LOOP
 	while (__AFL_LOOP(1000))
 #else
-	int i;
 	for (i = 1; i < argc; i++) {
 		uint8_t *buf = (uint8_t *)file_load(argv[i],
 						    &size,
