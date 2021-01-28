@@ -24,7 +24,7 @@
 #ifndef _RPC_PIPES_H_
 #define _RPC_PIPES_H_
 
-#include "librpc/rpc/dcerpc.h"
+#include "source3/librpc/rpc/dcerpc.h"
 
 struct dcesrv_ep_entry_list;
 struct tsocket_address;
