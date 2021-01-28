@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
 		ret = LLVMFuzzerTestOneInput(buf, size);
 		TALLOC_FREE(buf);
 		if (ret != 0) {
+			printf("LLVMFuzzerTestOneInput returned %d on argument %d\n",
+			       ret, i);
 			return ret;
 		}
 	}
