@@ -477,11 +477,12 @@ static bool test_guid_from_string(struct torture_context *tctx)
 {
 	struct GUID g1, exp;
 	/* we are asserting all these guids are valid and equal */
-	const char *guids[4] = {
+	const char *guids[5] = {
 		"00000001-0002-0003-0405-060708090a0b",
 		"{00000001-0002-0003-0405-060708090a0b}",
 		"{00000001-0002-0003-0405-060708090a0B}", /* mixed */
 		"00000001-0002-0003-0405-060708090A0B",   /* upper */
+		"01000000020003000405060708090a0b",       /* hex string */
 	};
 	int i;
 
@@ -507,6 +508,45 @@ static bool test_guid_from_string(struct torture_context *tctx)
 		torture_assert(tctx, GUID_equal(&g1, &exp),
 			       "UUID parsed incorrectly");
 	}
+	return true;
+}
+
+static bool test_guid_from_data_blob(struct torture_context *tctx)
+{
+	struct GUID g1, exp;
+	const uint8_t bin[16] = {
+		0x01, 0x00, 0x00, 0x00,
+		0x02, 0x00,
+		0x03, 0x00,
+		0x04, 0x05,
+		0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b };
+	const char *hexstr = "01000000020003000405060708090a0b";
+	const DATA_BLOB blobs[2] = {
+		data_blob_const(bin, sizeof(bin)),
+		data_blob_string_const(hexstr),
+	};
+	int i;
+
+	exp.time_low = 1;
+	exp.time_mid = 2;
+	exp.time_hi_and_version = 3;
+	exp.clock_seq[0] = 4;
+	exp.clock_seq[1] = 5;
+	exp.node[0] = 6;
+	exp.node[1] = 7;
+	exp.node[2] = 8;
+	exp.node[3] = 9;
+	exp.node[4] = 10;
+	exp.node[5] = 11;
+
+	for (i = 1; i < ARRAY_SIZE(blobs); i++) {
+		torture_assert_ntstatus_ok(tctx,
+					   GUID_from_data_blob(&blobs[i], &g1),
+					   "invalid return code");
+		torture_assert(tctx, GUID_equal(&g1, &exp),
+			       "UUID parsed incorrectly");
+	}
+
 	return true;
 }
 
@@ -718,6 +758,9 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "guid_from_string",
 				      test_guid_from_string);
+
+	torture_suite_add_simple_test(suite, "guid_from_data_blob",
+				      test_guid_from_data_blob);
 
 	torture_suite_add_simple_test(suite, "guid_from_string_invalid",
 				      test_guid_from_string_invalid);
