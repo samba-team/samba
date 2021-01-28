@@ -909,6 +909,11 @@
 	<para>Add VGP Files Group Policy to the sysvol</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage files remove</title>
+	<para>Remove VGP Files Group Policy from the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
