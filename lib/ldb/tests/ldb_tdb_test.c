@@ -1,5 +1,5 @@
 /*
- * lmdb backend specific tests for ldb
+ * tdb backend specific tests for ldb
  *
  *  Copyright (C) Andrew Bartlett <abartlet@samba.org> 2018
  *
@@ -19,7 +19,7 @@
  */
 
 /*
- * lmdb backend specific tests for ldb
+ * tdb backend specific tests for ldb
  *
  * Setup and tear down code copied  from ldb_mod_op_test.c
  */
