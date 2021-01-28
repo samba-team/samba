@@ -673,7 +673,7 @@ tasks = {
     "samba-fuzz": [
         # build the fuzzers (static) via the oss-fuzz script
         ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
-        ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl"),
+        ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl-fuzzer"),
         ],
 
     # * Test smbd and smbtorture can build semi-static
