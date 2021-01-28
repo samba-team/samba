@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 	while (__AFL_LOOP(1000))
 #else
 	int i;
-	for (i = 0; i < argc; i++) {
+	for (i = 1; i < argc; i++) {
 		uint8_t *buf = (uint8_t *)file_load(argv[i],
 						    &size,
 						    0,
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 			return ret;
 		}
 	}
-	if (i == 0)
+	if (i == 1)
 #endif
 	{
 		uint8_t *buf = (uint8_t *)fd_load(0, &size, 0, NULL);
