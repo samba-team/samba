@@ -188,11 +188,11 @@ bool run_smb2_basic(int dummy)
 			      cli->timeout,
 			      cli->smb2.session,
 			      cli->smb2.tcon);
+	cli_state_restore_tcon(cli, saved_tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;
 	}
-	cli_state_restore_tcon(cli, saved_tcon);
 
 	status = smb2cli_tdis(cli->conn,
 			      cli->timeout,
