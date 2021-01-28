@@ -1203,6 +1203,13 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				break;
 			case SMB_ENCRYPTION_REQUIRED:
 			default:
+				/*
+				 * Failed to set up encryption.
+				 * Disconnect the temporary IPC$
+				 * tcon before restoring the original
+				 * tcon so we don't leak it.
+				 */
+				cli_tdis(cli);
 				cli_state_restore_tcon(cli, orig_tcon);
 				return false;
 			}
