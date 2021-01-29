@@ -1997,7 +1997,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SSVAL(p,20,mode);
 		p += 22; /* p now points to the EA area. */
 
-		status = get_ea_list_from_file(ctx, conn, NULL,
+		status = get_ea_list_from_file(ctx, conn,
+					       smb_fname->fsp,
 					       smb_fname,
 					       &ea_len, &file_list);
 		if (!NT_STATUS_IS_OK(status)) {
