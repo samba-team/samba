@@ -33,6 +33,7 @@ from samba.gpclass import gp_inf_ext
 from samba.gp_smb_conf_ext import gp_smb_conf_ext
 from samba.vgp_files_ext import vgp_files_ext
 from samba.vgp_openssh_ext import vgp_openssh_ext
+from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -42,6 +43,7 @@ from samba.ndr import ndr_pack
 import codecs
 from shutil import copyfile
 import xml.etree.ElementTree as etree
+import hashlib
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -1106,3 +1108,123 @@ class GPOTests(tests.TestCase):
 
         # Unstage the Registry.pol file
         unstage_file(manifest)
+
+    def test_vgp_startup_scripts(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/UNIX/SCRIPTS/STARTUP/MANIFEST.XML')
+        test_script = os.path.join(os.path.dirname(manifest), 'TEST.SH')
+        test_data = '#!/bin/sh\necho $@ hello world'
+        ret = stage_file(test_script, test_data)
+        self.assertTrue(ret, 'Could not create the target %s' % test_script)
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_startup_scripts_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml file with test data
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '1'
+        data = etree.SubElement(policysetting, 'data')
+        listelement = etree.SubElement(data, 'listelement')
+        script = etree.SubElement(listelement, 'script')
+        script.text = os.path.basename(test_script).lower()
+        parameters = etree.SubElement(listelement, 'parameters')
+        parameters.text = '-n'
+        hash = etree.SubElement(listelement, 'hash')
+        hash.text = \
+            hashlib.md5(open(test_script, 'rb').read()).hexdigest().upper()
+        run_as = etree.SubElement(listelement, 'run_as')
+        run_as.text = 'root'
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 1,
+                              'The target script was not created')
+            entry = '@reboot %s %s %s' % (run_as.text, test_script,
+                                          parameters.text)
+            self.assertIn(entry,
+                          open(os.path.join(dname, files[0]), 'r').read(),
+                          'The test entry was not found')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 0,
+                              'The target script was not removed')
+
+            # Test rsop
+            g = [g for g in gpos if g.name == guid][0]
+            ret = ext.rsop(g)
+            self.assertIn(entry, list(ret.values())[0][0],
+                          'The target entry was not listed by rsop')
+
+        # Unstage the manifest.xml and script files
+        unstage_file(manifest)
+        unstage_file(test_script)
+
+        # Stage the manifest.xml file for run once scripts
+        etree.SubElement(listelement, 'run_once')
+        run_as.text = pwd.getpwuid(os.getuid()).pw_name
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        # A run once script will be executed immediately,
+        # instead of creating a cron job
+        with TemporaryDirectory() as dname:
+            test_file = '%s/TESTING.txt' % dname
+            test_data = '#!/bin/sh\ntouch %s' % test_file
+            ret = stage_file(test_script, test_data)
+            self.assertTrue(ret, 'Could not create the target %s' % test_script)
+
+            ext.process_group_policy([], gpos, dname)
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 1,
+                              'The test file was not created')
+            self.assertEquals(files[0], os.path.basename(test_file),
+                              'The test file was not created')
+
+            # Unlink the test file and ensure that processing
+            # policy again does not recreate it.
+            os.unlink(test_file)
+            ext.process_group_policy([], gpos, dname)
+            files = os.listdir(dname)
+            self.assertEquals(len(files), 0,
+                              'The test file should not have been created')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+
+            # Test rsop
+            entry = 'Run once as: %s `%s %s`' % (run_as.text, test_script,
+                                            parameters.text)
+            g = [g for g in gpos if g.name == guid][0]
+            ret = ext.rsop(g)
+            self.assertIn(entry, list(ret.values())[0][0],
+                          'The target entry was not listed by rsop')
+
+        # Unstage the manifest.xml and script files
+        unstage_file(manifest)
+        unstage_file(test_script)
