@@ -681,6 +681,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 	size_t total_ea_len = 0;
 	TALLOC_CTX *mem_ctx;
 	struct ea_list *ea_list = NULL;
+	NTSTATUS status;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
@@ -692,16 +693,34 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 	 * (streams cannot have EAs), but the estimate isn't just 0 in
 	 * this case! */
 	if (is_ntfs_stream_smb_fname(smb_fname)) {
-		fsp = NULL;
-	}
-	(void)get_ea_list_from_file_path(mem_ctx,
+		struct smb_filename *pathref = NULL;
+		status = synthetic_pathref(mem_ctx,
+				conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(mem_ctx);
+			return 0;
+		}
+		(void)get_ea_list_from_file_path(mem_ctx,
 				conn,
-				fsp,
+				pathref->fsp,
+				pathref,
+				&total_ea_len,
+				&ea_list);
+	} else {
+		(void)get_ea_list_from_file_path(mem_ctx,
+				conn,
+				smb_fname->fsp,
 				smb_fname,
 				&total_ea_len,
 				&ea_list);
+	}
 	if(conn->sconn->using_smb2) {
-		NTSTATUS status;
 		unsigned int ret_data_size;
 		/*
 		 * We're going to be using fill_ea_chained_buffer() to
