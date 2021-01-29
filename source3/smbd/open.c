@@ -4035,6 +4035,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					    nt_errstr(status));
 			}
 		}
+		TALLOC_FREE(lck);
+		fd_close(fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
