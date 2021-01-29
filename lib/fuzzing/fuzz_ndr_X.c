@@ -329,3 +329,9 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 
 	return 0;
 }
+
+
+int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+	return 0;
+}

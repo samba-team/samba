@@ -47,3 +47,9 @@ int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 	TALLOC_FREE(mem_ctx);
 	return 0;
 }
+
+
+int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+	return 0;
+}
