@@ -323,15 +323,11 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp && !fsp->fsp_flags.is_pathref && fsp_get_io_fd(fsp) != -1) {
-		sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
-					     ea_namelist_size);
-	} else {
-		sizeret = SMB_VFS_LISTXATTR(conn,
-					    smb_fname,
-					    ea_namelist,
-					    ea_namelist_size);
-	}
+	/* should be the case that fsp != NULL */
+	SMB_ASSERT(fsp != NULL);
+
+	sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
+				     ea_namelist_size);
 
 	if ((sizeret == -1) && (errno == ERANGE)) {
 		ea_namelist_size = 65536;
@@ -341,18 +337,8 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		}
 		to_free = ea_namelist;
 
-		if (fsp &&
-		    !fsp->fsp_flags.is_pathref &&
-		    fsp_get_io_fd(fsp) != -1)
-		{
-			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
-						     ea_namelist_size);
-		} else {
-			sizeret = SMB_VFS_LISTXATTR(conn,
-						    smb_fname,
-						    ea_namelist,
-						    ea_namelist_size);
-		}
+		sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
+					     ea_namelist_size);
 	}
 
 	if (sizeret == -1) {
