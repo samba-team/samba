@@ -173,11 +173,15 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool 
 
 /*
    Return the ldb module form of a database.
-   The URL can either be one of the following forms
-   ldb://path
-   ldapi://path
+   The URL looks something like this:
+     tdb://PATH
+     ldb://PATH
+     mdb://PATH
+     ldapi://PATH
+     PATH          (unadorned PATH defaults to tdb://)
 
-   flags is made up of LDB_FLG_*
+   for a complete list of backends (including possibly unmaintained ones) grep
+   for calls to ldb_register_backend().
 
    the options are passed uninterpreted to the backend, and are
    backend specific.
