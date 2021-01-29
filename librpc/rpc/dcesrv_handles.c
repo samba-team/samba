@@ -96,7 +96,8 @@ struct dcesrv_handle *dcesrv_handle_lookup(struct dcesrv_call_state *call,
 	struct dom_sid *sid;
 
 	/*
-	 * For simplicty, ensure we abort here for an interface that has no handles (programmer error)
+	 * For simplicity, ensure we abort here for an interface that
+	 * has no handles (programmer error)
 	 */
 	SMB_ASSERT((context->iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) == 0);
 
