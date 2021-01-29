@@ -533,9 +533,11 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	return;
 }
 
-NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
-				    struct dcesrv_call_state *call,
-				    struct gensec_security **out)
+NTSTATUS dcesrv_auth_gensec_prepare(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_call_state *call,
+	struct gensec_security **out,
+	void *private_data)
 {
 	struct gensec_security *gensec = NULL;
 	NTSTATUS status;
@@ -559,7 +561,9 @@ NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-void dcesrv_log_successful_authz(struct dcesrv_call_state *call)
+void dcesrv_log_successful_authz(
+	struct dcesrv_call_state *call,
+	void *private_data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth4_context *auth4_context = NULL;
@@ -631,7 +635,9 @@ static NTSTATUS dcesrv_assoc_group_new(struct dcesrv_call_state *call,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
+NTSTATUS dcesrv_assoc_group_find(
+	struct dcesrv_call_state *call,
+	void *private_data)
 {
 	uint32_t assoc_group_id = call->pkt.u.bind.assoc_group_id;
 

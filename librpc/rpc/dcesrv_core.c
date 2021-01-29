@@ -952,7 +952,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	conn->max_recv_frag = max_rep;
 	conn->max_xmit_frag = max_rep;
 
-	status = dce_ctx->callbacks.assoc_group.find(call);
+	status = dce_ctx->callbacks.assoc_group.find(
+		call, dce_ctx->callbacks.assoc_group.private_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
 			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));

@@ -115,7 +115,9 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(struct dcesrv_connectio
 	return assoc_group;
 }
 
-NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
+NTSTATUS dcesrv_assoc_group_find(
+	struct dcesrv_call_state *call,
+	void *private_data)
 {
 	/*
 	  if provided, check the assoc_group is valid
@@ -635,7 +637,9 @@ _PUBLIC_ struct server_id dcesrv_server_id(struct dcesrv_connection *conn)
 	return srv_conn->server_id;
 }
 
-void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
+void log_successful_dcesrv_authz_event(
+	struct dcesrv_call_state *call,
+	void *private_data)
 {
 	struct dcesrv_auth *auth = call->auth_state;
 	enum dcerpc_transport_t transport =
@@ -666,9 +670,11 @@ void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
 	auth->auth_audited = true;
 }
 
-NTSTATUS dcesrv_gensec_prepare(TALLOC_CTX *mem_ctx,
-			       struct dcesrv_call_state *call,
-			       struct gensec_security **out)
+NTSTATUS dcesrv_gensec_prepare(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_call_state *call,
+	struct gensec_security **out,
+	void *private_data)
 {
 	struct cli_credentials *server_creds = NULL;
 	struct imessaging_context *imsg_ctx =

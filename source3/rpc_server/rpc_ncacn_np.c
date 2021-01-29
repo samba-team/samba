@@ -488,7 +488,9 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if (hs->conn->assoc_group == NULL) {
 		ZERO_STRUCT(state->call->pkt);
 		state->call->pkt.u.bind.assoc_group_id = 0;
-		status = dce_ctx->callbacks.assoc_group.find(state->call);
+		status = dce_ctx->callbacks.assoc_group.find(
+			state->call,
+			dce_ctx->callbacks.assoc_group.private_data);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}

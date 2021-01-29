@@ -381,15 +381,22 @@ struct dcesrv_assoc_group {
 
 struct dcesrv_context_callbacks {
 	struct {
-		void (*successful_authz)(struct dcesrv_call_state *);
+		void (*successful_authz)(
+			struct dcesrv_call_state *call, void *private_data);
+		void *private_data;
 	} log;
 	struct {
-		NTSTATUS (*gensec_prepare)(TALLOC_CTX *mem_ctx,
-					struct dcesrv_call_state *call,
-					struct gensec_security **out);
+		NTSTATUS (*gensec_prepare)(
+			TALLOC_CTX *mem_ctx,
+			struct dcesrv_call_state *call,
+			struct gensec_security **out,
+			void *private_data);
+		void *private_data;
 	} auth;
 	struct {
-		NTSTATUS (*find)(struct dcesrv_call_state *);
+		NTSTATUS (*find)(
+			struct dcesrv_call_state *call, void *private_data);
+		void *private_data;
 	} assoc_group;
 };
 
