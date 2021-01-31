@@ -294,7 +294,6 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 				connection_struct *conn,
 				files_struct *fsp,
-				const struct smb_filename *smb_fname,
 				char ***pnames,
 				size_t *pnum_names)
 {
@@ -315,10 +314,11 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 	}
 	*pnum_names = 0;
 
-	status = refuse_symlink(conn, fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (fsp == NULL) {
 		/*
-		 * Just return no EA's on a symlink.
+		 * Callers may pass fsp == NULL when passing smb_fname->fsp of a
+		 * symlink. This is ok, handle it here, by just return no EA's
+		 * on a symlink.
 		 */
 		return NT_STATUS_OK;
 	}
@@ -449,7 +449,6 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	status = get_ea_names_from_file(talloc_tos(),
 				conn,
 				fsp,
-				smb_fname,
 				&names,
 				&num_names);
 

@@ -1215,7 +1215,6 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			files_struct *fsp,
-			const struct smb_filename *smb_fname,
 			char ***pnames,
 			size_t *pnum_names);
 NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
