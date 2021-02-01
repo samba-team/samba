@@ -1131,7 +1131,7 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 						return ret;
 					}
 				}
-				/* fallthrough */
+				FALL_THROUGH;
 			case LPSTAT_STOPPED:
 				for (i=0; stat1_strings[i]; i++) {
 					if (strstr_m(line,stat1_strings[i])) {
@@ -1140,7 +1140,7 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 						return ret;
 					}
 				}
-				/* fallthrough */
+				FALL_THROUGH;
 			case LPSTAT_ERROR:
 				for (i=0; stat2_strings[i]; i++) {
 					if (strstr_m(line,stat2_strings[i])) {
