@@ -415,7 +415,7 @@ enum ndr_compression_alg {
 #define NDR_PULL_GET_MEM_CTX(ndr) (ndr->current_mem_ctx)
 
 #define NDR_PULL_SET_MEM_CTX(ndr, mem_ctx, flgs) do {\
-	if ( !(flgs) || (ndr->flags & flgs) ) {\
+	if ( (flgs == 0) || (ndr->flags & flgs) ) {\
 		if (!(mem_ctx)) {\
 			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "NDR_PULL_SET_MEM_CTX(NULL): %s\n", __location__); \
 		}\
