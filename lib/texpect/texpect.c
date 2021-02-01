@@ -59,6 +59,9 @@
 #else
 const char progname[] = "unknown program";
 
+static void err(int eval, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 0);
+static void errx(int eval, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 0);
+
 static void err(int eval, const char *fmt, ...)
 {
 	int err_errno = errno;
