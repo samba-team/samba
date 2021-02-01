@@ -392,6 +392,7 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 {
 	struct smb_filename *smb_fname_base = NULL;
 	NTSTATUS status;
+	int ret;
 
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
 					     fsp->fsp_name->base_name,
@@ -401,6 +402,11 @@ static NTSTATUS open_pathref_base_fsp(const struct files_struct *dirfsp,
 					     fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = vfs_stat(fsp->conn, smb_fname_base);
+	if (ret != 0) {
+		return map_nt_error_from_unix(errno);
 	}
 
 	status = openat_pathref_fsp(dirfsp, smb_fname_base);
