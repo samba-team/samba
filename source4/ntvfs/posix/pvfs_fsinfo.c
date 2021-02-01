@@ -102,6 +102,7 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		if (sys_fsusage(pvfs->base_directory, &blocks_free, &blocks_total) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
+		break;
 	default:
 		break;
 	}
