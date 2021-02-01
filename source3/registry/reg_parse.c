@@ -121,6 +121,7 @@ static bool act_val_hex(struct reg_parse* p, cbuf* value, bool cont)
 				}
 				talloc_free(dst);
 			}
+			break;
 		default:
 			break;
 		}
