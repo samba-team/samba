@@ -210,6 +210,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 			case READ_CONTROL_ACCESS:
 				sec->dacl->aces[i].access_mask = PRINTER_ACE_MANAGE_DOCUMENTS;
 
+				break;
 			default:	/* no change */
 				break;
 		}
