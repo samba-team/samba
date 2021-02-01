@@ -865,6 +865,33 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			return false;
 		}
 
+		/*
+		 * We don't want to pass ./xxx to modules below us so don't
+		 * add the path if it is just . by itself.
+		 */
+		if (dirptr_path_is_dot) {
+			memcpy(pathreal, dname, talloc_get_size(dname));
+		} else {
+			memcpy(pathreal, dpath, pathlen);
+			pathreal[pathlen] = '/';
+			memcpy(pathreal + slashlen + pathlen, dname,
+			       talloc_get_size(dname));
+		}
+
+		/* Create smb_fname with NULL stream_name. */
+		smb_fname = synthetic_smb_fname(talloc_tos(),
+						pathreal,
+						NULL,
+						&sbuf,
+						dirptr->smb_dname->twrp,
+						dirptr->smb_dname->flags);
+		TALLOC_FREE(pathreal);
+		if (smb_fname == NULL) {
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			return false;
+		}
+
 		/* Create smb_fname with NULL stream_name. */
 		atname = synthetic_smb_fname(talloc_tos(),
 					     dname,
@@ -875,7 +902,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		if (atname == NULL) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
+			TALLOC_FREE(smb_fname);
 			return false;
 		}
 
@@ -898,14 +925,14 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(atname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
+			TALLOC_FREE(smb_fname);
 			continue;
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			if (!(atname->flags & SMB_FILENAME_POSIX_PATH)) {
 				TALLOC_FREE(atname);
 				TALLOC_FREE(dname);
 				TALLOC_FREE(fname);
-				TALLOC_FREE(pathreal);
+				TALLOC_FREE(smb_fname);
 				continue;
 			}
 			/*
@@ -920,7 +947,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 				TALLOC_FREE(atname);
 				TALLOC_FREE(dname);
 				TALLOC_FREE(fname);
-				TALLOC_FREE(pathreal);
+				TALLOC_FREE(smb_fname);
 				continue;
 			}
 			/*
@@ -932,34 +959,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			check_dfs_symlink = true;
 		}
 
-		/*
-		 * We don't want to pass ./xxx to modules below us so don't
-		 * add the path if it is just . by itself.
-		 */
-		if (dirptr_path_is_dot) {
-			memcpy(pathreal, dname, talloc_get_size(dname));
-		} else {
-			memcpy(pathreal, dpath, pathlen);
-			pathreal[pathlen] = '/';
-			memcpy(pathreal + slashlen + pathlen, dname,
-			       talloc_get_size(dname));
-		}
-
-		/* Create smb_fname with NULL stream_name. */
-		smb_fname = synthetic_smb_fname(talloc_tos(),
-						pathreal,
-						NULL,
-						&sbuf,
-						dirptr->smb_dname->twrp,
-						dirptr->smb_dname->flags);
-		if (smb_fname == NULL) {
-			TALLOC_FREE(atname);
-			TALLOC_FREE(dname);
-			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
-			return false;
-		}
-
 		status = move_smb_fname_fsp_link(smb_fname, atname);
 		TALLOC_FREE(atname);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -969,7 +968,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -978,7 +976,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -997,7 +994,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -1007,7 +1003,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
-			TALLOC_FREE(pathreal);
 			continue;
 		}
 
@@ -1042,7 +1037,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		TALLOC_FREE(dname);
 
 		*_smb_fname = talloc_move(ctx, &smb_fname);
-		TALLOC_FREE(pathreal);
 		if (*_smb_fname == NULL) {
 			return false;
 		}
