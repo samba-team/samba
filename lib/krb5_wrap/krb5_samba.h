@@ -389,7 +389,8 @@ int smb_krb5_principal_get_type(krb5_context context,
 				krb5_const_principal principal);
 
 #if !defined(HAVE_KRB5_WARNX)
-krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...);
+krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(2, 0);
 #endif
 
 krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
