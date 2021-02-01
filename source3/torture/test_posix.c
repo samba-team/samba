@@ -31,6 +31,7 @@ struct posix_test_entry {
 	const char *name;
 	const char *target;
 	const char *expected;
+	uint32_t attr;
 	uint64_t returned_size;
 	bool ok;
 };
@@ -44,6 +45,9 @@ static NTSTATUS posix_ls_fn(struct file_info *finfo,
 
 	for (; state->name != NULL; state++) {
 		if (strequal(finfo->name, state->expected)) {
+			if (state->attr != finfo->attr) {
+				break;
+			}
 			state->ok = true;
 			state->returned_size = finfo->size;
 			break;
@@ -57,6 +61,7 @@ static void posix_test_entries_reset(struct posix_test_entry *state)
 {
 	for (; state->name != NULL; state++) {
 		state->ok = false;
+		state->returned_size = 0;
 	}
 }
 
@@ -111,14 +116,17 @@ bool run_posix_ls_wildcard_test(int dummy)
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
@@ -275,14 +283,17 @@ bool run_posix_ls_single_test(int dummy)
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
@@ -457,14 +468,17 @@ bool run_posix_readlink_test(int dummy)
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
+			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
