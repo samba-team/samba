@@ -6378,6 +6378,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return;
 			}
 			lock_data_count = total_data;
+			break;
 		}
 		default:
 			break;
