@@ -1,0 +1,4 @@
+^samba3.smbtorture_s3.plain.POSIX-LS-WILDCARD.smbtorture.*
+^samba3.smbtorture_s3.crypt.POSIX-LS-WILDCARD.smbtorture.*
+^samba3.smbtorture_s3.plain.POSIX-LS-SINGLE.smbtorture.*
+^samba3.smbtorture_s3.crypt.POSIX-LS-SINGLE.smbtorture.*
