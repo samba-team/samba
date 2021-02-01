@@ -102,6 +102,7 @@ static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 			break;
 		case NETLOGON_CONTROL_SET_DBFLAG:
 			data.debug_level = atoi(domain);
+			break;
 		default:
 			break;
 	}
