@@ -5764,14 +5764,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				goto fail;
 			}
 
-			ret = SMB_VFS_FSTAT(smb_fname_base->fsp,
-					    &smb_fname_base->st);
-			if (ret != 0) {
-				DBG_DEBUG("Unable to stat stream [%s]: %s\n",
-					  smb_fname_str_dbg(smb_fname_base),
-					  strerror(errno));
-			}
-
 			/*
 			 * https://bugzilla.samba.org/show_bug.cgi?id=10229
 			 * We need to check if the requested access mask
