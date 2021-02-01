@@ -1870,8 +1870,23 @@ static int smb_full_audit_linkat(vfs_handle_struct *handle,
 			const struct smb_filename *new_smb_fname,
 			int flags)
 {
+	struct smb_filename *old_full_fname = NULL;
+	struct smb_filename *new_full_fname = NULL;
 	int result;
 
+	old_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						old_smb_fname);
+	if (old_full_fname == NULL) {
+		return -1;
+	}
+	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						new_smb_fname);
+	if (new_full_fname == NULL) {
+		TALLOC_FREE(old_full_fname);
+		return -1;
+	}
 	result = SMB_VFS_NEXT_LINKAT(handle,
 			srcfsp,
 			old_smb_fname,
@@ -1883,8 +1898,11 @@ static int smb_full_audit_linkat(vfs_handle_struct *handle,
 	       (result >= 0),
 	       handle,
 	       "%s|%s",
-	       smb_fname_str_do_log(handle->conn, old_smb_fname),
-	       smb_fname_str_do_log(handle->conn, new_smb_fname));
+	       smb_fname_str_do_log(handle->conn, old_full_fname),
+	       smb_fname_str_do_log(handle->conn, new_full_fname));
+
+	TALLOC_FREE(old_full_fname);
+	TALLOC_FREE(new_full_fname);
 
 	return result;
 }
