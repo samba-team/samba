@@ -4651,12 +4651,12 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	TALLOC_CTX *frame;
 	struct smb_acl_wrapper acl_wrapper = { 0 };
 	int fd = fsp_get_pathref_fd(fsp);
+	char buf[PATH_MAX] = {0};
 	struct smb_filename fname;
 	int ret;
 
 	if (fsp->fsp_flags.have_proc_fds) {
 		const char *proc_fd_path = NULL;
-		char buf[PATH_MAX];
 
 		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
 		if (proc_fd_path == NULL) {
