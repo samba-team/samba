@@ -381,6 +381,7 @@ int cbuf_puts_case(cbuf* s, const char* str, size_t len, enum fmt_case fmt)
 	case FMT_CASE_TITLE:
 		*ptr = toupper(*ptr);
 		ptr++;
+		FALL_THROUGH;
 	case FMT_CASE_LOWER:
 		while(*ptr != '\0') {
 			*ptr = tolower(*ptr);
