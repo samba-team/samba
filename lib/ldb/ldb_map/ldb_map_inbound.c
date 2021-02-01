@@ -262,6 +262,7 @@ static int map_search_self_callback(struct ldb_request *req, struct ldb_reply *a
 						LDB_ERR_OPERATIONS_ERROR);
 		}
 
+		break;
 	default:
 		/* ignore referrals */
 		break;
