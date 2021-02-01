@@ -438,7 +438,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 {
 	connection_struct *conn = dirfsp->conn;
 	struct smb_filename *full_fname = NULL;
-	bool file_existed = VALID_STAT(smb_fname->st);
 	struct files_struct *fsp = NULL;
 	int open_flags = O_RDONLY;
 	NTSTATUS status;
@@ -452,7 +451,11 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
-	if (file_existed && S_ISLNK(smb_fname->st.st_ex_mode)) {
+	if (!VALID_STAT(smb_fname->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
 		return NT_STATUS_STOPPED_ON_SYMLINK;
 	}
 
@@ -537,9 +540,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (file_existed &&
-	    !check_same_dev_ino(&smb_fname->st, &fsp->fsp_name->st))
-	{
+	if (!check_same_dev_ino(&smb_fname->st, &fsp->fsp_name->st)) {
 		DBG_DEBUG("file [%s] - dev/ino mismatch. "
 			  "Old (dev=%ju, ino=%ju). "
 			  "New (dev=%ju, ino=%ju).\n",
