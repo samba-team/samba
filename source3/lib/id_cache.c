@@ -87,6 +87,7 @@ void id_cache_delete_from_cache(const struct id_cache_ref* id)
 		break;
 	case USERNAME:
 		delete_getpwnam_cache(id->id.name);
+		break;
 	default:
 		break;
 	}
