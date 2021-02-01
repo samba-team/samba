@@ -1171,6 +1171,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		user_info->netlogon_trust_account.sid
 			= creds->sid;
 
+		break;
 	default:
 		/* We do not need to set up the user_info in this case */
 		break;
