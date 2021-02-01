@@ -3281,6 +3281,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *smb_fname_dir = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
+	int ret;
 
 	/* Split up the directory from the filename/mask. */
 	status = split_fname_dir_mask(ctx, smb_fname->base_name,
@@ -3452,6 +3453,15 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			if (f == NULL) {
 				TALLOC_FREE(dir_hnd);
 				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(frame);
+				TALLOC_FREE(talloced);
+				goto out;
+			}
+
+			ret = vfs_stat(conn, f);
+			if (ret != 0) {
+				status = map_nt_error_from_unix(errno);
+				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				goto out;
