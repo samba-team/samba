@@ -596,17 +596,27 @@ static int cap_linkat(vfs_handle_struct *handle,
 		const struct smb_filename *new_smb_fname,
 		int flags)
 {
-	char *capold = capencode(talloc_tos(), old_smb_fname->base_name);
-	char *capnew = capencode(talloc_tos(), new_smb_fname->base_name);
+	struct smb_filename *old_full_fname = NULL;
+	struct smb_filename *new_full_fname = NULL;
+	char *capold = NULL;
+	char *capnew = NULL;
 	struct smb_filename *old_cap_smb_fname = NULL;
 	struct smb_filename *new_cap_smb_fname = NULL;
 	int saved_errno = 0;
 	int ret;
 
-	if (!capold || !capnew) {
-		errno = ENOMEM;
-		return -1;
+	/* Process 'old' name. */
+	old_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						old_smb_fname);
+        if (old_full_fname == NULL) {
+		goto nomem_out;
+        }
+	capold = capencode(talloc_tos(), old_full_fname->base_name);
+	if (capold == NULL) {
+		goto nomem_out;
 	}
+	TALLOC_FREE(old_full_fname);
 	old_cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					capold,
 					NULL,
@@ -614,11 +624,21 @@ static int cap_linkat(vfs_handle_struct *handle,
 					old_smb_fname->twrp,
 					old_smb_fname->flags);
 	if (old_cap_smb_fname == NULL) {
-		TALLOC_FREE(capold);
-		TALLOC_FREE(capnew);
-		errno = ENOMEM;
-		return -1;
+		goto nomem_out;
 	}
+
+	/* Process 'new' name. */
+	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						new_smb_fname);
+        if (new_full_fname == NULL) {
+		goto nomem_out;
+        }
+	capnew = capencode(talloc_tos(), new_full_fname->base_name);
+	if (capnew == NULL) {
+		goto nomem_out;
+	}
+	TALLOC_FREE(new_full_fname);
 	new_cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					capnew,
 					NULL,
@@ -626,21 +646,20 @@ static int cap_linkat(vfs_handle_struct *handle,
 					new_smb_fname->twrp,
 					new_smb_fname->flags);
 	if (new_cap_smb_fname == NULL) {
-		TALLOC_FREE(capold);
-		TALLOC_FREE(capnew);
-		TALLOC_FREE(old_cap_smb_fname);
-		errno = ENOMEM;
-		return -1;
+		goto nomem_out;
 	}
+
 	ret = SMB_VFS_NEXT_LINKAT(handle,
-			srcfsp,
+			handle->conn->cwd_fsp,
 			old_cap_smb_fname,
-			dstfsp,
+			handle->conn->cwd_fsp,
 			new_cap_smb_fname,
 			flags);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
+	TALLOC_FREE(old_full_fname);
+	TALLOC_FREE(old_full_fname);
 	TALLOC_FREE(capold);
 	TALLOC_FREE(capnew);
 	TALLOC_FREE(old_cap_smb_fname);
@@ -649,6 +668,17 @@ static int cap_linkat(vfs_handle_struct *handle,
 		errno = saved_errno;
 	}
 	return ret;
+
+  nomem_out:
+
+	TALLOC_FREE(old_full_fname);
+	TALLOC_FREE(old_full_fname);
+	TALLOC_FREE(capold);
+	TALLOC_FREE(capnew);
+	TALLOC_FREE(old_cap_smb_fname);
+	TALLOC_FREE(new_cap_smb_fname);
+	errno = ENOMEM;
+	return -1;
 }
 
 static int cap_mknodat(vfs_handle_struct *handle,
