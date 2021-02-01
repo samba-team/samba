@@ -24,8 +24,6 @@
   $ python -m samba.subunit.run mylib.tests.test_suite
 """
 
-from iso8601.iso8601 import UTC
-
 import datetime
 import os
 import sys
@@ -184,7 +182,7 @@ class TestProtocolClient(unittest.TestResult):
 
         ":param datetime: A datetime.datetime object.
         """
-        time = a_datetime.astimezone(UTC)
+        time = a_datetime.astimezone(datetime.timezone.utc)
         self._stream.write("time: %04d-%02d-%02d %02d:%02d:%02d.%06dZ\n" % (
             time.year, time.month, time.day, time.hour, time.minute,
             time.second, time.microsecond))
@@ -458,7 +456,7 @@ class AutoTimingTestResultDecorator(HookedTestResultDecorator):
         time = self._time
         if time is not None:
             return
-        time = datetime.datetime.utcnow().replace(tzinfo=UTC)
+        time = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
         self.decorated.time(time)
 
     @property
