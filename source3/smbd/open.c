@@ -5783,6 +5783,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					"for base %s failed: "
 					"%s\n", smb_fname->base_name,
 					nt_errstr(status)));
+				TALLOC_FREE(smb_fname_base);
 				goto fail;
 			}
 		}
