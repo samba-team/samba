@@ -1755,7 +1755,6 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 	struct smbd_dirptr_lanman2_state *state =
 		(struct smbd_dirptr_lanman2_state *)private_data;
 	bool ms_dfs_link = false;
-	uint32_t mode = 0;
 
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		if (SMB_VFS_LSTAT(state->conn, smb_fname) != 0) {
@@ -1765,6 +1764,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 				 strerror(errno)));
 			return false;
 		}
+		return true;
 	} else if (!VALID_STAT(smb_fname->st) &&
 		   SMB_VFS_STAT(state->conn, smb_fname) != 0) {
 		/* Needed to show the msdfs symlinks as
@@ -1779,16 +1779,18 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 				 strerror(errno)));
 			return false;
 		}
+
+		*_mode = dos_mode_msdfs(state->conn, smb_fname);
+		return true;
 	}
 
-	if (ms_dfs_link) {
-		mode = dos_mode_msdfs(state->conn, smb_fname);
-	} else if (get_dosmode) {
-		mode = fdos_mode(smb_fname->fsp);
-		smb_fname->st = smb_fname->fsp->fsp_name->st;
+	if (!get_dosmode) {
+		return true;
 	}
 
-	*_mode = mode;
+	*_mode = fdos_mode(smb_fname->fsp);
+	smb_fname->st = smb_fname->fsp->fsp_name->st;
+
 	return true;
 }
 
