@@ -1344,18 +1344,22 @@ static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
 }
 
 static PyMethodDef py_cli_notify_state_methods[] = {
-	{ "get_changes",
-	  (PyCFunction)py_cli_notify_get_changes,
-	  METH_VARARGS|METH_KEYWORDS,
-	  "Wait for change notifications: \n"
-	  "N.get_changes(wait=BOOLEAN) -> "
-	  "change notifications as a dictionary\n"
-	  "\t\tList contents of a directory. The keys are, \n"
-	  "\t\t\tname: name of changed object\n"
-	  "\t\t\taction: type of the change\n"
-	  "None is returned if there's no response jet and wait=False is passed"
+	{
+		.ml_name = "get_changes",
+		.ml_meth = (PyCFunction)py_cli_notify_get_changes,
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc  = "Wait for change notifications: \n"
+			   "N.get_changes(wait=BOOLEAN) -> "
+			   "change notifications as a dictionary\n"
+			   "\t\tList contents of a directory. The keys are, \n"
+			   "\t\t\tname: name of changed object\n"
+			   "\t\t\taction: type of the change\n"
+			   "None is returned if there's no response jet and "
+			   "wait=False is passed"
 	},
-	{ NULL }
+	{
+		.ml_name = NULL
+	}
 };
 
 static PyTypeObject py_cli_notify_state_type = {
