@@ -5587,6 +5587,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
+	int ret;
 
 	DBG_DEBUG("create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -5734,30 +5735,34 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		SET_STAT_INVALID(smb_fname_base->st);
-
 		/*
 		 * We may be creating the basefile as part of creating the
 		 * stream, so it's legal if the basefile doesn't exist at this
 		 * point, the create_file_unixpath() below will create it. But
 		 * if the basefile exists we want a handle so we can fstat() it.
 		 */
-		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_base);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
-		{
-			DBG_ERR("open_smb_fname_fsp [%s] failed: %s\n",
-				smb_fname_str_dbg(smb_fname_base),
-				nt_errstr(status));
+
+		ret = vfs_stat(conn, smb_fname_base);
+		if (ret == -1 && errno != ENOENT) {
+			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(smb_fname_base);
 			goto fail;
 		}
-
-		if (smb_fname_base->fsp != NULL) {
-			int ret;
+		if (ret == 0) {
+			status = openat_pathref_fsp(conn->cwd_fsp,
+						    smb_fname_base);
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_STOPPED_ON_SYMLINK))
+			{
+				status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("open_smb_fname_fsp [%s] failed: %s\n",
+					smb_fname_str_dbg(smb_fname_base),
+					nt_errstr(status));
+				TALLOC_FREE(smb_fname_base);
+				goto fail;
+			}
 
 			ret = SMB_VFS_FSTAT(smb_fname_base->fsp,
 					    &smb_fname_base->st);
