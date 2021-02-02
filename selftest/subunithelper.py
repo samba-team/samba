@@ -24,7 +24,7 @@ import sys
 import os
 from samba import subunit
 from samba.subunit.run import TestProtocolClient
-from samba.subunit import iso8601
+import iso8601
 import unittest
 
 

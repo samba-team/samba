@@ -18,9 +18,6 @@
 """Subunit test protocol."""
 
 import samba
-
-import iso8601
-
 import unittest
 
 
