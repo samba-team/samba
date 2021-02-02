@@ -24,8 +24,14 @@ import sys
 import os
 from samba import subunit
 from samba.subunit.run import TestProtocolClient
-import iso8601
 import unittest
+try:
+    from dateutil.parser import isoparse as iso_parse_date
+except ImportError:
+    try:
+        from iso8601 import parse_date as iso_parse_date;
+    except ImportError:
+        print('Install either python-dateutil >= 2.7.1 or python-iso8601')
 
 
 VALID_RESULTS = set(['success', 'successful', 'failure', 'fail', 'skip',
@@ -63,7 +69,7 @@ def parse_results(msg_ops, statistics, fh):
         elif command == "time":
             msg_ops.control_msg(l)
             try:
-                dt = iso8601.parse_date(arg.rstrip("\n"))
+                dt = iso_parse_date(arg.rstrip("\n"))
             except TypeError as e:
                 print("Unable to parse time line: %s" % arg.rstrip("\n"))
             else:
