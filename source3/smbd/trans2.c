@@ -537,13 +537,18 @@ static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *co
 		return NT_STATUS_OK;
 	}
 
-	if (is_ntfs_stream_smb_fname(smb_fname)) {
+	/* symlink */
+	if (fsp == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return get_ea_list_from_file_path(mem_ctx,
 				conn,
-				smb_fname->fsp,
+				fsp,
 				pea_total_len,
 				ea_list);
 }
@@ -5447,7 +5452,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
 			status =
-			    get_ea_list_from_file(mem_ctx, conn, fsp,
+			    get_ea_list_from_file(mem_ctx, conn,
+						  smb_fname->fsp,
 						  smb_fname,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5472,7 +5478,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			size_t total_ea_len = 0;
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			status = get_ea_list_from_file(mem_ctx, conn, fsp,
+			status = get_ea_list_from_file(mem_ctx, conn,
+							smb_fname->fsp,
 							smb_fname,
 							&total_ea_len, &ea_list);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5500,7 +5507,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			/*TODO: add filtering and index handling */
 
 			status  =
-				get_ea_list_from_file(mem_ctx, conn, fsp,
+				get_ea_list_from_file(mem_ctx, conn,
+						  smb_fname->fsp,
 						  smb_fname,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
