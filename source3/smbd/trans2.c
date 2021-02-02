@@ -527,8 +527,10 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-				      const struct smb_filename *smb_fname, size_t *pea_total_len, struct ea_list **ea_list)
+static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx,
+				connection_struct *conn, files_struct *fsp,
+				size_t *pea_total_len,
+				struct ea_list **ea_list)
 {
 	*pea_total_len = 0;
 	*ea_list = NULL;
@@ -1990,7 +1992,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 		status = get_ea_list_from_file(ctx, conn,
 					       smb_fname->fsp,
-					       smb_fname,
 					       &ea_len, &file_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			file_list = NULL;
@@ -5454,7 +5455,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			status =
 			    get_ea_list_from_file(mem_ctx, conn,
 						  smb_fname->fsp,
-						  smb_fname,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
@@ -5480,7 +5480,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			status = get_ea_list_from_file(mem_ctx, conn,
 							smb_fname->fsp,
-							smb_fname,
 							&total_ea_len, &ea_list);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
@@ -5509,7 +5508,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			status  =
 				get_ea_list_from_file(mem_ctx, conn,
 						  smb_fname->fsp,
-						  smb_fname,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
