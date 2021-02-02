@@ -223,14 +223,25 @@ static void memcache_delete_element(struct memcache *cache,
 	TALLOC_FREE(e);
 }
 
-static void memcache_trim(struct memcache *cache)
+static void memcache_trim(struct memcache *cache, struct memcache_element *e)
 {
+	struct memcache_element *tail = NULL;
+
 	if (cache->max_size == 0) {
 		return;
 	}
 
-	while ((cache->size > cache->max_size) && DLIST_TAIL(cache->mru)) {
-		memcache_delete_element(cache, DLIST_TAIL(cache->mru));
+	for (tail = DLIST_TAIL(cache->mru);
+	     (cache->size > cache->max_size) && (tail != NULL);
+	     tail = DLIST_TAIL(cache->mru))
+	{
+		if (tail == e) {
+			tail = DLIST_PREV(tail);
+			if (tail == NULL) {
+				break;
+			}
+		}
+		memcache_delete_element(cache, tail);
 	}
 }
 
@@ -351,7 +362,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 		memcpy(&mtv, cache_value.data, sizeof(mtv));
 		cache->size += mtv.len;
 	}
-	memcache_trim(cache);
+	memcache_trim(cache, e);
 }
 
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
