@@ -95,6 +95,11 @@ dynconfig = {
          'FHS-PATH':  '${LIBEXECDIR}',
          'OVERWRITE': True,
     },
+    'SAMBA_LIBEXECDIR' : {
+         'STD-PATH':  '${LIBEXECDIR}/samba',
+         'FHS-PATH':  '${LIBEXECDIR}/samba',
+         'OVERWRITE': True,
+    },
     'DATADIR' : {
          'STD-PATH':  '${DATADIR}',
          'FHS-PATH':  '${DATADIR}',
@@ -373,6 +378,8 @@ def get_override(bld):
                  'PYTHONARCHDIR' : 'bin/python',
                  'BINDIR'        : 'bin',
                  'SBINDIR'       : 'bin',
+                 'LIBEXECDIR'    : 'bin',
+                 'SAMBA_LIBEXECDIR' : 'bin',
                  'CODEPAGEDIR'   : 'codepages',
                  'SCRIPTSBINDIR' : 'source4/scripting/bin',
                  'SETUPDIR'      : 'source4/setup'
