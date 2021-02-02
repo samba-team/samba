@@ -344,7 +344,7 @@ my $ld_preload = $ENV{LD_PRELOAD};
 
 if ($opt_libasan_so_path) {
 	if ($ld_preload) {
-		$ld_preload = "$ld_preload:$opt_libasan_so_path";
+		$ld_preload = "$opt_libasan_so_path:$ld_preload";
 	} else {
 		$ld_preload = "$opt_libasan_so_path";
 	}
