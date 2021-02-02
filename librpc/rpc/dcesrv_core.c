@@ -952,8 +952,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	conn->max_recv_frag = max_rep;
 	conn->max_xmit_frag = max_rep;
 
-	status = dce_ctx->callbacks.assoc_group.find(
-		call, dce_ctx->callbacks.assoc_group.private_data);
+	status = dce_ctx->callbacks->assoc_group.find(
+		call, dce_ctx->callbacks->assoc_group.private_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
 			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));
@@ -2311,6 +2311,10 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 {
 	struct dcesrv_context *dce_ctx;
 
+	if (cb == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	dce_ctx = talloc_zero(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 
@@ -2330,9 +2334,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	dce_ctx->broken_connections = NULL;
-	if (cb != NULL) {
-		dce_ctx->callbacks = *cb;
-	}
+	dce_ctx->callbacks = cb;
 
 	*_dce_ctx = dce_ctx;
 	return NT_STATUS_OK;

@@ -21,6 +21,10 @@ struct test_state {
 	struct dcesrv_context *dce_ctx;
 };
 
+static struct dcesrv_context_callbacks srv_callbacks = {
+	.log.successful_authz = NULL,
+};
+
 static int setup_samr(void **state)
 {
 	TALLOC_CTX *mem_ctx;
@@ -42,7 +46,7 @@ static int setup_samr(void **state)
 	status = dcerpc_register_ep_server(ep_server);
 	assert_true(NT_STATUS_IS_OK(status));
 
-	status = dcesrv_init_context(s, NULL, NULL, &s->dce_ctx);
+	status = dcesrv_init_context(s, NULL, &srv_callbacks, &s->dce_ctx);
 	assert_true(NT_STATUS_IS_OK(status));
 
 	status = dcesrv_init_ep_server(s->dce_ctx, "samr");

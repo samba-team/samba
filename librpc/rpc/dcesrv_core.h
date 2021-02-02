@@ -440,7 +440,7 @@ struct dcesrv_context {
 
 	struct dcesrv_connection *broken_connections;
 
-	struct dcesrv_context_callbacks callbacks;
+	struct dcesrv_context_callbacks *callbacks;
 };
 
 /* this structure is used by modules to determine the size of some critical types */

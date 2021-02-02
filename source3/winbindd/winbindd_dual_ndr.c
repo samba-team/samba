@@ -524,7 +524,7 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 	ZERO_STRUCT(dcesrv_call->pkt);
 	dcesrv_call->pkt.u.bind.assoc_group_id = 0;
 
-	cb = &dcesrv_call->conn->dce_ctx->callbacks;
+	cb = dcesrv_call->conn->dce_ctx->callbacks;
 	status = cb->assoc_group.find(
 		dcesrv_call, cb->assoc_group.private_data);
 	if (!NT_STATUS_IS_OK(status)) {
