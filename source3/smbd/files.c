@@ -502,21 +502,6 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 
 	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("Could not open fd for [%s]: %s\n",
-			  fsp_str_dbg(fsp),
-			  nt_errstr(status));
-
-		if (fsp->base_fsp != NULL) {
-			struct files_struct *tmp_base_fsp = fsp->base_fsp;
-
-			fsp_set_base_fsp(fsp, NULL);
-
-			fd_close(tmp_base_fsp);
-			file_free(NULL, tmp_base_fsp);
-		}
-		file_free(NULL, fsp);
-		fsp = NULL;
-
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND))
 		{
@@ -533,11 +518,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			 */
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			goto fail;
-		}
-
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto fail;
 	}
 
 	if (!check_same_dev_ino(&smb_fname->st, &fsp->fsp_name->st)) {
