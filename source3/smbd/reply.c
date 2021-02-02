@@ -3468,9 +3468,13 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			}
 
 			status = openat_pathref_fsp(conn->cwd_fsp, f);
-			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK))
+			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+			    (f->flags & SMB_FILENAME_POSIX_PATH) &&
+			    S_ISLNK(f->st.st_ex_mode))
 			{
+				status = NT_STATUS_OK;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);

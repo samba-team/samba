@@ -456,7 +456,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	}
 
 	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
-		return NT_STATUS_STOPPED_ON_SYMLINK;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	status = fsp_new(conn, conn, &fsp);
@@ -503,7 +503,8 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	status = fd_openat(dirfsp, smb_fname, fsp, open_flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
-		    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND))
+		    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK))
 		{
 			/*
 			 * streams_xattr return NT_STATUS_NOT_FOUND for
@@ -515,6 +516,10 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			 *
 			 * NT_STATUS_OBJECT_NAME_NOT_FOUND is the simple
 			 * ENOENT case.
+			 *
+			 * NT_STATUS_STOPPED_ON_SYMLINK is returned when trying
+			 * to open a symlink, our callers are not interested in
+			 * this.
 			 */
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
