@@ -8210,9 +8210,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		vfs_stat(conn, smb_fname_src);
 
 		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_INFO("openat_pathref_fsp [%s] failed: %s\n",
 				 smb_fname_str_dbg(smb_fname_src),
