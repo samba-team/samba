@@ -81,8 +81,14 @@ int mit_samba_context_init(struct mit_samba_context **_ctx)
 
 	/* init s4 configuration */
 	s4_conf_file = lpcfg_configfile(base_ctx.lp_ctx);
-	if (s4_conf_file) {
-		lpcfg_load(base_ctx.lp_ctx, s4_conf_file);
+	if (s4_conf_file != NULL) {
+		char *p = talloc_strdup(ctx, s4_conf_file);
+		if (p == NULL) {
+			ret = ENOMEM;
+			goto done;
+		}
+		lpcfg_load(base_ctx.lp_ctx, p);
+		TALLOC_FREE(p);
 	} else {
 		lpcfg_load_default(base_ctx.lp_ctx);
 	}
