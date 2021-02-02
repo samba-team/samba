@@ -8568,10 +8568,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	}
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_dst);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto out;
-	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND))
 	{
