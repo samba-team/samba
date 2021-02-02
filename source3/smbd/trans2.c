@@ -2963,9 +2963,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	ntstatus = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
-	if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		ntstatus = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		goto out;
