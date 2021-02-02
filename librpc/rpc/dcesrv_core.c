@@ -35,6 +35,10 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "system/network.h"
 
+/**
+ * @file
+ * @brief DCERPC server
+ */
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -2451,6 +2455,22 @@ _PUBLIC_ NTSTATUS dcesrv_reinit_context(struct dcesrv_context *dce_ctx)
 	}
 
 	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Set callback functions on an existing dcesrv_context
+ *
+ * This allows to reset callbacks initially set via
+ * dcesrv_init_context()
+ *
+ * @param[in] dce_ctx The context to set the callbacks on
+ * @param[in] cb The callbacks to set on dce_ctx
+ */
+_PUBLIC_ void dcesrv_context_set_callbacks(
+	struct dcesrv_context *dce_ctx,
+	struct dcesrv_context_callbacks *cb)
+{
+	dce_ctx->callbacks = cb;
 }
 
 _PUBLIC_ NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
