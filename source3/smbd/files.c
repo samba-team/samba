@@ -705,9 +705,6 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 	}
 
 	status = openat_pathref_fsp(dirfsp, parent);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(parent);
 		return status;
