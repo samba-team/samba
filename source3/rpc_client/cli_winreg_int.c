@@ -120,8 +120,8 @@ static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
 				       msg_ctx,
 				       &binding_handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("dcerpc_winreg_int_openkey: Could not connect to winreg pipe: %s\n",
-			  nt_errstr(status)));
+		DBG_WARNING("Could not connect to winreg pipe: %s\n",
+			    nt_errstr(status));
 		return status;
 	}
 
