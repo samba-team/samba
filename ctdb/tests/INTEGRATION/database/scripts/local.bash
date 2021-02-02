@@ -30,7 +30,7 @@ check_cattdb_num_records ()
 	return $ret
 }
 
-vacuum_test_key_dmaster ()
+_key_dmaster_check ()
 {
 	local node="$1"
 	local db="$2"
@@ -41,10 +41,42 @@ vacuum_test_key_dmaster ()
 
 	# shellcheck disable=SC2154
 	# $outfile is set above by try_command_on_node()
-	if ! grep -Fqx "dmaster: ${dmaster}" "$outfile" ; then
-		echo "BAD: node ${dmaster} is not dmaster"
-		cat "$outfile"
-		ctdb_test_fail
+	grep -Fqx "dmaster: ${dmaster}" "$outfile"
+}
+
+_key_dmaster_fail ()
+{
+	local dmaster="$1"
+
+	echo "BAD: node ${dmaster} is not dmaster"
+	# shellcheck disable=SC2154
+	# $outfile is set by the caller via _key_dmaster_check()
+	cat "$outfile"
+	ctdb_test_fail
+}
+
+vacuum_test_key_dmaster ()
+{
+	local node="$1"
+	local db="$2"
+	local key="$3"
+	local dmaster="${4:-${node}}"
+
+	if ! _key_dmaster_check "$node" "$db" "$key" "$dmaster" ; then
+		_key_dmaster_fail "$dmaster"
+	fi
+}
+
+vacuum_test_wait_key_dmaster ()
+{
+	local node="$1"
+	local db="$2"
+	local key="$3"
+	local dmaster="${4:-${node}}"
+
+	if ! wait_until 30 \
+	     _key_dmaster_check "$node" "$db" "$key" "$dmaster" ; then
+		_key_dmaster_fail "$dmaster"
 	fi
 }
 

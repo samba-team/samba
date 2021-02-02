@@ -100,7 +100,7 @@ try_command_on_node "$non_lmaster" "kill ${pid}"
 ctdb_test_cleanup_pid_clear
 
 echo "Wait until record is migrated to lmaster node ${lmaster}"
-wait_until 30 vacuum_test_key_dmaster "$lmaster" "$db" "$key"
+vacuum_test_wait_key_dmaster "$lmaster" "$db" "$key"
 
 echo
 echo "Confirm that all nodes still have the record"
