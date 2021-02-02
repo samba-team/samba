@@ -1982,14 +1982,9 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	}
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
-		 * Don't leak NT_STATUS_STOPPED_ON_SYMLINK into the callers:
-		 * it's a special SMB2 error that needs an extended SMB2 error
-		 * response. We don't support that for SMB2 and it doesn't exist
-		 * at all in SMB1.
-		 *
-		 * So we deal with symlinks here as we do in
+		 * We deal with symlinks here as we do in
 		 * SMB_VFS_CREATE_FILE(): return success for POSIX clients with
 		 * the notable difference that there will be no fsp in
 		 * smb_fname->fsp.
@@ -1997,10 +1992,10 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		 * For Windows (non POSIX) clients fail with
 		 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
 		 */
-		if (ucf_flags & UCF_POSIX_PATHNAMES) {
+		if (smb_fname->flags & SMB_FILENAME_POSIX_PATH &&
+		    S_ISLNK(smb_fname->st.st_ex_mode))
+		{
 			status = NT_STATUS_OK;
-		} else {
-			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 	}
 	if (!NT_STATUS_IS_OK(status)) {

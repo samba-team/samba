@@ -167,7 +167,10 @@ static void setup_close_full_information(connection_struct *conn,
 	int ret;
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+	    (smb_fname->flags & SMB_FILENAME_POSIX_PATH) &&
+	    S_ISLNK(smb_fname->st.st_ex_mode))
+	{
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
