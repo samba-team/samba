@@ -127,6 +127,29 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetProvisionComputerAccount             */
+	/*******************************************/
+
+	typedef [public,bitmap32bit] bitmap {
+		NETSETUP_PROVISION_DOWNLEVEL_PRIV_SUPPORT	= 0x00000001,
+		NETSETUP_PROVISION_REUSE_ACCOUNT		= 0x00000002,
+		NETSETUP_PROVISION_USE_DEFAULT_PASSWORD		= 0x00000004,
+		NETSETUP_PROVISION_SKIP_ACCOUNT_SEARCH		= 0x00000008,
+		NETSETUP_PROVISION_ROOT_CA_CERTS		= 0x00000010
+	} NetProvisionFlags;
+
+	[nopush,nopull] NET_API_STATUS NetProvisionComputerAccount(
+		[in,ref] string *domain,
+		[in,ref] string *machine_name,
+		[in,unique] string *machine_account_ou,
+		[in,unique] string *dcname,
+		[in] NetProvisionFlags options,
+		[in,out,unique] uint8 **provision_bin_data,
+		[in,out,unique] uint32 *provision_bin_data_size,
+		[in,out,unique] string **provision_text_data
+		);
+
+	/*******************************************/
 	/* NetServerGetInfo                        */
 	/*******************************************/
 
