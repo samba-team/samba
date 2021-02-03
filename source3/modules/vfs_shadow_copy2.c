@@ -1625,23 +1625,13 @@ static int shadow_copy2_mknodat(vfs_handle_struct *handle,
 			mode_t mode,
 			SMB_DEV_T dev)
 {
-	struct smb_filename *full_fname = NULL;
 	time_t timestamp = 0;
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
-	if (full_fname == NULL) {
-		return -1;
-	}
-
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 full_fname,
+					 smb_fname,
 					 &timestamp, NULL)) {
-		TALLOC_FREE(full_fname);
 		return -1;
 	}
-	TALLOC_FREE(full_fname);
 	if (timestamp != 0) {
 		errno = EROFS;
 		return -1;
