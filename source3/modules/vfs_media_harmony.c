@@ -1721,12 +1721,34 @@ static int mh_linkat(vfs_handle_struct *handle,
 		int flags)
 {
 	int status;
+	struct smb_filename *old_full_fname = NULL;
 	struct smb_filename *oldclientFname = NULL;
+	struct smb_filename *new_full_fname = NULL;
 	struct smb_filename *newclientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_linkat\n"));
-	if (!is_in_media_files(old_smb_fname->base_name) &&
-			!is_in_media_files(new_smb_fname->base_name)) {
+
+	old_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						old_smb_fname);
+	if (old_full_fname == NULL) {
+		status = -1;
+		goto err;
+	}
+
+	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						new_smb_fname);
+	if (new_full_fname == NULL) {
+		status = -1;
+		goto err;
+	}
+
+	if (!is_in_media_files(old_full_fname->base_name) &&
+			!is_in_media_files(new_full_fname->base_name)) {
+		TALLOC_FREE(old_full_fname);
+		TALLOC_FREE(new_full_fname);
+
 		status = SMB_VFS_NEXT_LINKAT(handle,
 				srcfsp,
 				old_smb_fname,
@@ -1737,24 +1759,26 @@ static int mh_linkat(vfs_handle_struct *handle,
 	}
 
 	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				old_smb_fname,
+				old_full_fname,
 				&oldclientFname))) {
 		goto err;
 	}
 	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				new_smb_fname,
+				new_full_fname,
 				&newclientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_LINKAT(handle,
-				srcfsp,
+				handle->conn->cwd_fsp,
 				oldclientFname,
-				dstfsp,
+				handle->conn->cwd_fsp,
 				newclientFname,
 				flags);
 
 err:
+	TALLOC_FREE(old_full_fname);
+	TALLOC_FREE(new_full_fname);
 	TALLOC_FREE(newclientFname);
 	TALLOC_FREE(oldclientFname);
 out:
