@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 	}
 	share = strchr_m(server,'\\');
 	if (!share) {
-		fprintf(stderr, "Invalid argument: %s\n", share);
+		fprintf(stderr, "Invalid argument: %s\n", server);
 		return -1;
 	}
 
