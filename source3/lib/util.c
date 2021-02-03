@@ -1107,21 +1107,38 @@ int map_process_lock_to_ofd_lock(int op)
  Returns true if it is equal, false otherwise.
 ********************************************************************/
 
+static bool nb_name_equal(const char *s1, const char *s2)
+{
+	int cmp = strncasecmp_m(s1, s2, MAX_NETBIOSNAME_LEN-1);
+	return (cmp == 0);
+}
+
 bool is_myname(const char *s)
 {
-	int n;
-	bool ret = False;
+	const char **aliases = NULL;
+	bool ok = false;
 
-	for (n=0; my_netbios_names(n); n++) {
-		const char *nbt_name = my_netbios_names(n);
-
-		if (strncasecmp_m(nbt_name, s, MAX_NETBIOSNAME_LEN-1) == 0) {
-			ret=True;
-			break;
-		}
+	ok = nb_name_equal(lp_netbios_name(), s);
+	if (ok) {
+		goto done;
 	}
-	DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
-	return(ret);
+
+	aliases = lp_netbios_aliases();
+	if (aliases == NULL) {
+		goto done;
+	}
+
+	while (*aliases != NULL) {
+		ok = nb_name_equal(*aliases, s);
+		if (ok) {
+			goto done;
+		}
+		aliases += 1;
+	}
+
+done:
+	DBG_DEBUG("is_myname(\"%s\") returns %d\n", s, (int)ok);
+	return ok;
 }
 
 /*******************************************************************
