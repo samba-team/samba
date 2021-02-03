@@ -98,6 +98,44 @@ static void torture_memcache_add_lookup_delete(void **state)
 	path2 = memcache_lookup_talloc(cache, GETWD_CACHE, key2);
 	assert_null(path2);
 
+	TALLOC_FREE(path1);
+	TALLOC_FREE(path2);
+	TALLOC_FREE(cache);
+}
+
+static void torture_memcache_add_oversize(void **state)
+{
+	TALLOC_CTX *mem_ctx = *state;
+	struct memcache *cache = NULL;
+	DATA_BLOB key1, key2;
+	char *path1 = NULL, *path2 = NULL;
+
+	cache = memcache_init(mem_ctx, 10);
+	assert_non_null(cache);
+
+	key1 = data_blob_const("key1", 4);
+	path1 = talloc_strdup(mem_ctx, "/tmp/one");
+	assert_non_null(path1);
+
+	key2 = data_blob_const("key2", 4);
+	path2 = talloc_strdup(mem_ctx, "/tmp/two");
+	assert_non_null(path1);
+
+	memcache_add_talloc(cache, GETWD_CACHE, key1, &path1);
+	assert_null(path1);
+
+	memcache_add_talloc(cache, GETWD_CACHE, key2, &path2);
+	assert_null(path2);
+
+	path1 = memcache_lookup_talloc(cache, GETWD_CACHE, key1);
+	assert_null(path1);
+
+	path2 = memcache_lookup_talloc(cache, GETWD_CACHE, key2);
+	assert_non_null(path2);
+	assert_string_equal(path2, "/tmp/two");
+
+	TALLOC_FREE(path1);
+	TALLOC_FREE(path2);
 	TALLOC_FREE(cache);
 }
 
@@ -107,6 +145,7 @@ int main(int argc, char *argv[])
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(torture_memcache_init),
 		cmocka_unit_test(torture_memcache_add_lookup_delete),
+		cmocka_unit_test(torture_memcache_add_oversize),
 	};
 
 	if (argc == 2) {
