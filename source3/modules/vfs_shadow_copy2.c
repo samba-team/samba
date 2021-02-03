@@ -1076,7 +1076,6 @@ static int shadow_copy2_symlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *new_smb_fname)
 {
-	struct smb_filename *full_fname = NULL;
 	time_t timestamp_old = 0;
 	time_t timestamp_new = 0;
 	char *snappath_old = NULL;
@@ -1091,25 +1090,15 @@ static int shadow_copy2_symlinkat(vfs_handle_struct *handle,
 				NULL)) {
 		return -1;
 	}
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						new_smb_fname);
-	if (full_fname == NULL) {
-		return -1;
-	}
-
 	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
 				handle,
-				full_fname,
+				new_smb_fname,
 				&timestamp_new,
 				NULL,
 				&snappath_new,
 				NULL)) {
-		TALLOC_FREE(full_fname);
 		return -1;
 	}
-	TALLOC_FREE(full_fname);
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
 		errno = EROFS;
 		return -1;
