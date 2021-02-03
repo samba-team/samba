@@ -350,3 +350,9 @@ else:
                      deps='cmocka replace talloc samba-util',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_memcache',
+                     source='tests/test_memcache.c',
+                     deps='cmocka replace talloc samba-util',
+                     local_include=False,
+                     for_selftest=True)
