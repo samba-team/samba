@@ -63,6 +63,18 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 				  struct NetRenameMachineInDomain *r);
 WERROR NetRenameMachineInDomain_l(struct libnetapi_ctx *ctx,
 				  struct NetRenameMachineInDomain *r);
+NET_API_STATUS NetProvisionComputerAccount(const char * domain /* [in] [ref] */,
+					   const char * machine_name /* [in] [ref] */,
+					   const char * machine_account_ou /* [in] [unique] */,
+					   const char * dcname /* [in] [unique] */,
+					   uint32_t options /* [in] */,
+					   uint8_t **provision_bin_data /* [in,out] [unique] */,
+					   uint32_t *provision_bin_data_size /* [in,out] [unique] */,
+					   const char * *provision_text_data /* [in,out] [unique] */);
+WERROR NetProvisionComputerAccount_r(struct libnetapi_ctx *ctx,
+				     struct NetProvisionComputerAccount *r);
+WERROR NetProvisionComputerAccount_l(struct libnetapi_ctx *ctx,
+				     struct NetProvisionComputerAccount *r);
 NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] [unique] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);

@@ -589,3 +589,21 @@ WERROR NetRenameMachineInDomain_l(struct libnetapi_ctx *ctx,
 {
 	LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, NetRenameMachineInDomain);
 }
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetProvisionComputerAccount_r(struct libnetapi_ctx *ctx,
+				     struct NetProvisionComputerAccount *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR NetProvisionComputerAccount_l(struct libnetapi_ctx *ctx,
+				     struct NetProvisionComputerAccount *r)
+{
+	return WERR_NOT_SUPPORTED;
+}

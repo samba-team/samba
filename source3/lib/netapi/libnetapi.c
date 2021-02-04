@@ -288,6 +288,64 @@ NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
 }
 
 /****************************************************************
+ NetProvisionComputerAccount
+****************************************************************/
+
+NET_API_STATUS NetProvisionComputerAccount(const char * domain /* [in] [ref] */,
+					   const char * machine_name /* [in] [ref] */,
+					   const char * machine_account_ou /* [in] [unique] */,
+					   const char * dcname /* [in] [unique] */,
+					   uint32_t options /* [in] */,
+					   uint8_t **provision_bin_data /* [in,out] [unique] */,
+					   uint32_t *provision_bin_data_size /* [in,out] [unique] */,
+					   const char * *provision_text_data /* [in,out] [unique] */)
+{
+	struct NetProvisionComputerAccount r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* In parameters */
+	r.in.domain = domain;
+	r.in.machine_name = machine_name;
+	r.in.machine_account_ou = machine_account_ou;
+	r.in.dcname = dcname;
+	r.in.options = options;
+	r.in.provision_bin_data = provision_bin_data;
+	r.in.provision_bin_data_size = provision_bin_data_size;
+	r.in.provision_text_data = provision_text_data;
+
+	/* Out parameters */
+	r.out.provision_bin_data = provision_bin_data;
+	r.out.provision_bin_data_size = provision_bin_data_size;
+	r.out.provision_text_data = provision_text_data;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetProvisionComputerAccount, &r);
+	}
+
+	werr = NetProvisionComputerAccount_l(ctx, &r);
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetProvisionComputerAccount, &r);
+	}
+
+	TALLOC_FREE(frame);
+	return (NET_API_STATUS)r.out.result;
+}
+
+/****************************************************************
  NetServerGetInfo
 ****************************************************************/
 
