@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.14.  This is *not*
+This is the second release candidate of Samba 4.14.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -201,6 +201,26 @@ smb.conf changes
   honor change notify privilege      New                        No
   smbd force process locks           New                        No
   server smb encrypt                 New                        default
+
+
+CHANGES SINCE 4.14.0rc1
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13992: Fix SAMBA RPC share error.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14602: "winbind:ignore domains" doesn't prevent user login from trusted
+     domain.
+   * BUG 14617: smbd tries to delete files with wrong permissions (uses guest
+     instead of user from force user =).
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14539: s3:idmap_hash: Reliably return ID_TYPE_BOTH.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14627: s3:smbd: Fix invalid memory access in
+     posix_sys_acl_blob_get_fd().
 
 
 KNOWN ISSUES
