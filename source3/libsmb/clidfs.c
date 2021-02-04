@@ -1230,6 +1230,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	if (force_encrypt) {
 		status = cli_cm_force_encryption_creds(cli, creds, "IPC$");
 		if (!NT_STATUS_IS_OK(status)) {
+			cli_tdis(cli);
 			cli_state_restore_tcon(cli, orig_tcon);
 			return false;
 		}
