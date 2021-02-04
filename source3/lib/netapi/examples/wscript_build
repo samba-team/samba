@@ -10,6 +10,7 @@ names = [
     ("join", "getjoinableous"),
     ("join", "getjoininformation"),
     ("join", "rename_machine"),
+    ("join", "provision_computer_account"),
     ("user", "user_add"),
     ("user", "user_del"),
     ("user", "user_enum"),
