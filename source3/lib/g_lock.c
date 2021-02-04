@@ -438,6 +438,9 @@ static NTSTATUS g_lock_trylock(
 				return NT_STATUS_POSSIBLE_DEADLOCK;
 			}
 
+			DBG_DEBUG("Waiting for lck.exclusive=%s\n",
+				  server_id_str_buf(lck.exclusive, &tmp));
+
 			*blocker = lck.exclusive;
 			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
@@ -559,6 +562,10 @@ static void g_lock_lock_fn(
 	struct server_id blocker = {0};
 
 	state->status = g_lock_trylock(rec, state, value, &blocker);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_DEBUG("g_lock_trylock returned %s\n",
+			  nt_errstr(state->status));
+	}
 	if (!NT_STATUS_EQUAL(state->status, NT_STATUS_LOCK_NOT_GRANTED)) {
 		return;
 	}
@@ -729,6 +736,7 @@ static void g_lock_lock_simple_fn(
 	void *private_data)
 {
 	struct g_lock_lock_simple_state *state = private_data;
+	struct server_id_buf buf;
 	struct g_lock lck = { .exclusive.pid = 0 };
 	bool ok;
 
@@ -740,11 +748,14 @@ static void g_lock_lock_simple_fn(
 	}
 
 	if (lck.exclusive.pid != 0) {
+		DBG_DEBUG("locked by %s\n",
+			  server_id_str_buf(lck.exclusive, &buf));
 		goto not_granted;
 	}
 
 	if (state->type == G_LOCK_WRITE) {
 		if (lck.num_shared != 0) {
+			DBG_DEBUG("num_shared=%zu\n", lck.num_shared);
 			goto not_granted;
 		}
 		lck.exclusive = state->me;
@@ -792,6 +803,11 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 				  nt_errstr(status));
 			return status;
 		}
+
+		DBG_DEBUG("status=%s, state.status=%s\n",
+			  nt_errstr(status),
+			  nt_errstr(state.status));
+
 		if (NT_STATUS_IS_OK(state.status)) {
 			if (ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) {
 				const char *name = dbwrap_name(ctx->db);
@@ -846,7 +862,7 @@ static void g_lock_unlock_fn(
 	void *private_data)
 {
 	struct g_lock_unlock_state *state = private_data;
-	struct server_id_buf tmp;
+	struct server_id_buf tmp1, tmp2;
 	struct g_lock lck;
 	size_t i;
 	bool ok, exclusive;
@@ -871,7 +887,7 @@ static void g_lock_unlock_fn(
 	if (i < lck.num_shared) {
 		if (exclusive) {
 			DBG_DEBUG("%s both exclusive and shared (%zu)\n",
-				  server_id_str_buf(state->self, &tmp),
+				  server_id_str_buf(state->self, &tmp1),
 				  i);
 			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			return;
@@ -879,8 +895,10 @@ static void g_lock_unlock_fn(
 		g_lock_del_shared(&lck, i);
 	} else {
 		if (!exclusive) {
-			DBG_DEBUG("Lock %s not found, num_rec=%zu\n",
-				  server_id_str_buf(state->self, &tmp),
+			DBG_DEBUG("Lock not found, self=%s, lck.exclusive=%s, "
+				  "num_rec=%zu\n",
+				  server_id_str_buf(state->self, &tmp1),
+				  server_id_str_buf(lck.exclusive, &tmp2),
 				  lck.num_shared);
 			state->status = NT_STATUS_NOT_FOUND;
 			return;
@@ -962,7 +980,12 @@ static void g_lock_writev_data_fn(
 	exclusive &= (lck.num_shared == 0);
 
 	if (!exclusive) {
-		DBG_DEBUG("Not locked by us\n");
+		struct server_id_buf buf1, buf2;
+		DBG_DEBUG("Not locked by us: self=%s, lck.exclusive=%s, "
+			  "lck.num_shared=%zu\n",
+			  server_id_str_buf(state->self, &buf1),
+			  server_id_str_buf(lck.exclusive, &buf2),
+			  lck.num_shared);
 		state->status = NT_STATUS_NOT_LOCKED;
 		return;
 	}
