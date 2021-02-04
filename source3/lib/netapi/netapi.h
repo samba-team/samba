@@ -98,6 +98,13 @@ struct DOMAIN_CONTROLLER_INFO {
 #define NETSETUP_INSTALL_INVOCATION ( 0x00040000 )
 #define NETSETUP_IGNORE_UNSUPPORTED_FLAGS ( 0x10000000 )
 
+/* bitmap NetProvisionFlags */
+#define NETSETUP_PROVISION_DOWNLEVEL_PRIV_SUPPORT ( 0x00000001 )
+#define NETSETUP_PROVISION_REUSE_ACCOUNT ( 0x00000002 )
+#define NETSETUP_PROVISION_USE_DEFAULT_PASSWORD ( 0x00000004 )
+#define NETSETUP_PROVISION_SKIP_ACCOUNT_SEARCH ( 0x00000008 )
+#define NETSETUP_PROVISION_ROOT_CA_CERTS ( 0x00000010 )
+
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
@@ -1612,6 +1619,35 @@ NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
 					const char * account /* [in] */,
 					const char * password /* [in] */,
 					uint32_t rename_options /* [in] */);
+
+/************************************************************//**
+ *
+ * NetProvisionComputerAccount
+ *
+ * @brief Provision a machine for offline join
+ *
+ * @param[in] domain The domain to provision for
+ * @param[in] machine_name The machine account name
+ * @param[in] machine_account_ou The machine account ou to create the account in
+ * @param[in] dcname A specific domain controller to use for account creation
+ * @param[in] options The options used for account creation
+ * @param[in,out] provision_bin_data The generated binary buffer
+ * @param[in,out] provision_bin_data_size The generated binary buffer size
+ * @param[in,out] provision_text_data The generated text data blob
+ * @return NET_API_STATUS
+ *
+ * example join/provision_computer_account.c
+ *
+ ***************************************************************/
+
+NET_API_STATUS NetProvisionComputerAccount(const char * domain /* [in] [ref] */,
+					   const char * machine_name /* [in] [ref] */,
+					   const char * machine_account_ou /* [in] [unique] */,
+					   const char * dcname /* [in] [unique] */,
+					   uint32_t options /* [in] */,
+					   uint8_t **provision_bin_data /* [in,out] [unique] */,
+					   uint32_t *provision_bin_data_size /* [in,out] [unique] */,
+					   const char * *provision_text_data /* [in,out] [unique] */);
 
 /************************************************************//**
  *
