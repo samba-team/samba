@@ -1,0 +1,196 @@
+/*
+   The MIT License (MIT)
+   Copyright (c) Microsoft Corporation
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+   associated documentation files (the "Software"), to deal in the Software without restriction,
+   including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+   and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+   subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all copies or substantial
+   portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+   NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   The Offline Domain Join IDL has been derived from :
+
+	https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/NetMgmt/odj-idl.md
+*/
+
+import "misc.idl", "lsa.idl", "netlogon.idl", "security.idl";
+
+#include "idl_types.h"
+
+cpp_quote("#define OP_JP2_FLAG_PERSISTENTSITE    0x00000001")
+
+interface ODJ
+{
+	typedef struct {
+		uint32 cbBlob;
+		[size_is(cbBlob)] uint8 *pBlob;
+	} OP_BLOB;
+
+	/* Contains a serialized ODJ_WIN7_BLOB structure. */
+	const string ODJ_GUID_JOIN_PROVIDER	= "{631c7621-5289-4321-bc9e-80f843f868c3}";
+
+	/* Contains a serialized OP_JOIN_PROV2_PART structure. */
+	const string ODJ_GUID_JOIN_PROVIDER2	= "{57BFC56B-52F9-480C-ADCB-91B3F8A82317}";
+
+	/* Contains a serialized OP_JOIN_PROV3_PART structure. */
+	const string ODJ_GUID_JOIN_PROVIDER3	= "{FC0CCF25-7FFA-474A-8611-69FFE269645F}";
+
+	/* Contains a serialized OP_CERT_PART structure. */
+	const string ODJ_GUID_CERT_PROVIDER	= "{9c0971e9-832f-4873-8e87-ef1419d4781e}";
+
+	/* Contains a serialized OP_POLICY_PART structure. */
+	const string ODJ_GUID_POLICY_PROVIDER	= "{68fb602a-0c09-48ce-b75f-07b7bd58f7ec}";
+
+#if 0
+	typedef struct {
+		char Value[6];
+	} SID_IDENTIFIER_AUTHORITY;
+
+	typedef struct {
+		char Revision;
+		char SubAuthorityCount;
+		SID_IDENTIFIER_AUTHORITY IdentifierAuthority;
+		[size_is(SubAuthorityCount)] uint32 SubAuthority[*];
+	} ODJ_SID;
+
+	typedef struct {
+		USHORT Length;
+		USHORT MaximumLength;
+		[size_is(MaximumLength/2), length_is(Length/2)] PWSTR Buffer;
+	} ODJ_UNICODE_STRING;
+#endif
+#define ODJ_SID dom_sid2
+#define ODJ_UNICODE_STRING lsa_StringLarge
+
+	typedef struct {
+		ODJ_UNICODE_STRING Name;
+		ODJ_UNICODE_STRING DnsDomainName;
+		ODJ_UNICODE_STRING DnsForestName;
+		GUID DomainGuid;
+		ODJ_SID *Sid;
+	} ODJ_POLICY_DNS_DOMAIN_INFO;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *lpDomain;
+		[string,charset(UTF16)] uint16 *lpMachineName;
+		[string,charset(UTF16)] [flag(NDR_SECRET)] uint16 *lpMachinePassword;
+		[flag(NDR_ALIGN8)]   DATA_BLOB _pad;
+		ODJ_POLICY_DNS_DOMAIN_INFO DnsDomainInfo;
+		netr_DsRGetDCNameInfo DcInfo;
+		DWORD Options;
+	} ODJ_WIN7BLOB;
+
+	typedef ODJ_WIN7BLOB *PODJ_WIN7BLOB;
+
+	typedef struct {
+		DWORD     dwFlags;
+		[string,charset(UTF16)] uint16 *lpNetbiosName;
+		[string,charset(UTF16)] uint16 *lpSiteName;
+		[string,charset(UTF16)] uint16 *lpPrimaryDNSDomain;
+		DWORD             dwReserved;
+		[string,charset(UTF16)] uint16 *lpReserved;
+	} OP_JOINPROV2_PART;
+
+	typedef struct {
+		DWORD Rid;
+		[string,charset(UTF16)] uint16 *lpSid;
+	} OP_JOINPROV3_PART;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16   *pKeyPath;
+		[string,charset(UTF16)] uint16   *pValueName;
+		winreg_Type                      ulValueType;
+		uint32                           cbValueData;
+		[size_is(cbValueData)]  uint8   *pValueData;
+	} OP_POLICY_ELEMENT;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16              *pSource;
+		uint32                                       ulRootKeyId;
+		uint32                                       cElements;
+		[size_is(cElements)]    OP_POLICY_ELEMENT   *pElements;
+	} OP_POLICY_ELEMENT_LIST;
+
+	typedef struct {
+		uint32                                       cElementLists;
+		[size_is(cElementLists)]
+		OP_POLICY_ELEMENT_LIST *pElementLists;
+		OP_BLOB                                     Extension;
+	} OP_POLICY_PART;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *pTemplateName;
+		uint32                       ulPrivateKeyExportPolicy;
+		[string,charset(UTF16)] uint16 *pPolicyServerUrl;
+		uint32                       ulPolicyServerUrlFlags;
+		[string,charset(UTF16)] uint16 *pPolicyServerId;
+		uint32                       cbPfx;
+		[size_is(cbPfx)]    uint8   *pPfx;
+	} OP_CERT_PFX_STORE;
+
+	typedef struct {
+		uint32                       StoreLocation;
+		[string,charset(UTF16)] uint16 *pStoreName;
+		uint32                       cbSst;
+		[size_is(cbSst)]    uint8   *pSst;
+	} OP_CERT_SST_STORE;
+
+	typedef struct {
+	        uint32                                       cPfxStores;
+		[size_is(cPfxStores)]   OP_CERT_PFX_STORE   *pPfxStores;
+		uint32                                       cSstStores;
+		[size_is(cSstStores)]   OP_CERT_SST_STORE   *pSstStores;
+		OP_BLOB                                     Extension;
+	} OP_CERT_PART;
+
+	typedef [public,bitmap32bit] bitmap {
+		OPSPI_PACKAGE_PART_ESSENTIAL	= 0x00000001
+	} ODJ_PackageFlags;
+
+	typedef struct {
+		GUID    PartType;
+		uint32   ulFlags;
+		OP_BLOB Part;
+		OP_BLOB Extension;
+	} OP_PACKAGE_PART;
+
+	typedef struct {
+		uint32                                 cParts;
+		[size_is(cParts)]   OP_PACKAGE_PART   *pParts;
+		OP_BLOB                               Extension;
+	} OP_PACKAGE_PART_COLLECTION;
+
+	typedef struct {
+		GUID    EncryptionType;
+		OP_BLOB EncryptionContext;
+		OP_BLOB WrappedPartCollection;
+		uint32   cbDecryptedPartCollection;
+		OP_BLOB Extension;
+	} OP_PACKAGE;
+
+	typedef [v1_enum,public] enum {
+		ODJ_WIN7_FORMAT = 0x00000001,	/* blob is ODJ_WIN7BLOB */
+		ODJ_WIN8_FORMAT = 0x00000002	/* blob is OP_PACKAGE */
+	} ODJFormat;
+
+	typedef struct {
+		ODJFormat ulODJFormat;
+		uint32 cbBlob;
+		[size_is(cbBlob)] uint8 *pBlob;
+	} ODJ_BLOB;
+
+	typedef [public] struct {
+		[value(1)] uint32 ulVersion;
+		uint32 ulcBlobs;
+		[size_is(ulcBlobs)] ODJ_BLOB *pBlobs;
+	} ODJ_PROVISION_DATA;
+}
