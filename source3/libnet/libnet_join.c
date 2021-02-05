@@ -2371,6 +2371,13 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 	}
 #endif /* HAVE_ADS */
 
+	if (r->in.provision_computer_account_only) {
+		/*
+		 * When we only provision a computer account we are done here - gd.
+		 */
+		return WERR_OK;
+	}
+
 	saf_join_store(r->out.netbios_domain_name, r->in.dc_name);
 	if (r->out.dns_domain_name) {
 		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
@@ -2701,9 +2708,11 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	werr = libnet_join_check_config(mem_ctx, r);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
+	if (!r->in.provision_computer_account_only) {
+		werr = libnet_join_check_config(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 	}
 
 #ifdef HAVE_ADS
@@ -2843,6 +2852,13 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 
 	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	if (r->in.provision_computer_account_only) {
+		/*
+		 * When we only provision a computer account we are done here - gd.
+		 */
 		goto done;
 	}
 

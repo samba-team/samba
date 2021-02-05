@@ -45,6 +45,7 @@ interface libnetjoin
 		[in] netr_SchannelType secure_channel_type,
 		[in,noprint] messaging_context *msg_ctx,
 		[in] uint32 desired_encryption_types,
+		[in] boolean8 provision_computer_account_only,
 		[out] string account_name,
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
