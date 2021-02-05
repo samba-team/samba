@@ -30,6 +30,9 @@
 #include "rpc_client/cli_pipe.h"
 #include "secrets.h"
 #include "libsmb/dsgetdcname.h"
+#include "../librpc/gen_ndr/ndr_ODJ.h"
+#include "lib/util/base64.h"
+#include "libnet/libnet_join_offline.h"
 
 /****************************************************************
 ****************************************************************/
@@ -596,14 +599,190 @@ WERROR NetRenameMachineInDomain_l(struct libnetapi_ctx *ctx,
 WERROR NetProvisionComputerAccount_r(struct libnetapi_ctx *ctx,
 				     struct NetProvisionComputerAccount *r)
 {
-	return WERR_NOT_SUPPORTED;
+	return NetProvisionComputerAccount_l(ctx, r);
 }
 
 /****************************************************************
 ****************************************************************/
 
+static WERROR NetProvisionComputerAccount_backend(struct libnetapi_ctx *ctx,
+						  struct NetProvisionComputerAccount *r,
+						  TALLOC_CTX *mem_ctx,
+						  struct ODJ_PROVISION_DATA **p)
+{
+	WERROR werr;
+	struct libnet_JoinCtx *j = NULL;
+	int use_kerberos = 0;
+	const char *username = NULL;
+
+	werr = libnet_init_JoinCtx(mem_ctx, &j);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	j->in.domain_name = talloc_strdup(j, r->in.domain);
+	if (j->in.domain_name == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	talloc_free(discard_const_p(char *, j->in.machine_name));
+	j->in.machine_name = talloc_strdup(j, r->in.machine_name);
+	if (j->in.machine_name == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (r->in.dcname) {
+		j->in.dc_name = talloc_strdup(j, r->in.dcname);
+		if (j->in.dc_name == NULL) {
+			talloc_free(j);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	if (r->in.machine_account_ou) {
+		j->in.account_ou = talloc_strdup(j, r->in.machine_account_ou);
+		if (j->in.account_ou == NULL) {
+			talloc_free(j);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	libnetapi_get_username(ctx, &username);
+	if (username == NULL) {
+		talloc_free(j);
+		return WERR_NERR_BADUSERNAME;
+	}
+
+	j->in.admin_account = talloc_strdup(j, username);
+	if (j->in.admin_account == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	libnetapi_get_use_kerberos(ctx, &use_kerberos);
+	if (!use_kerberos) {
+		const char *password = NULL;
+
+		libnetapi_get_password(ctx, &password);
+		if (password == NULL) {
+			talloc_free(j);
+			return WERR_NERR_BADPASSWORD;
+		}
+		j->in.admin_password = talloc_strdup(j, password);
+		if (j->in.admin_password == NULL) {
+			talloc_free(j);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	j->in.use_kerberos = use_kerberos;
+	j->in.debug = true;
+	j->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
+
+	if (r->in.options & NETSETUP_PROVISION_REUSE_ACCOUNT) {
+		j->in.join_flags |= WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
+	}
+
+	if (r->in.options & NETSETUP_PROVISION_USE_DEFAULT_PASSWORD) {
+		j->in.join_flags |= WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED;
+		j->in.machine_password = talloc_strdup(j, r->in.machine_name);
+		if (j->in.machine_password == NULL) {
+			talloc_free(j);
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	}
+
+	j->in.provision_computer_account_only = true;
+
+	werr = libnet_Join(mem_ctx, j);
+	if (!W_ERROR_IS_OK(werr) && j->out.error_string) {
+		libnetapi_set_error_string(ctx, "%s", j->out.error_string);
+		talloc_free(j);
+		return werr;
+	}
+
+	werr = libnet_odj_compose_ODJ_PROVISION_DATA(mem_ctx, j, p);
+	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(j);
+		return werr;
+	}
+
+	TALLOC_FREE(j);
+
+	return WERR_OK;
+}
+
 WERROR NetProvisionComputerAccount_l(struct libnetapi_ctx *ctx,
 				     struct NetProvisionComputerAccount *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	enum ndr_err_code ndr_err;
+	const char *b64_bin_data_str;
+	DATA_BLOB blob;
+	struct ODJ_PROVISION_DATA_serialized_ptr odj_provision_data;
+	struct ODJ_PROVISION_DATA *p;
+	TALLOC_CTX *mem_ctx = talloc_new(ctx);
+
+	if (r->in.provision_bin_data == NULL &&
+	    r->in.provision_text_data == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+	if (r->in.provision_bin_data != NULL &&
+	    r->in.provision_text_data != NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+	if (r->in.provision_bin_data == NULL &&
+	    r->in.provision_bin_data_size != NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+	if (r->in.provision_bin_data != NULL &&
+	   r->in.provision_bin_data_size == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	if (r->in.domain == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	if (r->in.machine_name == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	werr = NetProvisionComputerAccount_backend(ctx, r, mem_ctx, &p);
+	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(mem_ctx);
+		return werr;
+	}
+
+	ZERO_STRUCT(odj_provision_data);
+
+	odj_provision_data.s.p = p;
+
+	ndr_err = ndr_push_struct_blob(&blob, ctx, &odj_provision_data,
+		(ndr_push_flags_fn_t)ndr_push_ODJ_PROVISION_DATA_serialized_ptr);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(mem_ctx);
+		return W_ERROR(NERR_BadOfflineJoinInfo);
+	}
+
+	talloc_free(mem_ctx);
+
+	if (r->out.provision_text_data != NULL) {
+		b64_bin_data_str = base64_encode_data_blob(ctx, blob);
+		if (b64_bin_data_str == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		*r->out.provision_text_data = b64_bin_data_str;
+	}
+
+	if (r->out.provision_bin_data != NULL &&
+	    r->out.provision_bin_data_size != NULL) {
+		*r->out.provision_bin_data = blob.data;
+		*r->out.provision_bin_data_size = blob.length;
+	}
+
+	return werr;
 }
