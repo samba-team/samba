@@ -131,6 +131,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_PERFCOUNT
                     NDR_SECRETS
                     NDR_LEASES_DB
+                    NDR_ODJ
                     ''',
         depends_on='GEN_NDR_TABLES'
         )

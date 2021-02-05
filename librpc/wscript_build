@@ -361,6 +361,11 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
     header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_ODJ',
+    source='gen_ndr/ndr_ODJ.c',
+    public_deps='NDR_LSA NDR_NETLOGON NDR_SECURITY',
+    deps='ndr')
+
 bld.SAMBA_SUBSYSTEM('NDR_KRB5PAC',
                     source='',
                     deps='ndr-krb5pac')
