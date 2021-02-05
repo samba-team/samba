@@ -684,10 +684,6 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 #endif /* 0 */
 
 	mem_ctx = talloc_stackframe();
-	if (mem_ctx == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
 
 	status = make_session_info_system(mem_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
