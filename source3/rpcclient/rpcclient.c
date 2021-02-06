@@ -332,8 +332,11 @@ static NTSTATUS cmd_set_transport(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                         int argc, const char **argv)
+static NTSTATUS cmd_sign(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
@@ -372,8 +375,11 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return cmd_set_ss_level();
 }
 
-static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                         int argc, const char **argv)
+static NTSTATUS cmd_seal(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
@@ -412,8 +418,11 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return cmd_set_ss_level();
 }
 
-static NTSTATUS cmd_packet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   int argc, const char **argv)
+static NTSTATUS cmd_packet(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
@@ -471,8 +480,11 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static NTSTATUS cmd_none(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                         int argc, const char **argv)
+static NTSTATUS cmd_none(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
 	pipe_default_auth_type = DCERPC_AUTH_TYPE_NONE;
@@ -481,8 +493,11 @@ static NTSTATUS cmd_none(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return cmd_set_ss_level();
 }
 
-static NTSTATUS cmd_schannel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			     int argc, const char **argv)
+static NTSTATUS cmd_schannel(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	d_printf("Setting schannel - sign and seal\n");
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
@@ -491,8 +506,11 @@ static NTSTATUS cmd_schannel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return cmd_set_ss_level();
 }
 
-static NTSTATUS cmd_schannel_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			     int argc, const char **argv)
+static NTSTATUS cmd_schannel_sign(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	d_printf("Setting schannel - sign only\n");
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
@@ -501,8 +519,11 @@ static NTSTATUS cmd_schannel_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return cmd_set_ss_level();
 }
 
-static NTSTATUS cmd_choose_transport(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				     int argc, const char **argv)
+static NTSTATUS cmd_choose_transport(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
 {
 	NTSTATUS status;
 
@@ -589,37 +610,37 @@ static struct cmd_set rpcclient_commands[] = {
 	},
 	{
 		.name               = "sign",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_sign,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_sign,
 		.description        = "Force RPC pipe connections to be signed",
 		.usage              = "",
 	},
 	{
 		.name               = "seal",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_seal,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_seal,
 		.description        = "Force RPC pipe connections to be sealed",
 		.usage              = "",
 	},
 	{
 		.name               = "packet",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_packet,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_packet,
 		.description        = "Force RPC pipe connections with packet authentication level",
 		.usage              = "",
 	},
 	{
 		.name               = "schannel",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_schannel,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_schannel,
 		.description        = "Force RPC pipe connections to be sealed with 'schannel'. "
 				      "Assumes valid machine account to this domain controller.",
 		.usage              = "",
 	},
 	{
 		.name               = "schannelsign",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_schannel_sign,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_schannel_sign,
 		.description        = "Force RPC pipe connections to be signed (not sealed) with "
 				      "'schannel'.  Assumes valid machine account to this domain "
 				      "controller.",
@@ -634,15 +655,15 @@ static struct cmd_set rpcclient_commands[] = {
 	},
 	{
 		.name               = "transport",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_choose_transport,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_choose_transport,
 		.description        = "Choose ncacn transport for RPC operations",
 		.usage              = "",
 	},
 	{
 		.name               = "none",
-		.returntype         = RPC_RTYPE_NTSTATUS,
-		.ntfn               = cmd_none,
+		.returntype         = RPC_RTYPE_BINDING,
+		.bfn                = cmd_none,
 		.description        = "Force RPC pipe connections to have no special properties",
 		.usage              = "",
 	},
