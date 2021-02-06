@@ -911,22 +911,25 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 
 	/* Walk through a dlist of arrays of commands. */
 	for (temp_list = cmd_list; temp_list; temp_list = temp_list->next) {
-		struct cmd_set *temp_set = temp_list->cmd_set;
+		struct cmd_set *set = temp_list->cmd_set;
 
-		while (temp_set->name) {
-			if (strequal(argv[0], temp_set->name)) {
-				if (!(temp_set->returntype == RPC_RTYPE_NTSTATUS && temp_set->ntfn ) &&
-                         !(temp_set->returntype == RPC_RTYPE_WERROR && temp_set->wfn )) {
-					fprintf (stderr, "Invalid command\n");
-					goto out_free;
-				}
+		while (set->name != NULL) {
+			if (!strequal(argv[0], set->name)) {
+				set += 1;
+				continue;
+			}
 
-				result = do_cmd(cli, auth_info, temp_set,
-						binding, argc, argv);
-
+			if (((set->returntype == RPC_RTYPE_NTSTATUS) &&
+			     (set->ntfn == NULL)) ||
+			    ((set->returntype == RPC_RTYPE_WERROR) &&
+			     (set->wfn == NULL))) {
+				fprintf (stderr, "Invalid command\n");
 				goto out_free;
 			}
-			temp_set++;
+
+			result = do_cmd(
+				cli, auth_info, set, binding, argc, argv);
+			goto out_free;
 		}
 	}
 
