@@ -26,6 +26,7 @@
 typedef enum {
         RPC_RTYPE_NTSTATUS = 0,
         RPC_RTYPE_WERROR,
+	RPC_RTYPE_BINDING,
         MAX_RPC_RETURN_TYPE
 } RPC_RETURN_TYPE;
 
@@ -35,6 +36,10 @@ struct cmd_set {
 	NTSTATUS (*ntfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, 
 			const char **argv);
 	WERROR (*wfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
+	NTSTATUS (*bfn)(struct dcerpc_binding *binding,
+			TALLOC_CTX *mem_ctx,
+			int argc,
+			const char **argv);
 	const struct ndr_interface_table *table;
 	struct rpc_pipe_client *rpc_pipe;
 	const char *description;

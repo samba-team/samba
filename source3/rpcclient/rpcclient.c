@@ -870,6 +870,11 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			printf("result was %s\n", nt_errstr(ntresult));
 		}
+	} else if (cmd_entry->returntype == RPC_RTYPE_BINDING) {
+		ntresult = cmd_entry->bfn(binding, mem_ctx, argc, argv);
+		if (!NT_STATUS_IS_OK(ntresult)) {
+			printf("result was %s\n", nt_errstr(ntresult));
+		}
 	} else {
 		wresult = cmd_entry->wfn(cmd_entry->rpc_pipe, mem_ctx, argc, argv);
 		/* print out the DOS error */
@@ -922,7 +927,9 @@ static NTSTATUS process_cmd(struct user_auth_info *auth_info,
 			if (((set->returntype == RPC_RTYPE_NTSTATUS) &&
 			     (set->ntfn == NULL)) ||
 			    ((set->returntype == RPC_RTYPE_WERROR) &&
-			     (set->wfn == NULL))) {
+			     (set->wfn == NULL)) ||
+			    ((set->returntype == RPC_RTYPE_BINDING) &&
+			     (set->bfn == NULL))) {
 				fprintf (stderr, "Invalid command\n");
 				goto out_free;
 			}
