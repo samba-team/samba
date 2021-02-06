@@ -783,14 +783,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	NTSTATUS ntresult;
 	WERROR wresult;
 
-	TALLOC_CTX *mem_ctx;
-
-	/* Create mem_ctx */
-
-	if (!(mem_ctx = talloc_stackframe())) {
-		DEBUG(0, ("talloc_init() failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	/* Open pipe */
 
