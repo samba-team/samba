@@ -50,13 +50,9 @@ NTSTATUS dcerpc_lsa_open_policy(struct dcerpc_binding_handle *h,
 				struct policy_handle *pol,
 				NTSTATUS *result)
 {
-	struct lsa_ObjectAttribute attr;
+	struct lsa_ObjectAttribute attr = { .len = 0x18, };
 	struct lsa_QosInfo qos;
 	uint16_t system_name = '\\';
-
-	ZERO_STRUCT(attr);
-
-	attr.len	= 0x18;
 
 	if (sec_qos) {
 		qos.len			= 0xc;
@@ -109,12 +105,8 @@ NTSTATUS dcerpc_lsa_open_policy2(struct dcerpc_binding_handle *h,
 				 struct policy_handle *pol,
 				 NTSTATUS *result)
 {
-	struct lsa_ObjectAttribute attr;
+	struct lsa_ObjectAttribute attr = { .len = 0x18, };
 	struct lsa_QosInfo qos;
-
-	ZERO_STRUCT(attr);
-
-	attr.len	= 0x18;
 
 	if (sec_qos) {
 		qos.len			= 0xc;
@@ -183,11 +175,9 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_SidArray sid_array;
 	struct lsa_RefDomainList *ref_domains = NULL;
-	struct lsa_TransNameArray lsa_names;
+	struct lsa_TransNameArray lsa_names = { .count = 0, };
 	uint32_t count = 0;
 	int i;
-
-	ZERO_STRUCT(lsa_names);
 
 	sid_array.num_sids = num_sids;
 	sid_array.sids = talloc_array(mem_ctx, struct lsa_SidPtr, num_sids);
@@ -580,13 +570,10 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 	NTSTATUS status;
 	struct lsa_String *lsa_names = NULL;
 	struct lsa_RefDomainList *domains = NULL;
-	struct lsa_TransSidArray sid_array;
-	struct lsa_TransSidArray3 sid_array3;
+	struct lsa_TransSidArray sid_array = { .count = 0, };
+	struct lsa_TransSidArray3 sid_array3 = { .count = 0, };
 	uint32_t count = 0;
 	uint32_t i;
-
-	ZERO_STRUCT(sid_array);
-	ZERO_STRUCT(sid_array3);
 
 	lsa_names = talloc_array(mem_ctx, struct lsa_String, num_names);
 	if (lsa_names == NULL) {
