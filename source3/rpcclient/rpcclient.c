@@ -332,16 +332,15 @@ static NTSTATUS cmd_set_transport(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_sign(
+static NTSTATUS cmd_set_auth(
 	struct dcerpc_binding *binding,
-	TALLOC_CTX *mem_ctx,
+	const char *display_string,
 	int argc,
 	const char **argv)
 {
 	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
 
-	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
@@ -370,9 +369,21 @@ static NTSTATUS cmd_sign(
 		}
 	}
 
-	d_printf("Setting %s - sign\n", type);
+	d_printf("Setting %s - %s\n", type, display_string);
 
 	return cmd_set_ss_level();
+}
+
+static NTSTATUS cmd_sign(
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	int argc,
+	const char **argv)
+{
+	NTSTATUS status;
+	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	status = cmd_set_auth(binding, "sign", argc, argv);
+	return status;
 }
 
 static NTSTATUS cmd_seal(
@@ -381,41 +392,10 @@ static NTSTATUS cmd_seal(
 	int argc,
 	const char **argv)
 {
-	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
-	const char *type = "NTLMSSP";
-
+	NTSTATUS status;
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-
-	if (argc > 2) {
-		printf("Usage: %s %s\n", argv[0], p);
-		return NT_STATUS_OK;
-	}
-
-	if (argc == 2) {
-		type = argv[1];
-		if (strequal(type, "KRB5")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_KRB5;
-		} else if (strequal(type, "KRB5_SPNEGO")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
-		} else if (strequal(type, "NTLMSSP")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-		} else if (strequal(type, "SCHANNEL")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-		} else {
-			printf("unknown type %s\n", type);
-			printf("Usage: %s %s\n", argv[0], p);
-			return NT_STATUS_INVALID_LEVEL;
-		}
-	}
-
-	d_printf("Setting %s - sign and seal\n", type);
-
-	return cmd_set_ss_level();
+	status = cmd_set_auth(binding, "sign and seal", argc, argv);
+	return status;
 }
 
 static NTSTATUS cmd_packet(
@@ -424,43 +404,11 @@ static NTSTATUS cmd_packet(
 	int argc,
 	const char **argv)
 {
-	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
-	const char *type = "NTLMSSP";
-
+	NTSTATUS status;
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PACKET;
-	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-
-	if (argc > 2) {
-		printf("Usage: %s %s\n", argv[0], p);
-		return NT_STATUS_OK;
-	}
-
-	if (argc == 2) {
-		type = argv[1];
-		if (strequal(type, "KRB5")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_KRB5;
-		} else if (strequal(type, "KRB5_SPNEGO")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
-		} else if (strequal(type, "NTLMSSP")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-		} else if (strequal(type, "SCHANNEL")) {
-			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-		} else {
-			printf("unknown type %s\n", type);
-			printf("Usage: %s %s\n", argv[0], p);
-			return NT_STATUS_INVALID_LEVEL;
-		}
-	}
-
-	d_printf("Setting %s - packet\n", type);
-
-	return cmd_set_ss_level();
+	status = cmd_set_auth(binding, "packet", argc, argv);
+	return status;
 }
-
 
 static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    int argc, const char **argv)
