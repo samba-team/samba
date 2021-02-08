@@ -28,6 +28,13 @@ import "misc.idl", "lsa.idl", "netlogon.idl", "security.idl";
 
 cpp_quote("#define OP_JP2_FLAG_PERSISTENTSITE    0x00000001")
 
+[
+  uuid("11111111-3333-5555-7777-99999999"),
+  version(0.0),
+  pointer_default(unique),
+  helpstring("Offline Domain Join IDL"),
+  helper("../librpc/ndr/ndr_ODJ.h")
+]
 interface ODJ
 {
 	typedef struct {

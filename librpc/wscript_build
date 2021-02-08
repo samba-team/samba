@@ -362,7 +362,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_ODJ',
-    source='gen_ndr/ndr_ODJ.c',
+    source='gen_ndr/ndr_ODJ.c ndr/ndr_ODJ.c',
     public_deps='NDR_LSA NDR_NETLOGON NDR_SECURITY',
     deps='ndr')
 
