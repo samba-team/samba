@@ -3039,6 +3039,43 @@ class cmd_openssh(SuperCommand):
     subcommands["list"] = cmd_list_openssh()
     subcommands["set"] = cmd_set_openssh()
 
+class cmd_list_startup(Command):
+    """List VGP Startup Script Group Policy from the sysvol
+
+This command lists the startup script policies currently set on the sysvol.
+
+Example:
+samba-tool gpo manage scripts startup list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_startup(SuperCommand):
+    """Manage Startup Scripts Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_startup()
+
+class cmd_scripts(SuperCommand):
+    """Manage Scripts Group Policy Objects"""
+    subcommands = {}
+    subcommands["startup"] = cmd_startup()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
@@ -3048,6 +3085,7 @@ class cmd_manage(SuperCommand):
     subcommands["symlink"] = cmd_symlink()
     subcommands["files"] = cmd_files()
     subcommands["openssh"] = cmd_openssh()
+    subcommands["scripts"] = cmd_scripts()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""

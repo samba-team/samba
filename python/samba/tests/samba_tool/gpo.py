@@ -1120,6 +1120,47 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(openssh, out, 'The test entry was still found!')
 
+    def test_startup_script_list(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/Unix',
+                               'Scripts/Startup/manifest.xml')
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Unix Scripts'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Represents Unix scripts to run on Group Policy clients'
+        data = etree.SubElement(policysetting, 'data')
+        listelement = etree.SubElement(data, 'listelement')
+        script = etree.SubElement(listelement, 'script')
+        script.text = 'test.sh'
+        parameters = etree.SubElement(listelement, 'parameters')
+        parameters.text = '-e'
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
+
+        script_path = '\\'.join(['\\', lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'MACHINE\\VGP\\VTLA\\Unix',
+                               'Scripts\\Startup', script.text])
+        entry = '@reboot root %s %s' % (script_path, parameters.text)
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "scripts",
+                                                 "startup", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(entry, out, 'The test entry was not found!')
+
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
