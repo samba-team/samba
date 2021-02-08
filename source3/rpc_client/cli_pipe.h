@@ -55,7 +55,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx,
 			   const struct ndr_interface_table *table,
 			   struct rpc_pipe_client **presult);
 
-NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
+NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult);
 

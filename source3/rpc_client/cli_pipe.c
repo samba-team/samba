@@ -2982,30 +2982,105 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 				      table, presult);
 }
 
+static NTSTATUS rpc_pipe_get_ncalrpc_name(
+	const struct ndr_syntax_id *iface,
+	TALLOC_CTX *mem_ctx,
+	char **psocket_name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct rpc_pipe_client *epm_pipe = NULL;
+	struct pipe_auth_data *auth = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	bool is_epm;
+
+	is_epm = ndr_syntax_id_equal(iface, &ndr_table_epmapper.syntax_id);
+	if (is_epm) {
+		char *endpoint = talloc_strdup(mem_ctx, "EPMAPPER");
+		if (endpoint == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		*psocket_name = endpoint;
+		goto done;
+	}
+
+	status = rpc_pipe_open_ncalrpc(
+		frame, &ndr_table_epmapper, &epm_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_open_ncalrpc failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = rpccli_anon_bind_data(epm_pipe, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_anon_bind_data failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = rpc_pipe_bind(epm_pipe, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_bind failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	status = rpccli_epm_map_interface(
+		epm_pipe->binding_handle,
+		NCALRPC,
+		iface,
+		mem_ctx,
+		psocket_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_epm_map_interface failed: %s\n",
+			  nt_errstr(status));
+	}
+
+done:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /********************************************************************
  Create a rpc pipe client struct, connecting to a unix domain socket
  ********************************************************************/
-NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
+NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult)
 {
+	char *socket_name = NULL;
 	struct rpc_pipe_client *result;
 	struct sockaddr_un addr = { .sun_family = AF_UNIX };
 	socklen_t salen = sizeof(addr);
-	size_t pathlen;
+	int pathlen;
 	NTSTATUS status;
 	int fd = -1;
-
-	pathlen = strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
-	if (pathlen >= sizeof(addr.sun_path)) {
-		DBG_DEBUG("socket_path %s too long\n", socket_path);
-		return NT_STATUS_NAME_TOO_LONG;
-	}
 
 	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	status = rpc_pipe_get_ncalrpc_name(
+		&table->syntax_id, result, &socket_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_get_ncalrpc_name failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	pathlen = snprintf(
+		addr.sun_path,
+		sizeof(addr.sun_path),
+		"%s/%s",
+		lp_ncalrpc_dir(),
+		socket_name);
+	if ((pathlen < 0) || ((size_t)pathlen >= sizeof(addr.sun_path))) {
+		DBG_DEBUG("socket_path for %s too long\n", socket_name);
+		status = NT_STATUS_NAME_TOO_LONG;
+		goto fail;
+	}
+	TALLOC_FREE(socket_name);
 
 	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
@@ -3032,8 +3107,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	}
 
 	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
-		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
-			  strerror(errno)));
+		DBG_ERR("connect(%s) failed: %s\n",
+			addr.sun_path,
+			strerror(errno));
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}

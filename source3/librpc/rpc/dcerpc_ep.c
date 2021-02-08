@@ -44,7 +44,6 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *cli = NULL;
 	struct dcerpc_binding_handle *h;
 	struct pipe_auth_data *auth;
-	const char *ncalrpc_sock;
 	enum rpc_service_mode_e epmd_mode;
 	struct epm_entry_t *entries = NULL;
 	uint32_t i = 0;
@@ -115,17 +114,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		}
 	} else if (epmd_mode == RPC_SERVICE_MODE_EXTERNAL) {
 		/* Connect to the endpoint mapper locally */
-		ncalrpc_sock = talloc_asprintf(tmp_ctx,
-					      "%s/%s",
-					      lp_ncalrpc_dir(),
-					      "EPMAPPER");
-		if (ncalrpc_sock == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
 		status = rpc_pipe_open_ncalrpc(tmp_ctx,
-					       ncalrpc_sock,
 					       &ndr_table_epmapper,
 					       &cli);
 		if (!NT_STATUS_IS_OK(status)) {
