@@ -527,7 +527,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx,
+static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 				connection_struct *conn, files_struct *fsp,
 				size_t *pea_total_len,
 				struct ea_list **ea_list)
@@ -1990,7 +1990,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SSVAL(p,20,mode);
 		p += 22; /* p now points to the EA area. */
 
-		status = get_ea_list_from_file(ctx, conn,
+		status = get_ea_list_from_fsp(ctx, conn,
 					       smb_fname->fsp,
 					       &ea_len, &file_list);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5453,7 +5453,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
 			status =
-			    get_ea_list_from_file(mem_ctx, conn,
+			    get_ea_list_from_fsp(mem_ctx, conn,
 						  smb_fname->fsp,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5478,7 +5478,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			size_t total_ea_len = 0;
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			status = get_ea_list_from_file(mem_ctx, conn,
+			status = get_ea_list_from_fsp(mem_ctx, conn,
 							smb_fname->fsp,
 							&total_ea_len, &ea_list);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5506,7 +5506,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			/*TODO: add filtering and index handling */
 
 			status  =
-				get_ea_list_from_file(mem_ctx, conn,
+				get_ea_list_from_fsp(mem_ctx, conn,
 						  smb_fname->fsp,
 						  &total_ea_len, &ea_file_list);
 			if (!NT_STATUS_IS_OK(status)) {
