@@ -49,6 +49,17 @@ bld.SAMBA_BINARY('test_kerberos',
         for_selftest=True
         )
 
+bld.SAMBA_BINARY('test_auth_sam',
+        source='tests/sam.c',
+        deps='cmocka samdb samba-security ldb tevent',
+        local_include=False,
+        for_selftest=True,
+        ldflags='''
+            -Wl,--wrap,dsdb_search_dn
+            -Wl,--wrap,samdb_msg_add_int64
+        '''
+        )
+
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyparam_util = bld.pyembed_libname('pyparam_util')
 pyldb_util = bld.pyembed_libname('pyldb-util')
