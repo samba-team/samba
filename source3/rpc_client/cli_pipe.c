@@ -2734,6 +2734,166 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	return status;
 }
 
+static NTSTATUS rpccli_epm_map_binding(
+	struct dcerpc_binding_handle *epm_connection,
+	struct dcerpc_binding *binding,
+	TALLOC_CTX *mem_ctx,
+	char **pendpoint)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(binding);
+	enum dcerpc_transport_t res_transport;
+	struct dcerpc_binding *res_binding = NULL;
+	struct epm_twr_t *map_tower = NULL;
+	struct epm_twr_p_t res_towers = { .twr = NULL };
+	struct policy_handle *entry_handle = NULL;
+	uint32_t num_towers = 0;
+	const uint32_t max_towers = 1;
+	const char *endpoint = NULL;
+	char *tmp = NULL;
+	uint32_t result;
+	NTSTATUS status;
+
+	map_tower = talloc_zero(frame, struct epm_twr_t);
+	if (map_tower == NULL) {
+		goto nomem;
+	}
+
+	status = dcerpc_binding_build_tower(
+		frame, binding, &(map_tower->tower));
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_build_tower failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	res_towers.twr = talloc_array(frame, struct epm_twr_t, max_towers);
+	if (res_towers.twr == NULL) {
+		goto nomem;
+	}
+
+	entry_handle = talloc_zero(frame, struct policy_handle);
+	if (entry_handle == NULL) {
+		goto nomem;
+	}
+
+	status = dcerpc_epm_Map(
+		epm_connection,
+		frame,
+		NULL,
+		map_tower,
+		entry_handle,
+		max_towers,
+		&num_towers,
+		&res_towers,
+		&result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_epm_Map failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	if (result != EPMAPPER_STATUS_OK) {
+		DBG_DEBUG("dcerpc_epm_Map returned %"PRIu32"\n", result);
+		status = NT_STATUS_NOT_FOUND;
+		goto done;
+	}
+
+	if (num_towers != 1) {
+		DBG_DEBUG("dcerpc_epm_Map returned %"PRIu32" towers\n",
+			  num_towers);
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+
+	status = dcerpc_binding_from_tower(
+		frame, &(res_towers.twr->tower), &res_binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_from_tower failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	res_transport = dcerpc_binding_get_transport(res_binding);
+	if (res_transport != transport) {
+		DBG_DEBUG("dcerpc_epm_Map returned transport %d, "
+			  "expected %d\n",
+			  (int)res_transport,
+			  (int)transport);
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+
+	endpoint = dcerpc_binding_get_string_option(res_binding, "endpoint");
+	if (endpoint == NULL) {
+		DBG_DEBUG("dcerpc_epm_Map returned no endpoint\n");
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto done;
+	}
+
+	tmp = talloc_strdup(mem_ctx, endpoint);
+	if (tmp == NULL) {
+		goto nomem;
+	}
+	*pendpoint = tmp;
+
+	status = NT_STATUS_OK;
+	goto done;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+done:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+static NTSTATUS rpccli_epm_map_interface(
+	struct dcerpc_binding_handle *epm_connection,
+	enum dcerpc_transport_t transport,
+	const struct ndr_syntax_id *iface,
+	TALLOC_CTX *mem_ctx,
+	char **pendpoint)
+{
+	struct dcerpc_binding *binding = NULL;
+	char *endpoint = NULL;
+	NTSTATUS status;
+
+	status = dcerpc_parse_binding(mem_ctx, "", &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_parse_binding failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_binding_set_transport(binding, transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_set_transport failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_binding_set_abstract_syntax(binding, iface);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_set_abstract_syntax failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = rpccli_epm_map_binding(
+		epm_connection, binding, mem_ctx, &endpoint);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_epm_map_binding failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+	*pendpoint = endpoint;
+
+done:
+	TALLOC_FREE(binding);
+	return status;
+}
+
 /**
  * Determine the tcp port on which a dcerpc interface is listening
  * for the ncacn_ip_tcp transport via the endpoint mapper of the
@@ -2746,20 +2906,9 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *epm_pipe = NULL;
-	struct dcerpc_binding_handle *epm_handle = NULL;
 	struct pipe_auth_data *auth = NULL;
-	struct dcerpc_binding *map_binding = NULL;
-	struct dcerpc_binding *res_binding = NULL;
-	enum dcerpc_transport_t transport;
-	const char *endpoint = NULL;
-	struct epm_twr_t *map_tower = NULL;
-	struct epm_twr_t *res_towers = NULL;
-	struct policy_handle *entry_handle = NULL;
-	uint32_t num_towers = 0;
-	uint32_t max_towers = 1;
-	struct epm_twr_p_t towers;
+	char *endpoint = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	uint32_t result = 0;
 
 	if (pport == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -2781,7 +2930,6 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-	epm_handle = epm_pipe->binding_handle;
 
 	status = rpccli_anon_bind_data(tmp_ctx, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2793,93 +2941,15 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 		goto done;
 	}
 
-	/* create tower for asking the epmapper */
-
-	status = dcerpc_parse_binding(tmp_ctx, "ncacn_ip_tcp:",
-				      &map_binding);
+	status = rpccli_epm_map_interface(
+		epm_pipe->binding_handle,
+		NCACN_IP_TCP,
+		&table->syntax_id,
+		tmp_ctx,
+		&endpoint);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = dcerpc_binding_set_abstract_syntax(map_binding,
-						    &table->syntax_id);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
-	if (map_tower == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	status = dcerpc_binding_build_tower(tmp_ctx, map_binding,
-					    &(map_tower->tower));
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	/* allocate further parameters for the epm_Map call */
-
-	res_towers = talloc_array(tmp_ctx, struct epm_twr_t, max_towers);
-	if (res_towers == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	towers.twr = res_towers;
-
-	entry_handle = talloc_zero(tmp_ctx, struct policy_handle);
-	if (entry_handle == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	/* ask the endpoint mapper for the port */
-
-	status = dcerpc_epm_Map(epm_handle,
-				tmp_ctx,
-				NULL,
-				map_tower,
-				entry_handle,
-				max_towers,
-				&num_towers,
-				&towers,
-				&result);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	if (result != EPMAPPER_STATUS_OK) {
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	if (num_towers != 1) {
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* extract the port from the answer */
-
-	status = dcerpc_binding_from_tower(tmp_ctx,
-					   &(towers.twr->tower),
-					   &res_binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	transport = dcerpc_binding_get_transport(res_binding);
-	endpoint = dcerpc_binding_get_string_option(res_binding, "endpoint");
-
-	/* are further checks here necessary? */
-	if (transport != NCACN_IP_TCP) {
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto done;
-	}
-
-	if (endpoint == NULL) {
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		DBG_DEBUG("rpccli_epm_map_interface failed: %s\n",
+			  nt_errstr(status));
 		goto done;
 	}
 
