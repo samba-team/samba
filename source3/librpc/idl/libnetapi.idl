@@ -17,7 +17,18 @@ interface libnetapi
 	const int ERROR_MORE_DATA = 234L;
 
 	[public] typedef [v1_enum] enum {
-		NERR_Success=0
+		NERR_Success				= 0,
+		NERR_NoOfflineJoinInfo			= 2709,
+		NERR_BadOfflineJoinInfo			= 2710,
+		NERR_CantCreateJoinInfo			= 2711,
+		NERR_BadDomainJoinInfo			= 2712,
+		NERR_JoinPerformedMustRestart		= 2713,
+		NERR_NoJoinPending			= 2714,
+		NERR_ValuesNotSet			= 2715,
+		NERR_CantVerifyHostname			= 2716,
+		NERR_CantLoadOfflineHive		= 2717,
+		NERR_Connectionsecure			= 2718,
+		NERR_ProvisioningBlobUnsupported	= 2719
 	} NET_API_STATUS;
 
 	[public] typedef struct {
