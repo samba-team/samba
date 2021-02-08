@@ -1076,10 +1076,17 @@ const char *sys_proc_fd_path(int fd, char *buf, int bufsize)
 		return NULL;
 	}
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
 	written = snprintf(buf,
 			   bufsize,
 			   proc_fd_pattern,
 			   fd);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 	if (written >= bufsize) {
 		return NULL;
 	}
