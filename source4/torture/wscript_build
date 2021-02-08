@@ -72,6 +72,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
                   ndr/cabinet.c
                   ndr/charset.c
                   ndr/svcctl.c
+                  ndr/odj.c
 		  ''',
 	autoproto='ndr/proto.h',
 	deps='torture krb5samba',
