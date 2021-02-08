@@ -39,7 +39,7 @@ interface ODJ
 {
 	typedef struct {
 		uint32 cbBlob;
-		[size_is(cbBlob)] uint8 *pBlob;
+		[size_is(cbBlob),flag(LIBNDR_PRINT_ARRAY_HEX)] uint8 *pBlob;
 	} OP_BLOB;
 
 	/* Contains a serialized ODJ_WIN7_BLOB structure. */
@@ -77,6 +77,15 @@ interface ODJ
 #endif
 #define ODJ_SID dom_sid2
 #define ODJ_UNICODE_STRING lsa_StringLarge
+
+#define ODJ_DECLARE_SERIALIZED_PTR(el_name) \
+	typedef [public] struct { \
+		el_name *p; \
+	} el_name ##_ctr; \
+	\
+	typedef [public,gensize] struct { \
+		[subcontext(0xFFFFFC01)] el_name ## _ctr s; \
+	} el_name ## _serialized_ptr;
 
 	typedef struct {
 		ODJ_UNICODE_STRING Name;
@@ -117,7 +126,7 @@ interface ODJ
 		[string,charset(UTF16)] uint16   *pValueName;
 		winreg_Type                      ulValueType;
 		uint32                           cbValueData;
-		[size_is(cbValueData)]  uint8   *pValueData;
+		[size_is(cbValueData),flag(LIBNDR_PRINT_ARRAY_HEX)]  uint8   *pValueData;
 	} OP_POLICY_ELEMENT;
 
 	typedef struct {
@@ -159,6 +168,21 @@ interface ODJ
 		OP_BLOB                                     Extension;
 	} OP_CERT_PART;
 
+	ODJ_DECLARE_SERIALIZED_PTR(ODJ_WIN7BLOB)
+	ODJ_DECLARE_SERIALIZED_PTR(OP_JOINPROV2_PART)
+	ODJ_DECLARE_SERIALIZED_PTR(OP_JOINPROV3_PART)
+	ODJ_DECLARE_SERIALIZED_PTR(OP_POLICY_PART)
+	ODJ_DECLARE_SERIALIZED_PTR(OP_CERT_PART)
+
+	typedef [public,nodiscriminant,gensize] union {
+		[case(1)] [subcontext(0xFFFFFC01)] ODJ_WIN7BLOB win7blob;
+		[case(2)] [subcontext(0xFFFFFC01)] OP_JOINPROV2_PART_ctr join_prov2;
+		[case(3)] [subcontext(0xFFFFFC01)] OP_JOINPROV3_PART_ctr join_prov3;
+		[case(4)] [subcontext(0xFFFFFC01)] OP_CERT_PART_ctr cert_part;
+		[case(5)] [subcontext(0xFFFFFC01)] OP_POLICY_PART_ctr policy_part;
+		[default];
+	} OP_PACKAGE_PART_u;
+
 	typedef [public,bitmap32bit] bitmap {
 		OPSPI_PACKAGE_PART_ESSENTIAL	= 0x00000001
 	} ODJ_PackageFlags;
@@ -166,9 +190,16 @@ interface ODJ
 	typedef struct {
 		GUID    PartType;
 		uint32   ulFlags;
+#if 1
+		[value(ndr_size_OP_PACKAGE_PART_u(Part, odj_switch_level_from_guid(&PartType), 0))] uint32 part_len;
+		[subcontext(4),subcontext_size(part_len),switch_is(odj_switch_level_from_guid(&PartType))] OP_PACKAGE_PART_u *Part;
+#else
 		OP_BLOB Part;
+#endif
 		OP_BLOB Extension;
 	} OP_PACKAGE_PART;
+
+	ODJ_DECLARE_SERIALIZED_PTR(OP_PACKAGE_PART)
 
 	typedef struct {
 		uint32                                 cParts;
@@ -176,23 +207,46 @@ interface ODJ
 		OP_BLOB                               Extension;
 	} OP_PACKAGE_PART_COLLECTION;
 
+	ODJ_DECLARE_SERIALIZED_PTR(OP_PACKAGE_PART_COLLECTION)
+
+	typedef struct {
+		[value(ndr_size_OP_PACKAGE_PART_COLLECTION_serialized_ptr(w, 0))] uint32 cbBlob;
+		[subcontext(4), subcontext_size(cbBlob)] OP_PACKAGE_PART_COLLECTION_serialized_ptr *w;
+	} OP_PACKAGE_PART_COLLECTION_blob;
+
 	typedef struct {
 		GUID    EncryptionType;
 		OP_BLOB EncryptionContext;
+#if 1
+		OP_PACKAGE_PART_COLLECTION_blob WrappedPartCollection;
+#else
 		OP_BLOB WrappedPartCollection;
+#endif
 		uint32   cbDecryptedPartCollection;
 		OP_BLOB Extension;
 	} OP_PACKAGE;
+
+	ODJ_DECLARE_SERIALIZED_PTR(OP_PACKAGE)
 
 	typedef [v1_enum,public] enum {
 		ODJ_WIN7_FORMAT = 0x00000001,	/* blob is ODJ_WIN7BLOB */
 		ODJ_WIN8_FORMAT = 0x00000002	/* blob is OP_PACKAGE */
 	} ODJFormat;
 
+	typedef [public,nodiscriminant,gensize] union {
+		[case(ODJ_WIN7_FORMAT)] [subcontext(0xFFFFFC01)] ODJ_WIN7BLOB odj_win7blob;
+		[case(ODJ_WIN8_FORMAT)] [subcontext(0xFFFFFC01)] OP_PACKAGE_ctr op_package;
+		[default] [subcontext(0xFFFFFC01)] [flag(LIBNDR_FLAG_REMAINING)] DATA_BLOB blob;
+	} ODJ_BLOB_u;
+
 	typedef struct {
 		ODJFormat ulODJFormat;
-		uint32 cbBlob;
-		[size_is(cbBlob)] uint8 *pBlob;
+		[value(ndr_size_ODJ_BLOB_u(pBlob, ulODJFormat, 0))] uint32 cbBlob;
+#if 1
+		[switch_is(ulODJFormat), subcontext(4), subcontext_size(cbBlob)] ODJ_BLOB_u *pBlob;
+#else
+		[size_is(cbBlob),flag(LIBNDR_PRINT_ARRAY_HEX)] uint8 *pBlob;
+#endif
 	} ODJ_BLOB;
 
 	typedef [public] struct {
@@ -200,4 +254,6 @@ interface ODJ
 		uint32 ulcBlobs;
 		[size_is(ulcBlobs)] ODJ_BLOB *pBlobs;
 	} ODJ_PROVISION_DATA;
+
+	ODJ_DECLARE_SERIALIZED_PTR(ODJ_PROVISION_DATA)
 }
