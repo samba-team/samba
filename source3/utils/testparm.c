@@ -525,6 +525,13 @@ static int do_global_checks(void)
 		ret = 1;
 	}
 
+	if (!lp_server_schannel()) {
+		fprintf(stderr,
+			"WARNING: You have configured 'server schannel = no'. "
+			"Your server is vulernable to \"ZeroLogon\" "
+			"(CVE-2020-1472)\n\n");
+	}
+
 	return ret;
 }
 
