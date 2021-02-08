@@ -105,6 +105,9 @@ struct DOMAIN_CONTROLLER_INFO {
 #define NETSETUP_PROVISION_SKIP_ACCOUNT_SEARCH ( 0x00000008 )
 #define NETSETUP_PROVISION_ROOT_CA_CERTS ( 0x00000010 )
 
+/* bitmap NetProvisionJoinFlags */
+#define NETSETUP_PROVISION_ONLINE_CALLER ( 0x40000000 )
+
 #define FILTER_TEMP_DUPLICATE_ACCOUNT	( 0x0001 )
 #define FILTER_NORMAL_ACCOUNT	( 0x0002 )
 #define FILTER_INTERDOMAIN_TRUST_ACCOUNT	( 0x0008 )
@@ -1648,6 +1651,27 @@ NET_API_STATUS NetProvisionComputerAccount(const char * domain /* [in] [ref] */,
 					   uint8_t **provision_bin_data /* [in,out] [unique] */,
 					   uint32_t *provision_bin_data_size /* [in,out] [unique] */,
 					   const char * *provision_text_data /* [in,out] [unique] */);
+
+/************************************************************//**
+ *
+ * NetRequestOfflineDomainJoin
+ *
+ * @brief Request an offline domain join
+ *
+ * @param[in] provision_bin_data The provided binary buffer
+ * @param[in] provision_bin_data_size The provided binary buffer size
+ * @param[in] options The options used for account creation
+ * @param[in] windows_path The path for the joined image
+ * @return NET_API_STATUS
+ *
+ * example join/request_offline_domain_join.c
+ *
+ ***************************************************************/
+
+NET_API_STATUS NetRequestOfflineDomainJoin(uint8_t *provision_bin_data /* [in] [unique] */,
+					   uint32_t provision_bin_data_size /* [in] */,
+					   uint32_t options /* [in] */,
+					   const char * windows_path /* [in] [unique] */);
 
 /************************************************************//**
  *
