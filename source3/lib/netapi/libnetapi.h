@@ -78,9 +78,9 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r);
 WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r);
-NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
-				uint32_t level /* [in] */,
-				uint8_t **buffer /* [out] [ref] */);
+NET_API_STATUS NetWkstaGetInfo(const char * server_name /* [in] [unique] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buffer /* [out] [ref] */);
 WERROR NetWkstaGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetWkstaGetInfo *r);
 WERROR NetWkstaGetInfo_l(struct libnetapi_ctx *ctx,
@@ -477,7 +477,7 @@ WERROR I_NetLogonControl_l(struct libnetapi_ctx *ctx,
 NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
 				  uint32_t function_code /* [in] */,
 				  uint32_t query_level /* [in] */,
-				  uint8_t *data /* [in] [ref] */,
+				  uint8_t *data /* [in] [unique] */,
 				  uint8_t **buffer /* [out] [ref] */);
 WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
 			    struct I_NetLogonControl2 *r);

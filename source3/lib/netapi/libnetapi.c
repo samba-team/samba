@@ -41,6 +41,8 @@ NET_API_STATUS NetJoinDomain(const char * server /* [in] [unique] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -92,6 +94,8 @@ NET_API_STATUS NetUnjoinDomain(const char * server_name /* [in] [unique] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -139,6 +143,8 @@ NET_API_STATUS NetGetJoinInformation(const char * server_name /* [in] [unique] *
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -189,6 +195,8 @@ NET_API_STATUS NetGetJoinableOUs(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -242,6 +250,8 @@ NET_API_STATUS NetRenameMachineInDomain(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -291,6 +301,8 @@ NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] [unique] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -339,6 +351,8 @@ NET_API_STATUS NetServerSetInfo(const char * server_name /* [in] [unique] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -377,15 +391,17 @@ NET_API_STATUS NetServerSetInfo(const char * server_name /* [in] [unique] */,
  NetWkstaGetInfo
 ****************************************************************/
 
-NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
-				uint32_t level /* [in] */,
-				uint8_t **buffer /* [out] [ref] */)
+NET_API_STATUS NetWkstaGetInfo(const char * server_name /* [in] [unique] */,
+			       uint32_t level /* [in] */,
+			       uint8_t **buffer /* [out] [ref] */)
 {
 	struct NetWkstaGetInfo r;
 	struct libnetapi_ctx *ctx = NULL;
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -394,7 +410,7 @@ NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
 	}
 
 	/* In parameters */
-	r.in.server_name = wksta_name;
+	r.in.server_name = server_name;
 	r.in.level = level;
 
 	/* Out parameters */
@@ -404,7 +420,7 @@ NET_API_STATUS NetWkstaGetInfo(const char * wksta_name /* [in] [unique] */,
 		NDR_PRINT_IN_DEBUG(NetWkstaGetInfo, &r);
 	}
 
-	if (LIBNETAPI_LOCAL_SERVER(wksta_name)) {
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
 		werr = NetWkstaGetInfo_l(ctx, &r);
 	} else {
 		werr = NetWkstaGetInfo_r(ctx, &r);
@@ -433,6 +449,8 @@ NET_API_STATUS NetGetDCName(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -480,6 +498,8 @@ NET_API_STATUS NetGetAnyDCName(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -530,6 +550,8 @@ NET_API_STATUS DsGetDcName(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -582,6 +604,8 @@ NET_API_STATUS NetUserAdd(const char * server_name /* [in] [unique] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -628,6 +652,8 @@ NET_API_STATUS NetUserDel(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -679,6 +705,8 @@ NET_API_STATUS NetUserEnum(const char * server_name /* [in] [unique] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -734,6 +762,8 @@ NET_API_STATUS NetUserChangePassword(const char * domain_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -752,11 +782,7 @@ NET_API_STATUS NetUserChangePassword(const char * domain_name /* [in] */,
 		NDR_PRINT_IN_DEBUG(NetUserChangePassword, &r);
 	}
 
-	if (LIBNETAPI_LOCAL_SERVER(domain_name)) {
-		werr = NetUserChangePassword_l(ctx, &r);
-	} else {
-		werr = NetUserChangePassword_r(ctx, &r);
-	}
+	werr = NetUserChangePassword_l(ctx, &r);
 
 	r.out.result = W_ERROR_V(werr);
 
@@ -782,6 +808,8 @@ NET_API_STATUS NetUserGetInfo(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -832,6 +860,8 @@ NET_API_STATUS NetUserSetInfo(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -886,6 +916,8 @@ NET_API_STATUS NetUserGetGroups(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -938,6 +970,8 @@ NET_API_STATUS NetUserSetGroups(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -993,6 +1027,8 @@ NET_API_STATUS NetUserGetLocalGroups(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1045,6 +1081,8 @@ NET_API_STATUS NetUserModalsGet(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1092,6 +1130,8 @@ NET_API_STATUS NetUserModalsSet(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1145,6 +1185,8 @@ NET_API_STATUS NetQueryDisplayInformation(const char * server_name /* [in] [uniq
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1197,6 +1239,8 @@ NET_API_STATUS NetGroupAdd(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1243,6 +1287,8 @@ NET_API_STATUS NetGroupDel(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1293,6 +1339,8 @@ NET_API_STATUS NetGroupEnum(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1348,6 +1396,8 @@ NET_API_STATUS NetGroupSetInfo(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1398,6 +1448,8 @@ NET_API_STATUS NetGroupGetInfo(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1446,6 +1498,8 @@ NET_API_STATUS NetGroupAddUser(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1492,6 +1546,8 @@ NET_API_STATUS NetGroupDelUser(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1544,6 +1600,8 @@ NET_API_STATUS NetGroupGetUsers(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1600,6 +1658,8 @@ NET_API_STATUS NetGroupSetUsers(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1650,6 +1710,8 @@ NET_API_STATUS NetLocalGroupAdd(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1697,6 +1759,8 @@ NET_API_STATUS NetLocalGroupDel(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1743,6 +1807,8 @@ NET_API_STATUS NetLocalGroupGetInfo(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1793,6 +1859,8 @@ NET_API_STATUS NetLocalGroupSetInfo(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1846,6 +1914,8 @@ NET_API_STATUS NetLocalGroupEnum(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -1901,6 +1971,8 @@ NET_API_STATUS NetLocalGroupAddMembers(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -1951,6 +2023,8 @@ NET_API_STATUS NetLocalGroupDelMembers(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2005,6 +2079,8 @@ NET_API_STATUS NetLocalGroupGetMembers(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2061,6 +2137,8 @@ NET_API_STATUS NetLocalGroupSetMembers(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2109,6 +2187,8 @@ NET_API_STATUS NetRemoteTOD(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2155,6 +2235,8 @@ NET_API_STATUS NetShareAdd(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2203,6 +2285,8 @@ NET_API_STATUS NetShareDel(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2254,6 +2338,8 @@ NET_API_STATUS NetShareEnum(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2308,6 +2394,8 @@ NET_API_STATUS NetShareGetInfo(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2358,6 +2446,8 @@ NET_API_STATUS NetShareSetInfo(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2406,6 +2496,8 @@ NET_API_STATUS NetFileClose(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2452,6 +2544,8 @@ NET_API_STATUS NetFileGetInfo(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2506,6 +2600,8 @@ NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
@@ -2563,6 +2659,8 @@ NET_API_STATUS NetShutdownInit(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2610,6 +2708,8 @@ NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */)
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2656,6 +2756,8 @@ NET_API_STATUS I_NetLogonControl(const char * server_name /* [in] */,
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 
+	ZERO_STRUCT(r);
+
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -2697,7 +2799,7 @@ NET_API_STATUS I_NetLogonControl(const char * server_name /* [in] */,
 NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
 				  uint32_t function_code /* [in] */,
 				  uint32_t query_level /* [in] */,
-				  uint8_t *data /* [in] [ref] */,
+				  uint8_t *data /* [in] [unique] */,
 				  uint8_t **buffer /* [out] [ref] */)
 {
 	struct I_NetLogonControl2 r;
@@ -2705,6 +2807,8 @@ NET_API_STATUS I_NetLogonControl2(const char * server_name /* [in] */,
 	NET_API_STATUS status;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
 
 	status = libnetapi_getctx(&ctx);
 	if (status != 0) {
