@@ -150,6 +150,21 @@ interface libnetapi
 		);
 
 	/*******************************************/
+	/* NetRequestOfflineDomainJoin             */
+	/*******************************************/
+
+	typedef [public,bitmap32bit] bitmap {
+		NETSETUP_PROVISION_ONLINE_CALLER = 0x40000000
+	} NetProvisionJoinFlags;
+
+	[nopush,nopull] NET_API_STATUS NetRequestOfflineDomainJoin(
+		[in,unique] uint8 *provision_bin_data,
+		[in] uint32 provision_bin_data_size,
+		[in] NetProvisionJoinFlags options,
+		[in,unique] string *windows_path
+	);
+
+	/*******************************************/
 	/* NetServerGetInfo                        */
 	/*******************************************/
 
