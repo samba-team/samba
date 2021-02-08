@@ -75,6 +75,14 @@ WERROR NetProvisionComputerAccount_r(struct libnetapi_ctx *ctx,
 				     struct NetProvisionComputerAccount *r);
 WERROR NetProvisionComputerAccount_l(struct libnetapi_ctx *ctx,
 				     struct NetProvisionComputerAccount *r);
+NET_API_STATUS NetRequestOfflineDomainJoin(uint8_t *provision_bin_data /* [in] [unique] */,
+					   uint32_t provision_bin_data_size /* [in] */,
+					   uint32_t options /* [in] */,
+					   const char * windows_path /* [in] [unique] */);
+WERROR NetRequestOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
+				     struct NetRequestOfflineDomainJoin *r);
+WERROR NetRequestOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
+				     struct NetRequestOfflineDomainJoin *r);
 NET_API_STATUS NetServerGetInfo(const char * server_name /* [in] [unique] */,
 				uint32_t level /* [in] */,
 				uint8_t **buffer /* [out] [ref] */);

@@ -346,6 +346,53 @@ NET_API_STATUS NetProvisionComputerAccount(const char * domain /* [in] [ref] */,
 }
 
 /****************************************************************
+ NetRequestOfflineDomainJoin
+****************************************************************/
+
+NET_API_STATUS NetRequestOfflineDomainJoin(uint8_t *provision_bin_data /* [in] [unique] */,
+					   uint32_t provision_bin_data_size /* [in] */,
+					   uint32_t options /* [in] */,
+					   const char * windows_path /* [in] [unique] */)
+{
+	struct NetRequestOfflineDomainJoin r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	ZERO_STRUCT(r);
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/* In parameters */
+	r.in.provision_bin_data = provision_bin_data;
+	r.in.provision_bin_data_size = provision_bin_data_size;
+	r.in.options = options;
+	r.in.windows_path = windows_path;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetRequestOfflineDomainJoin, &r);
+	}
+
+	werr = NetRequestOfflineDomainJoin_l(ctx, &r);
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetRequestOfflineDomainJoin, &r);
+	}
+
+	TALLOC_FREE(frame);
+	return (NET_API_STATUS)r.out.result;
+}
+
+/****************************************************************
  NetServerGetInfo
 ****************************************************************/
 
