@@ -1720,6 +1720,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	unsigned int i, num_streams = 0;
 	struct stream_struct *streams = NULL;
+	struct smb_filename *pathref = NULL;
 
 	if (SMB_VFS_STAT(conn, smb_fname) == 0) {
 		DEBUG(10, ("'%s' exists\n", smb_fname_str_dbg(smb_fname)));
@@ -1732,12 +1733,36 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	/* Fall back to a case-insensitive scan of all streams on the file. */
-	status = vfs_streaminfo(conn, NULL, smb_fname, mem_ctx,
-				&num_streams, &streams);
+	if (smb_fname->fsp == NULL) {
+		status = synthetic_pathref(mem_ctx,
+					conn->cwd_fsp,
+					smb_fname->base_name,
+					NULL,
+					NULL,
+					smb_fname->twrp,
+					smb_fname->flags,
+					&pathref);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+				NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				TALLOC_FREE(pathref);
+				SET_STAT_INVALID(smb_fname->st);
+				return NT_STATUS_OK;
+			}
+			DBG_DEBUG("synthetic_pathref failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+	} else {
+		pathref = smb_fname;
+	}
 
+	/* Fall back to a case-insensitive scan of all streams on the file. */
+	status = vfs_streaminfo(conn, NULL, pathref, mem_ctx,
+				&num_streams, &streams);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		SET_STAT_INVALID(smb_fname->st);
+		TALLOC_FREE(pathref);
 		return NT_STATUS_OK;
 	}
 
@@ -1760,6 +1785,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	/* Couldn't find the stream. */
 	if (i == num_streams) {
 		SET_STAT_INVALID(smb_fname->st);
+		TALLOC_FREE(pathref);
 		TALLOC_FREE(streams);
 		return NT_STATUS_OK;
 	}
@@ -1782,6 +1808,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	}
 	status = NT_STATUS_OK;
  fail:
+	TALLOC_FREE(pathref);
 	TALLOC_FREE(streams);
 	return status;
 }

@@ -982,19 +982,21 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 				&mapped_name,
 				vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
 		return status;
 	}
 
-	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
+	status = synthetic_pathref(talloc_tos(),
+					handle->conn->cwd_fsp,
 					mapped_name,
 					NULL,
 					&smb_fname->st,
 					smb_fname->twrp,
-					smb_fname->flags);
-	if (catia_smb_fname == NULL) {
+					smb_fname->flags,
+					&catia_smb_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mapped_name);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, catia_smb_fname,

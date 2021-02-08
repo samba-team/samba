@@ -4919,9 +4919,36 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	int j;
 	unsigned int i, num_streams = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct smb_filename *pathref = NULL;
 	NTSTATUS status;
 
-	status = vfs_streaminfo(conn, NULL, smb_fname, talloc_tos(),
+	if (smb_fname->fsp == NULL) {
+		struct smb_filename *tmp = NULL;
+		status = synthetic_pathref(frame,
+					conn->cwd_fsp,
+					smb_fname->base_name,
+					NULL,
+					NULL,
+					smb_fname->twrp,
+					smb_fname->flags,
+					&tmp);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
+			    || NT_STATUS_EQUAL(status,
+				       NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				DBG_DEBUG("no streams around\n");
+				TALLOC_FREE(frame);
+				return NT_STATUS_OK;
+			}
+			DBG_DEBUG("synthetic_pathref failed: %s\n",
+			   nt_errstr(status));
+			goto fail;
+		}
+		pathref = tmp;
+	} else {
+		pathref = smb_fname;
+	}
+	status = vfs_streaminfo(conn, NULL, pathref, talloc_tos(),
 				&num_streams, &stream_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
