@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.2.4"
+VERSION="1.3.2"
 
 def configure(conf):
     if conf.CHECK_SOCKET_WRAPPER():
@@ -94,6 +94,11 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('socket_wrapper',
                           source='socket_wrapper.c',
+                          cflags='-D%s="%s" -D%s="%s"' % (
+                              "SOCKET_WRAPPER_PACKAGE",
+                              "samba_socket_wrapper",
+                              "SOCKET_WRAPPER_VERSION",
+                              VERSION),
                           deps='dl pthread tirpc',
                           install=False,
                           realname='libsocket-wrapper.so')
