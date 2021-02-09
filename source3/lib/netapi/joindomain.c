@@ -799,8 +799,120 @@ WERROR NetRequestOfflineDomainJoin_r(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR NetRequestOfflineDomainJoin_backend(struct libnetapi_ctx *ctx,
+						  const struct ODJ_WIN7BLOB *win7blob,
+						  const struct ODJ_PROVISION_DATA *odj_provision_data)
+{
+	struct libnet_JoinCtx *j = NULL;
+	WERROR werr;
+
+	werr = libnet_init_JoinCtx(ctx, &j);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	j->in.domain_name = talloc_strdup(j, win7blob->lpDomain);
+	if (j->in.domain_name == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	talloc_free(discard_const_p(char *, j->in.machine_name));
+	j->in.machine_name = talloc_strdup(j, win7blob->lpMachineName);
+	if (j->in.machine_name == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	j->in.machine_password = talloc_strdup(j, win7blob->lpMachinePassword);
+	if (j->in.machine_password == NULL) {
+		talloc_free(j);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	j->in.request_offline_join = true;
+	j->in.odj_provision_data = discard_const(odj_provision_data);
+	j->in.debug = true;
+	j->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED;
+
+	werr = libnet_Join(j, j);
+	if (!W_ERROR_IS_OK(werr) && j->out.error_string) {
+		libnetapi_set_error_string(ctx, "%s", j->out.error_string);
+		talloc_free(j);
+		return werr;
+	}
+
+	TALLOC_FREE(j);
+
+	return WERR_OK;
+}
+
 WERROR NetRequestOfflineDomainJoin_l(struct libnetapi_ctx *ctx,
 				     struct NetRequestOfflineDomainJoin *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DATA_BLOB blob, blob_base64;
+	enum ndr_err_code ndr_err;
+	struct ODJ_PROVISION_DATA_serialized_ptr odj_provision_data;
+	bool ok;
+	struct ODJ_WIN7BLOB win7blob = { 0 };
+	WERROR werr;
+
+	if (r->in.provision_bin_data == NULL ||
+	    r->in.provision_bin_data_size == 0) {
+		return W_ERROR(NERR_NoOfflineJoinInfo);
+	}
+
+	if (r->in.provision_bin_data_size < 2) {
+		return W_ERROR(NERR_BadOfflineJoinInfo);
+	}
+
+	if (r->in.provision_bin_data[0] == 0xff &&
+	    r->in.provision_bin_data[1] == 0xfe) {
+		ok = convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX,
+					   r->in.provision_bin_data+2,
+					   r->in.provision_bin_data_size-2,
+					   &blob_base64.data,
+					   &blob_base64.length);
+		if (!ok) {
+			return W_ERROR(NERR_BadOfflineJoinInfo);
+		}
+	} else {
+		blob_base64 = data_blob(r->in.provision_bin_data,
+					r->in.provision_bin_data_size);
+	}
+
+	blob = base64_decode_data_blob_talloc(ctx, (const char *)blob_base64.data);
+
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, &odj_provision_data,
+		(ndr_pull_flags_fn_t)ndr_pull_ODJ_PROVISION_DATA_serialized_ptr);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return W_ERROR(NERR_BadOfflineJoinInfo);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ODJ_PROVISION_DATA_serialized_ptr, &odj_provision_data);
+	}
+
+	if (odj_provision_data.s.p->ulVersion != 1) {
+		return W_ERROR(NERR_ProvisioningBlobUnsupported);
+	}
+
+	werr = libnet_odj_find_win7blob(odj_provision_data.s.p, &win7blob);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	if (!(r->in.options & NETSETUP_PROVISION_ONLINE_CALLER)) {
+		return WERR_NERR_SETUPNOTJOINED;
+	}
+
+	werr = NetRequestOfflineDomainJoin_backend(ctx,
+						   &win7blob,
+						   odj_provision_data.s.p);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	return W_ERROR(NERR_JoinPerformedMustRestart);
 }
