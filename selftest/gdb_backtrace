@@ -2,6 +2,8 @@
 
 BASENAME=`basename $0`
 
+unset LD_PRELOAD
+
 if [ -n "$VALGRIND" -o -n "$SMBD_VALGRIND" ]; then
 	echo "${BASENAME}: Not running debugger under valgrind"
 	exit 1
