@@ -939,6 +939,11 @@
 	<para>Removes a Samba Sudoers Group Policy from the sysvol.</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage scripts startup list</title>
+	<para>List VGP Startup Script Group Policy from the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
