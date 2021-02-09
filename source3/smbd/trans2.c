@@ -434,19 +434,19 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	*pea_total_len = 0;
 	*ea_list = NULL;
 
-	if (!lp_ea_support(SNUM(conn))) {
+	/* symlink */
+	if (fsp == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	if (fsp == NULL) {
-		/* fsp == NULL => symlink */
+	if (!lp_ea_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = get_ea_names_from_file(talloc_tos(),
-				conn,
+				fsp->conn,
 				fsp,
 				&names,
 				&num_names);
@@ -482,7 +482,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		}
 
 		status = get_ea_value(listp,
-					conn,
+					fsp->conn,
 					fsp,
 					fsp->fsp_name,
 					names[i],
