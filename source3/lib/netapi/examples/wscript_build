@@ -12,6 +12,7 @@ names = [
     ("join", "rename_machine"),
     ("join", "provision_computer_account"),
     ("join", "request_offline_domain_join"),
+    ("join", "djoin"),
     ("user", "user_add"),
     ("user", "user_del"),
     ("user", "user_enum"),
