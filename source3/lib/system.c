@@ -1068,7 +1068,7 @@ bool sys_have_proc_fds(void)
 	return have_proc_fds;
 }
 
-const char *sys_proc_fd_path(int fd, char *buf, int bufsize)
+const char *sys_proc_fd_path(int fd, char *buf, size_t bufsize)
 {
 	int written;
 

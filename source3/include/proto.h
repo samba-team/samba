@@ -237,7 +237,7 @@ int sys_get_number_of_cores(void);
 #endif
 
 bool sys_have_proc_fds(void);
-const char *sys_proc_fd_path(int fd, char *buf, int bufsize);
+const char *sys_proc_fd_path(int fd, char *buf, size_t bufsize);
 
 struct stat;
 void init_stat_ex_from_stat (struct stat_ex *dst,
