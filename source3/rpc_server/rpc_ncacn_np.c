@@ -1046,7 +1046,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		int l = 1;
-		if (errno == ENOENT) {
+		if (sys_errno == ENOENT) {
 			l = 2;
 		}
 		DEBUG(l, ("tstream_npa_connect_recv  to %s for pipe %s and "
