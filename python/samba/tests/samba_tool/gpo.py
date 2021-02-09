@@ -692,6 +692,41 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err,
                               'Failed to unset MaxTicketAge')
 
+    def test_security_nonempty_sections(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        gpt_inf = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/Microsoft/Windows NT',
+                               'SecEdit/GptTmpl.inf')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge', '10',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to set MaxTicketAge')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "security",
+                                                 "set"), self.gpo_guid,
+                                                 'MaxTicketAge',
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err,
+                              'Failed to unset MaxTicketAge')
+
+        inf_data = ConfigParser(interpolation=None)
+        inf_data.read(gpt_inf)
+
+        self.assertFalse(inf_data.has_section('Kerberos Policy'))
+
     def test_sudoers_remove(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
