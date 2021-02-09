@@ -1183,9 +1183,12 @@ static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *k
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("init_files_struct failed: %s\n",
 			nt_errstr(status));
+	} else if (fsp != NULL) {
+		SMB_VFS_CLOSE(fsp);
 	}
 
 	TALLOC_FREE(frame);
+	PyErr_NTSTATUS_NOT_OK_RAISE(status);
 	Py_RETURN_NONE;
 }
 
