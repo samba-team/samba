@@ -594,7 +594,8 @@ class GPOTests(tests.TestCase):
         # Create krb stage date
         gpofile = os.path.join(local_path, policies, '%s/MACHINE/MICROSOFT/' \
                   'WINDOWS NT/SECEDIT/GPTTMPL.INF')
-        krb_stage = '[Kerberos Policy]\nMaxTicketAge = 99\n'
+        krb_stage = '[Kerberos Policy]\nMaxTicketAge = 99\n' \
+                    '[System Access]\nMinimumPasswordAge = 998\n'
 
         for g in [g for g in gpos if g.file_sys_path]:
             ret = stage_file(gpofile % g.name, krb_stage)
