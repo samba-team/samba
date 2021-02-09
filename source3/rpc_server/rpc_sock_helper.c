@@ -160,7 +160,7 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	int **pfds)
 {
 	uint16_t port = 0;
-	char port_str[6];
+	char port_str[11];
 	const char *endpoint = NULL;
 	size_t i = 0, num_fds;
 	int *fds = NULL;
