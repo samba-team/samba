@@ -292,7 +292,6 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
-				connection_struct *conn,
 				files_struct *fsp,
 				char ***pnames,
 				size_t *pnum_names)
@@ -449,7 +448,6 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = get_ea_names_from_file(talloc_tos(),
-				fsp->conn,
 				fsp,
 				&names,
 				&num_names);

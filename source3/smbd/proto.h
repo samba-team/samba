@@ -1213,7 +1213,6 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *ea_name,
 			struct ea_struct *pea);
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
 			files_struct *fsp,
 			char ***pnames,
 			size_t *pnum_names);

@@ -685,7 +685,6 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 				return NT_STATUS_UNSUCCESSFUL);
 
 	status = get_ea_names_from_file(talloc_tos(),
-				handle->conn,
 				smb_fname->fsp,
 				&names,
 				&num_names);
