@@ -2050,9 +2050,16 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
 					time_t next_change = pwd_last_set + min_pwd_age;
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
 					_make_remark_format(ctx, PAM_ERROR_MSG,
 						_get_ntstatus_error_string("NT_STATUS_PWD_TOO_RECENT"),
 						ctime(&next_change));
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 					goto done;
 				}
 				break;
