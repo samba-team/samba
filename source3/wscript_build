@@ -839,7 +839,7 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
-                    source='libnet/libnet_join.c',
+                    source='libnet/libnet_join.c libnet/libnet_join_offline.c',
                     deps='NDR_LIBNET_JOIN INIT_SAMR net_keytab pdb')
 
 bld.SAMBA3_LIBRARY('net_keytab',
