@@ -442,6 +442,10 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
+	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = get_ea_names_from_file(talloc_tos(),
@@ -526,13 +530,11 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-
-#if 0
 /****************************************************************************
  Return a linked list of the total EA's. Plus the total size
 ****************************************************************************/
 
-static NTSTATUS get_ea_list_from_fsp_new(TALLOC_CTX *mem_ctx,
+static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 				files_struct *fsp,
 				size_t *pea_total_len,
 				struct ea_list **ea_list)
@@ -556,6 +558,10 @@ static NTSTATUS get_ea_list_from_fsp_new(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
+	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = get_ea_names_from_file(talloc_tos(),
@@ -638,34 +644,6 @@ static NTSTATUS get_ea_list_from_fsp_new(TALLOC_CTX *mem_ctx,
 
 	*ea_list = ea_list_head;
 	return NT_STATUS_OK;
-}
-#endif
-
-static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
-				files_struct *fsp,
-				size_t *pea_total_len,
-				struct ea_list **ea_list)
-{
-	*pea_total_len = 0;
-	*ea_list = NULL;
-
-	/* symlink */
-	if (fsp == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	if (!lp_ea_support(SNUM(fsp->conn))) {
-		return NT_STATUS_OK;
-	}
-
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return get_ea_list_from_file_path(mem_ctx,
-				fsp,
-				pea_total_len,
-				ea_list);
 }
 
 /****************************************************************************
