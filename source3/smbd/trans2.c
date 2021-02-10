@@ -656,22 +656,22 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp)
+static unsigned int estimate_ea_size(files_struct *fsp)
 {
 	size_t total_ea_len = 0;
 	TALLOC_CTX *mem_ctx;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 
-	if (!lp_ea_support(SNUM(conn))) {
-		return 0;
-	}
-
 	/* symlink */
 	if (fsp == NULL) {
 		return 0;
 	}
+
 	mem_ctx = talloc_stackframe();
+	if (!lp_ea_support(SNUM(fsp->conn))) {
+		return 0;
+	}
 
 	/* If this is a stream fsp, then we need to instead find the
 	 * estimated ea len from the main file, not the stream
@@ -685,7 +685,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp)
 				   &total_ea_len,
 				   &ea_list);
 
-	if(conn->sconn->using_smb2) {
+	if(fsp->conn->sconn->using_smb2) {
 		unsigned int ret_data_size;
 		/*
 		 * We're going to be using fill_ea_chained_buffer() to
@@ -697,7 +697,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp)
 						NULL,
 						0,
 						&ret_data_size,
-						conn,
+						fsp->conn,
 						ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			ret_data_size = 0;
@@ -1454,7 +1454,7 @@ static void call_trans2open(connection_struct *conn,
 	SIVAL(params,20,inode);
 	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
-		uint32_t ea_size = estimate_ea_size(conn, smb_fname->fsp);
+		uint32_t ea_size = estimate_ea_size(smb_fname->fsp);
 		SIVAL(params, 26, ea_size);
 	} else {
 		SIVAL(params, 26, 0);
@@ -1907,8 +1907,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
 		{
-			unsigned int ea_size = estimate_ea_size(conn,
-							smb_fname->fsp);
+			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,22,ea_size); /* Extended attributes */
 		}
 		p += 27;
@@ -2020,8 +2019,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
 			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
 		} else {
-			unsigned int ea_size = estimate_ea_size(conn,
-								smb_fname->fsp);
+			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 		}
 		p += 4;
@@ -2133,8 +2131,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
 			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
 		} else {
-			unsigned int ea_size = estimate_ea_size(conn,
-								smb_fname->fsp);
+			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 		}
 		p +=4;
@@ -2216,8 +2213,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
 			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
 		} else {
-			unsigned int ea_size = estimate_ea_size(conn,
-								smb_fname->fsp);
+			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 		}
 		p += 4;
@@ -2275,8 +2271,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			 */
 			SIVAL(p, 0, readdir_attr_data->attr_data.aapl.max_access);
 		} else {
-			unsigned int ea_size = estimate_ea_size(conn,
-								smb_fname->fsp);
+			unsigned int ea_size = estimate_ea_size(smb_fname->fsp);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 		}
 		p += 4;
@@ -5390,8 +5385,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_INFO_QUERY_EA_SIZE:
 		{
 			unsigned int ea_size =
-			    estimate_ea_size(conn,
-					     smb_fname->fsp);
+			    estimate_ea_size(smb_fname->fsp);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
 			srv_put_dos_date2(pdata,0,create_time);
@@ -5539,7 +5533,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_EA_INFO:
 		{
 			unsigned int ea_size =
-			    estimate_ea_size(conn, smb_fname->fsp);
+			    estimate_ea_size(smb_fname->fsp);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
 			data_size = 4;
 			*fixed_portion = 4;
@@ -5663,7 +5657,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_ALL_INFORMATION:
 		{
 			unsigned int ea_size =
-			    estimate_ea_size(conn, smb_fname->fsp);
+			    estimate_ea_size(smb_fname->fsp);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
 			put_long_date_full_timespec(conn->ts_res,pdata,&create_time_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+8,&atime_ts);
@@ -5698,7 +5692,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB2_FILE_ALL_INFORMATION:
 		{
 			unsigned int ea_size =
-			    estimate_ea_size(conn, smb_fname->fsp);
+			    estimate_ea_size(smb_fname->fsp);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
 			put_long_date_full_timespec(conn->ts_res,pdata+0x00,&create_time_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+0x08,&atime_ts);
