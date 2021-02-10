@@ -4947,6 +4947,58 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smb_unix_read_symlink(connection_struct *conn,
+				struct smb_request *req,
+				struct smb_filename *smb_fname,
+				char *pdata,
+				unsigned int data_size_in,
+				unsigned int *pdata_size_out)
+{
+	NTSTATUS status;
+	size_t len = 0;
+	int link_len = 0;
+	char *buffer = talloc_array(talloc_tos(), char, PATH_MAX+1);
+
+	if (!buffer) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("SMB_QUERY_FILE_UNIX_LINK for file %s\n",
+		smb_fname_str_dbg(smb_fname));
+
+	if(!S_ISLNK(smb_fname->st.st_ex_mode)) {
+		TALLOC_FREE(buffer);
+		return NT_STATUS_DOS(ERRSRV, ERRbadlink);
+	}
+
+	link_len = SMB_VFS_READLINKAT(conn,
+				conn->cwd_fsp,
+				smb_fname,
+				buffer,
+				PATH_MAX);
+
+	if (link_len == -1) {
+		TALLOC_FREE(buffer);
+		return map_nt_error_from_unix(errno);
+	}
+
+	buffer[link_len] = 0;
+	status = srvstr_push(pdata,
+			req->flags2,
+			pdata,
+			buffer,
+			data_size_in,
+			STR_TERMINATE,
+			&len);
+	TALLOC_FREE(buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*pdata_size_out = len;
+
+	return NT_STATUS_OK;
+}
+
 #if defined(HAVE_POSIX_ACLS)
 static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 				struct smb_request *req,
@@ -5875,41 +5927,15 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
-				int link_len = 0;
-				char *buffer = talloc_array(mem_ctx, char, PATH_MAX+1);
-
-				if (!buffer) {
-					return NT_STATUS_NO_MEMORY;
-				}
-
-				DEBUG(10,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_UNIX_LINK\n"));
-#ifdef S_ISLNK
-				if(!S_ISLNK(psbuf->st_ex_mode)) {
-					return NT_STATUS_DOS(ERRSRV, ERRbadlink);
-				}
-#else
-				return NT_STATUS_DOS(ERRDOS, ERRbadlink);
-#endif
-				link_len = SMB_VFS_READLINKAT(conn,
-							conn->cwd_fsp,
+				status = smb_unix_read_symlink(conn,
+							req,
 							smb_fname,
-							buffer,
-							PATH_MAX);
-
-				if (link_len == -1) {
-					return map_nt_error_from_unix(errno);
-				}
-				buffer[link_len] = 0;
-				status = srvstr_push(dstart, flags2,
-						  pdata, buffer,
-						  PTR_DIFF(dend, pdata),
-						  STR_TERMINATE, &len);
+							pdata,
+							data_size,
+							&data_size);
 				if (!NT_STATUS_IS_OK(status)) {
 					return status;
 				}
-				pdata += len;
-				data_size = PTR_DIFF(pdata,(*ppdata));
-
 				break;
 			}
 
