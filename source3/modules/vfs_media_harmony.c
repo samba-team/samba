@@ -2130,41 +2130,6 @@ out:
 }
 
 /*
- * Success: return positive number
- * Failure: set errno, return -1
- */
-static ssize_t mh_listxattr(struct vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		char *list,
-		size_t size)
-{
-	ssize_t ret;
-	struct smb_filename *clientFname = NULL;
-	int status;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_listxattr\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		ret = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		ret = -1;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_LISTXATTR(handle, clientFname, list, size);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return ret;
-}
-
-/*
  * Success: return 0
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
@@ -2284,7 +2249,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.getxattr_fn = mh_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
-	.listxattr_fn = mh_listxattr,
 	.removexattr_fn = mh_removexattr,
 	.setxattr_fn = mh_setxattr,
 

@@ -2040,14 +2040,6 @@ static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,
 	return glfs_fgetxattr(glfd, name, value, size);
 }
 
-static ssize_t vfs_gluster_listxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *list,
-				size_t size)
-{
-	return glfs_listxattr(handle->data, smb_fname->base_name, list, size);
-}
-
 static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,
 				      files_struct *fsp, char *list,
 				      size_t size)
@@ -2357,7 +2349,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_gluster_fgetxattr,
-	.listxattr_fn = vfs_gluster_listxattr,
 	.flistxattr_fn = vfs_gluster_flistxattr,
 	.removexattr_fn = vfs_gluster_removexattr,
 	.fremovexattr_fn = vfs_gluster_fremovexattr,

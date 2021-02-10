@@ -3612,14 +3612,6 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 	return getxattr(fsp->fsp_name->base_name, name, value, size);
 }
 
-static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			char *list,
-			size_t size)
-{
-	return listxattr(smb_fname->base_name, list, size);
-}
-
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	int fd = fsp_get_pathref_fd(fsp);
@@ -3896,7 +3888,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getxattrat_send_fn = vfswrap_getxattrat_send,
 	.getxattrat_recv_fn = vfswrap_getxattrat_recv,
 	.fgetxattr_fn = vfswrap_fgetxattr,
-	.listxattr_fn = vfswrap_listxattr,
 	.flistxattr_fn = vfswrap_flistxattr,
 	.removexattr_fn = vfswrap_removexattr,
 	.fremovexattr_fn = vfswrap_fremovexattr,

@@ -767,30 +767,6 @@ static size_t vxfs_filter_list(char *list, size_t size)
 	return size;
 }
 
-static ssize_t vxfs_listxattr(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *list,
-				size_t size)
-{
-	ssize_t result;
-
-	result = vxfs_listxattr_path(smb_fname->base_name, list, size);
-	if (result >= 0 || ((errno != ENOTSUP) && (errno != ENOSYS))) {
-		return result;
-	}
-
-	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
-
-	if (result <= 0) {
-		return result;
-	}
-
-	/* Remove any XATTR_USER_NTACL elements from the returned list. */
-	result = vxfs_filter_list(list, result);
-
-        return result;
-}
-
 static ssize_t vxfs_flistxattr(struct vfs_handle_struct *handle,
                                 struct files_struct *fsp, char *list,
                                 size_t size)
@@ -932,7 +908,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vxfs_fget_xattr,
-	.listxattr_fn = vxfs_listxattr,
 	.flistxattr_fn = vxfs_flistxattr,
 	.removexattr_fn = vxfs_remove_xattr,
 	.fremovexattr_fn = vxfs_fremove_xattr,

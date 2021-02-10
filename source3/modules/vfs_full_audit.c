@@ -209,7 +209,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GETXATTRAT_SEND,
 	SMB_VFS_OP_GETXATTRAT_RECV,
 	SMB_VFS_OP_FGETXATTR,
-	SMB_VFS_OP_LISTXATTR,
 	SMB_VFS_OP_FLISTXATTR,
 	SMB_VFS_OP_REMOVEXATTR,
 	SMB_VFS_OP_FREMOVEXATTR,
@@ -341,7 +340,6 @@ static struct {
 	{ SMB_VFS_OP_GETXATTRAT_SEND, "getxattrat_send" },
 	{ SMB_VFS_OP_GETXATTRAT_RECV, "getxattrat_recv" },
 	{ SMB_VFS_OP_FGETXATTR,	"fgetxattr" },
-	{ SMB_VFS_OP_LISTXATTR,	"listxattr" },
 	{ SMB_VFS_OP_FLISTXATTR,	"flistxattr" },
 	{ SMB_VFS_OP_REMOVEXATTR,	"removexattr" },
 	{ SMB_VFS_OP_FREMOVEXATTR,	"fremovexattr" },
@@ -2819,24 +2817,6 @@ static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *list,
-				size_t size)
-{
-	ssize_t result;
-
-	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
-
-	do_log(SMB_VFS_OP_LISTXATTR,
-	       (result >= 0),
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
-
 static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, char *list,
 				size_t size)
@@ -3095,7 +3075,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.getxattrat_send_fn = smb_full_audit_getxattrat_send,
 	.getxattrat_recv_fn = smb_full_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,
-	.listxattr_fn = smb_full_audit_listxattr,
 	.flistxattr_fn = smb_full_audit_flistxattr,
 	.removexattr_fn = smb_full_audit_removexattr,
 	.fremovexattr_fn = smb_full_audit_fremovexattr,

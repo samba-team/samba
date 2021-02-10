@@ -2633,28 +2633,6 @@ static ssize_t smb_time_audit_fgetxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_time_audit_listxattr(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					char *list,
-					size_t size)
-{
-	ssize_t result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("listxattr", timediff,
-				smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static ssize_t smb_time_audit_flistxattr(struct vfs_handle_struct *handle,
 					 struct files_struct *fsp, char *list,
 					 size_t size)
@@ -2948,7 +2926,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.getxattrat_send_fn = smb_time_audit_getxattrat_send,
 	.getxattrat_recv_fn = smb_time_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_time_audit_fgetxattr,
-	.listxattr_fn = smb_time_audit_listxattr,
 	.flistxattr_fn = smb_time_audit_flistxattr,
 	.removexattr_fn = smb_time_audit_removexattr,
 	.fremovexattr_fn = smb_time_audit_fremovexattr,

@@ -342,9 +342,11 @@
  * Version 44 - Replace SMB_VFS_GET_COMPRESSION() with SMB_VFS_FGET_COMPRESSION()
  * Version 44 - Add type argument to SMB_VFS_SYS_ACL_SET_FD()
  * Version 44 - Remove SMB_VFS_SYS_ACL_SET_FILE()
+ * Change to Version 45 - will ship with 4.15
+ * Version 45 - Remove SMB_VFS_LISTXATTR
  */
 
-#define SMB_VFS_INTERFACE_VERSION 44
+#define SMB_VFS_INTERFACE_VERSION 45
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -1244,10 +1246,6 @@ struct vfs_fn_pointers {
 				      TALLOC_CTX *mem_ctx,
 				      uint8_t **xattr_value);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
-	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					char *list,
-					size_t size);
 	ssize_t (*flistxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 	int (*removexattr_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
@@ -1769,10 +1767,6 @@ ssize_t smb_vfs_call_getxattrat_recv(struct tevent_req *req,
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size);
-ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *list,
-				size_t size);
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, char *list,
 				size_t size);

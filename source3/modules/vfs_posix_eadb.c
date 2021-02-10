@@ -185,18 +185,6 @@ static ssize_t posix_eadb_listattr(struct tdb_wrap *db_ctx,
 	return blob.length;
 }
 
-static ssize_t posix_eadb_listxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *list,
-				size_t size)
-{
-	struct tdb_wrap *db;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
-
-	return posix_eadb_listattr(db, smb_fname->base_name, -1, list, size);
-}
-
 static ssize_t posix_eadb_flistxattr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp, char *list,
 				    size_t size)
@@ -490,7 +478,6 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.fgetxattr_fn = posix_eadb_fgetxattr,
 	.setxattr_fn = posix_eadb_setxattr,
 	.fsetxattr_fn = posix_eadb_fsetxattr,
-	.listxattr_fn = posix_eadb_listxattr,
 	.flistxattr_fn = posix_eadb_flistxattr,
 	.removexattr_fn = posix_eadb_removexattr,
 	.fremovexattr_fn = posix_eadb_fremovexattr,

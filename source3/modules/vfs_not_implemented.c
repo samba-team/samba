@@ -929,15 +929,6 @@ ssize_t vfs_not_implemented_fgetxattr(vfs_handle_struct *handle,
 	return -1;
 }
 
-ssize_t vfs_not_implemented_listxattr(vfs_handle_struct *handle,
-				      const struct smb_filename *smb_fname,
-				      char *list,
-				      size_t size)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 ssize_t vfs_not_implemented_flistxattr(vfs_handle_struct *handle,
 				       struct files_struct *fsp, char *list,
 				       size_t size)
@@ -1143,7 +1134,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_not_implemented_fgetxattr,
-	.listxattr_fn = vfs_not_implemented_listxattr,
 	.flistxattr_fn = vfs_not_implemented_flistxattr,
 	.removexattr_fn = vfs_not_implemented_removexattr,
 	.fremovexattr_fn = vfs_not_implemented_fremovexattr,
