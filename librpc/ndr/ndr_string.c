@@ -334,6 +334,10 @@ _PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 
 _PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	if (s) {
 		ndr->print(ndr, "%-25s: '%s'", name, s);
 	} else {
