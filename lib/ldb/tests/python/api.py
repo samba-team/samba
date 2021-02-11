@@ -10,7 +10,6 @@ import time
 import ldb
 import shutil
 
-PY3 = sys.version_info > (3, 0)
 
 TDB_PREFIX = "tdb://"
 MDB_PREFIX = "mdb://"
@@ -150,12 +149,9 @@ class SimpleLdb(LdbBaseTest):
         except UnicodeDecodeError as e:
                 raise
         except TypeError as te:
-            if PY3:
-               p3errors = ["argument 2 must be str, not bytes",
-                           "Can't convert 'bytes' object to str implicitly"]
-               self.assertIn(str(te), p3errors)
-            else:
-               raise
+           p3errors = ["argument 2 must be str, not bytes",
+                       "Can't convert 'bytes' object to str implicitly"]
+           self.assertIn(str(te), p3errors)
 
     def test_search_attrs(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
@@ -3031,24 +3027,14 @@ class LdbMsgTests(TestCase):
     def test_repr(self):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=foo29")
         self.msg["dc"] = b"foo"
-        if PY3:
-            self.assertIn(repr(self.msg), [
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement([b'foo'])})",
-                "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')})",
-            ])
-            self.assertIn(repr(self.msg.text), [
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement([b'foo'])}).text",
-                "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')}).text",
-            ])
-        else:
-            self.assertIn(repr(self.msg), [
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})",
-                "Message({'dc': MessageElement(['foo']), 'dn': Dn('dc=foo29')})",
-            ])
-            self.assertIn(repr(self.msg.text), [
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])}).text",
-                "Message({'dc': MessageElement(['foo']), 'dn': Dn('dc=foo29')}).text",
-            ])
+        self.assertIn(repr(self.msg), [
+            "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement([b'foo'])})",
+            "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')})",
+        ])
+        self.assertIn(repr(self.msg.text), [
+            "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement([b'foo'])}).text",
+            "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')}).text",
+        ])
 
     def test_len(self):
         self.assertEqual(0, len(self.msg))
@@ -3288,20 +3274,12 @@ class MessageElementTests(TestCase):
 
     def test_repr(self):
         x = ldb.MessageElement([b"foo"])
-        if PY3:
-            self.assertEqual("MessageElement([b'foo'])", repr(x))
-            self.assertEqual("MessageElement([b'foo']).text", repr(x.text))
-        else:
-            self.assertEqual("MessageElement(['foo'])", repr(x))
-            self.assertEqual("MessageElement(['foo']).text", repr(x.text))
+        self.assertEqual("MessageElement([b'foo'])", repr(x))
+        self.assertEqual("MessageElement([b'foo']).text", repr(x.text))
         x = ldb.MessageElement([b"foo", b"bla"])
         self.assertEqual(2, len(x))
-        if PY3:
-            self.assertEqual("MessageElement([b'foo',b'bla'])", repr(x))
-            self.assertEqual("MessageElement([b'foo',b'bla']).text", repr(x.text))
-        else:
-            self.assertEqual("MessageElement(['foo','bla'])", repr(x))
-            self.assertEqual("MessageElement(['foo','bla']).text", repr(x.text))
+        self.assertEqual("MessageElement([b'foo',b'bla'])", repr(x))
+        self.assertEqual("MessageElement([b'foo',b'bla']).text", repr(x.text))
 
     def test_get_item(self):
         x = ldb.MessageElement([b"foo", b"bar"])
@@ -3332,12 +3310,8 @@ class MessageElementTests(TestCase):
 
     def test_extended(self):
         el = ldb.MessageElement([b"456"], ldb.FLAG_MOD_ADD, "bla")
-        if PY3:
-            self.assertEqual("MessageElement([b'456'])", repr(el))
-            self.assertEqual("MessageElement([b'456']).text", repr(el.text))
-        else:
-            self.assertEqual("MessageElement(['456'])", repr(el))
-            self.assertEqual("MessageElement(['456']).text", repr(el.text))
+        self.assertEqual("MessageElement([b'456'])", repr(el))
+        self.assertEqual("MessageElement([b'456']).text", repr(el.text))
 
     def test_bad_text(self):
         el = ldb.MessageElement(b'\xba\xdd')

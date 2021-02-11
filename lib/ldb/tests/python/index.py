@@ -30,7 +30,6 @@ import sys
 import ldb
 import shutil
 
-PY3 = sys.version_info > (3, 0)
 
 TDB_PREFIX = "tdb://"
 MDB_PREFIX = "mdb://"
