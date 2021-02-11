@@ -165,7 +165,7 @@ class SegfaultTests(samba.tests.TestCase):
 
     @segfault_detector
     def test_rpcecho(self):
-        from dcerpc import echo
+        from samba.dcerpc import echo
         echo.rpcecho("")
 
     @segfault_detector
