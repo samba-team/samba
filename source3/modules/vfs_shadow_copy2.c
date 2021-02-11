@@ -1578,26 +1578,43 @@ static int shadow_copy2_readlinkat(vfs_handle_struct *handle,
 	char *stripped = NULL;
 	int saved_errno = 0;
 	int ret;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *conv = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname,
-					 &timestamp, &stripped)) {
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
+
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+					handle,
+					full_fname,
+					&timestamp,
+					&stripped)) {
+		TALLOC_FREE(full_fname);
+		return -1;
+	}
+
 	if (timestamp == 0) {
+		TALLOC_FREE(full_fname);
+		TALLOC_FREE(stripped);
 		return SMB_VFS_NEXT_READLINKAT(handle,
 				dirfsp,
 				smb_fname,
 				buf,
 				bufsiz);
 	}
-	conv = cp_smb_filename(talloc_tos(), smb_fname);
+	conv = cp_smb_filename(talloc_tos(), full_fname);
 	if (conv == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(stripped);
 		errno = ENOMEM;
 		return -1;
 	}
+	TALLOC_FREE(full_fname);
 	conv->base_name = shadow_copy2_convert(
 		conv, handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
@@ -1605,7 +1622,7 @@ static int shadow_copy2_readlinkat(vfs_handle_struct *handle,
 		return -1;
 	}
 	ret = SMB_VFS_NEXT_READLINKAT(handle,
-				dirfsp,
+				handle->conn->cwd_fsp,
 				conv,
 				buf,
 				bufsiz);
