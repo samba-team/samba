@@ -1876,11 +1876,23 @@ static int vfs_gluster_readlinkat(struct vfs_handle_struct *handle,
 				char *buf,
 				size_t bufsiz)
 {
+	struct smb_filename *full_fname = NULL;
 	int ret;
 
 	START_PROFILE(syscall_readlinkat);
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-	ret = glfs_readlink(handle->data, smb_fname->base_name, buf, bufsiz);
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		END_PROFILE(syscall_readlinkat);
+		return -1;
+	}
+
+	ret = glfs_readlink(handle->data, full_fname->base_name, buf, bufsiz);
+
+	TALLOC_FREE(full_fname);
+
 	END_PROFILE(syscall_readlinkat);
 
 	return ret;
