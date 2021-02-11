@@ -1090,13 +1090,21 @@ static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
 		char *buf,
 		size_t bufsiz)
 {
+	struct smb_filename *full_fname = NULL;
 	int result = -1;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
 	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle,
-			smb_fname->base_name, buf, llu(bufsiz));
+			full_fname->base_name, buf, llu(bufsiz));
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
-	result = ceph_readlink(handle->data, smb_fname->base_name, buf, bufsiz);
+	result = ceph_readlink(handle->data, full_fname->base_name, buf, bufsiz);
+	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] readlink(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
