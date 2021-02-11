@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "msdfs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -141,6 +142,12 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	}
 	mapfilename[filename_len] = '\0';
 
+	/*
+	 * dfs links returned have had '/' characters replaced with '\'.
+	 * Return them to '/' so we can have absoute path mapfilenames.
+	 */
+	string_replace(mapfilename, '\\', '/');
+
 	DEBUG(10, ("Expanding from table [%s]\n", mapfilename));
 
 	raddr = tsocket_address_inet_addr_string(conn->sconn->remote_address,
@@ -182,56 +189,76 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	return new_target;
 }
 
-static int expand_msdfs_readlinkat(struct vfs_handle_struct *handle,
-				const struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				char *buf,
-				size_t bufsiz)
+static NTSTATUS expand_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
 {
-	TALLOC_CTX *ctx = talloc_tos();
-	int result;
-	char *target = talloc_array(ctx, char, PATH_MAX+1);
-	size_t len;
+	NTSTATUS status;
+	size_t i;
+	struct referral *reflist = NULL;
+	size_t count = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!target) {
-		errno = ENOMEM;
-		return -1;
-	}
-	if (bufsiz == 0) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	result = SMB_VFS_NEXT_READLINKAT(handle,
+	/*
+	 * Always call the NEXT function first, then
+	 * modify the return if needed.
+	 */
+	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+				mem_ctx,
 				dirfsp,
 				smb_fname,
-				target,
-				PATH_MAX);
+				ppreflist,
+				preferral_count);
 
-	if (result <= 0)
-		return result;
-
-	target[result] = '\0';
-
-	if ((strncmp(target, "msdfs:", 6) == 0) &&
-	    (strchr_m(target, '@') != NULL)) {
-		target = expand_msdfs_target(ctx, handle->conn, target);
-		if (!target) {
-			errno = ENOENT;
-			return -1;
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	len = MIN(bufsiz, strlen(target));
+	/*
+	 * This function can be called to check if a pathname
+	 * is an MSDFS link, but not return the values of it.
+	 * In this case ppreflist and preferral_count are NULL,
+	 * so don't bother trying to look at any returns.
+	 */
+	if (ppreflist == NULL || preferral_count == NULL) {
+		TALLOC_FREE(frame);
+		return status;
+	}
 
-	memcpy(buf, target, len);
+	/*
+	 * We are always returning the values returned
+	 * returned by the NEXT call, but we might mess
+	 * with the reflist[i].alternate_path values,
+	 * so use local pointers to minimise indirections.
+	 */
+	count = *preferral_count;
+	reflist = *ppreflist;
 
-	TALLOC_FREE(target);
-	return len;
+	for (i = 0; i < count; i++) {
+		if (strchr_m(reflist[i].alternate_path, '@') != NULL) {
+			char *new_altpath = expand_msdfs_target(frame,
+						handle->conn,
+						reflist[i].alternate_path);
+			if (new_altpath == NULL) {
+				TALLOC_FREE(*ppreflist);
+				*preferral_count = 0;
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+			reflist[i].alternate_path = talloc_move(reflist,
+							&new_altpath);
+		}
+	}
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
-	.readlinkat_fn = expand_msdfs_readlinkat
+	.read_dfs_pathat_fn = expand_read_dfs_pathat,
 };
 
 static_decl_vfs;
