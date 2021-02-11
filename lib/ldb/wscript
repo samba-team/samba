@@ -614,6 +614,7 @@ def test(ctx):
         os.mkdir(tmp_dir)
     pyret = samba_utils.RUN_PYTHON_TESTS(
         ['tests/python/api.py',
+         'tests/python/crash.py',
          'tests/python/index.py',
          'tests/python/repack.py'],
         extra_env={'SELFTEST_PREFIX': test_prefix})
