@@ -2743,6 +2743,11 @@ sub setup_preforkrestartdc
 		return undef;
 	}
 
+        # We treat processes in this environment cruelly, sometimes
+        # sending them SIGSEGV signals. We don't need gdb_backtrace
+        # dissecting these fake crashes in precise detail.
+        $env->{PLEASE_NO_GDB_BACKTRACE} = '1';
+
 	$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
 	$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
 
