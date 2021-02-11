@@ -184,9 +184,3 @@ class SegfaultTests(samba.tests.TestCase):
     def test_dcerpc_idl_inline_arrays(self):
         """Inline arrays were incorrectly handled."""
         dnsserver.DNS_RPC_SERVER_INFO_DOTNET().pExtensions
-
-    @segfault_detector
-    def test_ldb_dn_explode_crash(self):
-        for i in range(106, 550, 5):
-            dn = ldb.Dn(ldb.Ldb(), "a=b%s,c= " % (' ' * i))
-            dn.validate()
