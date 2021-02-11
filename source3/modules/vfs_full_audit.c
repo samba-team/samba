@@ -1846,7 +1846,15 @@ static int smb_full_audit_readlinkat(vfs_handle_struct *handle,
 			char *buf,
 			size_t bufsiz)
 {
+	struct smb_filename *full_fname = NULL;
 	int result;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_READLINKAT(handle,
 			dirfsp,
@@ -1858,7 +1866,9 @@ static int smb_full_audit_readlinkat(vfs_handle_struct *handle,
 	       (result >= 0),
 	       handle,
 	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
+	       smb_fname_str_do_log(handle->conn, full_fname));
+
+	TALLOC_FREE(full_fname);
 
 	return result;
 }
