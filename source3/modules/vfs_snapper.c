@@ -2243,14 +2243,18 @@ static int snapper_gmt_readlinkat(vfs_handle_struct *handle,
 				size_t bufsiz)
 {
 	time_t timestamp = 0;
-	char *stripped = NULL;
 	int ret;
 	int saved_errno = 0;
-	struct smb_filename *conv = NULL;
+	struct smb_filename *full_fname = NULL;
 
+	/*
+	 * Now this function only looks at smb_fname->twrp
+	 * we don't need to copy out the path. Just use
+	 * smb_fname->base_name directly.
+	 */
 	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
 					smb_fname,
-					&timestamp, &stripped)) {
+					&timestamp, NULL)) {
 		return -1;
 	}
 	if (timestamp == 0) {
@@ -2260,27 +2264,31 @@ static int snapper_gmt_readlinkat(vfs_handle_struct *handle,
 				buf,
 				bufsiz);
 	}
-	conv = cp_smb_filename(talloc_tos(), smb_fname);
-	if (conv == NULL) {
-		TALLOC_FREE(stripped);
-		errno = ENOMEM;
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+				dirfsp,
+				smb_fname);
+	if (full_fname == NULL) {
 		return -1;
 	}
-	conv->base_name = snapper_gmt_convert(conv, handle,
-					      stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv->base_name == NULL) {
+
+	/* Find the snapshot path from the full pathname. */
+	full_fname->base_name = snapper_gmt_convert(full_fname,
+					handle,
+					full_fname->base_name,
+					timestamp);
+	if (full_fname->base_name == NULL) {
+		TALLOC_FREE(full_fname);
 		return -1;
 	}
 	ret = SMB_VFS_NEXT_READLINKAT(handle,
-				dirfsp,
-				conv,
+				handle->conn->cwd_fsp,
+				full_fname,
 				buf,
 				bufsiz);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
-	TALLOC_FREE(conv);
+	TALLOC_FREE(full_fname);
 	if (saved_errno != 0) {
 		errno = saved_errno;
 	}
