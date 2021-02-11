@@ -57,6 +57,16 @@ def segfault_detector(f):
     return wrapper
 
 
+def no_gdb_backtrace(f):
+    from os import environ
+    def w(*args, **kwargs):
+        environ['PLEASE_NO_GDB_BACKTRACE'] = '1'
+        f(*args, **kwargs)
+        del environ['PLEASE_NO_GDB_BACKTRACE']
+
+    return w
+
+
 class SegfaultTests(samba.tests.TestCase):
     def get_lp_et_al(self):
         server = os.environ["SERVER"]
@@ -78,6 +88,7 @@ class SegfaultTests(samba.tests.TestCase):
         net = Net(creds, lp, server=server)
         net.replicate_init(42, lp, None, misc.GUID())
 
+    @no_gdb_backtrace
     @segfault_detector
     def test_net_replicate_init__3(self):
         # third argument is also unchecked
