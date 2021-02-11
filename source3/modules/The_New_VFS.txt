@@ -341,7 +341,7 @@ Table of Contents
    SMB_VFS_READ_DFS_PATHAT()          [Symlink]   Todo
    SMB_VFS_READDIR()                  [fsp]       -
    SMB_VFS_READDIR_ATTR()             [Path]      Todo
-   SMB_VFS_READLINKAT()               [Symlink]   Todo
+   SMB_VFS_READLINKAT()               [Symlink]   -
    SMB_VFS_REALPATH()                 [P2px]      -
    SMB_VFS_RECVFILE()                 [fsp]       -
    SMB_VFS_REMOVEXATTR()              [Path]      Todo

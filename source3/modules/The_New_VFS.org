@@ -273,7 +273,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_READ_DFS_PATHAT()         | [[Symlink][Symlink]]  | Todo   |
 | SMB_VFS_READDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_READDIR_ATTR()            | [[Path][Path]]     | Todo   |
-| SMB_VFS_READLINKAT()              | [[Symlink][Symlink]]  | Todo   |
+| SMB_VFS_READLINKAT()              | [[Symlink][Symlink]]  | -      |
 | SMB_VFS_REALPATH()                | [[P2px][P2px]]     | -      |
 | SMB_VFS_RECVFILE()                | [[fsp][fsp]]      | -      |
 | SMB_VFS_REMOVEXATTR()             | [[Path][Path]]     | Todo   |
