@@ -1029,15 +1029,19 @@ static int ceph_snap_gmt_readlinkat(vfs_handle_struct *handle,
 				size_t bufsiz)
 {
 	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
 	char conv[PATH_MAX + 1];
 	int ret;
-	struct smb_filename *new_fname;
+	struct smb_filename *full_fname = NULL;
 	int saved_errno;
 
+	/*
+	 * Now this function only looks at csmb_fname->twrp
+	 * we don't need to copy out the path. Just use
+	 * csmb_fname->base_name directly.
+	 */
 	ret = ceph_snap_gmt_strip_snapshot(handle,
 					csmb_fname,
-					&timestamp, stripped, sizeof(stripped));
+					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
 		return -1;
@@ -1049,26 +1053,34 @@ static int ceph_snap_gmt_readlinkat(vfs_handle_struct *handle,
 				buf,
 				bufsiz);
 	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						csmb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	/* Find the snapshot path from the full pathname. */
+	ret = ceph_snap_gmt_convert(handle,
+				full_fname->base_name,
+				timestamp,
+				conv,
+				sizeof(conv));
 	if (ret < 0) {
+		TALLOC_FREE(full_fname);
 		errno = -ret;
 		return -1;
 	}
-	new_fname = cp_smb_filename(talloc_tos(), csmb_fname);
-	if (new_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	new_fname->base_name = conv;
+	full_fname->base_name = conv;
 
 	ret = SMB_VFS_NEXT_READLINKAT(handle,
-				dirfsp,
-				new_fname,
+				handle->conn->cwd_fsp,
+				full_fname,
 				buf,
 				bufsiz);
 	saved_errno = errno;
-	TALLOC_FREE(new_fname);
+	TALLOC_FREE(full_fname);
 	errno = saved_errno;
 	return ret;
 }
