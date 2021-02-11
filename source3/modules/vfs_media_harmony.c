@@ -1679,10 +1679,19 @@ static int mh_readlinkat(vfs_handle_struct *handle,
 		size_t bufsiz)
 {
 	int status;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_readlinkat\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		status = -1;
+		goto err;
+	}
+
+	if (!is_in_media_files(full_fname->base_name)) {
 		status = SMB_VFS_NEXT_READLINKAT(handle,
 				dirfsp,
 				smb_fname,
@@ -1692,13 +1701,13 @@ static int mh_readlinkat(vfs_handle_struct *handle,
 	}
 
 	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				smb_fname,
+				full_fname,
 				&clientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_READLINKAT(handle,
-				dirfsp,
+				handle->conn->cwd_fsp,
 				clientFname,
 				buf,
 				bufsiz);
@@ -1706,6 +1715,7 @@ static int mh_readlinkat(vfs_handle_struct *handle,
 err:
 	TALLOC_FREE(clientFname);
 out:
+	TALLOC_FREE(full_fname);
 	return status;
 }
 
