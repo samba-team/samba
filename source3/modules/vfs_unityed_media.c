@@ -1322,10 +1322,19 @@ static int um_readlinkat(vfs_handle_struct *handle,
 {
 	int status;
 	struct smb_filename *client_fname = NULL;
+	struct smb_filename *full_fname = NULL;
 
 	DEBUG(10, ("Entering um_readlinkat\n"));
 
-	if (!is_in_media_files(smb_fname->base_name)) {
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	if (!is_in_media_files(full_fname->base_name)) {
+		TALLOC_FREE(full_fname);
 		return SMB_VFS_NEXT_READLINKAT(handle,
 				dirfsp,
 				smb_fname,
@@ -1334,18 +1343,19 @@ static int um_readlinkat(vfs_handle_struct *handle,
 	}
 
 	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname, &client_fname);
+					    full_fname, &client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_READLINKAT(handle,
-				dirfsp,
+				handle->conn->cwd_fsp,
 				client_fname,
 				buf,
 				bufsiz);
 
 err:
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(client_fname);
 	return status;
 }
