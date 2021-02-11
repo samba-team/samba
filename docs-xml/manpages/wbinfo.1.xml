@@ -582,8 +582,8 @@
 		the operation will fail. </para></listitem>
 		</varlistentry>
 
-		&stdarg.version;
-		&stdarg.help;
+		&cmdline.version;
+		&popt.autohelp;
 
 	</variablelist>
 </refsect1>
