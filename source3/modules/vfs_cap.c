@@ -553,12 +553,22 @@ static int cap_readlinkat(vfs_handle_struct *handle,
 			char *buf,
 			size_t bufsiz)
 {
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = NULL;
 	int saved_errno = 0;
 	int ret;
 
-	if (!cappath) {
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return -1;
+	}
+
+	cappath = capencode(talloc_tos(), full_fname->base_name);
+	if (cappath == NULL) {
+		TALLOC_FREE(full_fname);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -569,18 +579,20 @@ static int cap_readlinkat(vfs_handle_struct *handle,
 					smb_fname->twrp,
 					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
 		return -1;
 	}
 	ret = SMB_VFS_NEXT_READLINKAT(handle,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			cap_smb_fname,
 			buf,
 			bufsiz);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(cappath);
 	TALLOC_FREE(cap_smb_fname);
 	if (saved_errno != 0) {
