@@ -49,7 +49,6 @@ def segfault_detector(f):
             os._exit(0)
 
         pid2, status = os.waitpid(pid, 0)
-        signal = status & 255
         if os.WIFSIGNALED(status):
             signal = os.WTERMSIG(status)
             raise AssertionError("Failed with signal %d" % signal)
