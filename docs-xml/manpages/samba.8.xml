@@ -19,21 +19,21 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>samba</command>
-		<arg choice="opt">-D</arg>
-		<arg choice="opt">-i</arg>
-		<arg choice="opt">-M &lt;model&gt;</arg>
-		<arg choice="opt">--maximum-runtime=&lt;seconds&gt;</arg>
-		<arg choice="opt">-b</arg>
-		<arg choice="opt">--help</arg>
-		<arg choice="opt">--usage</arg>
-		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">--debug-stderr</arg>
-		<arg choice="opt">-s &lt;configuration file&gt;</arg>
-		<arg choice="opt">--option=&lt;smb_conf_param&gt;=&lt;value&gt;</arg>
-		<arg choice="opt">-l &lt;log directory&gt;</arg>
+		<arg choice="opt">-D|--daemon</arg>
+		<arg choice="opt">-F|--foreground</arg>
+		<arg choice="opt">-i|--interactive</arg>
+		<arg choice="opt">-M|--model=MODEL</arg>
+		<arg choice="opt">--maximum-runtime=seconds</arg>
+		<arg choice="opt">-b|--show-build</arg>
+		<arg choice="opt">--no-process-group</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
 		<arg choice="opt">--leak-report</arg>
 		<arg choice="opt">--leak-report-full</arg>
-		<arg choice="opt">-V</arg>
+		<arg choice="opt">-V|--version</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -85,6 +85,14 @@
 		than casual use file and print services.  This switch is
 		assumed if <command>samba</command> is executed on the
 		command line of a shell.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-F|--foreground</term>
+		<listitem><para>If specified, this parameter causes
+		the <command>samba</command> process to not daemonize,
+		i.e. double-fork and disassociate with the terminal.
 		</para></listitem>
 		</varlistentry>
 
@@ -155,29 +163,7 @@
 		</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>--usage</term>
-		<listitem><para>Display brief usage message.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--debug-stderr</term>
-		<listitem><para>Send debug output to STDERR.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--leak-report</term>
-		<listitem><para>Enable talloc leak reporting on exit.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--leak-report-full</term>
-		<listitem><para>Enable full talloc leak reporting on exit.
-		</para></listitem>
-		</varlistentry>
-
-		&popt.common.samba.server;
+		&cmdline.common.samba.server;
 		&popt.autohelp;
 	</variablelist>
 </refsect1>
