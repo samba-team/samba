@@ -19,19 +19,40 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>winexe</command>
-		<arg choice="opt">-h</arg>
-		<arg choice="opt">-V</arg>
-		<arg choice="opt">-U [DOMAIN/]USERNAME[%PASSWORD]</arg>
-		<arg choice="opt">-A FILE</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-k</arg>
-		<arg choice="opt">-d DEBUGLEVEL</arg>
 		<arg choice="opt">--uninstall</arg>
 		<arg choice="opt">--reinstall</arg>
 		<arg choice="opt">--runas [DOMAIN/]USERNAME[%PASSWORD]</arg>
 		<arg choice="opt">--runas-file FILE</arg>
 		<arg choice="opt">--interactive [0|1]</arg>
 		<arg choice="opt">--ostype [0|1]</arg>
+		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
+		<arg choice="opt">--debug-stdout</arg>
+		<arg choice="opt">--configfile=CONFIGFILE</arg>
+		<arg choice="opt">--option=name=value</arg>
+		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
+		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
+		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
+		<arg choice="opt">--netbios-scope=SCOPE</arg>
+		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
+		<arg choice="opt">--realm=REALM</arg>
+		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME%[PASSWORD]</arg>
+		<arg choice="opt">-N|--no-pass</arg>
+		<arg choice="opt">--password=STRING</arg>
+		<arg choice="opt">--pw-nt-hash</arg>
+		<arg choice="opt">-A|--authentication-file=FILE</arg>
+		<arg choice="opt">-P|--machine-pass</arg>
+		<arg choice="opt">--simple-bind-dn=DN</arg>
+		<arg choice="opt">--use-kerberos=desired|required|off</arg>
+		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
+		<arg choice="opt">--use-winbind-ccache</arg>
+		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
+		<arg choice="opt">-V|--version</arg>
+		<arg choice="opt">-?|--help</arg>
+		<arg choice="opt">--usage</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -49,15 +70,6 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
-
-		&stdarg.help;
-		&stdarg.version;
-		&stdarg.username;
-		&stdarg.authfile;
-		&stdarg.nopass;
-		&stdarg.kerberos;
-		&stdarg.client.debug;
-
 		<varlistentry>
 		<term>--uninstall</term>
 		<listitem>
@@ -148,6 +160,10 @@
 		</listitem>
 		</varlistentry>
 
+		&cmdline.common.samba.client;
+		&cmdline.common.connection;
+		&cmdline.common.credentials;
+		&popt.autohelp;
 	</variablelist>
 </refsect1>
 
