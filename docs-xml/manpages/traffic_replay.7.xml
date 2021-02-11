@@ -369,16 +369,16 @@
 	<term>Samba Common Options</term>
 	<listitem>
 	<itemizedlist>
-		&stdarg.client.debug;
-		&stdarg.configfile;
-		&stdarg.option;
+		&cmdline.common.debug.client;
+		&cmdline.common.config.client;
+		&cmdline.common.option;
 		<varlistentry>
 		<term>--realm=REALM</term>
 		<listitem><para>
 		Set the realm name
 		</para></listitem>
 		</varlistentry>
-		&stdarg.version;
+		&cmdline.version;
 	</itemizedlist>
 	</listitem>
 	</varlistentry>
@@ -415,7 +415,7 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.kerberos;
+		&cmdline.common.credentials.usekerberos;
 
 		<varlistentry>
 		<term>--ipaddress=IPADDRESS</term>
@@ -424,7 +424,7 @@
 		</para></listitem>
 		</varlistentry>
 
-		&stdarg.machinepass;
+		&cmdline.common.credentials.machinepass;
 	</itemizedlist>
 	</listitem>
 	</varlistentry>
