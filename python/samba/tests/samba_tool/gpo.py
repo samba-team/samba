@@ -1161,6 +1161,27 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertTrue(os.path.exists(local_script_path),
                         'The test script was not uploaded to the sysvol')
 
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "scripts", "startup",
+                                                 "remove"), self.gpo_guid,
+                                                 f.name, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Script remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "scripts",
+                                                 "startup", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(entry, out, 'The test entry was still found!')
+
     def test_startup_script_list(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
