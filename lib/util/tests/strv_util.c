@@ -106,10 +106,11 @@ static bool test_strv_split_some(struct torture_context *tctx)
 	};
 	const char *t;
 	char *strv = NULL;
-	int j;
+	size_t j;
 
 	for (j = 0; j < ARRAY_SIZE(data); j++) {
-		int i, num, ret;
+		size_t i, num;
+		int ret;
 		const struct test_str_split_data *d = &data[j];
 
 		num = 0;
