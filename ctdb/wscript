@@ -139,6 +139,17 @@ def configure(conf):
                     define='HAVE_PACKETSOCKET',
                     headers='sys/socket.h linux/if_packet.h')
 
+    conf.CHECK_CODE('''pthread_mutex_t m;
+                       int pid = 0;
+                       m.__data.__owner = pid;
+                    ''',
+                    'HAVE_PTHREAD_INTERNAL_MUTEX_OWNER',
+                    headers='pthread.h',
+                    msg='Checking for internal POSIX mutex owner field')
+    if not conf.env.HAVE_PTHREAD_INTERNAL_MUTEX_OWNER:
+        # This is unsupported - please see note in debug_locks.sh
+        Logs.info('Building without unsupported mutex debugging hack')
+
     if conf.env.standalone_ctdb:
         conf.SAMBA_CHECK_PERL(mandatory=True)
 
@@ -665,6 +676,12 @@ def build(bld):
                      deps='',
                      install_path='${BINDIR}',
                      manpages='ping_pong.1')
+
+    if bld.env.HAVE_PTHREAD_INTERNAL_MUTEX_OWNER:
+        bld.SAMBA_BINARY('tdb_mutex_check',
+                         source='utils/tdb/tdb_mutex_check.c',
+                         deps='tdb pthread',
+                         install_path='${CTDB_HELPER_BINDIR}')
 
     if bld.env.HAVE_PMDA:
         bld.SAMBA_BINARY('pmdactdb',

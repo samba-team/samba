@@ -223,6 +223,7 @@ fi
 %dir %{_libexecdir}/ctdb
 %{_libexecdir}/ctdb/*
 %dir %{_libdir}/ctdb
+%{_libexecdir}/tdb_mutex_check
 %{_libdir}/ctdb/lib*
 %dir %{_datadir}/ctdb/events
 %{_datadir}/ctdb/events/*
