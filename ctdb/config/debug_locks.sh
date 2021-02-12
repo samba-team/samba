@@ -28,6 +28,44 @@ fi
 # Load/cache database options from configuration file
 ctdb_get_db_options
 
+dump_stack ()
+{
+	_pid="$1"
+
+	echo "----- Stack trace for PID=${_pid} -----"
+	# x is intentionally ignored
+	# shellcheck disable=SC2034
+	read x x state x <"/proc/${_pid}/stat"
+	if [ "$state" = "D" ] ; then
+		# Don't run gstack on a process in D state since
+		# gstack will hang until the process exits D state.
+		# Although it is possible for a process to transition
+		# to D state after this check, it is unlikely because
+		# if a process is stuck in D state then it is probably
+		# the reason why this script was called.  Note that a
+		# kernel stack almost certainly won't help diagnose a
+		# deadlock... but it will probably give us someone to
+		# blame!
+		echo "----- Process in D state, printing kernel stack only"
+		cat "/proc/${_pid}/stack"
+	else
+		gstack "$_pid"
+	fi
+}
+
+dump_stacks ()
+{
+	_pids="$1"
+
+	# Use word splitting to squash whitespace
+	# shellcheck disable=SC2086
+	_pids=$(echo $_pids | tr ' ' '\n' | sort -u)
+
+	for _pid in $_pids; do
+		dump_stack "$_pid"
+	done
+}
+
 (
     flock -n 9 || exit 1
 
@@ -61,32 +99,8 @@ ctdb_get_db_options
 	    pids=$(echo "$out" | grep -v "W$" | grep "$db" | grep -v ctdbd | awk '{print $1}')
 	    all_pids="$all_pids $pids"
 	done
-	# Use word splitting to squash whitespace
-	# shellcheck disable=SC2086
-	pids=$(echo $all_pids | tr ' ' '\n' | sort -u)
 
-	# For each process waiting, log stack trace
-	for pid in $pids ; do
-	    echo "----- Stack trace for PID=$pid -----"
-	    # x is intentionally ignored
-	    # shellcheck disable=SC2034
-	    read x x state x <"/proc/${pid}/stat"
-	    if [ "$state" = "D" ] ; then
-		# Don't run gstack on a process in D state since
-		# gstack will hang until the process exits D state.
-		# Although it is possible for a process to transition
-		# to D state after this check, it is unlikely because
-		# if a process is stuck in D state then it is probably
-		# the reason why this script was called.  Note that a
-		# kernel stack almost certainly won't help diagnose a
-		# deadlock... but it will probably give us someone to
-		# blame!
-		echo "----- Process in D state, printing kernel stack only"
-		cat "/proc/${pid}/stack"
-	    else
-		gstack "$pid"
-	    fi
-	done
+	dump_stacks "$all_pids"
     fi
 
     echo "===== End of debug locks PID=$$ ====="
