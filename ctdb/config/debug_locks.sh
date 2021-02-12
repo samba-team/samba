@@ -64,11 +64,8 @@ dump_stacks ()
 	done
 }
 
-(
-    flock -n 9 || exit 1
-
-    echo "===== Start of debug locks PID=$$ ====="
-
+debug_via_proc_locks ()
+{
     # Create sed expression to convert inodes to names.
     # Filenames don't contain dashes and we want basenames
     # shellcheck disable=SC2035
@@ -99,10 +96,22 @@ dump_stacks ()
 	    all_pids="$all_pids $pids"
 	done
 
-	dump_stacks "$all_pids"
+	lock_holder_pids="${lock_holder_pids:+${lock_holder_pids} }${all_pids}"
     fi
+}
 
-    echo "===== End of debug locks PID=$$ ====="
+(
+	flock -n 9 || exit 1
+
+	echo "===== Start of debug locks PID=$$ ====="
+
+	lock_holder_pids=""
+
+	debug_via_proc_locks
+
+	dump_stacks "$lock_holder_pids"
+
+	echo "===== End of debug locks PID=$$ ====="
 )9>"${CTDB_SCRIPT_VARDIR}/debug_locks.lock" | script_log "ctdbd-lock"
 
 exit 0
