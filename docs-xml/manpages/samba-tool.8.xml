@@ -944,6 +944,11 @@
 	<para>List VGP Startup Script Group Policy from the sysvol</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage scripts startup add</title>
+	<para>Adds VGP Startup Script Group Policy to the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>

@@ -69,6 +69,7 @@ from samba.common import get_bytes, get_string
 from configparser import ConfigParser
 from io import StringIO, BytesIO
 from samba.vgp_files_ext import calc_mode, stat_from_mode
+import hashlib
 
 
 def gpo_flags_string(value):
@@ -3141,7 +3142,84 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
 
     def run(self, gpo, script, args=None, run_as=None, run_once=None,
             H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        if not os.path.exists(script):
+            raise CommandError("Script '%s' does not exist" % script)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+                             'MACHINE\\VGP\\VTLA\\Unix\\Scripts\\Startup'])
+        vgp_xml = '\\'.join([vgp_dir, 'manifest.xml'])
+        try:
+            xml_data = ET.ElementTree(ET.fromstring(conn.loadfile(vgp_xml)))
+            policy = xml_data.getroot().find('policysetting')
+            data = policy.find('data')
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                # The file doesn't exist, so create the xml structure
+                xml_data = ET.ElementTree(ET.Element('vgppolicy'))
+                policysetting = ET.SubElement(xml_data.getroot(),
+                                              'policysetting')
+                pv = ET.SubElement(policysetting, 'version')
+                pv.text = '1'
+                name = ET.SubElement(policysetting, 'name')
+                name.text = 'Unix Scripts'
+                description = ET.SubElement(policysetting, 'description')
+                description.text = \
+                    'Represents Unix scripts to run on Group Policy clients'
+                data = ET.SubElement(policysetting, 'data')
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        script_data = open(script, 'rb').read()
+        listelement = ET.SubElement(data, 'listelement')
+        script_elm = ET.SubElement(listelement, 'script')
+        script_elm.text = os.path.basename(script)
+        hash = ET.SubElement(listelement, 'hash')
+        hash.text = hashlib.md5(script_data).hexdigest().upper()
+        if args is not None:
+            parameters = ET.SubElement(listelement, 'parameters')
+            parameters.text = args.strip('"').strip("'")
+        if run_as is not None:
+            run_as_elm = ET.SubElement(listelement, 'run_as')
+            run_as_elm.text = run_as
+        if run_once is not None:
+            ET.SubElement(listelement, 'run_once')
+
+        out = BytesIO()
+        xml_data.write(out, encoding='UTF-8', xml_declaration=True)
+        out.seek(0)
+        sysvol_script = '\\'.join([vgp_dir, os.path.basename(script)])
+        try:
+            create_directory_hier(conn, vgp_dir)
+            conn.savefile(vgp_xml, out.read())
+            conn.savefile(sysvol_script, script_data)
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
 
 class cmd_startup(SuperCommand):
     """Manage Startup Scripts Group Policy Objects"""
