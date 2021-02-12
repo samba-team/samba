@@ -1770,8 +1770,11 @@ extern void build_options(bool screen);
 	BlockSignals(True,SIGUSR2);
 #endif
 
-	/* POSIX demands that signals are inherited. If the invoking process has
-	 * these signals masked, we will have problems, as we won't recieve them. */
+	/*
+	 * POSIX demands that signals are inherited. If the invoking
+	 * process has these signals masked, we will have problems, as
+	 * we won't receive them.
+	 */
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGTERM);
