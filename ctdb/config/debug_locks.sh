@@ -1,11 +1,25 @@
 #!/bin/sh
 
-# This script parses /proc/locks and finds the processes that are holding
-# locks on CTDB databases.  For all those processes the script dumps a
-# stack trace.
+# This script attempts to find processes holding locks on a particular
+# CTDB database and dumps a stack trace for each such processe.
 #
-# This script can be used only if Samba is configured to use fcntl locks
-# rather than mutex locks.
+# There are 2 cases:
+#
+# * Samba is configured to use fcntl locks
+#
+#   In this case /proc/locks is parsed to find potential lock holders
+#
+# * Samba is configured to use POSIX robust mutexes
+#
+#   In this case the helper program tdb_mutex_check is used to find
+#   potential lock holders.
+#
+#   This helper program uses a private glibc struct field, so is
+#   neither portable nor supported.  If this field is not available
+#   then the helper is not built.  Unexpected changes in internal
+#   glibc structures may cause unexpected results, including crashes.
+#   Bug reports for this helper program are not accepted without an
+#   accompanying patch.
 
 [ -n "$CTDB_BASE" ] || \
     CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; echo "$PWD")
@@ -141,6 +155,48 @@ debug_via_proc_locks ()
 	lock_holder_pids="${lock_holder_pids:+${lock_holder_pids} }${_pids}"
 }
 
+debug_via_tdb_mutex ()
+{
+	_helper="${CTDB_HELPER_BINDIR}/tdb_mutex_check"
+	if [ ! -x "$_helper" ] ; then
+		# Mutex helper not available - not supported?
+		# Avoid not found error...
+		return
+	fi
+
+	# Helper should always succeed
+	if ! _t=$("$_helper" "$tdb_path") ; then
+		return
+	fi
+
+	_out=$(echo "$_t" | sed -n -e 's#^\[\(.*\)\] pid=\(.*\)#\2 \1#p')
+
+	if [ -z "$_out" ]; then
+		if [ -n "$_t" ] ; then
+			echo "$_t" | grep -F 'trylock failed'
+		fi
+		return
+	fi
+
+	# Get process names, append $tdb_path
+	_out=$(echo "$_out" |
+	       while read -r _pid _rest ; do
+		       _pname=$(ps -p "$_pid" -o comm=)
+		       _tdb=$(basename "$tdb_path")
+		       echo "${_pid} ${_pname} ${_tdb} ${_rest}"
+	       done)
+
+	# Log information about locks
+	echo "Lock holders:"
+	echo "$_out"
+
+	# Get PIDs of processes that are holding locks
+	_pids=$(echo "$_out" |
+		awk -v pid="$lock_helper_pid" '$1 != pid {print $1}')
+
+	lock_holder_pids="${lock_holder_pids:+${lock_holder_pids} }${_pids}"
+}
+
 (
 	flock -n 9 || exit 1
 
@@ -149,6 +205,10 @@ debug_via_proc_locks ()
 	lock_holder_pids=""
 
 	debug_via_proc_locks
+
+	if [ "$lock_type" = "MUTEX" ] ; then
+		debug_via_tdb_mutex
+	fi
 
 	dump_stacks "$lock_holder_pids"
 
