@@ -254,7 +254,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_LCHOWN()                  | [[Path][Path]]     | Todo   |
 | SMB_VFS_LINKAT()                  | [[NsC][NsC]]      | -      |
 | SMB_VFS_LINUX_SETLEASE()          | [[fsp][fsp]]      | -      |
-| SMB_VFS_LISTXATTR()               | [[Path][Path]]     | Todo   |
+| SMB_VFS_LISTXATTR()               | [[Path][Path]]     | -      |
 | SMB_VFS_LOCK()                    | [[fsp][fsp]]      | -      |
 | SMB_VFS_LSEEK()                   | [[fsp][fsp]]      | -      |
 | SMB_VFS_LSTAT()                   | [[Path][Path]]     | Todo   |
