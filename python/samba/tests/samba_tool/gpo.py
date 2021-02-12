@@ -32,6 +32,8 @@ from samba.common import get_string
 from configparser import ConfigParser
 from io import StringIO
 import xml.etree.ElementTree as etree
+from tempfile import NamedTemporaryFile
+from time import sleep
 
 source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.."))
 
@@ -1119,6 +1121,45 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(openssh, out, 'The test entry was still found!')
+
+    def test_startup_script_add(self):
+        lp = LoadParm()
+        fname = None
+        with NamedTemporaryFile() as f:
+            fname = os.path.basename(f.name)
+            f.write(b'#!/bin/sh\necho $@ hello world')
+            f.flush()
+            (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                     "scripts", "startup",
+                                                     "add"), self.gpo_guid,
+                                                     f.name, "'-n'", "-H",
+                                                     "ldap://%s" %
+                                                     os.environ["SERVER"],
+                                                     "-U%s%%%s" %
+                                                     (os.environ["USERNAME"],
+                                                     os.environ["PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, 'Script add failed')
+
+        script_path = '\\'.join(['\\', lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'MACHINE\\VGP\\VTLA\\Unix',
+                               'Scripts\\Startup', fname])
+        entry = '@reboot root %s -n' % script_path
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage", "scripts",
+                                                 "startup", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(entry, out, 'The test entry was not found!')
+        local_path = lp.get('path', 'sysvol')
+        local_script_path = os.path.join(local_path, lp.get('realm').lower(),
+                                         'Policies', self.gpo_guid,
+                                         'Machine/VGP/VTLA/Unix',
+                                         'Scripts/Startup', fname)
+        self.assertTrue(os.path.exists(local_script_path),
+                        'The test script was not uploaded to the sysvol')
 
     def test_startup_script_list(self):
         lp = LoadParm()
