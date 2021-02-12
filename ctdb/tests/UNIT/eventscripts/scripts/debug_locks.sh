@@ -53,11 +53,13 @@ do_test ()
 	_holder_state="$2"
 	_helper_scope="$3"
 
+	_lock_helper_pid="4132032"
+
 	FAKE_PS_MAP=$(cat <<EOF
 1234567 ctdbd S
 2345678 smbd S
 4131931 smbd ${_holder_state}
-4132032 ctdb_lock_helpe S+
+${_lock_helper_pid} ctdb_lock_helpe S+
 EOF
 		   )
 	export FAKE_PS_MAP
@@ -117,12 +119,12 @@ EOF
 	_helper_lock=""
 	if [ "$_helper_scope" = "DB" ] ; then
 		_helper_lock=$(cat <<EOF
--> POSIX  ADVISORY  WRITE 4132032 ${_locking_tdb_id} 168 170
+-> POSIX  ADVISORY  WRITE ${_lock_helper_pid} ${_locking_tdb_id} 168 170
 EOF
 			    )
 	elif [ "$_helper_scope" = "RECORD" ] ; then
 		_helper_lock=$(cat <<EOF
--> POSIX  ADVISORY  WRITE 4132032 ${_locking_tdb_id} 112736 112736
+-> POSIX  ADVISORY  WRITE ${_lock_helper_pid} ${_locking_tdb_id} 112736 112736
 EOF
 			    )
 	fi
@@ -206,5 +208,10 @@ $_out
 ===== End of debug locks PID=PID =====
 EOF
 
-	script_test "${script_dir}/${script}"
+	script_test "${script_dir}/${script}" \
+		    "$_lock_helper_pid" \
+		    "$_helper_scope" \
+		    "$_path" \
+		    "fcntl"
+
 }

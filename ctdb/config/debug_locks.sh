@@ -12,6 +12,17 @@
 
 . "${CTDB_BASE}/functions"
 
+if [ $# -ne 4 ] ; then
+	die "usage: $0 <pid> { DB | RECORD } <tdb_path> { FCNTL | MUTEX }"
+fi
+
+lock_helper_pid="$1"
+# lock_scope is unused for now
+# shellcheck disable=SC2034
+lock_scope="$2"
+tdb_path="$3"
+lock_type="$4"
+
 # type is at least mentioned in POSIX and more is portable than which(1)
 # shellcheck disable=SC2039
 if ! type gstack >/dev/null 2>&1 ; then
