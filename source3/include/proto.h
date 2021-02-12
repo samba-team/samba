@@ -515,11 +515,11 @@ NTSTATUS receive_smb_raw(int fd,
 			unsigned int timeout,
 			size_t maxlen,
 			size_t *p_len);
-int open_socket_in(int type,
-		uint16_t port,
-		int dlevel,
-		const struct sockaddr_storage *psock,
-		bool rebind);
+int open_socket_in(
+	int type,
+	const struct sockaddr_storage *paddr,
+	uint16_t port,
+	bool rebind);
 NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 			 int timeout, int *pfd);
 struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,

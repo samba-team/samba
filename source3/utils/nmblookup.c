@@ -50,12 +50,16 @@ static bool open_sockets(void)
 					"from string %s", sock_addr));
 		return false;
 	}
-	ServerFD = open_socket_in( SOCK_DGRAM,
-				(RootPort ? 137 : 0),
-				(RootPort ?   0 : 3),
-				&ss, true );
-
-	if (ServerFD == -1) {
+	ServerFD = open_socket_in(
+		SOCK_DGRAM, &ss, (RootPort ? 137 : 0), true);
+	if (ServerFD < 0) {
+		if (RootPort) {
+			DBG_ERR("open_socket_in failed: %s\n",
+				strerror(-ServerFD));
+		} else {
+			DBG_NOTICE("open_socket_in failed: %s\n",
+				   strerror(-ServerFD));
+		}
 		return false;
 	}
 

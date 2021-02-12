@@ -107,56 +107,55 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 		 * Fail the subnet creation if this fails.
 		 */
 
-		nmb_sock = open_socket_in(SOCK_DGRAM, global_nmb_port,
-					  0, &ss, true);
-		if (nmb_sock == -1) {
-			DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
-			DEBUGADD(0,("  Failed to open nmb socket on interface %s ",
-				    inet_ntoa(myip)));
-			DEBUGADD(0,("for port %d.  ", global_nmb_port));
-			DEBUGADD(0,("Error was %s\n", strerror(errno)));
+		nmb_sock = open_socket_in(
+			SOCK_DGRAM, &ss, global_nmb_port, true);
+		if (nmb_sock < 0) {
+			DBG_ERR("Failed to open nmb socket on interface %s "
+				"for port %d: %s\n",
+				inet_ntoa(myip),
+				global_nmb_port,
+				strerror(-nmb_sock));
 			goto failed;
 		}
 		set_socket_options(nmb_sock,"SO_BROADCAST");
 		set_blocking(nmb_sock, false);
 
 		if (bind_bcast) {
-			nmb_bcast = open_socket_in(SOCK_DGRAM, global_nmb_port,
-						   0, &ss_bcast, true);
-			if (nmb_bcast == -1) {
-				DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
-				DEBUGADD(0,("  Failed to open nmb bcast socket on interface %s ",
-					    inet_ntoa(bcast_ip)));
-				DEBUGADD(0,("for port %d.  ", global_nmb_port));
-				DEBUGADD(0,("Error was %s\n", strerror(errno)));
+			nmb_bcast = open_socket_in(
+				SOCK_DGRAM, &ss_bcast, global_nmb_port, true);
+			if (nmb_bcast < 0) {
+				DBG_ERR("Failed to open nmb bcast socket on "
+					"interface %s for port %d: %s\n",
+					inet_ntoa(myip),
+					global_nmb_port,
+					strerror(-nmb_bcast));
 				goto failed;
 			}
 			set_socket_options(nmb_bcast, "SO_BROADCAST");
 			set_blocking(nmb_bcast, false);
 		}
 
-		dgram_sock = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
-					    3, &ss, true);
-		if (dgram_sock == -1) {
-			DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
-			DEBUGADD(0,("  Failed to open dgram socket on interface %s ",
-				    inet_ntoa(myip)));
-			DEBUGADD(0,("for port %d.  ", DGRAM_PORT));
-			DEBUGADD(0,("Error was %s\n", strerror(errno)));
+		dgram_sock = open_socket_in(SOCK_DGRAM, &ss, DGRAM_PORT, true);
+		if (dgram_sock < 0) {
+			DBG_ERR("Failed to open dgram socket on "
+				"interface %s for port %d: %s\n",
+				inet_ntoa(myip),
+				DGRAM_PORT,
+				strerror(-dgram_sock));
 			goto failed;
 		}
 		set_socket_options(dgram_sock, "SO_BROADCAST");
 		set_blocking(dgram_sock, false);
 
 		if (bind_bcast) {
-			dgram_bcast = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
-						     3, &ss_bcast, true);
-			if (dgram_bcast == -1) {
-				DEBUG(0,   ("nmbd_subnetdb:make_subnet()\n"));
-				DEBUGADD(0,("  Failed to open dgram bcast socket on interface %s ",
-					    inet_ntoa(bcast_ip)));
-				DEBUGADD(0,("for port %d.  ", DGRAM_PORT));
-				DEBUGADD(0,("Error was %s\n", strerror(errno)));
+			dgram_bcast = open_socket_in(
+				SOCK_DGRAM, &ss_bcast, DGRAM_PORT, true);
+			if (dgram_bcast < 0) {
+				DBG_ERR("Failed to open dgram bcast socket on "
+					"interface %s for port %d: %s\n",
+					inet_ntoa(myip),
+					DGRAM_PORT,
+					strerror(-dgram_sock));
 				goto failed;
 			}
 			set_socket_options(dgram_bcast, "SO_BROADCAST");

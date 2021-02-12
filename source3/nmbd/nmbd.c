@@ -733,22 +733,18 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	if (isdaemon) {
-		ClientNMB = open_socket_in(SOCK_DGRAM, port,
-					   0, &ss,
-					   true);
+		ClientNMB = open_socket_in(SOCK_DGRAM, &ss, port, true);
 	} else {
 		ClientNMB = 0;
 	}
 
-	if (ClientNMB == -1) {
+	if (ClientNMB < 0) {
 		return false;
 	}
 
-	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
-					   3, &ss,
-					   true);
+	ClientDGRAM = open_socket_in(SOCK_DGRAM, &ss, DGRAM_PORT, true);
 
-	if (ClientDGRAM == -1) {
+	if (ClientDGRAM < 0) {
 		if (ClientNMB != 0) {
 			close(ClientNMB);
 		}

@@ -234,67 +234,59 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Open a socket of the specified type, port, and address for incoming data.
-****************************************************************************/
+/*
+ * Open a socket of the specified type, port, and address for incoming data.
+ *
+ * Return sock or -errno
+ */
 
-int open_socket_in(int type,
-		uint16_t port,
-		int dlevel,
-		const struct sockaddr_storage *psock,
-		bool rebind)
+int open_socket_in(
+	int type,
+	const struct sockaddr_storage *paddr,
+	uint16_t port,
+	bool rebind)
 {
-	struct sockaddr_storage sock;
-	int res;
-	socklen_t slen = sizeof(struct sockaddr_in);
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+		.u.ss = *paddr,
+	};
+	int ret, sock = -1;
+	int val = rebind ? 1 : 0;
+	bool ok;
 
-	sock = *psock;
-
-#if defined(HAVE_IPV6)
-	if (sock.ss_family == AF_INET6) {
-		((struct sockaddr_in6 *)&sock)->sin6_port = htons(port);
-		slen = sizeof(struct sockaddr_in6);
-	}
-#endif
-	if (sock.ss_family == AF_INET) {
-		((struct sockaddr_in *)&sock)->sin_port = htons(port);
-	}
-
-	res = socket(sock.ss_family, type, 0 );
-	if( res == -1 ) {
-		if( DEBUGLVL(0) ) {
-			dbgtext( "open_socket_in(): socket() call failed: " );
-			dbgtext( "%s\n", strerror( errno ) );
-		}
-		return -1;
+	ok = samba_sockaddr_set_port(&addr, port);
+	if (!ok) {
+		ret = -EINVAL;
+		DBG_DEBUG("samba_sockaddr_set_port failed\n");
+		goto fail;
 	}
 
-	/* This block sets/clears the SO_REUSEADDR and possibly SO_REUSEPORT. */
-	{
-		int val = rebind ? 1 : 0;
-		if( setsockopt(res,SOL_SOCKET,SO_REUSEADDR,
-					(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: " );
-				dbgtext( "SO_REUSEADDR = %s ",
-						val?"true":"false" );
-				dbgtext( "on port %d failed ", port );
-				dbgtext( "with error = %s\n", strerror(errno) );
-			}
-		}
+	sock = socket(addr.u.ss.ss_family, type, 0 );
+	if (sock == -1) {
+		ret = -errno;
+		DBG_DEBUG("socket() failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	ret = setsockopt(
+		sock, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
+	if (ret == -1) {
+		ret = -errno;
+		DBG_DEBUG("setsockopt(SO_REUSEADDR) failed: %s\n",
+			  strerror(errno));
+		goto fail;
+	}
+
 #ifdef SO_REUSEPORT
-		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,
-					(char *)&val,sizeof(val)) == -1 ) {
-			if( DEBUGLVL( dlevel ) ) {
-				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %s ",
-						val?"true":"false");
-				dbgtext( "on port %d failed ", port);
-				dbgtext( "with error = %s\n", strerror(errno));
-			}
-		}
-#endif /* SO_REUSEPORT */
+	ret = setsockopt(
+		sock, SOL_SOCKET, SO_REUSEPORT, (char *)&val, sizeof(val));
+	if (ret == -1) {
+		ret = -errno;
+		DBG_DEBUG("setsockopt(SO_REUSEPORT) failed: %s\n",
+			  strerror(errno));
+		goto fail;
 	}
+#endif /* SO_REUSEPORT */
 
 #ifdef HAVE_IPV6
 	/*
@@ -305,41 +297,50 @@ int open_socket_in(int type,
 	 * and makes sure %I never resolves to a '::ffff:192.168.0.1'
 	 * string.
 	 */
-	if (sock.ss_family == AF_INET6) {
-		int val = 1;
-		int ret;
+	if (addr.u.ss.ss_family == AF_INET6) {
 
-		ret = setsockopt(res, IPPROTO_IPV6, IPV6_V6ONLY,
-				 (const void *)&val, sizeof(val));
+		val = 1;
+
+		ret = setsockopt(
+			sock,
+			IPPROTO_IPV6,
+			IPV6_V6ONLY,
+			(const void *)&val,
+			sizeof(val));
 		if (ret == -1) {
-			if(DEBUGLVL(0)) {
-				dbgtext("open_socket_in(): IPV6_ONLY failed: ");
-				dbgtext("%s\n", strerror(errno));
-			}
-			close(res);
-			return -1;
+			ret = -errno;
+			DBG_DEBUG("setsockopt(IPV6_V6ONLY) failed: %s\n",
+				  strerror(errno));
+			goto fail;
 		}
 	}
 #endif
 
 	/* now we've got a socket - we need to bind it */
-	if (bind(res, (struct sockaddr *)&sock, slen) == -1 ) {
-		if( DEBUGLVL(dlevel) && (port == NMB_PORT ||
-					 port == NBT_SMB_PORT ||
-					 port == TCP_SMB_PORT) ) {
-			char addr[INET6_ADDRSTRLEN];
-			print_sockaddr(addr, sizeof(addr),
-					&sock);
-			dbgtext( "bind failed on port %d ", port);
-			dbgtext( "socket_addr = %s.\n", addr);
-			dbgtext( "Error = %s\n", strerror(errno));
-		}
-		close(res);
-		return -1;
+	ret = bind(sock, &addr.u.sa, addr.sa_socklen);
+	if (ret == -1) {
+		char addrstr[INET6_ADDRSTRLEN];
+
+		ret = -errno;
+
+		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
+		DBG_DEBUG("bind for %s port %"PRIu16" failed: %s\n",
+			  addrstr,
+			  port,
+			  strerror(-ret));
+		goto fail;
 	}
 
-	DEBUG( 10, ( "bind succeeded on port %d\n", port ) );
-	return( res );
+	DBG_DEBUG("bind succeeded on port %"PRIu16"\n", port);
+
+	return sock;
+
+fail:
+	if (sock != -1) {
+		close(sock);
+		sock = -1;
+	}
+	return ret;
  }
 
 struct open_socket_out_state {

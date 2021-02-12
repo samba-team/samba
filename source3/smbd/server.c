@@ -1073,14 +1073,11 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	}
 
 	s->parent = parent;
-	s->fd = open_socket_in(SOCK_STREAM,
-			       port,
-			       parent->sockets == NULL ? 0 : 2,
-			       ifss,
-			       true);
-	if (s->fd == -1) {
-		DEBUG(0,("smbd_open_one_socket: open_socket_in: "
-			"%s\n", strerror(errno)));
+
+	s->fd = open_socket_in(SOCK_STREAM, ifss, port, true);
+	if (s->fd < 0) {
+		int err = -(s->fd);
+		DBG_ERR("open_socket_in failed: %s\n", strerror(err));
 		TALLOC_FREE(s);
 		/*
 		 * We ignore an error here, as we've done before

@@ -120,26 +120,19 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(
 		uint16_t i;
 
 		for (i = lp_rpc_low_port(); i <= lp_rpc_high_port(); i++) {
-			fd = open_socket_in(SOCK_STREAM,
-					    i,
-					    0,
-					    ifss,
-					    false);
+			fd = open_socket_in(SOCK_STREAM, ifss, i, false);
 			if (fd >= 0) {
 				*port = i;
 				break;
 			}
 		}
 	} else {
-		fd = open_socket_in(SOCK_STREAM,
-				    *port,
-				    0,
-				    ifss,
-				    true);
+		fd = open_socket_in(SOCK_STREAM, ifss, *port, true);
 	}
-	if (fd == -1) {
+
+	if (fd < 0) {
 		DBG_ERR("Failed to create socket on port %u!\n", *port);
-		return NT_STATUS_UNSUCCESSFUL;
+		return map_nt_error_from_unix(-fd);
 	}
 
 	/* ready to listen */
