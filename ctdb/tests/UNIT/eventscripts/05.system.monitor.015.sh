@@ -14,7 +14,7 @@ set_mem_usage 90 90
 required_result 1 <<EOF
 ERROR: System memory utilization 90% >= threshold 85%
 $FAKE_PROC_MEMINFO
-$(ps foobar)
+$(ps auxfww)
 EOF
 
 simple_test

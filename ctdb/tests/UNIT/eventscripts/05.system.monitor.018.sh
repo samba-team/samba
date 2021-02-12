@@ -41,7 +41,7 @@ set_mem_usage 80 80
 required_result 1 <<EOF
 ERROR: System memory utilization 80% >= threshold 80%
 $FAKE_PROC_MEMINFO
-$(ps foobar)
+$(ps auxfww)
 EOF
 simple_test
 
@@ -72,7 +72,7 @@ set_mem_usage 81 81
 required_result 1 <<EOF
 ERROR: System memory utilization 81% >= threshold 80%
 $FAKE_PROC_MEMINFO
-$(ps foobar)
+$(ps auxfww)
 EOF
 simple_test
 
