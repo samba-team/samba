@@ -387,3 +387,63 @@ NTSTATUS map_info6_to_validation(TALLOC_CTX *mem_ctx,
 	*_validation = validation;
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS copy_netr_DsRGetDCNameInfo(TALLOC_CTX *mem_ctx,
+				    const struct netr_DsRGetDCNameInfo *in,
+				    struct netr_DsRGetDCNameInfo **pout)
+{
+	struct netr_DsRGetDCNameInfo *r;
+
+	r = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
+	if (r == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->dc_unc = talloc_strdup(r, in->dc_unc);
+	if (r->dc_unc == NULL) {
+		talloc_free(r);
+		return NT_STATUS_NO_MEMORY;
+	}
+	r->dc_address = talloc_strdup(r, in->dc_address);
+	if (r->dc_address == NULL) {
+		talloc_free(r);
+		return NT_STATUS_NO_MEMORY;
+	}
+	r->dc_address_type = in->dc_address_type;
+	r->domain_guid = in->domain_guid;
+	r->domain_name = talloc_strdup(r, in->domain_name);
+	if (r->domain_name == NULL) {
+		talloc_free(r);
+		return NT_STATUS_NO_MEMORY;
+	}
+	/* forest could be empty */
+	if (in->forest_name != NULL) {
+		r->forest_name = talloc_strdup(r, in->forest_name);
+		if (r->forest_name == NULL) {
+			talloc_free(r);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	r->dc_flags = in->dc_flags;
+	if (in->dc_site_name != NULL) {
+		r->dc_site_name = talloc_strdup(r, in->dc_site_name);
+		if (r->dc_site_name == NULL) {
+			talloc_free(r);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (in->client_site_name != NULL) {
+		r->client_site_name = talloc_strdup(r, in->client_site_name);
+		if (r->client_site_name == NULL) {
+			talloc_free(r);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*pout = r;
+
+	return NT_STATUS_OK;
+}

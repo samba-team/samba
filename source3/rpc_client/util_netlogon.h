@@ -47,5 +47,8 @@ NTSTATUS map_info6_to_validation(TALLOC_CTX *mem_ctx,
 				 const struct netr_SamInfo6 *info6,
 				 uint16_t *_validation_level,
 				 union netr_Validation **_validation);
+NTSTATUS copy_netr_DsRGetDCNameInfo(TALLOC_CTX *mem_ctx,
+				    const struct netr_DsRGetDCNameInfo *in,
+				    struct netr_DsRGetDCNameInfo **pout);
 
 #endif /* _RPC_CLIENT_UTIL_NETLOGON_H_ */
