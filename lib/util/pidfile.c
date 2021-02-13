@@ -134,7 +134,7 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 	size_t len = strlen(piddir) + strlen(name) + 6;
 	char pidFile[len];
 	int fd;
-	char pidstr[20];
+	char pidstr[20] = { 0, };
 	pid_t ret = -1;
 
 	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
@@ -144,8 +144,6 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 	if (fd == -1) {
 		return 0;
 	}
-
-	ZERO_STRUCT(pidstr);
 
 	if (read(fd, pidstr, sizeof(pidstr)-1) <= 0) {
 		goto noproc;
