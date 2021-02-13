@@ -1117,12 +1117,12 @@ bool sockaddr_storage_to_samba_sockaddr(
 bool samba_sockaddr_set_port(struct samba_sockaddr *sa, uint16_t port)
 {
 	if (sa->u.sa.sa_family == AF_INET) {
-		sa->u.in.sin_port = port;
+		sa->u.in.sin_port = htons(port);
 		return true;
 	}
 #ifdef HAVE_IPV6
 	if (sa->u.sa.sa_family == AF_INET6) {
-		sa->u.in6.sin6_port = port;
+		sa->u.in6.sin6_port = htons(port);
 		return true;
 	}
 #endif
@@ -1132,12 +1132,12 @@ bool samba_sockaddr_set_port(struct samba_sockaddr *sa, uint16_t port)
 bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port)
 {
 	if (sa->u.sa.sa_family == AF_INET) {
-		*port = sa->u.in.sin_port;
+		*port = ntohs(sa->u.in.sin_port);
 		return true;
 	}
 #ifdef HAVE_IPV6
 	if (sa->u.sa.sa_family == AF_INET6) {
-		*port = sa->u.in6.sin6_port;
+		*port = ntohs(sa->u.in6.sin6_port);
 		return true;
 	}
 #endif
