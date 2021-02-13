@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "wkssvc.idl", "security.idl", "misc.idl";
+import "wkssvc.idl", "security.idl", "misc.idl", "netlogon.idl";
 
 /*
   libnetjoin interface definition
@@ -57,7 +57,8 @@ interface libnetjoin
 		[out] string error_string,
 		[out] boolean8 domain_is_ad,
 		[out] uint32 set_encryption_types,
-		[out] string krb5_salt
+		[out] string krb5_salt,
+		[out,unique] netr_DsRGetDCNameInfo *dcinfo
 		);
 
 	[nopush,nopull,noopnum] WERROR libnet_UnjoinCtx(
