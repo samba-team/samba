@@ -208,13 +208,12 @@ void pidfile_create(const char *piddir, const char *name)
 
 void pidfile_unlink(const char *piddir, const char *name)
 {
+	size_t len = strlen(piddir) + strlen(name) + 6;
+	char pidFile[len];
 	int ret;
-	char *pidFile = NULL;
 
-	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
-		DEBUG(0,("ERROR: Out of memory\n"));
-		exit(1);
-	}
+	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
+
 	ret = unlink(pidFile);
 	if (ret == -1) {
 		DEBUG(0,("Failed to delete pidfile %s. Error was %s\n",
