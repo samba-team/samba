@@ -979,26 +979,48 @@ static const smb_socket_option socket_options[] = {
 
 static void print_socket_options(int s)
 {
-	int value;
-	socklen_t vlen = 4;
+	TALLOC_CTX *frame = NULL;
 	const smb_socket_option *p = &socket_options[0];
+	char *str = NULL;
 
-	/* wrapped in if statement to prevent streams
-	 * leak in SCO Openserver 5.0 */
-	/* reported on samba-technical  --jerry */
-	if ( DEBUGLEVEL >= 5 ) {
-		DEBUG(5,("Socket options:\n"));
-		for (; p->name != NULL; p++) {
-			if (getsockopt(s, p->level, p->option,
-						(void *)&value, &vlen) == -1) {
-				DEBUGADD(5,("\tCould not test socket option %s.\n",
-							p->name));
-			} else {
-				DEBUGADD(5,("\t%s = %d\n",
-							p->name,value));
-			}
+	if (DEBUGLEVEL < 5) {
+		return;
+	}
+
+	frame = talloc_stackframe();
+
+	str = talloc_strdup(frame, "");
+	if (str == NULL) {
+		DBG_WARNING("talloc failed\n");
+		goto done;
+	}
+
+	for (; p->name != NULL; p++) {
+		int ret, val;
+		socklen_t vlen = sizeof(val);
+
+		ret = getsockopt(s, p->level, p->option, (void *)&val, &vlen);
+		if (ret == -1) {
+			DBG_INFO("Could not test socket option %s: %s.\n",
+				 p->name, strerror(errno));
+			continue;
+		}
+
+		str = talloc_asprintf_append_buffer(
+			str,
+			"%s%s=%d",
+			str[0] != '\0' ? ", " : "",
+			p->name,
+			val);
+		if (str == NULL) {
+			DBG_WARNING("talloc_asprintf_append_buffer failed\n");
+			goto done;
 		}
 	}
+
+	DEBUG(5, ("socket options: %s\n", str));
+done:
+	TALLOC_FREE(frame);
  }
 
 /****************************************************************************
