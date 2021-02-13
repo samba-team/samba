@@ -28,19 +28,21 @@
 
 struct file_ploadv_state {
 	struct tevent_context *ev;
+	struct tevent_req *subreq;
 	size_t maxsize;
 	int fd;
 	uint8_t *buf;
 };
 
-static int file_ploadv_state_destructor(struct file_ploadv_state *s);
+static void file_ploadv_cleanup_fn(
+	struct tevent_req *req, enum tevent_req_state req_state);
 static void file_ploadv_readable(struct tevent_req *subreq);
 
 struct tevent_req *file_ploadv_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   char * const argl[], size_t maxsize)
 {
-	struct tevent_req *req = NULL, *subreq = NULL;
+	struct tevent_req *req = NULL;
 	struct file_ploadv_state *state = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct file_ploadv_state);
@@ -55,23 +57,27 @@ struct tevent_req *file_ploadv_send(TALLOC_CTX *mem_ctx,
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	talloc_set_destructor(state, file_ploadv_state_destructor);
+	tevent_req_set_cleanup_fn(req, file_ploadv_cleanup_fn);
 
-	subreq = wait_for_read_send(state, state->ev, state->fd, false);
-	if (tevent_req_nomem(subreq, req)) {
+	state->subreq = wait_for_read_send(state, state->ev, state->fd, false);
+	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, file_ploadv_readable, req);
+	tevent_req_set_callback(state->subreq, file_ploadv_readable, req);
 	return req;
 }
 
-static int file_ploadv_state_destructor(struct file_ploadv_state *s)
+static void file_ploadv_cleanup_fn(
+	struct tevent_req *req, enum tevent_req_state req_state)
 {
-	if (s->fd != -1) {
-		sys_pclose(s->fd);
-		s->fd = -1;
+	struct file_ploadv_state *state = tevent_req_data(
+		req, struct file_ploadv_state);
+
+	TALLOC_FREE(state->subreq);
+	if (state->fd != -1) {
+		sys_pclose(state->fd);
+		state->fd = -1;
 	}
-	return 0;
 }
 
 static void file_ploadv_readable(struct tevent_req *subreq)
@@ -89,6 +95,7 @@ static void file_ploadv_readable(struct tevent_req *subreq)
 
 	ok = wait_for_read_recv(subreq, &err);
 	TALLOC_FREE(subreq);
+	state->subreq = NULL;
 	if (!ok) {
 		tevent_req_error(req, err);
 		return;
@@ -134,11 +141,11 @@ static void file_ploadv_readable(struct tevent_req *subreq)
 	memcpy(state->buf + bufsize, buf, nread);
 	state->buf[bufsize+nread] = '\0';
 
-	subreq = wait_for_read_send(state, state->ev, state->fd, false);
-	if (tevent_req_nomem(subreq, req)) {
+	state->subreq = wait_for_read_send(state, state->ev, state->fd, false);
+	if (tevent_req_nomem(state->subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, file_ploadv_readable, req);
+	tevent_req_set_callback(state->subreq, file_ploadv_readable, req);
 }
 
 int file_ploadv_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
