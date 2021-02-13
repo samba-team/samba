@@ -422,6 +422,7 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
 	char *dn = NULL;
+	struct dom_sid sid;
 
 	if (!r->in.machine_name) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -456,6 +457,12 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 		r->out.set_encryption_types = 0;
 	}
 
+	if (!ads_pull_sid(r->in.ads, res, "objectSid", &sid)) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	dom_sid_split_rid(mem_ctx, &sid, NULL, &r->out.account_rid);
  done:
 	ads_msgfree(r->in.ads, res);
 	TALLOC_FREE(dn);
@@ -1333,7 +1340,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL, result;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
-	uint32_t user_rid;
 	uint32_t acct_flags = ACB_WSTRUST;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
@@ -1447,7 +1453,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 						 access_desired,
 						 &user_pol,
 						 &access_granted,
-						 &user_rid,
+						 &r->out.account_rid,
 						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
@@ -1517,14 +1523,14 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	user_rid = user_rids.ids[0];
+	r->out.account_rid = user_rids.ids[0];
 
 	/* Open handle on user */
 
 	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      user_rid,
+				      r->out.account_rid,
 				      &user_pol,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {

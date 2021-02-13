@@ -58,7 +58,8 @@ interface libnetjoin
 		[out] boolean8 domain_is_ad,
 		[out] uint32 set_encryption_types,
 		[out] string krb5_salt,
-		[out,unique] netr_DsRGetDCNameInfo *dcinfo
+		[out,unique] netr_DsRGetDCNameInfo *dcinfo,
+		[out] uint32 account_rid
 		);
 
 	[nopush,nopull,noopnum] WERROR libnet_UnjoinCtx(

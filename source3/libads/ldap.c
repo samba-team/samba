@@ -1463,6 +1463,7 @@ char *ads_parent_dn(const char *dn)
 		"msDS-AdditionalDnsHostName",
 		"msDS-SupportedEncryptionTypes",
 		"nTSecurityDescriptor",
+		"objectSid",
 
 		NULL
 	};
