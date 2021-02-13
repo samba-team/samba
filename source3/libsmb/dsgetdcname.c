@@ -646,7 +646,12 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	if (dc_unc) {
-		info->dc_unc = talloc_strdup(mem_ctx, dc_unc);
+		if (!(dc_unc[0] == '\\' && dc_unc[1] == '\\')) {
+			info->dc_unc = talloc_asprintf(mem_ctx, "\\\\%s",
+						       dc_unc);
+		} else {
+			info->dc_unc = talloc_strdup(mem_ctx, dc_unc);
+		}
 		NT_STATUS_HAVE_NO_MEMORY(info->dc_unc);
 	}
 
