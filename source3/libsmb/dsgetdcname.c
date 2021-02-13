@@ -1120,6 +1120,7 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 	status = dsgetdcname_cached(mem_ctx, msg_ctx, domain_name, domain_guid,
 				    flags, site_name, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
+		*info = myinfo;
 		goto done;
 	}
 
