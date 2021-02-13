@@ -123,17 +123,27 @@ static WERROR libnet_odj_compose_OP_JOINPROV3_PART(TALLOC_CTX *mem_ctx,
 						   struct OP_JOINPROV3_PART **p)
 {
 	struct OP_JOINPROV3_PART *b;
+	struct dom_sid *sid;
 
 	b = talloc_zero(mem_ctx, struct OP_JOINPROV3_PART);
 	if (b == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	/* TODO */
+	b->Rid = r->out.account_rid;
+	sid = dom_sid_add_rid(mem_ctx, r->out.domain_sid, r->out.account_rid);
+	if (sid == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	b->lpSid = dom_sid_string(mem_ctx, sid);
+	if (b->lpSid == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	*p = b;
 
-	return WERR_INVALID_LEVEL;
+	return WERR_OK;
 }
 
 static WERROR libnet_odj_compose_OP_PACKAGE_PART(TALLOC_CTX *mem_ctx,
