@@ -939,7 +939,7 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 		generate_random_buffer((uint8_t *)&unique, sizeof(unique));
 	} while (unique == UINT64_C(0xFFFFFFFFFFFFFFFF));
 
-	unique_len = snprintf(buf, sizeof(buf), "%ju\n", (uintmax_t)unique);
+	unique_len = snprintf(buf, sizeof(buf), "%"PRIu64"\n", unique);
 
 	/* shorten a potentially preexisting file */
 
