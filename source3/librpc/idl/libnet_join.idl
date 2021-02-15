@@ -47,6 +47,7 @@ interface libnetjoin
 		[in] uint32 desired_encryption_types,
 		[in] boolean8 provision_computer_account_only,
 		[in,out,unique] ODJ_PROVISION_DATA *odj_provision_data,
+		[in] boolean8 request_offline_join,
 		[out] string account_name,
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
