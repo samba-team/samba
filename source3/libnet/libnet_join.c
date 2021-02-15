@@ -45,6 +45,8 @@
 #include "auth/credentials/credentials.h"
 #include "krb5_env.h"
 #include "libsmb/dsgetdcname.h"
+#include "rpc_client/util_netlogon.h"
+#include "libnet/libnet_join_offline.h"
 
 /****************************************************************
 ****************************************************************/
@@ -935,6 +937,14 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 	bool need_etype_update = false;
+
+	if (r->in.request_offline_join) {
+		/*
+		 * When in the "request offline join" path we can no longer
+		 * modify the AD account as we are operating w/o network - gd
+		 */
+		return ADS_SUCCESS;
+	}
 
 	if (!r->in.ads) {
 		status = libnet_join_connect_ads_user(mem_ctx, r);
@@ -2271,6 +2281,14 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAMETER;
 	}
 
+	if (r->in.request_offline_join) {
+		/*
+		 * When in the "request offline join" path we do not have admin
+		 * credentials available so we can skip the next steps - gd
+		 */
+		return WERR_OK;
+	}
+
 	if (!r->in.admin_domain) {
 		char *admin_domain = NULL;
 		char *admin_account = NULL;
@@ -2806,6 +2824,74 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_DomainOfflineJoin(TALLOC_CTX *mem_ctx,
+				       struct libnet_JoinCtx *r)
+{
+	NTSTATUS status;
+	WERROR werr;
+	struct ODJ_WIN7BLOB win7blob;
+	const char *dc_name;
+
+	if (!r->in.request_offline_join) {
+		return WERR_NERR_DEFAULTJOINREQUIRED;
+	}
+
+	if (r->in.odj_provision_data == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	werr = libnet_odj_find_win7blob(r->in.odj_provision_data, &win7blob);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	r->out.netbios_domain_name = talloc_strdup(mem_ctx,
+			win7blob.DnsDomainInfo.Name.string);
+	W_ERROR_HAVE_NO_MEMORY(r->out.netbios_domain_name);
+
+	r->out.dns_domain_name = talloc_strdup(mem_ctx,
+			win7blob.DnsDomainInfo.DnsDomainName.string);
+	W_ERROR_HAVE_NO_MEMORY(r->out.dns_domain_name);
+
+	r->out.forest_name = talloc_strdup(mem_ctx,
+			win7blob.DnsDomainInfo.DnsForestName.string);
+	W_ERROR_HAVE_NO_MEMORY(r->out.forest_name);
+
+	r->out.domain_guid = win7blob.DnsDomainInfo.DomainGuid;
+	r->out.domain_sid = dom_sid_dup(mem_ctx,
+			win7blob.DnsDomainInfo.Sid);
+	W_ERROR_HAVE_NO_MEMORY(r->out.domain_sid);
+
+	dc_name = strip_hostname(win7blob.DcInfo.dc_address);
+	if (dc_name == NULL) {
+		return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+	r->in.dc_name = talloc_strdup(mem_ctx, dc_name);
+	W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+
+	r->out.domain_is_ad = true;
+
+	/* we cannot use talloc_steal but have to deep copy the struct here */
+	status = copy_netr_DsRGetDCNameInfo(mem_ctx, &win7blob.DcInfo,
+					    &r->out.dcinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return WERR_OK;
+#if 0
+	/* the following fields are currently not filled in */
+
+	const char * dn;
+	uint32_t set_encryption_types;
+	const char * krb5_salt;
+	uint32_t account_rid;
+#endif
+}
+
+/****************************************************************
+****************************************************************/
+
 static WERROR libnet_join_rollback(TALLOC_CTX *mem_ctx,
 				   struct libnet_JoinCtx *r)
 {
@@ -2853,7 +2939,11 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
-		werr = libnet_DomainJoin(mem_ctx, r);
+		if (r->in.request_offline_join) {
+			werr = libnet_DomainOfflineJoin(mem_ctx, r);
+		} else {
+			werr = libnet_DomainJoin(mem_ctx, r);
+		}
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -2872,6 +2962,14 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		if (r->in.request_offline_join) {
+			/*
+			 * When we are serving an offline domain join request we
+			 * have no network so we are done here - gd.
+			 */
+			goto done;
+		}
+
 		werr = libnet_join_post_verify(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
 			libnet_join_rollback(mem_ctx, r);
