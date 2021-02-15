@@ -20,3 +20,5 @@
 WERROR libnet_odj_compose_ODJ_PROVISION_DATA(TALLOC_CTX *mem_ctx,
 					     const struct libnet_JoinCtx *r,
 					     struct ODJ_PROVISION_DATA **b_p);
+WERROR libnet_odj_find_win7blob(const struct ODJ_PROVISION_DATA *r,
+				struct ODJ_WIN7BLOB *win7blob);

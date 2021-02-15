@@ -322,3 +322,54 @@ WERROR libnet_odj_compose_ODJ_PROVISION_DATA(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+WERROR libnet_odj_find_win7blob(const struct ODJ_PROVISION_DATA *r,
+				struct ODJ_WIN7BLOB *win7blob)
+{
+	int i;
+
+	if (r == NULL) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	for (i = 0; i < r->ulcBlobs; i++) {
+
+		struct ODJ_BLOB b = r->pBlobs[i];
+
+		switch (b.ulODJFormat) {
+		case ODJ_WIN7_FORMAT:
+			*win7blob = b.pBlob->odj_win7blob;
+			return WERR_OK;
+
+		case ODJ_WIN8_FORMAT: {
+			NTSTATUS status;
+			struct OP_PACKAGE_PART_COLLECTION *col;
+			struct GUID guid;
+			int k;
+
+			if (b.pBlob->op_package.p->WrappedPartCollection.w == NULL) {
+				return WERR_BAD_FORMAT;
+			}
+
+			col = b.pBlob->op_package.p->WrappedPartCollection.w->s.p;
+
+			status = GUID_from_string(ODJ_GUID_JOIN_PROVIDER, &guid);
+			if (!NT_STATUS_IS_OK(status)) {
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
+
+			for (k = 0; k < col->cParts; k++) {
+				if (GUID_equal(&guid, &col->pParts[k].PartType)) {
+					*win7blob = col->pParts[k].Part->win7blob;
+					return WERR_OK;
+				}
+			}
+			break;
+		}
+		default:
+			return WERR_BAD_FORMAT;
+		}
+	}
+
+	return WERR_BAD_FORMAT;
+}
