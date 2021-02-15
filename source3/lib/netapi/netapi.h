@@ -1429,6 +1429,12 @@ NET_API_STATUS libnetapi_get_use_kerberos(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS libnetapi_set_logfile(struct libnetapi_ctx *ctx,
+				     const char *logfile);
+
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx);
 
 /****************************************************************

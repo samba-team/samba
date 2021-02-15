@@ -218,6 +218,25 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS libnetapi_set_logfile(struct libnetapi_ctx *ctx,
+				     const char *logfile)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	ctx->logfile = talloc_strdup(ctx, logfile);
+
+	if (!lp_set_cmdline("log file", logfile)) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_GEN_FAILURE);
+	}
+	debug_set_logfile(logfile);
+	setup_logging("libnetapi", DEBUG_FILE);
+	TALLOC_FREE(frame);
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
 					char **debuglevel)
 {

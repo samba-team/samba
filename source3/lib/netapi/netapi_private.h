@@ -56,6 +56,7 @@ struct libnetapi_private_ctx {
 
 struct libnetapi_ctx {
 	char *debuglevel;
+	char *logfile;
 	char *error_string;
 	int disable_policy_handle_cache;
 
@@ -69,6 +70,8 @@ NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 					  const char *format, ...)
 					  PRINTF_ATTRIBUTE(2,3);
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, char **debuglevel);
+NET_API_STATUS libnetapi_set_logfile(struct libnetapi_ctx *ctx,
+				     const char *logfile);
 
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx);
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
