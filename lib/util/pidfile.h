@@ -29,15 +29,17 @@
 /**
  * @brief Create a PID file
  *
- * Opens file, locks it, and writes PID.  Returns EACCES or EAGAIN if
- * another process has the PID file locked.  Use unlink(2) and
+ * Opens file, locks it, and writes PID.  Returns EAGAIN if another
+ * process has the PID file locked.  Use unlink(2) and
  * pidfile_fd_close() to remove the PID file.
  *
  * @param[in] path PID file name
  * @param[out] outfd File descriptor of open/locked PID file
+ * @param[out] existing_pid Return existing PID on EAGAIN
  * @return 0 on success, errno on failure
  */
-int pidfile_path_create(const char *path, int *outfd);
+int pidfile_path_create(
+	const char *path, int *outfd, pid_t *existing_pid);
 
 /**
  * @brief Unlock and close a PID file

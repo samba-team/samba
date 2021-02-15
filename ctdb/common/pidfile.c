@@ -54,7 +54,7 @@ int pidfile_context_create(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	pid_ctx->pid = getpid();
 
-	ret = pidfile_path_create(pid_ctx->pidfile, &fd);
+	ret = pidfile_path_create(pid_ctx->pidfile, &fd, NULL);
 	if (ret != 0) {
 		return ret;
 	}
