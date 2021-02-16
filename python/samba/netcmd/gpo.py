@@ -3247,7 +3247,63 @@ samba-tool gpo manage scripts startup remove {31B2F340-016D-11D2-945F-00C04FB984
 
     def run(self, gpo, script, H=None, sambaopts=None, credopts=None,
             versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+                             'MACHINE\\VGP\\VTLA\\Unix\\Scripts\\Startup'])
+        vgp_xml = '\\'.join([vgp_dir, 'manifest.xml'])
+        try:
+            xml_data = ET.ElementTree(ET.fromstring(conn.loadfile(vgp_xml)))
+            policy = xml_data.getroot().find('policysetting')
+            data = policy.find('data')
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                raise CommandError("Cannot remove script '%s' "
+                    "because it does not exist" % script)
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        for listelement in data.findall('listelement'):
+            script_elm = listelement.find('script')
+            if script_elm.text == os.path.basename(script.replace('\\', '/')):
+                data.remove(listelement)
+                break
+        else:
+            raise CommandError("Cannot remove script '%s' "
+                "because it does not exist" % script)
+
+        out = BytesIO()
+        xml_data.write(out, encoding='UTF-8', xml_declaration=True)
+        out.seek(0)
+        try:
+            create_directory_hier(conn, vgp_dir)
+            conn.savefile(vgp_xml, out.read())
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
 
 class cmd_startup(SuperCommand):
     """Manage Startup Scripts Group Policy Objects"""
