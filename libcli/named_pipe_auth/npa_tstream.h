@@ -47,6 +47,15 @@ int _tstream_npa_connect_recv(struct tevent_req *req,
 	_tstream_npa_connect_recv(req, perrno, mem_ctx, stream, f, d, a, \
 				  __location__)
 
+int _tstream_npa_existing_stream(TALLOC_CTX *mem_ctx,
+				 struct tstream_context **transport,
+				 uint16_t file_type,
+				 struct tstream_context **_stream,
+				 const char *location);
+#define tstream_npa_existing_stream(mem_ctx, transport, ft, stream) \
+	_tstream_npa_existing_stream(mem_ctx, transport, ft, stream, \
+				     __location__)
+
 int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
 				 int fd,
 				 uint16_t file_type,

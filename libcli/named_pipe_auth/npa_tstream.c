@@ -949,15 +949,14 @@ static const struct tstream_context_ops tstream_npa_ops = {
 	.disconnect_recv	= tstream_npa_disconnect_recv,
 };
 
-int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
-				 int fd,
+int _tstream_npa_existing_stream(TALLOC_CTX *mem_ctx,
+				 struct tstream_context **transport,
 				 uint16_t file_type,
 				 struct tstream_context **_stream,
 				 const char *location)
 {
 	struct tstream_context *stream;
 	struct tstream_npa *npas;
-	int ret;
 
 	switch (file_type) {
 	case FILE_TYPE_BYTE_MODE_PIPE:
@@ -977,23 +976,33 @@ int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
 	if (!stream) {
 		return -1;
 	}
-	ZERO_STRUCTP(npas);
 
-	npas->file_type = file_type;
-
-	ret = tstream_bsd_existing_socket(stream, fd,
-					  &npas->unix_stream);
-	if (ret == -1) {
-		int saved_errno = errno;
-		talloc_free(stream);
-		errno = saved_errno;
-		return -1;
-	}
+	*npas = (struct tstream_npa) {
+		.file_type = file_type,
+		.unix_stream = talloc_move(npas, transport),
+	};
 
 	*_stream = stream;
 	return 0;
 }
 
+int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
+				 int fd,
+				 uint16_t file_type,
+				 struct tstream_context **_stream,
+				 const char *location)
+{
+	struct tstream_context *transport = NULL;
+	int ret;
+
+	ret = _tstream_bsd_existing_socket(
+		mem_ctx, fd, &transport, location);
+	if (ret == -1) {
+		return -1;
+	}
+	return _tstream_npa_existing_stream(
+		mem_ctx, &transport, file_type, _stream, location);
+}
 
 struct tstream_npa_accept_state {
 	struct tevent_context *ev;
