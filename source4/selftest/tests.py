@@ -1359,6 +1359,9 @@ planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests")
 planpythontestsuite(
     "ad_dc",
     "samba.tests.krb5.kdc_tgs_tests")
+planpythontestsuite(
+    "ad_dc",
+    "samba.tests.krb5.ms_kile_client_principal_lookup_tests")
 
 for env in [
         'vampire_dc',
