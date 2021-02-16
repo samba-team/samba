@@ -34,4 +34,10 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct netr_DsRGetDCNameInfo **info);
 
+NTSTATUS dsgetonedcname(TALLOC_CTX *mem_ctx,
+			struct messaging_context *msg_ctx,
+			const char *domain_name,
+			const char *dcname,
+			uint32_t flags,
+			struct netr_DsRGetDCNameInfo **info);
 #endif

@@ -1212,3 +1212,56 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+NTSTATUS dsgetonedcname(TALLOC_CTX *mem_ctx,
+			struct messaging_context *msg_ctx,
+			const char *domain_name,
+			const char *dcname,
+			uint32_t flags,
+			struct netr_DsRGetDCNameInfo **info)
+{
+	NTSTATUS status;
+	struct sockaddr_storage *addrs;
+	unsigned int num_addrs, i;
+	const char *hostname = strip_hostname(dcname);
+
+	status = resolve_name_list(mem_ctx, hostname, 0x20,
+				   &addrs, &num_addrs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	for (i = 0; i < num_addrs; i++) {
+
+		bool ok;
+		struct ip_service_name dclist;
+
+		dclist.hostname = hostname;
+		ok = sockaddr_storage_to_samba_sockaddr(&dclist.sa, &addrs[i]);
+		if (!ok) {
+			TALLOC_FREE(addrs);
+			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		status = process_dc_dns(mem_ctx, domain_name, flags,
+					&dclist, 1, info);
+		if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(addrs);
+			return NT_STATUS_OK;
+		}
+
+		if (lp_disable_netbios()) {
+			continue;
+		}
+
+		status = process_dc_netbios(mem_ctx, msg_ctx, domain_name, flags,
+					    &dclist, 1, info);
+		if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(addrs);
+			return NT_STATUS_OK;
+		}
+	}
+
+	TALLOC_FREE(addrs);
+	return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+}
