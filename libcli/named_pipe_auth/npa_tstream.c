@@ -233,6 +233,9 @@ static void tstream_npa_connect_writev_done(struct tevent_req *subreq)
 
 	subreq = tstream_u32_read_send(
 		state, state->caller.ev, 0x00FFFFFF, state->unix_stream);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
 	tevent_req_set_callback(subreq, tstream_npa_connect_readv_done, req);
 }
 
