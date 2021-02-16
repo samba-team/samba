@@ -22,6 +22,7 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 from collections import namedtuple
+import ldb
 from ldb import SCOPE_BASE
 from samba import generate_random_password
 from samba.auth import system_session
@@ -103,7 +104,7 @@ class KDCBaseTest(RawKerberosTest):
         for dn in self.accounts:
             delete_force(self.ldb, dn)
 
-    def create_account(self, name, machine_account=False, spn=None):
+    def create_account(self, name, machine_account=False, spn=None, upn=None):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDown to clean up the created accounts.
@@ -133,6 +134,8 @@ class KDCBaseTest(RawKerberosTest):
             "unicodePwd": utf16pw}
         if spn is not None:
             details["servicePrincipalName"] = spn
+        if upn is not None:
+            details["userPrincipalName"] = upn
         self.ldb.add(details)
 
         creds = Credentials()
@@ -418,3 +421,27 @@ class KDCBaseTest(RawKerberosTest):
         self.assertTrue(len(res) == 1, "did not get objectSid for %s" % dn)
         sid = self.ldb.schema_format_value("objectSID", res[0]["objectSID"][0])
         return sid.decode('utf8')
+
+    def add_attribute(self, dn_str, name, value):
+        if isinstance(value, list):
+            values = value
+        else:
+            values = [value]
+        flag = ldb.FLAG_MOD_ADD
+
+        dn = ldb.Dn(self.ldb, dn_str)
+        msg = ldb.Message(dn)
+        msg[name] = ldb.MessageElement(values, flag, name)
+        self.ldb.modify(msg)
+
+    def modify_attribute(self, dn_str, name, value):
+        if isinstance(value, list):
+            values = value
+        else:
+            values = [value]
+        flag = ldb.FLAG_MOD_REPLACE
+
+        dn = ldb.Dn(self.ldb, dn_str)
+        msg = ldb.Message(dn)
+        msg[name] = ldb.MessageElement(values, flag, name)
+        self.ldb.modify(msg)
