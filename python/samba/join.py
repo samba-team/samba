@@ -399,20 +399,6 @@ class DCJoinContext(object):
                                 ldb.OID_COMPARATOR_AND, samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN))
         return str(res[0].dn)
 
-    def get_naming_master(ctx):
-        '''get the parent domain partition DN from parent DNS name'''
-        res = ctx.samdb.search(base='CN=Partitions,%s' % ctx.config_dn, attrs=['fSMORoleOwner'],
-                               scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"])
-        if 'fSMORoleOwner' not in res[0]:
-            raise DCJoinException("Can't find naming master on partition DN %s in %s" % (ctx.partition_dn, ctx.samdb.url))
-        try:
-            master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0].decode('utf8')).get_extended_component('GUID')))
-        except KeyError:
-            raise DCJoinException("Can't find GUID in naming master on partition DN %s" % res[0]['fSMORoleOwner'][0])
-
-        master_host = '%s._msdcs.%s' % (master_guid, ctx.dnsforest)
-        return master_host
-
     def get_mysid(ctx):
         '''get the SID of the connected user. Only works with w2k8 and later,
            so only used for RODC join'''
