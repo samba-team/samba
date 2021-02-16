@@ -893,7 +893,9 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		DBG_NOTICE("Can't open new file [%s], errno = %d\n",
+			   smb_fname_str_dbg(smb_fname), errno);
+		goto error_exit;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
