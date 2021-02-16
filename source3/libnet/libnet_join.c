@@ -2639,6 +2639,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	const char *pre_connect_realm = NULL;
 	const char *numeric_dcip = NULL;
 	const char *sitename = NULL;
+	struct netr_DsRGetDCNameInfo *info;
+	const char *dc;
+	uint32_t name_type_flags = 0;
 
 	/* Before contacting a DC, we can securely know
 	 * the realm only if the user specifies it.
@@ -2648,15 +2651,23 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		pre_connect_realm = r->in.domain_name;
 	}
 
-	if (!r->in.dc_name) {
-		struct netr_DsRGetDCNameInfo *info;
-		const char *dc;
-		uint32_t name_type_flags = 0;
-		if (r->in.domain_name_type == JoinDomNameTypeDNS) {
-			name_type_flags = DS_IS_DNS_NAME;
-		} else if (r->in.domain_name_type == JoinDomNameTypeNBT) {
-			name_type_flags = DS_IS_FLAT_NAME;
-		}
+	if (r->in.domain_name_type == JoinDomNameTypeDNS) {
+		name_type_flags = DS_IS_DNS_NAME;
+	} else if (r->in.domain_name_type == JoinDomNameTypeNBT) {
+		name_type_flags = DS_IS_FLAT_NAME;
+	}
+
+	if (r->in.dc_name) {
+		status = dsgetonedcname(mem_ctx,
+					r->in.msg_ctx,
+					r->in.domain_name,
+					r->in.dc_name,
+					DS_DIRECTORY_SERVICE_REQUIRED |
+					DS_WRITABLE_REQUIRED |
+					DS_RETURN_DNS_NAME |
+					name_type_flags,
+					&info);
+	} else {
 		status = dsgetdcname(mem_ctx,
 				     r->in.msg_ctx,
 				     r->in.domain_name,
@@ -2668,33 +2679,33 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     DS_RETURN_DNS_NAME |
 				     name_type_flags,
 				     &info);
-		if (!NT_STATUS_IS_OK(status)) {
-			libnet_join_set_error_string(mem_ctx, r,
-				"failed to find DC for domain %s - %s",
-				r->in.domain_name,
-				get_friendly_nt_error_msg(status));
-			return WERR_NERR_DCNOTFOUND;
-		}
-
-		dc = strip_hostname(info->dc_unc);
-		r->in.dc_name = talloc_strdup(mem_ctx, dc);
-		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
-
-		if (info->dc_address == NULL || info->dc_address[0] != '\\' ||
-		    info->dc_address[1] != '\\') {
-			DBG_ERR("ill-formed DC address '%s'\n",
-				info->dc_address);
-			return WERR_NERR_DCNOTFOUND;
-		}
-
-		numeric_dcip = info->dc_address + 2;
-		sitename = info->dc_site_name;
-		/* info goes out of scope but the memory stays
-		   allocated on the talloc context */
-
-		/* return the allocated netr_DsRGetDCNameInfo struct */
-		r->out.dcinfo = info;
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to find DC for domain %s - %s",
+			r->in.domain_name,
+			get_friendly_nt_error_msg(status));
+		return WERR_NERR_DCNOTFOUND;
+	}
+
+	dc = strip_hostname(info->dc_unc);
+	r->in.dc_name = talloc_strdup(mem_ctx, dc);
+	W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+
+	if (info->dc_address == NULL || info->dc_address[0] != '\\' ||
+	    info->dc_address[1] != '\\') {
+		DBG_ERR("ill-formed DC address '%s'\n",
+			info->dc_address);
+		return WERR_NERR_DCNOTFOUND;
+	}
+
+	numeric_dcip = info->dc_address + 2;
+	sitename = info->dc_site_name;
+	/* info goes out of scope but the memory stays
+	   allocated on the talloc context */
+
+	/* return the allocated netr_DsRGetDCNameInfo struct */
+	r->out.dcinfo = info;
 
 	if (pre_connect_realm != NULL) {
 		struct sockaddr_storage ss = {0};
