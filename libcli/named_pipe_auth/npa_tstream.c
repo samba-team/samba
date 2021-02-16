@@ -253,8 +253,7 @@ static void tstream_npa_connect_readv_done(struct tevent_req *subreq)
 
 	err = tstream_u32_read_recv(subreq, state, &in.data, &in.length);
 	TALLOC_FREE(subreq);
-	if (err != 0) {
-		tevent_req_error(req, err);
+	if (tevent_req_error(req, err)) {
 		return;
 	}
 
