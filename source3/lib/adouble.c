@@ -2598,8 +2598,7 @@ int ad_set(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_SETXATTR(handle->conn,
-			       smb_fname,
+	ret = SMB_VFS_FSETXATTR(smb_fname->fsp,
 			       AFPINFO_EA_NETATALK,
 			       ad->ad_data,
 			       AD_DATASZ_XATTR, 0);
