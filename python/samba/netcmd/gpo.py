@@ -3323,6 +3323,39 @@ class cmd_scripts(SuperCommand):
     subcommands = {}
     subcommands["startup"] = cmd_startup()
 
+class cmd_list_motd(Command):
+    """List VGP MOTD Group Policy from the sysvol
+
+This command lists the Message of the Day from the sysvol that will be applied
+to winbind clients.
+
+Example:
+samba-tool gpo manage motd list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_motd(SuperCommand):
+    """Manage Message of the Day Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_motd()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
@@ -3333,6 +3366,7 @@ class cmd_manage(SuperCommand):
     subcommands["files"] = cmd_files()
     subcommands["openssh"] = cmd_openssh()
     subcommands["scripts"] = cmd_scripts()
+    subcommands["motd"] = cmd_motd()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""

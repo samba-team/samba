@@ -1223,6 +1223,45 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_vgp_motd(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+        local_path = lp.get('path', 'sysvol')
+        vgp_xml = os.path.join(local_path, lp.get('realm').lower(), 'Policies',
+                               self.gpo_guid, 'Machine/VGP/VTLA/Unix',
+                               'MOTD/manifest.xml')
+
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        pv = etree.SubElement(policysetting, 'version')
+        pv.text = '1'
+        name = etree.SubElement(policysetting, 'name')
+        name.text = 'Text File'
+        description = etree.SubElement(policysetting, 'description')
+        description.text = 'Represents a Generic Text File'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'replace'
+        data = etree.SubElement(policysetting, 'data')
+        filename = etree.SubElement(data, 'filename')
+        filename.text = 'motd'
+        text = etree.SubElement(data, 'text')
+        text.text = 'This is a message of the day'
+        ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
+        self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "motd", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(text.text, out, 'The test entry was not found!')
+
+        # Unstage the manifest.xml file
+        unstage_file(vgp_xml)
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
