@@ -2,8 +2,8 @@
  * BSD 3-Clause License
  *
  * Copyright (c) 2005-2008, Jelmer Vernooij <jelmer@samba.org>
- * Copyright (c) 2006-2018, Stefan Metzmacher <metze@samba.org>
- * Copyright (c) 2013-2018, Andreas Schneider <asn@samba.org>
+ * Copyright (c) 2006-2021, Stefan Metzmacher <metze@samba.org>
+ * Copyright (c) 2013-2021, Andreas Schneider <asn@samba.org>
  * Copyright (c) 2014-2017, Michael Adam <obnox@samba.org>
  * Copyright (c) 2016-2018, Anoop C S <anoopcs@redhat.com>
  * All rights reserved.
@@ -85,6 +85,8 @@
 #include <rpc/rpc.h>
 #endif
 #include <pthread.h>
+
+#include "socket_wrapper.h"
 
 enum swrap_dbglvl_e {
 	SWRAP_LOG_ERROR = 0,
@@ -370,7 +372,7 @@ static pthread_mutex_t autobind_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Mutex to guard the initialization of array of socket_info structures */
 static pthread_mutex_t sockets_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Mutex to guard the socket reset in swrap_close() and swrap_remove_stale() */
+/* Mutex to guard the socket reset in swrap_remove_wrapper() */
 static pthread_mutex_t socket_reset_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Mutex to synchronize access to first free index in socket_info array */
@@ -391,8 +393,6 @@ static pthread_mutex_t pcap_dump_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mtu_update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Function prototypes */
-
-bool socket_wrapper_enabled(void);
 
 #if ! defined(HAVE_CONSTRUCTOR_ATTRIBUTE) && defined(HAVE_PRAGMA_INIT)
 /* xlC and other oldschool compilers support (only) this */
@@ -492,6 +492,9 @@ typedef int (*__libc_bind)(int sockfd,
 			   const struct sockaddr *addr,
 			   socklen_t addrlen);
 typedef int (*__libc_close)(int fd);
+#ifdef HAVE___CLOSE_NOCANCEL
+typedef int (*__libc___close_nocancel)(int fd);
+#endif
 typedef int (*__libc_connect)(int sockfd,
 			      const struct sockaddr *addr,
 			      socklen_t addrlen);
@@ -572,6 +575,9 @@ struct swrap_libc_symbols {
 #endif
 	SWRAP_SYMBOL_ENTRY(bind);
 	SWRAP_SYMBOL_ENTRY(close);
+#ifdef HAVE___CLOSE_NOCANCEL
+	SWRAP_SYMBOL_ENTRY(__close_nocancel);
+#endif
 	SWRAP_SYMBOL_ENTRY(connect);
 	SWRAP_SYMBOL_ENTRY(dup);
 	SWRAP_SYMBOL_ENTRY(dup2);
@@ -850,6 +856,15 @@ static int libc_close(int fd)
 
 	return swrap.libc.symbols._libc_close.f(fd);
 }
+
+#ifdef HAVE___CLOSE_NOCANCEL
+static int libc___close_nocancel(int fd)
+{
+	swrap_bind_symbol_all();
+
+	return swrap.libc.symbols._libc___close_nocancel.f(fd);
+}
+#endif /* HAVE___CLOSE_NOCANCEL */
 
 static int libc_connect(int sockfd,
 			const struct sockaddr *addr,
@@ -1199,6 +1214,9 @@ static void __swrap_bind_symbol_all_once(void)
 #endif
 	swrap_bind_symbol_libsocket(bind);
 	swrap_bind_symbol_libc(close);
+#ifdef HAVE___CLOSE_NOCANCEL
+	swrap_bind_symbol_libc(__close_nocancel);
+#endif
 	swrap_bind_symbol_libsocket(connect);
 	swrap_bind_symbol_libc(dup);
 	swrap_bind_symbol_libc(dup2);
@@ -2027,6 +2045,13 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			type = u_type;
 			iface = (addr & 0x000000FF);
 		} else {
+			char str[256] = {0,};
+			inet_ntop(inaddr->sa_family,
+				  &in->sin_addr,
+				  str, sizeof(str));
+			SWRAP_LOG(SWRAP_LOG_WARN,
+				  "str[%s] prt[%u]",
+				  str, (unsigned)prt);
 			errno = ENETUNREACH;
 			return -1;
 		}
@@ -2062,6 +2087,13 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		if (IN6_ARE_ADDR_EQUAL(&cmp1, &cmp2)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
+			char str[256] = {0,};
+			inet_ntop(inaddr->sa_family,
+				  &in->sin6_addr,
+				  str, sizeof(str));
+			SWRAP_LOG(SWRAP_LOG_WARN,
+				  "str[%s] prt[%u]",
+				  str, (unsigned)prt);
 			errno = ENETUNREACH;
 			return -1;
 		}
@@ -2390,46 +2422,7 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 }
 #endif
 
-static void swrap_remove_stale(int fd)
-{
-	struct socket_info *si;
-	int si_index;
-
-	SWRAP_LOG(SWRAP_LOG_TRACE, "remove stale wrapper for %d", fd);
-
-	swrap_mutex_lock(&socket_reset_mutex);
-
-	si_index = find_socket_info_index(fd);
-	if (si_index == -1) {
-		swrap_mutex_unlock(&socket_reset_mutex);
-		return;
-	}
-
-	reset_socket_info_index(fd);
-
-	si = swrap_get_socket_info(si_index);
-
-	swrap_mutex_lock(&first_free_mutex);
-	SWRAP_LOCK_SI(si);
-
-	swrap_dec_refcount(si);
-
-	if (swrap_get_refcount(si) > 0) {
-		goto out;
-	}
-
-	if (si->un_addr.sun_path[0] != '\0') {
-		unlink(si->un_addr.sun_path);
-	}
-
-	swrap_set_next_free(si, first_free);
-	first_free = si_index;
-
-out:
-	SWRAP_UNLOCK_SI(si);
-	swrap_mutex_unlock(&first_free_mutex);
-	swrap_mutex_unlock(&socket_reset_mutex);
-}
+static void swrap_remove_stale(int fd);
 
 static int sockaddr_convert_to_un(struct socket_info *si,
 				  const struct sockaddr *in_addr,
@@ -2990,7 +2983,7 @@ static int swrap_pcap_get_fd(const char *fname)
 		file_hdr.frame_max_len	= SWRAP_FRAME_LENGTH_MAX;
 		file_hdr.link_type	= 0x0065; /* 101 RAW IP */
 
-		if (write(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+		if (libc_write(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 			libc_close(fd);
 			fd = -1;
 		}
@@ -3325,7 +3318,7 @@ static void swrap_pcap_dump_packet(struct socket_info *si,
 
 	fd = swrap_pcap_get_fd(file_name);
 	if (fd != -1) {
-		if (write(fd, packet, packet_len) != (ssize_t)packet_len) {
+		if (libc_write(fd, packet, packet_len) != (ssize_t)packet_len) {
 			free(packet);
 			goto done;
 		}
@@ -5532,7 +5525,7 @@ static int swrap_sendmsg_unix_scm_rights(const struct cmsghdr *cmsg,
 		return -1;
 	}
 
-	sret = write(pipefd[1], &info, sizeof(info));
+	sret = libc_write(pipefd[1], &info, sizeof(info));
 	if (sret != sizeof(info)) {
 		int saved_errno = errno;
 		if (sret != -1) {
@@ -7403,10 +7396,13 @@ ssize_t writev(int s, const struct iovec *vector, int count)
  * CLOSE
  ***************************/
 
-static int swrap_close(int fd)
+static int swrap_remove_wrapper(const char *__func_name,
+				int (*__close_fd_fn)(int fd),
+				int fd)
 {
 	struct socket_info *si = NULL;
 	int si_index;
+	int ret_errno = errno;
 	int ret;
 
 	swrap_mutex_lock(&socket_reset_mutex);
@@ -7414,10 +7410,10 @@ static int swrap_close(int fd)
 	si_index = find_socket_info_index(fd);
 	if (si_index == -1) {
 		swrap_mutex_unlock(&socket_reset_mutex);
-		return libc_close(fd);
+		return __close_fd_fn(fd);
 	}
 
-	SWRAP_LOG(SWRAP_LOG_TRACE, "Close wrapper for fd=%d", fd);
+	swrap_log(SWRAP_LOG_TRACE, __func_name, "Remove wrapper for fd=%d", fd);
 	reset_socket_info_index(fd);
 
 	si = swrap_get_socket_info(si_index);
@@ -7425,7 +7421,10 @@ static int swrap_close(int fd)
 	swrap_mutex_lock(&first_free_mutex);
 	SWRAP_LOCK_SI(si);
 
-	ret = libc_close(fd);
+	ret = __close_fd_fn(fd);
+	if (ret == -1) {
+		ret_errno = errno;
+	}
 
 	swrap_dec_refcount(si);
 
@@ -7460,13 +7459,67 @@ out:
 	swrap_mutex_unlock(&first_free_mutex);
 	swrap_mutex_unlock(&socket_reset_mutex);
 
+	errno = ret_errno;
 	return ret;
+}
+
+static int swrap_noop_close(int fd)
+{
+	(void)fd; /* unused */
+	return 0;
+}
+
+static void swrap_remove_stale(int fd)
+{
+	swrap_remove_wrapper(__func__, swrap_noop_close, fd);
+}
+
+/*
+ * This allows socket_wrapper aware applications to
+ * indicate that the given fd does not belong to
+ * an inet socket.
+ *
+ * We already overload a lot of unrelated functions
+ * like eventfd(), timerfd_create(), ... in order to
+ * call swrap_remove_stale() on the returned fd, but
+ * we'll never be able to handle all possible syscalls.
+ *
+ * socket_wrapper_indicate_no_inet_fd() gives them a way
+ * to do the same.
+ *
+ * We don't export swrap_remove_stale() in order to
+ * make it easier to analyze SOCKET_WRAPPER_DEBUGLEVEL=3
+ * log files.
+ */
+void socket_wrapper_indicate_no_inet_fd(int fd)
+{
+	swrap_remove_wrapper(__func__, swrap_noop_close, fd);
+}
+
+static int swrap_close(int fd)
+{
+	return swrap_remove_wrapper(__func__, libc_close, fd);
 }
 
 int close(int fd)
 {
 	return swrap_close(fd);
 }
+
+#ifdef HAVE___CLOSE_NOCANCEL
+
+static int swrap___close_nocancel(int fd)
+{
+	return swrap_remove_wrapper(__func__, libc___close_nocancel, fd);
+}
+
+int __close_nocancel(int fd);
+int __close_nocancel(int fd)
+{
+	return swrap___close_nocancel(fd);
+}
+
+#endif /* HAVE___CLOSE_NOCANCEL */
 
 /****************************
  * DUP
