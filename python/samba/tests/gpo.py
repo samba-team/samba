@@ -34,6 +34,7 @@ from samba.gp_smb_conf_ext import gp_smb_conf_ext
 from samba.vgp_files_ext import vgp_files_ext
 from samba.vgp_openssh_ext import vgp_openssh_ext
 from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
+from samba.vgp_motd_ext import vgp_motd_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -1256,3 +1257,52 @@ class GPOTests(tests.TestCase):
         # Unstage the manifest.xml and script files
         unstage_file(manifest)
         unstage_file(test_script)
+
+    def test_vgp_motd(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        manifest = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/UNIX/MOTD/MANIFEST.XML')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_motd_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml file with test data
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '1'
+        data = etree.SubElement(policysetting, 'data')
+        filename = etree.SubElement(data, 'filename')
+        filename.text = 'motd'
+        text = etree.SubElement(data, 'text')
+        text.text = 'This is the message of the day'
+        ret = stage_file(manifest, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % manifest)
+
+        # Process all gpos, with temp output directory
+        with NamedTemporaryFile() as f:
+            ext.process_group_policy([], gpos, f.name)
+            self.assertEquals(open(f.name, 'r').read(), text.text,
+                              'The motd was not applied')
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], f.name)
+            self.assertNotEquals(open(f.name, 'r').read(), text.text,
+                                 'The motd was not unapplied')
+
+        # Unstage the Registry.pol file
+        unstage_file(manifest)
