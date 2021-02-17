@@ -2207,15 +2207,21 @@ static NTSTATUS catia_set_dos_attributes(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return status;
 	}
-	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+	status = synthetic_pathref(talloc_tos(),
+					handle->conn->cwd_fsp,
 					mapped_name,
 					NULL,
 					&smb_fname->st,
 					smb_fname->twrp,
-					smb_fname->flags);
-	if (mapped_smb_fname == NULL) {
-		TALLOC_FREE(mapped_name);
-		return NT_STATUS_NO_MEMORY;
+					smb_fname->flags,
+					&mapped_smb_fname);
+	/*
+	 * how about NT_STATUS_OBJECT_NAME_NOT_FOUND / link ? not sure
+	 * if we let that go and return success or not :/
+	 */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
