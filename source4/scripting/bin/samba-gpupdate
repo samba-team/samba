@@ -40,6 +40,7 @@ from samba.gp_msgs_ext import gp_msgs_ext
 from samba.vgp_symlink_ext import vgp_symlink_ext
 from samba.vgp_files_ext import vgp_files_ext
 from samba.vgp_openssh_ext import vgp_openssh_ext
+from samba.vgp_motd_ext import vgp_motd_ext
 import logging
 
 if __name__ == "__main__":
@@ -99,6 +100,7 @@ if __name__ == "__main__":
         gp_extensions.append(vgp_symlink_ext)
         gp_extensions.append(vgp_files_ext)
         gp_extensions.append(vgp_openssh_ext)
+        gp_extensions.append(vgp_motd_ext)
         gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
         gp_extensions.extend(user_exts)
