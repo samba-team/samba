@@ -959,6 +959,11 @@
 	<para>List VGP MOTD Group Policy from the sysvol.</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage motd set</title>
+	<para>Sets a VGP MOTD Group Policy to the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
