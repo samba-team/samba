@@ -2057,6 +2057,13 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 		goto done;
 	}
 
+	err = smbconf_set_global_parameter(ctx, "netbios name",
+					   r->in.machine_name);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
+		goto done;
+	}
+
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
 		err = smbconf_set_global_parameter(ctx, "security", "user");
