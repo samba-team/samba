@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <iconv.h>
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -181,4 +183,60 @@ int netapi_save_file(const char *fname, void *ppacket, size_t length)
 	}
 	close(fd);
 	return 0;
+}
+
+int netapi_save_file_ucs2(const char *fname, const char *str)
+{
+	char *str_p = NULL;
+	char *ucs2_str = NULL;
+	size_t str_len = 0;
+	size_t ucs2_str_len = 0;
+	iconv_t cd;
+	int ret;
+	char *start;
+	size_t start_len;
+	char *p;
+
+	str_len = strlen(str) + 1;
+	ucs2_str_len = 2 * str_len; /* room for ucs2 */
+	ucs2_str_len += 2;
+
+	ucs2_str = calloc(ucs2_str_len, sizeof(char));
+	if (ucs2_str == NULL) {
+		return -1;
+	}
+	p = ucs2_str; /* store for free */
+
+	ucs2_str[0] = 0xff;
+	ucs2_str[1] = 0xfe;
+
+	start = ucs2_str;
+	start_len = ucs2_str_len;
+
+	ucs2_str += 2;
+	ucs2_str_len -= 2;
+
+	cd = iconv_open("UTF-16LE", "ASCII");
+	if (cd == (iconv_t)-1) {
+		free(p);
+		return -1;
+	}
+
+	str_p = (void *)((uintptr_t)str);
+
+	ret = iconv(cd,
+		    &str_p,
+		    &str_len,
+		    &ucs2_str,
+		    &ucs2_str_len);
+	if (ret == -1) {
+		free(p);
+		return -1;
+	}
+	iconv_close(cd);
+
+	ret = netapi_save_file(fname, start, start_len);
+	free(p);
+
+	return ret;
 }

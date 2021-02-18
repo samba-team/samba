@@ -15,3 +15,4 @@ extern struct poptOption popt_common_netapi_examples[];
 
 char *netapi_read_file(const char *filename, uint32_t *psize);
 int netapi_save_file(const char *fname, void *ppacket, size_t length);
+int netapi_save_file_ucs2(const char *fname, const char *str);
