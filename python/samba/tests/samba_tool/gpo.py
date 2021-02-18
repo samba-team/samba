@@ -1223,6 +1223,50 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_vgp_motd_set(self):
+        text = 'This is the message of the day'
+        msg = '"%s\n"' % text
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "motd", "set"),
+                                                 self.gpo_guid,
+                                                 msg, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'MOTD set failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "motd", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(text, out, 'The test entry was not found!')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "motd", "set"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'MOTD unset failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "motd", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(text, out, 'The test entry was still found!')
+
     def test_vgp_motd(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])

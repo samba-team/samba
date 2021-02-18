@@ -3387,10 +3387,40 @@ samba-tool gpo manage motd list {31B2F340-016D-11D2-945F-00C04FB984F9}
         text = data.find('text')
         self.outf.write(text.text)
 
+class cmd_set_motd(Command):
+    """Sets a VGP MOTD Group Policy to the sysvol
+
+This command sets the Message of the Day to the sysvol for applying to winbind
+clients. Not providing a value will unset the policy.
+
+Example:
+samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message for today"
+    """
+
+    synopsis = "%prog <gpo> [value] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "value?"]
+
+    def run(self, gpo, value=None, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        pass
+
 class cmd_motd(SuperCommand):
     """Manage Message of the Day Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_motd()
+    subcommands["set"] = cmd_set_motd()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
