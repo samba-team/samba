@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.14.  This is *not*
+This is the third release candidate of Samba 4.14.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -201,6 +201,22 @@ smb.conf changes
   honor change notify privilege      New                        No
   smbd force process locks           New                        No
   server smb encrypt                 New                        default
+
+
+CHANGES SINCE 4.14.0rc2
+=======================
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14624: classicupgrade: Treat old never expires value right.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13898: s3:pysmbd: fix fd leak in py_smbd_create_file().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14625: Fix smbd share mode double free crash.
+
+o  Paul Wise <pabs3@bonedaddy.net>
+   * BUG 12505: HEIMDAL: krb5_storage_free(NULL) should work.
 
 
 CHANGES SINCE 4.14.0rc1
