@@ -96,7 +96,7 @@ static bool mark_file_valid(vfs_handle_struct *handle,
 
 	DEBUG(10, ("marking file %s as valid\n", smb_fname->base_name));
 
-	ret = SMB_VFS_SETXATTR(handle->conn, smb_fname, SAMBA_XATTR_MARKER,
+	ret = SMB_VFS_FSETXATTR(smb_fname->fsp, SAMBA_XATTR_MARKER,
 				    &buf, sizeof(buf), 0);
 
 	if (ret == -1) {
@@ -130,6 +130,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
+	struct smb_filename *tmpref = NULL;
+	const struct smb_filename *pathref = NULL;
 	int ret;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
@@ -378,11 +380,27 @@ static char *stream_dir(vfs_handle_struct *handle,
 	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
-
-	if (check_valid && !mark_file_valid(handle, smb_fname)) {
+	pathref = smb_fname;
+	if (smb_fname->fsp == NULL) {
+		NTSTATUS status;
+		status = synthetic_pathref(talloc_tos(),
+					handle->conn->cwd_fsp,
+					smb_fname->base_name,
+					NULL,
+					NULL,
+					smb_fname->twrp,
+					smb_fname->flags,
+					&tmpref);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		pathref = tmpref;
+	}
+	if (check_valid && !mark_file_valid(handle, pathref)) {
 		goto fail;
 	}
 
+	TALLOC_FREE(tmpref);
 	TALLOC_FREE(rootdir_fname);
 	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
@@ -390,6 +408,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	return result;
 
  fail:
+	TALLOC_FREE(tmpref);
 	TALLOC_FREE(rootdir_fname);
 	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
