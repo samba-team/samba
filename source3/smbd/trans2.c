@@ -6661,14 +6661,18 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	}
 
 	/* Always operate on the base_name, even if a stream was passed in. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+	status = synthetic_pathref(talloc_tos(),
+					conn->cwd_fsp,
 					smb_fname->base_name,
 					NULL,
-					&smb_fname->st,
+					NULL,
 					smb_fname->twrp,
-					smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		return NT_STATUS_NO_MEMORY;
+					smb_fname->flags,
+					&smb_fname_base);
+
+	/* do we handle link as non error here ? */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (dosmode) {
