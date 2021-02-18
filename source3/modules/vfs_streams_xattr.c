@@ -639,7 +639,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* (over)write the new stream */
-	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_src,
+	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_dst,
 				dst_xattr_name, ea.value.data, ea.value.length,
 				0);
 	if (nret < 0) {
