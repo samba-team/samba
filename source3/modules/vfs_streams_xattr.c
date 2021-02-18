@@ -589,6 +589,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	ssize_t oret;
 	ssize_t nret;
 	struct ea_struct ea;
+	struct smb_filename *pathref = NULL;
 
 	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
 	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
@@ -634,14 +635,30 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname_src, src_xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = ENOENT;
+		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
 
+	if (smb_fname_dst->fsp == NULL) {
+		status = synthetic_pathref(talloc_tos(),
+				handle->conn->cwd_fsp,
+				smb_fname_dst->base_name,
+				NULL,
+				NULL,
+				smb_fname_dst->twrp,
+				smb_fname_dst->flags,
+				&pathref);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = ENOENT;
+			goto fail;
+		}
+		smb_fname_dst = pathref;
+	}
 	/* (over)write the new stream */
-	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_dst,
-				dst_xattr_name, ea.value.data, ea.value.length,
-				0);
+	nret = SMB_VFS_FSETXATTR(
+			smb_fname_dst->fsp,
+			dst_xattr_name, ea.value.data, ea.value.length,
+			0);
 	if (nret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
@@ -663,6 +680,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	errno = 0;
 	ret = 0;
  fail:
+	TALLOC_FREE(pathref);
 	TALLOC_FREE(src_xattr_name);
 	TALLOC_FREE(dst_xattr_name);
 	return ret;
