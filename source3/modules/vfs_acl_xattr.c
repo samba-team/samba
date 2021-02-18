@@ -196,14 +196,8 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		  (unsigned int)pblob->length, fsp_str_dbg(fsp)));
 
 	become_root();
-	if (fsp_get_pathref_fd(fsp) != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
+	ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
 			pblob->data, pblob->length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
-				XATTR_NTACL_NAME,
-				pblob->data, pblob->length, 0);
-	}
 	if (ret) {
 		saved_errno = errno;
 	}
