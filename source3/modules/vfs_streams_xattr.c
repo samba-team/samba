@@ -441,8 +441,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		ret = SMB_VFS_SETXATTR(fsp->conn,
-				       smb_fname,
+		ret = SMB_VFS_FSETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
 				       xattr_name,
 				       &null, sizeof(null),
 				       flags & O_EXCL ? XATTR_CREATE : 0);
