@@ -1555,6 +1555,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	off_t ret=-1;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *parent = NULL;
+	struct smb_filename *pathref = NULL;
 	bool ok;
 
 	if (!CAN_WRITE(conn)) {
@@ -1671,7 +1672,26 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
+	if (smb_fname_dst->fsp == NULL) {
+		status = synthetic_pathref(parent,
+					conn->cwd_fsp,
+					smb_fname_dst->base_name,
+					smb_fname_dst->stream_name,
+					NULL,
+					smb_fname_dst->twrp,
+					smb_fname_dst->flags,
+					&pathref);
+
+		/* should we handle NT_STATUS_OBJECT_NAME_NOT_FOUND specially here ???? */
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(parent);
+			goto out;
+		}
+		file_set_dosmode(conn, pathref, fattr, parent, false);
+		smb_fname_dst->st.st_ex_mode = pathref->st.st_ex_mode;
+	} else {
+		file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
+	}
 	TALLOC_FREE(parent);
 
 	if (ret < (off_t)smb_fname_src->st.st_ex_size) {
