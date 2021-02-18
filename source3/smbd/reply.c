@@ -7582,6 +7582,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
+	if (smb_fname_dst_in)
 
 	/*
 	 * Check for special case with case preserving and not
@@ -7824,23 +7825,33 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		    (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))))
 		{
-			/*
-			 * We must set the archive bit on the newly renamed
-			 * file.
-			 */
-			ret = SMB_VFS_FSTAT(fsp, &smb_fname_dst->st);
-			if (ret == 0) {
-				uint32_t old_dosmode;
-
-				fsp->fsp_name->st = smb_fname_dst->st;
-				old_dosmode = fdos_mode(fsp);
-
-				file_set_dosmode(conn,
-					smb_fname_dst,
-					old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
-					NULL,
-					true);
+			struct smb_filename *pathref = NULL;
+			status = synthetic_pathref(ctx,
+						conn->cwd_fsp,
+						smb_fname_dst->base_name,
+						smb_fname_dst->stream_name,
+						NULL,
+						smb_fname_dst->twrp,
+						smb_fname_dst->flags,
+						&pathref);
+			if (NT_STATUS_IS_OK(status)) {
+				/*
+				 * We must set the archive bit on the newly renamed
+				 * file.
+				 */
+				ret = SMB_VFS_FSTAT(fsp, &pathref->st);
+				if (ret == 0) {
+					uint32_t old_dosmode;
+					fsp->fsp_name->st = pathref->st;
+					old_dosmode = fdos_mode(fsp);
+					file_set_dosmode(conn,
+							pathref,
+							old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
+							NULL,
+							true);
+				}
 			}
+			TALLOC_FREE(pathref);
 		}
 
 		/*
