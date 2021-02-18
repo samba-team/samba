@@ -1284,20 +1284,23 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 	struct smb_filename *smb_fname;
 	uint32_t dosmode;
 	int ret;
+	NTSTATUS status;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	status = synthetic_pathref(talloc_tos(),
+					conn->cwd_fsp,
 					psmb_fname->base_name,
 					NULL,
-					&psmb_fname->st,
+					NULL,
 					psmb_fname->twrp,
-					psmb_fname->flags);
+					psmb_fname->flags,
+					&smb_fname);
 
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	dosmode = fdos_mode(psmb_fname->fsp);
@@ -1306,12 +1309,14 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 
 	ret = file_set_dosmode(conn, smb_fname, dosmode, NULL, false);
 	if (ret == -1) {
+		TALLOC_FREE(smb_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
 	DEBUG(10,("set_create_timespec_ea: wrote create time EA for file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
+	TALLOC_FREE(smb_fname);
 	return NT_STATUS_OK;
 }
 
