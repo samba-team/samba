@@ -1464,12 +1464,14 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_fsetxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 			     int argc, const char **argv)
 {
 	ssize_t ret;
 	int flags = 0;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 
 	if ((argc < 4) || (argc > 5)) {
 		printf("Usage: setxattr <path> <xattr> <value> [flags]\n");
@@ -1486,11 +1488,24 @@ static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_SETXATTR(vfs->conn, smb_fname, argv[2],
+
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ret = SMB_VFS_FSETXATTR(pathref_fname->fsp, argv[2],
 			       argv[3], strlen(argv[3]), flags);
 	if (ret == -1) {
 		int err = errno;
-		printf("setxattr returned (%s)\n", strerror(err));
+		printf("fsetxattr returned (%s)\n", strerror(err));
 		return map_nt_error_from_unix(err);
 	}
 	return NT_STATUS_OK;
@@ -2083,8 +2098,8 @@ struct cmd_set vfs_commands[] = {
 	  "getxattr <path> <name>" },
 	{ "listxattr", cmd_listxattr, "VFS listxattr()",
 	  "listxattr <path>" },
-	{ "setxattr", cmd_setxattr, "VFS setxattr()",
-	  "setxattr <path> <name> <value> [<flags>]" },
+	{ "fsetxattr", cmd_fsetxattr, "VFS fsetxattr()",
+	  "fsetxattr <path> <name> <value> [<flags>]" },
 	{ "removexattr", cmd_removexattr, "VFS removexattr()",
 	  "removexattr <path> <name>\n" },
 	{ "fget_nt_acl", cmd_fget_nt_acl, "VFS fget_nt_acl()", 
