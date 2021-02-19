@@ -1342,6 +1342,31 @@ static int ceph_snap_gmt_setxattr(struct vfs_handle_struct *handle,
 				aname, value, size, flags);
 }
 
+static int ceph_snap_gmt_fsetxattr(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				const char *aname, const void *value,
+				size_t size, int flags)
+{
+	const struct smb_filename *csmb_fname = NULL;
+	time_t timestamp = 0;
+	int ret;
+
+	csmb_fname = fsp->fsp_name;
+	ret = ceph_snap_gmt_strip_snapshot(handle,
+					csmb_fname,
+					&timestamp, NULL, 0);
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_FSETXATTR(handle, fsp,
+				aname, value, size, flags);
+}
+
 static int ceph_snap_gmt_get_real_filename(struct vfs_handle_struct *handle,
 					 const struct smb_filename *path,
 					 const char *name,
@@ -1492,6 +1517,7 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.removexattr_fn = ceph_snap_gmt_removexattr,
 	.setxattr_fn = ceph_snap_gmt_setxattr,
+	.fsetxattr_fn = ceph_snap_gmt_fsetxattr,
 	.chflags_fn = ceph_snap_gmt_chflags,
 	.get_real_filename_fn = ceph_snap_gmt_get_real_filename,
 };
