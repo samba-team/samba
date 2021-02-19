@@ -2531,11 +2531,13 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 	bool valid_security = false;
 	bool valid_workgroup = false;
 	bool valid_realm = false;
+	bool valid_hostname = false;
 	bool ignored_realm = false;
 
 	/* check if configuration is already set correctly */
 
 	valid_workgroup = strequal(lp_workgroup(), r->out.netbios_domain_name);
+	valid_hostname = strequal(lp_netbios_name(), r->in.machine_name);
 
 	switch (r->out.domain_is_ad) {
 		case false:
@@ -2561,7 +2563,8 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 				valid_security = true;
 			}
 
-			if (valid_workgroup && valid_realm && valid_security) {
+			if (valid_workgroup && valid_realm && valid_security &&
+					valid_hostname) {
 				if (ignored_realm && !r->in.modify_config)
 				{
 					libnet_join_set_error_string(mem_ctx, r,
@@ -2584,6 +2587,13 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 	if (!r->in.modify_config) {
 
 		char *wrong_conf = talloc_strdup(mem_ctx, "");
+
+		if (!valid_hostname) {
+			wrong_conf = talloc_asprintf_append(wrong_conf,
+				"\"netbios name\" set to '%s', should be '%s'",
+				lp_netbios_name(), r->in.machine_name);
+			W_ERROR_HAVE_NO_MEMORY(wrong_conf);
+		}
 
 		if (!valid_workgroup) {
 			wrong_conf = talloc_asprintf_append(wrong_conf,
