@@ -335,14 +335,8 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 		return false;
 	}
 
-	if (fsp_get_pathref_fd(fsp) != -1) {
-		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
-					     blob.data, blob.length, 0);
-	} else {
-		ret = SMB_VFS_NEXT_SETXATTR(handle, fsp->fsp_name,
-					    config->xattr_name,
-					    blob.data, blob.length, 0);
-	}
+	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
+				     blob.data, blob.length, 0);
 	if (ret != 0) {
 		saved_errno = errno;
 	}
