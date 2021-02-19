@@ -345,7 +345,7 @@ static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle,
 		name = FAKE_ACL_DEFAULT_XATTR;
 		break;
 	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
+	ret = SMB_VFS_NEXT_FSETXATTR(handle, smb_fname->fsp,
 			name, blob.data, blob.length, 0);
 	TALLOC_FREE(frame);
 	return ret;
@@ -628,10 +628,18 @@ static int fake_acls_chmod(vfs_handle_struct *handle,
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = -1;
 	SMB_ACL_T the_acl = NULL;
-	struct smb_filename *smb_fname = cp_smb_filename_nostream(talloc_tos(),
-						smb_fname_in);
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	status = synthetic_pathref(talloc_tos(),
+				handle->conn->cwd_fsp,
+				smb_fname_in->base_name,
+				NULL,
+				NULL,
+				smb_fname_in->twrp,
+				smb_fname_in->flags,
+				&smb_fname);
 
-	if (smb_fname == NULL) {
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return -1;
 	}
