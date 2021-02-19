@@ -444,8 +444,8 @@ static int fake_acls_lchown(vfs_handle_struct *handle,
 		 * to.
 		 */
 		SIVAL(id_buf, 0, uid);
-		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname,
+		ret = SMB_VFS_NEXT_FSETXATTR(handle,
+				smb_fname->fsp,
 				FAKE_UID,
 				id_buf,
 				sizeof(id_buf),
@@ -456,8 +456,8 @@ static int fake_acls_lchown(vfs_handle_struct *handle,
 	}
 	if (gid != -1) {
 		SIVAL(id_buf, 0, gid);
-		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname,
+		ret = SMB_VFS_NEXT_FSETXATTR(handle,
+				smb_fname->fsp,
 				FAKE_GID,
 				id_buf,
 				sizeof(id_buf),
