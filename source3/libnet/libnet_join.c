@@ -2763,11 +2763,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	if (!r->in.provision_computer_account_only) {
-		werr = libnet_join_check_config(mem_ctx, r);
-		if (!W_ERROR_IS_OK(werr)) {
+	werr = libnet_join_check_config(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		if (!r->in.provision_computer_account_only) {
 			goto done;
 		}
+		/* do not fail when only provisioning */
 	}
 
 #ifdef HAVE_ADS
@@ -2912,6 +2913,11 @@ static WERROR libnet_DomainOfflineJoin(TALLOC_CTX *mem_ctx,
 					    &r->out.dcinfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
+	}
+
+	werr = libnet_join_check_config(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	return WERR_OK;
