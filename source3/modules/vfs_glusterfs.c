@@ -2072,14 +2072,6 @@ static int vfs_gluster_fremovexattr(struct vfs_handle_struct *handle,
 	return glfs_fremovexattr(glfd, name);
 }
 
-static int vfs_gluster_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value, size_t size, int flags)
-{
-	return glfs_setxattr(handle->data, smb_fname->base_name, name, value, size, flags);
-}
-
 static int vfs_gluster_fsetxattr(struct vfs_handle_struct *handle,
 				 files_struct *fsp, const char *name,
 				 const void *value, size_t size, int flags)
@@ -2352,7 +2344,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.flistxattr_fn = vfs_gluster_flistxattr,
 	.removexattr_fn = vfs_gluster_removexattr,
 	.fremovexattr_fn = vfs_gluster_fremovexattr,
-	.setxattr_fn = vfs_gluster_setxattr,
 	.fsetxattr_fn = vfs_gluster_fsetxattr,
 
 	/* AIO Operations */

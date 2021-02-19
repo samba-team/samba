@@ -1312,22 +1312,6 @@ static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_
 	WRAP_RETURN(ret);
 }
 
-static int cephwrap_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value,
-				size_t size,
-				int flags)
-{
-	int ret;
-	DBG_DEBUG("[CEPH] setxattr(%p, %s, %s, %p, %llu, %d)\n", handle,
-			smb_fname->base_name, name, value, llu(size), flags);
-	ret = ceph_setxattr(handle->data, smb_fname->base_name,
-			name, value, size, flags);
-	DBG_DEBUG("[CEPH] setxattr(...) = %d\n", ret);
-	WRAP_RETURN(ret);
-}
-
 static int cephwrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
 	int ret;
@@ -1582,7 +1566,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.flistxattr_fn = cephwrap_flistxattr,
 	.removexattr_fn = cephwrap_removexattr,
 	.fremovexattr_fn = cephwrap_fremovexattr,
-	.setxattr_fn = cephwrap_setxattr,
 	.fsetxattr_fn = cephwrap_fsetxattr,
 
 	/* Posix ACL Operations */

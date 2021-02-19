@@ -344,6 +344,7 @@
  * Version 44 - Remove SMB_VFS_SYS_ACL_SET_FILE()
  * Change to Version 45 - will ship with 4.15
  * Version 45 - Remove SMB_VFS_LISTXATTR
+ * Version 45 - Remove SMB_VFS_SETXATTR
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1251,12 +1252,6 @@ struct vfs_fn_pointers {
 					const struct smb_filename *smb_fname,
 					const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
-	int (*setxattr_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					const char *name,
-					const void *value,
-					size_t size,
-					int flags);
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 	/* aio operations */
@@ -1775,12 +1770,6 @@ int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
 				const char *name);
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name);
-int smb_vfs_call_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value,
-				size_t size,
-				int flags);
 int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
 			   const char *name, const void *value, size_t size,
 			   int flags);

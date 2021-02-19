@@ -126,21 +126,6 @@ static int posix_eadb_setattr(struct tdb_wrap *db_ctx,
 	return 0;
 }
 
-static int posix_eadb_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value,
-				size_t size,
-				int flags)
-{
-	struct tdb_wrap *db;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
-
-	return posix_eadb_setattr(db, smb_fname->base_name,
-			-1, name, value, size, flags);
-}
-
 static int posix_eadb_fsetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *name, const void *value,
@@ -476,7 +461,6 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = posix_eadb_fgetxattr,
-	.setxattr_fn = posix_eadb_setxattr,
 	.fsetxattr_fn = posix_eadb_fsetxattr,
 	.flistxattr_fn = posix_eadb_flistxattr,
 	.removexattr_fn = posix_eadb_removexattr,

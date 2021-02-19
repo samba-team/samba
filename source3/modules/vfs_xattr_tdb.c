@@ -283,35 +283,6 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 	return xattr_size;
 }
 
-static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value,
-				size_t size,
-				int flags)
-{
-	struct file_id id;
-	struct db_context *db;
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-				if (!xattr_tdb_init(-1, frame, &db))
-				{
-					TALLOC_FREE(frame); return -1;
-				});
-
-	ret = xattr_tdb_get_file_id(handle, smb_fname->base_name, &id);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	ret = xattr_tdb_setattr(db, &id, name, value, size, flags);
-	TALLOC_FREE(frame);
-	return ret;
-}
-
 static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *name, const void *value,
@@ -710,7 +681,6 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.getxattrat_send_fn = xattr_tdb_getxattrat_send,
 	.getxattrat_recv_fn = xattr_tdb_getxattrat_recv,
 	.fgetxattr_fn = xattr_tdb_fgetxattr,
-	.setxattr_fn = xattr_tdb_setxattr,
 	.fsetxattr_fn = xattr_tdb_fsetxattr,
 	.flistxattr_fn = xattr_tdb_flistxattr,
 	.removexattr_fn = xattr_tdb_removexattr,

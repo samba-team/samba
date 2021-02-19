@@ -2694,31 +2694,6 @@ static int smb_time_audit_fremovexattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_setxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				const void *value,
-				size_t size,
-				int flags)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value, size,
-				       flags);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("setxattr", timediff,
-				smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_fsetxattr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp, const char *name,
 				    const void *value, size_t size, int flags)
@@ -2929,7 +2904,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.flistxattr_fn = smb_time_audit_flistxattr,
 	.removexattr_fn = smb_time_audit_removexattr,
 	.fremovexattr_fn = smb_time_audit_fremovexattr,
-	.setxattr_fn = smb_time_audit_setxattr,
 	.fsetxattr_fn = smb_time_audit_fsetxattr,
 	.aio_force_fn = smb_time_audit_aio_force,
 	.durable_cookie_fn = smb_time_audit_durable_cookie,

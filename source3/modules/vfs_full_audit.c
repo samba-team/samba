@@ -212,7 +212,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FLISTXATTR,
 	SMB_VFS_OP_REMOVEXATTR,
 	SMB_VFS_OP_FREMOVEXATTR,
-	SMB_VFS_OP_SETXATTR,
 	SMB_VFS_OP_FSETXATTR,
 
 	/* aio operations */
@@ -343,7 +342,6 @@ static struct {
 	{ SMB_VFS_OP_FLISTXATTR,	"flistxattr" },
 	{ SMB_VFS_OP_REMOVEXATTR,	"removexattr" },
 	{ SMB_VFS_OP_FREMOVEXATTR,	"fremovexattr" },
-	{ SMB_VFS_OP_SETXATTR,	"setxattr" },
 	{ SMB_VFS_OP_FSETXATTR,	"fsetxattr" },
 	{ SMB_VFS_OP_AIO_FORCE, "aio_force" },
 	{ SMB_VFS_OP_IS_OFFLINE, "is_offline" },
@@ -2863,26 +2861,6 @@ static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname,
-			  const char *name, const void *value, size_t size,
-			  int flags)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value, size,
-				       flags);
-
-	do_log(SMB_VFS_OP_SETXATTR,
-	       (result >= 0),
-	       handle,
-	       "%s|%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname),
-	       name);
-
-	return result;
-}
-
 static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags)
@@ -3078,7 +3056,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.flistxattr_fn = smb_full_audit_flistxattr,
 	.removexattr_fn = smb_full_audit_removexattr,
 	.fremovexattr_fn = smb_full_audit_fremovexattr,
-	.setxattr_fn = smb_full_audit_setxattr,
 	.fsetxattr_fn = smb_full_audit_fsetxattr,
 	.aio_force_fn = smb_full_audit_aio_force,
 	.durable_cookie_fn = smb_full_audit_durable_cookie,

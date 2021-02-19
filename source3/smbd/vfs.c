@@ -2940,18 +2940,6 @@ int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 	return handle->fns->fremovexattr_fn(handle, fsp, name);
 }
 
-int smb_vfs_call_setxattr(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name,
-			const void *value,
-			size_t size,
-			int flags)
-{
-	VFS_FIND(setxattr);
-	return handle->fns->setxattr_fn(handle, smb_fname,
-			name, value, size, flags);
-}
-
 int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags)

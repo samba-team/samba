@@ -2166,37 +2166,6 @@ out:
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
  */
-static int mh_setxattr(struct vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		const char *name,
-		const void *value,
-		size_t size,
-		int flags)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_setxattr\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value,
-				size, flags);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		goto err;
-	}
-	status = SMB_VFS_NEXT_SETXATTR(handle, clientFname, name, value,
-			size, flags);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
 
 /* VFS operations structure */
 
@@ -2250,7 +2219,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.removexattr_fn = mh_removexattr,
-	.setxattr_fn = mh_setxattr,
 
 	/* aio operations */
 };

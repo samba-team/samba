@@ -960,49 +960,6 @@ static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,
         return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, cappath);
 }
 
-static int cap_setxattr(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name,
-			const void *value,
-			size_t size,
-			int flags)
-{
-	struct smb_filename *cap_smb_fname = NULL;
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
-	char *capname = capencode(talloc_tos(), name);
-	int ret;
-	int saved_errno = 0;
-
-	if (!cappath || !capname) {
-		errno = ENOMEM;
-		return -1;
-	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					cappath,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(cappath);
-		TALLOC_FREE(capname);
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, cap_smb_fname,
-				capname, value, size, flags);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(cappath);
-	TALLOC_FREE(capname);
-	TALLOC_FREE(cap_smb_fname);
-	if (saved_errno) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, const void *value, size_t size, int flags)
 {
 	char *cappath = capencode(talloc_tos(), path);
@@ -1116,7 +1073,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.fgetxattr_fn = cap_fgetxattr,
 	.removexattr_fn = cap_removexattr,
 	.fremovexattr_fn = cap_fremovexattr,
-	.setxattr_fn = cap_setxattr,
 	.fsetxattr_fn = cap_fsetxattr,
 	.create_dfs_pathat_fn = cap_create_dfs_pathat,
 	.read_dfs_pathat_fn = cap_read_dfs_pathat

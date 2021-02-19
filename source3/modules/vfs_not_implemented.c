@@ -952,17 +952,6 @@ int vfs_not_implemented_fremovexattr(vfs_handle_struct *handle,
 	return -1;
 }
 
-int vfs_not_implemented_setxattr(vfs_handle_struct *handle,
-				 const struct smb_filename *smb_fname,
-				 const char *name,
-				 const void *value,
-				 size_t size,
-				 int flags)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,
 				  const char *name, const void *value, size_t size,
 				  int flags)
@@ -1137,7 +1126,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.flistxattr_fn = vfs_not_implemented_flistxattr,
 	.removexattr_fn = vfs_not_implemented_removexattr,
 	.fremovexattr_fn = vfs_not_implemented_fremovexattr,
-	.setxattr_fn = vfs_not_implemented_setxattr,
 	.fsetxattr_fn = vfs_not_implemented_fsetxattr,
 
 	/* aio operations */

@@ -1759,39 +1759,6 @@ err:
 	return status;
 }
 
-static int um_setxattr(struct vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname,
-		       const char *name,
-		       const void *value,
-		       size_t size,
-		       int flags)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_setxattr\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value,
-					     size, flags);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_SETXATTR(handle, client_fname, name, value,
-				       size, flags);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static int um_connect(vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user)
@@ -1882,7 +1849,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.removexattr_fn = um_removexattr,
-	.setxattr_fn = um_setxattr,
 };
 
 static_decl_vfs;

@@ -499,84 +499,6 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 }
 
-static int vxfs_set_xattr(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_in,
-			const char *name,
-			const void *value,
-			size_t size,
-			int flags)
-{
-	struct smb_filename *smb_fname = NULL;
-	bool is_dir = false;
-	int ret = 0;
-	int saved_errno = 0;
-
-	DEBUG(10, ("In vxfs_set_xattr\n"));
-
-	smb_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname_in);
-	if (smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (SMB_VFS_NEXT_STAT(handle, smb_fname) != 0) {
-		TALLOC_FREE(smb_fname);
-		return -1;
-	}
-
-	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
-
-	ret = vxfs_setxattr_path(smb_fname_in->base_name, name, value, size,
-				 flags, is_dir);
-	if ((ret == 0) ||
-	    ((ret == -1) && (errno != ENOTSUP) && (errno != ENOSYS))) {
-		/*
-		 * Now remve old style xattr if it exists
-		 */
-		SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
-		/*
-		 * Do not bother about return value
-		 */
-		if (ret != 0) {
-			saved_errno = errno;
-		}
-		goto fail;
-	}
-
-	DEBUG(10, ("Fallback to xattr\n"));
-	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
-					    XATTR_USER_NTACL,
-					    value, size, flags);
-		if (ret != 0) {
-			saved_errno = errno;
-			goto fail;
-		}
-		return 0;
-	}
-
-	/* Clients can't set XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
-		saved_errno = EACCES;
-		ret = -1;
-		goto fail;
-	}
-
-	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
-				    name, value, size, flags);
-	if (ret != 0) {
-		saved_errno = errno;
-		goto fail;
-	}
-
-fail:
-	TALLOC_FREE(smb_fname);
-	if (saved_errno != 0) {
-		saved_errno = errno;
-	}
-	return ret;
-}
-
 static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size,  int flags){
@@ -911,7 +833,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.flistxattr_fn = vxfs_flistxattr,
 	.removexattr_fn = vxfs_remove_xattr,
 	.fremovexattr_fn = vxfs_fremove_xattr,
-	.setxattr_fn = vxfs_set_xattr,
 	.fsetxattr_fn = vxfs_fset_xattr,
 };
 
