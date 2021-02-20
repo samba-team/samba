@@ -29,6 +29,7 @@
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "lib/util/bitmap.h"
 
 static bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
 {
@@ -1266,7 +1267,9 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 {
 	struct wbcDomainSid *wbc_sids = NULL;
 	struct wbcUnixId *wbc_ids = NULL;
+	struct bitmap *found = NULL;
 	uint32_t i, num_not_cached;
+	uint32_t wbc_ids_size = 0;
 	wbcErr err;
 	bool ret = false;
 
@@ -1274,6 +1277,20 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 	if (wbc_sids == NULL) {
 		return false;
 	}
+	found = bitmap_talloc(wbc_sids, num_sids);
+	if (found == NULL) {
+		goto fail;
+	}
+
+	/*
+	 * We go through the requested SID array three times.
+	 * First time to look for global_sid_Unix_Users
+	 * and global_sid_Unix_Groups SIDS, and to look
+	 * for mappings cached in the idmap_cache.
+	 *
+	 * Use bitmap_set() to mark an ids[] array entry as
+	 * being mapped.
+	 */
 
 	num_not_cached = 0;
 
@@ -1285,17 +1302,20 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 				       &sids[i], &rid)) {
 			ids[i].type = ID_TYPE_UID;
 			ids[i].id = rid;
+			bitmap_set(found, i);
 			continue;
 		}
 		if (sid_peek_check_rid(&global_sid_Unix_Groups,
 				       &sids[i], &rid)) {
 			ids[i].type = ID_TYPE_GID;
 			ids[i].id = rid;
+			bitmap_set(found, i);
 			continue;
 		}
 		if (idmap_cache_find_sid2unixid(&sids[i], &ids[i], &expired)
 		    && !expired)
 		{
+			bitmap_set(found, i);
 			continue;
 		}
 		ids[i].type = ID_TYPE_NOT_SPECIFIED;
@@ -1306,62 +1326,121 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 	if (num_not_cached == 0) {
 		goto done;
 	}
-	wbc_ids = talloc_array(talloc_tos(), struct wbcUnixId, num_not_cached);
+
+	/*
+	 * For the ones that we couldn't map in the loop above, query winbindd
+	 * via wbcSidsToUnixIds().
+	 */
+
+	wbc_ids_size = num_not_cached;
+	wbc_ids = talloc_array(talloc_tos(), struct wbcUnixId, wbc_ids_size);
 	if (wbc_ids == NULL) {
 		goto fail;
 	}
-	for (i=0; i<num_not_cached; i++) {
+	for (i=0; i<wbc_ids_size; i++) {
 		wbc_ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+		wbc_ids[i].id.gid = (uint32_t)-1;
 	}
-	err = wbcSidsToUnixIds(wbc_sids, num_not_cached, wbc_ids);
+	err = wbcSidsToUnixIds(wbc_sids, wbc_ids_size, wbc_ids);
 	if (!WBC_ERROR_IS_OK(err)) {
 		DEBUG(10, ("wbcSidsToUnixIds returned %s\n",
 			   wbcErrorString(err)));
 	}
 
+	/*
+	 * Second time through the SID array, replace
+	 * the ids[] entries that wbcSidsToUnixIds() was able to
+	 * map.
+	 *
+	 * Use bitmap_set() to mark an ids[] array entry as
+	 * being mapped.
+	 */
+
 	num_not_cached = 0;
 
 	for (i=0; i<num_sids; i++) {
-		if (ids[i].type == ID_TYPE_NOT_SPECIFIED) {
-			switch (wbc_ids[num_not_cached].type) {
-			case WBC_ID_TYPE_UID:
-				ids[i].type = ID_TYPE_UID;
-				ids[i].id = wbc_ids[num_not_cached].id.uid;
-				break;
-			case WBC_ID_TYPE_GID:
-				ids[i].type = ID_TYPE_GID;
-				ids[i].id = wbc_ids[num_not_cached].id.gid;
-				break;
-			default:
-				/* The types match, and wbcUnixId -> id is a union anyway */
-				ids[i].type = (enum id_type)wbc_ids[num_not_cached].type;
-				ids[i].id = wbc_ids[num_not_cached].id.gid;
-				break;
-			}
-			num_not_cached += 1;
+		if (bitmap_query(found, i)) {
+			continue;
 		}
+
+		SMB_ASSERT(num_not_cached < wbc_ids_size);
+
+		switch (wbc_ids[num_not_cached].type) {
+		case WBC_ID_TYPE_UID:
+			ids[i].type = ID_TYPE_UID;
+			ids[i].id = wbc_ids[num_not_cached].id.uid;
+			bitmap_set(found, i);
+			break;
+		case WBC_ID_TYPE_GID:
+			ids[i].type = ID_TYPE_GID;
+			ids[i].id = wbc_ids[num_not_cached].id.gid;
+			bitmap_set(found, i);
+			break;
+		case WBC_ID_TYPE_BOTH:
+			ids[i].type = ID_TYPE_BOTH;
+			ids[i].id = wbc_ids[num_not_cached].id.uid;
+			bitmap_set(found, i);
+			break;
+		case WBC_ID_TYPE_NOT_SPECIFIED:
+			/*
+			 * wbcSidsToUnixIds() wasn't able to map this
+			 * so we still need to check legacy_sid_to_XXX()
+			 * below. Don't mark the bitmap entry
+			 * as being found so the final loop knows
+			 * to try and map this entry.
+			 */
+			ids[i].type = ID_TYPE_NOT_SPECIFIED;
+			ids[i].id = (uint32_t)-1;
+			break;
+		default:
+			/*
+			 * A successful return from wbcSidsToUnixIds()
+			 * cannot return anything other than the values
+			 * checked for above. Ensure this is so.
+			 */
+			smb_panic(__location__);
+			break;
+		}
+		num_not_cached += 1;
 	}
 
+	/*
+	 * Third and final time through the SID array,
+	 * try legacy_sid_to_gid()/legacy_sid_to_uid()
+	 * for entries we haven't already been able to
+	 * map.
+	 *
+	 * Use bitmap_set() to mark an ids[] array entry as
+	 * being mapped.
+	 */
+
 	for (i=0; i<num_sids; i++) {
-		if (ids[i].type != ID_TYPE_NOT_SPECIFIED) {
+		if (bitmap_query(found, i)) {
 			continue;
 		}
 		if (legacy_sid_to_gid(&sids[i], &ids[i].id)) {
 			ids[i].type = ID_TYPE_GID;
+			bitmap_set(found, i);
 			continue;
 		}
 		if (legacy_sid_to_uid(&sids[i], &ids[i].id)) {
 			ids[i].type = ID_TYPE_UID;
+			bitmap_set(found, i);
 			continue;
 		}
 	}
 done:
+	/*
+	 * Pass through the return array for consistency.
+	 * Any ids[].id mapped to (uint32_t)-1 must be returned
+	 * as ID_TYPE_NOT_SPECIFIED.
+	 */
 	for (i=0; i<num_sids; i++) {
 		switch(ids[i].type) {
 		case ID_TYPE_GID:
 		case ID_TYPE_UID:
 		case ID_TYPE_BOTH:
-			if (ids[i].id == -1) {
+			if (ids[i].id == (uint32_t)-1) {
 				ids[i].type = ID_TYPE_NOT_SPECIFIED;
 			}
 			break;
