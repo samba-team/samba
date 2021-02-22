@@ -36,6 +36,7 @@ from samba.vgp_openssh_ext import vgp_openssh_ext
 from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
 from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
+from samba.vgp_access_ext import vgp_access_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -1366,3 +1367,133 @@ class GPOTests(tests.TestCase):
 
         # Unstage the manifest.xml file
         unstage_file(manifest)
+
+    def test_vgp_access(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        allow = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/VAS/HOSTACCESSCONTROL/ALLOW/MANIFEST.XML')
+        deny = os.path.join(local_path, policies, guid, 'MACHINE',
+            'VGP/VTLA/VAS/HOSTACCESSCONTROL/DENY/MANIFEST.XML')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = vgp_access_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the manifest.xml allow file
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '2'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'merge'
+        data = etree.SubElement(policysetting, 'data')
+        # Add an allowed user
+        listelement = etree.SubElement(data, 'listelement')
+        otype = etree.SubElement(listelement, 'type')
+        otype.text = 'USER'
+        entry = etree.SubElement(listelement, 'entry')
+        entry.text = 'goodguy@%s' % realm
+        adobject = etree.SubElement(listelement, 'adobject')
+        name = etree.SubElement(adobject, 'name')
+        name.text = 'goodguy'
+        domain = etree.SubElement(adobject, 'domain')
+        domain.text = realm
+        otype = etree.SubElement(adobject, 'type')
+        otype.text = 'user'
+        # Add an allowed group
+        groupattr = etree.SubElement(data, 'groupattr')
+        groupattr.text = 'samAccountName'
+        listelement = etree.SubElement(data, 'listelement')
+        otype = etree.SubElement(listelement, 'type')
+        otype.text = 'GROUP'
+        entry = etree.SubElement(listelement, 'entry')
+        entry.text = '%s\\goodguys' % realm
+        dn = etree.SubElement(listelement, 'dn')
+        dn.text = 'CN=goodguys,CN=Users,%s' % base_dn
+        adobject = etree.SubElement(listelement, 'adobject')
+        name = etree.SubElement(adobject, 'name')
+        name.text = 'goodguys'
+        domain = etree.SubElement(adobject, 'domain')
+        domain.text = realm
+        otype = etree.SubElement(adobject, 'type')
+        otype.text = 'group'
+        ret = stage_file(allow, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % allow)
+
+        # Stage the manifest.xml deny file
+        stage = etree.Element('vgppolicy')
+        policysetting = etree.SubElement(stage, 'policysetting')
+        version = etree.SubElement(policysetting, 'version')
+        version.text = '2'
+        apply_mode = etree.SubElement(policysetting, 'apply_mode')
+        apply_mode.text = 'merge'
+        data = etree.SubElement(policysetting, 'data')
+        # Add a denied user
+        listelement = etree.SubElement(data, 'listelement')
+        otype = etree.SubElement(listelement, 'type')
+        otype.text = 'USER'
+        entry = etree.SubElement(listelement, 'entry')
+        entry.text = 'badguy@%s' % realm
+        adobject = etree.SubElement(listelement, 'adobject')
+        name = etree.SubElement(adobject, 'name')
+        name.text = 'badguy'
+        domain = etree.SubElement(adobject, 'domain')
+        domain.text = realm
+        otype = etree.SubElement(adobject, 'type')
+        otype.text = 'user'
+        # Add a denied group
+        groupattr = etree.SubElement(data, 'groupattr')
+        groupattr.text = 'samAccountName'
+        listelement = etree.SubElement(data, 'listelement')
+        otype = etree.SubElement(listelement, 'type')
+        otype.text = 'GROUP'
+        entry = etree.SubElement(listelement, 'entry')
+        entry.text = '%s\\badguys' % realm
+        dn = etree.SubElement(listelement, 'dn')
+        dn.text = 'CN=badguys,CN=Users,%s' % base_dn
+        adobject = etree.SubElement(listelement, 'adobject')
+        name = etree.SubElement(adobject, 'name')
+        name.text = 'badguys'
+        domain = etree.SubElement(adobject, 'domain')
+        domain.text = realm
+        otype = etree.SubElement(adobject, 'type')
+        otype.text = 'group'
+        ret = stage_file(deny, etree.tostring(stage))
+        self.assertTrue(ret, 'Could not create the target %s' % deny)
+
+        # Process all gpos, with temp output directory
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            conf = os.listdir(dname)
+            self.assertEquals(len(conf), 1, 'The conf file was not created')
+            gp_cfg = os.path.join(dname, conf[0])
+
+            # Check the access config for the correct access.conf entries
+            print('Config file %s found' % gp_cfg)
+            data = open(gp_cfg, 'r').read()
+            self.assertIn('+:%s\\goodguy:ALL' % realm, data)
+            self.assertIn('+:%s\\goodguys:ALL' % realm, data)
+            self.assertIn('-:%s\\badguy:ALL' % realm, data)
+            self.assertIn('-:%s\\badguys:ALL' % realm, data)
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            self.assertFalse(os.path.exists(gp_cfg),
+                             'Unapply failed to cleanup config')
+
+        # Unstage the manifest.pol files
+        unstage_file(allow)
+        unstage_file(deny)
