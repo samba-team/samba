@@ -1543,7 +1543,7 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 	     strequal(domain_name, unix_groups_domain_name() ) )
 	{
 		/*
-		 * The "Unix User" and "Unix Group" domain our handled by
+		 * The "Unix User" and "Unix Group" domain are handled by
 		 * passdb
 		 */
 		return find_domain_from_name_noinit( get_global_sam_name() );
