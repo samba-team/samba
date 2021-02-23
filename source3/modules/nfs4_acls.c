@@ -997,6 +997,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	if (security_descriptor_with_ms_nfs(psd)) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
