@@ -569,13 +569,70 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy = { 0 };
 	struct dom_sid sid;
-	const char *dom_name;
+	const char *dom_name = domain_name;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	bool retry = false;
+	bool ok;
 
 	DBG_NOTICE("%s\\%s\n", domain_name, name);
+
+	if (strequal(domain_name, unix_users_domain_name())) {
+		struct passwd *pwd = NULL;
+
+		if (name[0] == '\0') {
+			sid_copy(&sid, &global_sid_Unix_Users);
+			type = SID_NAME_DOMAIN;
+			goto done;
+		}
+
+		pwd = Get_Pwnam_alloc(tmp_ctx, name);
+		if (pwd == NULL) {
+			goto fail;
+		}
+		ok = sid_compose(&sid, &global_sid_Unix_Users, pwd->pw_uid);
+		if (!ok) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
+		type = SID_NAME_USER;
+		goto done;
+	}
+
+	if (strequal(domain_name, unix_groups_domain_name())) {
+		struct group *grp = NULL;
+
+		if (name[0] == '\0') {
+			sid_copy(&sid, &global_sid_Unix_Groups);
+			type = SID_NAME_DOMAIN;
+			goto done;
+		}
+
+		grp = getgrnam(name);
+		if (grp == NULL) {
+			goto fail;
+		}
+		ok = sid_compose(&sid, &global_sid_Unix_Groups, grp->gr_gid);
+		if (!ok) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
+		type = SID_NAME_DOM_GRP;
+		goto done;
+	}
+
+	if (name[0] == '\0') {
+		sid_copy(&sid, &domain->sid);
+		type = SID_NAME_DOMAIN;
+		goto done;
+	}
+
+	ok = lookup_wellknown_name(mem_ctx, name, &sid, &dom_name);
+	if (ok) {
+		type = SID_NAME_WKN_GRP;
+		goto done;
+	}
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
@@ -584,7 +641,7 @@ again:
 						&lsa_pipe,
 						&lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		goto fail;
 	}
 
 	status = rpc_name_to_sid(tmp_ctx,
@@ -603,14 +660,15 @@ again:
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		goto fail;
 	}
 
+done:
 	if (pdom_name != NULL) {
 		*pdom_name = talloc_strdup(mem_ctx, dom_name);
 		if (*pdom_name == NULL) {
 			status = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 	}
 
@@ -621,7 +679,8 @@ again:
 		*ptype = type;
 	}
 
-done:
+	status = NT_STATUS_OK;
+fail:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
