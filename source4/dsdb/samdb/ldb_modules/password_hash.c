@@ -1540,6 +1540,7 @@ static int setup_primary_userPassword_hash(
 	 * RHEL 7 behaviour.
 	 */
 	errno = 0;
+
 #ifdef HAVE_CRYPT_RN
 	hash = crypt_rn((char *)io->n.cleartext_utf8->data,
 			cmd,
@@ -1554,7 +1555,11 @@ static int setup_primary_userPassword_hash(
 	 */
 	hash = crypt((char *)io->n.cleartext_utf8->data, cmd);
 #endif
-	if (hash == NULL) {
+	/*
+	* On error, crypt() and crypt_r() may return a null pointer,
+	* or a pointer to an invalid hash beginning with a '*'.
+	*/
+	if (hash == NULL || hash[0] == '*') {
 		char buf[1024];
 		int err = strerror_r(errno, buf, sizeof(buf));
 		if (err != 0) {
