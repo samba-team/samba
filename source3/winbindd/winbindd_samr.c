@@ -710,73 +710,165 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 				char **pname,
 				enum lsa_SidType *ptype)
 {
-	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy = { 0 };
-	char *domain_name = NULL;
-	char *name = NULL;
-	enum lsa_SidType type;
+	struct rpc_pipe_client *samr_pipe = NULL;
+	struct dcerpc_binding_handle *h = NULL;
+	struct policy_handle dom_pol = { .handle_type = 0, };
+	const char *domain_name = "";
+	const char *name = "";
+	enum lsa_SidType type = SID_NAME_USE_NONE;
+	struct lsa_Strings names = { .count = 0, };
+	struct samr_Ids types = { .count = 0 };
+	struct dom_sid domain_sid;
+	uint32_t rid;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NONE_MAPPED;
+	NTSTATUS result;
 	bool retry = false;
+	bool ok;
 
 	DEBUG(3,("sam_sid_to_name\n"));
 
-	/* Paranoia check */
-	if (!sid_check_is_in_builtin(sid) &&
-	    !sid_check_is_builtin(sid) &&
-	    !sid_check_is_in_our_sam(sid) &&
-	    !sid_check_is_our_sam(sid) &&
-	    !sid_check_is_in_unix_users(sid) &&
-	    !sid_check_is_unix_users(sid) &&
-	    !sid_check_is_in_unix_groups(sid) &&
-	    !sid_check_is_unix_groups(sid) &&
-	    !sid_check_is_in_wellknown_domain(sid)) {
-		struct dom_sid_buf buf;
-		DEBUG(0, ("sam_sid_to_name: possible deadlock - trying to "
-			  "lookup SID %s\n",
-			  dom_sid_str_buf(sid, &buf)));
-		status = NT_STATUS_NONE_MAPPED;
+	if (sid_check_is_unix_users(sid)) {
+		domain_name = unix_users_domain_name();
+		type = SID_NAME_DOMAIN;
 		goto done;
+	}
+	if (sid_check_is_in_unix_users(sid)) {
+		struct passwd *pwd = NULL;
+
+		ok = sid_peek_rid(sid, &rid);
+		if (!ok) {
+			goto fail;
+		}
+		pwd = getpwuid(rid);
+		if (pwd == NULL) {
+			goto fail;
+		}
+
+		domain_name = unix_users_domain_name();
+		name = talloc_strdup(tmp_ctx, pwd->pw_name);
+		if (name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		type = SID_NAME_USER;
+		goto done;
+	}
+
+	if (sid_check_is_unix_groups(sid)) {
+		domain_name = unix_groups_domain_name();
+		type = SID_NAME_DOMAIN;
+		goto done;
+	}
+	if (sid_check_is_in_unix_groups(sid)) {
+		struct group *grp = NULL;
+
+		ok = sid_peek_rid(sid, &rid);
+		if (!ok) {
+			goto fail;
+		}
+		grp = getgrgid(rid);
+		if (grp == NULL) {
+			goto fail;
+		}
+
+		domain_name = unix_groups_domain_name();
+		name = talloc_strdup(tmp_ctx, grp->gr_name);
+		if (name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		type = SID_NAME_DOM_GRP;
+		goto done;
+	}
+
+	ok = lookup_wellknown_sid(tmp_ctx, sid, &domain_name, &name);
+	if (ok) {
+		type = SID_NAME_WKN_GRP;
+		goto done;
+	}
+
+	if (dom_sid_equal(sid, &domain->sid)) {
+		domain_name = domain->name;
+		type = SID_NAME_DOMAIN;
+		goto done;
+	}
+
+	sid_copy(&domain_sid, sid);
+	ok = sid_split_rid(&domain_sid, &rid);
+	if (!ok) {
+		goto fail;
+	}
+
+	if (!dom_sid_equal(&domain_sid, &domain->sid)) {
+		goto fail;
 	}
 
 again:
-	status = open_cached_internal_pipe_conn(domain,
-						NULL,
-						NULL,
-						&lsa_pipe,
-						&lsa_policy);
+	status = open_cached_internal_pipe_conn(
+		domain, &samr_pipe, &dom_pol, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		goto fail;
 	}
+	h = samr_pipe->binding_handle;
 
-	status = rpc_sid_to_name(tmp_ctx,
-				 lsa_pipe,
-				 &lsa_policy,
-				 domain,
-				 sid,
-				 &domain_name,
-				 &name,
-				 &type);
+	status = dcerpc_samr_LookupRids(
+		h, tmp_ctx, &dom_pol, 1, &rid, &names, &types, &result);
 
-	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
 		retry = true;
 		goto again;
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_samr_LookupRids failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_DEBUG("dcerpc_samr_LookupRids resulted in %s\n",
+			  nt_errstr(result));
+		status = result;
+		goto fail;
+	}
+
+	domain_name = domain->name;
+	name = names.names[0].string;
+	type = types.ids[0];
+
+	if (name != NULL) {
+		char *normalized = NULL;
+		NTSTATUS nstatus = normalize_name_map(
+			tmp_ctx, domain_name, name, &normalized);
+		if (NT_STATUS_IS_OK(nstatus) ||
+		    NT_STATUS_EQUAL(nstatus, NT_STATUS_FILE_RENAMED)) {
+			name = normalized;
+		}
+	}
+
+done:
 	if (ptype) {
 		*ptype = type;
 	}
 
 	if (pname) {
-		*pname = talloc_move(mem_ctx, &name);
+		*pname = talloc_strdup(mem_ctx, name);
+		if (*pname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
 	}
 
 	if (pdomain_name) {
-		*pdomain_name = talloc_move(mem_ctx, &domain_name);
+		*pdomain_name = talloc_strdup(mem_ctx, domain_name);
+		if (*pdomain_name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
 	}
 
-done:
-
+	status = NT_STATUS_OK;
+fail:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
