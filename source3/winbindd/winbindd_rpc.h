@@ -46,39 +46,6 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			       uint32_t *pnum_info,
 			       struct wb_acct_info **pinfo);
 
-/* Convert a single name to a sid in a domain */
-NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
-			 struct rpc_pipe_client *lsa_pipe,
-			 struct policy_handle *lsa_policy,
-			 const char *domain_name,
-			 const char *name,
-			 uint32_t flags,
-			 const char **pdom_name,
-			 struct dom_sid *psid,
-			 enum lsa_SidType *ptype);
-
-/* Convert a domain SID to a user or group name */
-NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
-			 struct rpc_pipe_client *lsa_pipe,
-			 struct policy_handle *lsa_policy,
-			 struct winbindd_domain *domain,
-			 const struct dom_sid *sid,
-			 char **pdomain_name,
-			 char **pname,
-			 enum lsa_SidType *ptype);
-
-/* Convert a bunch of rids to user or group names */
-NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
-			   struct rpc_pipe_client *lsa_pipe,
-			   struct policy_handle *lsa_policy,
-			   struct winbindd_domain *domain,
-			   const struct dom_sid *sid,
-			   uint32_t *rids,
-			   size_t num_rids,
-			   char **pdomain_name,
-			   char ***pnames,
-			   enum lsa_SidType **ptypes);
-
 /* Lookup groups a user is a member of. */
 NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 			       struct rpc_pipe_client *samr_pipe,
