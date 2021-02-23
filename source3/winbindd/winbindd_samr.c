@@ -566,13 +566,18 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 				   struct dom_sid *psid,
 				   enum lsa_SidType *ptype)
 {
-	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy = { 0 };
+	struct rpc_pipe_client *samr_pipe = NULL;
+	struct dcerpc_binding_handle *h = NULL;
+	struct policy_handle dom_pol = { .handle_type = 0, };
 	struct dom_sid sid;
 	const char *dom_name = domain_name;
+	struct lsa_String lsa_name = { .string = name };
+	struct samr_Ids rids = { .count = 0 };
+	struct samr_Ids types = { .count = 0 };
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
+	NTSTATUS result;
 	bool retry = false;
 	bool ok;
 
@@ -628,40 +633,52 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	ok = lookup_wellknown_name(mem_ctx, name, &sid, &dom_name);
+	ok = lookup_wellknown_name(tmp_ctx, name, &sid, &dom_name);
 	if (ok) {
 		type = SID_NAME_WKN_GRP;
 		goto done;
 	}
 
+	{
+		char *normalized = NULL;
+		NTSTATUS nstatus = normalize_name_unmap(
+			tmp_ctx, name, &normalized);
+		if (NT_STATUS_IS_OK(nstatus) ||
+		    NT_STATUS_EQUAL(nstatus, NT_STATUS_FILE_RENAMED)) {
+			name = normalized;
+		}
+	}
+
 again:
-	status = open_cached_internal_pipe_conn(domain,
-						NULL,
-						NULL,
-						&lsa_pipe,
-						&lsa_policy);
+	status = open_cached_internal_pipe_conn(
+		domain, &samr_pipe, &dom_pol, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
+	h = samr_pipe->binding_handle;
 
-	status = rpc_name_to_sid(tmp_ctx,
-				 lsa_pipe,
-				 &lsa_policy,
-				 domain_name,
-				 name,
-				 flags,
-				 &dom_name,
-				 &sid,
-				 &type);
+	status = dcerpc_samr_LookupNames(
+		h, tmp_ctx, &dom_pol, 1, &lsa_name, &rids, &types, &result);
 
-	if (!retry && reset_connection_on_error(domain, lsa_pipe, status)) {
+	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
 		retry = true;
 		goto again;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_samr_LookupNames returned %s\n",
+			  nt_errstr(status));
 		goto fail;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_DEBUG("dcerpc_samr_LookupNames resulted in %s\n",
+			  nt_errstr(status));
+		status = result;
+		goto fail;
+	}
+
+	sid_compose(&sid, &domain->sid, rids.ids[0]);
+	type = types.ids[0];
 
 done:
 	if (pdom_name != NULL) {
