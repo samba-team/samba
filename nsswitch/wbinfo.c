@@ -1381,7 +1381,7 @@ static bool wbinfo_lookupsid_fullname(const char *sid_str)
 static bool wbinfo_lookuprids(const char *domain, const char *arg)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct wbcDomainInfo *dinfo = NULL;
+	struct wbcDomainSid dsid;
 	char *domain_name = NULL;
 	const char **names = NULL;
 	enum wbcSidType *types = NULL;
@@ -1396,13 +1396,19 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 		domain = get_winbind_domain();
 	}
 
-	/* Send request */
-
-	wbc_status = wbcDomainInfo(domain, &dinfo);
+	wbc_status = wbcStringToSid(domain, &dsid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_printf("wbcDomainInfo(%s) failed: %s\n", domain,
-			 wbcErrorString(wbc_status));
-		goto done;
+		struct wbcDomainInfo *dinfo = NULL;
+
+		wbc_status = wbcDomainInfo(domain, &dinfo);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_printf("wbcDomainInfo(%s) failed: %s\n", domain,
+				 wbcErrorString(wbc_status));
+			goto done;
+		}
+
+		dsid = dinfo->sid;
+		wbcFreeMemory(dinfo);
 	}
 
 	mem_ctx = talloc_new(NULL);
@@ -1437,8 +1443,8 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 		goto done;
 	}
 
-	wbc_status = wbcLookupRids(&dinfo->sid, num_rids, rids,
-				   &p, &names, &types);
+	wbc_status = wbcLookupRids(
+		&dsid, num_rids, rids, &p, &names, &types);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_printf("winbind_lookup_rids failed: %s\n",
 			 wbcErrorString(wbc_status));
@@ -1455,7 +1461,6 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 
 	ret = true;
 done:
-	wbcFreeMemory(dinfo);
 	wbcFreeMemory(domain_name);
 	wbcFreeMemory(names);
 	wbcFreeMemory(types);
