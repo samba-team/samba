@@ -3659,6 +3659,38 @@ class cmd_issue(SuperCommand):
     subcommands["list"] = cmd_list_issue()
     subcommands["set"] = cmd_set_issue()
 
+class cmd_list_access(Command):
+    """List VGP Host Access Group Policy from the sysvol
+
+This command lists host access rules from the sysvol that will be applied to winbind clients.
+
+Example:
+samba-tool gpo manage access list {31B2F340-016D-11D2-945F-00C04FB984F9}
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo"]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
+        pass
+
+class cmd_access(SuperCommand):
+    """Manage Host Access Group Policy Objects"""
+    subcommands = {}
+    subcommands["list"] = cmd_list_access()
+
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
     subcommands = {}
@@ -3671,6 +3703,7 @@ class cmd_manage(SuperCommand):
     subcommands["scripts"] = cmd_scripts()
     subcommands["motd"] = cmd_motd()
     subcommands["issue"] = cmd_issue()
+    subcommands["access"] = cmd_access()
 
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management."""

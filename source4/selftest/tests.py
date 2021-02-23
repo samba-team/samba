@@ -772,6 +772,8 @@ for env in all_fl_envs:
 for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc",
             smbv1_disabled_testenv]:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo")
+for env in ["ad_dc_ntvfs", "ad_dc"]:
+    planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo_exts")
 
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
