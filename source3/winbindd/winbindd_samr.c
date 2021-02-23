@@ -575,7 +575,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	NTSTATUS status;
 	bool retry = false;
 
-	DEBUG(3,("sam_name_to_sid\n"));
+	DBG_NOTICE("%s\\%s\n", domain_name, name);
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
