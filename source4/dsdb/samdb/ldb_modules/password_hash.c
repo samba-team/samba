@@ -2031,7 +2031,12 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		num_packages++;
 	}
 
-	if (io->ac->userPassword_schemes) {
+	/*
+	 * Don't generate crypt() or similar password for the krbtgt account.
+	 * It's unnecessary, and the length of the cleartext in UTF-8 form
+	 * exceeds the maximum (CRYPT_MAX_PASSPHRASE_SIZE) allowed by crypt().
+	 */
+	if (io->ac->userPassword_schemes && !io->u.is_krbtgt) {
 		/*
 		 * setup 'Primary:userPassword' element
 		 */
