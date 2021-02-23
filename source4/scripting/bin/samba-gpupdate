@@ -43,6 +43,7 @@ from samba.vgp_openssh_ext import vgp_openssh_ext
 from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
+from samba.vgp_access_ext import vgp_access_ext
 import logging
 
 if __name__ == "__main__":
@@ -105,6 +106,7 @@ if __name__ == "__main__":
         gp_extensions.append(vgp_motd_ext)
         gp_extensions.append(vgp_issue_ext)
         gp_extensions.append(vgp_startup_scripts_ext)
+        gp_extensions.append(vgp_access_ext)
         gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
         gp_extensions.extend(user_exts)
