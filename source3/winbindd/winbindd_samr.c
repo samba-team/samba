@@ -225,7 +225,7 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 	struct policy_handle dom_pol = { 0 };
 	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -233,11 +233,6 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 
 	if (pnum_info) {
 		*pnum_info = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -287,16 +282,11 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol = { 0 };
 	uint32_t *rids = NULL;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
 	DEBUG(3,("samr_query_user_list\n"));
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
@@ -341,7 +331,7 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	struct policy_handle lsa_policy = { 0 };
 	struct netr_DomainTrust *trusts = NULL;
 	uint32_t num_trusts = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -349,11 +339,6 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 
 	if (ptrust_list) {
 		ZERO_STRUCTP(ptrust_list);
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -409,7 +394,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	char **names = NULL;
 	uint32_t *name_types = NULL;
 
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -418,16 +403,12 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	/* Paranoia check */
 	if (sid_check_is_in_builtin(group_sid) && (type != SID_NAME_ALIAS)) {
 		/* There's no groups, only aliases in BUILTIN */
-		return NT_STATUS_NO_SUCH_GROUP;
+		status = NT_STATUS_NO_SUCH_GROUP;
+		goto done;
 	}
 
 	if (pnum_names) {
 		*pnum_names = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -527,7 +508,7 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 	struct policy_handle dom_pol = { 0 };
 	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -535,11 +516,6 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 
 	if (pnum_info) {
 		*pnum_info = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -595,16 +571,11 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	struct dom_sid sid;
 	const char *dom_name;
 	enum lsa_SidType type;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
 	DEBUG(3,("sam_name_to_sid\n"));
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
@@ -668,7 +639,7 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	char *domain_name = NULL;
 	char *name = NULL;
 	enum lsa_SidType type;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -688,12 +659,8 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 		DEBUG(0, ("sam_sid_to_name: possible deadlock - trying to "
 			  "lookup SID %s\n",
 			  dom_sid_str_buf(sid, &buf)));
-		return NT_STATUS_NONE_MAPPED;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
 again:
@@ -752,7 +719,7 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	enum lsa_SidType *types = NULL;
 	char *domain_name = NULL;
 	char **names = NULL;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -768,12 +735,8 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 		DEBUG(0, ("sam_rids_to_names: possible deadlock - trying to "
 			  "lookup SID %s\n",
 			  dom_sid_str_buf(domain_sid, &buf)));
-		return NT_STATUS_NONE_MAPPED;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
 
 again:
@@ -830,17 +793,12 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol = { 0 };
 	union samr_DomainInfo *info = NULL;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 	bool retry = false;
 
 	DEBUG(3,("sam_lockout_policy\n"));
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
@@ -888,17 +846,12 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol = { 0 };
 	union samr_DomainInfo *info = NULL;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 	bool retry = false;
 
 	DEBUG(3,("sam_password_policy\n"));
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 again:
 	status = open_cached_internal_pipe_conn(domain,
@@ -950,7 +903,7 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 	struct policy_handle dom_pol;
 	struct dom_sid *user_grpsids = NULL;
 	uint32_t num_groups = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -960,11 +913,6 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 
 	if (pnum_groups) {
 		*pnum_groups = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -1019,7 +967,7 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 	struct policy_handle dom_pol = { 0 };
 	uint32_t num_aliases = 0;
 	uint32_t *alias_rids = NULL;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -1027,11 +975,6 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 
 	if (pnum_aliases) {
 		*pnum_aliases = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
@@ -1082,7 +1025,7 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol = { 0 };
 	uint32_t seq = DOM_SEQUENCE_NONE;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	bool retry = false;
 
@@ -1090,11 +1033,6 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 
 	if (pseq) {
 		*pseq = DOM_SEQUENCE_NONE;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 again:
