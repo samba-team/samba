@@ -58,6 +58,10 @@ class ProvisionUserPasswordTestCase(SambaToolCmdTest):
         (result, out, err) = self.provision()
         self.assertEqual(0, result)
 
+    def test_length(self):
+        (result, out, err) = self.provision(machinepass="FooBar123" + ("a"*1024))
+        self.assertNotEqual(0, result)
+
     def tearDown(self):
         super(ProvisionUserPasswordTestCase, self).tearDown()
         shutil.rmtree(self.tempsambadir)
