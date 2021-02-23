@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     # Then change password and samaccountname and dnshostname
     msg = ldb.Message(newdn)
-    machinepass = samba.generate_random_machine_password(128, 255)
+    machinepass = samba.generate_random_machine_password(120, 120)
     mputf16 = machinepass.encode('utf-16-le')
 
     account = "%s$" % opts.newname.upper()
