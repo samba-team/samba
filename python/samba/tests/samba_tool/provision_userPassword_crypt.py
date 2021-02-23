@@ -55,7 +55,7 @@ class ProvisionUserPasswordTestCase(SambaToolCmdTest):
         return self.run_command(command)
 
     def test_crypt(self):
-        (result, out, err) = self.provision("FooBar123")
+        (result, out, err) = self.provision()
         self.assertEqual(0, result)
 
     def tearDown(self):

@@ -136,7 +136,7 @@ class DCJoinContext(object):
         if machinepass is not None:
             ctx.acct_pass = machinepass
         else:
-            ctx.acct_pass = samba.generate_random_machine_password(128, 255)
+            ctx.acct_pass = samba.generate_random_machine_password(120, 120)
 
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
 

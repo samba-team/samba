@@ -1925,7 +1925,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     if krbtgtpass is None:
         krbtgtpass = samba.generate_random_machine_password(128, 255)
     if machinepass is None:
-        machinepass = samba.generate_random_machine_password(128, 255)
+        machinepass = samba.generate_random_machine_password(120, 120)
     if dnspass is None:
         dnspass = samba.generate_random_password(128, 255)
 
