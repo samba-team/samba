@@ -1850,6 +1850,397 @@ done:
 	return ret;
 }
 
+static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
+					       const char *testname,
+					       struct cli_credentials *credentials,
+					       const struct smbcli_options *options1,
+					       const struct smbcli_options *options2,
+					       NTSTATUS bind_reject_status)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	NTSTATUS status;
+	bool ret = false;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_session *session1_1 = NULL;
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo1;
+	struct smb2_tree *tree2_0 = NULL;
+	struct smb2_transport *transport2 = NULL;
+	struct smb2_session *session1_2 = NULL;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree1,
+			      tctx->ev,
+			      options1,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect options1 failed");
+	session1_1 = tree1->session;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s_%s.dat",
+		 testname, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	status = smb2_create(tree1, tctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_0,
+			      tctx->ev,
+			      options2,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect options2 failed");
+	transport2 = tree2_0->session->transport;
+
+	/*
+	 * Now bind the 2nd transport connection to the 1st session
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2_0,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status, bind_reject_status, ret, done,
+					   "smb2_session_setup_spnego failed");
+	TALLOC_FREE(session1_2);
+
+	/* Check the initial session is still alive */
+	ZERO_STRUCT(qfinfo1);
+	qfinfo1.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo1.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree1, tctx, &qfinfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	/*
+	 * I guess this is not part of MultipleChannel_Negative_SMB2002,
+	 * but we should also check the status without
+	 * SMB2_SESSION_FLAG_BINDING.
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2_0,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+	session1_2->needs_bind = false;
+
+	status = smb2_session_setup_spnego(session1_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					   "smb2_session_setup_spnego failed");
+	TALLOC_FREE(session1_2);
+
+	/* Check the initial session is still alive */
+	ZERO_STRUCT(qfinfo1);
+	qfinfo1.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo1.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree1, tctx, &qfinfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	/*
+	 * Now bind the 2nd transport connection to the 1st session (again)
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2_0,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status, bind_reject_status, ret, done,
+					   "smb2_session_setup_spnego failed");
+	TALLOC_FREE(session1_2);
+
+	/* Check the initial session is still alive */
+	ZERO_STRUCT(qfinfo1);
+	qfinfo1.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo1.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree1, tctx, &qfinfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	ret = true;
+done:
+	talloc_free(tree2_0);
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	talloc_free(tree1);
+
+	return ret;
+}
+
+/*
+ * This is similar to the MultipleChannel_Negative_SMB2002 test
+ * from the Windows Protocol Test Suite.
+ *
+ * It demonstrates that the server needs to do lookup
+ * in the global session table in order to get the signing
+ * and error code of invalid session setups correct.
+ *
+ * See: https://bugzilla.samba.org/show_bug.cgi?id=14512
+ *
+ * Note you can ignore tree0...
+ */
+static bool test_session_bind_negative_smb202(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test SMB 2.02 is encrytion is required");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_zero();
+	options1.max_protocol = PROTOCOL_SMB2_02;
+
+	options2 = options1;
+	options2.only_negprot = true;
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_REQUEST_NOT_ACCEPTED);
+	talloc_free(tree0);
+	return ret;
+}
+
+static bool test_session_bind_negative_smb210(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test SMB 2.10 is encrytion is required");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.max_protocol = PROTOCOL_SMB2_10;
+
+	options2 = options1;
+	options2.only_negprot = true;
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_REQUEST_NOT_ACCEPTED);
+	talloc_free(tree0);
+	return ret;
+}
+
+static bool test_session_bind_negative_smb2to3(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test SMB 2.10 is encrytion is required");
+	}
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB2_02;
+	options1.max_protocol = PROTOCOL_SMB2_10;
+
+	options2 = options1;
+	options2.only_negprot = true;
+	options2.min_protocol = PROTOCOL_SMB3_00;
+	options2.max_protocol = PROTOCOL_SMB3_11;
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_INVALID_PARAMETER);
+	talloc_free(tree0);
+	return ret;
+}
+
+static bool test_session_bind_negative_smb3to2(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test SMB 2.10 is encrytion is required");
+	}
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_00;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+
+	options2 = options1;
+	options2.only_negprot = true;
+	options2.min_protocol = PROTOCOL_SMB2_02;
+	options2.max_protocol = PROTOCOL_SMB2_10;
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_REQUEST_NOT_ACCEPTED);
+	talloc_free(tree0);
+	return ret;
+}
+
+static bool test_session_bind_negative_smb3to3(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_02;
+	options1.max_protocol = PROTOCOL_SMB3_02;
+
+	options2 = options1;
+	options2.only_negprot = true;
+	options2.min_protocol = PROTOCOL_SMB3_11;
+	options2.max_protocol = PROTOCOL_SMB3_11;
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_INVALID_PARAMETER);
+	talloc_free(tree0);
+	return ret;
+}
+
+static bool test_session_bind_negative_smb3encGtoC(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials0 = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials = NULL;
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	struct smbcli_options options2;
+	bool ok;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	credentials = cli_credentials_shallow_copy(tctx, credentials0);
+	torture_assert(tctx, credentials != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(credentials,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES128_GCM,
+		},
+	};
+
+	options2 = options1;
+	options2.only_negprot = true;
+	options2.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES128_CCM,
+		},
+	};
+
+	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
+						 credentials,
+						 &options1, &options2,
+						 NT_STATUS_INVALID_PARAMETER);
+	talloc_free(tree0);
+	return ret;
+}
+
 static bool test_session_two_logoff(struct torture_context *tctx,
 				    struct smb2_tree *tree1)
 {
@@ -1913,6 +2304,12 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "expire_disconnect",
 				      test_session_expire_disconnect);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb202", test_session_bind_negative_smb202);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb210", test_session_bind_negative_smb210);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb2to3", test_session_bind_negative_smb2to3);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb3to2", test_session_bind_negative_smb3to2);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb3to3", test_session_bind_negative_smb3to3);
+	torture_suite_add_1smb2_test(suite, "bind_negative_smb3encGtoC", test_session_bind_negative_smb3encGtoC);
 	torture_suite_add_1smb2_test(suite, "two_logoff", test_session_two_logoff);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");

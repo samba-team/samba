@@ -1,0 +1,6 @@
+^samba3.smb2.session.*.bind_negative_smb202
+^samba3.smb2.session.*.bind_negative_smb210
+^samba3.smb2.session.*.bind_negative_smb2to3
+^samba3.smb2.session.*.bind_negative_smb3to2
+^samba3.smb2.session.*.bind_negative_smb3to3
+^samba3.smb2.session.*.bind_negative_smb3encGtoC
