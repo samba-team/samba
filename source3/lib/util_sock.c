@@ -1108,7 +1108,7 @@ bool is_myname_or_ipaddr(const char *s)
 		return false;
 	}
 
-	/* Santize the string from '\\name' */
+	/* Sanitize the string from '\\name' */
 	name = talloc_strdup(ctx, s);
 	if (!name) {
 		return false;
