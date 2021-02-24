@@ -1217,7 +1217,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_OK;
 	struct dcerpc_binding_handle *h = NULL;
 	struct tsocket_address *local;
-	struct policy_handle user_handle;
+	struct policy_handle user_handle = { .handle_type = 0 };
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
 	struct samr_UserInfo18 info18;
@@ -1227,8 +1227,6 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	DATA_BLOB session_key;
 	enum samr_UserInfoLevel infolevel;
 	TALLOC_CTX *frame = talloc_stackframe();
-
-	ZERO_STRUCT(user_handle);
 
 	status = session_extract_session_key(session_info,
 					     &session_key,
