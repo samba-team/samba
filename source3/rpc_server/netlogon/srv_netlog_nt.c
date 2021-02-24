@@ -1469,9 +1469,10 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		return status;
 	}
 
-	DEBUG(3,("_netr_ServerPasswordSet2: Server Password Seti2 by remote "
-		 "machine:[%s] on account [%s]\n",
-		 r->in.computer_name, creds->computer_name));
+	DBG_NOTICE("Server Password Set2 by remote "
+		   "machine:[%s] on account [%s]\n",
+		   r->in.computer_name,
+		   creds->computer_name);
 
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
