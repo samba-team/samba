@@ -441,11 +441,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 					 LSA_POLICY_VIEW_LOCAL_INFORMATION,
 					 &pol,
 					 &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -540,11 +536,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
 				      &connect_handle,
 				      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -555,11 +547,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 					  &domain_name,
 					  &domain_sid,
 					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -569,11 +557,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 					domain_sid,
 					&domain_handle,
 					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -586,11 +570,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 					 &rids,
 					 &types,
 					 &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -615,11 +595,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 				      rid,
 				      user_handle,
 				      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -727,11 +703,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 					    UserControlInformation,
 					    &info,
 					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -789,11 +761,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 					    &info,
 					    &result);
 	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -1275,11 +1243,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 					    UserControlInformation,
 					    &info,
 					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
@@ -1350,11 +1314,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 					  info,
 					  &result);
 	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}
 
