@@ -1669,6 +1669,12 @@ class cmd_admxload(Command):
                         if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
                             raise CommandError("The authenticated user does "
                                                "not have sufficient privileges")
+        self.outf.write('Installing ADMX templates to the Central Store '
+                        'prevents Windows from displaying its own templates '
+                        'in the Group Policy Management Console. You will '
+                        'need to install these templates '
+                        'from https://www.microsoft.com/en-us/download/102157 '
+                        'to continue using Windows Administrative Templates. ')
 
 class cmd_add_sudoers(Command):
     """Adds a Samba Sudoers Group Policy to the sysvol
