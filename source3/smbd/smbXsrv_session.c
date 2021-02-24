@@ -1596,7 +1596,31 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 		global->num_channels--;
 		if (global->num_channels == 0) {
 			struct smbXsrv_client *client = session->client;
+			struct tevent_queue *xconn_wait_queue =
+				xconn->transport.shutdown_wait_queue;
 			struct tevent_req *subreq = NULL;
+
+			/*
+			 * Let the connection wait until the session is
+			 * destroyed.
+			 *
+			 * We don't set a callback, as we just want to block the
+			 * wait queue and the talloc_free() of the session will
+			 * remove the item from the wait queue in order
+			 * to remove allow the connection to disapear.
+			 */
+			if (xconn_wait_queue != NULL) {
+				subreq = tevent_queue_wait_send(session,
+								client->raw_ev_ctx,
+								xconn_wait_queue);
+				if (subreq == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					DBG_ERR("tevent_queue_wait_send() session(%llu) failed: %s\n",
+						(unsigned long long)session->global->session_wire_id,
+						nt_errstr(status));
+					return status;
+				}
+			}
 
 			/*
 			 * This is garanteed to set

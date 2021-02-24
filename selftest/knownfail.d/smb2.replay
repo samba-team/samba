@@ -1,12 +1,3 @@
-# These are temporary in order to demonstrate the current bugs
-^samba3.smb2.replay.dhv2-pending2n-vs-oplock-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2n-vs-lease-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2l-vs-oplock-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2l-vs-lease-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2o-vs-oplock-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2o-vs-lease-sane.nt4_dc
-^samba3.smb2.replay.dhv2-pending2n-vs-oplock-sane.ad_dc
-^samba3.smb2.replay.dhv2-pending2o-vs-oplock-sane.ad_dc
 # These tests demonstrate the broken Windows behavior
 # and check for ACCESS_DENIED instead of FILE_NOT_AVAILABLE
 # See https://bugzilla.samba.org/show_bug.cgi?id=14449

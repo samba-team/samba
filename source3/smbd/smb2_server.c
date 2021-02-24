@@ -1498,7 +1498,6 @@ size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
 }
 
 struct smbXsrv_connection_shutdown_state {
-	struct tevent_queue *wait_queue;
 	struct smbXsrv_connection *xconn;
 };
 
@@ -1521,6 +1520,7 @@ static struct tevent_req *smbXsrv_connection_shutdown_send(TALLOC_CTX *mem_ctx,
 	 */
 	SMB_ASSERT(!NT_STATUS_IS_OK(xconn->transport.status));
 	SMB_ASSERT(xconn->transport.terminating);
+	SMB_ASSERT(xconn->transport.shutdown_wait_queue == NULL);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXsrv_connection_shutdown_state);
@@ -1531,45 +1531,48 @@ static struct tevent_req *smbXsrv_connection_shutdown_send(TALLOC_CTX *mem_ctx,
 	state->xconn = xconn;
 	tevent_req_defer_callback(req, ev);
 
-	status = smbXsrv_session_disconnect_xconn(xconn);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-
-	state->wait_queue = tevent_queue_create(state, "smbXsrv_connection_shutdown_queue");
-	if (tevent_req_nomem(state->wait_queue, req)) {
+	xconn->transport.shutdown_wait_queue =
+		tevent_queue_create(state, "smbXsrv_connection_shutdown_queue");
+	if (tevent_req_nomem(xconn->transport.shutdown_wait_queue, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
-		/*
-		 * The connection is gone so we
-		 * don't need to take care of
-		 * any crypto
-		 */
-		preq->session = NULL;
-		preq->do_signing = false;
-		preq->do_encryption = false;
-		preq->preauth = NULL;
-
-		if (preq->subreq != NULL) {
-			tevent_req_cancel(preq->subreq);
-		}
-
 		/*
 		 * Now wait until the request is finished.
 		 *
 		 * We don't set a callback, as we just want to block the
 		 * wait queue and the talloc_free() of the request will
 		 * remove the item from the wait queue.
+		 *
+		 * Note that we don't cancel the requests here
+		 * in order to keep the replay detection logic correct.
+		 *
+		 * However if we teardown the last channel of
+		 * a connection, we'll call some logic via
+		 * smbXsrv_session_disconnect_xconn()
+		 * -> smbXsrv_session_disconnect_xconn_callback()
+		 *   -> smbXsrv_session_remove_channel()
+		 *     -> smb2srv_session_shutdown_send()
+		 * will indeed cancel the request.
 		 */
-		subreq = tevent_queue_wait_send(preq, ev, state->wait_queue);
+		subreq = tevent_queue_wait_send(preq, ev,
+					xconn->transport.shutdown_wait_queue);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
 	}
 
-	len = tevent_queue_length(state->wait_queue);
+	/*
+	 * This may attach sessions with num_channels == 0
+	 * to xconn->transport.shutdown_wait_queue.
+	 */
+	status = smbXsrv_session_disconnect_xconn(xconn);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	len = tevent_queue_length(xconn->transport.shutdown_wait_queue);
 	if (len == 0) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -1580,7 +1583,7 @@ static struct tevent_req *smbXsrv_connection_shutdown_send(TALLOC_CTX *mem_ctx,
 	 * this way we get notified when all pending requests are finished
 	 * and send to the socket.
 	 */
-	subreq = tevent_queue_wait_send(state, ev, state->wait_queue);
+	subreq = tevent_queue_wait_send(state, ev, xconn->transport.shutdown_wait_queue);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
