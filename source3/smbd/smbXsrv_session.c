@@ -1219,6 +1219,9 @@ static int smbXsrv_session_destructor(struct smbXsrv_session *session)
 {
 	NTSTATUS status;
 
+	DBG_DEBUG("destructing session(%llu)\n",
+		  (unsigned long long)session->global->session_wire_id);
+
 	status = smbXsrv_session_clear_and_logoff(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbXsrv_session_destructor: "
@@ -1556,6 +1559,8 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 	return NT_STATUS_OK;
 }
 
+static void smbXsrv_session_remove_channel_done(struct tevent_req *subreq);
+
 NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 					struct smbXsrv_connection *xconn)
 {
@@ -1570,12 +1575,6 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 	}
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (!NT_STATUS_IS_OK(status)) {
-		c = NULL;
-	}
-	if (session->global->num_channels <= 1) {
-		/*
-		 * The last channel is treated different
-		 */
 		c = NULL;
 	}
 
@@ -1595,6 +1594,30 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 		}
 		ARRAY_DEL_ELEMENT(global->channels, n, global->num_channels);
 		global->num_channels--;
+		if (global->num_channels == 0) {
+			struct smbXsrv_client *client = session->client;
+			struct tevent_req *subreq = NULL;
+
+			/*
+			 * This is garanteed to set
+			 * session->status = NT_STATUS_USER_SESSION_DELETED
+			 * even if NULL is returned.
+			 */
+			subreq = smb2srv_session_shutdown_send(session,
+							       client->raw_ev_ctx,
+							       session,
+							       NULL);
+			if (subreq == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				DBG_ERR("smb2srv_session_shutdown_send(%llu) failed: %s\n",
+					(unsigned long long)session->global->session_wire_id,
+					nt_errstr(status));
+				return status;
+			}
+			tevent_req_set_callback(subreq,
+						smbXsrv_session_remove_channel_done,
+						session);
+		}
 		need_update = true;
 	}
 
@@ -1603,6 +1626,31 @@ NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
 	}
 
 	return smbXsrv_session_update(session);
+}
+
+static void smbXsrv_session_remove_channel_done(struct tevent_req *subreq)
+{
+	struct smbXsrv_session *session =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_session);
+	NTSTATUS status;
+
+	status = smb2srv_session_shutdown_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smb2srv_session_shutdown_recv(%llu) failed: %s\n",
+			(unsigned long long)session->global->session_wire_id,
+			nt_errstr(status));
+	}
+
+	status = smbXsrv_session_logoff(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_session_logoff(%llu) failed: %s\n",
+			(unsigned long long)session->global->session_wire_id,
+			nt_errstr(status));
+	}
+
+	TALLOC_FREE(session);
 }
 
 struct smb2srv_session_shutdown_state {
