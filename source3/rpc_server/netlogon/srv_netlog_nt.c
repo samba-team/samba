@@ -418,7 +418,6 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	struct dcerpc_binding_handle *h = NULL;
 	struct policy_handle pol;
 	uint32_t enum_ctx = 0;
-	int i;
 	uint32_t max_size = (uint32_t)-1;
 
 	ZERO_STRUCT(pol);
@@ -451,6 +450,8 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	}
 
 	do {
+		uint32_t i;
+
 		/* Lookup list of trusted domains */
 		status = dcerpc_lsa_EnumTrustDom(h,
 						 p->mem_ctx,
@@ -1380,7 +1381,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 				 struct netr_ServerPasswordSet *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	int i;
+	size_t i;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct _samr_Credentials_t cr = { CRED_TYPE_NT_HASH, {0}};
 
