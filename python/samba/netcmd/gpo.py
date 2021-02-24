@@ -3684,7 +3684,73 @@ samba-tool gpo manage access list {31B2F340-016D-11D2-945F-00C04FB984F9}
     takes_args = ["gpo"]
 
     def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        vgp_xml = '\\'.join([realm.lower(), 'Policies', gpo,
+                             'MACHINE\\VGP\\VTLA\\VAS'
+                             'HostAccessControl\\Allow\\manifest.xml'])
+        try:
+            allow = ET.fromstring(conn.loadfile(vgp_xml))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                allow = None # The file doesn't exist, ignore it
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        if allow is not None:
+            policy = allow.find('policysetting')
+            data = policy.find('data')
+            for listelement in data.findall('listelement'):
+                adobject = listelement.find('adobject')
+                name = adobject.find('name')
+                domain = adobject.find('domain')
+                self.outf.write('+:%s\\%s:ALL\n' % (domain.text, name.text))
+
+        vgp_xml = '\\'.join([realm.lower(), 'Policies', gpo,
+                             'MACHINE\\VGP\\VTLA\\VAS'
+                             'HostAccessControl\\Deny\\manifest.xml'])
+        try:
+            deny = ET.fromstring(conn.loadfile(vgp_xml))
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                deny = None # The file doesn't exist, ignore it
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        if deny is not None:
+            policy = deny.find('policysetting')
+            data = policy.find('data')
+            for listelement in data.findall('listelement'):
+                adobject = listelement.find('adobject')
+                name = adobject.find('name')
+                domain = adobject.find('domain')
+                self.outf.write('-:%s\\%s:ALL\n' % (domain.text, name.text))
 
 class cmd_access(SuperCommand):
     """Manage Host Access Group Policy Objects"""

@@ -974,6 +974,11 @@
 	<para>Sets a VGP Issue Group Policy to the sysvol</para>
 </refsect3>
 
+<refsect3>
+	<title>gpo manage access list</title>
+	<para>List VGP Host Access Group Policy from the sysvol</para>
+</refsect3>
+
 <refsect2>
 	<title>group</title>
 	<para>Manage groups.</para>
