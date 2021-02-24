@@ -115,8 +115,7 @@ class gp_access_ext(gp_inf_ext):
     object to update the parameter to Samba4. Not registry oriented whatsoever.
     '''
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def load_ldb(self):
         try:
             self.ldb = SamDB(self.lp.samdb_url(),
                              session_info=system_session(),
@@ -132,6 +131,7 @@ class gp_access_ext(gp_inf_ext):
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         if self.lp.get('server role') != 'active directory domain controller':
             return
+        self.load_ldb()
         inf_file = 'MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf'
         for guid, settings in deleted_gpo_list:
             self.gp_db.set_guid(guid)
