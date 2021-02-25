@@ -794,6 +794,13 @@ auth:
 
 		state->session = smb2req->session;
 		status = state->session->status;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_BAD_LOGON_SESSION_STATE)) {
+			/*
+			 * This comes from smb2srv_session_lookup_global().
+			 */
+			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
+			return tevent_req_post(req, ev);
+		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
 			status = NT_STATUS_OK;
 		}

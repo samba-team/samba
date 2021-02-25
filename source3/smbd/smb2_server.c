@@ -438,6 +438,10 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 			status = smb2srv_session_lookup_conn(xconn, uid, now,
 							     &s);
 			if (s == NULL) {
+				status = smb2srv_session_lookup_global(xconn->client,
+								       uid, req, &s);
+			}
+			if (s == NULL) {
 				DEBUG(1, ("invalid session[%llu] in "
 					  "SMB2_TRANSFORM header\n",
 					   (unsigned long long)uid));
@@ -2524,6 +2528,28 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	if (session) {
 		req->session = session;
 		req->last_session_id = in_session_id;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+		switch (in_opcode) {
+		case SMB2_OP_SESSSETUP:
+			status = smb2srv_session_lookup_global(req->xconn->client,
+							       in_session_id,
+							       req,
+							       &session);
+			if (NT_STATUS_IS_OK(status)) {
+				/*
+				 * We fallback to a session of
+				 * another process in order to
+				 * get the signing correct.
+				 *
+				 * We don't set req->last_session_id here.
+				 */
+				req->session = session;
+			}
+			break;
+		default:
+			break;
+		}
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
 		switch (in_opcode) {

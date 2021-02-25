@@ -1162,6 +1162,10 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 	state->db_rec = smbXsrv_session_global_fetch_locked(
 		state->connection->client->session_table->global.db_ctx,
 		global_id, state /* TALLOC_CTX */);
+	if (state->db_rec == NULL) {
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
 
 	smb2srv_session_close_previous_check(req);
 }
@@ -2181,6 +2185,113 @@ NTSTATUS get_valid_smbXsrv_session(struct smbXsrv_client *client,
 	}
 
 	*session = state.session;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
+				       uint64_t session_wire_id,
+				       TALLOC_CTX *mem_ctx,
+				       struct smbXsrv_session **_session)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_session_table *table = client->session_table;
+	uint32_t global_id = session_wire_id & UINT32_MAX;
+	uint64_t global_zeros = session_wire_id & 0xFFFFFFFF00000000LLU;
+	struct smbXsrv_session *session = NULL;
+	struct db_record *global_rec = NULL;
+	bool is_free = false;
+	NTSTATUS status;
+
+	if (global_id == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+	if (global_zeros != 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	if (table == NULL) {
+		/* this might happen before the end of negprot */
+		TALLOC_FREE(frame);
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	if (table->global.db_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	session = talloc_zero(mem_ctx, struct smbXsrv_session);
+	if (session == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(frame, session);
+
+	session->client = client;
+	session->status = NT_STATUS_BAD_LOGON_SESSION_STATE;
+	session->local_id = global_id;
+
+	/*
+	 * This means smb2_get_new_nonce() will return
+	 * NT_STATUS_ENCRYPTION_FAILED.
+	 *
+	 * But we intialize some random parts just in case...
+	 */
+	session->nonce_high_max = session->nonce_high = 0;
+	generate_nonce_buffer((uint8_t *)&session->nonce_high_random,
+			      sizeof(session->nonce_high_random));
+	generate_nonce_buffer((uint8_t *)&session->nonce_low,
+			      sizeof(session->nonce_low));
+
+	global_rec = smbXsrv_session_global_fetch_locked(table->global.db_ctx,
+							 global_id,
+							 frame);
+	if (global_rec == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	smbXsrv_session_global_verify_record(global_rec,
+					     &is_free,
+					     NULL,
+					     session,
+					     &session->global);
+	if (is_free) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	/*
+	 * We don't have channels on this session
+	 * and only the main signing key
+	 */
+	session->global->num_channels = 0;
+	status = smb2_signing_key_sign_create(session->global,
+					      session->global->signing_algo,
+					      NULL, /* no master key */
+					      NULL, /* derivations */
+					      &session->global->signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	session->global->signing_key->blob = session->global->signing_key_blob;
+
+	status = smb2_signing_key_cipher_create(session->global,
+						session->global->encryption_cipher,
+						NULL, /* no master key */
+						NULL, /* derivations */
+						&session->global->decryption_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	session->global->decryption_key->blob = session->global->decryption_key_blob;
+
+	*_session = talloc_move(mem_ctx, &session);
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
