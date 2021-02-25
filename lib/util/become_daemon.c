@@ -108,11 +108,11 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 
 void exit_daemon(const char *msg, int error)
 {
-#if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 	if (msg == NULL) {
 		msg = strerror(error);
 	}
 
+#if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 	sd_notifyf(0, "STATUS=daemon failed to start: %s\n"
 				  "ERRNO=%i",
 				  msg,
