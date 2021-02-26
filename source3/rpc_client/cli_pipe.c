@@ -1808,7 +1808,7 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 
 /*******************************************************************
  Creates a DCE/RPC bind alter context authentication request which
- may contain a spnego auth blobl
+ may contain a spnego auth blob
  ********************************************************************/
 
 static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
