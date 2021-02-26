@@ -49,7 +49,10 @@ class vgp_sudoers_ext(gp_xml_ext):
                 for entry in data.findall('sudoers_entry'):
                     command = entry.find('command').text
                     user = entry.find('user').text
-                    principals = entry.find('listelement').findall('principal')
+                    listelements = entry.findall('listelement')
+                    principals = []
+                    for listelement in listelements:
+                        principals.extend(listelement.findall('principal'))
                     if len(principals) > 0:
                         uname = ','.join([u.text if u.attrib['type'] == 'user' \
                             else '%s%%' % u.text for u in principals])
@@ -96,7 +99,10 @@ class vgp_sudoers_ext(gp_xml_ext):
             for entry in data.findall('sudoers_entry'):
                 command = entry.find('command').text
                 user = entry.find('user').text
-                principals = entry.find('listelement').findall('principal')
+                listelements = entry.findall('listelement')
+                principals = []
+                for listelement in listelements:
+                    principals.extend(listelement.findall('principal'))
                 if len(principals) > 0:
                     uname = ','.join([u.text if u.attrib['type'] == 'user' \
                         else '%s%%' % u.text for u in principals])
