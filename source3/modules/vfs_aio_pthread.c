@@ -464,6 +464,13 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (fsp->conn->sconn->client->server_multi_channel_enabled) {
+		/*
+		 * This module is not compatible with multi channel yet.
+		 */
+		aio_allow_open = false;
+	}
+
 	if (!aio_allow_open) {
 		/* aio opens turned off. */
 		return openat(fsp_get_io_fd(dirfsp),
