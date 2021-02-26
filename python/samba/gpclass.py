@@ -515,11 +515,18 @@ def rsop(lp, creds, logger, store, gp_extensions, target):
     print('%s Policy\n' % target)
     term_width = shutil.get_terminal_size(fallback=(120, 50))[0]
     for gpo in gpos:
+        if gpo.display_name.strip() == 'Local Policy':
+            continue # We never apply local policy
         print('GPO: %s' % gpo.display_name)
         print('='*term_width)
         for ext in gp_extensions:
             ext = ext(logger, lp, creds, store)
-            print('  CSE: %s' % ext.__module__.split('.')[-1])
+            cse_name_m = re.findall("'([\w\.]+)'", str(type(ext)))
+            if len(cse_name_m) > 0:
+                cse_name = cse_name_m[-1].split('.')[-1]
+            else:
+                cse_name = ext.__module__.split('.')[-1]
+            print('  CSE: %s' % cse_name)
             print('  ' + ('-'*int(term_width/2)))
             for section, settings in ext.rsop(gpo).items():
                 print('    Policy Type: %s' % section)
