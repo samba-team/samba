@@ -33,6 +33,18 @@
 
 #include "become_daemon.h"
 
+static bool sd_notifications = true;
+
+/*******************************************************************
+ Enable or disable daemon status systemd notifications
+********************************************************************/
+void daemon_sd_notifications(bool enable)
+{
+	sd_notifications = enable;
+	DBG_DEBUG("Daemon status systemd notifications %s\n",
+		  sd_notifications ? "enabled" : "disabled");
+}
+
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
@@ -76,7 +88,7 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 			_exit(0);
 		}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	} else {
+	} else if (sd_notifications) {
 		sd_notify(0, "STATUS=Starting process...");
 #endif
 	}
@@ -113,10 +125,12 @@ void exit_daemon(const char *msg, int error)
 	}
 
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "STATUS=daemon failed to start: %s\n"
+	if (sd_notifications) {
+		sd_notifyf(0, "STATUS=daemon failed to start: %s\n"
 				  "ERRNO=%i",
 				  msg,
 				  error);
+	}
 #endif
 	DBG_ERR("daemon failed to start: %s, error code %d\n",
 		msg, error);
@@ -129,8 +143,11 @@ void daemon_ready(const char *daemon)
 		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...",
-		   daemon);
+	if (sd_notifications) {
+		sd_notifyf(0,
+			   "READY=1\nSTATUS=%s: ready to serve connections...",
+			   daemon);
+	}
 #endif
 	DBG_ERR("daemon '%s' finished starting up and ready to serve "
 		"connections\n", daemon);
@@ -142,7 +159,9 @@ void daemon_status(const char *daemon, const char *msg)
 		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "STATUS=%s: %s", daemon, msg);
+	if (sd_notifications) {
+		sd_notifyf(0, "STATUS=%s: %s", daemon, msg);
+	}
 #endif
 	DBG_ERR("daemon '%s' : %s\n", daemon, msg);
 }
