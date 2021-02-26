@@ -66,6 +66,8 @@ class vgp_openssh_ext(gp_xml_ext):
                     attribute = get_string(b64encode(get_bytes(gpo.name) +
                         get_bytes(cfg_dir)))
                     fname = self.gp_db.retrieve(str(self), attribute)
+                    if not os.path.isdir(cfg_dir):
+                        os.mkdir(cfg_dir, 0o640)
                     if fname and os.path.exists(fname):
                         f = open(fname, 'w')
                     else:
