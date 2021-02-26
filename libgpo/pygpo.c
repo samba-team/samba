@@ -478,7 +478,6 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	}
 
 out:
-	TALLOC_FREE(gpo_ctx);
 	TALLOC_FREE(frame);
 	return ret;
 }
