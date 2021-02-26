@@ -421,7 +421,6 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 				connection_struct *conn,
 				files_struct *fsp,
-				const struct smb_filename *smb_fname,
 				size_t *pea_total_len,
 				struct ea_list **ea_list)
 {
@@ -439,12 +438,12 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp) {
-		posix_pathnames =
-			(fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
-	} else {
-		posix_pathnames = (smb_fname->flags & SMB_FILENAME_POSIX_PATH);
+	if (fsp == NULL) {
+		/* fsp == NULL => symlink */
+		return NT_STATUS_OK;
 	}
+
+	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = get_ea_names_from_file(talloc_tos(),
 				conn,
@@ -485,7 +484,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		status = get_ea_value(listp,
 					conn,
 					fsp,
-					smb_fname,
+					fsp->fsp_name,
 					names[i],
 					&listp->ea);
 
@@ -544,8 +543,7 @@ static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *co
 
 	return get_ea_list_from_file_path(mem_ctx,
 				conn,
-				fsp,
-				smb_fname,
+				smb_fname->fsp,
 				pea_total_len,
 				ea_list);
 }
@@ -703,7 +701,6 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp)
 	(void)get_ea_list_from_file_path(mem_ctx,
 					 conn,
 					 fsp,
-					 fsp->fsp_name,
 					 &total_ea_len,
 					 &ea_list);
 
@@ -744,8 +741,7 @@ static void canonicalize_ea_name(connection_struct *conn,
 	struct ea_list *ea_list;
 	NTSTATUS status = get_ea_list_from_file_path(mem_ctx,
 					conn,
-					fsp,
-					smb_fname,
+					smb_fname->fsp,
 					&total_ea_len,
 					&ea_list);
 	if (!NT_STATUS_IS_OK(status)) {
