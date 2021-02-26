@@ -267,18 +267,21 @@ static int virusfilter_vfs_connect(
 
 	infected_file_command = lp_parm_const_string(
 		snum, "virusfilter", "infected file command", NULL);
-	config->infected_file_command = talloc_strdup(config, infected_file_command);
-	if (config->infected_file_command == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (infected_file_command != NULL) {
+		config->infected_file_command = talloc_strdup(config, infected_file_command);
+		if (config->infected_file_command == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
-
 	scan_error_command = lp_parm_const_string(
 		snum, "virusfilter", "scan error command", NULL);
-	config->scan_error_command = talloc_strdup(config, scan_error_command);
-	if (config->scan_error_command == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (scan_error_command != NULL) {
+		config->scan_error_command = talloc_strdup(config, scan_error_command);
+		if (config->scan_error_command == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	config->block_access_on_error = lp_parm_bool(
@@ -290,10 +293,12 @@ static int virusfilter_vfs_connect(
 	quarantine_dir = lp_parm_const_string(
 		snum, "virusfilter", "quarantine directory",
 		tmp ? tmp : "/tmp/.quarantine");
-	config->quarantine_dir = talloc_strdup(config, quarantine_dir);
-	if (config->quarantine_dir == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (quarantine_dir != NULL) {
+		config->quarantine_dir = talloc_strdup(config, quarantine_dir);
+		if (config->quarantine_dir == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	if (tmp != config->quarantine_dir) {
@@ -311,42 +316,50 @@ static int virusfilter_vfs_connect(
 	quarantine_prefix = lp_parm_const_string(
 		snum, "virusfilter", "quarantine prefix",
 		VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX);
-	config->quarantine_prefix = talloc_strdup(config, quarantine_prefix);
-	if (config->quarantine_prefix == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (quarantine_prefix != NULL) {
+		config->quarantine_prefix = talloc_strdup(config, quarantine_prefix);
+		if (config->quarantine_prefix == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	quarantine_suffix = lp_parm_const_string(
 		snum, "virusfilter", "quarantine suffix",
 		VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX);
-	config->quarantine_suffix = talloc_strdup(config, quarantine_suffix);
-	if (config->quarantine_suffix == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (quarantine_suffix != NULL) {
+		config->quarantine_suffix = talloc_strdup(config, quarantine_suffix);
+		if (config->quarantine_suffix == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	/*
 	 * Make sure prefixes and suffixes do not contain directory
 	 * delimiters
 	 */
-	sret = strstr(config->quarantine_prefix, "/");
-	if (sret != NULL) {
-		DBG_ERR("quarantine prefix must not contain directory "
-			"delimiter(s) such as '/' (%s replaced with %s)\n",
-			config->quarantine_prefix,
-			VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX);
-		config->quarantine_prefix =
-			VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX;
+	if (config->quarantine_prefix != NULL) {
+		sret = strstr(config->quarantine_prefix, "/");
+		if (sret != NULL) {
+			DBG_ERR("quarantine prefix must not contain directory "
+				"delimiter(s) such as '/' (%s replaced with %s)\n",
+				config->quarantine_prefix,
+				VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX);
+			config->quarantine_prefix =
+				VIRUSFILTER_DEFAULT_QUARANTINE_PREFIX;
+		}
 	}
-	sret = strstr(config->quarantine_suffix, "/");
-	if (sret != NULL) {
-		DBG_ERR("quarantine suffix must not contain directory "
-			"delimiter(s) such as '/' (%s replaced with %s)\n",
-			config->quarantine_suffix,
-			VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX);
-		config->quarantine_suffix =
-			VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX;
+	if (config->quarantine_suffix != NULL) {
+		sret = strstr(config->quarantine_suffix, "/");
+		if (sret != NULL) {
+			DBG_ERR("quarantine suffix must not contain directory "
+				"delimiter(s) such as '/' (%s replaced with %s)\n",
+				config->quarantine_suffix,
+				VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX);
+			config->quarantine_suffix =
+				VIRUSFILTER_DEFAULT_QUARANTINE_SUFFIX;
+		}
 	}
 
 	config->quarantine_keep_tree = lp_parm_bool(
@@ -358,42 +371,50 @@ static int virusfilter_vfs_connect(
 	rename_prefix = lp_parm_const_string(
 		snum, "virusfilter", "rename prefix",
 		VIRUSFILTER_DEFAULT_RENAME_PREFIX);
-	config->rename_prefix = talloc_strdup(config, rename_prefix);
-	if (config->rename_prefix == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (rename_prefix != NULL) {
+		config->rename_prefix = talloc_strdup(config, rename_prefix);
+		if (config->rename_prefix == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	rename_suffix = lp_parm_const_string(
 		snum, "virusfilter", "rename suffix",
 		VIRUSFILTER_DEFAULT_RENAME_SUFFIX);
-	config->rename_suffix = talloc_strdup(config, rename_suffix);
-	if (config->rename_suffix == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (rename_suffix != NULL) {
+		config->rename_suffix = talloc_strdup(config, rename_suffix);
+		if (config->rename_suffix == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	/*
 	 * Make sure prefixes and suffixes do not contain directory
 	 * delimiters
 	 */
-	sret = strstr(config->rename_prefix, "/");
-	if (sret != NULL) {
-		DBG_ERR("rename prefix must not contain directory "
-			"delimiter(s) such as '/' (%s replaced with %s)\n",
-			config->rename_prefix,
-			VIRUSFILTER_DEFAULT_RENAME_PREFIX);
-		config->rename_prefix =
-			VIRUSFILTER_DEFAULT_RENAME_PREFIX;
+	if (config->rename_prefix != NULL) {
+		sret = strstr(config->rename_prefix, "/");
+		if (sret != NULL) {
+			DBG_ERR("rename prefix must not contain directory "
+				"delimiter(s) such as '/' (%s replaced with %s)\n",
+				config->rename_prefix,
+				VIRUSFILTER_DEFAULT_RENAME_PREFIX);
+			config->rename_prefix =
+				VIRUSFILTER_DEFAULT_RENAME_PREFIX;
+		}
 	}
-	sret = strstr(config->rename_suffix, "/");
-	if (sret != NULL) {
-		DBG_ERR("rename suffix must not contain directory "
-			"delimiter(s) such as '/' (%s replaced with %s)\n",
-			config->rename_suffix,
-			VIRUSFILTER_DEFAULT_RENAME_SUFFIX);
-		config->rename_suffix =
-			VIRUSFILTER_DEFAULT_RENAME_SUFFIX;
+	if (config->rename_suffix != NULL) {
+		sret = strstr(config->rename_suffix, "/");
+		if (sret != NULL) {
+			DBG_ERR("rename suffix must not contain directory "
+				"delimiter(s) such as '/' (%s replaced with %s)\n",
+				config->rename_suffix,
+				VIRUSFILTER_DEFAULT_RENAME_SUFFIX);
+			config->rename_suffix =
+				VIRUSFILTER_DEFAULT_RENAME_SUFFIX;
+		}
 	}
 
 	config->infected_open_errno = lp_parm_int(
@@ -410,10 +431,12 @@ static int virusfilter_vfs_connect(
 
 	socket_path = lp_parm_const_string(
 		snum, "virusfilter", "socket path", NULL);
-	config->socket_path = talloc_strdup(config, socket_path);
-	if (config->socket_path == NULL) {
-		DBG_ERR("virusfilter-vfs: out of memory!\n");
-		return -1;
+	if (socket_path != NULL) {
+		config->socket_path = talloc_strdup(config, socket_path);
+		if (config->socket_path == NULL) {
+			DBG_ERR("virusfilter-vfs: out of memory!\n");
+			return -1;
+		}
 	}
 
 	/* canonicalize socket_path */
