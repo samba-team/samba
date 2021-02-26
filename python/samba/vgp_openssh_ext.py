@@ -82,3 +82,24 @@ class vgp_openssh_ext(gp_xml_ext):
                     self.gp_db.store(str(self), attribute, f.name)
                     self.gp_db.commit()
                     f.close()
+
+    def rsop(self, gpo):
+        output = {}
+        if gpo.file_sys_path:
+            xml = 'MACHINE/VGP/VTLA/SshCfg/SshD/manifest.xml'
+            path = os.path.join(gpo.file_sys_path, xml)
+            xml_conf = self.parse(path)
+            if not xml_conf:
+                return output
+            policy = xml_conf.find('policysetting')
+            data = policy.find('data')
+            configfile = data.find('configfile')
+            for configsection in configfile.findall('configsection'):
+                if configsection.find('sectionname').text:
+                    continue
+                for kv in configsection.findall('keyvaluepair'):
+                    if str(self) not in output.keys():
+                        output[str(self)] = {}
+                    output[str(self)][kv.find('key').text] = \
+                        kv.find('value').text
+        return output
