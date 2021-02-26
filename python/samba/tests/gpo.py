@@ -493,18 +493,46 @@ class GPOTests(tests.TestCase):
         principal_list.append(group)
         sudoers_entry.append(principal_list)
         data.append(sudoers_entry)
+        # Ensure an empty principal doesn't cause a crash
+        sudoers_entry = etree.SubElement(data, 'sudoers_entry')
+        command = etree.SubElement(sudoers_entry, 'command')
+        command.text = 'ALL'
+        user = etree.SubElement(sudoers_entry, 'user')
+        user.text = 'ALL'
+        # Ensure having dispersed principals still works
+        sudoers_entry = etree.SubElement(data, 'sudoers_entry')
+        command = etree.SubElement(sudoers_entry, 'command')
+        command.text = 'ALL'
+        user = etree.SubElement(sudoers_entry, 'user')
+        user.text = 'ALL'
+        listelement = etree.SubElement(sudoers_entry, 'listelement')
+        principal = etree.SubElement(listelement, 'principal')
+        principal.text = 'fakeu2'
+        principal.attrib['type'] = 'user'
+        listelement = etree.SubElement(sudoers_entry, 'listelement')
+        group = etree.SubElement(listelement, 'principal')
+        group.text = 'fakeg2'
+        group.attrib['type'] = 'group'
         policysetting.append(data)
         ret = stage_file(manifest, etree.tostring(stage))
         self.assertTrue(ret, 'Could not create the target %s' % manifest)
 
         # Process all gpos, with temp output directory
         data = 'fakeu,fakeg% ALL=(ALL) NOPASSWD: ALL'
+        data2 = 'fakeu2,fakeg2% ALL=(ALL) NOPASSWD: ALL'
+        data_no_principal = 'ALL ALL=(ALL) NOPASSWD: ALL'
         with TemporaryDirectory() as dname:
             ext.process_group_policy([], gpos, dname)
             sudoers = os.listdir(dname)
-            self.assertEquals(len(sudoers), 1, 'The sudoer file was not created')
-            self.assertIn(data,
-                    open(os.path.join(dname, sudoers[0]), 'r').read(),
+            self.assertEquals(len(sudoers), 3, 'The sudoer file was not created')
+            output = open(os.path.join(dname, sudoers[0]), 'r').read() + \
+                     open(os.path.join(dname, sudoers[1]), 'r').read() + \
+                     open(os.path.join(dname, sudoers[2]), 'r').read()
+            self.assertIn(data, output,
+                    'The sudoers entry was not applied')
+            self.assertIn(data2, output,
+                    'The sudoers entry was not applied')
+            self.assertIn(data_no_principal, output,
                     'The sudoers entry was not applied')
 
             # Remove policy
