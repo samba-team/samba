@@ -136,7 +136,7 @@ def fake_build_environment(info=True, flush=False):
     try:
         proj = ConfigSet.ConfigSet(Options.lockfile)
     except IOError:
-        raise Errors.WafError("Project not configured (run 'waf configure' first)")
+        raise Errors.WafError("Project not configured (run './configure' first)")
 
     bld.load_envs()
 
