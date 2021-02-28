@@ -903,6 +903,39 @@ static bool do_poolusage(struct tevent_context *ev_ctx,
 	return true;
 }
 
+static bool do_rpc_dump_status(
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	const struct server_id dst,
+	const int argc,
+	const char **argv)
+{
+	pid_t pid = procid_to_pid(&dst);
+	int stdout_fd = 1;
+
+	if (argc != 1) {
+		fprintf(stderr,
+			"Usage: smbcontrol <dest> rpc-dump-status\n");
+		return False;
+	}
+
+	if (pid == 0) {
+		fprintf(stderr, "Can only send to a specific PID\n");
+		return false;
+	}
+
+	messaging_send_iov(
+		msg_ctx,
+		dst,
+		MSG_RPC_DUMP_STATUS,
+		NULL,
+		0,
+		&stdout_fd,
+		1);
+
+	return true;
+}
+
 /* Fetch and print the ringbuf log */
 
 static void print_ringbuf_log_cb(struct messaging_context *msg,
@@ -1478,6 +1511,11 @@ static const struct {
 		.name = "pool-usage",
 		.fn   = do_poolusage,
 		.help = "Display talloc memory usage",
+	},
+	{
+		.name = "rpc-dump-status",
+		.fn   = do_rpc_dump_status,
+		.help = "Display rpc status",
 	},
 	{
 		.name = "ringbuf-log",
