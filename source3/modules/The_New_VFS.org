@@ -284,7 +284,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SET_COMPRESSION()         | [[fsp][fsp]]      | -      |
 | SMB_VFS_SET_DOS_ATTRIBUTES()      | [[Path][Path]]     | -      |
 | SMB_VFS_SET_QUOTA()               | [[Special][Special]]  | -      |
-| SMB_VFS_SETXATTR()                | [[Path][Path]]     | Todo   |
+| SMB_VFS_SETXATTR()                | [[Path][Path]]     | -      |
 | SMB_VFS_SNAP_CHECK_PATH()         | [[Disk][Disk]]     | -      |
 | SMB_VFS_SNAP_CREATE()             | [[Disk][Disk]]     | -      |
 | SMB_VFS_SNAP_DELETE()             | [[Disk][Disk]]     | -      |

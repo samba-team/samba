@@ -352,7 +352,7 @@ Table of Contents
    SMB_VFS_SET_COMPRESSION()          [fsp]       -
    SMB_VFS_SET_DOS_ATTRIBUTES()       [Path]      -
    SMB_VFS_SET_QUOTA()                [Special]   -
-   SMB_VFS_SETXATTR()                 [Path]      Todo
+   SMB_VFS_SETXATTR()                 [Path]      -
    SMB_VFS_SNAP_CHECK_PATH()          [Disk]      -
    SMB_VFS_SNAP_CREATE()              [Disk]      -
    SMB_VFS_SNAP_DELETE()              [Disk]      -
