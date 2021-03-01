@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.14.  This is *not*
+This is the fourth release candidate of Samba 4.14.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -201,6 +201,26 @@ smb.conf changes
   honor change notify privilege      New                        No
   smbd force process locks           New                        No
   server smb encrypt                 New                        default
+
+
+CHANGES SINCE 4.14.0rc3
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14604: smbd: In conn_force_tdis_done() when forcing a connection closed
+     force a full reload of services.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14593: dbcheck: Check Deleted Objects and reduce noise in reports about
+     expired tombstones.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14619: vfs: Restore platform specific POSIX sys_acl_set_file()
+     functions.
+   * BUG 14620: Fix the build on AIX.
+   * BUG 14629: smbd: Don't overwrite _mode if neither a msdfs symlink nor
+     get_dosmode is requested.
+   * BUG 14635: Fix printer driver upload.
 
 
 CHANGES SINCE 4.14.0rc2
