@@ -29,7 +29,7 @@
  *		-s,--configfile 
  *		-O,--socket-options 
  *		-V,--version
- *		-l,--log-base
+ *		-l,--log-basename
  *		-n,--netbios-name
  *		-W,--workgroup
  *		-i,--scope
