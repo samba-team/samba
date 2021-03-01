@@ -124,23 +124,6 @@ As Python 2.7 has been End Of Life upstream since April 2020, Samba
 is dropping ALL Python 2.x support in this release.
 
 
-NT4-like 'classic' Samba domain controllers
--------------------------------------------
-
-Samba 4.13 deprecates Samba's original domain controller mode.
-
-Sites using Samba as a Domain Controller should upgrade from the
-NT4-like 'classic' Domain Controller to a Samba Active Directory DC
-to ensure full operation with modern windows clients.
-
-
-SMBv1 only protocol options deprecated
---------------------------------------
-
-A number of smb.conf parameters for less-secure authentication methods
-which are only possible over SMBv1 are deprecated in this release.
-
-
 Miscellaneous samba-tool changes
 --------------------------------
 
@@ -180,8 +163,6 @@ CTDB CHANGES
 REMOVED FEATURES
 ================
 
-The deprecated "ldap ssl ads" smb.conf option has been removed.
-
 
 smb.conf changes
 ================
@@ -189,13 +170,6 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
   smb encrypt                        Removed
-  ldap ssl ads                       Removed
-  client plaintext auth              Deprecated                 no
-  client NTLMv2 auth                 Deprecated                 yes
-  client lanman auth                 Deprecated                 no
-  client use spnego                  Deprecated                 yes
-  domain logons                      Deprecated                 no
-  raw NTLMv2 auth                    Deprecated                 no
   async dns timeout                  New                        10
   client smb encrypt                 New                        default
   honor change notify privilege      New                        No
