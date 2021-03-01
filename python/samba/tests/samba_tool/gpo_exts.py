@@ -94,6 +94,47 @@ class GpoCmdTestCase(SambaToolCmdTest):
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
 
+    def test_vgp_access_add(self):
+        lp = LoadParm()
+        lp.load(os.environ['SERVERCONFFILE'])
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "add"),
+                                                 self.gpo_guid,
+                                                 "allow", self.test_user,
+                                                 lp.get('realm').lower(),
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Access add failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "add"),
+                                                 self.gpo_guid,
+                                                 "deny", self.test_group,
+                                                 lp.get('realm').lower(),
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Access add failed')
+
+        allow_entry = '+:%s\\%s:ALL' % (lp.get('realm').lower(), self.test_user)
+        deny_entry = '-:%s\\%s:ALL' % (lp.get('realm').lower(), self.test_group)
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertIn(allow_entry, out, 'The test entry was not found!')
+        self.assertIn(deny_entry, out, 'The test entry was not found!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
@@ -108,8 +149,20 @@ class GpoCmdTestCase(SambaToolCmdTest):
         except IndexError:
             self.fail("Failed to find GUID in output: %s" % out)
 
+        self.test_user = 'testuser'
+        (result, out, err) = self.runsubcmd("user", "add", self.test_user,
+                                            "--random-password")
+        self.assertCmdSuccess(result, out, err, 'User creation failed')
+        self.test_group = 'testgroup'
+        (result, out, err) = self.runsubcmd("group", "add", self.test_group)
+        self.assertCmdSuccess(result, out, err, 'Group creation failed')
+
     def tearDown(self):
         """remove the temporary GPO to work with"""
         (result, out, err) = self.runsubcmd("gpo", "del", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, "Ensuring gpo deleted successfully")
+        (result, out, err) = self.runsubcmd("user", "delete", self.test_user)
+        self.assertCmdSuccess(result, out, err, 'User delete failed')
+        (result, out, err) = self.runsubcmd("group", "delete", self.test_group)
+        self.assertCmdSuccess(result, out, err, 'Group delete failed')
         super(GpoCmdTestCase, self).tearDown()
