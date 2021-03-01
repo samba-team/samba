@@ -1890,8 +1890,6 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 						&cli);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("open_internal_pipe: Could not connect to %s pipe: %s\n",
-			  table->name, nt_errstr(status)));
 		return status;
 	}
 

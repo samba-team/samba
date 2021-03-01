@@ -66,6 +66,8 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 
 	status = wb_open_internal_pipe(mem_ctx, &ndr_table_samr, samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Could not connect to %s pipe: %s\n",
+			ndr_table_samr.name, nt_errstr(status));
 		return status;
 	}
 
@@ -104,6 +106,8 @@ NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
 
 	status = wb_open_internal_pipe(mem_ctx, &ndr_table_lsarpc, lsa_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Could not connect to %s pipe: %s\n",
+			ndr_table_lsarpc.name, nt_errstr(status));
 		return status;
 	}
 
