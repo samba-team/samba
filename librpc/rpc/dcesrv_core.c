@@ -2978,19 +2978,19 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 	/* unravel the NDR for the packet */
 	status = call->context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
-			call->context->iface->name,
-			call->pkt.u.request.opnum,
-			dcerpc_errstr(call, call->fault_code));
+		DBG_INFO("DCE/RPC fault in call %s:%02X - %s\n",
+			 call->context->iface->name,
+			 call->pkt.u.request.opnum,
+			 dcerpc_errstr(call, call->fault_code));
 		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
 	status = call->context->iface->local(call, call, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
-			call->context->iface->name,
-			call->pkt.u.request.opnum,
-			dcerpc_errstr(call, call->fault_code));
+		DBG_INFO("DCE/RPC fault in call %s:%02X - %s\n",
+			 call->context->iface->name,
+			 call->pkt.u.request.opnum,
+			 dcerpc_errstr(call, call->fault_code));
 		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
@@ -3000,10 +3000,10 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 	/* call the reply function */
 	status = call->context->iface->reply(call, call, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
-			call->context->iface->name,
-			call->pkt.u.request.opnum,
-			dcerpc_errstr(call, call->fault_code));
+		DBG_INFO("DCE/RPC fault in call %s:%02X - %s\n",
+			 call->context->iface->name,
+			 call->pkt.u.request.opnum,
+			 dcerpc_errstr(call, call->fault_code));
 		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
@@ -3016,10 +3016,10 @@ _PUBLIC_ NTSTATUS dcesrv_call_dispatch_local(struct dcesrv_call_state *call)
 
 	status = call->context->iface->ndr_push(call, call, push, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
-			call->context->iface->name,
-			call->pkt.u.request.opnum,
-			dcerpc_errstr(call, call->fault_code));
+		DBG_INFO("DCE/RPC fault in call %s:%02X - %s\n",
+			 call->context->iface->name,
+			 call->pkt.u.request.opnum,
+			 dcerpc_errstr(call, call->fault_code));
 		return dcerpc_fault_to_nt_status(call->fault_code);
 	}
 
