@@ -446,6 +446,10 @@ static int construct_modifyTimeStamp(struct ldb_module *module,
 		const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 		char *value = ldb_timestring(msg, schema->ts_last_change);
 
+		if (value == NULL) {
+			return ldb_oom(ldb_module_get_ctx(module));
+		}
+
 		return ldb_msg_add_string(msg, "modifyTimeStamp", value);
 	}
 	return ldb_msg_copy_attr(msg, "whenChanged", "modifyTimeStamp");
