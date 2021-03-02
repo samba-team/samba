@@ -967,8 +967,15 @@ int file_set_dosmode(connection_struct *conn,
 	else
 		dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
-	/* Store the DOS attributes in an EA by preference. */
-	status = SMB_VFS_SET_DOS_ATTRIBUTES(conn, smb_fname, dosmode);
+	if (smb_fname->fsp != NULL) {
+		/* Store the DOS attributes in an EA by preference. */
+		status = SMB_VFS_FSET_DOS_ATTRIBUTES(conn,
+						     smb_fname->fsp,
+						     dosmode);
+	} else {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
 	if (NT_STATUS_IS_OK(status)) {
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
@@ -1323,6 +1330,11 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 	dosmode = fdos_mode(psmb_fname->fsp);
 
 	smb_fname->st.st_ex_btime = create_time;
+	/*
+	 * ensure if we pass fsp around we can get the create time
+	 * from fsp->fsp_name
+	 */
+	smb_fname->fsp->fsp_name->st.st_ex_btime = create_time;
 
 	ret = file_set_dosmode(conn, smb_fname, dosmode, NULL, false);
 	if (ret == -1) {
