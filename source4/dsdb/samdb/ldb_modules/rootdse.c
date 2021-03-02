@@ -313,8 +313,14 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	}
 
 	if (do_attribute(attrs, "currentTime")) {
-		if (ldb_msg_add_steal_string(msg, "currentTime",
-					     ldb_timestring(msg, time(NULL))) != LDB_SUCCESS) {
+		char *timestr = ldb_timestring(msg, time(NULL));
+
+		if (timestr == NULL) {
+			goto failed;
+		}
+
+		if (ldb_msg_add_steal_string(
+			    msg, "currentTime", timestr) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
