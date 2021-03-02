@@ -2667,6 +2667,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		sitename = info->dc_site_name;
 		/* info goes out of scope but the memory stays
 		   allocated on the talloc context */
+
+		/* return the allocated netr_DsRGetDCNameInfo struct */
+		r->out.dcinfo = info;
 	}
 
 	if (pre_connect_realm != NULL) {
