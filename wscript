@@ -321,7 +321,8 @@ def configure(conf):
     # allows us to find problems on our development hosts faster.
     # It also results in faster load time.
 
-    conf.add_as_needed()
+    conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
+
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
