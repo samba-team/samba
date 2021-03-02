@@ -3779,7 +3779,110 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
 
     def run(self, gpo, etype, cn, domain, H=None, sambaopts=None,
             credopts=None, versionopts=None):
-        pass
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        if etype == 'allow':
+            vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+                                 'MACHINE\\VGP\\VTLA\\VAS'
+                                 'HostAccessControl\\Allow'])
+        elif etype == 'deny':
+            vgp_dir = '\\'.join([realm.lower(), 'Policies', gpo,
+                                 'MACHINE\\VGP\\VTLA\\VAS'
+                                 'HostAccessControl\\Deny'])
+        else:
+            raise CommandError("The entry type must be either 'allow' or "
+                               "'deny'. Unknown type '%s'" % etype)
+        vgp_xml = '\\'.join([vgp_dir, 'manifest.xml'])
+        try:
+            xml_data = ET.ElementTree(ET.fromstring(conn.loadfile(vgp_xml)))
+            policy = xml_data.getroot().find('policysetting')
+            data = policy.find('data')
+        except NTSTATUSError as e:
+            # STATUS_OBJECT_NAME_INVALID, STATUS_OBJECT_NAME_NOT_FOUND,
+            # STATUS_OBJECT_PATH_NOT_FOUND
+            if e.args[0] in [0xC0000033, 0xC0000034, 0xC000003A]:
+                # The file doesn't exist, so create the xml structure
+                xml_data = ET.ElementTree(ET.Element('vgppolicy'))
+                policysetting = ET.SubElement(xml_data.getroot(),
+                                              'policysetting')
+                pv = ET.SubElement(policysetting, 'version')
+                pv.text = '1'
+                name = ET.SubElement(policysetting, 'name')
+                name.text = 'Host Access Control'
+                description = ET.SubElement(policysetting, 'description')
+                description.text = 'Represents host access control data (pam_access)'
+                apply_mode = ET.SubElement(policysetting, 'apply_mode')
+                apply_mode.text = 'merge'
+                data = ET.SubElement(policysetting, 'data')
+            elif e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+        url = dc_url(self.lp, self.creds, dc=domain)
+        samdb = SamDB(url=url, session_info=system_session(),
+                      credentials=self.creds, lp=self.lp)
+
+        res = samdb.search(base=samdb.domain_dn(),
+                           scope=ldb.SCOPE_SUBTREE,
+                           expression="(cn=%s)" % cn,
+                           attrs=['userPrincipalName',
+                                  'samaccountname',
+                                  'objectClass'])
+        if len(res) == 0:
+            raise CommandError('Unable to find user or group "%s"' % cn)
+
+        objectclass = get_string(res[0]['objectClass'][-1])
+        if objectclass not in ['user', 'group']:
+            raise CommandError('%s is not a user or group' % cn)
+
+        listelement = ET.SubElement(data, 'listelement')
+        etype = ET.SubElement(listelement, 'type')
+        etype.text = objectclass.upper()
+        entry = ET.SubElement(listelement, 'entry')
+        if objectclass == 'user':
+            entry.text = get_string(res[0]['userPrincipalName'][-1])
+        else:
+            groupattr = ET.SubElement(data, 'groupattr')
+            groupattr.text = 'samAccountName'
+            entry.text = '%s\\%s' % (domain,
+                                     get_string(res[0]['samaccountname'][-1]))
+        adobject = ET.SubElement(listelement, 'adobject')
+        name = ET.SubElement(adobject, 'name')
+        name.text = get_string(res[0]['samaccountname'][-1])
+        domain_elm = ET.SubElement(adobject, 'domain')
+        domain_elm.text = domain
+        etype = ET.SubElement(adobject, 'type')
+        etype.text = objectclass
+
+        out = BytesIO()
+        xml_data.write(out, encoding='UTF-8', xml_declaration=True)
+        out.seek(0)
+        try:
+            create_directory_hier(conn, vgp_dir)
+            conn.savefile(vgp_xml, out.read())
+        except NTSTATUSError as e:
+            if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            raise
 
 class cmd_access(SuperCommand):
     """Manage Host Access Group Policy Objects"""
