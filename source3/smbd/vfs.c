@@ -2481,7 +2481,7 @@ NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t dosmode)
 {
-	VFS_FIND(set_dos_attributes);
+	VFS_FIND(fset_dos_attributes);
 	return handle->fns->fset_dos_attributes_fn(handle, fsp, dosmode);
 }
 
