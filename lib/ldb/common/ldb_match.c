@@ -342,8 +342,6 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		TALLOC_FREE(cnk.data);
 	}
 
-	/* last chunk may not have reached end of string */
-	if ( (! tree->u.substring.end_with_wildcard) && (val.length != 0) ) goto mismatch;
 	talloc_free(save_p);
 	*matched = true;
 	return LDB_SUCCESS;
