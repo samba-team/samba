@@ -183,7 +183,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
 		}
 	}
 
-	/* tell the recovery daemon to reaload the nodes file too */
+	/* tell the recovery daemon to reload the nodes file too */
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELOAD_NODES, tdb_null);
 
 	talloc_free(tmp_ctx);
