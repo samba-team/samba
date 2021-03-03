@@ -295,8 +295,9 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		uint8_t *p;
 
 		chunk = tree->u.substring.chunks[c];
-		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto mismatch;
-
+		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) {
+			goto mismatch;
+		}
 		/*
 		 * Empty strings are returned as length 0. Ensure
 		 * we can cope with this.
@@ -304,52 +305,41 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if (cnk.length == 0) {
 			goto mismatch;
 		}
-		/*
-		 * Values might be binary blobs. Don't use string
-		 * search, but memory search instead.
-		 */
-		p = memmem((const void *)val.data,val.length,
-			   (const void *)cnk.data, cnk.length);
-		if (p == NULL) goto mismatch;
-
-		/*
-		 * At this point we know cnk.length <= val.length as
-		 * otherwise there could be no match
-		 */
-
-		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
-			uint8_t *g;
-			uint8_t *end = val.data + val.length;
-			do { /* greedy */
-
-				/*
-				 * haystack is a valid pointer in val
-				 * because the memmem() can only
-				 * succeed if the needle (cnk.length)
-				 * is <= haystacklen
-				 *
-				 * p will be a pointer at least
-				 * cnk.length from the end of haystack
-				 */
-				uint8_t *haystack
-					= p + cnk.length;
-				size_t haystacklen
-					= end - (haystack);
-
-				g = memmem(haystack,
-					   haystacklen,
-					   (const uint8_t *)cnk.data,
-					   cnk.length);
-				if (g) {
-					p = g;
-				}
-			} while(g);
+		if (cnk.length > val.length) {
+			goto mismatch;
 		}
-		val.length = val.length - (p - (uint8_t *)(val.data)) - cnk.length;
-		val.data = (uint8_t *)(p + cnk.length);
+
+		if ( (tree->u.substring.chunks[c + 1]) == NULL &&
+		     (! tree->u.substring.end_with_wildcard) ) {
+			/*
+			 * The last bit, after all the asterisks, must match
+			 * exactly the last bit of the string.
+			 */
+			int cmp;
+			p = val.data + val.length - cnk.length;
+			cmp = memcmp(p,
+				     cnk.data,
+				     cnk.length);
+			if (cmp != 0) {
+				goto mismatch;
+			}
+		} else {
+			/*
+			 * Values might be binary blobs. Don't use string
+			 * search, but memory search instead.
+			 */
+			p = memmem((const void *)val.data, val.length,
+				   (const void *)cnk.data, cnk.length);
+			if (p == NULL) {
+				goto mismatch;
+			}
+			/* move val to the end of the match */
+			p += cnk.length;
+			val.length -= (p - val.data);
+			val.data = p;
+		}
 		c++;
-		talloc_free(cnk.data);
-		cnk.data = NULL;
+		TALLOC_FREE(cnk.data);
 	}
 
 	/* last chunk may not have reached end of string */
