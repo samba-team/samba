@@ -646,8 +646,8 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	struct g_lock_lock_state *state = tevent_req_data(
 		req, struct g_lock_lock_state);
 	struct g_lock_lock_fn_state fn_state;
-	struct server_id blocker;
-	bool blockerdead;
+	struct server_id blocker = { .pid = 0 };
+	bool blockerdead = false;
 	NTSTATUS status;
 
 	status = dbwrap_watched_watch_recv(subreq, &blockerdead, &blocker);
