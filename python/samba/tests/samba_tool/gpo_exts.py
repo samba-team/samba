@@ -135,6 +135,40 @@ class GpoCmdTestCase(SambaToolCmdTest):
         self.assertIn(allow_entry, out, 'The test entry was not found!')
         self.assertIn(deny_entry, out, 'The test entry was not found!')
 
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "remove"),
+                                                 self.gpo_guid,
+                                                 "allow", self.test_user,
+                                                 lp.get('realm').lower(),
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Access remove failed')
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "remove"),
+                                                 self.gpo_guid,
+                                                 "deny", self.test_group,
+                                                 lp.get('realm').lower(),
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Access remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "access", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(allow_entry, out, 'The test entry was still found!')
+        self.assertNotIn(deny_entry, out, 'The test entry was still found!')
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()

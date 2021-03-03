@@ -3884,11 +3884,41 @@ samba-tool gpo manage access add {31B2F340-016D-11D2-945F-00C04FB984F9} allow go
                                    "not have sufficient privileges")
             raise
 
+class cmd_remove_access(Command):
+    """Remove a VGP Host Access Group Policy from the sysvol
+
+This command removes a host access setting from the sysvol for applying to
+winbind clients.
+
+Example:
+samba-tool gpo manage access remove {31B2F340-016D-11D2-945F-00C04FB984F9} allow goodguy example.com
+    """
+
+    synopsis = "%prog <gpo> <allow/deny> <name> <domain> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["gpo", "etype", "name", "domain"]
+
+    def run(self, gpo, etype, name, domain, H=None, sambaopts=None,
+            credopts=None, versionopts=None):
+        pass
+
 class cmd_access(SuperCommand):
     """Manage Host Access Group Policy Objects"""
     subcommands = {}
     subcommands["list"] = cmd_list_access()
     subcommands["add"] = cmd_add_access()
+    subcommands["remove"] = cmd_remove_access()
 
 class cmd_manage(SuperCommand):
     """Manage Group Policy Objects"""
