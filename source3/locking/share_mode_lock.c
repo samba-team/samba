@@ -2150,7 +2150,7 @@ static bool share_mode_entry_do(
 	struct locking_tdb_data *ltdb = NULL;
 	size_t idx;
 	bool found = false;
-	bool modified;
+	bool modified = false;
 	struct share_mode_entry e;
 	uint8_t *e_ptr = NULL;
 	bool had_share_entries, have_share_entries;
