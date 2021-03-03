@@ -179,8 +179,8 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = smb_fget_nt_acl_nfs4(fsp, NULL, security_info, ppdesc,
-				      mem_ctx, pacl);
+	status = smb_fget_nt_acl_nfs4(
+		fsp, NULL, security_info, mem_ctx, ppdesc, pacl);
 	TALLOC_FREE(frame);
 	return status;
 }
