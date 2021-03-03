@@ -1923,7 +1923,7 @@ static void share_mode_entry_do_fn(
 	struct share_mode_entry_do_state *state = private_data;
 	size_t idx;
 	bool found = false;
-	bool modified;
+	bool modified = false;
 	struct share_mode_entry e;
 	struct share_mode_entry_buf buf;
 	TDB_DATA dbufs[3];
