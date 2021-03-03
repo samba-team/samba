@@ -185,7 +185,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND,
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV,
 	SMB_VFS_OP_FGET_DOS_ATTRIBUTES,
-	SMB_VFS_OP_SET_DOS_ATTRIBUTES,
 	SMB_VFS_OP_FSET_DOS_ATTRIBUTES,
 
 	/* NT ACL operations. */
@@ -323,7 +322,6 @@ static struct {
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_SEND, "get_dos_attributes_send" },
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES_RECV, "get_dos_attributes_recv" },
 	{ SMB_VFS_OP_FGET_DOS_ATTRIBUTES, "fget_dos_attributes" },
-	{ SMB_VFS_OP_SET_DOS_ATTRIBUTES, "set_dos_attributes" },
 	{ SMB_VFS_OP_FSET_DOS_ATTRIBUTES, "fset_dos_attributes" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL_AT,	"get_nt_acl_at" },
@@ -2432,26 +2430,6 @@ static NTSTATUS smb_full_audit_fget_dos_attributes(
 	return status;
 }
 
-static NTSTATUS smb_full_audit_set_dos_attributes(
-				struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint32_t dosmode)
-{
-	NTSTATUS status;
-
-	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
-				smb_fname,
-				dosmode);
-
-	do_log(SMB_VFS_OP_SET_DOS_ATTRIBUTES,
-		NT_STATUS_IS_OK(status),
-		handle,
-		"%s",
-		smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return status;
-}
-
 static NTSTATUS smb_full_audit_fset_dos_attributes(
 				struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
@@ -3028,7 +3006,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_dos_attributes_send_fn = smb_full_audit_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = smb_full_audit_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,
-	.set_dos_attributes_fn = smb_full_audit_set_dos_attributes,
 	.fset_dos_attributes_fn = smb_full_audit_fset_dos_attributes,
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.get_nt_acl_at_fn = smb_full_audit_get_nt_acl_at,

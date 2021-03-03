@@ -1161,10 +1161,6 @@ struct vfs_fn_pointers {
 					   struct files_struct *fsp,
 					   uint32_t *dosmode);
 
-	NTSTATUS (*set_dos_attributes_fn)(struct vfs_handle_struct *handle,
-					  const struct smb_filename *smb_fname,
-					  uint32_t dosmode);
-
 	NTSTATUS (*fset_dos_attributes_fn)(struct vfs_handle_struct *hande,
 					   struct files_struct *fsp,
 					   uint32_t dosmode);
@@ -1630,9 +1626,6 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_fget_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t *dosmode);
-NTSTATUS smb_vfs_call_set_dos_attributes(struct vfs_handle_struct *handle,
-					 const struct smb_filename *smb_fname,
-					 uint32_t dosmode);
 NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t dosmode);

@@ -1865,13 +1865,6 @@ static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 	return fget_ea_dos_attribute(fsp, dosmode);
 }
 
-static NTSTATUS vfswrap_set_dos_attributes(struct vfs_handle_struct *handle,
-					   const struct smb_filename *smb_fname,
-					   uint32_t dosmode)
-{
-	return set_ea_dos_attribute(handle->conn, smb_fname, dosmode);
-}
-
 static NTSTATUS vfswrap_fset_dos_attributes(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    uint32_t dosmode)
@@ -3836,7 +3829,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.strict_lock_check_fn = vfswrap_strict_lock_check,
 	.translate_name_fn = vfswrap_translate_name,
 	.fsctl_fn = vfswrap_fsctl,
-	.set_dos_attributes_fn = vfswrap_set_dos_attributes,
 	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
 	.get_dos_attributes_send_fn = vfswrap_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfswrap_get_dos_attributes_recv,

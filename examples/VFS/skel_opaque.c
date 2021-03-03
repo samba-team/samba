@@ -766,13 +766,6 @@ static NTSTATUS skel_fget_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS skel_set_dos_attributes(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint32_t dosmode)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS skel_fset_dos_attributes(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint32_t dosmode)
@@ -1088,7 +1081,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.get_dos_attributes_send_fn = skel_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = skel_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = skel_fget_dos_attributes,
-	.set_dos_attributes_fn = skel_set_dos_attributes,
 	.fset_dos_attributes_fn = skel_fset_dos_attributes,
 
 	/* NT ACL operations. */

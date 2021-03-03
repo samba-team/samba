@@ -661,52 +661,6 @@ static ssize_t vxfs_flistxattr(struct vfs_handle_struct *handle,
         return result;
 }
 
-static NTSTATUS vxfs_set_ea_dos_attributes(struct vfs_handle_struct *handle,
-					   const struct smb_filename *smb_fname,
-					   uint32_t dosmode)
-{
-	NTSTATUS	err;
-	int			ret = 0;
-	bool		attrset = false;
-	bool		is_dir = false;
-
-	DBG_DEBUG("Entered function\n");
-
-	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
-	if (!(dosmode & FILE_ATTRIBUTE_READONLY)) {
-		ret = vxfs_checkwxattr_path(smb_fname->base_name);
-		if (ret == -1) {
-			DBG_DEBUG("ret:%d\n", ret);
-			if ((errno != EOPNOTSUPP) && (errno != ENOENT)) {
-				return map_nt_error_from_unix(errno);
-			}
-		}
-	}
-	if (dosmode & FILE_ATTRIBUTE_READONLY) {
-		ret = vxfs_setwxattr_path(smb_fname->base_name, is_dir);
-		DBG_DEBUG("ret:%d\n", ret);
-		if (ret == -1) {
-			if ((errno != EOPNOTSUPP) && (errno != EINVAL)) {
-				return map_nt_error_from_unix(errno);
-			}
-		} else {
-			attrset = true;
-		}
-	}
-	err = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, dosmode);
-	if (!NT_STATUS_IS_OK(err)) {
-		if (attrset) {
-			ret = vxfs_clearwxattr_path(smb_fname->base_name, is_dir);
-			DBG_DEBUG("ret:%d\n", ret);
-			if ((ret == -1) && (errno != ENOENT)) {
-				return map_nt_error_from_unix(errno);
-			}
-		}
-	}
-
-	return err;
-}
-
 static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    uint32_t dosmode)
@@ -773,7 +727,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.sys_acl_set_fd_fn = vxfs_sys_acl_set_fd,
 #endif
 
-	.set_dos_attributes_fn = vxfs_set_ea_dos_attributes,
 	.fset_dos_attributes_fn = vxfs_fset_ea_dos_attributes,
 	.getxattr_fn = vxfs_get_xattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,

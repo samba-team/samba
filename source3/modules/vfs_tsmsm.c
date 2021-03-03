@@ -519,37 +519,6 @@ static NTSTATUS tsmsm_set_offline(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS tsmsm_set_dos_attributes(struct vfs_handle_struct *handle,
-					 const struct smb_filename *smb_fname,
-					 uint32_t dosmode)
-{
-	NTSTATUS status;
-	uint32_t old_dosmode;
-	struct smb_filename *fname = NULL;
-
-	/* dos_mode() doesn't like const smb_fname */
-	fname = cp_smb_filename(talloc_tos(), smb_fname);
-	if (fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	old_dosmode = fdos_mode(smb_fname->fsp);
-	TALLOC_FREE(fname);
-
-	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, dosmode);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!(old_dosmode & FILE_ATTRIBUTE_OFFLINE) &&
-	    (dosmode & FILE_ATTRIBUTE_OFFLINE))
-	{
-		return NT_STATUS_OK;
-	}
-
-	return tsmsm_set_offline(handle, smb_fname);
-}
-
 static NTSTATUS tsmsm_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t dosmode)
@@ -590,7 +559,6 @@ static struct vfs_fn_pointers tsmsm_fns = {
 	.pwrite_send_fn = tsmsm_pwrite_send,
 	.pwrite_recv_fn = tsmsm_pwrite_recv,
 	.sendfile_fn = tsmsm_sendfile,
-	.set_dos_attributes_fn = tsmsm_set_dos_attributes,
 	.fset_dos_attributes_fn = tsmsm_fset_dos_attributes,
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,

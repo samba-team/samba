@@ -1714,41 +1714,6 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS vfs_gpfs_set_dos_attributes(struct vfs_handle_struct *handle,
-					   const struct smb_filename *smb_fname,
-					   uint32_t dosmode)
-{
-	struct gpfs_config_data *config;
-	struct gpfs_winattr attrs = { };
-	int ret;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	if (!config->winattr) {
-		return SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
-						       smb_fname, dosmode);
-	}
-
-	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
-	ret = gpfswrap_set_winattrs_path(smb_fname->base_name,
-					 GPFS_WINATTR_SET_ATTRS, &attrs);
-
-	if (ret == -1 && errno == ENOSYS) {
-		return SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
-						       smb_fname, dosmode);
-	}
-
-	if (ret == -1) {
-		DBG_WARNING("Setting winattrs failed for %s: %s\n",
-			    smb_fname->base_name, strerror(errno));
-		return map_nt_error_from_unix(errno);
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 					     struct files_struct *fsp,
 					     uint32_t dosmode)
@@ -2619,7 +2584,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,
-	.set_dos_attributes_fn = vfs_gpfs_set_dos_attributes,
 	.fset_dos_attributes_fn = vfs_gpfs_fset_dos_attributes,
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
 	.get_nt_acl_at_fn = gpfsacl_get_nt_acl_at,
