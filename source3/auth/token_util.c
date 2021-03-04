@@ -316,7 +316,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 	struct security_token *usrtok = NULL;
 	uint32_t session_info_flags = 0;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   info3->base.account_name.string));
@@ -536,7 +536,7 @@ static NTSTATUS add_local_groups(struct security_token *result,
 	uint32_t getgroups_num_group_sids = 0;
 	struct passwd *pass = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	int i;
+	uint32_t i;
 
 	if (is_guest) {
 		/*
