@@ -382,6 +382,19 @@ NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
 				    SAMBA_XATTR_DOS_ATTRIB,
 				    attrstr,
 				    sizeof(attrstr));
+	if (sizeret == -1 && ( errno == EPERM || errno == EACCES )) {
+		/* we may also retrieve dos attribs for unreadable files, this
+		   is why we'll retry as root. We don't use root in the first
+		   run because in cases like NFS, root might have even less
+		   rights than the real user
+		*/
+		become_root();
+		sizeret = SMB_VFS_FGETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
+					    SAMBA_XATTR_DOS_ATTRIB,
+					    attrstr,
+					    sizeof(attrstr));
+		unbecome_root();
+	}
 	if (sizeret == -1) {
 		DBG_INFO("Cannot get attribute "
 			 "from EA on file %s: Error = %s\n",
