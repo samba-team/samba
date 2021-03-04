@@ -4,7 +4,7 @@ import "misc.idl", "security.idl";
 [
   uuid("3dde7c30-165d-11d1-ab8f-00805f14db40"),
   version(1.0),
-  endpoint("ncacn_np:[\\pipe\\protected_storage]","ncacn_np:[\\pipe\\ntsvcs]" ,"ncacn_ip_tcp:"),
+  endpoint("ncacn_np:[\\pipe\\protected_storage]", "ncacn_ip_tcp:"),
   helpstring("Remote Backup Key Storage"),
   helper("../librpc/ndr/ndr_backupkey.h"),
   pointer_default(unique)
