@@ -100,7 +100,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-/* length limited conversion of a ldb_val to a int32_t */
+/* length limited conversion of a ldb_val to an int64_t */
 static int val_to_int64(const struct ldb_val *in, int64_t *v)
 {
 	char *end;
@@ -113,8 +113,6 @@ static int val_to_int64(const struct ldb_val *in, int64_t *v)
 	strncpy(buf, (char *)in->data, in->length);
 	buf[in->length] = 0;
 
-	/* We've to use "strtoll" here to have the intended overflows.
-	 * Otherwise we may get "LONG_MAX" and the conversion is wrong. */
 	*v = (int64_t) strtoll(buf, &end, 0);
 	if (*end != 0) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
