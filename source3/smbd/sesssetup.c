@@ -268,33 +268,28 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			action |= SMB_SETUP_GUEST;
 		}
 
+		session->global->signing_algo = SMB2_SIGNING_MD5_SMB1;
+		session->global->encryption_cipher = 0;
+		session->global->channels[0].signing_algo =
+				session->global->signing_algo;
+		session->global->channels[0].encryption_cipher =
+				session->global->encryption_cipher;
+
 		if (session_info->session_key.length > 0) {
 			struct smbXsrv_session *x = session;
 
-			/*
-			 * Note: the SMB1 signing key is not truncated to 16 byte!
-			 */
-			x->global->signing_key =
-				talloc_zero(x->global, struct smb2_signing_key);
-			if (x->global->signing_key == NULL) {
+			status = smb2_signing_key_sign_create(x->global,
+						x->global->signing_algo,
+						&session_info->session_key,
+						NULL, /* no derivation */
+						&x->global->signing_key);
+			if (!NT_STATUS_IS_OK(status)) {
 				data_blob_free(&out_blob);
 				TALLOC_FREE(session);
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				reply_nterror(req, status);
 				return;
 			}
-			/* TODO: setup destructor once we cache the hmac handle */
-
-			x->global->signing_key->blob =
-				x->global->signing_key_blob =
-				data_blob_dup_talloc(x->global->signing_key,
-						     session_info->session_key);
-			if (!smb2_signing_key_valid(x->global->signing_key)) {
-				data_blob_free(&out_blob);
-				TALLOC_FREE(session);
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-			talloc_keep_secret(x->global->signing_key->blob.data);
+			x->global->signing_key_blob = x->global->signing_key->blob;
 
 			/*
 			 * clear the session key
@@ -983,65 +978,64 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
+	session->global->signing_algo = SMB2_SIGNING_MD5_SMB1;
+	session->global->encryption_cipher = 0;
+	session->global->channels[0].signing_algo =
+			session->global->signing_algo;
+	session->global->channels[0].encryption_cipher =
+			session->global->encryption_cipher;
+
 	if (session_info->session_key.length > 0) {
+		struct smbXsrv_session *x = session;
 		uint8_t session_key[16];
+		NTSTATUS status;
 
-		/*
-		 * Note: the SMB1 signing key is not truncated to 16 byte!
-		 */
-		session->global->signing_key =
-			talloc_zero(session->global, struct smb2_signing_key);
-		if (session->global->signing_key == NULL) {
+		status = smb2_signing_key_sign_create(x->global,
+					x->global->signing_algo,
+					&session_info->session_key,
+					NULL, /* no derivation */
+					&x->global->signing_key);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			reply_nterror(req, status);
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		/* TODO: setup destructor once we cache the hmac handle */
-
-		session->global->signing_key->blob =
-			session->global->signing_key_blob =
-			data_blob_dup_talloc(session->global->signing_key,
-					     session_info->session_key);
-		if (!smb2_signing_key_valid(session->global->signing_key)) {
-			TALLOC_FREE(session);
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBsesssetupX);
-			return;
-		}
-		talloc_keep_secret(session->global->signing_key->blob.data);
+		x->global->signing_key_blob = x->global->signing_key->blob;
 
 		/*
 		 * The application key is truncated/padded to 16 bytes
 		 */
 		ZERO_STRUCT(session_key);
-		memcpy(session_key, session->global->signing_key->blob.data,
-		       MIN(session->global->signing_key->blob.length,
+		memcpy(session_key, session->global->signing_key_blob.data,
+		       MIN(session->global->signing_key_blob.length,
 			   sizeof(session_key)));
-		session->global->application_key =
+		session->global->application_key_blob =
 			data_blob_talloc(session->global,
 					 session_key,
 					 sizeof(session_key));
 		ZERO_STRUCT(session_key);
-		if (session->global->application_key.data == NULL) {
+		if (session->global->application_key_blob.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
+		talloc_keep_secret(session->global->application_key_blob.data);
 
 		/*
 		 * Place the application key into the session_info
 		 */
 		data_blob_clear_free(&session_info->session_key);
 		session_info->session_key = data_blob_dup_talloc(session_info,
-						session->global->application_key);
+						session->global->application_key_blob);
 		if (session_info->session_key.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
+		talloc_keep_secret(session_info->session_key.data);
 	}
 
 	sconn->num_users++;

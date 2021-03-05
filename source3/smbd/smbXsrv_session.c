@@ -879,7 +879,7 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 } while(0)
 	{
 		uint32_t i;
-		__BLOB_KEEP_SECRET(global->application_key);
+		__BLOB_KEEP_SECRET(global->application_key_blob);
 		__BLOB_KEEP_SECRET(global->signing_key_blob);
 		__BLOB_KEEP_SECRET(global->encryption_key_blob);
 		__BLOB_KEEP_SECRET(global->decryption_key_blob);

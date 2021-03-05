@@ -220,6 +220,7 @@ interface smbXsrv
 		[ignore] smb2_signing_key		*signing_key;
 		uint32					auth_session_info_seqnum;
 		[ignore] smbXsrv_connection		*connection;
+		uint16					signing_algo;
 		uint16					encryption_cipher;
 	} smbXsrv_channel_global0;
 
@@ -238,14 +239,17 @@ interface smbXsrv
 		auth_session_info			*auth_session_info;
 		uint16					connection_dialect;
 		smbXsrv_signing_flags			signing_flags;
+		uint16					signing_algo;
 		smbXsrv_encrpytion_flags		encryption_flags;
+		uint16					encryption_cipher;
 		[noprint] DATA_BLOB			signing_key_blob;
 		[ignore] smb2_signing_key		*signing_key;
 		[noprint] DATA_BLOB			encryption_key_blob;
 		[ignore] smb2_signing_key		*encryption_key;
 		[noprint] DATA_BLOB			decryption_key_blob;
 		[ignore] smb2_signing_key		*decryption_key;
-		[noprint] DATA_BLOB			application_key;
+		[noprint] DATA_BLOB			application_key_blob;
+		[ignore] smb2_signing_key		*application_key;
 		[range(1, 1024)] uint32			num_channels;
 		smbXsrv_channel_global0			channels[num_channels];
 	} smbXsrv_session_global0;

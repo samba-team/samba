@@ -198,7 +198,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	bool guest = false;
-	uint8_t session_key[16];
 	struct smbXsrv_session *x = session;
 	struct smbXsrv_session_auth0 *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
@@ -285,111 +284,49 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				 xconn->smb2.server.dialect));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else {
-		x->global->channels[0].encryption_cipher = xconn->smb2.server.cipher;
+	}
+	x->global->signing_algo = xconn->smb2.server.sign_algo;
+	x->global->encryption_cipher = xconn->smb2.server.cipher;
+	if (guest) {
+		x->global->encryption_cipher = SMB2_ENCRYPTION_NONE;
 	}
 
 	if (x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
 		*out_session_flags |= SMB2_SESSION_FLAG_ENCRYPT_DATA;
 	}
 
-	ZERO_STRUCT(session_key);
-	memcpy(session_key, session_info->session_key.data,
-	       MIN(session_info->session_key.length, sizeof(session_key)));
-
-	x->global->signing_key = talloc_zero(x->global,
-					     struct smb2_signing_key);
-	if (x->global->signing_key == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_sign_create(x->global,
+					      x->global->signing_algo,
+					      &session_info->session_key,
+					      derivations.signing,
+					      &x->global->signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	talloc_set_destructor(x->global->signing_key,
-			      smb2_signing_key_destructor);
+	x->global->signing_key_blob = x->global->signing_key->blob;
 
-	x->global->signing_key->blob =
-		x->global->signing_key_blob =
-			data_blob_talloc(x->global,
-					 session_key,
-					 sizeof(session_key));
-	if (!smb2_signing_key_valid(x->global->signing_key)) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.signing;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     x->global->signing_key->blob.data,
-					     x->global->signing_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.cipher_c2s;
-
-		x->global->decryption_key =
-			talloc_zero(x->global, struct smb2_signing_key);
-		if (x->global->decryption_key == NULL) {
-			ZERO_STRUCT(session_key);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		x->global->decryption_key->blob =
-			x->global->decryption_key_blob =
-				data_blob_talloc(x->global->decryption_key,
-						 session_key,
-						 sizeof(session_key));
-		if (!smb2_signing_key_valid(x->global->decryption_key)) {
-			ZERO_STRUCT(session_key);
-			return NT_STATUS_NO_MEMORY;
-		}
-		talloc_keep_secret(x->global->decryption_key->blob.data);
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     x->global->decryption_key->blob.data,
-					     x->global->decryption_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.cipher_s2c;
+	if (x->global->encryption_cipher != SMB2_ENCRYPTION_NONE) {
 		size_t nonce_size;
 
-		x->global->encryption_key =
-			talloc_zero(x->global, struct smb2_signing_key);
-		if (x->global->encryption_key == NULL) {
-			ZERO_STRUCT(session_key);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		x->global->encryption_key->blob =
-			x->global->encryption_key_blob =
-				data_blob_talloc(x->global->encryption_key,
-						 session_key,
-						 sizeof(session_key));
-		if (!smb2_signing_key_valid(x->global->encryption_key)) {
-			ZERO_STRUCT(session_key);
-			return NT_STATUS_NO_MEMORY;
-		}
-		talloc_keep_secret(x->global->encryption_key->blob.data);
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     x->global->encryption_key->blob.data,
-					     x->global->encryption_key->blob.length);
+		status = smb2_signing_key_cipher_create(x->global,
+							x->global->encryption_cipher,
+							&session_info->session_key,
+							derivations.cipher_s2c,
+							&x->global->encryption_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		x->global->encryption_key_blob = x->global->encryption_key->blob;
+
+		status = smb2_signing_key_cipher_create(x->global,
+							x->global->encryption_cipher,
+							&session_info->session_key,
+							derivations.cipher_c2s,
+							&x->global->decryption_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		x->global->decryption_key_blob = x->global->decryption_key->blob;
 
 		/*
 		 * CCM and GCM algorithms must never have their
@@ -418,26 +355,15 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->nonce_low = 0;
 	}
 
-	x->global->application_key =
-		data_blob_dup_talloc(x->global, x->global->signing_key->blob);
-	if (x->global->application_key.data == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_sign_create(x->global,
+					      x->global->signing_algo,
+					      &session_info->session_key,
+					      derivations.application,
+					      &x->global->application_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	talloc_keep_secret(x->global->application_key.data);
-
-	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.application;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     x->global->application_key.data,
-					     x->global->application_key.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
+	x->global->application_key_blob = x->global->application_key->blob;
 
 	if (xconn->protocol >= PROTOCOL_SMB3_00 && lp_debug_encryption()) {
 		DEBUG(0, ("debug encryption: dumping generated session keys\n"));
@@ -445,46 +371,41 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		dump_data(0, (uint8_t*)&session->global->session_wire_id,
 			  sizeof(session->global->session_wire_id));
 		DEBUGADD(0, ("Session Key   "));
-		dump_data(0, session_key, sizeof(session_key));
+		dump_data(0, session_info->session_key.data,
+			  session_info->session_key.length);
+		DEBUGADD(0, ("Signing Algo: %u\n", x->global->signing_algo));
 		DEBUGADD(0, ("Signing Key   "));
-		dump_data(0, x->global->signing_key->blob.data,
-			  x->global->signing_key->blob.length);
+		dump_data(0, x->global->signing_key_blob.data,
+			  x->global->signing_key_blob.length);
 		DEBUGADD(0, ("App Key       "));
-		dump_data(0, x->global->application_key.data,
-			  x->global->application_key.length);
+		dump_data(0, x->global->application_key_blob.data,
+			  x->global->application_key_blob.length);
 
 		/* In server code, ServerIn is the decryption key */
 
+		DEBUGADD(0, ("Cipher Algo: %u\n", x->global->encryption_cipher));
 		DEBUGADD(0, ("ServerIn Key  "));
-		dump_data(0, x->global->decryption_key->blob.data,
-			  x->global->decryption_key->blob.length);
+		dump_data(0, x->global->decryption_key_blob.data,
+			  x->global->decryption_key_blob.length);
 		DEBUGADD(0, ("ServerOut Key "));
-		dump_data(0, x->global->encryption_key->blob.data,
-			  x->global->encryption_key->blob.length);
+		dump_data(0, x->global->encryption_key_blob.data,
+			  x->global->encryption_key_blob.length);
 	}
 
-	ZERO_STRUCT(session_key);
-
-	x->global->channels[0].signing_key =
-		talloc_zero(x->global->channels, struct smb2_signing_key);
-	if (x->global->channels[0].signing_key == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_copy(x->global->channels,
+				       x->global->signing_key,
+				       &x->global->channels[0].signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	talloc_set_destructor(x->global->channels[0].signing_key,
-			      smb2_signing_key_destructor);
-
-	x->global->channels[0].signing_key->blob =
-		x->global->channels[0].signing_key_blob =
-			data_blob_dup_talloc(x->global->channels[0].signing_key,
-					     x->global->signing_key->blob);
-	if (!smb2_signing_key_valid(x->global->channels[0].signing_key)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_keep_secret(x->global->channels[0].signing_key->blob.data);
+	x->global->channels[0].signing_key_blob =
+		x->global->channels[0].signing_key->blob;
+	x->global->channels[0].signing_algo = x->global->signing_algo;
+	x->global->channels[0].encryption_cipher = x->global->encryption_cipher;
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key);
+						x->global->application_key_blob);
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -566,7 +487,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key);
+						x->global->application_key_blob);
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -629,7 +550,6 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	struct smbXsrv_session_auth0 *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
 	struct smbXsrv_channel_global0 *c = NULL;
-	uint8_t session_key[16];
 	size_t i;
 	struct smb2_signing_derivations derivations = {
 		.signing = NULL,
@@ -693,42 +613,18 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	ZERO_STRUCT(session_key);
-	memcpy(session_key, session_info->session_key.data,
-	       MIN(session_info->session_key.length, sizeof(session_key)));
+	c->signing_algo = xconn->smb2.server.sign_algo;
+	c->encryption_cipher = xconn->smb2.server.cipher;
 
-	c->signing_key = talloc_zero(x->global, struct smb2_signing_key);
-	if (c->signing_key == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_sign_create(x->global->channels,
+					      c->signing_algo,
+					      &session_info->session_key,
+					      derivations.signing,
+					      &c->signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	talloc_set_destructor(c->signing_key,
-			      smb2_signing_key_destructor);
-
-	c->signing_key->blob =
-		c->signing_key_blob =
-			data_blob_talloc(c->signing_key,
-					 session_key,
-					 sizeof(session_key));
-	if (!smb2_signing_key_valid(c->signing_key)) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_keep_secret(c->signing_key->blob.data);
-
-	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.signing;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     c->signing_key->blob.data,
-					     c->signing_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-	ZERO_STRUCT(session_key);
+	c->signing_key_blob = c->signing_key->blob;
 
 	TALLOC_FREE(auth);
 	status = smbXsrv_session_update(session);

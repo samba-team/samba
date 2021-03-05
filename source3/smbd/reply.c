@@ -966,7 +966,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	 * Once the application key is defined, it does not
 	 * change any more.
 	 */
-	if (session->global->application_key.length == 0 &&
+	if (session->global->application_key_blob.length == 0 &&
 	    smb2_signing_key_valid(session->global->signing_key))
 	{
 		struct smbXsrv_session *x = session;
@@ -981,22 +981,23 @@ void reply_tcon_and_X(struct smb_request *req)
 		/*
 		 * The application key is truncated/padded to 16 bytes
 		 */
-		x->global->application_key = data_blob_talloc(x->global,
+		x->global->application_key_blob = data_blob_talloc(x->global,
 							     session_key,
 							     sizeof(session_key));
 		ZERO_STRUCT(session_key);
-		if (x->global->application_key.data == NULL) {
+		if (x->global->application_key_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtconX);
 			return;
 		}
+		talloc_keep_secret(x->global->application_key_blob.data);
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_SIGNATURES) {
 			NTSTATUS status;
 
-			status = smb_key_derivation(x->global->application_key.data,
-						    x->global->application_key.length,
-						    x->global->application_key.data);
+			status = smb_key_derivation(x->global->application_key_blob.data,
+						    x->global->application_key_blob.length,
+						    x->global->application_key_blob.data);
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_ERR("smb_key_derivation failed: %s\n",
 					nt_errstr(status));
@@ -1011,13 +1012,14 @@ void reply_tcon_and_X(struct smb_request *req)
 		 */
 		data_blob_clear_free(&session_info->session_key);
 		session_info->session_key = data_blob_dup_talloc(session_info,
-						x->global->application_key);
+						x->global->application_key_blob);
 		if (session_info->session_key.data == NULL) {
-			data_blob_clear_free(&x->global->application_key);
+			data_blob_clear_free(&x->global->application_key_blob);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBtconX);
 			return;
 		}
+		talloc_keep_secret(session_info->session_key.data);
 		session_key_updated = true;
 	}
 
@@ -1030,7 +1032,7 @@ void reply_tcon_and_X(struct smb_request *req)
 			struct smbXsrv_session *x = session;
 			struct auth_session_info *session_info =
 				session->global->auth_session_info;
-			data_blob_clear_free(&x->global->application_key);
+			data_blob_clear_free(&x->global->application_key_blob);
 			data_blob_clear_free(&session_info->session_key);
 		}
 		reply_nterror(req, nt_status);
