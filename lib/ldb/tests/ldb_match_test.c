@@ -91,6 +91,33 @@ static int teardown(void **state)
 	return 0;
 }
 
+static void escape_string(uint8_t *buf, size_t buflen,
+			  const uint8_t *s, size_t len)
+{
+	size_t i;
+	size_t j = 0;
+	for (i = 0; i < len; i++) {
+		if (j == buflen - 1) {
+			goto fin;
+		}
+		if (s[i] >= 0x20) {
+			buf[j] = s[i];
+			j++;
+		} else {
+			if (j >= buflen - 4) {
+				goto fin;
+			}
+			/* utf-8 control char representation */
+			buf[j] = 0xE2;
+			buf[j + 1] = 0x90;
+			buf[j + 2] = 0x80 + s[i];
+			j+= 3;
+		}
+	}
+fin:
+	buf[j] = 0;
+}
+
 
 /*
  * The wild card pattern "attribute=*" is parsed as an LDB_OP_PRESENT operation
@@ -122,22 +149,109 @@ static void test_wildcard_match_star(void **state)
  * Test basic wild card matching
  *
  */
+struct wildcard_test {
+	uint8_t *val;
+	size_t val_size;
+	const char *search;
+	bool should_match;
+	bool fold;
+};
+
+/*
+ * Q: Why this macro rather than plain struct values?
+ * A: So we can get the size of the const char[] value while it is still a
+ * true array, not a pointer.
+ *
+ * Q: but why not just use strlen?
+ * A: so values can contain '\0', which we supposedly allow.
+ */
+
+#define TEST_ENTRY(val, search, should_match, fold)	\
+	{						\
+		(uint8_t*)discard_const(val),		\
+		sizeof(val) - 1,			\
+		search,					\
+		should_match,				\
+		fold					\
+	 }
+
 static void test_wildcard_match(void **state)
 {
 	struct ldbtest_ctx *ctx = *state;
-	bool matched = false;
-
-	uint8_t value[] = "The value.......end";
-	struct ldb_val val = {
-		.data   = value,
-		.length = (sizeof(value))
+	size_t failed = 0;
+	size_t i;
+	struct wildcard_test tests[] = {
+		TEST_ENTRY("The value.......end", "*end", true, true),
+		TEST_ENTRY("The value.......end", "*fend", false, true),
+		TEST_ENTRY("The value.......end", "*eel", false, true),
+		TEST_ENTRY("The value.......end", "*d", true, true),
+		TEST_ENTRY("The value.......end", "*D*", true, true),
+		TEST_ENTRY("The value.......end", "*e*d*", true, true),
+		TEST_ENTRY("end", "*e*d*", true, true),
+		TEST_ENTRY("end", "  *e*d*", true, true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0aaaaaaaaaaaa", "*aaaaa", true, true),
+		TEST_ENTRY("1.0..0.0.0.0.0.0.0aAaaaAAAAAAA", "*a", true,  true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0.0.0.0aaaa", "*aaaaa", false, true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0.0.0.0", "*0.0", true, true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0.0.0.0", "*0.0.0", true, true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0.0.0", "1*0*0*0*0*0*0*0*0*0", true,
+			   true),
+		TEST_ENTRY("1.0.0.0.0.0.0.0.0", "1*0*0*0*0*0*0*0*0*0", false,
+			   true),
+		TEST_ENTRY("1.0.0.0.000.0.0.0.0", "1*0*0*0*0*0*0*0*0*0", true,
+			   true),
+		TEST_ENTRY("1\n0\r0\t000.0.0.0.0", "1*0*0*0*0*0*0*0*0", true,
+			   true),
+		/*
+		 *  We allow NUL bytes in non-casefolding syntaxes.
+		 */
+		TEST_ENTRY("1\x00 x", "1*x", true, false),
+		TEST_ENTRY("1\x00 x", "*x", true, false),
+		TEST_ENTRY("1\x00 x", "*x*", true, false),
+		TEST_ENTRY("1\x00 x", "* *", true, false),
+		TEST_ENTRY("1\x00 x", "1*", true, false),
+		TEST_ENTRY("1\x00 b* x", "1*b*", true, false),
+		TEST_ENTRY("1.0..0.0.0.0.0.0.0aAaaaAAAAAAA", "*a", false,  false),
 	};
-	struct ldb_parse_tree *tree = ldb_parse_tree(ctx, "objectClass=*end");
-	assert_non_null(tree);
 
-	ldb_wildcard_compare(ctx->ldb, tree, val, &matched);
-	assert_true(matched);
+	for (i = 0; i < ARRAY_SIZE(tests); i++) {
+		bool matched;
+		int ret;
+		struct ldb_val val = {
+			.data   = (uint8_t *)tests[i].val,
+			.length = tests[i].val_size
+		};
+		const char *attr = tests[i].fold ? "objectclass" : "birthLocation";
+		const char *s = talloc_asprintf(ctx, "%s=%s",
+						attr, tests[i].search);
+		struct ldb_parse_tree *tree = ldb_parse_tree(ctx, s);
+		assert_non_null(tree);
+		ret = ldb_wildcard_compare(ctx->ldb, tree, val, &matched);
+		if (ret != LDB_SUCCESS) {
+			uint8_t buf[100];
+			escape_string(buf, sizeof(buf),
+				      tests[i].val, tests[i].val_size);
+			print_error("%zu val: «%s», search «%s» FAILED with %d\n",
+				    i, buf, tests[i].search, ret);
+			failed++;
+		}
+		if (matched != tests[i].should_match) {
+			uint8_t buf[100];
+			escape_string(buf, sizeof(buf),
+				      tests[i].val, tests[i].val_size);
+			print_error("%zu val: «%s», search «%s» should %s\n",
+				    i, buf, tests[i].search,
+				    matched ? "not match" : "match");
+			failed++;
+		}
+	}
+	if (failed != 0) {
+		fail_msg("wrong results for %zu/%zu wildcard searches\n",
+			 failed, ARRAY_SIZE(tests));
+	}
 }
+
+#undef TEST_ENTRY
 
 
 /*
