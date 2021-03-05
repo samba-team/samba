@@ -105,6 +105,191 @@ int smb2_signing_key_destructor(struct smb2_signing_key *key)
 	return 0;
 }
 
+NTSTATUS smb2_signing_key_copy(TALLOC_CTX *mem_ctx,
+			       const struct smb2_signing_key *src,
+			       struct smb2_signing_key **_dst)
+{
+	struct smb2_signing_key *dst = NULL;
+
+	dst = talloc_zero(mem_ctx, struct smb2_signing_key);
+	if (dst == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(dst, smb2_signing_key_destructor);
+
+	dst->sign_algo_id = src->sign_algo_id;
+	dst->cipher_algo_id = src->cipher_algo_id;
+
+	if (src->blob.length == 0) {
+		*_dst = dst;
+		return NT_STATUS_OK;
+	}
+
+	dst->blob = data_blob_talloc_zero(dst, src->blob.length);
+	if (dst->blob.length == 0) {
+		TALLOC_FREE(dst);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(dst->blob.data);
+	memcpy(dst->blob.data, src->blob.data, dst->blob.length);
+
+	*_dst = dst;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
+					uint16_t sign_algo_id,
+					uint16_t cipher_algo_id,
+					const DATA_BLOB *master_key,
+					const struct smb2_signing_derivation *d,
+					struct smb2_signing_key **_key)
+{
+	struct smb2_signing_key *key = NULL;
+	size_t in_key_length = 16;
+	size_t out_key_length = 16;
+	NTSTATUS status;
+
+	if (sign_algo_id != SMB2_SIGNING_INVALID_ALGO) {
+		SMB_ASSERT(cipher_algo_id == SMB2_ENCRYPTION_INVALID_ALGO);
+	}
+	if (cipher_algo_id != SMB2_ENCRYPTION_INVALID_ALGO) {
+		SMB_ASSERT(sign_algo_id == SMB2_SIGNING_INVALID_ALGO);
+	}
+
+	key = talloc_zero(mem_ctx, struct smb2_signing_key);
+	if (key == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(key, smb2_signing_key_destructor);
+
+	key->sign_algo_id = sign_algo_id;
+	key->cipher_algo_id = cipher_algo_id;
+
+	if (master_key == NULL) {
+		SMB_ASSERT(d == NULL);
+
+		*_key = key;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Per default use the full key.
+	 */
+	in_key_length = out_key_length = master_key->length;
+	switch (sign_algo_id) {
+	case SMB2_SIGNING_INVALID_ALGO:
+		/*
+		 * This means we're processing cipher_algo_id below
+		 */
+		break;
+	case SMB2_SIGNING_MD5_SMB1:
+		SMB_ASSERT(d == NULL);
+		break;
+	case SMB2_SIGNING_HMAC_SHA256:
+	case SMB2_SIGNING_AES128_CMAC:
+		/*
+		 * signing keys are padded or truncated to
+		 * 16 bytes.
+		 *
+		 * Even with master_key->length = 0,
+		 * we need to use 16 zeros.
+		 */
+		in_key_length = out_key_length = 16;
+		break;
+	default:
+		DBG_ERR("sign_algo_id[%u] not supported\n", sign_algo_id);
+		return NT_STATUS_HMAC_NOT_SUPPORTED;
+	}
+	switch (cipher_algo_id) {
+	case SMB2_ENCRYPTION_INVALID_ALGO:
+		/*
+		 * This means we're processing sign_algo_id above
+		 */
+		break;
+	case SMB2_ENCRYPTION_NONE:
+		/*
+		 * No encryption negotiated.
+		 */
+		break;
+	case SMB2_ENCRYPTION_AES128_CCM:
+	case SMB2_ENCRYPTION_AES128_GCM:
+		/*
+		 * encryption keys are padded or truncated to
+		 * 16 bytes.
+		 */
+		if (master_key->length == 0) {
+			DBG_ERR("cipher_algo_id[%u] without key\n",
+				cipher_algo_id);
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
+		in_key_length = out_key_length = 16;
+		break;
+	default:
+		DBG_ERR("cipher_algo_id[%u] not supported\n", cipher_algo_id);
+		return NT_STATUS_FWP_INCOMPATIBLE_CIPHER_CONFIG;
+	}
+
+	if (out_key_length == 0) {
+		*_key = key;
+		return NT_STATUS_OK;
+	}
+
+	key->blob = data_blob_talloc_zero(key, out_key_length);
+	if (key->blob.length == 0) {
+		TALLOC_FREE(key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(key->blob.data);
+	memcpy(key->blob.data,
+	       master_key->data,
+	       MIN(key->blob.length, master_key->length));
+
+	if (d == NULL) {
+		*_key = key;
+		return NT_STATUS_OK;
+	}
+
+	status = smb2_key_derivation(key->blob.data, in_key_length,
+				     d->label.data, d->label.length,
+				     d->context.data, d->context.length,
+				     key->blob.data, out_key_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(key);
+		return status;
+	}
+
+	*_key = key;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2_signing_key_sign_create(TALLOC_CTX *mem_ctx,
+				      uint16_t sign_algo_id,
+				      const DATA_BLOB *master_key,
+				      const struct smb2_signing_derivation *d,
+				      struct smb2_signing_key **_key)
+{
+	return smb2_signing_key_create(mem_ctx,
+				       sign_algo_id,
+				       SMB2_ENCRYPTION_INVALID_ALGO,
+				       master_key,
+				       d,
+				       _key);
+}
+
+NTSTATUS smb2_signing_key_cipher_create(TALLOC_CTX *mem_ctx,
+					uint16_t cipher_algo_id,
+					const DATA_BLOB *master_key,
+					const struct smb2_signing_derivation *d,
+					struct smb2_signing_key **_key)
+{
+	return smb2_signing_key_create(mem_ctx,
+				       SMB2_SIGNING_INVALID_ALGO,
+				       cipher_algo_id,
+				       master_key,
+				       d,
+				       _key);
+}
+
 bool smb2_signing_key_valid(const struct smb2_signing_key *key)
 {
 	if (key == NULL) {

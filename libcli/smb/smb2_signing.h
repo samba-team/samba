@@ -45,12 +45,14 @@ void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *
 
 struct smb2_signing_key {
 	DATA_BLOB blob;
+	uint16_t sign_algo_id;
 	union {
 #ifdef SMB2_SIGNING_KEY_GNUTLS_TYPES
 		gnutls_hmac_hd_t hmac_hnd;
 #endif
 		void *__hmac_hnd;
 	};
+	uint16_t cipher_algo_id;
 	union {
 #ifdef SMB2_SIGNING_KEY_GNUTLS_TYPES
 		gnutls_aead_cipher_hd_t cipher_hnd;
@@ -60,6 +62,20 @@ struct smb2_signing_key {
 };
 
 int smb2_signing_key_destructor(struct smb2_signing_key *key);
+
+NTSTATUS smb2_signing_key_copy(TALLOC_CTX *mem_ctx,
+			       const struct smb2_signing_key *src,
+			       struct smb2_signing_key **_dst);
+NTSTATUS smb2_signing_key_sign_create(TALLOC_CTX *mem_ctx,
+				      uint16_t sign_algo_id,
+				      const DATA_BLOB *master_key,
+				      const struct smb2_signing_derivation *d,
+				      struct smb2_signing_key **_key);
+NTSTATUS smb2_signing_key_cipher_create(TALLOC_CTX *mem_ctx,
+					uint16_t cipher_algo_id,
+					const DATA_BLOB *master_key,
+					const struct smb2_signing_derivation *d,
+					struct smb2_signing_key **_key);
 
 bool smb2_signing_key_valid(const struct smb2_signing_key *key);
 
