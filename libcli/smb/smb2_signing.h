@@ -61,8 +61,6 @@ struct smb2_signing_key {
 	};
 };
 
-int smb2_signing_key_destructor(struct smb2_signing_key *key);
-
 NTSTATUS smb2_signing_key_copy(TALLOC_CTX *mem_ctx,
 			       const struct smb2_signing_key *src,
 			       struct smb2_signing_key **_dst);

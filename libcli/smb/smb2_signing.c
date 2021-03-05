@@ -90,7 +90,7 @@ void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *
 	}
 }
 
-int smb2_signing_key_destructor(struct smb2_signing_key *key)
+static int smb2_signing_key_destructor(struct smb2_signing_key *key)
 {
 	if (key->hmac_hnd != NULL) {
 		gnutls_hmac_deinit(key->hmac_hnd, NULL);
