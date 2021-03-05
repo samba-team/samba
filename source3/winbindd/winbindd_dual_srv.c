@@ -286,6 +286,8 @@ NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 		if (maps[i]->status == ID_MAPPED) {
 			r->out.xids[i] = maps[i]->xid;
 			sid_copy(&r->out.sids[i], maps[i]->sid);
+		} else {
+			r->out.sids[i] = (struct dom_sid) { 0 };
 		}
 	}
 
