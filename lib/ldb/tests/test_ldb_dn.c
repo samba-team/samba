@@ -190,7 +190,6 @@ static void test_ldb_dn_explode(void **state)
 		 * special, invalid, linear, and ext_linear are set before
 		 * explode
 		 */
-		fprintf(stderr, "%zu «%s»: ", i, tests[i].strdn);
 		linear = ldb_dn_get_linearized(dn);
 		assert_true((linear == NULL) == (tests[i].linearized == NULL));
 		assert_string_equal(linear,
@@ -209,8 +208,8 @@ static void test_ldb_dn_explode(void **state)
 
 		/* comp nums are set by explode */
 		result = ldb_dn_validate(dn);
-		fprintf(stderr, "res %i lin «%s» ext «%s»\n",
-			result, linear, ext_linear);
+		print_error("test %zu «%s»: res %i lin «%s» ext «%s»\n",
+			    i, tests[i].strdn, result, linear, ext_linear);
 		
 		assert_true(result == tests[i].explode_result);
 		assert_int_equal(ldb_dn_get_comp_num(dn),
