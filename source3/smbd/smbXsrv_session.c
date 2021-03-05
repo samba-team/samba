@@ -872,6 +872,23 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 
 	global = global_blob.info.info0;
 
+#define __BLOB_KEEP_SECRET(__blob) do { \
+	if ((__blob).length != 0) { \
+		talloc_keep_secret((__blob).data); \
+	} \
+} while(0)
+	{
+		uint32_t i;
+		__BLOB_KEEP_SECRET(global->application_key);
+		__BLOB_KEEP_SECRET(global->signing_key_blob);
+		__BLOB_KEEP_SECRET(global->encryption_key_blob);
+		__BLOB_KEEP_SECRET(global->decryption_key_blob);
+		for (i = 0; i < global->num_channels; i++) {
+			__BLOB_KEEP_SECRET(global->channels[i].signing_key_blob);
+		}
+	}
+#undef __BLOB_KEEP_SECRET
+
 	exists = serverid_exists(&global->channels[0].server_id);
 	if (!exists) {
 		struct server_id_buf idbuf;
