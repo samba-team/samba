@@ -181,6 +181,8 @@ static void test_wildcard_match(void **state)
 	size_t failed = 0;
 	size_t i;
 	struct wildcard_test tests[] = {
+		TEST_ENTRY("                     1  0", "1*0*", true, true),
+		TEST_ENTRY("                     1  0", "1 *0", true, true),
 		TEST_ENTRY("The value.......end", "*end", true, true),
 		TEST_ENTRY("The value.......end", "*fend", false, true),
 		TEST_ENTRY("The value.......end", "*eel", false, true),
@@ -203,8 +205,12 @@ static void test_wildcard_match(void **state)
 		TEST_ENTRY("1\n0\r0\t000.0.0.0.0", "1*0*0*0*0*0*0*0*0", true,
 			   true),
 		/*
-		 *  We allow NUL bytes in non-casefolding syntaxes.
+		 *  We allow NUL bytes and redundant spaces in non-casefolding
+		 *  syntaxes.
 		 */
+		TEST_ENTRY("                  1  0", "*1  0", true, false),
+		TEST_ENTRY("                  1  0", "*1  0", true, false),
+		TEST_ENTRY("1    0", "*1 0", false, false),
 		TEST_ENTRY("1\x00 x", "1*x", true, false),
 		TEST_ENTRY("1\x00 x", "*x", true, false),
 		TEST_ENTRY("1\x00 x", "*x*", true, false),
