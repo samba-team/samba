@@ -644,7 +644,7 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 	if (!VALID_STAT(smb_fname->st)) {
 		ret = vfs_stat(dirfsp->conn, smb_fname);
 		if (ret != 0) {
-			DBG_ERR("stat [%s] failed: %s",
+			DBG_ERR("stat [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
 				strerror(errno));
 			TALLOC_FREE(smb_fname);
