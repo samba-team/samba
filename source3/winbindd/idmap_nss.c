@@ -25,6 +25,7 @@
 #include "nsswitch/winbind_client.h"
 #include "idmap.h"
 #include "lib/winbind_util.h"
+#include "libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -55,6 +56,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		struct passwd *pw;
 		struct group *gr;
 		const char *name;
+		struct dom_sid sid;
 		enum lsa_SidType type;
 		bool ret;
 
@@ -86,7 +88,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		   the following call will not recurse so this is safe */
 		(void)winbind_on();
 		/* Lookup name from PDC using lsa_lookup_names() */
-		ret = winbind_lookup_name(dom->name, name, ids[i]->sid, &type);
+		ret = winbind_lookup_name(dom->name, name, &sid, &type);
 		(void)winbind_off();
 
 		if (!ret) {
@@ -99,6 +101,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		switch (type) {
 		case SID_NAME_USER:
 			if (ids[i]->xid.type == ID_TYPE_UID) {
+				sid_copy(ids[i]->sid, &sid);
 				ids[i]->status = ID_MAPPED;
 			}
 			break;
@@ -107,6 +110,7 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
 			if (ids[i]->xid.type == ID_TYPE_GID) {
+				sid_copy(ids[i]->sid, &sid);
 				ids[i]->status = ID_MAPPED;
 			}
 			break;
