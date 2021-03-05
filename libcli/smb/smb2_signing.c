@@ -34,6 +34,62 @@
 
 #include "lib/crypto/gnutls_helpers.h"
 
+void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *ds,
+					       enum protocol_types protocol,
+					       const DATA_BLOB preauth_hash)
+{
+	*ds = (struct smb2_signing_derivations) { .signing = NULL, };
+
+	if (protocol >= PROTOCOL_SMB3_10) {
+		struct smb2_signing_derivation *d = NULL;
+
+		SMB_ASSERT(preauth_hash.length != 0);
+
+		d = &ds->__signing;
+		ds->signing = d;
+		d->label = data_blob_string_const_null("SMBSigningKey");
+		d->context = preauth_hash;
+
+		d = &ds->__cipher_c2s;
+		ds->cipher_c2s = d;
+		d->label = data_blob_string_const_null("SMBC2SCipherKey");
+		d->context = preauth_hash;
+
+		d = &ds->__cipher_s2c;
+		ds->cipher_s2c = d;
+		d->label = data_blob_string_const_null("SMBS2CCipherKey");
+		d->context = preauth_hash;
+
+		d = &ds->__application;
+		ds->application = d;
+		d->label = data_blob_string_const_null("SMBAppKey");
+		d->context = preauth_hash;
+
+	} else if (protocol >= PROTOCOL_SMB2_24) {
+		struct smb2_signing_derivation *d = NULL;
+
+		d = &ds->__signing;
+		ds->signing = d;
+		d->label = data_blob_string_const_null("SMB2AESCMAC");
+		d->context = data_blob_string_const_null("SmbSign");
+
+		d = &ds->__cipher_c2s;
+		ds->cipher_c2s = d;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerIn ");
+
+		d = &ds->__cipher_s2c;
+		ds->cipher_s2c = d;
+		d->label = data_blob_string_const_null("SMB2AESCCM");
+		d->context = data_blob_string_const_null("ServerOut");
+
+		d = &ds->__application;
+		ds->application = d;
+		d->label = data_blob_string_const_null("SMB2APP");
+		d->context = data_blob_string_const_null("SmbRpc");
+	}
+}
+
 int smb2_signing_key_destructor(struct smb2_signing_key *key)
 {
 	if (key->hmac_hnd != NULL) {

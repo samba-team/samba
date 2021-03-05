@@ -23,6 +23,26 @@
 
 struct iovec;
 
+struct smb2_signing_derivation {
+	DATA_BLOB label;
+	DATA_BLOB context;
+};
+
+struct smb2_signing_derivations {
+	struct smb2_signing_derivation __signing;
+	const struct smb2_signing_derivation *signing;
+	struct smb2_signing_derivation __cipher_c2s;
+	const struct smb2_signing_derivation *cipher_c2s;
+	struct smb2_signing_derivation __cipher_s2c;
+	const struct smb2_signing_derivation *cipher_s2c;
+	struct smb2_signing_derivation __application;
+	const struct smb2_signing_derivation *application;
+};
+
+void smb2_signing_derivations_fill_const_stack(struct smb2_signing_derivations *ds,
+					       enum protocol_types protocol,
+					       const DATA_BLOB preauth_hash);
+
 struct smb2_signing_key {
 	DATA_BLOB blob;
 	union {
