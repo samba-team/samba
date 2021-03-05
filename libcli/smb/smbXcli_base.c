@@ -151,7 +151,7 @@ struct smbXcli_conn {
 struct smb2cli_session {
 	uint64_t session_id;
 	uint16_t session_flags;
-	DATA_BLOB application_key;
+	struct smb2_signing_key *application_key;
 	struct smb2_signing_key *signing_key;
 	bool should_sign;
 	bool should_encrypt;
@@ -5567,6 +5567,7 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_conn *conn)
 {
 	struct smbXcli_session *session;
+	NTSTATUS status;
 
 	session = talloc_zero(mem_ctx, struct smbXcli_session);
 	if (session == NULL) {
@@ -5579,26 +5580,28 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(session, smbXcli_session_destructor);
 
-	session->smb2->signing_key = talloc_zero(session,
-						 struct smb2_signing_key);
-	if (session->smb2->signing_key == NULL) {
+	status = smb2_signing_key_sign_create(session->smb2,
+					      conn->smb2.server.sign_algo,
+					      NULL, /* no master key */
+					      NULL, /* derivations */
+					      &session->smb2->signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
 		return NULL;
 	}
-	talloc_set_destructor(session->smb2->signing_key,
-			      smb2_signing_key_destructor);
 
 	DLIST_ADD_END(conn->sessions, session);
 	session->conn = conn;
 
-	session->smb2_channel.signing_key =
-		talloc_zero(session, struct smb2_signing_key);
-	if (session->smb2_channel.signing_key == NULL) {
+	status = smb2_signing_key_sign_create(session,
+					      conn->smb2.server.sign_algo,
+					      NULL, /* no master key */
+					      NULL, /* derivations */
+					      &session->smb2_channel.signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
 		return NULL;
 	}
-	talloc_set_destructor(session->smb2_channel.signing_key,
-			      smb2_signing_key_destructor);
 
 	memcpy(session->smb2_channel.preauth_sha512,
 	       conn->smb2.preauth_sha512,
@@ -5702,7 +5705,10 @@ bool smbXcli_session_is_authenticated(struct smbXcli_session *session)
 	 * at auth time.
 	 */
 	if (session->conn->protocol >= PROTOCOL_SMB2_02) {
-		application_key = &session->smb2->application_key;
+		if (!smb2_signing_key_valid(session->smb2->application_key)) {
+			return false;
+		}
+		application_key = &session->smb2->application_key->blob;
 	} else {
 		application_key = &session->smb1.application_key;
 	}
@@ -5806,7 +5812,10 @@ NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
 	}
 
 	if (session->conn->protocol >= PROTOCOL_SMB2_02) {
-		application_key = &session->smb2->application_key;
+		if (!smb2_signing_key_valid(session->smb2->application_key)) {
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
+		application_key = &session->smb2->application_key->blob;
 	} else {
 		application_key = &session->smb1.application_key;
 	}
@@ -6038,7 +6047,6 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 {
 	struct smbXcli_conn *conn = session->conn;
 	uint16_t no_sign_flags = 0;
-	uint8_t session_key[16];
 	bool check_signature = true;
 	uint32_t hdr_flags;
 	NTSTATUS status;
@@ -6087,119 +6095,47 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 						  conn->protocol,
 						  preauth_hash);
 
-	ZERO_STRUCT(session_key);
-	memcpy(session_key, _session_key.data,
-	       MIN(_session_key.length, sizeof(session_key)));
-
-	session->smb2->signing_key->blob =
-		data_blob_talloc(session->smb2->signing_key,
-				 session_key,
-				 sizeof(session_key));
-	if (!smb2_signing_key_valid(session->smb2->signing_key)) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_sign_create(session->smb2,
+					      conn->smb2.server.sign_algo,
+					      &_session_key,
+					      derivations.signing,
+					      &session->smb2->signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.signing;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     session->smb2->signing_key->blob.data,
-					     session->smb2->signing_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	status = smb2_signing_key_cipher_create(session->smb2,
+						conn->smb2.server.cipher,
+						&_session_key,
+						derivations.cipher_c2s,
+						&session->smb2->encryption_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	session->smb2->encryption_key =
-		talloc_zero(session, struct smb2_signing_key);
-	if (session->smb2->encryption_key == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(session->smb2->encryption_key,
-			      smb2_signing_key_destructor);
-
-	session->smb2->encryption_key->blob =
-		data_blob_dup_talloc(session->smb2->encryption_key,
-				     session->smb2->signing_key->blob);
-	if (!smb2_signing_key_valid(session->smb2->encryption_key)) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_cipher_create(session->smb2,
+						conn->smb2.server.cipher,
+						&_session_key,
+						derivations.cipher_s2c,
+						&session->smb2->decryption_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.cipher_c2s;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     session->smb2->encryption_key->blob.data,
-					     session->smb2->encryption_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	status = smb2_signing_key_sign_create(session->smb2,
+					      conn->smb2.server.sign_algo,
+					      &_session_key,
+					      derivations.application,
+					      &session->smb2->application_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	session->smb2->decryption_key =
-		talloc_zero(session, struct smb2_signing_key);
-	if (session->smb2->decryption_key == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(session->smb2->decryption_key,
-			      smb2_signing_key_destructor);
-
-	session->smb2->decryption_key->blob =
-		data_blob_dup_talloc(session->smb2->decryption_key,
-				     session->smb2->signing_key->blob);
-	if (!smb2_signing_key_valid(session->smb2->decryption_key)) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.cipher_s2c;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     session->smb2->decryption_key->blob.data,
-					     session->smb2->decryption_key->blob.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	session->smb2->application_key =
-		data_blob_dup_talloc(session,
-				     session->smb2->signing_key->blob);
-	if (session->smb2->application_key.data == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (conn->protocol >= PROTOCOL_SMB2_24) {
-		const struct smb2_signing_derivation *d = derivations.application;
-
-		status = smb2_key_derivation(session_key, sizeof(session_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     session->smb2->application_key.data,
-					     session->smb2->application_key.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-	ZERO_STRUCT(session_key);
-
-	session->smb2_channel.signing_key->blob =
-		data_blob_dup_talloc(session->smb2_channel.signing_key,
-				     session->smb2->signing_key->blob);
-	if (!smb2_signing_key_valid(session->smb2_channel.signing_key)) {
-		return NT_STATUS_NO_MEMORY;
+	status = smb2_signing_key_copy(session,
+				       session->smb2->signing_key,
+				       &session->smb2_channel.signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	check_signature = conn->mandatory_signing;
@@ -6290,6 +6226,7 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 					struct smbXcli_session **_session2)
 {
 	struct smbXcli_session *session2;
+	NTSTATUS status;
 
 	if (!smb2_signing_key_valid(session1->smb2->signing_key)) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -6313,14 +6250,15 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_END(conn->sessions, session2);
 	session2->conn = conn;
 
-	session2->smb2_channel.signing_key =
-		talloc_zero(session2, struct smb2_signing_key);
-	if (session2->smb2_channel.signing_key == NULL) {
+	status = smb2_signing_key_sign_create(session2,
+					      conn->smb2.server.sign_algo,
+					      NULL, /* no master key */
+					      NULL, /* derivations */
+					      &session2->smb2_channel.signing_key);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session2);
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_destructor(session2->smb2_channel.signing_key,
-			      smb2_signing_key_destructor);
 
 	memcpy(session2->smb2_channel.preauth_sha512,
 	       conn->smb2.preauth_sha512,
