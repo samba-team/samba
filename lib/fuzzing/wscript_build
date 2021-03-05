@@ -123,6 +123,11 @@ bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  deps='fuzzing ldb afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_ldb_comparison_fold',
+                 source='fuzz_ldb_comparison_fold.c',
+                 deps='fuzzing ldb afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_dcerpc_parse_binding',
                  source='fuzz_dcerpc_parse_binding.c',
                  deps='fuzzing dcerpc afl-fuzz-main',
