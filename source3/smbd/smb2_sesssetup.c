@@ -203,23 +203,15 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	struct smbXsrv_session_auth0 *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
 	size_t i;
-	struct _derivation {
-		DATA_BLOB label;
-		DATA_BLOB context;
+	struct smb2_signing_derivations derivations = {
+		.signing = NULL,
 	};
-	struct {
-		struct _derivation signing;
-		struct _derivation encryption;
-		struct _derivation decryption;
-		struct _derivation application;
-	} derivation = { };
+	DATA_BLOB preauth_hash = data_blob_null;
 
 	*_auth = NULL;
 
 	if (xconn->protocol >= PROTOCOL_SMB3_10) {
 		struct smbXsrv_preauth *preauth;
-		struct _derivation *d;
-		DATA_BLOB p;
 		gnutls_hash_hd_t hash_hnd;
 		int rc;
 
@@ -247,44 +239,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		}
 		gnutls_hash_deinit(hash_hnd, preauth->sha512_value);
 
-		p = data_blob_const(preauth->sha512_value,
+		preauth_hash = data_blob_const(preauth->sha512_value,
 				    sizeof(preauth->sha512_value));
-
-		d = &derivation.signing;
-		d->label = data_blob_string_const_null("SMBSigningKey");
-		d->context = p;
-
-		d = &derivation.decryption;
-		d->label = data_blob_string_const_null("SMBC2SCipherKey");
-		d->context = p;
-
-		d = &derivation.encryption;
-		d->label = data_blob_string_const_null("SMBS2CCipherKey");
-		d->context = p;
-
-		d = &derivation.application;
-		d->label = data_blob_string_const_null("SMBAppKey");
-		d->context = p;
-
-	} else if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d;
-
-		d = &derivation.signing;
-		d->label = data_blob_string_const_null("SMB2AESCMAC");
-		d->context = data_blob_string_const_null("SmbSign");
-
-		d = &derivation.decryption;
-		d->label = data_blob_string_const_null("SMB2AESCCM");
-		d->context = data_blob_string_const_null("ServerIn ");
-
-		d = &derivation.encryption;
-		d->label = data_blob_string_const_null("SMB2AESCCM");
-		d->context = data_blob_string_const_null("ServerOut");
-
-		d = &derivation.application;
-		d->label = data_blob_string_const_null("SMB2APP");
-		d->context = data_blob_string_const_null("SmbRpc");
 	}
+
+	smb2_signing_derivations_fill_const_stack(&derivations,
+						  xconn->protocol,
+						  preauth_hash);
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    (xconn->smb2.server.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED))
@@ -356,7 +317,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d = &derivation.signing;
+		const struct smb2_signing_derivation *d = derivations.signing;
 
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
@@ -369,7 +330,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d = &derivation.decryption;
+		const struct smb2_signing_derivation *d = derivations.cipher_c2s;
 
 		x->global->decryption_key =
 			talloc_zero(x->global, struct smb2_signing_key);
@@ -400,7 +361,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d = &derivation.encryption;
+		const struct smb2_signing_derivation *d = derivations.cipher_s2c;
 		size_t nonce_size;
 
 		x->global->encryption_key =
@@ -466,7 +427,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	talloc_keep_secret(x->global->application_key.data);
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d = &derivation.application;
+		const struct smb2_signing_derivation *d = derivations.application;
 
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
@@ -670,21 +631,16 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	struct smbXsrv_channel_global0 *c = NULL;
 	uint8_t session_key[16];
 	size_t i;
-	struct _derivation {
-		DATA_BLOB label;
-		DATA_BLOB context;
+	struct smb2_signing_derivations derivations = {
+		.signing = NULL,
 	};
-	struct {
-		struct _derivation signing;
-	} derivation = { };
+	DATA_BLOB preauth_hash = data_blob_null;
 	bool ok;
 
 	*_auth = NULL;
 
 	if (xconn->protocol >= PROTOCOL_SMB3_10) {
 		struct smbXsrv_preauth *preauth;
-		struct _derivation *d;
-		DATA_BLOB p;
 		gnutls_hash_hd_t hash_hnd = NULL;
 		int rc;
 
@@ -713,20 +669,13 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		}
 		gnutls_hash_deinit(hash_hnd, preauth->sha512_value);
 
-		p = data_blob_const(preauth->sha512_value,
+		preauth_hash = data_blob_const(preauth->sha512_value,
 				    sizeof(preauth->sha512_value));
-
-		d = &derivation.signing;
-		d->label = data_blob_string_const_null("SMBSigningKey");
-		d->context = p;
-
-	} else if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d;
-
-		d = &derivation.signing;
-		d->label = data_blob_string_const_null("SMB2AESCMAC");
-		d->context = data_blob_string_const_null("SmbSign");
 	}
+
+	smb2_signing_derivations_fill_const_stack(&derivations,
+						  xconn->protocol,
+						  preauth_hash);
 
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -768,7 +717,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	talloc_keep_secret(c->signing_key->blob.data);
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
-		struct _derivation *d = &derivation.signing;
+		const struct smb2_signing_derivation *d = derivations.signing;
 
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
