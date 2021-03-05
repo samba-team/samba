@@ -298,12 +298,8 @@ static bool smb2_setup_nbt_length(struct iovec *vector, int count)
 
 static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
 {
-	if (req->first_key.length > 0) {
-		data_blob_clear_free(&req->first_key);
-	}
-	if (req->last_key.length > 0) {
-		data_blob_clear_free(&req->last_key);
-	}
+	TALLOC_FREE(req->first_enc_key);
+	TALLOC_FREE(req->last_sign_key);
 	return 0;
 }
 
@@ -1934,27 +1930,18 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	 * we need to sign/encrypt here with the last/first key we remembered
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
-		struct smb2_signing_key key = {
-			.blob = req->first_key,
-		};
-		status = smb2_signing_encrypt_pdu(&key,
+		status = smb2_signing_encrypt_pdu(req->first_enc_key,
 					xconn->smb2.server.cipher,
 					firsttf,
 					nreq->out.vector_count - first_idx);
-		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-	} else if (req->last_key.length > 0) {
-		struct smb2_signing_key key = {
-			.blob = req->last_key,
-		};
-
-		status = smb2_signing_sign_pdu(&key,
+	} else if (smb2_signing_key_valid(req->last_sign_key)) {
+		status = smb2_signing_sign_pdu(req->last_sign_key,
 					       xconn->protocol,
 					       outhdr_v,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
-		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2075,9 +2062,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		if (req->first_key.length > 0) {
-			data_blob_clear_free(&req->first_key);
-		}
+		TALLOC_FREE(req->first_enc_key);
 
 		req->current_idx = 1;
 
@@ -2108,9 +2093,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 			SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
 		}
 	}
-	if (req->last_key.length > 0) {
-		data_blob_clear_free(&req->last_key);
-	}
+	TALLOC_FREE(req->last_sign_key);
 
 	/*
 	 * smbd_smb2_request_pending_timer() just send a packet
@@ -3487,7 +3470,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	if (req->do_encryption &&
 	    (firsttf->iov_len == 0) &&
-	    (req->first_key.length == 0) &&
+	    (!smb2_signing_key_valid(req->first_enc_key)) &&
 	    (req->session != NULL) &&
 	    smb2_signing_key_valid(req->session->global->encryption_key))
 	{
@@ -3516,10 +3499,11 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		 * we are sure that we do not change
 		 * the header again.
 		 */
-		req->first_key = data_blob_dup_talloc(req,
-						      encryption_key->blob);
-		if (req->first_key.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		status = smb2_signing_key_copy(req,
+					       encryption_key,
+					       &req->first_enc_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		tf = talloc_zero_array(req, uint8_t,
@@ -3538,32 +3522,26 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	if ((req->current_idx > SMBD_SMB2_NUM_IOV_PER_REQ) &&
-	    (req->last_key.length > 0) &&
+	    (smb2_signing_key_valid(req->last_sign_key)) &&
 	    (firsttf->iov_len == 0))
 	{
 		int last_idx = req->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
 		struct iovec *lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
-		struct smb2_signing_key key = {
-			.blob = req->last_key,
-		};
 
 		/*
 		 * As we are sure the header of the last request in the
 		 * compound chain will not change, we can to sign here
 		 * with the last signing key we remembered.
 		 */
-		status = smb2_signing_sign_pdu(&key,
+		status = smb2_signing_sign_pdu(req->last_sign_key,
 					       xconn->protocol,
 					       lasthdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
-		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 	}
-	if (req->last_key.length > 0) {
-		data_blob_clear_free(&req->last_key);
-	}
+	TALLOC_FREE(req->last_sign_key);
 
 	SMBPROFILE_IOBYTES_ASYNC_END(req->profile,
 		iov_buflen(outhdr, SMBD_SMB2_NUM_IOV_PER_REQ-1));
@@ -3595,10 +3573,11 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			 * we are sure that we do not change
 			 * the header again.
 			 */
-			req->last_key = data_blob_dup_talloc(req,
-							     signing_key->blob);
-			if (req->last_key.data == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			status = smb2_signing_key_copy(req,
+						       signing_key,
+						       &req->last_sign_key);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 		}
 
@@ -3631,14 +3610,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 * now check if we need to sign the current response
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
-		struct smb2_signing_key key = {
-			.blob = req->first_key,
-		};
-		status = smb2_signing_encrypt_pdu(&key,
+		status = smb2_signing_encrypt_pdu(req->first_enc_key,
 					xconn->smb2.server.cipher,
 					firsttf,
 					req->out.vector_count - first_idx);
-		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -3655,9 +3630,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return status;
 		}
 	}
-	if (req->first_key.length > 0) {
-		data_blob_clear_free(&req->first_key);
-	}
+	TALLOC_FREE(req->first_enc_key);
 
 	if (req->preauth != NULL) {
 		gnutls_hash_hd_t hash_hnd = NULL;

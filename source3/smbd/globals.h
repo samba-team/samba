@@ -742,12 +742,12 @@ struct smbd_smb2_request {
 	 * the encryption key for the whole
 	 * compound chain
 	 */
-	DATA_BLOB first_key;
+	struct smb2_signing_key *first_enc_key;
 	/*
 	 * the signing key for the last
 	 * request/response of a compound chain
 	 */
-	DATA_BLOB last_key;
+	struct smb2_signing_key *last_sign_key;
 	struct smbXsrv_preauth *preauth;
 
 	struct timeval request_time;
