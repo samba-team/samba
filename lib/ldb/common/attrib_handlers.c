@@ -335,8 +335,8 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
 			break;
 		if (*s1 == ' ') {
-			while (n1 && s1[0] == s1[1]) { s1++; n1--; }
-			while (n2 && s2[0] == s2[1]) { s2++; n2--; }
+			while (n1 > 1 && s1[0] == s1[1]) { s1++; n1--; }
+			while (n2 > 1 && s2[0] == s2[1]) { s2++; n2--; }
 		}
 		s1++; s2++;
 		n1--; n2--;
