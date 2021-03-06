@@ -1002,6 +1002,10 @@ int messaging_dgm_init(struct tevent_context *ev,
 		return EEXIST;
 	}
 
+	if ((socket_dir == NULL) || (lockfile_dir == NULL)) {
+		return EINVAL;
+	}
+
 	ctx = talloc_zero(NULL, struct messaging_dgm_context);
 	if (ctx == NULL) {
 		goto fail_nomem;
