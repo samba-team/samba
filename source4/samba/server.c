@@ -828,7 +828,7 @@ static int binary_smbd_main(const char *binary_name,
 			 * satisfy static checkers
 			 */
 			return 1;
-			}
+		}
 	}
 
 	se = tevent_add_signal(state->event_ctx,
