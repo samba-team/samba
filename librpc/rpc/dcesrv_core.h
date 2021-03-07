@@ -115,7 +115,7 @@ struct dcesrv_call_state {
 	 * and skip the reply
 	 *
 	 * this is only allowed to the backend when DCESRV_CALL_STATE_FLAG_MAY_ASYNC
-	 * is alerady set by the frontend
+	 * is already set by the frontend
 	 *
 	 * the backend then needs to call dcesrv_reply() when it's
 	 * ready to send the reply
