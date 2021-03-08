@@ -3896,6 +3896,46 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			state->smb2.signing_skipped = true;
 			signing_key = NULL;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_REQUEST_OUT_OF_SEQUENCE)) {
+			/*
+			 * if the server returns
+			 * NT_STATUS_REQUEST_OUT_OF_SEQUENCE for a session setup
+			 * request, the response is not signed and we should
+			 * propagate the NT_STATUS_REQUEST_OUT_OF_SEQUENCE
+			 * status to the caller
+			 */
+			if (opcode == SMB2_OP_SESSSETUP) {
+				state->smb2.signing_skipped = true;
+				signing_key = NULL;
+			}
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			/*
+			 * if the server returns NT_STATUS_NOT_SUPPORTED
+			 * for a session setup request, the response is not
+			 * signed and we should propagate the NT_STATUS_NOT_SUPPORTED
+			 * status to the caller.
+			 */
+			if (opcode == SMB2_OP_SESSSETUP) {
+				state->smb2.signing_skipped = true;
+				signing_key = NULL;
+			}
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			/*
+			 * if the server returns
+			 * NT_STATUS_ACCESS_DENIED for a session setup
+			 * request, the response is not signed and we should
+			 * propagate the NT_STATUS_ACCESS_DENIED
+			 * status to the caller without disconnecting
+			 * the connection because we where not able to
+			 * verify the response signature.
+			 */
+			if (opcode == SMB2_OP_SESSSETUP) {
+				state->smb2.signing_skipped = true;
+				signing_key = NULL;
+			}
+		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 			/*
