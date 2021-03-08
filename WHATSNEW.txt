@@ -1,4 +1,80 @@
                    ==============================
+                   Release Notes for Samba 4.13.5
+                           March 09, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.4
+--------------------
+
+o  Trever L. Adams <trever.adams@gmail.com>
+   * BUG 14634: s3:modules:vfs_virusfilter: Recent talloc changes cause infinite
+     start-up failure.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13992: s3: libsmb: Add missing cli_tdis() in error path if encryption
+     setup failed on temp proxy connection.
+   * BUG 14604: smbd: In conn_force_tdis_done() when forcing a connection closed
+     force a full reload of services.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14593: dbcheck: Check Deleted Objects and reduce noise in reports about
+     expired tombstones.
+
+o  Ralph Boehme <slow@samba.org
+   * BUG 14503: s3: Fix fcntl waf configure check.
+   * BUG 14602: s3/auth: Implement "winbind:ignore domains".
+   * BUG 14617: smbd: Use fsp->conn->session_info for the initial
+     delete-on-close token.
+
+o  Peter Eriksson <pen@lysator.liu.se>
+   * BUG 14648: s3: VFS: nfs4_acls. Add missing TALLOC_FREE(frame) in error
+     path.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14624: classicupgrade: Treat old never expires value right.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14636: g_lock: Fix uninitalized variable reads.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13898: s3:pysmbd: Fix fd leak in py_smbd_create_file().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14625: lib:util: Avoid free'ing our own pointer.
+
+o  Paul Wise <pabs3@bonedaddy.net>
+   * BUG 12505: HEIMDAL: krb5_storage_free(NULL) should work.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.13.4
                           January 26, 2021
                    ==============================
@@ -65,8 +141,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
