@@ -1,28 +1,4 @@
-^samba3.smb2.session.*.bind_negative_smb3signCtoHs
+# These tests fail with INVALID_PARAMETER as
+# we required the same client guid for session binds
 ^samba3.smb2.session.*.bind_negative_smb3signCtoHd
-^samba3.smb2.session.*.bind_negative_smb3signCtoGs
-^samba3.smb2.session.*.bind_negative_smb3signCtoGd
-^samba3.smb2.session.*.bind_negative_smb3signHtoCs
 ^samba3.smb2.session.*.bind_negative_smb3signHtoCd
-^samba3.smb2.session.*.bind_negative_smb3signHtoGs
-^samba3.smb2.session.*.bind_negative_smb3signHtoGd
-^samba3.smb2.session.*.bind_negative_smb3signGtoCs
-^samba3.smb2.session.*.bind_negative_smb3signGtoCd
-^samba3.smb2.session.*.bind_negative_smb3signGtoHs
-^samba3.smb2.session.*.bind_negative_smb3signGtoHd
-^samba3.smb2.session.*.bind_negative_smb3sneGtoCs
-^samba3.smb2.session.*.bind_negative_smb3sneGtoCd
-^samba3.smb2.session.*.bind_negative_smb3sneGtoHs
-^samba3.smb2.session.*.bind_negative_smb3sneGtoHd
-^samba3.smb2.session.*.bind_negative_smb3sneCtoGs
-^samba3.smb2.session.*.bind_negative_smb3sneCtoGd
-^samba3.smb2.session.*.bind_negative_smb3sneHtoGs
-^samba3.smb2.session.*.bind_negative_smb3sneHtoGd
-^samba3.smb2.session.*.bind_negative_smb3signC30toGs
-^samba3.smb2.session.*.bind_negative_smb3signC30toGd
-^samba3.smb2.session.*.bind_negative_smb3signH2XtoGs
-^samba3.smb2.session.*.bind_negative_smb3signH2XtoGd
-^samba3.smb2.session.*.bind_negative_smb3signGtoC30s
-^samba3.smb2.session.*.bind_negative_smb3signGtoC30d
-^samba3.smb2.session.*.bind_negative_smb3signGtoH2Xs
-^samba3.smb2.session.*.bind_negative_smb3signGtoH2Xd

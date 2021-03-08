@@ -691,16 +691,6 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	state->in_security_buffer = in_security_buffer;
 
 	if (in_flags & SMB2_SESSION_FLAG_BINDING) {
-		if (smb2req->xconn->protocol < PROTOCOL_SMB3_00) {
-			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (!smb2req->xconn->client->server_multi_channel_enabled) {
-			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
-			return tevent_req_post(req, ev);
-		}
-
 		if (in_session_id == 0) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
@@ -708,6 +698,29 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 
 		if (smb2req->session == NULL) {
 			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
+			return tevent_req_post(req, ev);
+		}
+
+		if ((smb2req->session->global->signing_algo >= SMB2_SIGNING_AES128_GMAC) &&
+		    (smb2req->xconn->smb2.server.sign_algo != smb2req->session->global->signing_algo))
+		{
+			tevent_req_nterror(req, NT_STATUS_REQUEST_OUT_OF_SEQUENCE);
+			return tevent_req_post(req, ev);
+		}
+		if ((smb2req->xconn->smb2.server.sign_algo >= SMB2_SIGNING_AES128_GMAC) &&
+		    (smb2req->session->global->signing_algo != smb2req->xconn->smb2.server.sign_algo))
+		{
+			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (smb2req->xconn->protocol < PROTOCOL_SMB3_00) {
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (!smb2req->xconn->client->server_multi_channel_enabled) {
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 			return tevent_req_post(req, ev);
 		}
 
@@ -723,17 +736,19 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		if (smb2req->session->global->signing_algo
-		    != smb2req->xconn->smb2.server.sign_algo)
+		if (smb2req->session->global->encryption_cipher
+		    != smb2req->xconn->smb2.server.cipher)
 		{
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
 
-		if (smb2req->session->global->encryption_cipher
-		    != smb2req->xconn->smb2.server.cipher)
-		{
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		status = smb2req->session->status;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_BAD_LOGON_SESSION_STATE)) {
+			/*
+			 * This comes from smb2srv_session_lookup_global().
+			 */
+			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
 			return tevent_req_post(req, ev);
 		}
 
