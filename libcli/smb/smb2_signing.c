@@ -73,8 +73,16 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	gnutls_mac_algorithm_t hmac_algo = GNUTLS_MAC_UNKNOWN;
 	int i;
 
+	/*
+	 * We expect
+	 * - SMB2 HDR
+	 * - SMB2 BODY FIXED
+	 * - (optional) SMB2 BODY DYN
+	 * - (optional) PADDING
+	 */
 	SMB_ASSERT(count >= 2);
 	SMB_ASSERT(vector[0].iov_len == SMB2_HDR_BODY);
+	SMB_ASSERT(count <= 4);
 
 	switch (sign_algo_id) {
 	case SMB2_SIGNING_AES128_CMAC:
@@ -171,13 +179,16 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 	uint8_t res[16];
 	int i;
 
-	if (count < 2) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (vector[0].iov_len != SMB2_HDR_BODY) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/*
+	 * We expect
+	 * - SMB2 HDR
+	 * - SMB2 BODY FIXED
+	 * - (optional) SMB2 BODY DYN
+	 * - (optional) PADDING
+	 */
+	SMB_ASSERT(count >= 2);
+	SMB_ASSERT(vector[0].iov_len == SMB2_HDR_BODY);
+	SMB_ASSERT(count <= 4);
 
 	hdr = (uint8_t *)vector[0].iov_base;
 
@@ -288,8 +299,16 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 	uint8_t res[16];
 	NTSTATUS status;
 
+	/*
+	 * We expect
+	 * - SMB2 HDR
+	 * - SMB2 BODY FIXED
+	 * - (optional) SMB2 BODY DYN
+	 * - (optional) PADDING
+	 */
 	SMB_ASSERT(count >= 2);
 	SMB_ASSERT(vector[0].iov_len == SMB2_HDR_BODY);
+	SMB_ASSERT(count <= 4);
 
 	hdr = (const uint8_t *)vector[0].iov_base;
 
