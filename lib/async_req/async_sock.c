@@ -652,8 +652,7 @@ static void wait_for_read_done(struct tevent_context *ev,
 		private_data, struct tevent_req);
 	struct wait_for_read_state *state =
 	    tevent_req_data(req, struct wait_for_read_state);
-	ssize_t nread;
-	char c;
+	int ret, available;
 
 	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
@@ -664,26 +663,20 @@ static void wait_for_read_done(struct tevent_context *ev,
 		return;
 	}
 
-	nread = recv(state->fd, &c, 1, MSG_PEEK);
+	ret = ioctl(state->fd, FIONREAD, &available);
 
-	if (nread == 0) {
-		tevent_req_error(req, EPIPE);
-		return;
-	}
-
-	if ((nread == -1) && (errno == EINTR)) {
+	if ((ret == -1) && (errno == EINTR)) {
 		/* come back later */
 		return;
 	}
 
-	if ((nread == -1) && (errno == ENOTSOCK)) {
-		/* Ignore this specific error on pipes */
-		tevent_req_done(req);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
 		return;
 	}
 
-	if (nread == -1) {
-		tevent_req_error(req, errno);
+	if (available == 0) {
+		tevent_req_error(req, EPIPE);
 		return;
 	}
 
