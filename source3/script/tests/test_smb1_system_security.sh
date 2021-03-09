@@ -35,7 +35,7 @@ smb1_system_security() {
 testit "grant SeSecurityPrivilege" $NET rpc rights grant $USERNAME SeSecurityPrivilege -U $USERNAME%$PASSWORD -I $SERVER_IP || failed=`expr $failed + 1`
 
 # Run the test.
-testit "smb1-system-secuirity" smb1_system_security || failed=`expr $failed + 1`
+testit "smb1-system-security" smb1_system_security || failed=`expr $failed + 1`
 
 # Revoke SeSecurityPrivilege
 testit "revoke SeSecurityPrivilege" $NET rpc rights revoke $USERNAME SeSecurityPrivilege -U $USERNAME%$PASSWORD -I $SERVER_IP || failed=`expr $failed + 1`
