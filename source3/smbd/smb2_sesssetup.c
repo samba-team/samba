@@ -716,6 +716,13 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
+		if (smb2req->session->global->connection_dialect
+		    != smb2req->xconn->smb2.server.dialect)
+		{
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
 		status = smbXsrv_session_find_channel(smb2req->session,
 						      smb2req->xconn,
 						      &c);
@@ -724,31 +731,6 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 				goto auth;
 			}
 			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
-			return tevent_req_post(req, ev);
-		}
-
-		/*
-		 * OLD: 3.00 NEW 3.02 => INVALID_PARAMETER
-		 * OLD: 3.02 NEW 3.00 => INVALID_PARAMETER
-		 * OLD: 2.10 NEW 3.02 => ACCESS_DENIED
-		 * OLD: 3.02 NEW 2.10 => ACCESS_DENIED
-		 */
-		if (smb2req->session->global->connection_dialect
-		    < SMB2_DIALECT_REVISION_222)
-		{
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-		if (smb2req->xconn->smb2.server.dialect
-		    < SMB2_DIALECT_REVISION_222)
-		{
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-		if (smb2req->session->global->connection_dialect
-		    != smb2req->xconn->smb2.server.dialect)
-		{
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
 
