@@ -13,7 +13,8 @@ conf.CHECK_CFG(package='gnutls',
                      msg='Checking for GnuTLS >= %s' % gnutls_required_version,
                      mandatory=True)
 
-gnutls_version = conf.cmd_and_log(conf.env.PKGCONFIG + ['--modversion', 'gnutls']).strip()
+gnutls_version_str = conf.cmd_and_log(conf.env.PKGCONFIG + ['--modversion', 'gnutls']).strip()
+gnutls_version = parse_version(gnutls_version_str)
 
 # Define gnutls as a system library
 conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
@@ -33,8 +34,11 @@ conf.CHECK_FUNCS_IN('gnutls_set_default_priority_append', 'gnutls')
 #
 # 3.6.10 - 3.6.14 have a severe memory leak with AES-CCM
 #     https://gitlab.com/gnutls/gnutls/-/merge_requests/1278
-if (parse_version(gnutls_version) > parse_version('3.6.14')):
-    conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
+if (gnutls_version > parse_version('3.6.10')):
+    if conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls'):
+        conf.DEFINE('ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM', 1)
+        if (gnutls_version > parse_version('3.6.14')):
+            conf.DEFINE('ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM', 1)
 
 # Check if gnutls has fips mode support
 # gnutls_fips140_mode_enabled() is available since 3.3.0
