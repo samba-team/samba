@@ -55,8 +55,14 @@ struct smb2_negotiate_context *smb2_negotiate_context_find(const struct smb2_neg
 							   uint16_t type);
 #define WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK	31
 
+struct smb3_encryption_capabilities {
+#define SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS 2
+	uint16_t num_algos;
+	uint16_t algos[SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS];
+};
+
 struct smb311_capabilities {
-	uint8_t dummy;
+	struct smb3_encryption_capabilities encryption;
 };
 
 #endif /* _LIBCLI_SMB_SMB2_NEGOTIATE_BLOB_H_ */
