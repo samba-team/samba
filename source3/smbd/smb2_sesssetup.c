@@ -810,9 +810,6 @@ auth:
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
-		if (!(in_flags & SMB2_SESSION_FLAG_BINDING)) {
-			state->session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		}
 	}
 
 	status = smbXsrv_session_find_channel(smb2req->session,
@@ -820,6 +817,10 @@ auth:
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
+	}
+
+	if (!(in_flags & SMB2_SESSION_FLAG_BINDING)) {
+		state->session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 
 	status = smbXsrv_session_find_auth(state->session, smb2req->xconn,
