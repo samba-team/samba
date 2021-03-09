@@ -1674,7 +1674,7 @@ class cmd_admxload(Command):
                         'in the Group Policy Management Console. You will '
                         'need to install these templates '
                         'from https://www.microsoft.com/en-us/download/102157 '
-                        'to continue using Windows Administrative Templates. ')
+                        'to continue using Windows Administrative Templates.\n')
 
 class cmd_add_sudoers(Command):
     """Adds a Samba Sudoers Group Policy to the sysvol
