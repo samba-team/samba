@@ -723,6 +723,20 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
+		if (smb2req->session->global->signing_algo
+		    != smb2req->xconn->smb2.server.sign_algo)
+		{
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (smb2req->session->global->encryption_cipher
+		    != smb2req->xconn->smb2.server.cipher)
+		{
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
 		status = smbXsrv_session_find_channel(smb2req->session,
 						      smb2req->xconn,
 						      &c);
