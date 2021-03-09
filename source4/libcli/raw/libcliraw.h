@@ -26,6 +26,7 @@
 #include "libcli/raw/request.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "libcli/raw/interfaces.h"
+#include "libcli/smb/smb2_negotiate_context.h"
 
 struct smbcli_tree;  /* forward declare */
 struct smbcli_request;  /* forward declare */
@@ -105,6 +106,7 @@ struct smbcli_options {
 	struct GUID client_guid;
 	uint64_t max_credits;
 	unsigned int only_negprot;
+	struct smb311_capabilities smb3_capabilities;
 };
 
 /* this is the context for the client transport layer */
