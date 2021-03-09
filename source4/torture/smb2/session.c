@@ -23,6 +23,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/cmdline/popt_common.h"
@@ -1850,6 +1851,342 @@ done:
 	return ret;
 }
 
+static bool test_session_bind_auth_mismatch(struct torture_context *tctx,
+					    struct smb2_tree *tree1,
+					    const char *testname,
+					    struct cli_credentials *creds1,
+					    struct cli_credentials *creds2,
+					    bool creds2_require_ok)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo;
+	bool ret = false;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options options2;
+	struct smb2_transport *transport2 = NULL;
+	struct smb2_session *session1_1 = tree1->session;
+	struct smb2_session *session1_2 = NULL;
+	struct smb2_session *session2_1 = NULL;
+	struct smb2_session *session2_2 = NULL;
+	struct smb2_session *session3_1 = NULL;
+	uint32_t caps;
+	bool encrypted;
+	bool creds2_got_ok = false;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree1->smbXcli);
+
+	caps = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+
+	/*
+	 * We always want signing for this test!
+	 */
+	smb2cli_tcon_should_sign(tree1->smbXcli, true);
+	options2 = transport1->options;
+	options2.signing = SMB_SIGNING_REQUIRED;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s_%s.dat", testname,
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      creds1,
+			      &tree2,
+			      tctx->ev,
+			      &options2,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	session2_2 = tree2->session;
+	transport2 = tree2->session->transport;
+
+	/*
+	 * Now bind the 2nd transport connection to the 1st session
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1_2,
+					   creds1,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+
+	/* use the 1st connection, 1st session */
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	tree1->session = session1_1;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	/* use the 2nd connection, 1st session */
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	tree1->session = session1_2;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	tree1->session = session1_1;
+	status = smb2_util_close(tree1, *h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+	h1 = NULL;
+
+	/*
+	 * Create a 3rd session in order to check if the invalid (creds2)
+	 * are mapped to guest.
+	 */
+	session3_1 = smb2_session_init(transport1,
+				       lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				       tctx);
+	torture_assert(tctx, session3_1 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session3_1,
+					   creds2,
+					   0 /* previous_session_id */);
+	if (creds2_require_ok) {
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego worked");
+		creds2_got_ok = true;
+	} else if (NT_STATUS_IS_OK(status)) {
+		bool authentiated = smbXcli_session_is_authenticated(session3_1->smbXcli);
+		torture_assert(tctx, !authentiated, "Invalid credentials allowed!");
+		creds2_got_ok = true;
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_LOGON_FAILURE, ret, done,
+					"smb2_session_setup_spnego worked");
+	}
+
+	/*
+	 * Now bind the 1st transport connection to the 2nd session
+	 */
+	session2_1 = smb2_session_channel(transport1,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree1,
+					  session2_2);
+	torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
+
+	tree2->session = session2_1;
+	status = smb2_util_unlink(tree2, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_util_unlink worked on invalid channel");
+
+	status = smb2_session_setup_spnego(session2_1,
+					   creds2,
+					   0 /* previous_session_id */);
+	if (creds2_got_ok) {
+		/*
+		 * attaching with a different user (guest or anonymous) results
+		 * in ACCESS_DENIED.
+		 */
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED, ret, done,
+					"smb2_session_setup_spnego worked");
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_LOGON_FAILURE, ret, done,
+					"smb2_session_setup_spnego worked");
+	}
+
+	tree2->session = session2_1;
+	status = smb2_util_unlink(tree2, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_util_unlink worked on invalid channel");
+
+	tree2->session = session2_2;
+	status = smb2_util_unlink(tree2, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed");
+	status = smb2_util_unlink(tree2, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+					"smb2_util_unlink worked");
+	if (creds2_got_ok) {
+		/*
+		 * We got ACCESS_DENIED on the session bind
+		 * with a different user, now check that
+		 * the correct user can actually bind on
+		 * the same connection.
+		 */
+		TALLOC_FREE(session2_1);
+		session2_1 = smb2_session_channel(transport1,
+						  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+						  tree1,
+						  session2_2);
+		torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
+
+		status = smb2_session_setup_spnego(session2_1,
+						   creds1,
+						   0 /* previous_session_id */);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+		tree2->session = session2_1;
+		status = smb2_util_unlink(tree2, fname);
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+						"smb2_util_unlink worked");
+		tree2->session = session2_2;
+	}
+
+	tree1->session = session1_1;
+	status = smb2_util_unlink(tree1, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+					"smb2_util_unlink worked");
+
+	tree1->session = session1_2;
+	status = smb2_util_unlink(tree1, fname);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+					"smb2_util_unlink worked");
+
+	if (creds2_got_ok) {
+		/*
+		 * With valid credentials, there's no point to test a failing
+		 * reauth.
+		 */
+		ret = true;
+		goto done;
+	}
+
+	/*
+	 * Do a failing reauth the 2nd channel
+	 */
+	status = smb2_session_setup_spnego(session1_2,
+					   creds2,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_LOGON_FAILURE, ret, done,
+					"smb2_session_setup_spnego worked");
+
+	tree1->session = session1_1;
+	status = smb2_util_unlink(tree1, fname);
+	if (encrypted) {
+		torture_assert_goto(tctx, !smbXcli_conn_is_connected(transport1->conn), ret, done,
+						"smb2_util_unlink worked");
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+						"smb2_util_unlink worked");
+	}
+
+	tree1->session = session1_2;
+	status = smb2_util_unlink(tree1, fname);
+	if (encrypted) {
+		torture_assert_goto(tctx, !smbXcli_conn_is_connected(transport2->conn), ret, done,
+						"smb2_util_unlink worked");
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+						"smb2_util_unlink worked");
+	}
+
+	status = smb2_util_unlink(tree2, fname);
+	if (encrypted) {
+		torture_assert_goto(tctx, !smbXcli_conn_is_connected(transport1->conn), ret, done,
+						"smb2_util_unlink worked");
+		torture_assert_goto(tctx, !smbXcli_conn_is_connected(transport2->conn), ret, done,
+						"smb2_util_unlink worked");
+	} else {
+		torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done,
+						"smb2_util_unlink worked");
+	}
+
+	ret = true;
+done:
+	talloc_free(tree2);
+	tree1->session = session1_1;
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_util_unlink(tree1, fname);
+
+	talloc_free(tree1);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+static bool test_session_bind_invalid_auth(struct torture_context *tctx, struct smb2_tree *tree1)
+{
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct cli_credentials *invalid_credentials = NULL;
+	bool ret = false;
+
+	invalid_credentials = cli_credentials_init(tctx);
+	torture_assert(tctx, (invalid_credentials != NULL), "talloc error");
+	cli_credentials_set_username(invalid_credentials, "__none__invalid__none__", CRED_SPECIFIED);
+	cli_credentials_set_domain(invalid_credentials, "__none__invalid__none__", CRED_SPECIFIED);
+	cli_credentials_set_password(invalid_credentials, "__none__invalid__none__", CRED_SPECIFIED);
+	cli_credentials_set_realm(invalid_credentials, NULL, CRED_SPECIFIED);
+	cli_credentials_set_workstation(invalid_credentials, "", CRED_UNINITIALISED);
+
+	ret = test_session_bind_auth_mismatch(tctx, tree1, __func__,
+					      credentials,
+					      invalid_credentials,
+					      false);
+	return ret;
+}
+
+static bool test_session_bind_different_user(struct torture_context *tctx, struct smb2_tree *tree1)
+{
+	struct cli_credentials *credentials1 = popt_get_cmdline_credentials();
+	struct cli_credentials *credentials2 = torture_user2_credentials(tctx, tctx);
+	char *u1 = cli_credentials_get_unparsed_name(credentials1, tctx);
+	char *u2 = cli_credentials_get_unparsed_name(credentials2, tctx);
+	bool ret = false;
+	bool bval;
+
+	torture_assert(tctx, (credentials2 != NULL), "talloc error");
+	bval = cli_credentials_is_anonymous(credentials2);
+	if (bval) {
+		torture_skip(tctx, "valid user2 credentials are required");
+	}
+	bval = strequal(u1, u2);
+	if (bval) {
+		torture_skip(tctx, "different user2 credentials are required");
+	}
+
+	ret = test_session_bind_auth_mismatch(tctx, tree1, __func__,
+					      credentials1,
+					      credentials2,
+					      true);
+	return ret;
+}
+
 static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
 					       const char *testname,
 					       struct cli_credentials *credentials,
@@ -2304,6 +2641,8 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "expire_disconnect",
 				      test_session_expire_disconnect);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
+	torture_suite_add_1smb2_test(suite, "bind_invalid_auth", test_session_bind_invalid_auth);
+	torture_suite_add_1smb2_test(suite, "bind_different_user", test_session_bind_different_user);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb202", test_session_bind_negative_smb202);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb210", test_session_bind_negative_smb210);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb2to3", test_session_bind_negative_smb2to3);
