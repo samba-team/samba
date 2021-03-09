@@ -181,6 +181,16 @@ class GPOTests(tests.TestCase):
         self.assertEqual(result, after, 'check_safe_path() didn\'t'
                           ' correctly convert \\ to /')
 
+    def test_check_safe_path_typesafe_name(self):
+        path = '\\\\toady.suse.de\\SysVol\\toady.suse.de\\Policies\\' \
+               '{31B2F340-016D-11D2-945F-00C04FB984F9}\\GPT.INI'
+        expected_path = 'toady.suse.de/Policies/' \
+                        '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
+
+        result = check_safe_path(path)
+        self.assertEqual(result, expected_path,
+            'check_safe_path unable to detect variable case sysvol components')
+
     def test_gpt_ext_register(self):
         this_path = os.path.dirname(os.path.realpath(__file__))
         samba_path = os.path.realpath(os.path.join(this_path, '../../../'))
