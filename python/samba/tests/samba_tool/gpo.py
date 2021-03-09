@@ -802,10 +802,32 @@ class GpoCmdTestCase(SambaToolCmdTest):
         principal = etree.SubElement(listelement, 'principal')
         principal.text = 'fakeu'
         principal.attrib['type'] = 'user'
+        # Ensure an empty principal doesn't cause a crash
+        sudoers_entry = etree.SubElement(data, 'sudoers_entry')
+        command = etree.SubElement(sudoers_entry, 'command')
+        command.text = 'ALL'
+        user = etree.SubElement(sudoers_entry, 'user')
+        user.text = 'ALL'
+        # Ensure having dispersed principals still works
+        sudoers_entry = etree.SubElement(data, 'sudoers_entry')
+        command = etree.SubElement(sudoers_entry, 'command')
+        command.text = 'ALL'
+        user = etree.SubElement(sudoers_entry, 'user')
+        user.text = 'ALL'
+        listelement = etree.SubElement(sudoers_entry, 'listelement')
+        principal = etree.SubElement(listelement, 'principal')
+        principal.text = 'fakeu2'
+        principal.attrib['type'] = 'user'
+        listelement = etree.SubElement(sudoers_entry, 'listelement')
+        group = etree.SubElement(listelement, 'principal')
+        group.text = 'fakeg2'
+        group.attrib['type'] = 'group'
         ret = stage_file(vgp_xml, etree.tostring(stage, 'utf-8'))
         self.assertTrue(ret, 'Could not create the target %s' % vgp_xml)
 
         sudoer = 'fakeu ALL=(ALL) NOPASSWD: ALL'
+        sudoer2 = 'fakeu2,fakeg2% ALL=(ALL) NOPASSWD: ALL'
+        sudoer_no_principal = 'ALL ALL=(ALL) NOPASSWD: ALL'
         (result, out, err) = self.runsublevelcmd("gpo", ("manage",
                                                  "sudoers", "list"),
                                                  self.gpo_guid, "-H",
@@ -814,7 +836,44 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  "-U%s%%%s" %
                                                  (os.environ["USERNAME"],
                                                  os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers list failed')
         self.assertIn(sudoer, out, 'The test entry was not found!')
+        self.assertIn(sudoer2, out, 'The test entry was not found!')
+        self.assertIn(sudoer_no_principal, out,
+                      'The test entry was not found!')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "remove"),
+                                                 self.gpo_guid, sudoer2,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "remove"),
+                                                 self.gpo_guid,
+                                                 sudoer_no_principal,
+                                                 "-H", "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, 'Sudoers remove failed')
+
+        (result, out, err) = self.runsublevelcmd("gpo", ("manage",
+                                                 "sudoers", "list"),
+                                                 self.gpo_guid, "-H",
+                                                 "ldap://%s" %
+                                                 os.environ["SERVER"],
+                                                 "-U%s%%%s" %
+                                                 (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+        self.assertNotIn(sudoer2, out, 'The test entry was still found!')
+        self.assertNotIn(sudoer_no_principal, out,
+                      'The test entry was still found!')
 
         # Unstage the manifest.xml file
         unstage_file(vgp_xml)
