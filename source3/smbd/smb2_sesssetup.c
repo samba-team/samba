@@ -1115,6 +1115,21 @@ static void smbd_smb2_session_setup_wrap_setup_done(struct tevent_req *subreq)
 
 	state->error = status;
 
+	if (state->in_flags & SMB2_SESSION_FLAG_BINDING) {
+		status = smbXsrv_session_remove_channel(state->smb2req->session,
+							state->smb2req->xconn);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+		tevent_req_nterror(req, state->error);
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(state->error, NT_STATUS_USER_SESSION_DELETED)) {
+		tevent_req_nterror(req, state->error);
+		return;
+	}
+
 	subreq = smb2srv_session_shutdown_send(state, state->ev,
 					       state->smb2req->session,
 					       state->smb2req);

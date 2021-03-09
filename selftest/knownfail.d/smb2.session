@@ -1,7 +1,7 @@
-^samba3.smb2.session.*.bind_invalid_auth
 ^samba3.smb2.session.*.bind_negative_smb210
 ^samba3.smb2.session.*.bind_negative_smb2to3
 ^samba3.smb2.session.*.bind_negative_smb3to2
 ^samba3.smb2.session.*.bind_negative_smb3to3
 ^samba3.smb2.session.*.bind_negative_smb3encGtoC
 ^samba3.smb2.session.*.bind_different_user.ad_dc
+^samba3.smb2.session.*.bind_invalid_auth.ad_member_idmap_rid
