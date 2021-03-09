@@ -1859,7 +1859,10 @@ samba-tool gpo manage sudoers list {31B2F340-016D-11D2-945F-00C04FB984F9}
         for entry in data.findall('sudoers_entry'):
             command = entry.find('command').text
             user = entry.find('user').text
-            principals = entry.find('listelement').findall('principal')
+            listelements = entry.findall('listelement')
+            principals = []
+            for listelement in listelements:
+                principals.extend(listelement.findall('principal'))
             if len(principals) > 0:
                 uname = ','.join([u.text if u.attrib['type'] == 'user' \
                     else '%s%%' % u.text for u in principals])
@@ -1935,7 +1938,10 @@ samba-tool gpo manage sudoers remove {31B2F340-016D-11D2-945F-00C04FB984F9} 'fak
         for e in data.findall('sudoers_entry'):
             command = e.find('command').text
             user = e.find('user').text
-            principals = e.find('listelement').findall('principal')
+            listelements = e.findall('listelement')
+            principals = []
+            for listelement in listelements:
+                principals.extend(listelement.findall('principal'))
             if len(principals) > 0:
                 uname = ','.join([u.text if u.attrib['type'] == 'user' \
                     else '%s%%' % u.text for u in principals])
