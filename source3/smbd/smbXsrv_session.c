@@ -1552,6 +1552,55 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smbXsrv_session_remove_channel(struct smbXsrv_session *session,
+					struct smbXsrv_connection *xconn)
+{
+	struct smbXsrv_session_auth0 *a = NULL;
+	struct smbXsrv_channel_global0 *c = NULL;
+	NTSTATUS status;
+	bool need_update = false;
+
+	status = smbXsrv_session_find_auth(session, xconn, 0, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		a = NULL;
+	}
+	status = smbXsrv_session_find_channel(session, xconn, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		c = NULL;
+	}
+	if (session->global->num_channels <= 1) {
+		/*
+		 * The last channel is treated different
+		 */
+		c = NULL;
+	}
+
+	if (a != NULL) {
+		smbXsrv_session_auth0_destructor(a);
+		a->connection = NULL;
+		need_update = true;
+	}
+
+	if (c != NULL) {
+		struct smbXsrv_session_global0 *global = session->global;
+		ptrdiff_t n;
+
+		n = (c - global->channels);
+		if (n >= global->num_channels || n < 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		ARRAY_DEL_ELEMENT(global->channels, n, global->num_channels);
+		global->num_channels--;
+		need_update = true;
+	}
+
+	if (!need_update) {
+		return NT_STATUS_OK;
+	}
+
+	return smbXsrv_session_update(session);
+}
+
 struct smb2srv_session_shutdown_state {
 	struct tevent_queue *wait_queue;
 };
@@ -1988,10 +2037,7 @@ static int smbXsrv_session_disconnect_xconn_callback(struct db_record *local_rec
 	TDB_DATA val;
 	void *ptr = NULL;
 	struct smbXsrv_session *session = NULL;
-	struct smbXsrv_session_auth0 *a = NULL;
-	struct smbXsrv_channel_global0 *c = NULL;
 	NTSTATUS status;
-	bool need_update = false;
 
 	val = dbwrap_record_get_value(local_rec);
 	if (val.dsize != sizeof(ptr)) {
@@ -2007,56 +2053,15 @@ static int smbXsrv_session_disconnect_xconn_callback(struct db_record *local_rec
 	session = talloc_get_type_abort(ptr, struct smbXsrv_session);
 
 	session->db_rec = local_rec;
-
-	status = smbXsrv_session_find_auth(session, state->xconn, 0, &a);
+	status = smbXsrv_session_remove_channel(session, state->xconn);
+	session->db_rec = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
-		a = NULL;
-	}
-	status = smbXsrv_session_find_channel(session, state->xconn, &c);
-	if (!NT_STATUS_IS_OK(status)) {
-		c = NULL;
-	}
-	if (session->global->num_channels <= 1) {
-		/*
-		 * The last channel is treated different
-		 */
-		c = NULL;
-	}
-
-	if (a != NULL) {
-		smbXsrv_session_auth0_destructor(a);
-		a->connection = NULL;
-		need_update = true;
-	}
-
-	if (c != NULL) {
-		struct smbXsrv_session_global0 *global = session->global;
-		ptrdiff_t n;
-
-		n = (c - global->channels);
-		if (n >= global->num_channels || n < 0) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			if (NT_STATUS_IS_OK(state->first_status)) {
-				state->first_status = status;
-			}
-			state->errors++;
-			session->db_rec = NULL;
-			return 0;
-		}
-		ARRAY_DEL_ELEMENT(global->channels, n, global->num_channels);
-		global->num_channels--;
-		need_update = true;
-	}
-
-	if (need_update) {
-		status = smbXsrv_session_update(session);
 		if (NT_STATUS_IS_OK(state->first_status)) {
 			state->first_status = status;
 		}
 		state->errors++;
 	}
 
-	session->db_rec = NULL;
 	return 0;
 }
 
