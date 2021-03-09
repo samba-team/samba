@@ -215,6 +215,7 @@ bld.SAMBA3_BINARY('net',
                  net_conf.c
                  net_conf_util.c
                  net_join.c
+                 net_offlinejoin.c
                  net_user.c
                  net_group.c
                  net_file.c

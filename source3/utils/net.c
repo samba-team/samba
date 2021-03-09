@@ -758,6 +758,13 @@ static struct functable net_func[] = {
 		N_("  Use 'net help join' to get more information about 'net "
 		   "join'.")
 	},
+	{	"offlinejoin",
+		net_offlinejoin,
+		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
+		N_("Perform offline domain join"),
+		N_("  Use 'net help offlinejoin' to get more information about 'net "
+		   "offlinejoin'.")
+	},
 	{	"dom",
 		net_dom,
 		NET_TRANSPORT_LOCAL,

@@ -95,6 +95,15 @@ int net_idmap(struct net_context *c, int argc, const char **argv);
 int net_join_usage(struct net_context *c, int argc, const char **argv);
 int net_join(struct net_context *c, int argc, const char **argv);
 
+/* The following definitions come from source3/utils/net_offlinejoin.c  */
+
+int net_offlinejoin_usage(struct net_context *c, int argc, const char **argv);
+int net_offlinejoin(struct net_context *c, int argc, const char **argv);
+int net_offlinejoin_provision(struct net_context *c,
+			      int argc, const char **argv);
+int net_offlinejoin_requestodj(struct net_context *c,
+			       int argc, const char **argv);
+
 /* The following definitions come from utils/net_lookup.c  */
 
 int net_lookup_usage(struct net_context *c, int argc, const char **argv);
