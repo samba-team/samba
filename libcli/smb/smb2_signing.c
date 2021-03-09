@@ -324,7 +324,7 @@ static NTSTATUS smb2_signing_gmac(gnutls_aead_cipher_hd_t cipher_hnd,
 {
 	size_t tag_size = _tag_size;
 	int rc;
-#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM
 
 	rc = gnutls_aead_cipher_encryptv2(cipher_hnd,
 					  iv, iv_size,
@@ -336,7 +336,7 @@ static NTSTATUS smb2_signing_gmac(gnutls_aead_cipher_hd_t cipher_hnd,
 	}
 
 	return NT_STATUS_OK;
-#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+#else /* ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM */
 	TALLOC_CTX *tmp_ctx = NULL;
 	size_t atext_size = 0;
 	uint8_t *atext = NULL;
@@ -387,7 +387,7 @@ static NTSTATUS smb2_signing_gmac(gnutls_aead_cipher_hd_t cipher_hnd,
 	}
 
 	return NT_STATUS_OK;
-#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+#endif /* ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM */
 }
 
 static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key,
@@ -808,6 +808,9 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 				  struct iovec *vector,
 				  int count)
 {
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	bool use_encryptv2 = false;
+#endif
 	uint16_t cipher_id;
 	uint8_t *tf;
 	size_t a_total;
@@ -851,18 +854,30 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	case SMB2_ENCRYPTION_AES128_CCM:
 		algo = GNUTLS_CIPHER_AES_128_CCM;
 		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES128_GCM:
 		algo = GNUTLS_CIPHER_AES_128_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES256_CCM:
 		algo = GNUTLS_CIPHER_AES_256_CCM;
 		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES256_GCM:
 		algo = GNUTLS_CIPHER_AES_256_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM
+		use_encryptv2 = true;
+#endif
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -903,8 +918,8 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	       0,
 	       16 - iv_size);
 
-#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
-	{
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	if (use_encryptv2) {
 		uint8_t tag[tag_size];
 		giovec_t auth_iov[1];
 
@@ -928,8 +943,8 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		}
 
 		memcpy(tf + SMB2_TF_SIGNATURE, tag, tag_size);
-	}
-#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+	} else
+#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 	{
 		size_t ptext_size = m_total;
 		uint8_t *ptext = NULL;
@@ -1007,7 +1022,6 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		TALLOC_FREE(ptext);
 		TALLOC_FREE(ctext);
 	}
-#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 
 	DBG_INFO("Encrypted SMB2 message\n");
 
@@ -1020,6 +1034,9 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 				  struct iovec *vector,
 				  int count)
 {
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	bool use_encryptv2 = false;
+#endif
 	uint16_t cipher_id;
 	uint8_t *tf;
 	uint16_t flags;
@@ -1073,18 +1090,30 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	case SMB2_ENCRYPTION_AES128_CCM:
 		algo = GNUTLS_CIPHER_AES_128_CCM;
 		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES128_GCM:
 		algo = GNUTLS_CIPHER_AES_128_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES256_CCM:
 		algo = GNUTLS_CIPHER_AES_256_CCM;
 		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM
+		use_encryptv2 = true;
+#endif
 		break;
 	case SMB2_ENCRYPTION_AES256_GCM:
 		algo = GNUTLS_CIPHER_AES_256_GCM;
 		iv_size = gnutls_cipher_get_iv_size(algo);
+#ifdef ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_GCM
+		use_encryptv2 = true;
+#endif
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1122,8 +1151,8 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	}
 
 /* gnutls_aead_cipher_encryptv2() has a bug in version 3.6.10 */
-#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
-	{
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	if (use_encryptv2) {
 		giovec_t auth_iov[1];
 
 		auth_iov[0] = (giovec_t) {
@@ -1144,8 +1173,8 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
 			goto out;
 		}
-	}
-#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
+	} else
+#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 	{
 		size_t ctext_size = m_total + tag_size;
 		uint8_t *ctext = NULL;
@@ -1229,7 +1258,6 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		TALLOC_FREE(ptext);
 		TALLOC_FREE(ctext);
 	}
-#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 
 	DBG_INFO("Decrypted SMB2 message\n");
 
