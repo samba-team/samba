@@ -336,6 +336,13 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	socklen_t sa_length;
 	int ret;
 
+	if (smb3_capabilities != NULL) {
+		const struct smb3_encryption_capabilities *ciphers =
+			&smb3_capabilities->encryption;
+
+		SMB_ASSERT(ciphers->num_algos <= SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS);
+	}
+
 	conn = talloc_zero(mem_ctx, struct smbXcli_conn);
 	if (!conn) {
 		return NULL;
@@ -4772,6 +4779,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	}
 
 	if (state->conn->max_protocol >= PROTOCOL_SMB3_10) {
+		const struct smb3_encryption_capabilities *client_ciphers =
+			&state->conn->smb2.client.smb3_capabilities.encryption;
 		NTSTATUS status;
 		struct smb2_negotiate_contexts c = { .num_contexts = 0, };
 		uint8_t *netname_utf16 = NULL;
@@ -4794,15 +4803,23 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			return NULL;
 		}
 
-		SSVAL(p, 0, 2); /* ChiperCount */
+		if (client_ciphers->num_algos > 0) {
+			size_t ofs = 0;
+			SSVAL(p, ofs, client_ciphers->num_algos);
+			ofs += 2;
 
-		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_GCM);
-		SSVAL(p, 4, SMB2_ENCRYPTION_AES128_CCM);
+			for (i = 0; i < client_ciphers->num_algos; i++) {
+				size_t next_ofs = ofs + 2;
+				SMB_ASSERT(next_ofs < ARRAY_SIZE(p));
+				SSVAL(p, ofs, client_ciphers->algos[i]);
+				ofs = next_ofs;
+			}
 
-		status = smb2_negotiate_context_add(
-			state, &c, SMB2_ENCRYPTION_CAPABILITIES, p, 6);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
+			status = smb2_negotiate_context_add(
+				state, &c, SMB2_ENCRYPTION_CAPABILITIES, p, ofs);
+			if (!NT_STATUS_IS_OK(status)) {
+				return NULL;
+			}
 		}
 
 		ok = convert_string_talloc(state, CH_UNIX, CH_UTF16,
@@ -5085,7 +5102,20 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	cipher = smb2_negotiate_context_find(&c, SMB2_ENCRYPTION_CAPABILITIES);
 	if (cipher != NULL) {
+		const struct smb3_encryption_capabilities *client_ciphers =
+			&state->conn->smb2.client.smb3_capabilities.encryption;
+		bool found_selected = false;
 		uint16_t cipher_count;
+		uint16_t cipher_selected;
+
+		if (client_ciphers->num_algos == 0) {
+			/*
+			 * We didn't ask for SMB2_ENCRYPTION_CAPABILITIES
+			 */
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
 
 		if (cipher->data.length < 2) {
 			tevent_req_nterror(req,
@@ -5094,8 +5124,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		}
 
 		cipher_count = SVAL(cipher->data.data, 0);
-
-		if (cipher_count > 1) {
+		if (cipher_count != 1) {
 			tevent_req_nterror(req,
 					NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -5106,19 +5135,35 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 					NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
 		}
+		cipher_selected = SVAL(cipher->data.data, 2);
 
-		if (cipher_count == 1) {
-			uint16_t cipher_selected;
-
-			cipher_selected = SVAL(cipher->data.data, 2);
-
-			switch (cipher_selected) {
-			case SMB2_ENCRYPTION_AES128_GCM:
-			case SMB2_ENCRYPTION_AES128_CCM:
-				conn->smb2.server.cipher = cipher_selected;
+		for (i = 0; i < client_ciphers->num_algos; i++) {
+			if (cipher_selected == SMB2_ENCRYPTION_NONE) {
+				/*
+				 * encryption not supported
+				 */
+				found_selected = true;
+				break;
+			}
+			if (client_ciphers->algos[i] == cipher_selected) {
+				/*
+				 * We found a match
+				 */
+				found_selected = true;
 				break;
 			}
 		}
+
+		if (!found_selected) {
+			/*
+			 * The server send a cipher we didn't offer.
+			 */
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		conn->smb2.server.cipher = cipher_selected;
 	}
 
 	/* First we hash the request */
