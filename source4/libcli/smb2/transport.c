@@ -72,7 +72,8 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					      options->signing,
 					      0, /* smb1_capabilities */
 					      &options->client_guid,
-					      options->smb2_capabilities);
+					      options->smb2_capabilities,
+					      &options->smb3_capabilities);
 	if (transport->conn == NULL) {
 		talloc_free(transport);
 		return NULL;

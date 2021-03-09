@@ -25,6 +25,7 @@
 #include "../libcli/smb/smb_seal.h"
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "../libcli/smb/smb2_negotiate_context.h"
 #include "../librpc/ndr/libndr.h"
 #include "../include/client.h"
 
@@ -69,6 +70,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	bool use_level_II_oplocks = false;
 	uint32_t smb1_capabilities = 0;
 	uint32_t smb2_capabilities = 0;
+	struct smb311_capabilities smb3_capabilities = { };
 	struct GUID client_guid;
 
 	if (!GUID_all_zero(&cli_state_client_guid)) {
@@ -179,7 +181,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 					signing_state,
 					smb1_capabilities,
 					&client_guid,
-					smb2_capabilities);
+					smb2_capabilities,
+					&smb3_capabilities);
 	if (cli->conn == NULL) {
 		goto error;
 	}

@@ -99,7 +99,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					      options->signing,
 					      smb1_capabilities,
 					      NULL, /* client_guid */
-					      0); /* smb2_capabilities */
+					      0, /* smb2_capabilities */
+					      NULL); /* smb3_ciphers */
 	if (transport->conn == NULL) {
 		TALLOC_FREE(sock);
 		TALLOC_FREE(transport);

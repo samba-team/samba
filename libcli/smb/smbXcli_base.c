@@ -115,6 +115,7 @@ struct smbXcli_conn {
 			uint32_t capabilities;
 			uint16_t security_mode;
 			struct GUID guid;
+			struct smb311_capabilities smb3_capabilities;
 		} client;
 
 		struct {
@@ -326,7 +327,8 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 enum smb_signing_setting signing_state,
 					 uint32_t smb1_capabilities,
 					 struct GUID *client_guid,
-					 uint32_t smb2_capabilities)
+					 uint32_t smb2_capabilities,
+					 const struct smb311_capabilities *smb3_capabilities)
 {
 	struct smbXcli_conn *conn = NULL;
 	void *ss = NULL;
@@ -429,6 +431,9 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		conn->smb2.client.guid = *client_guid;
 	}
 	conn->smb2.client.capabilities = smb2_capabilities;
+	if (smb3_capabilities != NULL) {
+		conn->smb2.client.smb3_capabilities = *smb3_capabilities;
+	}
 
 	conn->smb2.cur_credits = 1;
 	conn->smb2.max_credits = 0;

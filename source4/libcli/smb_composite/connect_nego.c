@@ -153,7 +153,8 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 					  state->options.signing,
 					  smb1_capabilities,
 					  &state->options.client_guid,
-					  state->options.smb2_capabilities);
+					  state->options.smb2_capabilities,
+					  &state->options.smb3_capabilities);
 	if (tevent_req_nomem(state->conn, req)) {
 		return;
 	}

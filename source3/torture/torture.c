@@ -14572,7 +14572,7 @@ static bool run_ign_bad_negprot(int dummy)
 	}
 
 	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
-				   NULL, 0);
+				   NULL, 0, NULL);
 	if (conn == NULL) {
 		d_fprintf(stderr, "smbXcli_conn_create failed\n");
 		return false;
