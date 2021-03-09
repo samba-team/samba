@@ -1,19 +1,15 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate of Samba 4.14.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.14 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.14.0
+                          March 09, 2021
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.14 release series.
+Please read the release notes carefully before upgrading.
+
 
 New GPG key
------------
+===========
 
 The GPG release key for Samba releases changed from:
 
@@ -86,7 +82,6 @@ Publishing printers in AD is more reliable and more printer features are
 added to the published information in AD. Samba now also supports Windows
 drivers for the ARM64 architecture.
 
-
 Client Group Policy
 -------------------
 This release extends Samba to support Group Policy functionality for Winbind
@@ -111,7 +106,6 @@ Configuration/Policies/Administrative Templates. Alternatively, Samba policy
 may be managed using the `samba-tool gpo manage` command. This tool does not
 require the admx templates to be installed.
 
-
 Python 3.6 or later required
 ----------------------------
 
@@ -123,22 +117,21 @@ Samba's minimum runtime requirement for python was raised to Python
 As Python 2.7 has been End Of Life upstream since April 2020, Samba
 is dropping ALL Python 2.x support in this release.
 
-
 Miscellaneous samba-tool changes
 --------------------------------
 
-The samba-tool commands to manage AD objects (e.g. users, computers and
+The 'samba-tool' subcommands to manage AD objects (e.g. users, computers and
 groups) now consistently use the "add" command when adding a new object to
-the AD. The previous deprecation warnings when using the "add" commands
-have been removed. For compatibility reasons, both the "add" and "create"
+the AD. The previous deprecation warnings when using the 'add' commands
+have been removed. For compatibility reasons, both the 'add' and 'create'
 commands can be used now.
 
 Users, groups and contacts can now be renamed with the respective rename
 commands.
 
-Locked users can be unlocked with the new "samba-tool user unlock" command.
+Locked users can be unlocked with the new 'samba-tool user unlock' command.
 
-The "samba-tool user list" and "samba-tool group listmembers" commands
+The 'samba-tool user list' and 'samba-tool group listmembers' commands
 provide additional options to hide expired and disabled user accounts
 (--hide-expired and --hide-disabled).
 
@@ -160,10 +153,6 @@ CTDB CHANGES
   recmaster".
 
 
-REMOVED FEATURES
-================
-
-
 smb.conf changes
 ================
 
@@ -175,6 +164,21 @@ smb.conf changes
   honor change notify privilege      New                        No
   smbd force process locks           New                        No
   server smb encrypt                 New                        default
+
+
+CHANGES SINCE 4.14.0rc4
+=======================
+
+o  Trever L. Adams <trever.adams@gmail.com>
+   * BUG 14634: s3:modules:vfs_virusfilter: Recent talloc changes cause infinite
+     start-up failure.
+
+o  Peter Eriksson <pen@lysator.liu.se>
+   * BUG 14648: s3: VFS: nfs4_acls. Add missing TALLOC_FREE(frame) in error
+     path.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14636: g_lock: Fix uninitalized variable reads.
 
 
 CHANGES SINCE 4.14.0rc3
