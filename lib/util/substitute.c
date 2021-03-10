@@ -194,6 +194,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 	in = talloc_strdup(mem_ctx, insert);
 	if (!in) {
 		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
+		talloc_free(string);
 		return NULL;
 	}
 	ls = (ssize_t)strlen(s);
