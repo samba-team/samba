@@ -386,7 +386,7 @@ static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	} else {
 		int error = 0;
-		char s[value_to_match->length+1];
+		char s[65];
 
 		memcpy(s, value_to_match->data, value_to_match->length);
 		s[value_to_match->length] = 0;
