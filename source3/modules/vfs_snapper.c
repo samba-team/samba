@@ -2553,6 +2553,31 @@ static int snapper_gmt_setxattr(struct vfs_handle_struct *handle,
 				aname, value, size, flags);
 }
 
+static int snapper_gmt_fsetxattr(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				const char *aname, const void *value,
+				size_t size, int flags)
+{
+	time_t timestamp = 0;
+	const struct smb_filename *smb_fname = NULL;
+
+	smb_fname = fsp->fsp_name;
+
+	if (!snapper_gmt_strip_snapshot(talloc_tos(),
+					handle,
+					smb_fname,
+					&timestamp,
+					NULL)) {
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_FSETXATTR(handle, fsp,
+				aname, value, size, flags);
+}
+
 static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
 					 const struct smb_filename *fpath,
 					 const char *name,
@@ -2755,6 +2780,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.removexattr_fn = snapper_gmt_removexattr,
 	.setxattr_fn = snapper_gmt_setxattr,
+	.fsetxattr_fn = snapper_gmt_fsetxattr,
 	.chflags_fn = snapper_gmt_chflags,
 	.get_real_filename_fn = snapper_gmt_get_real_filename,
 };
