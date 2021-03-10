@@ -84,10 +84,6 @@ static char *sclassic_string_option(TALLOC_CTX *mem_ctx,
 		return lpcfg_comment(s, lpcfg_default_service(lp_ctx), mem_ctx);
 	}
 
-	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return talloc_strdup(mem_ctx, lpcfg_volume_label(s, lpcfg_default_service(lp_ctx)));
-	}
-
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
 		if (lpcfg_printable(s, lpcfg_default_service(lp_ctx))) {
 			return talloc_strdup(mem_ctx, "PRINTER");

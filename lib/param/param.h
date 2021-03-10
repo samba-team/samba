@@ -179,10 +179,6 @@ struct loadparm_service *lpcfg_servicebynum(struct loadparm_context *lp_ctx,
 struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 				    const char *service_name);
 
-/**
- * A useful volume label function.
- */
-const char *lp_cfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
 struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx);
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);

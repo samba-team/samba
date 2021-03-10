@@ -3280,18 +3280,6 @@ const char *lpcfg_servicename(const struct loadparm_service *service)
 	return service ? lpcfg_string((const char *)service->szService) : NULL;
 }
 
-/**
- * A useful volume label function.
- */
-const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
-{
-	const char *ret;
-	ret = lpcfg_string((const char *)((service != NULL && service->volume != NULL) ?
-				       service->volume : sDefault->volume));
-	if (!*ret)
-		return lpcfg_servicename(service);
-	return ret;
-}
 struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx == NULL) {

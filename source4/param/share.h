@@ -93,7 +93,6 @@ NTSTATUS share_init(void);
 #define SHARE_HOSTS_DENY	"hosts-deny"
 #define SHARE_NTVFS_HANDLER	"ntvfs-handler"
 #define SHARE_TYPE		"type"
-#define SHARE_VOLUME		"volume"
 #define SHARE_CSC_POLICY	"csc-policy"
 #define SHARE_AVAILABLE		"available"
 #define SHARE_BROWSEABLE	"browseable"
