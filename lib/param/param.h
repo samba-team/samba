@@ -116,18 +116,10 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
 struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 				     const struct loadparm_service *pservice,
 				     const char *name);
-bool lpcfg_add_home(struct loadparm_context *lp_ctx,
-		 const char *pszHomename,
-		 struct loadparm_service *default_service,
-		 const char *user, const char *pszHomedir);
-bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
-		    const char *pszPrintername,
-		    struct loadparm_service *default_service);
 struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const char *name);
 void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm);
 bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name);
-bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx);
 
 bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 			    const char *pszParmName, const char *pszParmValue);
@@ -150,13 +142,6 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option);
 bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 			 struct loadparm_service *service,
 			 const char *parm_name, FILE * f);
-
-/**
- * Unload unused services.
- */
-void lpcfg_killunused(struct loadparm_context *lp_ctx,
-		   struct smbsrv_connection *smb,
-		   bool (*snumused) (struct smbsrv_connection *, int));
 
 /**
  * Initialise the global parameter structure.
@@ -198,16 +183,6 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
  * A useful volume label function.
  */
 const char *lp_cfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
-
-/**
- * If we are PDC then prefer us as DMB
- */
-const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault);
-
-/**
- * Return the max print jobs per queue.
- */
-int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault);
 struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx);
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);

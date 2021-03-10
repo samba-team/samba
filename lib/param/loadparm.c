@@ -729,76 +729,6 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Add a new home service, with the specified home directory, defaults coming
- * from service ifrom.
- */
-
-bool lpcfg_add_home(struct loadparm_context *lp_ctx,
-		 const char *pszHomename,
-		 struct loadparm_service *default_service,
-		 const char *user, const char *pszHomedir)
-{
-	struct loadparm_service *service;
-
-	service = lpcfg_add_service(lp_ctx, default_service, pszHomename);
-
-	if (service == NULL)
-		return false;
-
-	if (!(*(default_service->path))
-	    || strequal(default_service->path, lp_ctx->sDefault->path)) {
-		service->path = talloc_strdup(service, pszHomedir);
-	} else {
-		service->path = string_sub_talloc(service, lpcfg_path(default_service, lp_ctx->sDefault, service), "%H", pszHomedir);
-	}
-
-	if (!(*(service->comment))) {
-		service->comment = talloc_asprintf(service, "Home directory of %s", user);
-	}
-	service->available = default_service->available;
-	service->browseable = default_service->browseable;
-
-	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n",
-		  pszHomename, user, service->path));
-
-	return true;
-}
-
-/**
- * Add a new printer service, with defaults coming from service iFrom.
- */
-
-bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
-		       const char *pszPrintername,
-		       struct loadparm_service *default_service)
-{
-	const char *comment = "From Printcap";
-	struct loadparm_service *service;
-	service = lpcfg_add_service(lp_ctx, default_service, pszPrintername);
-
-	if (service == NULL)
-		return false;
-
-	/* note that we do NOT default the availability flag to True - */
-	/* we take it from the default service passed. This allows all */
-	/* dynamic printers to be disabled by disabling the [printers] */
-	/* entry (if/when the 'available' keyword is implemented!).    */
-
-	/* the printer name is set to the service name. */
-	lpcfg_string_set(service, &service->_printername, pszPrintername);
-	lpcfg_string_set(service, &service->comment, comment);
-	service->browseable = default_service->browseable;
-	/* Printers cannot be read_only. */
-	service->read_only = false;
-	/* Printer services must be printable. */
-	service->printable = true;
-
-	DEBUG(3, ("adding printer service %s\n", pszPrintername));
-
-	return true;
-}
-
-/**
  * Map a parameter's string representation to something we can use.
  * Returns False if the parameter string is not recognised, else TRUE.
  */
@@ -1100,39 +1030,6 @@ void add_to_file_list(TALLOC_CTX *mem_ctx, struct file_lists **list,
 fail:
 	DEBUG(0, ("Unable to add file to file list: %s\n", fname));
 
-}
-
-/*******************************************************************
- Check if a config file has changed date.
-********************************************************************/
-bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
-{
-	struct file_lists *f;
-	DEBUG(6, ("lpcfg_file_list_changed()\n"));
-
-	for (f = lp_ctx->file_lists; f != NULL; f = f->next) {
-		char *n2;
-		time_t mod_time;
-
-		n2 = standard_sub_basic(lp_ctx, f->name);
-
-		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
-			     f->name, n2, ctime(&f->modtime)));
-
-		mod_time = file_modtime(n2);
-
-		if (mod_time && ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))) {
-			DEBUGADD(6, ("file %s modified: %s\n", n2,
-				  ctime(&mod_time)));
-			f->modtime = mod_time;
-			talloc_free(f->subfname);
-			f->subfname = talloc_strdup(f, n2);
-			TALLOC_FREE(n2);
-			return true;
-		}
-		TALLOC_FREE(n2);
-	}
-	return false;
 }
 
 /*
@@ -2565,31 +2462,6 @@ void init_printer_values(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx,
 	}
 }
 
-/**
- * Unload unused services.
- */
-
-void lpcfg_killunused(struct loadparm_context *lp_ctx,
-		   struct smbsrv_connection *smb,
-		   bool (*snumused) (struct smbsrv_connection *, int))
-{
-	int i;
-
-	if (lp_ctx->s3_fns != NULL) {
-		smb_panic("Cannot be used from an s3 loadparm ctx");
-	}
-
-	for (i = 0; i < lp_ctx->iNumServices; i++) {
-		if (lp_ctx->services[i] == NULL)
-			continue;
-
-		if (!snumused || !snumused(smb, i)) {
-			talloc_free(lp_ctx->services[i]);
-			lp_ctx->services[i] = NULL;
-		}
-	}
-}
-
 
 static int lpcfg_destructor(struct loadparm_context *lp_ctx)
 {
@@ -3420,35 +3292,6 @@ const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm
 		return lpcfg_servicename(service);
 	return ret;
 }
-
-/**
- * Return the correct printer name.
- */
-const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
-{
-	const char *ret;
-	ret = lpcfg_string((const char *)((service != NULL && service->_printername != NULL) ?
-				       service->_printername : sDefault->_printername));
-	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lpcfg_servicename(service);
-
-	return ret;
-}
-
-
-/**
- * Return the max print jobs per queue.
- */
-int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
-{
-	int maxjobs = lpcfg_max_print_jobs(service, sDefault);
-
-	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
-		maxjobs = PRINT_MAX_JOBID - 1;
-
-	return maxjobs;
-}
-
 struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx == NULL) {
