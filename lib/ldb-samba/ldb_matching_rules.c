@@ -428,20 +428,20 @@ static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
 		}
 
 		if (rec->wType == DNS_TYPE_SOA || rec->wType == DNS_TYPE_NS) {
-			TALLOC_FREE(tmp_ctx);
+			TALLOC_FREE(rec);
 			continue;
 		}
 
 		if (rec->wType == DNS_TYPE_TOMBSTONE) {
-			TALLOC_FREE(tmp_ctx);
+			TALLOC_FREE(rec);
 			continue;
 		}
 		if (rec->dwTimeStamp == 0) {
-			TALLOC_FREE(tmp_ctx);
+			TALLOC_FREE(rec);
 			continue;
 		}
 		if (rec->dwTimeStamp > tombstone_time) {
-			TALLOC_FREE(tmp_ctx);
+			TALLOC_FREE(rec);
 			continue;
 		}
 
