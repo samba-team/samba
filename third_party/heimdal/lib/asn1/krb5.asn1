@@ -81,6 +81,7 @@ EXPORTS
 	KrbFastFinished,
 	KrbFastReq,
 	KrbFastArmor,
+	KrbFastArmoredReq,
 	KDCFastState,
 	KDCFastCookie,
 	KDC-PROXY-MESSAGE,
