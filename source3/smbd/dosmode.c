@@ -418,6 +418,10 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	if (smb_fname->fsp == NULL) {
+		/* symlink */
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	/*
 	 * Don't store FILE_ATTRIBUTE_OFFLINE, it's dealt with in
 	 * vfs_default via DMAPI if that is enabled.
