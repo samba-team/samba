@@ -358,10 +358,12 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 {
 	struct files_struct *fsp = smb_fname->fsp;
 	NTSTATUS status;
+	int saved_errno = errno;
 
 	destroy_fsp_smb_fname_link(&smb_fname->fsp_link);
 
 	if (fsp == NULL) {
+		errno = saved_errno;
 		return 0;
 	}
 
@@ -380,6 +382,7 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	file_free(NULL, fsp);
 	smb_fname->fsp = NULL;
 
+	errno = saved_errno;
 	return 0;
 }
 
