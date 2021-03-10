@@ -1600,6 +1600,7 @@ generate_template(const Symbol *s)
 	    "int ASN1CALL\n"
 	    "decode_%s(const unsigned char *p, size_t len, %s *data, size_t *size)\n"
 	    "{\n"
+            "    memset(data, 0, sizeof(*data));\n"
 	    "    return _asn1_decode_top(asn1_%s, 0|%s, p, len, data, size);\n"
 	    "}\n"
 	    "\n",
