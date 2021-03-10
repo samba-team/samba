@@ -5,3 +5,4 @@
 ^samba3.smb2.session.*.bind_negative_smb3to2
 ^samba3.smb2.session.*.bind_negative_smb3to3
 ^samba3.smb2.session.*.bind_negative_smb3encGtoC
+^samba3.smb2.session.*.bind_different_user.ad_dc
