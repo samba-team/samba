@@ -605,7 +605,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	ok = security_token_is_sid(session_info->security_token,
 			&x->global->auth_session_info->security_token->sids[0]);
 	if (!ok) {
-		return NT_STATUS_NOT_SUPPORTED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (session_info->session_key.length == 0) {
