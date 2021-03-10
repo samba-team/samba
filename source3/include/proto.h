@@ -576,21 +576,7 @@ char *realloc_string_sub2(char *string,
 char *realloc_string_sub(char *string,
 			const char *pattern,
 			const char *insert);
-char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
-			const char *pattern,
-			const char *insert,
-			bool remove_unsafe_characters,
-			bool replace_once,
-			bool allow_trailing_dollar);
-char *talloc_string_sub(TALLOC_CTX *mem_ctx,
-			const char *src,
-			const char *pattern,
-			const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
-char *talloc_all_string_sub(TALLOC_CTX *ctx,
-				const char *src,
-				const char *pattern,
-				const char *insert);
 char *octal_string(int i);
 char *string_truncate(char *s, unsigned int length);
 char *strchr_m(const char *src, char c);

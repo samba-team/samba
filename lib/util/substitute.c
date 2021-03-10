@@ -113,58 +113,9 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 	}
 }
 
-void string_sub_once(char *s, const char *pattern,
-		const char *insert, size_t len)
-{
-	string_sub2( s, pattern, insert, len, true, true, false );
-}
-
 void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
 	string_sub2( s, pattern, insert, len, true, false, false );
-}
-
-/**
- * Talloc'ed version of string_sub
- */
-_PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s, 
-				const char *pattern, const char *insert)
-{
-	const char *p;
-	char *ret;
-	size_t len, alloc_len;
-
-	if (insert == NULL || pattern == NULL || !*pattern || s == NULL)
-		return NULL;
-
-	/* determine length needed */
-	len = strlen(s);
-	
-	for (p = strstr(s, pattern); p != NULL; 
-	     p = strstr(p+strlen(pattern), pattern)) {
-		len += strlen(insert) - strlen(pattern);
-	}
-
-	alloc_len = MAX(len, strlen(s))+1;
-	ret = talloc_array(mem_ctx, char, alloc_len);
-	if (ret == NULL)
-		return NULL;
-	strncpy(ret, s, alloc_len);
-	string_sub(ret, pattern, insert, alloc_len);
-
-	ret = talloc_realloc(mem_ctx, ret, char, len+1);
-	if (ret == NULL)
-		return NULL;
-
-	if (ret[len] != '\0') {
-		DEBUG(0,("Internal error at %s(%d): string not terminated\n",
-			 __FILE__, __LINE__));
-		abort();
-	}
-
-	talloc_set_name_const(ret, ret);
-
-	return ret;
 }
 
 /**
@@ -208,4 +159,121 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 		s = p + li;
 		ls = ls + li - lp;
 	}
+}
+
+/*
+ * Internal guts of talloc_string_sub and talloc_all_string_sub.
+ * talloc version of string_sub2.
+ */
+
+char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern,
+			const char *insert,
+			bool remove_unsafe_characters,
+			bool replace_once,
+			bool allow_trailing_dollar)
+{
+	char *p, *in;
+	char *s;
+	char *string;
+	ssize_t ls,lp,li,ld, i;
+
+	if (!insert || !pattern || !*pattern || !src) {
+		return NULL;
+	}
+
+	string = talloc_strdup(mem_ctx, src);
+	if (string == NULL) {
+		DEBUG(0, ("talloc_string_sub2: "
+			"talloc_strdup failed\n"));
+		return NULL;
+	}
+
+	s = string;
+
+	in = talloc_strdup(mem_ctx, insert);
+	if (!in) {
+		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
+		return NULL;
+	}
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li - lp;
+
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '$':
+				/* allow a trailing $
+				 * (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
+					break;
+				}
+
+				FALL_THROUGH;
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '%':
+			case '\r':
+			case '\n':
+				if (remove_unsafe_characters) {
+					in[i] = '_';
+					break;
+				}
+
+				FALL_THROUGH;
+			default:
+				/* ok */
+				break;
+		}
+	}
+
+	while ((p = strstr_m(s,pattern))) {
+		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
+			string = (char *)talloc_realloc_size(mem_ctx, string,
+							ls + ld + 1);
+			if (!string) {
+				DEBUG(0, ("talloc_string_sub: out of "
+					  "memory!\n"));
+				TALLOC_FREE(in);
+				return NULL;
+			}
+			p = string + offset + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		memcpy(p, in, li);
+		s = p + li;
+		ls += ld;
+
+		if (replace_once) {
+			break;
+		}
+	}
+	TALLOC_FREE(in);
+	return string;
+}
+
+/* Same as string_sub, but returns a talloc'ed string */
+
+char *talloc_string_sub(TALLOC_CTX *mem_ctx,
+			const char *src,
+			const char *pattern,
+			const char *insert)
+{
+	return talloc_string_sub2(mem_ctx, src, pattern, insert,
+			true, false, false);
+}
+
+char *talloc_all_string_sub(TALLOC_CTX *ctx,
+				const char *src,
+				const char *pattern,
+				const char *insert)
+{
+	return talloc_string_sub2(ctx, src, pattern, insert,
+			false, false, false);
 }

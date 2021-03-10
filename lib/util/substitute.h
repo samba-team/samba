@@ -39,12 +39,6 @@
 **/
 void string_sub(char *s,const char *pattern, const char *insert, size_t len);
 
-void string_sub_once(char *s, const char *pattern,
-		     const char *insert, size_t len);
-
-char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s,
-			const char *pattern, const char *insert);
-
 /**
  Similar to string_sub() but allows for any character to be substituted.
  Use with caution!
@@ -53,4 +47,18 @@ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s,
 **/
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 
+char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern,
+			const char *insert,
+			bool remove_unsafe_characters,
+			bool replace_once,
+			bool allow_trailing_dollar);
+char *talloc_string_sub(TALLOC_CTX *mem_ctx,
+			const char *src,
+			const char *pattern,
+			const char *insert);
+char *talloc_all_string_sub(TALLOC_CTX *ctx,
+				const char *src,
+				const char *pattern,
+				const char *insert);
 #endif /* _SAMBA_SUBSTITUTE_H_ */
