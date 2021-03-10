@@ -157,6 +157,15 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_context *in_preauth = NULL;
 	struct smb2_negotiate_context *in_cipher = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
+	const struct smb311_capabilities default_smb3_capabilities = {
+		.encryption = {
+			.num_algos = 2,
+			.algos = {
+				SMB2_ENCRYPTION_AES128_GCM,
+				SMB2_ENCRYPTION_AES128_CCM,
+			},
+		},
+	};
 	DATA_BLOB out_negotiate_context_blob = data_blob_null;
 	uint32_t out_negotiate_context_offset = 0;
 	uint16_t out_negotiate_context_count = 0;
@@ -456,13 +465,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	if ((capabilities & SMB2_CAP_ENCRYPTION) && (in_cipher != NULL)) {
+		const struct smb3_encryption_capabilities *srv_ciphers =
+			&default_smb3_capabilities.encryption;
+		uint16_t srv_preferred_idx = UINT16_MAX;
 		size_t needed = 2;
 		uint16_t cipher_count;
 		const uint8_t *p;
 		uint8_t buf[4];
 		size_t i;
-		bool aes_128_ccm_supported = false;
-		bool aes_128_gcm_supported = false;
 
 		capabilities &= ~SMB2_CAP_ENCRYPTION;
 
@@ -472,7 +482,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		}
 
 		cipher_count = SVAL(in_cipher->data.data, 0);
-
 		if (cipher_count == 0) {
 			return smbd_smb2_request_error(req,
 					NT_STATUS_INVALID_PARAMETER);
@@ -487,23 +496,31 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		}
 
 		for (i=0; i < cipher_count; i++) {
+			uint16_t si;
 			uint16_t v;
 
 			v = SVAL(p, 0);
 			p += 2;
 
-			if (v == SMB2_ENCRYPTION_AES128_GCM) {
-				aes_128_gcm_supported = true;
-			}
-			if (v == SMB2_ENCRYPTION_AES128_CCM) {
-				aes_128_ccm_supported = true;
+			for (si = 0; si < srv_ciphers->num_algos; si++) {
+				if (srv_ciphers->algos[si] != v) {
+					continue;
+				}
+
+				/*
+				 * The server ciphers are listed
+				 * with the lowest idx being preferred.
+				 */
+				if (si < srv_preferred_idx) {
+					srv_preferred_idx = si;
+				}
+				break;
 			}
 		}
 
-		if (aes_128_gcm_supported) {
-			xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_GCM;
-		} else if (aes_128_ccm_supported) {
-			xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
+		if (srv_preferred_idx != UINT16_MAX) {
+			xconn->smb2.server.cipher =
+				srv_ciphers->algos[srv_preferred_idx];
 		}
 
 		SSVAL(buf, 0, 1); /* ChiperCount */
