@@ -91,11 +91,9 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			     uint8_t *KO, size_t KO_len);
 
 NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
-				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count);
 NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
-				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count);
 

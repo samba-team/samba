@@ -3390,7 +3390,6 @@ skip_credits:
 		}
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
-					state->conn->smb2.server.cipher,
 					&iov[tf_iov], num_iov - tf_iov);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -3578,7 +3577,6 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 			tf_iov[1].iov_len = enc_len;
 
 			status = smb2_signing_decrypt_pdu(s->smb2->decryption_key,
-							  conn->smb2.server.cipher,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(iov);

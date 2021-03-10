@@ -620,10 +620,10 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 }
 
 NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
-				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count)
 {
+	uint16_t cipher_id;
 	uint8_t *tf;
 	size_t a_total;
 	ssize_t m_total;
@@ -651,6 +651,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		DBG_WARNING("No encryption key for SMB2 signing\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
+	cipher_id = encryption_key->cipher_algo_id;
 
 	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
 
@@ -826,10 +827,10 @@ out:
 }
 
 NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
-				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count)
 {
+	uint16_t cipher_id;
 	uint8_t *tf;
 	uint16_t flags;
 	size_t a_total;
@@ -859,6 +860,7 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		DBG_WARNING("No decryption key for SMB2 signing\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
+	cipher_id = decryption_key->cipher_algo_id;
 
 	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
 
