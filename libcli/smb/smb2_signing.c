@@ -630,7 +630,6 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	uint32_t iv_size = 0;
 	uint32_t key_size = 0;
 	size_t tag_size = 0;
-	uint8_t _key[16] = {0};
 	gnutls_cipher_algorithm_t algo = 0;
 	gnutls_datum_t key;
 	gnutls_datum_t iv;
@@ -679,18 +678,18 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	key_size = gnutls_cipher_get_key_size(algo);
 	tag_size = gnutls_cipher_get_tag_size(algo);
 
-	if (key_size > sizeof(_key)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	if (key_size != encryption_key->blob.length) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (tag_size != 16) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	key = (gnutls_datum_t) {
-		.data = _key,
+		.data = encryption_key->blob.data,
 		.size = key_size,
 	};
-
-	memcpy(key.data,
-	       encryption_key->blob.data,
-	       MIN(encryption_key->blob.length, key.size));
 
 	iv = (gnutls_datum_t) {
 		.data = tf + SMB2_TF_NONCE,
@@ -821,8 +820,6 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 
 	status = NT_STATUS_OK;
 out:
-	ZERO_ARRAY(_key);
-
 	return status;
 }
 
@@ -839,7 +836,6 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	uint32_t iv_size = 0;
 	uint32_t key_size = 0;
 	size_t tag_size = 0;
-	uint8_t _key[16] = {0};
 	gnutls_cipher_algorithm_t algo = 0;
 	gnutls_datum_t key;
 	gnutls_datum_t iv;
@@ -896,18 +892,18 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	key_size = gnutls_cipher_get_key_size(algo);
 	tag_size = gnutls_cipher_get_tag_size(algo);
 
-	if (key_size > sizeof(_key)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	if (key_size != decryption_key->blob.length) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (tag_size != 16) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	key = (gnutls_datum_t) {
-		.data = _key,
+		.data = decryption_key->blob.data,
 		.size = key_size,
 	};
-
-	memcpy(key.data,
-	       decryption_key->blob.data,
-	       MIN(decryption_key->blob.length, key.size));
 
 	iv = (gnutls_datum_t) {
 		.data = tf + SMB2_TF_NONCE,
@@ -1038,7 +1034,5 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 
 	status = NT_STATUS_OK;
 out:
-	ZERO_ARRAY(_key);
-
 	return status;
 }
