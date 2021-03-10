@@ -24,6 +24,7 @@
 
 struct smbcli_state;
 struct smbcli_tree;
+struct cli_credentials;
 
 /**
  * Useful target macros for handling server bugs in torture tests.
@@ -107,5 +108,14 @@ NTSTATUS torture_check_privilege(struct smbcli_state *cli,
 				 const char *sid_str,
 				 const char *privilege);
 
+/*
+ * Use this to pass a 2nd user:
+ *
+ * --option='torture:user2name=user2'
+ * --option='torture:user2domain=domain2'
+ * --option='torture:user2password=password2'
+ */
+struct cli_credentials *torture_user2_credentials(struct torture_context *tctx,
+						  TALLOC_CTX *mem_ctx);
 
 #endif /* _TORTURE_UTIL_H_ */

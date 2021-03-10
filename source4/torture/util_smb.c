@@ -37,6 +37,8 @@
 #include "libcli/util/clilsa.h"
 #include "torture/util.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 
 /**
   setup a directory ready for a test
@@ -967,4 +969,52 @@ NTSTATUS torture_check_privilege(struct smbcli_state *cli,
 	talloc_free(tmp_ctx);
 
 	return smblsa_sid_check_privilege(cli, sid_str, privilege);
+}
+
+/*
+ * Use this to pass a 2nd user:
+ *
+ * --option='torture:user2name=user2'
+ * --option='torture:user2domain=domain2'
+ * --option='torture:user2password=password2'
+ */
+struct cli_credentials *torture_user2_credentials(struct torture_context *tctx,
+						  TALLOC_CTX *mem_ctx)
+{
+	struct cli_credentials *credentials1 = popt_get_cmdline_credentials();
+	const char *user1domain = cli_credentials_get_domain(credentials1);
+	const char *user2name = torture_setting_string(tctx, "user2name", NULL);
+	const char *user2domain = torture_setting_string(tctx, "user2domain", user1domain);
+	const char *user2password = torture_setting_string(tctx, "user2password", NULL);
+	struct cli_credentials *credentials2 = NULL;
+
+	credentials2 = cli_credentials_shallow_copy(mem_ctx, credentials1);
+	if (credentials2 == NULL) {
+		torture_comment(tctx,
+				"%s: cli_credentials_shallow_copy() failed\n",
+				__func__);
+		return NULL;
+	}
+	if (user2name != NULL) {
+		torture_comment(tctx,
+				"Using "
+				"'torture:user2name'='%s' "
+				"'torture:user2domain'='%s' "
+				"'torture:user2password'='REDACTED'",
+				user2name,
+				user2domain);
+		cli_credentials_set_username(credentials2, user2name, CRED_SPECIFIED);
+		cli_credentials_set_domain(credentials2, user2domain, CRED_SPECIFIED);
+		cli_credentials_set_password(credentials2, user2password, CRED_SPECIFIED);
+	} else {
+		torture_comment(tctx,
+				"Fallback to anonymous for "
+				"'torture:user2name'=NULL "
+				"'torture:user2domain'='%s' "
+				"'torture:user2password'='REDACTED'",
+				user2domain);
+		cli_credentials_set_anonymous(credentials2);
+	}
+
+	return credentials2;
 }
