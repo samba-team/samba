@@ -119,4 +119,18 @@ bool dns_zoneinfo_load_zone_property(struct dnsserver_zoneinfo *zoneinfo,
 			dt == NULL ? "" : dt); \
 	}
 
+/* There are this many nttime jiffies in an hour */
+#define NTTIME_TO_HOURS (3600ULL * 10ULL * 1000ULL * 1000ULL)
+
+/*
+ * convert unix time to a DNS timestamp
+ * (hours in the NTTIME epoch, 32 bit).
+ */
+uint32_t unix_to_dns_timestamp(time_t t);
+
+/*
+ * Convert a DNS timestamp into NTTIME.
+ */
+NTSTATUS dns_timestamp_to_nt_time(NTTIME *_nt, uint32_t t);
+
 #endif /* __DNSSERVER_COMMON_H__ */

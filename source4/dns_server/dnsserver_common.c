@@ -1394,3 +1394,84 @@ bool dns_name_equal(const char *name1, const char *name2)
 	}
 	return strncasecmp(name1, name2, len1) == 0;
 }
+
+
+/*
+ * Convert unix time to a DNS timestamp
+ * uint32 hours in the NTTIME epoch
+ *
+ * This uses unix_to_nt_time() which can return special flag NTTIMEs like
+ * UINT64_MAX (0xFFF...) or NTTIME_MAX (0x7FF...), which will convert to
+ * distant future timestamps; or 0 as a flag value, meaning a 1601 timestamp,
+ * which is used to indicate a record does not expire.
+ *
+ * As we don't generally check for these special values in NTTIME conversions,
+ * we also don't check here, but for the benefit of people encountering these
+ * timestamps and searching for their origin, here is a list:
+ *
+ **  TIME_T_MAX
+ *
+ * Even if time_t is 32 bit, this will become NTTIME_MAX (a.k.a INT64_MAX,
+ * 0x7fffffffffffffff) in 100ns units. That translates to 256204778 hours
+ * since 1601, which converts back to 9223372008000000000 or
+ * 0x7ffffff9481f1000. It will present as 30828-09-14 02:00:00, around 48
+ * minutes earlier than NTTIME_MAX.
+ *
+ **  0, the start of the unix epoch, 1970-01-01 00:00:00
+ *
+ * This is converted into 0 in the Windows epoch, 1601-01-01 00:00:00 which is
+ * clearly the same whether you count in 100ns units or hours. In DNS record
+ * timestamps this is a flag meaning the record will never expire.
+ *
+ **  (time_t)-1, such as what *might* mean 1969-12-31 23:59:59
+ *
+ * This becomes (NTTIME)-1ULL a.k.a. UINT64_MAX, 0xffffffffffffffff thence
+ * 512409557 in hours since 1601. That in turn is 0xfffffffaf2028800 or
+ * 18446744052000000000 in NTTIME (rounded to the hour), which might be
+ * presented as -21709551616 or -0x50dfd7800, because NTITME is not completely
+ * dedicated to being unsigned. If it gets shown as a year, it will be around
+ * 60055.
+ *
+ **  Other negative time_t values (e.g. 1969-05-29).
+ *
+ * The meaning of these is somewhat undefined, but in any case they will
+ * translate perfectly well into the same dates in NTTIME.
+ *
+ **  Notes
+ *
+ * There are dns timestamps that exceed the range of NTTIME (up to 488356 AD),
+ * but it is not possible for this function to produce them.
+ *
+ * It is plausible that it was at midnight on 1601-01-01, in London, that
+ * Shakespeare wrote:
+ *
+ *  The time is out of joint. O cursed spite
+ *  That ever I was born to set it right!
+ *
+ * and this is why we have this epoch and time zone.
+ */
+uint32_t unix_to_dns_timestamp(time_t t)
+{
+	NTTIME nt;
+	unix_to_nt_time(&nt, t);
+	nt /= NTTIME_TO_HOURS;
+	return (uint32_t) nt;
+}
+
+/*
+ * Convert a DNS timestamp into NTTIME.
+ *
+ * Because DNS timestamps cover a longer time period than NTTIME, and these
+ * would wrap to an arbitrary NTTIME, we saturate at NTTIME_MAX and return an
+ * error in this case.
+ */
+NTSTATUS dns_timestamp_to_nt_time(NTTIME *_nt, uint32_t t)
+{
+	NTTIME nt = t;
+	if (nt > NTTIME_MAX / NTTIME_TO_HOURS) {
+		*_nt = NTTIME_MAX;
+		return NT_STATUS_INTEGER_OVERFLOW;
+	}
+	*_nt = nt * NTTIME_TO_HOURS;
+	return NT_STATUS_OK;
+}
