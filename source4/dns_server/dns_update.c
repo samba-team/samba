@@ -302,7 +302,6 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     bool name_is_static)
 {
 	enum ndr_err_code ndr_err;
-	NTTIME t;
 
 	if (rrec->rr_type == DNS_QTYPE_ALL) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -316,10 +315,7 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 	if (name_is_static) {
 		r->dwTimeStamp = 0;
 	} else {
-		unix_to_nt_time(&t, time(NULL));
-		t /= 10 * 1000 * 1000;
-		t /= 3600;
-		r->dwTimeStamp = t;
+		r->dwTimeStamp = unix_to_dns_timestamp(time(NULL));
 	}
 
 	/* If we get QCLASS_ANY, we're done here */

@@ -1908,7 +1908,6 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	uint16_t num_recs = 0;
 	uint16_t first = 0;
 	uint16_t i;
-	NTTIME t;
 	WERROR werr;
 
 	if (state->transaction_token != (void*)version) {
@@ -1993,10 +1992,7 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		if (dns_name_is_static(recs, num_recs)) {
 			rec->dwTimeStamp = 0;
 		} else {
-			unix_to_nt_time(&t, time(NULL));
-			t /= 10 * 1000 * 1000; /* convert to seconds */
-			t /= 3600;	     /* convert to hours */
-			rec->dwTimeStamp = (uint32_t)t;
+			rec->dwTimeStamp = unix_to_dns_timestamp(time(NULL));
 		}
 	}
 

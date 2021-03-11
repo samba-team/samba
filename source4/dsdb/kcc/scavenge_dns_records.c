@@ -381,7 +381,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 	struct dns_server_zone *zones = NULL;
 	struct dns_server_zone *z = NULL;
 	int ret, i;
-	NTTIME current_time;
+	uint32_t current_time;
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res = NULL;
 	int tombstone_time;
@@ -392,9 +392,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = {"dnsRecord", "dNSTombstoned", NULL};
 	rec = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
 
-	unix_to_nt_time(&current_time, time(NULL));
-	current_time /= 10 * 1000 * 1000;
-	current_time /= 3600;
+	current_time = unix_to_dns_timestamp(time(NULL));
 
 	lp_ctx = (struct loadparm_context *)ldb_get_opaque(samdb, "loadparm");
 	tombstone_time =

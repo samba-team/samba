@@ -941,7 +941,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	bool become_tombstoned = false;
 	struct ldb_dn *zone_dn = NULL;
 	struct dnsserver_zoneinfo *zoneinfo = NULL;
-	NTTIME t;
+	uint32_t t;
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
@@ -1015,9 +1015,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		}
 
 		if (zoneinfo->fAging == 1 && records[i].dwTimeStamp != 0) {
-			unix_to_nt_time(&t, time(NULL));
-			t /= 10 * 1000 * 1000;
-			t /= 3600;
+			t = unix_to_dns_timestamp(time(NULL));
 			if (t - records[i].dwTimeStamp >
 			    zoneinfo->dwNoRefreshInterval) {
 				records[i].dwTimeStamp = t;
