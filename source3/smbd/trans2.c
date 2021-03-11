@@ -792,20 +792,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
-			if (!fsp->fsp_flags.is_pathref &&
-			    fsp_get_io_fd(fsp) != -1)
-			{
-				DEBUG(10,("set_ea: deleting ea name %s on "
-					  "file %s by file descriptor.\n",
-					  unix_ea_name, fsp_str_dbg(fsp)));
-				ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
-			} else {
-				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
-					unix_ea_name, fsp->fsp_name->base_name));
-				ret = SMB_VFS_REMOVEXATTR(conn,
-						fsp->fsp_name,
-						unix_ea_name);
-			}
+			DBG_DEBUG("deleting ea name %s on "
+				  "file %s by file descriptor.\n",
+				  unix_ea_name, fsp_str_dbg(fsp));
+			ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
 #ifdef ENOATTR
 			/* Removing a non existent attribute always succeeds. */
 			if (ret == -1 && errno == ENOATTR) {
