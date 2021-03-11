@@ -465,6 +465,27 @@ enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
 	return encryption_state;
 }
 
+static const struct enum_list enum_smb3_signing_algorithms[] = {
+	{SMB2_SIGNING_AES128_CMAC, "aes-128-cmac"},
+	{SMB2_SIGNING_HMAC_SHA256, "hmac-sha-256"},
+	{-1, NULL}
+};
+
+const char *smb3_signing_algorithm_name(uint16_t algo)
+{
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(enum_smb3_signing_algorithms); i++) {
+		if (enum_smb3_signing_algorithms[i].value != algo) {
+			continue;
+		}
+
+		return enum_smb3_signing_algorithms[i].name;
+	}
+
+	return NULL;
+}
+
 static const struct enum_list enum_smb3_encryption_algorithms[] = {
 	{SMB2_ENCRYPTION_AES128_GCM, "aes-128-gcm"},
 	{SMB2_ENCRYPTION_AES128_CCM, "aes-128-ccm"},
@@ -512,16 +533,62 @@ static int32_t parse_enum_val(const struct enum_list *e,
 struct smb311_capabilities smb311_capabilities_parse(const char *role,
 				const char * const *encryption_algos)
 {
+	const char * const *signing_algos = NULL;
 	struct smb311_capabilities c = {
+		.signing = {
+			.num_algos = 0,
+		},
 		.encryption = {
 			.num_algos = 0,
 		},
 	};
+	char sign_param[64] = { 0, };
 	char enc_param[64] = { 0, };
 	size_t ai;
 
+	snprintf(sign_param, sizeof(sign_param),
+		 "%s smb3 signing algorithms", role);
 	snprintf(enc_param, sizeof(enc_param),
 		 "%s smb3 encryption algorithms", role);
+
+	for (ai = 0; signing_algos != NULL && signing_algos[ai] != NULL; ai++) {
+		const char *algoname = signing_algos[ai];
+		int32_t v32;
+		uint16_t algo;
+		size_t di;
+		bool ignore = false;
+
+		if (c.signing.num_algos >= SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS) {
+			DBG_ERR("WARNING: Ignoring trailing value '%s' for parameter '%s'\n",
+				  algoname, sign_param);
+			continue;
+		}
+
+		v32 = parse_enum_val(enum_smb3_signing_algorithms,
+				     sign_param, algoname);
+		if (v32 == INT32_MAX) {
+			continue;
+		}
+		algo = v32;
+
+		for (di = 0; di < c.signing.num_algos; di++) {
+			if (algo != c.signing.algos[di]) {
+				continue;
+			}
+
+			ignore = true;
+			break;
+		}
+
+		if (ignore) {
+			DBG_ERR("WARNING: Ignoring duplicate value '%s' for parameter '%s'\n",
+				  algoname, sign_param);
+			continue;
+		}
+
+		c.signing.algos[c.signing.num_algos] = algo;
+		c.signing.num_algos += 1;
+	}
 
 	for (ai = 0; encryption_algos != NULL && encryption_algos[ai] != NULL; ai++) {
 		const char *algoname = encryption_algos[ai];

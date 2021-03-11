@@ -337,9 +337,12 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	int ret;
 
 	if (smb3_capabilities != NULL) {
+		const struct smb3_signing_capabilities *sign_algos =
+			&smb3_capabilities->signing;
 		const struct smb3_encryption_capabilities *ciphers =
 			&smb3_capabilities->encryption;
 
+		SMB_ASSERT(sign_algos->num_algos <= SMB3_SIGNING_CAPABILITIES_MAX_ALGOS);
 		SMB_ASSERT(ciphers->num_algos <= SMB3_ENCRYTION_CAPABILITIES_MAX_ALGOS);
 	}
 
@@ -4844,6 +4847,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	}
 
 	if (state->conn->max_protocol >= PROTOCOL_SMB3_11) {
+		const struct smb3_signing_capabilities *client_sign_algos =
+			&state->conn->smb2.client.smb3_capabilities.signing;
 		const struct smb3_encryption_capabilities *client_ciphers =
 			&state->conn->smb2.client.smb3_capabilities.encryption;
 		NTSTATUS status;
@@ -4882,6 +4887,25 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 
 			status = smb2_negotiate_context_add(
 				state, &c, SMB2_ENCRYPTION_CAPABILITIES, p, ofs);
+			if (!NT_STATUS_IS_OK(status)) {
+				return NULL;
+			}
+		}
+
+		if (client_sign_algos->num_algos > 0) {
+			size_t ofs = 0;
+			SSVAL(p, ofs, client_sign_algos->num_algos);
+			ofs += 2;
+
+			for (i = 0; i < client_sign_algos->num_algos; i++) {
+				size_t next_ofs = ofs + 2;
+				SMB_ASSERT(next_ofs < ARRAY_SIZE(p));
+				SSVAL(p, ofs, client_sign_algos->algos[i]);
+				ofs = next_ofs;
+			}
+
+			status = smb2_negotiate_context_add(
+				state, &c, SMB2_SIGNING_CAPABILITIES, p, ofs);
 			if (!NT_STATUS_IS_OK(status)) {
 				return NULL;
 			}
@@ -4968,6 +4992,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	uint16_t salt_length;
 	uint16_t hash_selected;
 	gnutls_hash_hd_t hash_hnd = NULL;
+	struct smb2_negotiate_context *sign_algo = NULL;
 	struct smb2_negotiate_context *cipher = NULL;
 	struct iovec sent_iov[3] = {{0}, {0}, {0}};
 	static const struct smb2cli_req_expected_response expected[] = {
@@ -5172,6 +5197,65 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (hash_selected != SMB2_PREAUTH_INTEGRITY_SHA512) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
+	}
+
+	sign_algo = smb2_negotiate_context_find(&c, SMB2_SIGNING_CAPABILITIES);
+	if (sign_algo != NULL) {
+		const struct smb3_signing_capabilities *client_sign_algos =
+			&state->conn->smb2.client.smb3_capabilities.signing;
+		bool found_selected = false;
+		uint16_t sign_algo_count;
+		uint16_t sign_algo_selected;
+
+		if (client_sign_algos->num_algos == 0) {
+			/*
+			 * We didn't ask for SMB2_ENCRYPTION_CAPABILITIES
+			 */
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (sign_algo->data.length < 2) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		sign_algo_count = SVAL(sign_algo->data.data, 0);
+		if (sign_algo_count != 1) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (sign_algo->data.length < (2 + 2 * sign_algo_count)) {
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		sign_algo_selected = SVAL(sign_algo->data.data, 2);
+
+		for (i = 0; i < client_sign_algos->num_algos; i++) {
+			if (client_sign_algos->algos[i] == sign_algo_selected) {
+				/*
+				 * We found a match
+				 */
+				found_selected = true;
+				break;
+			}
+		}
+
+		if (!found_selected) {
+			/*
+			 * The server send a sign_algo we didn't offer.
+			 */
+			tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		conn->smb2.server.sign_algo = sign_algo_selected;
 	}
 
 	cipher = smb2_negotiate_context_find(&c, SMB2_ENCRYPTION_CAPABILITIES);
