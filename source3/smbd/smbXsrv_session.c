@@ -1723,28 +1723,7 @@ struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			if (!NT_STATUS_IS_OK(xconn->transport.status)) {
-				preq->session = NULL;
-				/*
-				 * If we no longer have a session we can't
-				 * sign or encrypt replies.
-				 */
-				preq->do_signing = false;
-				preq->do_encryption = false;
-				preq->preauth = NULL;
-
-				if (preq->subreq != NULL) {
-					tevent_req_cancel(preq->subreq);
-				}
-				continue;
-			}
-
-			/*
-			 * Never cancel anything in a compound
-			 * request. Way too hard to deal with
-			 * the result.
-			 */
-			if (!preq->compound_related && preq->subreq != NULL) {
+			if (preq->subreq != NULL) {
 				tevent_req_cancel(preq->subreq);
 			}
 
