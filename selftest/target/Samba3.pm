@@ -2490,6 +2490,11 @@ sub provision($$)
 [print3]
 	copy = print1
 	default devmode = no
+
+[print_var_exp]
+	copy = print1
+	print command = $self->{srcdir}/source3/script/tests/printing/printing_var_exp_lpr_cmd.sh \"Windows user: %U\" \"UNIX user: %u\" \"Domain: %D\"
+
 [lp]
 	copy = print1
 
