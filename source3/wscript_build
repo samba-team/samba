@@ -790,6 +790,7 @@ bld.SAMBA3_SUBSYSTEM('PRINTBASE',
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     source='''
                            printing/printing.c
+                           printing/rap_jobid.c
                            printing/nt_printing.c
                            printing/nt_printing_tdb.c
                            printing/nt_printing_migrate_internal.c

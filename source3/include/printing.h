@@ -238,9 +238,6 @@ WERROR print_queue_resume(const struct auth_session_info *server_info,
 			  struct messaging_context *msg_ctx, int snum);
 WERROR print_queue_purge(const struct auth_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum);
-uint16_t pjobid_to_rap(const char* sharename, uint32_t jobid);
-bool rap_to_pjobid(uint16_t rap_jobid, fstring sharename, uint32_t *pjobid);
-void rap_jobid_delete(const char* sharename, uint32_t jobid);
 bool print_backend_init(struct messaging_context *msg_ctx);
 void printing_end(void);
 

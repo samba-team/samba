@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "../libcli/security/security.h"
 #include "smbd/fd_handle.h"
+#include "source3/printing/rap_jobid.h"
 
 struct print_file_data {
 	char *svcname;
