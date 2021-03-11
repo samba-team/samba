@@ -791,6 +791,12 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	s->final_binding = dcerpc_binding_dup(s, s->lsa_pipe->binding);
 	if (composite_nomem(s->final_binding, c)) return;
 
+	/*
+	 * We don't want to inherit the assoc_group_id from the
+	 * lsa_pipe here!
+	 */
+	dcerpc_binding_set_assoc_group_id(s->final_binding, 0);
+
 	epm_creds = cli_credentials_init_anon(s);
 	if (composite_nomem(epm_creds, c)) return;
 
