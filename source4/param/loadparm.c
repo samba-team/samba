@@ -50,6 +50,15 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 		.smb2_capabilities = SMB2_CAP_ALL,
 		.client_guid = GUID_random(),
 		.max_credits = WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK,
+		.smb3_capabilities = {
+			.encryption = {
+				.num_algos = 2,
+				.algos = {
+					SMB2_ENCRYPTION_AES128_GCM,
+					SMB2_ENCRYPTION_AES128_CCM,
+				},
+			},
+		},
 	};
 }
 
