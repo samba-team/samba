@@ -510,6 +510,10 @@ bool smbd_become_authenticated_pipe_user(struct auth_session_info *session_info)
 	if (!push_sec_ctx())
 		return False;
 
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
+
 	set_sec_ctx(session_info->unix_token->uid, session_info->unix_token->gid,
 		    session_info->unix_token->ngroups, session_info->unix_token->groups,
 		    session_info->security_token);
