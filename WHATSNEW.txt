@@ -1,4 +1,77 @@
                    ===============================
+                   Release Notes for Samba 4.12.12
+                           March 11, 2021
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.12 release series.
+Please note that this will be the last bugfix release of the Samba 4.12 release
+series. There will be Security Releases only beyond this point.
+
+
+Changes since 4.12.11
+---------------------
+
+o  Trever L. Adams <trever.adams@gmail.com>
+   * BUG 14634: s3:modules:vfs_virusfilter: Recent talloc changes cause infinite
+     start-up failure.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13992: SAMBA RPC share error.
+   * BUG 14612: s3: smbd: Add call to conn_setup_case_options() to
+     create_conn_struct_as_root().
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14602: s3/auth: Implement "winbind:ignore domains".
+   * BUG 14612: build: Remove smbd_conn private library.
+
+o  Peter Eriksson <pen@lysator.liu.se>
+   * BUG 14648: s3: VFS: nfs4_acls. Add missing TALLOC_FREE(frame) in error
+     path.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14624: classicupgrade: Treat old never expires value right.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 1463: g_lock: Fix uninitalized variable reads.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13898: s3:pysmbd: Fix fd leak in py_smbd_create_file().
+   * BUG 14607: Work around special SMB2 IOCTL response behavior of NetApp
+     Ontap 7.3.7.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14625: Fix smbd share mode double free crash.
+
+o  Paul Wise <pabs3@bonedaddy.net>
+   * BUG 12505: HEIMDAL: krb5_storage_free(NULL) should work.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ===============================
                    Release Notes for Samba 4.12.11
                           January 14, 2021
                    ===============================
@@ -80,8 +153,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ===============================
