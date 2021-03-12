@@ -2099,8 +2099,7 @@ exit:
 		ealen = -1;
 		if (errno == EINVAL) {
 			become_root();
-			(void)SMB_VFS_REMOVEXATTR(handle->conn,
-						  smb_fname,
+			(void)SMB_VFS_FREMOVEXATTR(smb_fname->fsp,
 						  AFPINFO_EA_NETATALK);
 			unbecome_root();
 			errno = ENOENT;
