@@ -2049,8 +2049,20 @@ static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,
 		DBG_ERR("Failed to fetch gluster fd\n");
 		return -1;
 	}
-
-	return glfs_flistxattr(glfd, list, size);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to list xattrs.
+		 */
+		return glfs_flistxattr(glfd, list, size);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		return glfs_listxattr(handle->data,
+				fsp->fsp_name->base_name,
+				list,
+				size);
+	}
 }
 
 static int vfs_gluster_removexattr(struct vfs_handle_struct *handle,
