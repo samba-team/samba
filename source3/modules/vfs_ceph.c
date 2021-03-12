@@ -1283,7 +1283,23 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	int ret;
 	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %llu)\n",
 		  handle, fsp, list, llu(size));
-	ret = ceph_flistxattr(handle->data, fsp_get_io_fd(fsp), list, size);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to list xattrs.
+		 */
+		ret = ceph_flistxattr(handle->data,
+					fsp_get_io_fd(fsp),
+					list,
+					size);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		ret = ceph_listxattr(handle->data,
+					fsp->fsp_name->base_name,
+					list,
+					size);
+	}
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
