@@ -1323,7 +1323,19 @@ static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fremovexattr(%p, %p, %s)\n", handle, fsp, name);
-	ret = ceph_fremovexattr(handle->data, fsp_get_io_fd(fsp), name);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to remove xattrs.
+		 */
+		ret = ceph_fremovexattr(handle->data, fsp_get_io_fd(fsp), name);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		ret = ceph_removexattr(handle->data,
+					fsp->fsp_name->base_name,
+					name);
+	}
 	DBG_DEBUG("[CEPH] fremovexattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
