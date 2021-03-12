@@ -33,7 +33,7 @@ o  Björn Jacke <bj@sernet.de>
    * BUG 14624: classicupgrade: Treat old never expires value right.
 
 o  Volker Lendecke <vl@samba.org>
-   * BUG 1463: g_lock: Fix uninitalized variable reads.
+   * BUG 14636: g_lock: Fix uninitalized variable reads.
 
 o  Stefan Metzmacher <metze@samba.org>
    * BUG 13898: s3:pysmbd: Fix fd leak in py_smbd_create_file().
