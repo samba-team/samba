@@ -485,6 +485,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 struct smbd_smb2_create_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
+	struct GUID req_guid;
 	struct smb_request *smb1req;
 	bool open_was_deferred;
 	struct tevent_immediate *im;
@@ -504,6 +505,8 @@ struct smbd_smb2_create_state {
 	uint64_t allocation_size;
 	struct GUID _create_guid;
 	struct GUID *create_guid;
+	struct GUID _purge_create_guid;
+	struct GUID *purge_create_guid;
 	bool update_open;
 	bool durable_requested;
 	uint32_t durable_timeout_msec;
@@ -542,6 +545,15 @@ struct smbd_smb2_create_state {
 	uint64_t out_file_id_volatile;
 	struct smb2_create_blobs *out_context_blobs;
 };
+
+static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
+						const char *caller_func);
+
+static void smbd_smb2_create_cleanup(struct tevent_req *req,
+				     enum tevent_req_state req_state)
+{
+	smbd_smb2_create_purge_replay_cache(req, __func__);
+}
 
 static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 	struct tevent_req *req,
@@ -709,6 +721,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smb1req = smb1req;
 
+	state->req_guid = smbd_request_guid(smb1req, 0);
+
+	tevent_req_set_cleanup_fn(req, smbd_smb2_create_cleanup);
+
 	if (smb2req->subreq == NULL) {
 		DBG_DEBUG("name [%s]\n", in_name);
 	} else {
@@ -721,6 +737,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->request_time = old_state->request_time;
 		state->open_rec = talloc_move(state, &old_state->open_rec);
 		state->open_was_deferred = old_state->open_was_deferred;
+		state->_purge_create_guid = old_state->_purge_create_guid;
+		state->purge_create_guid = old_state->purge_create_guid;
+		old_state->purge_create_guid = NULL;
 	}
 
 	TALLOC_FREE(smb2req->subreq);
@@ -1026,6 +1045,31 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
+						const char *caller_func)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+	NTSTATUS status;
+
+	if (state->purge_create_guid == NULL) {
+		return;
+	}
+
+	status = smbXsrv_open_purge_replay_cache(state->smb2req->xconn->client,
+						 state->purge_create_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct GUID_txt_buf buf;
+
+		D_ERR("%s: smbXsrv_open_purge_replay_cache(%s) %s\n",
+		      caller_func,
+		      GUID_buf_string(state->purge_create_guid, &buf),
+		      nt_errstr(status));
+	}
+
+	state->purge_create_guid = NULL;
+}
+
 static void smbd_smb2_create_before_exec(struct tevent_req *req)
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
@@ -1117,6 +1161,7 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 
 	if (state->dh2q != NULL) {
 		const uint8_t *p = state->dh2q->data.data;
+		NTTIME now = timeval_to_nttime(&smb2req->request_time);
 		uint32_t durable_v2_timeout = 0;
 		DATA_BLOB create_guid_blob;
 		const uint8_t *hdr;
@@ -1179,14 +1224,33 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 			flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
 
 		status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
-							  state->create_guid,
-							  0 /* now */,
+							  state->req_guid,
+							  *state->create_guid,
+							  state->fname,
+							  now,
 							  &state->op);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FWP_RESERVED)) {
+			/*
+			 * We've reserved the replay_cache record
+			 * for ourself, indicating we're still
+			 * in progress.
+			 *
+			 * It means the smbd_smb2_create_cleanup()
+			 * may need to call smbXsrv_open_purge_replay_cache()
+			 * in order to cleanup.
+			 */
+			SMB_ASSERT(state->op == NULL);
+			state->_purge_create_guid = state->_create_guid;
+			state->purge_create_guid = &state->_purge_create_guid;
+			status = NT_STATUS_OK;
 			state->replay_operation = false;
-		} else if (tevent_req_nterror(req, status)) {
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
+			tevent_req_nterror(req, status);
+			return;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("smb2srv_open_lookup_replay_cache "
 				    "failed: %s\n", nt_errstr(status));
+			tevent_req_nterror(req, status);
 			return;
 		} else if (!state->replay_operation) {
 			/*
@@ -1388,6 +1452,12 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 			tevent_req_post(req, state->ev);
 			return;
 		}
+
+		/*
+		 * We should not purge the replay cache anymore
+		 * as it's attached to the smbXsrv_open record now.
+		 */
+		state->purge_create_guid = NULL;
 	}
 
 	if (state->dhnq != NULL && state->op->global->durable) {

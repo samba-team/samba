@@ -512,4 +512,11 @@ interface smbXsrv
 	void smbXsrv_open_decode(
 		[in] smbXsrv_openB blob
 		);
+
+	const uint32 SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE = 28;
+	typedef [public] struct {
+		GUID					holder_req_guid;
+		NTTIME					idle_time;
+		uint32					local_id;
+	} smbXsrv_open_replay_cache;
 }

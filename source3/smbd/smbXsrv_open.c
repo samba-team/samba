@@ -928,7 +928,16 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	struct GUID_txt_buf buf;
 	char *guid_string;
 	struct db_context *db = op->table->local.replay_cache_db_ctx;
+	struct smbXsrv_open_replay_cache rc = {
+		.idle_time = op->idle_time,
+		.local_id = op->local_id,
+	};
+	uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE];
+	DATA_BLOB blob = data_blob_const(data, ARRAY_SIZE(data));
+	enum ndr_err_code ndr_err;
 	NTSTATUS status;
+	TDB_DATA key;
+	TDB_DATA val;
 
 	if (!(op->flags & SMBXSRV_OPEN_NEED_REPLAY_CACHE)) {
 		return NT_STATUS_OK;
@@ -939,16 +948,18 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	}
 
 	create_guid = &op->global->create_guid;
-	if (GUID_all_zero(create_guid)) {
-		return NT_STATUS_OK;
-	}
-
 	guid_string = GUID_buf_string(create_guid, &buf);
-	if (guid_string == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	key = string_term_tdb_data(guid_string);
 
-	status = dbwrap_store_uint32_bystring(db, guid_string, op->local_id);
+	ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
+		(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		return status;
+	}
+	val = make_tdb_data(blob.data, blob.length);
+
+	status = dbwrap_store(db, key, val, TDB_REPLACE);
 
 	if (NT_STATUS_IS_OK(status)) {
 		op->flags |= SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
@@ -956,6 +967,27 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	}
 
 	return status;
+}
+
+NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
+					 const struct GUID *create_guid)
+{
+	struct GUID_txt_buf buf;
+	char *guid_string;
+	struct db_context *db;
+
+	if (client->open_table == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	db = client->open_table->local.replay_cache_db_ctx;
+
+	guid_string = GUID_buf_string(create_guid, &buf);
+	if (guid_string == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return dbwrap_purge_bystring(db, guid_string);
 }
 
 static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
@@ -1269,44 +1301,189 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 	return status;
 }
 
+/*
+ * This checks or marks the replay cache, we have the following
+ * cases:
+ *
+ * 1. There is no record in the cache
+ *    => we add the passes caller_req_guid as holder_req_guid
+ *       together with local_id as 0.
+ *    => We return STATUS_FWP_RESERVED in order to indicate
+ *       that the caller holds the current reservation
+ *
+ * 2. There is a record in the cache and holder_req_guid
+ *    is already the same as caller_req_guid and local_id is 0
+ *    => We return STATUS_FWP_RESERVED in order to indicate
+ *       that the caller holds the current reservation
+ *
+ * 3. There is a record in the cache with a holder_req_guid
+ *    other than caller_req_guid (and local_id is 0):
+ *    => We return NT_STATUS_FILE_NOT_AVAILABLE to indicate
+ *       the original request is still pending
+ *
+ * 4. There is a record in the cache with a zero holder_req_guid
+ *    and a valid local_id:
+ *    => We lookup the existing open by local_id
+ *    => We return NT_STATUS_OK together with the smbXsrv_open
+ *
+ *
+ * With NT_STATUS_OK the caller can continue the replay processing.
+ *
+ * With STATUS_FWP_RESERVED the caller should continue the normal
+ * open processing:
+ * - On success:
+ *   - smbXsrv_open_update()/smbXsrv_open_set_replay_cache()
+ *     will convert the record to a zero holder_req_guid
+ *     with a valid local_id.
+ * - On failure:
+ *   - smbXsrv_open_purge_replay_cache() should cleanup
+ *     the reservation.
+ *
+ * All other values should be returned to the client,
+ * while NT_STATUS_FILE_NOT_AVAILABLE will trigger the
+ * retry loop on the client.
+ */
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
-					  const struct GUID *create_guid,
-					  NTTIME now, /* TODO: needed ? */
+					  struct GUID caller_req_guid,
+					  struct GUID create_guid,
+					  const char *name,
+					  NTTIME now,
 					  struct smbXsrv_open **_open)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
-	char *guid_string;
-	struct GUID_txt_buf buf;
-	uint32_t local_id = 0;
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct db_context *db = table->local.replay_cache_db_ctx;
+	struct GUID_txt_buf _create_guid_buf;
+	struct GUID_txt_buf tmp_guid_buf;
+	const char *create_guid_str = NULL;
+	TDB_DATA create_guid_key;
+	struct db_record *db_rec = NULL;
+	struct smbXsrv_open *op = NULL;
+	struct smbXsrv_open_replay_cache rc = {
+		.holder_req_guid = caller_req_guid,
+		.idle_time = now,
+		.local_id = 0,
+	};
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob = data_blob_null;
+	TDB_DATA val;
 
-	if (GUID_all_zero(create_guid)) {
-		return NT_STATUS_NOT_FOUND;
+	*_open = NULL;
+
+	create_guid_str = GUID_buf_string(&create_guid, &_create_guid_buf);
+	create_guid_key = string_term_tdb_data(create_guid_str);
+
+	db_rec = dbwrap_fetch_locked(db, frame, create_guid_key);
+	if (db_rec == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	guid_string = GUID_buf_string(create_guid, &buf);
-	if (guid_string == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
+	val = dbwrap_record_get_value(db_rec);
+	if (val.dsize == 0) {
+		uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE];
+
+		blob = data_blob_const(data, ARRAY_SIZE(data));
+		ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
+			(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		val = make_tdb_data(blob.data, blob.length);
+		status = dbwrap_record_store(db_rec, val, TDB_REPLACE);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/*
+		 * We're the new holder
+		 */
+		*_open = NULL;
+		TALLOC_FREE(frame);
+		return NT_STATUS_FWP_RESERVED;
 	}
 
-	status = dbwrap_fetch_uint32_bystring(db, guid_string, &local_id);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+	if (val.dsize != SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	blob = data_blob_const(val.dptr, val.dsize);
+	ndr_err = ndr_pull_struct_blob_all_noalloc(&blob, &rc,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_replay_cache);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		TALLOC_FREE(frame);
 		return status;
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("failed to fetch local_id from replay cache: %s\n",
-			nt_errstr(status));
-		return status;
+	if (rc.local_id != 0) {
+		if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
+			/*
+			 * This should not happen
+			 */
+			status = NT_STATUS_INTERNAL_ERROR;
+			DBG_ERR("caller %s already holds local_id %u for create %s [%s] - %s\n",
+				GUID_buf_string(&caller_req_guid, &tmp_guid_buf),
+				(unsigned)rc.local_id,
+				create_guid_str,
+				name,
+				nt_errstr(status));
+
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		status = smbXsrv_open_local_lookup(table,
+						   rc.local_id,
+						   0, /* global_id */
+						   now,
+						   &op);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("holder %s stale for local_id %u for create %s [%s] - %s\n",
+				GUID_buf_string(&rc.holder_req_guid, &tmp_guid_buf),
+				(unsigned)rc.local_id,
+				create_guid_str,
+				name,
+				nt_errstr(status));
+
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/*
+		 * We found an open the caller can reuse.
+		 */
+		SMB_ASSERT(op != NULL);
+		*_open = op;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 	}
 
-	status = smbXsrv_open_local_lookup(table, local_id, 0, /* global_id */
-					   now, _open);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("smbXsrv_open_local_lookup failed for local_id %u\n",
-			(unsigned)local_id);
+	if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
+		/*
+		 * We're still the holder
+		 */
+		*_open = NULL;
+		TALLOC_FREE(frame);
+		return NT_STATUS_FWP_RESERVED;
 	}
 
+	/*
+	 * The original request (or a former replay) is still
+	 * pending, ask the client to retry by sending FILE_NOT_AVAILABLE.
+	 */
+	status = NT_STATUS_FILE_NOT_AVAILABLE;
+	DBG_DEBUG("holder %s still pending for create %s [%s] - %s\n",
+		   GUID_buf_string(&rc.holder_req_guid, &tmp_guid_buf),
+		   create_guid_str,
+		   name,
+		   nt_errstr(status));
+	TALLOC_FREE(frame);
 	return status;
 }
 

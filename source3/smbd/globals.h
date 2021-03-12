@@ -672,8 +672,12 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 			     uint64_t volatile_id,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
+NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
+					 const struct GUID *create_guid);
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
-					  const struct GUID *create_guid,
+					  struct GUID caller_req_guid,
+					  struct GUID create_guid,
+					  const char *name,
 					  NTTIME now,
 					  struct smbXsrv_open **_open);
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
