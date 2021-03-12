@@ -1332,8 +1332,27 @@ static int cephwrap_fsetxattr(struct vfs_handle_struct *handle, struct files_str
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n", handle, fsp, name, value, llu(size), flags);
-	ret = ceph_fsetxattr(handle->data, fsp_get_io_fd(fsp),
-			     name, value, size, flags);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to set xattrs.
+		 */
+		ret = ceph_fsetxattr(handle->data,
+				fsp_get_io_fd(fsp),
+				name,
+				value,
+				size,
+				flags);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		ret = ceph_setxattr(handle->data,
+				fsp->fsp_name->base_name,
+				name,
+				value,
+				size,
+				flags);
+	}
 	DBG_DEBUG("[CEPH] fsetxattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
