@@ -666,8 +666,15 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	/* remove the old stream */
-	oret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname_src,
+	/*
+	 * remove the old stream.
+	 * Note that now we're doing this by handle
+	 * not by pathname we must do it on the base_fsp,
+	 * as we have to remove the actual xattr on the base file.
+	 */
+	SMB_ASSERT(smb_fname_src->fsp->base_fsp != NULL);
+
+	oret = SMB_VFS_FREMOVEXATTR(smb_fname_src->fsp->base_fsp,
 				   src_xattr_name);
 	if (oret < 0) {
 		if (errno == ENOATTR) {
