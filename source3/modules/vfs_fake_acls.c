@@ -385,39 +385,22 @@ static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_in)
+			const struct smb_filename *smb_fname)
 {
 	int ret;
 	const char *name = FAKE_ACL_DEFAULT_XATTR;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct smb_filename *smb_fname = cp_smb_filename_nostream(talloc_tos(),
-						smb_fname_in);
-
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
 
 	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
 		errno = EINVAL;
-		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
+	ret = SMB_VFS_NEXT_FREMOVEXATTR(handle, smb_fname->fsp, name);
 	if (ret == -1 && errno == ENOATTR) {
 		ret = 0;
 		errno = 0;
 	}
 
-	TALLOC_FREE(frame);
 	return ret;
 }
 
