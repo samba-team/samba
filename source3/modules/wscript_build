@@ -307,13 +307,6 @@ bld.SAMBA3_MODULE('vfs_hpuxacl',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_hpuxacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_hpuxacl'))
 
-bld.SAMBA3_MODULE('vfs_tru64acl',
-                 subsystem='vfs',
-                 source='vfs_tru64acl.c',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_true64acl'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_true64acl'))
-
 bld.SAMBA3_MODULE('vfs_catia',
                  subsystem='vfs',
                  source='vfs_catia.c',
