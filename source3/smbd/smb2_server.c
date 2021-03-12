@@ -4604,6 +4604,18 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 		bool ok;
 		struct msghdr msg;
 
+		if (!NT_STATUS_IS_OK(xconn->transport.status)) {
+			/*
+			 * we're not supposed to do any io
+			 * just flush all pending stuff.
+			 */
+			xconn->smb2.send_queue_len--;
+			DLIST_REMOVE(xconn->smb2.send_queue, e);
+
+			talloc_free(e->mem_ctx);
+			continue;
+		}
+
 		if (e->sendfile_header != NULL) {
 			size_t size = 0;
 			size_t i = 0;
