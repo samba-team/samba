@@ -33,6 +33,7 @@
 #include "lib/param/param.h"
 #include "lib/events/events.h"
 #include "oplock_break_handler.h"
+#include "lease_break_handler.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -91,6 +92,15 @@
 			__IO_OUT_VAL(__io1, __io2, lease_response.lease_key.data[1]);\
 		} \
 	} while(0)
+
+#define WAIT_FOR_ASYNC_RESPONSE(__tctx, __req) do { \
+	torture_comment((__tctx), "Waiting for async response: %s\n", #__req); \
+	while (!(__req)->cancel.can_cancel && (__req)->state <= SMB2_REQUEST_RECV) { \
+		if (tevent_loop_once((__tctx)->ev) != 0) { \
+			break; \
+		} \
+	} \
+} while(0)
 
 #define BASEDIR "replaytestdir"
 
@@ -1350,6 +1360,3073 @@ done:
 	return ret;
 }
 
+/**
+ * This tests replay with a pending open on a single
+ * channel. It tests the case where the client2 open
+ * is deferred because it conflicts with a HANDLE lease,
+ * which is broken because the operation should otherwise
+ * return NT_STATUS_SHARING_VIOLATION.
+ *
+ * With a durablev2 request containing a create_guid:
+ * - client2_level = NONE:
+ *   but without asking for an oplock nor a lease.
+ * - client2_level = BATCH:
+ *   and asking for a batch oplock.
+ * - client2_level = LEASE
+ *   and asking for an RWH lease.
+ *
+ * While another client holds a batch oplock or
+ * RWH lease. (client1_level => LEASE or BATCH).
+ *
+ * There are two modes of this test one, with releaseing
+ * the oplock/lease of client1 via close or ack.
+ * (release_op SMB2_OP_CLOSE/SMB2_OP_BREAK).
+ *
+ * Windows doesn't detect replays in this case and
+ * always result in NT_STATUS_SHARING_VIOLATION.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ */
+static bool _test_dhv2_pending1_vs_violation(struct torture_context *tctx,
+					     const char *testname,
+					     struct smb2_tree *tree1,
+					     uint8_t client1_level,
+					     uint8_t release_op,
+					     struct smb2_tree *tree2,
+					     uint8_t client2_level,
+					     NTSTATUS orig21_reject_status,
+					     NTSTATUS replay22_reject_status,
+					     NTSTATUS replay23_reject_status)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle *h2f = NULL;
+	struct smb2_handle _h21;
+	struct smb2_handle *h21 = NULL;
+	struct smb2_handle _h23;
+	struct smb2_handle *h23 = NULL;
+	struct smb2_handle _h24;
+	struct smb2_handle *h24 = NULL;
+	struct smb2_create io1, io21, io22, io23, io24;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_request *req21 = NULL;
+	struct smb2_request *req22 = NULL;
+	bool ret = true;
+	char fname[256];
+	struct smb2_transport *transport1 = tree1->session->transport;
+	uint32_t server_capabilities;
+	uint32_t share_capabilities;
+	struct smb2_lease ls1;
+	uint64_t lease_key1;
+	uint16_t lease_epoch1 = 0;
+	struct smb2_break op_ack1;
+	struct smb2_lease_break_ack lb_ack1;
+	struct smb2_lease ls2;
+	uint64_t lease_key2;
+	uint16_t lease_epoch2 = 0;
+	bool share_is_so;
+	struct smb2_transport *transport2 = tree2->session->transport;
+	int request_timeout2 = transport2->options.request_timeout;
+	struct smb2_session *session2 = tree2->session;
+	const char *hold_name = NULL;
+
+	switch (client1_level) {
+	case SMB2_OPLOCK_LEVEL_LEASE:
+		hold_name = "RWH Lease";
+		break;
+	case SMB2_OPLOCK_LEVEL_BATCH:
+		hold_name = "BATCH Oplock";
+		break;
+	default:
+		smb_panic(__location__);
+		break;
+	}
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		if (client1_level == SMB2_OPLOCK_LEVEL_LEASE ||
+		    client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			torture_skip(tctx, "leases are not supported");
+		}
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+	if (share_is_so) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "%s not supported on SCALEOUT share",
+			     hold_name));
+	}
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s\\%s_%s.dat",
+		 BASEDIR, testname, generate_random_str(tctx, 8));
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	ZERO_STRUCT(op_ack1);
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+	ZERO_STRUCT(lb_ack1);
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	smb2_keepalive(transport1);
+	transport2->oplock.handler = torture_oplock_ack_handler;
+	transport2->oplock.private_data = tree2;
+	transport2->lease.handler = torture_lease_handler;
+	transport2->lease.private_data = tree2;
+	smb2_keepalive(transport2);
+
+	smb2_util_unlink(tree1, fname);
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h1);
+	CHECK_VAL(break_info.count, 0);
+
+	lease_key1 = random();
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io1, &ls1, false /* dir */, fname,
+			lease_key1, NULL, smb2_util_lease_state("RWH"), lease_epoch1++);
+	} else {
+		smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	io1.in.share_access = 0;
+	io1.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid1;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[0], lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[1], ~lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_epoch, lease_epoch1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RWH"));
+	} else {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.timeout, 300*1000);
+
+	lease_key2 = random();
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io21, &ls2, false /* dir */, fname,
+			lease_key2, NULL, smb2_util_lease_state("RWH"), lease_epoch2++);
+	} else {
+		smb2_oplock_create(&io21, fname, client2_level);
+	}
+	io21.in.share_access = 0;
+	io21.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io21.in.desired_access = SEC_RIGHTS_FILE_READ;
+	io21.in.durable_open = false;
+	io21.in.durable_open_v2 = true;
+	io21.in.persistent_open = false;
+	io21.in.create_guid = create_guid2;
+	io21.in.timeout = UINT32_MAX;
+	io24 = io23 = io22 = io21;
+
+	req21 = smb2_create_send(tree2, &io21);
+	torture_assert(tctx, req21 != NULL, "req21");
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		const struct smb2_lease_break *lb =
+			&lease_break_info.lease_break;
+		const struct smb2_lease *l = &lb->current_lease;
+		const struct smb2_lease_key *k = &l->lease_key;
+
+		torture_wait_for_lease_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 1);
+
+		torture_assert(tctx,
+			lease_break_info.lease_transport == transport1,
+			"expect lease break on transport1\n");
+		CHECK_VAL(k->data[0], lease_key1);
+		CHECK_VAL(k->data[1], ~lease_key1);
+		/*
+		 * With share none the handle lease
+		 * is broken.
+		 */
+		CHECK_VAL(lb->new_lease_state,
+			  smb2_util_lease_state("RW"));
+		CHECK_VAL(lb->break_flags,
+			  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
+		CHECK_VAL(lb->new_epoch, lease_epoch1+1);
+		lease_epoch1 += 1;
+
+		lb_ack1.in.lease.lease_key = lb->current_lease.lease_key;
+		lb_ack1.in.lease.lease_state = lb->new_lease_state;
+	} else {
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		torture_assert(tctx,
+			break_info.received_transport == transport1,
+			"expect oplock break on transport1\n");
+		CHECK_VAL(break_info.handle.data[0], _h1.data[0]);
+		CHECK_VAL(break_info.handle.data[1], _h1.data[1]);
+		CHECK_VAL(break_info.level, SMB2_OPLOCK_LEVEL_II);
+
+		op_ack1.in = break_info.br.in;
+	}
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	WAIT_FOR_ASYNC_RESPONSE(tctx, req21);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	if (NT_STATUS_EQUAL(replay22_reject_status, NT_STATUS_SHARING_VIOLATION)) {
+		/*
+		 * The server is broken and doesn't
+		 * detect a replay, so we start an async
+		 * request and send a lease break ack
+		 * after 5 seconds in order to avoid
+		 * the 35 second delay.
+		 */
+		torture_comment(tctx, "Starting ASYNC Replay req22 expecting %s\n",
+				nt_errstr(replay22_reject_status));
+		smb2cli_session_start_replay(session2->smbXcli);
+		transport2->options.request_timeout = 15;
+		req22 = smb2_create_send(tree2, &io22);
+		torture_assert(tctx, req22 != NULL, "req22");
+		transport2->options.request_timeout = request_timeout2;
+		smb2cli_session_stop_replay(session2->smbXcli);
+
+		WAIT_FOR_ASYNC_RESPONSE(tctx, req22);
+	} else {
+		torture_comment(tctx, "SYNC Replay io22 expecting %s\n",
+				nt_errstr(replay22_reject_status));
+		smb2cli_session_start_replay(session2->smbXcli);
+		transport2->options.request_timeout = 5;
+		status = smb2_create(tree2, tctx, &io22);
+		CHECK_STATUS(status, replay22_reject_status);
+		transport2->options.request_timeout = request_timeout2;
+		smb2cli_session_stop_replay(session2->smbXcli);
+	}
+
+	/*
+	 * We don't expect any action for 35 seconds
+	 *
+	 * But we sleep just 5 seconds before we
+	 * ack the break.
+	 */
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+		torture_wait_for_lease_break(tctx);
+		torture_wait_for_lease_break(tctx);
+		torture_wait_for_lease_break(tctx);
+		torture_wait_for_lease_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		if (release_op == SMB2_OP_CLOSE) {
+			torture_comment(tctx, "Closing h1\n");
+			smb2_util_close(tree1, _h1);
+			h1 = NULL;
+		} else {
+			torture_comment(tctx, "Acking lease_key1\n");
+			status = smb2_lease_break_ack(tree1, &lb_ack1);
+			CHECK_STATUS(status, NT_STATUS_OK);
+			CHECK_VAL(lb_ack1.out.lease.lease_flags, 0);
+			CHECK_VAL(lb_ack1.out.lease.lease_state, lb_ack1.in.lease.lease_state);
+			CHECK_VAL(lb_ack1.out.lease.lease_key.data[0], lease_key1);
+			CHECK_VAL(lb_ack1.out.lease.lease_key.data[1], ~lease_key1);
+			CHECK_VAL(lb_ack1.out.lease.lease_duration, 0);
+		}
+	} else {
+		torture_wait_for_oplock_break(tctx);
+		torture_wait_for_oplock_break(tctx);
+		torture_wait_for_oplock_break(tctx);
+		torture_wait_for_oplock_break(tctx);
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		if (release_op == SMB2_OP_CLOSE) {
+			torture_comment(tctx, "Closing h1\n");
+			smb2_util_close(tree1, _h1);
+			h1 = NULL;
+		} else {
+			torture_comment(tctx, "Acking break h1\n");
+			status = smb2_break(tree1, &op_ack1);
+			CHECK_STATUS(status, NT_STATUS_OK);
+			CHECK_VAL(op_ack1.out.oplock_level, op_ack1.in.oplock_level);
+		}
+	}
+
+	torture_comment(tctx, "Checking req21 expecting %s\n",
+			nt_errstr(orig21_reject_status));
+	status = smb2_create_recv(req21, tctx, &io21);
+	CHECK_STATUS(status, orig21_reject_status);
+	if (NT_STATUS_IS_OK(orig21_reject_status)) {
+		_h21 = io21.out.file.handle;
+		h21 = &_h21;
+		if (h2f == NULL) {
+			h2f = h21;
+		}
+		CHECK_VAL(h21->data[0], h2f->data[0]);
+		CHECK_VAL(h21->data[1], h2f->data[1]);
+		CHECK_CREATED(&io21, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_VAL(io21.out.oplock_level, client2_level);
+		CHECK_VAL(io21.out.durable_open, false);
+		if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			CHECK_VAL(io21.out.lease_response_v2.lease_key.data[0], lease_key2);
+			CHECK_VAL(io21.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+			CHECK_VAL(io21.out.lease_response_v2.lease_epoch, lease_epoch2);
+			CHECK_VAL(io21.out.lease_response_v2.lease_state,
+				  smb2_util_lease_state("RHW"));
+			CHECK_VAL(io21.out.durable_open_v2, true);
+			CHECK_VAL(io21.out.timeout, 300*1000);
+		} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+			CHECK_VAL(io21.out.durable_open_v2, true);
+			CHECK_VAL(io21.out.timeout, 300*1000);
+		} else {
+			CHECK_VAL(io21.out.durable_open_v2, false);
+		}
+	}
+
+	if (NT_STATUS_EQUAL(replay22_reject_status, NT_STATUS_SHARING_VIOLATION)) {
+		torture_comment(tctx, "Checking req22 expecting %s\n",
+				nt_errstr(replay22_reject_status));
+		status = smb2_create_recv(req22, tctx, &io22);
+		CHECK_STATUS(status, replay22_reject_status);
+	}
+
+	torture_comment(tctx, "SYNC Replay io23 expecting %s\n",
+			nt_errstr(replay23_reject_status));
+	smb2cli_session_start_replay(session2->smbXcli);
+	transport2->options.request_timeout = 5;
+	status = smb2_create(tree2, tctx, &io23);
+	transport2->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, replay23_reject_status);
+	smb2cli_session_stop_replay(session2->smbXcli);
+	if (NT_STATUS_IS_OK(replay23_reject_status)) {
+		_h23 = io23.out.file.handle;
+		h23 = &_h23;
+		if (h2f == NULL) {
+			h2f = h23;
+		}
+		CHECK_VAL(h23->data[0], h2f->data[0]);
+		CHECK_VAL(h23->data[1], h2f->data[1]);
+		CHECK_CREATED(&io23, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_VAL(io23.out.oplock_level, client2_level);
+		CHECK_VAL(io23.out.durable_open, false);
+		if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			CHECK_VAL(io23.out.lease_response_v2.lease_key.data[0], lease_key2);
+			CHECK_VAL(io23.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+			CHECK_VAL(io23.out.lease_response_v2.lease_epoch, lease_epoch2);
+			CHECK_VAL(io23.out.lease_response_v2.lease_state,
+				  smb2_util_lease_state("RHW"));
+			CHECK_VAL(io23.out.durable_open_v2, true);
+			CHECK_VAL(io23.out.timeout, 300*1000);
+		} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+			CHECK_VAL(io23.out.durable_open_v2, true);
+			CHECK_VAL(io23.out.timeout, 300*1000);
+		} else {
+			CHECK_VAL(io23.out.durable_open_v2, false);
+		}
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	if (h1 != NULL) {
+		torture_comment(tctx, "Closing h1\n");
+		smb2_util_close(tree1, _h1);
+		h1 = NULL;
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	torture_comment(tctx, "SYNC Replay io24 expecting %s\n",
+			nt_errstr(NT_STATUS_OK));
+	smb2cli_session_start_replay(session2->smbXcli);
+	transport2->options.request_timeout = 5;
+	status = smb2_create(tree2, tctx, &io24);
+	transport2->options.request_timeout = request_timeout2;
+	smb2cli_session_stop_replay(session2->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h24 = io24.out.file.handle;
+	h24 = &_h24;
+	if (h2f == NULL) {
+		h2f = h24;
+	}
+	CHECK_VAL(h24->data[0], h2f->data[0]);
+	CHECK_VAL(h24->data[1], h2f->data[1]);
+	CHECK_CREATED(&io24, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io24.out.oplock_level, client2_level);
+	CHECK_VAL(io24.out.durable_open, false);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io24.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+	status = smb2_util_close(tree2, *h24);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h24 = NULL;
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+done:
+
+	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+
+	TALLOC_FREE(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/*
+ * This tests replay with a pending open on a single
+ * channel. It tests the case where the client2 open
+ * is deferred because it conflicts with a HANDLE lease,
+ * which is broken because the operation should otherwise
+ * return NT_STATUS_SHARING_VIOLATION.
+ *
+ * With a durablev2 request containing a create_guid,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease,
+ * which is released by a close.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_SHARING_VIOLATION to the replay (after
+ * 35 seconds), and this tests reports NT_STATUS_IO_TIMEOUT,
+ * as it expectes a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
+ * see test_dhv2_pending1n_vs_violation_lease_close_windows().
+ */
+static bool test_dhv2_pending1n_vs_violation_lease_close_sane(struct torture_context *tctx,
+							      struct smb2_tree *tree1,
+							      struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_violation(tctx, __func__,
+						tree1,
+						SMB2_OPLOCK_LEVEL_LEASE,
+						SMB2_OP_CLOSE,
+						tree2,
+						SMB2_OPLOCK_LEVEL_NONE,
+						NT_STATUS_OK,
+						NT_STATUS_FILE_NOT_AVAILABLE,
+						NT_STATUS_OK);
+}
+
+/*
+ * This tests replay with a pending open on a single
+ * channel. It tests the case where the client2 open
+ * is deferred because it conflicts with a HANDLE lease,
+ * which is broken because the operation should otherwise
+ * return NT_STATUS_SHARING_VIOLATION.
+ *
+ * With a durablev2 request containing a create_guid,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease,
+ * which is released by a close.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange behavior of ignoring the
+ * replay, which is returned done by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE
+ * see test_dhv2_pending1n_vs_violation_lease_close_sane().
+ */
+static bool test_dhv2_pending1n_vs_violation_lease_close_windows(struct torture_context *tctx,
+								 struct smb2_tree *tree1,
+								 struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_violation(tctx, __func__,
+						tree1,
+						SMB2_OPLOCK_LEVEL_LEASE,
+						SMB2_OP_CLOSE,
+						tree2,
+						SMB2_OPLOCK_LEVEL_NONE,
+						NT_STATUS_OK,
+						NT_STATUS_SHARING_VIOLATION,
+						NT_STATUS_OK);
+}
+
+/*
+ * This tests replay with a pending open on a single
+ * channel. It tests the case where the client2 open
+ * is deferred because it conflicts with a HANDLE lease,
+ * which is broken because the operation should otherwise
+ * return NT_STATUS_SHARING_VIOLATION.
+ *
+ * With a durablev2 request containing a create_guid,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease,
+ * which is released by a lease break ack.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_SHARING_VIOLATION to the replay (after
+ * 35 seconds), and this tests reports NT_STATUS_IO_TIMEOUT,
+ * as it expectes a NT_STATUS_FILE_NOT_AVAILABLE within 5 seconds.
+ * see test_dhv2_pending1n_vs_violation_lease_ack_windows().
+ */
+static bool test_dhv2_pending1n_vs_violation_lease_ack_sane(struct torture_context *tctx,
+							    struct smb2_tree *tree1,
+							    struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_violation(tctx, __func__,
+						tree1,
+						SMB2_OPLOCK_LEVEL_LEASE,
+						SMB2_OP_BREAK,
+						tree2,
+						SMB2_OPLOCK_LEVEL_NONE,
+						NT_STATUS_SHARING_VIOLATION,
+						NT_STATUS_FILE_NOT_AVAILABLE,
+						NT_STATUS_SHARING_VIOLATION);
+}
+
+/*
+ * This tests replay with a pending open on a single
+ * channel. It tests the case where the client2 open
+ * is deferred because it conflicts with a HANDLE lease,
+ * which is broken because the operation should otherwise
+ * return NT_STATUS_SHARING_VIOLATION.
+ *
+ * With a durablev2 request containing a create_guid,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease,
+ * which is released by a close.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange behavior of ignoring the
+ * replay, which is returned done by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE
+ * see test_dhv2_pending1n_vs_violation_lease_ack_sane().
+ */
+static bool test_dhv2_pending1n_vs_violation_lease_ack_windows(struct torture_context *tctx,
+							       struct smb2_tree *tree1,
+							       struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_violation(tctx, __func__,
+						tree1,
+						SMB2_OPLOCK_LEVEL_LEASE,
+						SMB2_OP_BREAK,
+						tree2,
+						SMB2_OPLOCK_LEVEL_NONE,
+						NT_STATUS_SHARING_VIOLATION,
+						NT_STATUS_SHARING_VIOLATION,
+						NT_STATUS_SHARING_VIOLATION);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid and
+ * a share_access of READ/WRITE/DELETE:
+ * - client2_level = NONE:
+ *   but without asking for an oplock nor a lease.
+ * - client2_level = BATCH:
+ *   and asking for a batch oplock.
+ * - client2_level = LEASE
+ *   and asking for an RWH lease.
+ *
+ * While another client holds a batch oplock or
+ * RWH lease. (client1_level => LEASE or BATCH).
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ */
+static bool _test_dhv2_pending1_vs_hold(struct torture_context *tctx,
+					const char *testname,
+					uint8_t client1_level,
+					uint8_t client2_level,
+					NTSTATUS reject_status,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h21;
+	struct smb2_handle *h21 = NULL;
+	struct smb2_handle _h24;
+	struct smb2_handle *h24 = NULL;
+	struct smb2_create io1, io21, io22, io23, io24;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_request *req21 = NULL;
+	bool ret = true;
+	char fname[256];
+	struct smb2_transport *transport1 = tree1->session->transport;
+	uint32_t server_capabilities;
+	uint32_t share_capabilities;
+	struct smb2_lease ls1;
+	uint64_t lease_key1;
+	uint16_t lease_epoch1 = 0;
+	struct smb2_lease ls2;
+	uint64_t lease_key2;
+	uint16_t lease_epoch2 = 0;
+	bool share_is_so;
+	struct smb2_transport *transport2 = tree2->session->transport;
+	int request_timeout2 = transport2->options.request_timeout;
+	struct smb2_session *session2 = tree2->session;
+	const char *hold_name = NULL;
+
+	switch (client1_level) {
+	case SMB2_OPLOCK_LEVEL_LEASE:
+		hold_name = "RWH Lease";
+		break;
+	case SMB2_OPLOCK_LEVEL_BATCH:
+		hold_name = "BATCH Oplock";
+		break;
+	default:
+		smb_panic(__location__);
+		break;
+	}
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		if (client1_level == SMB2_OPLOCK_LEVEL_LEASE ||
+		    client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			torture_skip(tctx, "leases are not supported");
+		}
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+	if (share_is_so) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "%s not supported on SCALEOUT share",
+			     hold_name));
+	}
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s\\%s_%s.dat",
+		 BASEDIR, testname, generate_random_str(tctx, 8));
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	smb2_keepalive(transport1);
+	transport2->oplock.handler = torture_oplock_ack_handler;
+	transport2->oplock.private_data = tree2;
+	transport2->lease.handler = torture_lease_handler;
+	transport2->lease.private_data = tree2;
+	smb2_keepalive(transport2);
+
+	smb2_util_unlink(tree1, fname);
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h1);
+	CHECK_VAL(break_info.count, 0);
+
+	lease_key1 = random();
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io1, &ls1, false /* dir */, fname,
+			lease_key1, NULL, smb2_util_lease_state("RWH"), lease_epoch1++);
+	} else {
+		smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	io1.in.share_access = smb2_util_share_access("RWD");
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid1;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[0], lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[1], ~lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_epoch, lease_epoch1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+	} else {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.timeout, 300*1000);
+
+	lease_key2 = random();
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io21, &ls2, false /* dir */, fname,
+			lease_key2, NULL, smb2_util_lease_state("RWH"), lease_epoch2++);
+	} else {
+		smb2_oplock_create(&io21, fname, client2_level);
+	}
+	io21.in.share_access = smb2_util_share_access("RWD");
+	io21.in.durable_open = false;
+	io21.in.durable_open_v2 = true;
+	io21.in.persistent_open = false;
+	io21.in.create_guid = create_guid2;
+	io21.in.timeout = UINT32_MAX;
+	io24 = io23 = io22 = io21;
+
+	req21 = smb2_create_send(tree2, &io21);
+	torture_assert(tctx, req21 != NULL, "req21");
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		const struct smb2_lease_break *lb =
+			&lease_break_info.lease_break;
+		const struct smb2_lease *l = &lb->current_lease;
+		const struct smb2_lease_key *k = &l->lease_key;
+
+		torture_wait_for_lease_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 1);
+
+		torture_assert(tctx,
+			lease_break_info.lease_transport == transport1,
+			"expect lease break on transport1\n");
+		CHECK_VAL(k->data[0], lease_key1);
+		CHECK_VAL(k->data[1], ~lease_key1);
+		CHECK_VAL(lb->new_lease_state,
+			  smb2_util_lease_state("RH"));
+		CHECK_VAL(lb->break_flags,
+			  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
+		CHECK_VAL(lb->new_epoch, lease_epoch1+1);
+		lease_epoch1 += 1;
+	} else {
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		torture_assert(tctx,
+			break_info.received_transport == transport1,
+			"expect oplock break on transport1\n");
+		CHECK_VAL(break_info.handle.data[0], _h1.data[0]);
+		CHECK_VAL(break_info.handle.data[1], _h1.data[1]);
+		CHECK_VAL(break_info.level, SMB2_OPLOCK_LEVEL_II);
+	}
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	WAIT_FOR_ASYNC_RESPONSE(tctx, req21);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2cli_session_start_replay(session2->smbXcli);
+	transport2->options.request_timeout = 5;
+	status = smb2_create(tree2, tctx, &io22);
+	transport2->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2cli_session_start_replay(session2->smbXcli);
+	transport2->options.request_timeout = 5;
+	status = smb2_create(tree2, tctx, &io23);
+	transport2->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_util_close(tree1, _h1);
+	h1 = NULL;
+
+	status = smb2_create_recv(req21, tctx, &io21);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h21 = io21.out.file.handle;
+	h21 = &_h21;
+	CHECK_CREATED(&io21, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io21.out.oplock_level, client2_level);
+	CHECK_VAL(io21.out.durable_open, false);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io21.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io21.out.durable_open_v2, true);
+		CHECK_VAL(io21.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io21.out.durable_open_v2, true);
+		CHECK_VAL(io21.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io21.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2cli_session_start_replay(session2->smbXcli);
+	status = smb2_create(tree2, tctx, &io24);
+	smb2cli_session_stop_replay(session2->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h24 = io24.out.file.handle;
+	h24 = &_h24;
+	CHECK_CREATED(&io24, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(h24->data[0], h21->data[0]);
+	CHECK_VAL(h24->data[1], h21->data[1]);
+	CHECK_VAL(io24.out.oplock_level, client2_level);
+	CHECK_VAL(io24.out.durable_open, false);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io24.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+	status = smb2_util_close(tree2, *h24);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h24 = NULL;
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+done:
+
+	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+
+	TALLOC_FREE(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1n_vs_oplock_windows().
+ */
+static bool test_dhv2_pending1n_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1n_vs_oplock_sane.
+ */
+static bool test_dhv2_pending1n_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1n_vs_lease_windows().
+ */
+static bool test_dhv2_pending1n_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1n_vs_lease_sane.
+ */
+static bool test_dhv2_pending1n_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1l_vs_oplock_windows().
+ */
+static bool test_dhv2_pending1l_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1l_vs_oplock_sane.
+ */
+static bool test_dhv2_pending1l_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1l_vs_lease_windows().
+ */
+static bool test_dhv2_pending1l_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1l_vs_lease_sane.
+ */
+static bool test_dhv2_pending1l_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1o_vs_oplock_windows().
+ */
+static bool test_dhv2_pending1o_vs_oplock_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1o_vs_oplock_sane.
+ */
+static bool test_dhv2_pending1o_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending1o_vs_lease_windows().
+ */
+static bool test_dhv2_pending1o_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open on a single
+ * channel.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending1o_vs_lease_sane.
+ */
+static bool test_dhv2_pending1o_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2)
+{
+	return _test_dhv2_pending1_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid and
+ * a share_access of READ/WRITE/DELETE:
+ * - client2_level = NONE:
+ *   but without asking for an oplock nor a lease.
+ * - client2_level = BATCH:
+ *   and asking for a batch oplock.
+ * - client2_level = LEASE
+ *   and asking for an RWH lease.
+ *
+ * While another client holds a batch oplock or
+ * RWH lease. (client1_level => LEASE or BATCH).
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ */
+static bool _test_dhv2_pending2_vs_hold(struct torture_context *tctx,
+					const char *testname,
+					uint8_t client1_level,
+					uint8_t client2_level,
+					NTSTATUS reject_status,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2_1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h24;
+	struct smb2_handle *h24 = NULL;
+	struct smb2_create io1, io21, io22, io23, io24;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_request *req21 = NULL;
+	bool ret = true;
+	char fname[256];
+	struct smb2_transport *transport1 = tree1->session->transport;
+	uint32_t server_capabilities;
+	uint32_t share_capabilities;
+	struct smb2_lease ls1;
+	uint64_t lease_key1;
+	uint16_t lease_epoch1 = 0;
+	struct smb2_lease ls2;
+	uint64_t lease_key2;
+	uint16_t lease_epoch2 = 0;
+	bool share_is_so;
+	struct smb2_transport *transport2_1 = tree2_1->session->transport;
+	int request_timeout2 = transport2_1->options.request_timeout;
+	struct smbcli_options options2x;
+	struct smb2_tree *tree2_2 = NULL;
+	struct smb2_tree *tree2_3 = NULL;
+	struct smb2_tree *tree2_4 = NULL;
+	struct smb2_transport *transport2_2 = NULL;
+	struct smb2_transport *transport2_3 = NULL;
+	struct smb2_transport *transport2_4 = NULL;
+	struct smb2_session *session2_1 = tree2_1->session;
+	struct smb2_session *session2_2 = NULL;
+	struct smb2_session *session2_3 = NULL;
+	struct smb2_session *session2_4 = NULL;
+	uint16_t csn2 = 1;
+	const char *hold_name = NULL;
+
+	switch (client1_level) {
+	case SMB2_OPLOCK_LEVEL_LEASE:
+		hold_name = "RWH Lease";
+		break;
+	case SMB2_OPLOCK_LEVEL_BATCH:
+		hold_name = "BATCH Oplock";
+		break;
+	default:
+		smb_panic(__location__);
+		break;
+	}
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "MULTI_CHANNEL are not supported");
+	}
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		if (client1_level == SMB2_OPLOCK_LEVEL_LEASE ||
+		    client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			torture_skip(tctx, "leases are not supported");
+		}
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+	if (share_is_so) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "%s not supported on SCALEOUT share",
+			     hold_name));
+	}
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s\\%s_%s.dat",
+		 BASEDIR, testname, generate_random_str(tctx, 8));
+
+	options2x = transport2_1->options;
+	options2x.only_negprot = true;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_2,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_2 = tree2_2->session->transport;
+
+	session2_2 = smb2_session_channel(transport2_2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_2->smbXcli = tree2_1->smbXcli;
+	tree2_2->session = session2_2;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_3,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_3 = tree2_3->session->transport;
+
+	session2_3 = smb2_session_channel(transport2_3,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_3 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_3,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_3->smbXcli = tree2_1->smbXcli;
+	tree2_3->session = session2_3;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_4,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_4 = tree2_4->session->transport;
+
+	session2_4 = smb2_session_channel(transport2_4,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_4 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_4,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_4->smbXcli = tree2_1->smbXcli;
+	tree2_4->session = session2_4;
+
+	smb2cli_session_reset_channel_sequence(session2_2->smbXcli, csn2++);
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	smb2_keepalive(transport1);
+	transport2_1->oplock.handler = torture_oplock_ack_handler;
+	transport2_1->oplock.private_data = tree2_1;
+	transport2_1->lease.handler = torture_lease_handler;
+	transport2_1->lease.private_data = tree2_1;
+	smb2_keepalive(transport2_1);
+	transport2_2->oplock.handler = torture_oplock_ack_handler;
+	transport2_2->oplock.private_data = tree2_2;
+	transport2_2->lease.handler = torture_lease_handler;
+	transport2_2->lease.private_data = tree2_2;
+	smb2_keepalive(transport2_2);
+	transport2_3->oplock.handler = torture_oplock_ack_handler;
+	transport2_3->oplock.private_data = tree2_3;
+	transport2_3->lease.handler = torture_lease_handler;
+	transport2_3->lease.private_data = tree2_3;
+	smb2_keepalive(transport2_3);
+	transport2_4->oplock.handler = torture_oplock_ack_handler;
+	transport2_4->oplock.private_data = tree2_4;
+	transport2_4->lease.handler = torture_lease_handler;
+	transport2_4->lease.private_data = tree2_4;
+	smb2_keepalive(transport2_4);
+
+	smb2_util_unlink(tree1, fname);
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h1);
+	CHECK_VAL(break_info.count, 0);
+
+	lease_key1 = random();
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io1, &ls1, false /* dir */, fname,
+			lease_key1, NULL, smb2_util_lease_state("RWH"), lease_epoch1++);
+	} else {
+		smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid1;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[0], lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[1], ~lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_epoch, lease_epoch1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+	} else {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.timeout, 300*1000);
+
+	lease_key2 = random();
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io21, &ls2, false /* dir */, fname,
+			lease_key2, NULL, smb2_util_lease_state("RWH"), lease_epoch2++);
+	} else {
+		smb2_oplock_create(&io21, fname, client2_level);
+	}
+	io21.in.durable_open = false;
+	io21.in.durable_open_v2 = true;
+	io21.in.persistent_open = false;
+	io21.in.create_guid = create_guid2;
+	io21.in.timeout = UINT32_MAX;
+	io24 = io23 = io22 = io21;
+
+	req21 = smb2_create_send(tree2_1, &io21);
+	torture_assert(tctx, req21 != NULL, "req21");
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		const struct smb2_lease_break *lb =
+			&lease_break_info.lease_break;
+		const struct smb2_lease *l = &lb->current_lease;
+		const struct smb2_lease_key *k = &l->lease_key;
+
+		torture_wait_for_lease_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 1);
+
+		torture_assert(tctx,
+			lease_break_info.lease_transport == transport1,
+			"expect lease break on transport1\n");
+		CHECK_VAL(k->data[0], lease_key1);
+		CHECK_VAL(k->data[1], ~lease_key1);
+		CHECK_VAL(lb->new_lease_state,
+			  smb2_util_lease_state("RH"));
+		CHECK_VAL(lb->break_flags,
+			  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
+		CHECK_VAL(lb->new_epoch, lease_epoch1+1);
+		lease_epoch1 += 1;
+	} else {
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		torture_assert(tctx,
+			break_info.received_transport == transport1,
+			"expect oplock break on transport1\n");
+		CHECK_VAL(break_info.handle.data[0], _h1.data[0]);
+		CHECK_VAL(break_info.handle.data[1], _h1.data[1]);
+		CHECK_VAL(break_info.level, SMB2_OPLOCK_LEVEL_II);
+	}
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	WAIT_FOR_ASYNC_RESPONSE(tctx, req21);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smbXcli_conn_disconnect(transport2_1->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smb2cli_session_reset_channel_sequence(session2_1->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_2->smbXcli);
+	transport2_2->options.request_timeout = 5;
+	status = smb2_create(tree2_2, tctx, &io22);
+	transport2_2->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2_2->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smbXcli_conn_disconnect(transport2_2->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smb2cli_session_reset_channel_sequence(session2_2->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_3->smbXcli);
+	transport2_3->options.request_timeout = 5;
+	status = smb2_create(tree2_3, tctx, &io23);
+	transport2_3->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2_3->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_util_close(tree1, _h1);
+	h1 = NULL;
+
+	status = smb2_create_recv(req21, tctx, &io21);
+	CHECK_STATUS(status, NT_STATUS_LOCAL_DISCONNECT);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smbXcli_conn_disconnect(transport2_3->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smb2cli_session_reset_channel_sequence(session2_3->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_4->smbXcli);
+	status = smb2_create(tree2_4, tctx, &io24);
+	smb2cli_session_stop_replay(session2_4->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h24 = io24.out.file.handle;
+	h24 = &_h24;
+	CHECK_CREATED(&io24, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io24.out.oplock_level, client2_level);
+	CHECK_VAL(io24.out.durable_open, false);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io24.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+	status = smb2_util_close(tree2_4, *h24);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h24 = NULL;
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+done:
+
+	smbXcli_conn_disconnect(transport2_1->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_2->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_3->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_4->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+
+	TALLOC_FREE(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2n_vs_lease_windows().
+ */
+static bool test_dhv2_pending2n_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2n_vs_lease_sane().
+ */
+static bool test_dhv2_pending2n_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2n_vs_oplock_windows().
+ */
+static bool test_dhv2_pending2n_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2n_vs_oplock_sane().
+ */
+static bool test_dhv2_pending2n_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2l_vs_oplock_windows().
+ */
+static bool test_dhv2_pending2l_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2l_vs_oplock_sane().
+ */
+static bool test_dhv2_pending2l_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2l_vs_oplock_windows().
+ */
+static bool test_dhv2_pending2l_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2l_vs_oplock_sane().
+ */
+static bool test_dhv2_pending2l_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2o_vs_oplock_windows().
+ */
+static bool test_dhv2_pending2o_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2o_vs_oplock_sane().
+ */
+static bool test_dhv2_pending2o_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending2o_vs_lease_windows().
+ */
+static bool test_dhv2_pending2o_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and closed transports on the client and server side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending2o_vs_lease_sane().
+ */
+static bool test_dhv2_pending2o_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending2_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid and
+ * a share_access of READ/WRITE/DELETE:
+ * - client2_level = NONE:
+ *   but without asking for an oplock nor a lease.
+ * - client2_level = BATCH:
+ *   and asking for a batch oplock.
+ * - client2_level = LEASE
+ *   and asking for an RWH lease.
+ *
+ * While another client holds a batch oplock or
+ * RWH lease. (client1_level => LEASE or BATCH).
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ */
+static bool _test_dhv2_pending3_vs_hold(struct torture_context *tctx,
+					const char *testname,
+					uint8_t client1_level,
+					uint8_t client2_level,
+					NTSTATUS reject_status,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2_1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h21;
+	struct smb2_handle *h21 = NULL;
+	struct smb2_handle _h24;
+	struct smb2_handle *h24 = NULL;
+	struct smb2_create io1, io21, io22, io23, io24;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_request *req21 = NULL;
+	bool ret = true;
+	char fname[256];
+	struct smb2_transport *transport1 = tree1->session->transport;
+	uint32_t server_capabilities;
+	uint32_t share_capabilities;
+	struct smb2_lease ls1;
+	uint64_t lease_key1;
+	uint16_t lease_epoch1 = 0;
+	struct smb2_lease ls2;
+	uint64_t lease_key2;
+	uint16_t lease_epoch2 = 0;
+	bool share_is_so;
+	struct smb2_transport *transport2_1 = tree2_1->session->transport;
+	int request_timeout2 = transport2_1->options.request_timeout;
+	struct smbcli_options options2x;
+	struct smb2_tree *tree2_2 = NULL;
+	struct smb2_tree *tree2_3 = NULL;
+	struct smb2_tree *tree2_4 = NULL;
+	struct smb2_transport *transport2_2 = NULL;
+	struct smb2_transport *transport2_3 = NULL;
+	struct smb2_transport *transport2_4 = NULL;
+	struct smb2_session *session2_1 = tree2_1->session;
+	struct smb2_session *session2_2 = NULL;
+	struct smb2_session *session2_3 = NULL;
+	struct smb2_session *session2_4 = NULL;
+	bool block_setup = false;
+	bool blocked2_1 = false;
+	bool blocked2_2 = false;
+	bool blocked2_3 = false;
+	uint16_t csn2 = 1;
+	const char *hold_name = NULL;
+
+	switch (client1_level) {
+	case SMB2_OPLOCK_LEVEL_LEASE:
+		hold_name = "RWH Lease";
+		break;
+	case SMB2_OPLOCK_LEVEL_BATCH:
+		hold_name = "BATCH Oplock";
+		break;
+	default:
+		smb_panic(__location__);
+		break;
+	}
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "MULTI_CHANNEL are not supported");
+	}
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		if (client1_level == SMB2_OPLOCK_LEVEL_LEASE ||
+		    client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+			torture_skip(tctx, "leases are not supported");
+		}
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+	if (share_is_so) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "%s not supported on SCALEOUT share",
+			     hold_name));
+	}
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s\\%s_%s.dat",
+		 BASEDIR, testname, generate_random_str(tctx, 8));
+
+	options2x = transport2_1->options;
+	options2x.only_negprot = true;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_2,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_2 = tree2_2->session->transport;
+
+	session2_2 = smb2_session_channel(transport2_2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_2 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_2->smbXcli = tree2_1->smbXcli;
+	tree2_2->session = session2_2;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_3,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_3 = tree2_3->session->transport;
+
+	session2_3 = smb2_session_channel(transport2_3,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_3 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_3,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_3->smbXcli = tree2_1->smbXcli;
+	tree2_3->session = session2_3;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2_4,
+			      tctx->ev,
+			      &options2x,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport2_4 = tree2_4->session->transport;
+
+	session2_4 = smb2_session_channel(transport2_4,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tctx,
+					  session2_1);
+	torture_assert(tctx, session2_4 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_4,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+	tree2_4->smbXcli = tree2_1->smbXcli;
+	tree2_4->session = session2_4;
+
+	smb2cli_session_reset_channel_sequence(session2_2->smbXcli, csn2++);
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	smb2_keepalive(transport1);
+	transport2_1->oplock.handler = torture_oplock_ack_handler;
+	transport2_1->oplock.private_data = tree2_1;
+	transport2_1->lease.handler = torture_lease_handler;
+	transport2_1->lease.private_data = tree2_1;
+	smb2_keepalive(transport2_1);
+	transport2_2->oplock.handler = torture_oplock_ack_handler;
+	transport2_2->oplock.private_data = tree2_2;
+	transport2_2->lease.handler = torture_lease_handler;
+	transport2_2->lease.private_data = tree2_2;
+	smb2_keepalive(transport2_2);
+	transport2_3->oplock.handler = torture_oplock_ack_handler;
+	transport2_3->oplock.private_data = tree2_3;
+	transport2_3->lease.handler = torture_lease_handler;
+	transport2_3->lease.private_data = tree2_3;
+	smb2_keepalive(transport2_3);
+	transport2_4->oplock.handler = torture_oplock_ack_handler;
+	transport2_4->oplock.private_data = tree2_4;
+	transport2_4->lease.handler = torture_lease_handler;
+	transport2_4->lease.private_data = tree2_4;
+	smb2_keepalive(transport2_4);
+
+	smb2_util_unlink(tree1, fname);
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h1);
+	CHECK_VAL(break_info.count, 0);
+
+	lease_key1 = random();
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io1, &ls1, false /* dir */, fname,
+			lease_key1, NULL, smb2_util_lease_state("RWH"), lease_epoch1++);
+	} else {
+		smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid1;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[0], lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_key.data[1], ~lease_key1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_epoch, lease_epoch1);
+		CHECK_VAL(io1.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+	} else {
+		CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	}
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.timeout, 300*1000);
+
+	lease_key2 = random();
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		smb2_lease_v2_create(&io21, &ls2, false /* dir */, fname,
+			lease_key2, NULL, smb2_util_lease_state("RWH"), lease_epoch2++);
+	} else {
+		smb2_oplock_create(&io21, fname, client2_level);
+	}
+	io21.in.durable_open = false;
+	io21.in.durable_open_v2 = true;
+	io21.in.persistent_open = false;
+	io21.in.create_guid = create_guid2;
+	io21.in.timeout = UINT32_MAX;
+	io24 = io23 = io22 = io21;
+
+	req21 = smb2_create_send(tree2_1, &io21);
+	torture_assert(tctx, req21 != NULL, "req21");
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		const struct smb2_lease_break *lb =
+			&lease_break_info.lease_break;
+		const struct smb2_lease *l = &lb->current_lease;
+		const struct smb2_lease_key *k = &l->lease_key;
+
+		torture_wait_for_lease_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(lease_break_info.count, 1);
+
+		torture_assert(tctx,
+			lease_break_info.lease_transport == transport1,
+			"expect lease break on transport1\n");
+		CHECK_VAL(k->data[0], lease_key1);
+		CHECK_VAL(k->data[1], ~lease_key1);
+		CHECK_VAL(lb->new_lease_state,
+			  smb2_util_lease_state("RH"));
+		CHECK_VAL(lb->break_flags,
+			  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);
+		CHECK_VAL(lb->new_epoch, lease_epoch1+1);
+		lease_epoch1 += 1;
+	} else {
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 1);
+		CHECK_VAL(lease_break_info.count, 0);
+
+		torture_assert(tctx,
+			break_info.received_transport == transport1,
+			"expect oplock break on transport1\n");
+		CHECK_VAL(break_info.handle.data[0], _h1.data[0]);
+		CHECK_VAL(break_info.handle.data[1], _h1.data[1]);
+		CHECK_VAL(break_info.level, SMB2_OPLOCK_LEVEL_II);
+	}
+
+	torture_reset_break_info(tctx, &break_info);
+	break_info.oplock_skip_ack = true;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	WAIT_FOR_ASYNC_RESPONSE(tctx, req21);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	block_setup = test_setup_blocked_transports(tctx);
+	torture_assert(tctx, block_setup, "test_setup_blocked_transports");
+
+	blocked2_1 = _test_block_smb2_transport(tctx, transport2_1, "transport2_1");
+	torture_assert_goto(tctx, blocked2_1, ret, done, "we could not block tcp transport");
+	smb2cli_session_reset_channel_sequence(session2_1->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_2->smbXcli);
+	transport2_2->options.request_timeout = 5;
+	status = smb2_create(tree2_2, tctx, &io22);
+	transport2_2->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2_2->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	blocked2_2 = _test_block_smb2_transport(tctx, transport2_2, "transport2_2");
+	torture_assert_goto(tctx, blocked2_2, ret, done, "we could not block tcp transport");
+	smb2cli_session_reset_channel_sequence(session2_2->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_3->smbXcli);
+	transport2_3->options.request_timeout = 5;
+	status = smb2_create(tree2_3, tctx, &io23);
+	transport2_3->options.request_timeout = request_timeout2;
+	CHECK_STATUS(status, reject_status);
+	smb2cli_session_stop_replay(session2_3->smbXcli);
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_util_close(tree1, _h1);
+	h1 = NULL;
+
+	status = smb2_create_recv(req21, tctx, &io21);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h21 = io21.out.file.handle;
+	h21 = &_h21;
+	CHECK_CREATED(&io21, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io21.out.oplock_level, client2_level);
+	CHECK_VAL(io21.out.durable_open, false);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io21.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io21.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io21.out.durable_open_v2, true);
+		CHECK_VAL(io21.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io21.out.durable_open_v2, true);
+		CHECK_VAL(io21.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io21.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	blocked2_3 = _test_block_smb2_transport(tctx, transport2_3, "transport2_3");
+	torture_assert_goto(tctx, blocked2_3, ret, done, "we could not block tcp transport");
+	smb2cli_session_reset_channel_sequence(session2_3->smbXcli, csn2++);
+
+	smb2cli_session_start_replay(session2_4->smbXcli);
+	status = smb2_create(tree2_4, tctx, &io24);
+	smb2cli_session_stop_replay(session2_4->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h24 = io24.out.file.handle;
+	h24 = &_h24;
+	CHECK_CREATED(&io24, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(h24->data[0], h21->data[0]);
+	CHECK_VAL(h24->data[1], h21->data[1]);
+	if (client2_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[0], lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_key.data[1], ~lease_key2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_epoch, lease_epoch2);
+		CHECK_VAL(io24.out.lease_response_v2.lease_state,
+			  smb2_util_lease_state("RHW"));
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else if (client2_level == SMB2_OPLOCK_LEVEL_BATCH) {
+		CHECK_VAL(io24.out.durable_open_v2, true);
+		CHECK_VAL(io24.out.timeout, 300*1000);
+	} else {
+		CHECK_VAL(io24.out.durable_open_v2, false);
+	}
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+	status = smb2_util_close(tree2_4, *h24);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h24 = NULL;
+
+	if (client1_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		torture_wait_for_lease_break(tctx);
+	} else {
+		torture_wait_for_oplock_break(tctx);
+	}
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+done:
+
+	if (blocked2_3) {
+		_test_unblock_smb2_transport(tctx, transport2_3, "transport2_3");
+	}
+	if (blocked2_2) {
+		_test_unblock_smb2_transport(tctx, transport2_2, "transport2_2");
+	}
+	if (blocked2_1) {
+		_test_unblock_smb2_transport(tctx, transport2_1, "transport2_1");
+	}
+	if (block_setup) {
+		test_cleanup_blocked_transports(tctx);
+	}
+
+	smbXcli_conn_disconnect(transport2_1->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_2->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_3->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2_4->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+
+	TALLOC_FREE(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3n_vs_lease_windows().
+ */
+static bool test_dhv2_pending3n_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3n_vs_lease_sane.
+ */
+static bool test_dhv2_pending3n_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3n_vs_oplock_windows().
+ */
+static bool test_dhv2_pending3n_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * but without asking for an oplock nor a lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3n_vs_oplock_sane.
+ */
+static bool test_dhv2_pending3n_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_NONE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3l_vs_oplock_windows().
+ */
+static bool test_dhv2_pending3l_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3l_vs_oplock_sane.
+ */
+static bool test_dhv2_pending3l_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3l_vs_lease_windows().
+ */
+static bool test_dhv2_pending3l_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a v2 lease.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3l_vs_lease_sane().
+ */
+static bool test_dhv2_pending3l_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3o_vs_oplock_windows().
+ */
+static bool test_dhv2_pending3o_vs_oplock_sane(struct torture_context *tctx,
+					       struct smb2_tree *tree1,
+					       struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds a batch oplock.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3o_vs_oplock_sane().
+ */
+static bool test_dhv2_pending3o_vs_oplock_windows(struct torture_context *tctx,
+						  struct smb2_tree *tree1,
+						  struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the sane reject status of
+ * NT_STATUS_FILE_NOT_AVAILABLE.
+ *
+ * It won't pass against Windows as it returns
+ * NT_STATUS_ACCESS_DENIED see
+ * test_dhv2_pending3o_vs_lease_windows().
+ */
+static bool test_dhv2_pending3o_vs_lease_sane(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_FILE_NOT_AVAILABLE,
+					   tree1, tree2_1);
+}
+
+/**
+ * This tests replay with a pending open with 4 channels
+ * and blocked transports on the client side.
+ *
+ * With a durablev2 request containing a create_guid,
+ * a share_access of READ/WRITE/DELETE,
+ * and asking for a batch oplock.
+ *
+ * While another client holds an RWH lease.
+ * And allows share_access of READ/WRITE/DELETE.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=14449
+ *
+ * This expects the strange reject status of
+ * NT_STATUS_ACCESS_DENIED, which is returned
+ * by Windows Servers.
+ *
+ * It won't pass against Samba as it returns
+ * NT_STATUS_FILE_NOT_AVAILABLE. see
+ * test_dhv2_pending3o_vs_lease_sane().
+ */
+static bool test_dhv2_pending3o_vs_lease_windows(struct torture_context *tctx,
+						 struct smb2_tree *tree1,
+						 struct smb2_tree *tree2_1)
+{
+	return _test_dhv2_pending3_vs_hold(tctx, __func__,
+					   SMB2_OPLOCK_LEVEL_LEASE,
+					   SMB2_OPLOCK_LEVEL_BATCH,
+					   NT_STATUS_ACCESS_DENIED,
+					   tree1, tree2_1);
+}
+
 static bool test_channel_sequence_table(struct torture_context *tctx,
 					struct smb2_tree *tree,
 					bool do_replay,
@@ -2385,6 +5462,46 @@ struct torture_suite *torture_smb2_replay_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease2",  test_replay_dhv2_lease2);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease3",  test_replay_dhv2_lease3);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease-oplock",  test_replay_dhv2_lease_oplock);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-violation-lease-close-sane", test_dhv2_pending1n_vs_violation_lease_close_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-violation-lease-ack-sane", test_dhv2_pending1n_vs_violation_lease_ack_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-violation-lease-close-windows", test_dhv2_pending1n_vs_violation_lease_close_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-violation-lease-ack-windows", test_dhv2_pending1n_vs_violation_lease_ack_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-oplock-sane", test_dhv2_pending1n_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-oplock-windows", test_dhv2_pending1n_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-lease-sane", test_dhv2_pending1n_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1n-vs-lease-windows",  test_dhv2_pending1n_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1l-vs-oplock-sane", test_dhv2_pending1l_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1l-vs-oplock-windows", test_dhv2_pending1l_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1l-vs-lease-sane", test_dhv2_pending1l_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1l-vs-lease-windows", test_dhv2_pending1l_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1o-vs-oplock-sane", test_dhv2_pending1o_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1o-vs-oplock-windows", test_dhv2_pending1o_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1o-vs-lease-sane", test_dhv2_pending1o_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending1o-vs-lease-windows", test_dhv2_pending1o_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2n-vs-oplock-sane", test_dhv2_pending2n_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2n-vs-oplock-windows", test_dhv2_pending2n_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2n-vs-lease-sane", test_dhv2_pending2n_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2n-vs-lease-windows", test_dhv2_pending2n_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2l-vs-oplock-sane", test_dhv2_pending2l_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2l-vs-oplock-windows", test_dhv2_pending2l_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2l-vs-lease-sane", test_dhv2_pending2l_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2l-vs-lease-windows", test_dhv2_pending2l_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2o-vs-oplock-sane", test_dhv2_pending2o_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2o-vs-oplock-windows", test_dhv2_pending2o_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2o-vs-lease-sane", test_dhv2_pending2o_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending2o-vs-lease-windows", test_dhv2_pending2o_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3n-vs-oplock-sane", test_dhv2_pending3n_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3n-vs-oplock-windows", test_dhv2_pending3n_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3n-vs-lease-sane", test_dhv2_pending3n_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3n-vs-lease-windows", test_dhv2_pending3n_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3l-vs-oplock-sane",  test_dhv2_pending3l_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3l-vs-oplock-windows",  test_dhv2_pending3l_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3l-vs-lease-sane",  test_dhv2_pending3l_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3l-vs-lease-windows",  test_dhv2_pending3l_vs_lease_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3o-vs-oplock-sane",  test_dhv2_pending3o_vs_oplock_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3o-vs-oplock-windows",  test_dhv2_pending3o_vs_oplock_windows);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3o-vs-lease-sane",  test_dhv2_pending3o_vs_lease_sane);
+	torture_suite_add_2smb2_test(suite, "dhv2-pending3o-vs-lease-windows",  test_dhv2_pending3o_vs_lease_windows);
 	torture_suite_add_1smb2_test(suite, "channel-sequence", test_channel_sequence);
 	torture_suite_add_1smb2_test(suite, "replay3", test_replay3);
 	torture_suite_add_1smb2_test(suite, "replay4", test_replay4);
