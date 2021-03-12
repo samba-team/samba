@@ -2094,7 +2094,22 @@ static int vfs_gluster_fsetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return glfs_fsetxattr(glfd, name, value, size, flags);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to set xattrs.
+		 */
+		return glfs_fsetxattr(glfd, name, value, size, flags);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		return glfs_setxattr(handle->data,
+				fsp->fsp_name->base_name,
+				name,
+				value,
+				size,
+				flags);
+	}
 }
 
 /* AIO Operations */
