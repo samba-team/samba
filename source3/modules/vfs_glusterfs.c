@@ -2080,8 +2080,19 @@ static int vfs_gluster_fremovexattr(struct vfs_handle_struct *handle,
 		DBG_ERR("Failed to fetch gluster fd\n");
 		return -1;
 	}
-
-	return glfs_fremovexattr(glfd, name);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to remove xattrs.
+		 */
+		return glfs_fremovexattr(glfd, name);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		return glfs_removexattr(handle->data,
+				fsp->fsp_name->base_name,
+				name);
+	}
 }
 
 static int vfs_gluster_fsetxattr(struct vfs_handle_struct *handle,
