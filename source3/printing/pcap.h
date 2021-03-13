@@ -38,7 +38,6 @@ void pcap_cache_destroy_specific(struct pcap_cache **ppcache);
 bool pcap_cache_loaded(time_t *_last_change);
 bool pcap_cache_replace(const struct pcap_cache *cache);
 void pcap_printer_fn_specific(const struct pcap_cache *, void (*fn)(const char *, const char *, const char *, void *), void *);
-void pcap_printer_read_fn(void (*fn)(const char *, const char *, const char *, void *), void *);
 
 void pcap_cache_reload(struct tevent_context *ev,
 		       struct messaging_context *msg_ctx,
