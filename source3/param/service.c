@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "printing/pcap.h"
+#include "printing/printer_list.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "lib/param/loadparm.h"
@@ -178,7 +179,7 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 		if (iPrinterService >= 0) {
 			DEBUG(3,("checking whether %s is a valid printer name...\n",
 				*p_service_out));
-			if (pcap_printername_ok(*p_service_out)) {
+			if (printer_list_printername_exists(*p_service_out)) {
 				DEBUG(3,("%s is a valid printer name\n",
 					*p_service_out));
 				DEBUG(3,("adding %s as a printer service\n",

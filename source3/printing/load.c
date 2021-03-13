@@ -55,7 +55,7 @@ static void add_auto_printers(void)
 		if (lp_servicenumber(p) >= 0)
 			continue;
 		
-		if (pcap_printername_ok(p))
+		if (printer_list_printername_exists(p))
 			lp_add_printer(p, pnum);
 	}
 

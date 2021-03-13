@@ -211,15 +211,6 @@ done:
 	return;
 }
 
-
-bool pcap_printername_ok(const char *printername)
-{
-	NTSTATUS status;
-
-	status = printer_list_get_printer(talloc_tos(), printername, NULL, NULL, 0);
-	return NT_STATUS_IS_OK(status);
-}
-
 /***************************************************************************
 run a function on each printer name in the printcap file.
 ***************************************************************************/

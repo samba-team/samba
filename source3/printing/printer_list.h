@@ -46,6 +46,8 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 				  const char **location,
 				  time_t *last_refresh);
 
+bool printer_list_printername_exists(const char *name);
+
 /**
  * @brief Add a printer to the printer list database.
  *

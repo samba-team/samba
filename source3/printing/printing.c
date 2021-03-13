@@ -2731,7 +2731,8 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 	}
 
 	/* for autoloaded printers, check that the printcap entry still exists */
-	if (lp_autoloaded(snum) && !pcap_printername_ok(sharename)) {
+	if (lp_autoloaded(snum) &&
+	    !printer_list_printername_exists(sharename)) {
 		DEBUG(3, ("print_job_checks: printer name %s check failed.\n",
 			  sharename));
 		return WERR_ACCESS_DENIED;

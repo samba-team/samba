@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "nt_printing.h"
 #include "printing/pcap.h"
+#include "printing/printer_list.h"
 #include "printing/load.h"
 #include "auth.h"
 #include "messages.h"
@@ -101,7 +102,8 @@ void delete_and_reload_printers(void)
 		pname = lp_printername(frame, lp_sub, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
-		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
+		if (lp_autoloaded(snum) &&
+		    !printer_list_printername_exists(pname)) {
 			lp_killservice(snum);
 		}
 	}

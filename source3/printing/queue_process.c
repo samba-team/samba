@@ -26,6 +26,7 @@
 #include "lib/util/util_process.h"
 #include "printing.h"
 #include "printing/pcap.h"
+#include "printing/printer_list.h"
 #include "printing/queue_process.h"
 #include "locking/proto.h"
 #include "locking/share_mode_lock.h"
@@ -98,7 +99,8 @@ static void delete_and_reload_printers_full(struct tevent_context *ev,
 		pname = lp_printername(session_info, lp_sub, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
-		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
+		if (lp_autoloaded(snum) &&
+		    !printer_list_printername_exists(pname)) {
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(session_info, session_info,

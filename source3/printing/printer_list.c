@@ -146,6 +146,27 @@ done:
 	return status;
 }
 
+bool printer_list_printername_exists(const char *name)
+{
+	struct db_context *db = get_printer_list_db();
+	char *key = NULL;
+	bool ok;
+
+	if (db == NULL) {
+		return false;
+	}
+
+	key = talloc_asprintf_strupper_m(
+		talloc_tos(), PL_KEY_FORMAT, name);
+	if (key == NULL) {
+		return false;
+	}
+
+	ok = dbwrap_exists(db, string_term_tdb_data(key));
+	TALLOC_FREE(key);
+	return ok;
+}
+
 NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 				  const char *name,
 				  const char *comment,
