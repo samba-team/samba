@@ -1290,19 +1290,6 @@ bool handle_ldap_debug_level(struct loadparm_context *lp_ctx, struct loadparm_se
 	return true;
 }
 
-bool handle_netbios_aliases(struct loadparm_context *lp_ctx, struct loadparm_service *service,
-			    const char *pszParmValue, char **ptr)
-{
-	TALLOC_FREE(lp_ctx->globals->netbios_aliases);
-	lp_ctx->globals->netbios_aliases = str_list_make_v3_const(lp_ctx->globals->ctx,
-								  pszParmValue, NULL);
-
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->set_netbios_aliases(lp_ctx->globals->netbios_aliases);
-	}
-	return true;
-}
-
 /*
  * idmap related parameters
  */

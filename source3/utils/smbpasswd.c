@@ -634,14 +634,6 @@ int main(int argc, char **argv)
 
 	setup_logging("smbpasswd", DEBUG_STDERR);
 
-	/*
-	 * Set the machine NETBIOS name if not already
-	 * set from the config file. 
-	 */ 
-
-	if (!init_names())
-		return 1;
-
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
 		fprintf(stderr, "smbpasswd must *NOT* be setuid root.\n");

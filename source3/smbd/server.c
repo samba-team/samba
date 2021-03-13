@@ -1387,9 +1387,6 @@ static bool init_structs(void )
 	 * set from the config file.
 	 */
 
-	if (!init_names())
-		return False;
-
 	if (!secrets_init())
 		return False;
 

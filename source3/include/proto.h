@@ -310,10 +310,7 @@ bool is_allowed_domain(const char *domain_name);
 
 enum protocol_types get_Protocol(void);
 void set_Protocol(enum protocol_types  p);
-void gfree_names(void);
 void gfree_all( void );
-bool set_netbios_aliases(const char **str_array);
-bool init_names(void);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
 		     bool fake_dir_create_times);
 bool socket_exist(const char *fname);

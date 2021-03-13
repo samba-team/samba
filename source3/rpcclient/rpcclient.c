@@ -1088,11 +1088,6 @@ out_free:
 
 	rpcclient_msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
 
-	if (!init_names()) {
-		result = 1;
-		goto done;
-	}
-
 	/*
 	 * Get password
 	 * from stdin if necessary

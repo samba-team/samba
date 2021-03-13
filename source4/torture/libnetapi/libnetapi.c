@@ -39,7 +39,6 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
 
-	init_names();
 	load_interfaces();
 
 	status = libnetapi_net_init(&ctx);

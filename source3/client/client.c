@@ -6622,11 +6622,6 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	if (!init_names()) {
-		fprintf(stderr, "init_names() failed\n");
-		exit(1);
-	}
-
 	if(new_name_resolve_order)
 		lp_set_cmdline("name resolve order", new_name_resolve_order);
 

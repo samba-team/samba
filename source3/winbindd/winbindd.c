@@ -1842,11 +1842,6 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	/* Setup names. */
-
-	if (!init_names())
-		exit(1);
-
   	load_interfaces();
 
 	if (!secrets_init()) {

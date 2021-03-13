@@ -14,7 +14,6 @@ struct loadparm_s3_helpers
 	bool (*lp_include)(struct loadparm_context*, struct loadparm_service *,
 		       	const char *, char **);
 	void (*init_ldap_debugging)(void);
-	bool (*set_netbios_aliases)(const char **);
 	bool (*do_section)(const char *pszSectionName, void *userdata);
 	struct loadparm_global *globals;
 	unsigned int *flags;

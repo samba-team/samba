@@ -99,7 +99,6 @@ static enum remote_arch_types ra_type = RA_UNKNOWN;
 
 void gfree_all( void )
 {
-	gfree_names();
 	gfree_loadparm();
 	gfree_charcnv();
 	gfree_interfaces();

@@ -586,7 +586,6 @@ int main(int argc, const char **argv)
 	/* Load configuration */
 	lp_load_global(get_dyn_CONFIGFILE());
 	setup_logging("pdbtest", DEBUG_STDOUT);
-	init_names();
 
 	if (backend == NULL) {
 		backend = lp_passdb_backend();

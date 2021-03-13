@@ -1397,9 +1397,6 @@ static void get_credentials_file(struct net_context *c,
 		c->opt_target_workgroup = talloc_strdup(c, lp_workgroup());
 	}
 
-	if (!init_names())
-		exit(1);
-
 	load_interfaces();
 
 	/* this makes sure that when we do things like call scripts,

@@ -81,7 +81,6 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
 
-	init_names();
 	load_interfaces();
 	reopen_logs();
 
@@ -178,7 +177,6 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 		}
 	}
 
-	gfree_names();
 	gfree_loadparm();
 	gfree_charcnv();
 	gfree_interfaces();

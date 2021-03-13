@@ -3460,8 +3460,6 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			poptGetArg(pc), CRED_SPECIFIED);
 	}
 
-	/*init_names(); */
-
 	if (!query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);

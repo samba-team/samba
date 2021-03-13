@@ -1135,9 +1135,6 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	if (!init_names())
-		exit(1);
-
 	setparms =	(backend ? BIT_BACKEND : 0) +
 			(verbose ? BIT_VERBOSE : 0) +
 			(spstyle ? BIT_SPSTYLE : 0) +
