@@ -25,6 +25,75 @@
 
 extern uint16_t samba_nb_type; /* Samba's NetBIOS type. */
 
+static const char **mynames = NULL;
+
+static bool add_unique_netbios_name(const char *name)
+{
+	size_t i, num_names = talloc_array_length(mynames);
+	char *str = NULL;
+	const char **tmp = NULL;
+
+	for (i=0; i<num_names; i++) {
+		if (strequal(name, mynames[i])) {
+			return true;
+		}
+	}
+
+	str = talloc_strdup(NULL, name);
+	if (str == NULL) {
+		return false;
+	}
+
+	tmp = talloc_realloc(NULL, mynames, const char *, num_names+1);
+	if (tmp == NULL) {
+		TALLOC_FREE(str);
+		return false;
+	}
+	tmp[num_names] = talloc_move(tmp, &str);
+	mynames = tmp;
+	return true;
+}
+
+bool nmbd_init_my_netbios_names(void)
+{
+	const char *name = lp_netbios_name();
+	const char **aliases = lp_netbios_aliases();
+
+	TALLOC_FREE(mynames);
+
+	if (name[0] != '\0') {
+		bool ok = add_unique_netbios_name(name);
+		if (!ok) {
+			return false;
+		}
+	}
+
+	if (aliases == NULL) {
+		return true;
+	}
+
+	while (*aliases != NULL) {
+		bool ok = add_unique_netbios_name(*aliases);
+		if (!ok) {
+			return false;
+		}
+		aliases += 1;
+	}
+
+	return true;
+}
+
+const char *my_netbios_names(int i)
+{
+	size_t num_names = talloc_array_length(mynames);
+
+	if ((i >= 0) && (i < num_names)) {
+		return mynames[i];
+	}
+
+	return NULL;
+}
+
 /****************************************************************************
  Fail funtion when registering my netbios names.
 **************************************************************************/

@@ -83,11 +83,6 @@ void gfree_names(void)
 	free_netbios_names_array();
 }
 
-const char *my_netbios_names(int i)
-{
-	return smb_my_netbios_names[i];
-}
-
 bool set_netbios_aliases(const char **str_array)
 {
 	size_t namecount;

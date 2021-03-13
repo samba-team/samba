@@ -312,7 +312,6 @@ enum protocol_types get_Protocol(void);
 void set_Protocol(enum protocol_types  p);
 void gfree_names(void);
 void gfree_all( void );
-const char *my_netbios_names(int i);
 bool set_netbios_aliases(const char **str_array);
 bool init_names(void);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,

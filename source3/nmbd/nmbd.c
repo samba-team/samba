@@ -436,6 +436,7 @@ static void msg_reload_nmbd_services(struct messaging_context *msg,
 	reload_nmbd_services( True );
 	reopen_logs();
 	reload_interfaces(0);
+	nmbd_init_my_netbios_names();
 }
 
 static void msg_nmbd_send_packet(struct messaging_context *msg,
@@ -990,8 +991,9 @@ static bool open_sockets(bool isdaemon, int port)
 	if ( !reload_nmbd_services(False) )
 		return(-1);
 
-	if(!init_names())
+	if (!nmbd_init_my_netbios_names()) {
 		return -1;
+	}
 
 	reload_nmbd_services( True );
 

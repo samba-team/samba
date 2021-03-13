@@ -118,6 +118,8 @@ void add_logon_names(void);
 
 /* The following definitions come from nmbd/nmbd_mynames.c  */
 
+bool nmbd_init_my_netbios_names(void);
+const char *my_netbios_names(int i);
 void register_my_workgroup_one_subnet(struct subnet_record *subrec);
 bool register_my_workgroup_and_names(void);
 void release_wins_names(void);
