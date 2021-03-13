@@ -1243,11 +1243,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 	bool ok1;
 	char *sret = NULL;
 	struct smb_filename *smb_fname = NULL;
-
-	/*
-	 * For now assert this, so SMB_VFS_NEXT_STAT() below works.
-	 */
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
+	SMB_STRUCT_STAT sbuf = smb_fname_in->st;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct virusfilter_config, return -1);
@@ -1289,7 +1285,7 @@ static int virusfilter_vfs_openat(struct vfs_handle_struct *handle,
 		goto virusfilter_vfs_open_next;
 	}
 
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf);
 	if (ret != 0) {
 
 		/*
