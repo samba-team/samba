@@ -118,7 +118,8 @@ bool set_netbios_aliases(const char **str_array)
 
 			/* Look for duplicates */
 			for( n=0; n<namecount; n++ ) {
-				if( strequal( str_array[i], my_netbios_names(n) ) ) {
+				if( strequal( str_array[i],
+					      smb_my_netbios_names[n] ) ) {
 					duplicate = True;
 					break;
 				}
@@ -147,9 +148,9 @@ bool init_names(void)
 	}
 
 	DEBUG( 5, ("Netbios name list:-\n") );
-	for( n=0; my_netbios_names(n); n++ ) {
+	for( n=0; smb_my_netbios_names[n]; n++ ) {
 		DEBUGADD( 5, ("my_netbios_names[%d]=\"%s\"\n",
-					n, my_netbios_names(n) ) );
+			      n, smb_my_netbios_names[n] ) );
 	}
 
 	return( True );
