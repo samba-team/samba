@@ -191,7 +191,7 @@ void nt_printer_add(TALLOC_CTX *mem_ctx,
 		    const char *printer);
 
 /* The version int is used by getdrivers.  Note that
-   all architecture strings that support mutliple
+   all architecture strings that support multiple
    versions must be grouped together since enumdrivers
    uses this property to prevent issuing multiple
    enumdriver calls for the same arch */
