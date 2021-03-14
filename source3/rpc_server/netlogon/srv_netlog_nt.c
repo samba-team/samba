@@ -629,15 +629,15 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	struct dcerpc_binding_handle *h = NULL;
-	struct tsocket_address *local;
-	struct policy_handle user_handle;
-	uint32_t user_rid;
-	struct dom_sid *domain_sid;
-	uint32_t acct_ctrl;
-	union samr_UserInfo *info;
-	struct auth_session_info *session_info;
+	struct tsocket_address *local = NULL;
+	struct policy_handle user_handle = { .handle_type = 0 };
+	uint32_t user_rid = UINT32_MAX;
+	struct dom_sid *domain_sid = NULL;
+	uint32_t acct_ctrl = 0;
+	union samr_UserInfo *info = NULL;
+	struct auth_session_info *session_info = NULL;
 	int rc;
 
 #if 0
