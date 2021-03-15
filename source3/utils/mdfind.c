@@ -159,10 +159,7 @@ int main(int argc, char **argv)
 		goto fail;
 	}
 
-	status = cli_rpc_pipe_open_noauth_transport(cli,
-						    NCACN_NP,
-						    &ndr_table_mdssvc,
-						    &rpccli);
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_mdssvc, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
