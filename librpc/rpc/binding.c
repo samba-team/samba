@@ -1369,39 +1369,34 @@ _PUBLIC_ struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
 	if (b->object_string != NULL) {
 		n->object_string = talloc_strdup(n, b->object_string);
 		if (n->object_string == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 	}
 	if (b->host != NULL) {
 		n->host = talloc_strdup(n, b->host);
 		if (n->host == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 	}
 
 	if (b->target_hostname != NULL) {
 		n->target_hostname = talloc_strdup(n, b->target_hostname);
 		if (n->target_hostname == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 	}
 
 	if (b->target_principal != NULL) {
 		n->target_principal = talloc_strdup(n, b->target_principal);
 		if (n->target_principal == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 	}
 
 	if (b->endpoint != NULL) {
 		n->endpoint = talloc_strdup(n, b->endpoint);
 		if (n->endpoint == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 	}
 
@@ -1412,21 +1407,22 @@ _PUBLIC_ struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
 
 		n->options = talloc_array(n, const char *, count + 1);
 		if (n->options == NULL) {
-			talloc_free(n);
-			return NULL;
+			goto nomem;
 		}
 
 		for (i = 0; i < count; i++) {
 			n->options[i] = talloc_strdup(n->options, b->options[i]);
 			if (n->options[i] == NULL) {
-				talloc_free(n);
-				return NULL;
+				goto nomem;
 			}
 		}
 		n->options[count] = NULL;
 	}
 
 	return n;
+nomem:
+	TALLOC_FREE(n);
+	return NULL;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
