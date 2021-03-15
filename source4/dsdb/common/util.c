@@ -5363,9 +5363,9 @@ int dsdb_create_partial_replica_NC(struct ldb_context *ldb,  struct ldb_dn *dn)
  * This also requires that the domain_msg have (if present):
  *  - lockOutObservationWindow
  */
-static int dsdb_effective_badPwdCount(const struct ldb_message *user_msg,
-				      int64_t lockOutObservationWindow,
-				      NTTIME now)
+int dsdb_effective_badPwdCount(const struct ldb_message *user_msg,
+			       int64_t lockOutObservationWindow,
+			       NTTIME now)
 {
 	int64_t badPasswordTime;
 	badPasswordTime = ldb_msg_find_attr_as_int64(user_msg, "badPasswordTime", 0);
@@ -5412,25 +5412,24 @@ static struct ldb_result *lookup_user_pso(struct ldb_context *sam_ldb,
 }
 
 /*
- * Return the effective badPwdCount
+ * Return the msDS-LockoutObservationWindow for a user message
  *
  * This requires that the user_msg have (if present):
- *  - badPasswordTime
- *  - badPwdCount
  *  - msDS-ResultantPSO
  */
-int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
-				       TALLOC_CTX *mem_ctx,
-				       struct ldb_dn *domain_dn,
-				       const struct ldb_message *user_msg)
+int64_t samdb_result_msds_LockoutObservationWindow(
+	struct ldb_context *sam_ldb,
+	TALLOC_CTX *mem_ctx,
+	struct ldb_dn *domain_dn,
+	const struct ldb_message *user_msg)
 {
-	struct timeval tv_now = timeval_current();
-	NTTIME now = timeval_to_nttime(&tv_now);
 	int64_t lockOutObservationWindow;
 	struct ldb_result *res = NULL;
 	const char *attrs[] = { "msDS-LockoutObservationWindow",
 				NULL };
-
+	if (domain_dn == NULL) {
+		smb_panic("domain dn is NULL");
+	}
 	res = lookup_user_pso(sam_ldb, mem_ctx, user_msg, attrs);
 
 	if (res != NULL) {
@@ -5446,7 +5445,27 @@ int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 			 samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
 					    "lockOutObservationWindow", NULL);
 	}
+	return lockOutObservationWindow;
+}
 
+/*
+ * Return the effective badPwdCount
+ *
+ * This requires that the user_msg have (if present):
+ *  - badPasswordTime
+ *  - badPwdCount
+ *  - msDS-ResultantPSO
+ */
+int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *domain_dn,
+				       const struct ldb_message *user_msg)
+{
+	struct timeval tv_now = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv_now);
+	int64_t lockOutObservationWindow =
+		samdb_result_msds_LockoutObservationWindow(
+			sam_ldb, mem_ctx, domain_dn, user_msg);
 	return dsdb_effective_badPwdCount(user_msg, lockOutObservationWindow, now);
 }
 
