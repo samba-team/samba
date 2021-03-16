@@ -14,6 +14,6 @@ ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
-testit "rpcclient" $VALGRIND $BINDIR/rpcclient -c 'getusername' $ADDARGS || failed=`expr $failed + 1`
+testit "rpcclient" $VALGRIND $BINDIR/rpcclient $ADDARGS || failed=`expr $failed + 1`
 
 testok $0 $failed

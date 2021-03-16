@@ -950,8 +950,20 @@ for s in signseal_options:
                 plansmbtorture4testsuite(test, "nt4_dc_smb1_done", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
             else:
                 plansmbtorture4testsuite(test, "nt4_dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
-            plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                                                                                 "none", options, configuration])
+            plantestsuite(
+                f'samba3.blackbox.rpcclient over ncacn_np with [{a}{s}{e}] ',
+                "nt4_dc:local",
+                [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                 "none",
+                 options + " -c getusername",
+                 configuration])
+            plantestsuite(
+                f'samba3.blackbox.rpcclient over ncalrpc with [{a}{s}{e}] ',
+                "nt4_dc:local",
+                [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                 "none",
+                 f'ncalrpc:[{a}{s}{e}] -c epmmap',
+                 configuration])
 
     # We should try more combinations in future, but this is all
     # the pre-calculated credentials cache supports at the moment
@@ -972,8 +984,14 @@ for s in signseal_options:
     for a in auth_options2:
         binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
 
-        plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s] " % (a, s, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                                                                            "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
+        plantestsuite(
+            f'samba3.blackbox.rpcclient krb5 ncacn_np with [{a}{s}{e}] ',
+            "ktest:local",
+            [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+             "$PREFIX/ktest/krb5_ccache-3",
+             binding_string,
+             "-k -c getusername",
+             configuration])
 
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "ad_member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
                                                                         "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])

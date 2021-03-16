@@ -826,7 +826,41 @@ static void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
+static NTSTATUS rpccli_ncalrpc_connect(
+	const struct ndr_interface_table *iface,
+	TALLOC_CTX *mem_ctx,
+	struct rpc_pipe_client **prpccli)
+{
+	struct rpc_pipe_client *rpccli = NULL;
+	struct pipe_auth_data *auth = NULL;
+	NTSTATUS status;
 
+	status = rpc_pipe_open_ncalrpc(mem_ctx, iface, &rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_open_ncalrpc failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = rpccli_ncalrpc_bind_data(rpccli, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_ncalrpc_bind_data failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = rpc_pipe_bind(rpccli, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_bind failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	*prpccli = rpccli;
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(rpccli);
+	return status;
+}
 /**
  * Call an rpcclient function, passing an argv array.
  *
@@ -849,114 +883,129 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* Open pipe */
 
 	if ((cmd_entry->table != NULL) && (cmd_entry->rpc_pipe == NULL)) {
-		enum dcerpc_AuthType auth_type;
-		enum dcerpc_AuthLevel auth_level;
-		struct cli_credentials *creds =
-			get_cmdline_auth_info_creds(auth_info);
-		enum credentials_use_kerberos krb5_state =
-			cli_credentials_get_kerberos_state(creds);
-
-		binding_get_auth_info(
-			binding, &auth_type, &auth_level, &krb5_state);
-
-		switch (auth_type) {
-		case DCERPC_AUTH_TYPE_NONE:
-			ntresult = cli_rpc_pipe_open_noauth_transport(
-				cli, transport,
-				cmd_entry->table,
-				&cmd_entry->rpc_pipe);
-			break;
-		case DCERPC_AUTH_TYPE_SPNEGO:
-		case DCERPC_AUTH_TYPE_NTLMSSP:
-		case DCERPC_AUTH_TYPE_KRB5:
-			cli_credentials_set_kerberos_state(
-				creds, krb5_state);
-
-			ntresult = cli_rpc_pipe_open_with_creds(
-				cli, cmd_entry->table,
-				transport,
-				auth_type,
-				auth_level,
-				smbXcli_conn_remote_name(cli->conn),
-				creds,
-				&cmd_entry->rpc_pipe);
-			break;
-		case DCERPC_AUTH_TYPE_SCHANNEL:
-			TALLOC_FREE(rpcclient_netlogon_creds);
-			ntresult = cli_rpc_pipe_open_schannel(
-				cli, rpcclient_msg_ctx,
-				cmd_entry->table,
-				transport,
-				rpcclient_netlogon_domain,
-				&cmd_entry->rpc_pipe,
-				rpcclient_msg_ctx,
-				&rpcclient_netlogon_creds);
-			break;
-		default:
-			DEBUG(0, ("Could not initialise %s. Invalid "
-				  "auth type %u\n",
-				  cmd_entry->table->name,
-				  auth_type ));
-			talloc_free(mem_ctx);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		if (!NT_STATUS_IS_OK(ntresult)) {
-			DEBUG(0, ("Could not initialise %s. Error was %s\n",
-				  cmd_entry->table->name,
-				  nt_errstr(ntresult) ));
-			talloc_free(mem_ctx);
-			return ntresult;
-		}
-
-		if (rpcclient_netlogon_creds == NULL &&
-		    cmd_entry->use_netlogon_creds) {
-			const char *dc_name =
-				cmd_entry->rpc_pipe->desthost;
-			const char *domain = rpcclient_netlogon_domain;
-			struct cli_credentials *trust_creds = NULL;
-
-			ntresult = pdb_get_trust_credentials(
-				domain,
-				NULL,
-				mem_ctx,
-				&trust_creds);
+		if (transport == NCALRPC) {
+			ntresult = rpccli_ncalrpc_connect(
+				cmd_entry->table, cli, &cmd_entry->rpc_pipe);
 			if (!NT_STATUS_IS_OK(ntresult)) {
-				DEBUG(0, ("Failed to fetch trust credentials for "
-					  "%s to connect to %s: %s\n",
-					  domain, cmd_entry->table->name,
-					  nt_errstr(ntresult)));
-				TALLOC_FREE(cmd_entry->rpc_pipe);
+				TALLOC_FREE(mem_ctx);
+				return ntresult;
+			}
+		} else {
+			enum dcerpc_AuthType auth_type;
+			enum dcerpc_AuthLevel auth_level;
+			struct cli_credentials *creds =
+				get_cmdline_auth_info_creds(auth_info);
+			enum credentials_use_kerberos krb5_state =
+				cli_credentials_get_kerberos_state(creds);
+
+			binding_get_auth_info(
+				binding, &auth_type, &auth_level, &krb5_state);
+
+			switch (auth_type) {
+			case DCERPC_AUTH_TYPE_NONE:
+				ntresult = cli_rpc_pipe_open_noauth_transport(
+					cli, transport,
+					cmd_entry->table,
+					&cmd_entry->rpc_pipe);
+				break;
+			case DCERPC_AUTH_TYPE_SPNEGO:
+			case DCERPC_AUTH_TYPE_NTLMSSP:
+			case DCERPC_AUTH_TYPE_KRB5:
+				cli_credentials_set_kerberos_state(
+					creds, krb5_state);
+
+				ntresult = cli_rpc_pipe_open_with_creds(
+					cli, cmd_entry->table,
+					transport,
+					auth_type,
+					auth_level,
+					smbXcli_conn_remote_name(cli->conn),
+					creds,
+					&cmd_entry->rpc_pipe);
+				break;
+			case DCERPC_AUTH_TYPE_SCHANNEL:
+				TALLOC_FREE(rpcclient_netlogon_creds);
+				ntresult = cli_rpc_pipe_open_schannel(
+					cli, rpcclient_msg_ctx,
+					cmd_entry->table,
+					transport,
+					rpcclient_netlogon_domain,
+					&cmd_entry->rpc_pipe,
+					rpcclient_msg_ctx,
+					&rpcclient_netlogon_creds);
+				break;
+			default:
+				DEBUG(0, ("Could not initialise %s. Invalid "
+					  "auth type %u\n",
+					  cmd_entry->table->name,
+					  auth_type ));
+				talloc_free(mem_ctx);
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			if (!NT_STATUS_IS_OK(ntresult)) {
+				DBG_ERR("Could not initialise %s. "
+					"Error was %s\n",
+					cmd_entry->table->name,
+					nt_errstr(ntresult));
 				talloc_free(mem_ctx);
 				return ntresult;
 			}
 
-			ntresult = rpccli_create_netlogon_creds_ctx(trust_creds,
-								    dc_name,
-								    rpcclient_msg_ctx,
-								    rpcclient_msg_ctx,
-								    &rpcclient_netlogon_creds);
-			if (!NT_STATUS_IS_OK(ntresult)) {
-				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					  cmd_entry->table->name));
-				TALLOC_FREE(cmd_entry->rpc_pipe);
-				TALLOC_FREE(mem_ctx);
-				return ntresult;
-			}
+			if (rpcclient_netlogon_creds == NULL &&
+			    cmd_entry->use_netlogon_creds) {
+				const char *dc_name =
+					cmd_entry->rpc_pipe->desthost;
+				const char *domain = rpcclient_netlogon_domain;
+				struct cli_credentials *trust_creds = NULL;
 
-			ntresult = rpccli_setup_netlogon_creds(
-				cli,
-				NCACN_NP,
-				rpcclient_netlogon_creds,
-				false, /* force_reauth */
-				trust_creds);
-			TALLOC_FREE(trust_creds);
-			if (!NT_STATUS_IS_OK(ntresult)) {
-				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					  cmd_entry->table->name));
-				TALLOC_FREE(cmd_entry->rpc_pipe);
-				TALLOC_FREE(rpcclient_netlogon_creds);
-				TALLOC_FREE(mem_ctx);
-				return ntresult;
+				ntresult = pdb_get_trust_credentials(
+					domain,
+					NULL,
+					mem_ctx,
+					&trust_creds);
+				if (!NT_STATUS_IS_OK(ntresult)) {
+					DBG_ERR("Failed to fetch trust "
+						"credentials for "
+						"%s to connect to %s: %s\n",
+						domain,
+						cmd_entry->table->name,
+						nt_errstr(ntresult));
+					TALLOC_FREE(cmd_entry->rpc_pipe);
+					talloc_free(mem_ctx);
+					return ntresult;
+				}
+
+				ntresult = rpccli_create_netlogon_creds_ctx(
+					trust_creds,
+					dc_name,
+					rpcclient_msg_ctx,
+					rpcclient_msg_ctx,
+					&rpcclient_netlogon_creds);
+				if (!NT_STATUS_IS_OK(ntresult)) {
+					DBG_ERR("Could not initialise "
+						"credentials for %s.\n",
+						cmd_entry->table->name);
+					TALLOC_FREE(cmd_entry->rpc_pipe);
+					TALLOC_FREE(mem_ctx);
+					return ntresult;
+				}
+
+				ntresult = rpccli_setup_netlogon_creds(
+					cli,
+					NCACN_NP,
+					rpcclient_netlogon_creds,
+					false, /* force_reauth */
+					trust_creds);
+				TALLOC_FREE(trust_creds);
+				if (!NT_STATUS_IS_OK(ntresult)) {
+					DBG_ERR("Could not initialise "
+						"credentials for %s.\n",
+						cmd_entry->table->name);
+					TALLOC_FREE(cmd_entry->rpc_pipe);
+					TALLOC_FREE(rpcclient_netlogon_creds);
+					TALLOC_FREE(mem_ctx);
+					return ntresult;
+				}
 			}
 		}
 	}
@@ -1215,27 +1264,33 @@ out_free:
 		rpcclient_netlogon_domain = lp_workgroup();
 	}
 
-	nt_status = cli_full_connection_creds(&cli, lp_netbios_name(), host,
-					opt_ipaddr ? &server_ss : NULL, opt_port,
-					"IPC$", "IPC",
-					get_cmdline_auth_info_creds(
-						popt_get_cmdline_auth_info()),
-					flags);
+	if (transport == NCACN_NP) {
+		nt_status = cli_full_connection_creds(
+			&cli,
+			lp_netbios_name(),
+			host,
+			opt_ipaddr ? &server_ss : NULL,
+			opt_port,
+			"IPC$",
+			"IPC",
+			get_cmdline_auth_info_creds(
+				popt_get_cmdline_auth_info()),
+			flags);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
-		result = 1;
-		goto done;
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Cannot connect to server.  Error was %s\n",
+				  nt_errstr(nt_status)));
+			result = 1;
+			goto done;
+		}
+
+		/* Load command lists */
+		cli_set_timeout(cli, timeout);
 	}
 
 #if 0	/* COMMENT OUT FOR TESTING */
 	memset(cmdline_auth_info.password,'X',sizeof(cmdline_auth_info.password));
 #endif
-
-	/* Load command lists */
-
-	timeout = 10000;
-	cli_set_timeout(cli, timeout);
 
 	cmd_set = rpcclient_command_list;
 
