@@ -31,6 +31,34 @@ from samba.netcmd import CommandError
 # so that we never inadvertently use .runcmd() by accident.
 class DomainBackupOfflineCmp(BlackboxTestCase):
 
+    def test_domain_backup_offline_hard_link_tdb(self):
+        self.hard_link_testcase('tdb')
+
+    def test_domain_backup_offline_hard_link_mdb(self):
+        self.hard_link_testcase('mdb')
+
+    def hard_link_testcase(self, backend):
+        self.prov_dir = self.provision(backend)
+        self.extract_dir = None
+
+        # Create hard links in the private and state directories
+        os.link(os.path.join(self.prov_dir, "private", "krb5.conf"),
+                os.path.join(self.prov_dir, "state", "krb5.conf"))
+
+        backup_file = self.backup(self.prov_dir)
+
+        # Extract the backup
+        self.extract_dir = tempfile.mkdtemp(dir=self.tempdir)
+        tf = tarfile.open(backup_file)
+        tf.extractall(self.extract_dir)
+
+        # Ensure that the hard link in the private directory was backed up,
+        # while the one in the state directory was not.
+        self.assertTrue(os.path.exists(os.path.join(self.extract_dir,
+                                                    "private", "krb5.conf")))
+        self.assertFalse(os.path.exists(os.path.join(self.extract_dir,
+                                                    "statedir", "krb5.conf")))
+
     def test_domain_backup_offline_untar_tdb(self):
         self.untar_testcase('tdb')
 
@@ -44,12 +72,15 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
         self.restore_testcase('mdb')
 
     def restore_testcase(self, backend):
-        prov_dir, backup_file = self.provision_and_backup(backend)
+        self.prov_dir = self.provision(backend)
+        self.extract_dir = None
+        backup_file = self.backup(self.prov_dir)
 
-        extract_dir = tempfile.mkdtemp(dir=self.tempdir)
+        self.extract_dir = tempfile.mkdtemp(dir=self.tempdir)
         cmd = ("samba-tool domain backup restore --backup-file={f}"
                " --targetdir={d} "
-               "--newservername=NEWSERVER").format(f=backup_file, d=extract_dir)
+               "--newservername=NEWSERVER").format(f=backup_file,
+                                                   d=self.extract_dir)
         self.check_output(cmd)
 
         # attrs that are altered by the restore process
@@ -61,22 +92,18 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
                         "interSiteTopologyGenerator"]
         filter_arg = "--filter=" + ",".join(ignore_attrs)
         args = ["--two", filter_arg]
-        self.ldapcmp(prov_dir, extract_dir, args)
-
-        shutil.rmtree(prov_dir)
-        shutil.rmtree(extract_dir)
+        self.ldapcmp(self.prov_dir, self.extract_dir, args)
 
     def untar_testcase(self, backend):
-        prov_dir, backup_file = self.provision_and_backup(backend)
+        self.prov_dir = self.provision(backend)
+        self.extract_dir = None
+        backup_file = self.backup(self.prov_dir)
 
-        extract_dir = tempfile.mkdtemp(dir=self.tempdir)
+        self.extract_dir = tempfile.mkdtemp(dir=self.tempdir)
         tf = tarfile.open(backup_file)
-        tf.extractall(extract_dir)
+        tf.extractall(self.extract_dir)
 
-        self.ldapcmp(prov_dir, extract_dir)
-
-        shutil.rmtree(prov_dir)
-        shutil.rmtree(extract_dir)
+        self.ldapcmp(self.prov_dir, self.extract_dir)
 
     def ldapcmp(self, prov_dir, ex_dir, args=[]):
         sam_fn = os.path.join("private", "sam.ldb")
@@ -90,8 +117,8 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
             self.check_output(cmd)
 
     # Test the "samba-tool domain backup" command with ldapcmp
-    def provision_and_backup(self, backend):
-        prov_dir = tempfile.mkdtemp(dir=self.tempdir)
+    def provision(self, backend):
+        target = tempfile.mkdtemp(dir=self.tempdir)
 
         # Provision domain.  Use fake ACLs and store xattrs in tdbs so that
         # NTACL backup will work inside the testenv.
@@ -100,13 +127,16 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
         # circumstances, causing the ldapcmp to fail.
         prov_cmd = "samba-tool domain provision " +\
                    "--domain FOO --realm foo.example.com " +\
-                   "--targetdir {prov_dir} " +\
+                   "--targetdir {target} " +\
                    "--backend-store {backend} " +\
                    "--host-name OLDSERVER "+\
                    "--option=\"vfs objects=fake_acls xattr_tdb\""
-        prov_cmd = prov_cmd.format(prov_dir=prov_dir, backend=backend)
+        prov_cmd = prov_cmd.format(target=target, backend=backend)
         self.check_output(prov_cmd)
 
+        return target
+
+    def backup(self, prov_dir):
         # Run the backup and check we got one backup tar file
         cmd = ("samba-tool domain backup offline --targetdir={prov_dir} "
                "-s {prov_dir}/etc/smb.conf").format(prov_dir=prov_dir)
@@ -120,4 +150,10 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
                                " file but got {0}".format(len(tar_files)))
 
         backup_file = os.path.join(prov_dir, tar_files[0])
-        return prov_dir, backup_file
+        return backup_file
+
+    def tearDown(self):
+        # Remove temporary directories
+        shutil.rmtree(self.prov_dir)
+        if self.extract_dir:
+            shutil.rmtree(self.extract_dir)
