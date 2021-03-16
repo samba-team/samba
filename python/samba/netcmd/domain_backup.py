@@ -313,7 +313,8 @@ class cmd_domain_backup_online(samba.netcmd.Command):
             shutil.rmtree(paths.sysvol)
 
             # Edit the downloaded sam.ldb to mark it as a backup
-            samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+            samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
+                          flags=ldb.FLG_DONT_CREATE_DB)
             time_str = get_timestamp()
             add_backup_marker(samdb, "backupDate", time_str)
             add_backup_marker(samdb, "sidForRestore", new_sid)
@@ -537,7 +538,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # open a DB connection to the restored DB
         private_dir = os.path.join(targetdir, 'private')
         samdb_path = os.path.join(private_dir, 'sam.ldb')
-        samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp)
+        samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp,
+                      flags=ldb.FLG_DONT_CREATE_DB)
         backup_type = self.get_backup_type(samdb)
 
         if site is None:
@@ -645,7 +647,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                    host_ip, host_ip6, site)
 
         secrets_path = os.path.join(private_dir, 'secrets.ldb')
-        secrets_ldb = Ldb(secrets_path, session_info=system_session(), lp=lp)
+        secrets_ldb = Ldb(secrets_path, session_info=system_session(), lp=lp,
+                          flags=ldb.FLG_DONT_CREATE_DB)
         secretsdb_self_join(secrets_ldb, domain=ctx.domain_name,
                             realm=ctx.realm, dnsdomain=ctx.dnsdomain,
                             netbiosname=ctx.myname, domainsid=ctx.domsid,
@@ -937,7 +940,8 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
 
         # connect to the local DB (making sure we use the new/renamed config)
         lp.load(paths.smbconf)
-        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
+                      flags=ldb.FLG_DONT_CREATE_DB)
 
         # Edit the cloned sam.ldb to mark it as a backup
         time_str = get_timestamp()
@@ -1025,7 +1029,8 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
     # on the secrets.ldb file before backing up that file and secrets.tdb
     def backup_secrets(self, private_dir, lp, logger):
         secrets_path = os.path.join(private_dir, 'secrets')
-        secrets_obj = Ldb(secrets_path + '.ldb', lp=lp)
+        secrets_obj = Ldb(secrets_path + '.ldb', lp=lp,
+                          flags=ldb.FLG_DONT_CREATE_DB)
         logger.info('Starting transaction on ' + secrets_path)
         secrets_obj.transaction_start()
         self.offline_tdb_copy(secrets_path + '.ldb')
@@ -1050,7 +1055,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         else:
             logger.info('Starting transaction on ' + sam_ldb_path)
             copy_function = self.offline_tdb_copy
-            sam_obj = Ldb(sam_ldb_path, lp=lp)
+            sam_obj = Ldb(sam_ldb_path, lp=lp, flags=ldb.FLG_DONT_CREATE_DB)
             sam_obj.transaction_start()
 
         logger.info('   backing up ' + sam_ldb_path)
@@ -1102,7 +1107,8 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         check_targetdir(logger, targetdir)
 
-        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
+                      flags=ldb.FLG_RDONLY)
         sid = get_sid_for_restore(samdb, logger)
 
         # Iterating over the directories in this specific order ensures that
@@ -1157,7 +1163,8 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         #          Writing to a .bak file only works because the DN being
         #          written to happens to be top level.
         samdb = SamDB(url=paths.samdb + self.backup_ext,
-                      session_info=system_session(), lp=lp)
+                      session_info=system_session(), lp=lp,
+                      flags=ldb.FLG_DONT_CREATE_DB)
         time_str = get_timestamp()
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", sid)
@@ -1169,7 +1176,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
             if not os.path.exists(path + self.backup_ext):
                 if path.endswith('.ldb'):
                     logger.info('Starting transaction on solo db: ' + path)
-                    ldb_obj = Ldb(path, lp=lp)
+                    ldb_obj = Ldb(path, lp=lp, flags=ldb.FLG_DONT_CREATE_DB)
                     ldb_obj.transaction_start()
                     logger.info('   running tdbbackup on the same file')
                     self.offline_tdb_copy(path)
