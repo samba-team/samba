@@ -93,13 +93,13 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
     def test_domain_backup_offline_untar_tdb(self):
         self.untar_testcase('tdb')
 
-    def test_domain_backup_offline_untar_mbd(self):
+    def test_domain_backup_offline_untar_mdb(self):
         self.untar_testcase('mdb')
 
     def test_domain_backup_offline_restore_tdb(self):
         self.restore_testcase('tdb')
 
-    def test_domain_backup_offline_restore_mbd(self):
+    def test_domain_backup_offline_restore_mdb(self):
         self.restore_testcase('mdb')
 
     def restore_testcase(self, backend):
