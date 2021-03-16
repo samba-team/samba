@@ -1714,6 +1714,7 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 	state->open_was_deferred = false;
 	/* Ensure we don't have any outstanding immediate event. */
 	TALLOC_FREE(state->im);
+	TALLOC_FREE(state->open_rec);
 }
 
 void remove_deferred_open_message_smb2(
