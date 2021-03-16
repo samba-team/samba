@@ -22,15 +22,35 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 smbclient="$BINDIR/smbclient"
 
 test_var_expansion() {
+	logfile=/tmp/$USER_printing_var_exp.log
+
 	$smbclient -U $DOMAIN/$USERNAME%$PASSWORD \
 		   //$SERVER_IP/print_var_exp \
-		   -c "print $SRCDIR/testdata/printing/example.ps" || return 1
+		   -c "print $SRCDIR/testdata/printing/example.ps"
+	if [ $? -ne 0 ] ; then
+	    rm -f "$logfile"
+	    return 1
+	fi
+	cat "$logfile"
 
-	cat /tmp/printing_var_exp.log
+	grep "Windows user: $USERNAME" "$logfile"
+	if [ $? -ne 0 ] ; then
+	    rm -f "$logfile"
+	    return 1
+	fi
+	grep "UNIX user: $USERNAME" "$logfile"
+	if [ $? -ne 0 ] ; then
+	    rm -f "$logfile"
+	    return 1
+	fi
+	grep "Domain: $DOMAIN" "$logfile"
+	if [ $? -ne 0 ] ; then
+	    rm -f "$logfile"
+	    return 1
+	fi
 
-	grep "Windows user: $USERNAME" /tmp/printing_var_exp.log || return 1
-	grep "UNIX user: $USERNAME" /tmp/printing_var_exp.log || return 1
-	grep "Domain: $DOMAIN" /tmp/printing_var_exp.log || return 1
+	rm -f "$logfile"
+	return 0
 }
 
 testit "Test variable expansion for '%U', '%u' and '%D'" \
