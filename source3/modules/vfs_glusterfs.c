@@ -2130,8 +2130,14 @@ static NTSTATUS vfs_gluster_create_dfs_pathat(struct vfs_handle_struct *handle,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	int ret;
 	char *msdfs_link = NULL;
+	struct smb_filename *full_fname = NULL;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		goto out;
+	}
 
 	/* Form the msdfs_link contents */
 	msdfs_link = msdfs_link_string(frame,
@@ -2143,7 +2149,7 @@ static NTSTATUS vfs_gluster_create_dfs_pathat(struct vfs_handle_struct *handle,
 
 	ret = glfs_symlink(handle->data,
 			msdfs_link,
-			smb_fname->base_name);
+			full_fname->base_name);
 	if (ret == 0) {
 		status = NT_STATUS_OK;
 	} else {
