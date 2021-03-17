@@ -386,8 +386,6 @@ static NTSTATUS vfswrap_create_dfs_pathat(struct vfs_handle_struct *handle,
 	int ret;
 	char *msdfs_link = NULL;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	/* Form the msdfs_link contents */
 	msdfs_link = msdfs_link_string(frame,
 					reflist,
@@ -397,7 +395,7 @@ static NTSTATUS vfswrap_create_dfs_pathat(struct vfs_handle_struct *handle,
 	}
 
 	ret = symlinkat(msdfs_link,
-			fsp_get_io_fd(dirfsp),
+			fsp_get_pathref_fd(dirfsp),
 			smb_fname->base_name);
 	if (ret == 0) {
 		status = NT_STATUS_OK;
