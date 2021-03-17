@@ -3041,6 +3041,7 @@ static void poll_open_done(struct tevent_req *subreq)
 	status = share_mode_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	open_rec->watch_req = NULL;
+	TALLOC_FREE(open_rec->te);
 
 	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
 		  nt_errstr(status));
