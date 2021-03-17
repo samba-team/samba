@@ -26,10 +26,6 @@
 #include "modules/vfs_posixacl.h"
 #endif
 
-#if defined(HAVE_TRU64_ACLS)
-#include "modules/vfs_tru64acl.h"
-#endif
-
 #if defined(HAVE_SOLARIS_UNIXWARE_ACLS)
 #include "modules/vfs_solarisacl.h"
 #endif
@@ -430,43 +426,6 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	return aixacl_sys_acl_delete_def_file(handle, smb_fname);
-}
-
-#elif defined(HAVE_TRU64_ACLS)
-
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	return tru64acl_sys_acl_get_file(handle, smb_fname, type,
-					 mem_ctx);
-}
-
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
-			 TALLOC_CTX *mem_ctx)
-{
-	return tru64acl_sys_acl_get_fd(handle, fsp, mem_ctx);
-}
-
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-	return tru64acl_sys_acl_set_file(handle, smb_fname, type, acl_d);
-}
-
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d)
-{
-	return tru64acl_sys_acl_set_fd(handle, fsp, acl_d);
-}
-
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return tru64acl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)

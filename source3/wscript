@@ -543,10 +543,6 @@ return acl_get_perm_np(permset_d, perm);
                 Logs.info('Using solaris or UnixWare ACLs')
                 conf.DEFINE('HAVE_SOLARIS_UNIXWARE_ACLS',1)
                 default_static_modules.extend(['vfs_solarisacl'])
-            elif conf.CHECK_FUNCS_IN(['acl_get_fd'], 'pacl'):
-                Logs.info('Using Tru64 ACLs')
-                conf.DEFINE('HAVE_TRU64_ACLS',1)
-                default_static_modules.extend(['vfs_tru64acl'])
             else:
                 conf.fatal("ACL support not found. Try installing libacl1-dev "
                            "or libacl-devel.  "
