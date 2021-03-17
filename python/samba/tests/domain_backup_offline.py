@@ -21,6 +21,7 @@ import shutil
 import tempfile
 from samba.tests import BlackboxTestCase
 from samba.netcmd import CommandError
+from samba.param import LoadParm
 
 # The backup tests require that a completely clean LoadParm object gets used
 # for the restore. Otherwise the same global LP gets re-used, and the LP
@@ -30,6 +31,36 @@ from samba.netcmd import CommandError
 # So although this is a samba-tool test, we don't inherit from SambaToolCmdTest
 # so that we never inadvertently use .runcmd() by accident.
 class DomainBackupOfflineCmp(BlackboxTestCase):
+
+    def test_domain_backup_offline_nested_tdb(self):
+        self.nested_testcase('tdb')
+
+    def test_domain_backup_offline_nested_mdb(self):
+        self.nested_testcase('mdb')
+
+    def nested_testcase(self, backend):
+        self.prov_dir = self.provision(backend)
+        self.extract_dir = None
+
+        src = os.path.join(self.prov_dir, "private")
+        dst = os.path.join(self.prov_dir, "state", "private")
+
+        # Move private directory inside state directory
+        shutil.move(src, dst)
+
+        smbconf = os.path.join(self.prov_dir, "etc", "smb.conf")
+
+        # Update the conf file
+        lp = LoadParm(filename_for_non_global_lp=smbconf)
+        lp.set("private dir", dst)
+        lp.dump(False, smbconf)
+
+        backup_file = self.backup(self.prov_dir)
+
+        # Ensure each file is only present once in the tar file
+        tf = tarfile.open(backup_file)
+        names = tf.getnames()
+        self.assertEqual(len(names), len(set(names)))
 
     def test_domain_backup_offline_hard_link_tdb(self):
         self.hard_link_testcase('tdb')
