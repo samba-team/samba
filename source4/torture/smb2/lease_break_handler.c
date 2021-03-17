@@ -50,14 +50,30 @@ bool torture_lease_handler(struct smb2_transport *transport,
 	struct smb2_tree *tree = private_data;
 	struct smb2_lease_break_ack io;
 	struct smb2_request *req;
+	const char *action = NULL;
+	char *ls = smb2_util_lease_state_string(lease_break_info.tctx,
+						lb->new_lease_state);
+
+	if (lb->break_flags & SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED) {
+		action = "acking";
+	} else {
+		action = "received";
+	}
 
 	lease_break_info.lease_transport = transport;
 	lease_break_info.lease_break = *lb;
 	lease_break_info.count++;
 
 	if (lease_break_info.lease_skip_ack) {
+		torture_comment(lease_break_info.tctx,
+			"transport[%p] Skip %s to %s in lease handler\n",
+			transport, action, ls);
 		return true;
 	}
+
+	torture_comment(lease_break_info.tctx,
+		"transport[%p] %s to %s in lease handler\n",
+		transport, action, ls);
 
 	if (lb->break_flags & SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED) {
 		ZERO_STRUCT(io);
@@ -113,18 +129,25 @@ void torture_wait_for_lease_break(struct torture_context *tctx)
 
 	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
 	if (te == NULL) {
-		torture_comment(tctx, "Failed to wait for an oplock break. "
-				      "test results may not be accurate.");
+		torture_comment(tctx, "Failed to wait for an lease break. "
+				      "test results may not be accurate.\n");
 		goto done;
 	}
 
+	torture_comment(tctx, "Waiting for a potential lease break...\n");
 	while (!timesup && lease_break_info.count < old_count + 1) {
 		if (tevent_loop_once(tctx->ev) != 0) {
-			torture_comment(tctx, "Failed to wait for an oplock "
+			torture_comment(tctx, "Failed to wait for a lease "
 					      "break. test results may not be "
-					      "accurate.");
+					      "accurate.\n");
 			goto done;
 		}
+	}
+	if (timesup) {
+		torture_comment(tctx, "... waiting for a lease break timed out\n");
+	} else {
+		torture_comment(tctx, "Got %u lease breaks\n",
+				lease_break_info.count - old_count);
 	}
 
 done:

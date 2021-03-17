@@ -73,9 +73,6 @@ bool torture_oplock_ack_handler(struct smb2_transport *transport,
 		name = "unknown";
 		break_info.failures++;
 	}
-	torture_comment(break_info.tctx,
-			"transport[%p] Acking to %s [0x%02X] in oplock handler\n",
-			transport, name, level);
 
 	break_info.br.in.file.handle	= *handle;
 	break_info.br.in.oplock_level	= level;
@@ -85,8 +82,15 @@ bool torture_oplock_ack_handler(struct smb2_transport *transport,
 	SMB_ASSERT(tree->session->transport == transport);
 
 	if (break_info.oplock_skip_ack) {
+		torture_comment(break_info.tctx,
+				"transport[%p] skip acking to %s [0x%02X] in oplock handler\n",
+				transport, name, level);
 		return true;
 	}
+
+	torture_comment(break_info.tctx,
+			"transport[%p] Acking to %s [0x%02X] in oplock handler\n",
+			transport, name, level);
 
 	req = smb2_break_send(tree, &break_info.br);
 	req->async.fn = torture_oplock_ack_callback;
@@ -135,17 +139,24 @@ void torture_wait_for_oplock_break(struct torture_context *tctx)
 	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
 	if (te == NULL) {
 		torture_comment(tctx, "Failed to wait for an oplock break. "
-				      "test results may not be accurate.");
+				      "test results may not be accurate.\n");
 		goto done;
 	}
 
+	torture_comment(tctx, "Waiting for a potential oplock break...\n");
 	while (!timesup && break_info.count < old_count + 1) {
 		if (tevent_loop_once(tctx->ev) != 0) {
 			torture_comment(tctx, "Failed to wait for an oplock "
 					      "break. test results may not be "
-					      "accurate.");
+					      "accurate\n.");
 			goto done;
 		}
+	}
+	if (timesup) {
+		torture_comment(tctx, "... waiting for an oplock break timed out\n");
+	} else {
+		torture_comment(tctx, "Got %u oplock breaks\n",
+				break_info.count - old_count);
 	}
 
 done:
