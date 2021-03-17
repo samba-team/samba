@@ -1,6 +1,6 @@
 #!/bin/bash
 
-logfile=/tmp/$USER_printing_var_exp.log
+logfile="${SELFTEST_TMPDIR}/${USER}_printing_var_exp.log"
 
 rm -f "$logfile"
 

@@ -22,7 +22,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 smbclient="$BINDIR/smbclient"
 
 test_var_expansion() {
-	logfile=/tmp/$USER_printing_var_exp.log
+	logfile="${SELFTEST_TMPDIR}/${USER}_printing_var_exp.log"
 
 	$smbclient -U $DOMAIN/$USERNAME%$PASSWORD \
 		   //$SERVER_IP/print_var_exp \
