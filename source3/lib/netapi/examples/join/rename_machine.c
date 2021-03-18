@@ -33,6 +33,8 @@ int main(int argc, const char **argv)
 	const char *new_machine_name = NULL;
 	uint32_t rename_opt = 0;
 	struct libnetapi_ctx *ctx = NULL;
+	const char *username = NULL;
+	const char *password = NULL;
 
 	poptContext pc;
 	int opt;
@@ -68,10 +70,23 @@ int main(int argc, const char **argv)
 
 	/* NetRenameMachineInDomain */
 
+	status = libnetapi_get_username(ctx, &username);
+	if (status != 0) {
+		printf("failed with: %s\n",
+			libnetapi_get_error_string(ctx, status));
+		goto out;
+	}
+	status = libnetapi_get_password(ctx, &password);
+	if (status != 0) {
+		printf("failed with: %s\n",
+			libnetapi_get_error_string(ctx, status));
+		goto out;
+	}
+
 	status = NetRenameMachineInDomain(host_name,
 					  new_machine_name,
-					  ctx->username,
-					  ctx->password,
+					  username,
+					  password,
 					  rename_opt);
 	if (status != 0) {
 		printf("failed with: %s\n",
