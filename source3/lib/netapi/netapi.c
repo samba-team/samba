@@ -25,6 +25,7 @@
 #include "krb5_env.h"
 #include "source3/param/loadparm.h"
 #include "lib/param/param.h"
+#include "auth/gensec/gensec.h"
 
 struct libnetapi_ctx *stat_ctx = NULL;
 static bool libnetapi_initialized = false;
@@ -286,34 +287,61 @@ NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx,
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 				      const char *username)
 {
+	if (ctx == NULL || username == NULL) {
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
+	}
+
 	TALLOC_FREE(ctx->username);
 	ctx->username = talloc_strdup(ctx, username ? username : "");
 
 	if (!ctx->username) {
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
+
+	cli_credentials_parse_string(ctx->creds, username, CRED_SPECIFIED);
+
 	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 				      const char *password)
 {
+	bool ok;
+
+	if (ctx == NULL || password == NULL) {
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
+	}
+
 	TALLOC_FREE(ctx->password);
 	ctx->password = talloc_strdup(ctx, password);
 	if (!ctx->password) {
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
+
+	ok = cli_credentials_set_password(ctx->creds, password, CRED_SPECIFIED);
+	if (!ok) {
+		return W_ERROR_V(WERR_INTERNAL_ERROR);
+	}
+
 	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 				       const char *workgroup)
 {
+	bool ok;
+
 	TALLOC_FREE(ctx->workgroup);
 	ctx->workgroup = talloc_strdup(ctx, workgroup);
 	if (!ctx->workgroup) {
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
+
+	ok = cli_credentials_set_domain(ctx->creds, workgroup, CRED_SPECIFIED);
+	if (!ok) {
+		return W_ERROR_V(WERR_INTERNAL_ERROR);
+	}
+
 	return NET_API_STATUS_SUCCESS;
 }
 
@@ -323,6 +351,10 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 {
 	ctx->use_kerberos = true;
+
+	cli_credentials_set_kerberos_state(ctx->creds,
+					   CRED_USE_KERBEROS_REQUIRED);
+
 	return NET_API_STATUS_SUCCESS;
 }
 
@@ -331,7 +363,14 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
+	uint32_t gensec_features;
+
 	ctx->use_ccache = true;
+
+	gensec_features = cli_credentials_get_gensec_features(ctx->creds);
+	gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
+	cli_credentials_set_gensec_features(ctx->creds, gensec_features);
+
 	return NET_API_STATUS_SUCCESS;
 }
 
