@@ -315,6 +315,27 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	return NET_API_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Set the cli_credentials to be used in the netapi context
+ *
+ * @param[in]  ctx    The netapi context
+ *
+ * @param[in]  creds  The cli_credentials which should be used by netapi.
+ *
+ * @return 0 on success, an werror code otherwise.
+ */
+NET_API_STATUS libnetapi_set_creds(struct libnetapi_ctx *ctx,
+				   struct cli_credentials *creds)
+{
+	if (ctx == NULL || creds == NULL) {
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
+	}
+
+	ctx->creds = creds;
+
+	return NET_API_STATUS_SUCCESS;
+}
+
 /****************************************************************
 ****************************************************************/
 
