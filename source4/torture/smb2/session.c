@@ -1851,6 +1851,312 @@ done:
 	return ret;
 }
 
+static bool test_session_bind2(struct torture_context *tctx, struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname1[256];
+	char fname2[256];
+	struct smb2_handle _h1f1;
+	struct smb2_handle *h1f1 = NULL;
+	struct smb2_handle _h1f2;
+	struct smb2_handle *h1f2 = NULL;
+	struct smb2_handle _h2f2;
+	struct smb2_handle *h2f2 = NULL;
+	struct smb2_create io1f1;
+	struct smb2_create io1f2;
+	struct smb2_create io2f1;
+	struct smb2_create io2f2;
+	union smb_fileinfo qfinfo;
+	bool ret = false;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options options2;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_transport *transport2 = NULL;
+	struct smbcli_options options3;
+	struct smb2_tree *tree3 = NULL;
+	struct smb2_transport *transport3 = NULL;
+	struct smb2_session *session1_1 = tree1->session;
+	struct smb2_session *session1_2 = NULL;
+	struct smb2_session *session1_3 = NULL;
+	struct smb2_session *session2_1 = NULL;
+	struct smb2_session *session2_2 = NULL;
+	struct smb2_session *session2_3 = NULL;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(transport1->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx, "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+
+	/*
+	 * We always want signing for this test!
+	 */
+	smb2cli_tcon_should_sign(tree1->smbXcli, true);
+	options2 = transport1->options;
+	options2.signing = SMB_SIGNING_REQUIRED;
+
+	/* Add some random component to the file name. */
+	snprintf(fname1, sizeof(fname1), "session_bind2_1_%s.dat",
+		 generate_random_str(tctx, 8));
+	snprintf(fname2, sizeof(fname2), "session_bind2_2_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+
+	smb2_oplock_create_share(&io1f1, fname1,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level(""));
+	smb2_oplock_create_share(&io1f2, fname2,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level(""));
+
+	status = smb2_create(tree1, mem_ctx, &io1f1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1f1 = io1f1.out.file.handle;
+	h1f1 = &_h1f1;
+	CHECK_CREATED(tctx, &io1f1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1f1.out.oplock_level,
+					smb2_util_oplock_level(""),
+					"oplock_level incorrect");
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree2,
+			      tctx->ev,
+			      &options2,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	session2_2 = tree2->session;
+	transport2 = tree2->session->transport;
+	smb2cli_tcon_should_sign(tree2->smbXcli, true);
+
+	smb2_oplock_create_share(&io2f1, fname1,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level(""));
+	smb2_oplock_create_share(&io2f2, fname2,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level(""));
+
+	status = smb2_create(tree2, mem_ctx, &io2f2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h2f2 = io2f2.out.file.handle;
+	h2f2 = &_h2f2;
+	CHECK_CREATED(tctx, &io2f2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io2f2.out.oplock_level,
+					smb2_util_oplock_level(""),
+					"oplock_level incorrect");
+
+	options3 = transport1->options;
+	options3.signing = SMB_SIGNING_REQUIRED;
+	options3.only_negprot = true;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree3,
+			      tctx->ev,
+			      &options3,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+	transport3 = tree3->session->transport;
+
+	/*
+	 * Create a fake session for the 2nd transport connection to the 1st session
+	 */
+	session1_2 = smb2_session_channel(transport2,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree1,
+					  session1_1);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+
+	/*
+	 * Now bind the 3rd transport connection to the 1st session
+	 */
+	session1_3 = smb2_session_channel(transport3,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree1,
+					  session1_1);
+	torture_assert(tctx, session1_3 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1_3,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+
+	/*
+	 * Create a fake session for the 1st transport connection to the 2nd session
+	 */
+	session2_1 = smb2_session_channel(transport1,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2,
+					  session2_2);
+	torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
+
+	/*
+	 * Now bind the 3rd transport connection to the 2nd session
+	 */
+	session2_3 = smb2_session_channel(transport3,
+					  lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					  tree2,
+					  session2_2);
+	torture_assert(tctx, session2_3 != NULL, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session2_3,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_session_setup_spnego failed");
+
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1f1;
+	tree1->session = session1_1;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+	tree1->session = session1_2;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_getinfo_file failed");
+	tree1->session = session1_3;
+	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h2f2;
+	tree2->session = session2_1;
+	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_getinfo_file failed");
+	tree2->session = session2_2;
+	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+	tree2->session = session2_3;
+	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	tree1->session = session1_1;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+	tree1->session = session1_2;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_create failed");
+	tree1->session = session1_3;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+
+	tree2->session = session2_1;
+	status = smb2_create(tree2, mem_ctx, &io2f1);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_create failed");
+	tree2->session = session2_2;
+	status = smb2_create(tree2, mem_ctx, &io2f1);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+	tree2->session = session2_3;
+	status = smb2_create(tree2, mem_ctx, &io2f1);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+
+	smbXcli_conn_disconnect(transport3->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smb_msleep(500);
+
+	tree1->session = session1_1;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+	tree1->session = session1_2;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_create failed");
+
+	tree2->session = session2_1;
+	status = smb2_create(tree2, mem_ctx, &io2f1);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					"smb2_create failed");
+	tree2->session = session2_2;
+	status = smb2_create(tree2, mem_ctx, &io2f1);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					"smb2_create failed");
+
+	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smb_msleep(500);
+	h2f2 = NULL;
+
+	tree1->session = session1_1;
+	status = smb2_create(tree1, mem_ctx, &io1f2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1f2 = io1f2.out.file.handle;
+	h1f2 = &_h1f2;
+	CHECK_CREATED(tctx, &io1f2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1f2.out.oplock_level,
+					smb2_util_oplock_level(""),
+					"oplock_level incorrect");
+
+	tree1->session = session1_1;
+	status = smb2_util_close(tree1, *h1f1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+	h1f1 = NULL;
+
+	ret = true;
+done:
+
+	smbXcli_conn_disconnect(transport3->conn, NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(transport2->conn, NT_STATUS_LOCAL_DISCONNECT);
+
+	tree1->session = session1_1;
+	tree2->session = session2_2;
+
+	if (h1f1 != NULL) {
+		smb2_util_close(tree1, *h1f1);
+	}
+	if (h1f2 != NULL) {
+		smb2_util_close(tree1, *h1f2);
+	}
+	if (h2f2 != NULL) {
+		smb2_util_close(tree2, *h2f2);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+
+	talloc_free(tree1);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static bool test_session_bind_auth_mismatch(struct torture_context *tctx,
 					    struct smb2_tree *tree1,
 					    const char *testname,
@@ -2641,6 +2947,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "expire_disconnect",
 				      test_session_expire_disconnect);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
+	torture_suite_add_1smb2_test(suite, "bind2", test_session_bind2);
 	torture_suite_add_1smb2_test(suite, "bind_invalid_auth", test_session_bind_invalid_auth);
 	torture_suite_add_1smb2_test(suite, "bind_different_user", test_session_bind_different_user);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb202", test_session_bind_negative_smb202);
