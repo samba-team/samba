@@ -307,12 +307,6 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 {
 	bool ok;
 
-	TALLOC_FREE(ctx->workgroup);
-	ctx->workgroup = talloc_strdup(ctx, workgroup);
-	if (!ctx->workgroup) {
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
-	}
-
 	ok = cli_credentials_set_domain(ctx->creds, workgroup, CRED_SPECIFIED);
 	if (!ok) {
 		return W_ERROR_V(WERR_INTERNAL_ERROR);

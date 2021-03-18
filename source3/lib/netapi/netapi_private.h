@@ -57,7 +57,6 @@ struct libnetapi_private_ctx {
 struct libnetapi_ctx {
 	char *debuglevel;
 	char *error_string;
-	char *workgroup;
 	int use_kerberos;
 	int use_ccache;
 	int disable_policy_handle_cache;
