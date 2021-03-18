@@ -27,9 +27,9 @@ bld.SAMBA3_LIBRARY('netapi',
                     lib/netapi/file.c
                     lib/netapi/shutdown.c
                     lib/netapi/netlogon.c''',
+                    deps='CREDENTIALS_CMDLINE',
                     public_deps='''
                     talloc
-                    util_cmdline
                     msrpc3
                     ads
                     NDR_LIBNETAPI
