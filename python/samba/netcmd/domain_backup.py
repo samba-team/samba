@@ -1156,6 +1156,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # Backup secrets, sam.ldb and their downstream files
         self.backup_secrets(paths.private_dir, lp, logger)
         self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
+        samdb = None
 
         # Open the new backed up samdb, flag it as backed up, and write
         # the next SID so the restore tool can add objects.
