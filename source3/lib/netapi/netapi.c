@@ -320,8 +320,6 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 
 NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 {
-	ctx->use_kerberos = true;
-
 	cli_credentials_set_kerberos_state(ctx->creds,
 					   CRED_USE_KERBEROS_REQUIRED);
 

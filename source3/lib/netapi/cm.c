@@ -75,6 +75,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	const char *username = NULL;
 	const char *password = NULL;
 	NET_API_STATUS rc;
+	enum credentials_use_kerberos krb5_state;
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAMETER;
@@ -105,8 +106,10 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		return WERR_INTERNAL_ERROR;
 	}
 
+	krb5_state = cli_credentials_get_kerberos_state(ctx->creds);
+
 	set_cmdline_auth_info_signing_state_raw(auth_info, SMB_SIGNING_IPC_DEFAULT);
-	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
+	set_cmdline_auth_info_use_kerberos(auth_info, krb5_state == CRED_USE_KERBEROS_REQUIRED);
 	set_cmdline_auth_info_username(auth_info, username);
 	if (password != NULL) {
 		set_cmdline_auth_info_password(auth_info, password);
@@ -116,7 +119,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 
 	if (username && username[0] &&
 	    password && password[0] &&
-	    ctx->use_kerberos) {
+	    krb5_state == CRED_USE_KERBEROS_REQUIRED) {
 		set_cmdline_auth_info_fallback_after_kerberos(auth_info, true);
 	}
 
