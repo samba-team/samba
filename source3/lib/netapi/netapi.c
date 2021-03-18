@@ -255,7 +255,7 @@ NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx,
 	}
 
 	if (username != NULL) {
-		*username = ctx->username;
+		*username = cli_credentials_get_username(ctx->creds);
 	}
 
 	return NET_API_STATUS_SUCCESS;
@@ -278,7 +278,7 @@ NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx,
 	}
 
 	if (password != NULL) {
-		*password = ctx->password;
+		*password = cli_credentials_get_password(ctx->creds);
 	}
 
 	return NET_API_STATUS_SUCCESS;
