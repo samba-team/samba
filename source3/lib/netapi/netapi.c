@@ -227,6 +227,52 @@ NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
+/**
+ * @brief Get the username of the libnet context
+ *
+ * @param[in]  ctx      The netapi context
+ *
+ * @param[in]  username A pointer to hold the username.
+ *
+ * @return 0 on success, an werror code otherwise.
+ */
+NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx,
+				      const char **username)
+{
+	if (ctx == NULL) {
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
+	}
+
+	if (username != NULL) {
+		*username = ctx->username;
+	}
+
+	return NET_API_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Get the password of the libnet context
+ *
+ * @param[in]  ctx      The netapi context
+ *
+ * @param[in]  password A pointer to hold the password.
+ *
+ * @return 0 on success, an werror code otherwise.
+ */
+NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx,
+				      const char **password)
+{
+	if (ctx == NULL) {
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
+	}
+
+	if (password != NULL) {
+		*password = ctx->password;
+	}
+
+	return NET_API_STATUS_SUCCESS;
+}
+
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 				      const char *username)
 {

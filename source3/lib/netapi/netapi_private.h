@@ -53,8 +53,6 @@ struct libnetapi_private_ctx {
 	struct messaging_context *msg_ctx;
 };
 
-NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx, char **password);
-NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx, char **username);
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 					  const char *format, ...)
 					  PRINTF_ATTRIBUTE(2,3);
