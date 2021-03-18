@@ -294,12 +294,6 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 		return W_ERROR_V(WERR_INVALID_PARAMETER);
 	}
 
-	TALLOC_FREE(ctx->password);
-	ctx->password = talloc_strdup(ctx, password);
-	if (!ctx->password) {
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
-	}
-
 	ok = cli_credentials_set_password(ctx->creds, password, CRED_SPECIFIED);
 	if (!ok) {
 		return W_ERROR_V(WERR_INTERNAL_ERROR);

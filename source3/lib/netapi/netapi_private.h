@@ -58,7 +58,6 @@ struct libnetapi_ctx {
 	char *debuglevel;
 	char *error_string;
 	char *workgroup;
-	char *password;
 	int use_kerberos;
 	int use_ccache;
 	int disable_policy_handle_cache;
