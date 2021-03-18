@@ -35,6 +35,8 @@ int main(int argc, const char **argv)
 	uint32_t num_ous = 0;
 	struct libnetapi_ctx *ctx = NULL;
 	int i;
+	const char *username = NULL;
+	const char *password = NULL;
 
 	poptContext pc;
 	int opt;
@@ -70,10 +72,23 @@ int main(int argc, const char **argv)
 
 	/* NetGetJoinableOUs */
 
+	status = libnetapi_get_username(ctx, &username);
+	if (status != 0) {
+		printf("failed with: %s\n",
+			libnetapi_get_error_string(ctx, status));
+		goto out;
+	}
+	status = libnetapi_get_password(ctx, &password);
+	if (status != 0) {
+		printf("failed with: %s\n",
+			libnetapi_get_error_string(ctx, status));
+		goto out;
+	}
+
 	status = NetGetJoinableOUs(host_name,
 				   domain_name,
-				   ctx->username,
-				   ctx->password,
+				   username,
+				   password,
 				   &num_ous,
 				   &ous);
 	if (status != 0) {
