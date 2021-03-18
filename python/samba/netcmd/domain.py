@@ -120,7 +120,7 @@ common_provision_join_options = [
            help="choose machine password (otherwise random)"),
     Option("--plaintext-secrets", action="store_true",
            help="Store secret/sensitive values as plain text on disk" +
-           "(default is to encrypt secret/ensitive values)"),
+           "(default is to encrypt secret/sensitive values)"),
     Option("--backend-store", type="choice", metavar="BACKENDSTORE",
            choices=["tdb", "mdb"],
            help="Specify the database backend to be used "
