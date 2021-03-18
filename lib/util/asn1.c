@@ -1085,20 +1085,6 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 	return asn1_end_tag(data);
 }
 
-/* check a enumerated value is correct */
-bool asn1_check_enumerated(struct asn1_data *data, int v)
-{
-	uint8_t b;
-	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return false;
-	if (!asn1_read_uint8(data, &b)) return false;
-	if (!asn1_end_tag(data)) return false;
-
-	if (v != b)
-		data->has_error = false;
-
-	return !data->has_error;
-}
-
 /* write an enumerated value to the stream */
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 {
