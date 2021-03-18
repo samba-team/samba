@@ -72,6 +72,9 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	struct client_ipc_connection *p;
 	NTSTATUS status;
 	struct cli_credentials *creds = NULL;
+	const char *username = NULL;
+	const char *password = NULL;
+	NET_API_STATUS rc;
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAMETER;
@@ -89,17 +92,30 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	if (!auth_info) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
+
+	rc = libnetapi_get_username(ctx, &username);
+	if (rc != 0) {
+		TALLOC_FREE(auth_info);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	rc = libnetapi_get_password(ctx, &password);
+	if (rc != 0) {
+		TALLOC_FREE(auth_info);
+		return WERR_INTERNAL_ERROR;
+	}
+
 	set_cmdline_auth_info_signing_state_raw(auth_info, SMB_SIGNING_IPC_DEFAULT);
 	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
-	set_cmdline_auth_info_username(auth_info, ctx->username);
-	if (ctx->password) {
-		set_cmdline_auth_info_password(auth_info, ctx->password);
+	set_cmdline_auth_info_username(auth_info, username);
+	if (password != NULL) {
+		set_cmdline_auth_info_password(auth_info, password);
 	} else {
 		set_cmdline_auth_info_getpass(auth_info);
 	}
 
-	if (ctx->username && ctx->username[0] &&
-	    ctx->password && ctx->password[0] &&
+	if (username && username[0] &&
+	    password && password[0] &&
 	    ctx->use_kerberos) {
 		set_cmdline_auth_info_fallback_after_kerberos(auth_info, true);
 	}

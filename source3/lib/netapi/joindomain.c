@@ -429,7 +429,9 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	if (r->in.account) {
 		ads->auth.user_name = SMB_STRDUP(r->in.account);
 	} else {
-		const char *username = cli_credentials_get_username(ctx->creds);
+		const char *username = NULL;
+
+		libnetapi_get_username(ctx, &username);
 		if (username != NULL) {
 			ads->auth.user_name = SMB_STRDUP(username);
 		}
@@ -439,7 +441,9 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	if (r->in.password) {
 		ads->auth.password = SMB_STRDUP(r->in.password);
 	} else {
-		const char *password = cli_credentials_get_password(ctx->creds);
+		const char *password = NULL;
+
+		libnetapi_get_password(ctx, &password);
 		if (password != NULL) {
 			ads->auth.password = SMB_STRDUP(password);
 		}
