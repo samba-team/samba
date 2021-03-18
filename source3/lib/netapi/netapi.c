@@ -333,8 +333,6 @@ NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
 	uint32_t gensec_features;
 
-	ctx->use_ccache = true;
-
 	gensec_features = cli_credentials_get_gensec_features(ctx->creds);
 	gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
 	cli_credentials_set_gensec_features(ctx->creds, gensec_features);

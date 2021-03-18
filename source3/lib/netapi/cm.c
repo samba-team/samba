@@ -25,6 +25,7 @@
 #include "libsmb/libsmb.h"
 #include "rpc_client/cli_pipe.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/gensec/gensec.h"
 
 /********************************************************************
 ********************************************************************/
@@ -76,6 +77,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	const char *password = NULL;
 	NET_API_STATUS rc;
 	enum credentials_use_kerberos krb5_state;
+	uint32_t gensec_features;
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAMETER;
@@ -107,6 +109,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	}
 
 	krb5_state = cli_credentials_get_kerberos_state(ctx->creds);
+	gensec_features = cli_credentials_get_gensec_features(ctx->creds);
 
 	set_cmdline_auth_info_signing_state_raw(auth_info, SMB_SIGNING_IPC_DEFAULT);
 	set_cmdline_auth_info_use_kerberos(auth_info, krb5_state == CRED_USE_KERBEROS_REQUIRED);
@@ -123,7 +126,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		set_cmdline_auth_info_fallback_after_kerberos(auth_info, true);
 	}
 
-	if (ctx->use_ccache) {
+	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
 		set_cmdline_auth_info_use_ccache(auth_info, true);
 	}
 	creds = get_cmdline_auth_info_creds(auth_info);
