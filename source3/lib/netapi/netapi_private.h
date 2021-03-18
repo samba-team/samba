@@ -59,7 +59,6 @@ struct libnetapi_ctx {
 	char *username;
 	char *workgroup;
 	char *password;
-	char *krb5_cc_env;
 	int use_kerberos;
 	int use_ccache;
 	int disable_policy_handle_cache;
