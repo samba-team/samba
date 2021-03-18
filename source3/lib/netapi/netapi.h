@@ -1362,19 +1362,7 @@ struct NETLOGON_INFO_4 {
 /****************************************************************
 ****************************************************************/
 
-struct libnetapi_ctx {
-	char *debuglevel;
-	char *error_string;
-	char *username;
-	char *workgroup;
-	char *password;
-	char *krb5_cc_env;
-	int use_kerberos;
-	int use_ccache;
-	int disable_policy_handle_cache;
-
-	void *private_data;
-};
+struct libnetapi_ctx;
 
 /****************************************************************
 ****************************************************************/

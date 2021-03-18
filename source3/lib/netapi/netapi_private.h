@@ -53,6 +53,21 @@ struct libnetapi_private_ctx {
 	struct messaging_context *msg_ctx;
 };
 
+struct libnetapi_ctx {
+	char *debuglevel;
+	char *error_string;
+	char *username;
+	char *workgroup;
+	char *password;
+	char *krb5_cc_env;
+	int use_kerberos;
+	int use_ccache;
+	int disable_policy_handle_cache;
+
+	void *private_data;
+};
+
+
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 					  const char *format, ...)
 					  PRINTF_ATTRIBUTE(2,3);
