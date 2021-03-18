@@ -23,6 +23,8 @@
 #include "lib/netapi/netapi_private.h"
 #include "secrets.h"
 #include "krb5_env.h"
+#include "source3/param/loadparm.h"
+#include "lib/param/param.h"
 
 struct libnetapi_ctx *stat_ctx = NULL;
 static bool libnetapi_initialized = false;
@@ -104,6 +106,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = NULL;
 
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
@@ -111,7 +114,21 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
+	ctx->creds = cli_credentials_init(ctx);
+	if (ctx->creds == NULL) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
+	}
+
 	BlockSignals(True, SIGPIPE);
+
+	cli_credentials_guess(ctx->creds, lp_ctx);
 
 	if (getenv("USER")) {
 		ctx->username = talloc_strdup(ctx, getenv("USER"));

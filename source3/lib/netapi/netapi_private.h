@@ -21,6 +21,7 @@
 #define __LIB_NETAPI_PRIVATE_H__
 
 #include "lib/netapi/netapi_net.h"
+#include "auth/credentials/credentials.h"
 
 #define LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, fn) \
 	DEBUG(10,("redirecting call %s to localhost\n", #fn)); \
@@ -62,6 +63,8 @@ struct libnetapi_ctx {
 	int use_kerberos;
 	int use_ccache;
 	int disable_policy_handle_cache;
+
+	struct cli_credentials *creds;
 
 	void *private_data;
 };
