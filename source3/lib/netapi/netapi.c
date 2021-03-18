@@ -131,17 +131,6 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 
 	cli_credentials_guess(ctx->creds, lp_ctx);
 
-	if (getenv("USER")) {
-		ctx->username = talloc_strdup(ctx, getenv("USER"));
-	} else {
-		ctx->username = talloc_strdup(ctx, "");
-	}
-	if (!ctx->username) {
-		TALLOC_FREE(frame);
-		fprintf(stderr, "libnetapi_init: out of memory\n");
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
-	}
-
 	status = libnetapi_init_private_context(ctx);
 	if (status != 0) {
 		TALLOC_FREE(frame);
@@ -289,13 +278,6 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 {
 	if (ctx == NULL || username == NULL) {
 		return W_ERROR_V(WERR_INVALID_PARAMETER);
-	}
-
-	TALLOC_FREE(ctx->username);
-	ctx->username = talloc_strdup(ctx, username ? username : "");
-
-	if (!ctx->username) {
-		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
 	cli_credentials_parse_string(ctx->creds, username, CRED_SPECIFIED);
