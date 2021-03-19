@@ -61,30 +61,6 @@ int vxfs_setxattr_fd(int fd, const char *name, const void *value,
 	return ret;
 }
 
-int vxfs_setxattr_path(const char *path, const char *name, const void *value,
-		       size_t len, int flags, bool is_dir)
-{
-	int ret, fd = -1;
-
-	if (is_dir) {
-		fd = open(path, O_RDONLY|O_DIRECTORY);
-	} else {
-		fd = open(path, O_WRONLY);
-	}
-
-	if (fd == -1) {
-		DEBUG(10, ("error in vxfs_setxattr_path: %s\n",
-		      strerror(errno)));
-		return -1;
-	}
-
-	ret = vxfs_setxattr_fd(fd, name, value, len, flags);
-
-	close(fd);
-
-	return ret;
-}
-
 int vxfs_getxattr_fd(int fd, const char *name, void *value, size_t len)
 {
 	int ret;

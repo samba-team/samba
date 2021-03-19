@@ -18,8 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-int vxfs_setxattr_path(const char *, const char *, const void *, size_t, int,
-		       bool);
 int vxfs_setxattr_fd(int, const char *, const void *, size_t, int);
 
 int vxfs_getxattr_path(const char *, const char *, void *, size_t);
