@@ -79,7 +79,10 @@ void load_printers(void)
 		return;
 	}
 
-	if (lp_servicenumber(PRINTERS_NAME) >= 0) {
+	/*
+	 * Do not add printers from pcap, if we don't have a [printers] share.
+	 */
+	if (lp_servicenumber(PRINTERS_NAME) < 0) {
 		return;
 	}
 
