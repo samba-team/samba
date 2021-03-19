@@ -256,6 +256,16 @@ static PyObject *py_is_ad_dc_built(PyObject *self,
 #endif
 }
 
+static PyObject *py_is_selftest_enabled(PyObject *self,
+                PyObject *Py_UNUSED(ignored))
+{
+#ifdef ENABLE_SELFTEST
+	Py_RETURN_TRUE;
+#else
+	Py_RETURN_FALSE;
+#endif
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -448,6 +458,8 @@ static PyMethodDef py_misc_methods[] = {
 		"Generate random bytes with specified length." },
 	{ "is_ad_dc_built", (PyCFunction)py_is_ad_dc_built, METH_NOARGS,
 		"is Samba built with AD DC?" },
+	{ "is_selftest_enabled", (PyCFunction)py_is_selftest_enabled,
+		METH_NOARGS, "is Samba built with selftest enabled?" },
 	{0}
 };
 
