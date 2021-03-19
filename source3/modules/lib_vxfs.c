@@ -189,23 +189,6 @@ int vxfs_listxattr_fd(int fd, char *list, size_t size)
 	return len;
 }
 
-int vxfs_listxattr_path(const char *path, char *list, size_t size)
-{
-	int ret, fd = -1;
-
-	fd = open(path, O_RDONLY);
-	if (fd == -1) {
-		DEBUG(10, ("file not opened: vxfs_listxattr_path for %s\n",
-			   path));
-		return -1;
-	}
-
-	ret = vxfs_listxattr_fd(fd, list, size);
-	close(fd);
-
-	return ret;
-}
-
 int vxfs_setwxattr_fd(int fd)
 {
 	int ret = 0;

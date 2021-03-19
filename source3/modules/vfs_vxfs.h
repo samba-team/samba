@@ -28,7 +28,6 @@ int vxfs_getxattr_fd(int, const char *, void *, size_t);
 int vxfs_removexattr_path(const char *, const char *, bool);
 int vxfs_removexattr_fd(int, const char *);
 
-int vxfs_listxattr_path(const char *, char *, size_t);
 int vxfs_listxattr_fd(int, char *, size_t);
 
 int vxfs_setwxattr_path(const char *, bool);
