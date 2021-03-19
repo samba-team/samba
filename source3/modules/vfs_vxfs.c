@@ -585,57 +585,6 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
 }
 
-static int vxfs_remove_xattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname_in,
-				const char *name)
-{
-	bool is_dir = false;
-	int ret = 0, ret_new = 0, old_errno;
-	struct smb_filename *smb_fname = NULL;
-
-	DEBUG(10, ("In vxfs_remove_xattr\n"));
-
-	smb_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname_in);
-	if (smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	/* Remove with old way */
-	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		ret = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname,
-					       XATTR_USER_NTACL);
-	} else {
-		if (strcasecmp(name, XATTR_USER_NTACL) != 0) {
-			ret = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname,
-						       name);
-		}
-	}
-	/* Remove with new way */
-	old_errno = errno;
-
-	if (SMB_VFS_NEXT_STAT(handle, smb_fname) != 0) {
-		TALLOC_FREE(smb_fname);
-		return -1;
-	}
-
-	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
-	TALLOC_FREE(smb_fname);
-	/*
-	 * If both fail, return failuer else return whichever succeeded
-	 */
-	ret_new = vxfs_removexattr_path(smb_fname_in->base_name, name, is_dir);
-	if (errno == ENOTSUP || errno == ENOSYS) {
-		errno = old_errno;
-	}
-	if ((ret_new != -1) && (ret == -1)) {
-		ret = ret_new;
-	}
-
-	return ret;
-
-}
-
 static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name){
 	int ret = 0, ret_new = 0, old_errno;
@@ -831,7 +780,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vxfs_fget_xattr,
 	.flistxattr_fn = vxfs_flistxattr,
-	.removexattr_fn = vxfs_remove_xattr,
 	.fremovexattr_fn = vxfs_fremove_xattr,
 	.fsetxattr_fn = vxfs_fset_xattr,
 };

@@ -23,7 +23,6 @@ int vxfs_setxattr_fd(int, const char *, const void *, size_t, int);
 int vxfs_getxattr_path(const char *, const char *, void *, size_t);
 int vxfs_getxattr_fd(int, const char *, void *, size_t);
 
-int vxfs_removexattr_path(const char *, const char *, bool);
 int vxfs_removexattr_fd(int, const char *);
 
 int vxfs_listxattr_fd(int, char *, size_t);

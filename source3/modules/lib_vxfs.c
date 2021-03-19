@@ -121,27 +121,6 @@ int vxfs_removexattr_fd(int fd, const char *name)
 	return ret;
 }
 
-int vxfs_removexattr_path(const char *path, const char *name, bool is_dir)
-{
-	int ret, fd = -1;
-
-	if (is_dir) {
-		fd = open(path, O_RDONLY|O_DIRECTORY);
-	} else {
-		fd = open(path, O_WRONLY);
-	}
-	if (fd == -1) {
-		DEBUG(10, ("file not opened: vxfs_removexattr_path for %s\n",
-			   path));
-		return -1;
-	}
-
-	ret = vxfs_removexattr_fd(fd, name);
-	close(fd);
-
-	return ret;
-}
-
 int vxfs_listxattr_fd(int fd, char *list, size_t size)
 {
 	int ret;
