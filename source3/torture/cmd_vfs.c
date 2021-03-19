@@ -1516,24 +1516,32 @@ static NTSTATUS cmd_removexattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 {
 	ssize_t ret;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 3) {
 		printf("Usage: removexattr <path> <xattr>\n");
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
 					argv[1],
-					NULL,
-					NULL,
-					0,
-					ssf_flags());
-
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ret = SMB_VFS_REMOVEXATTR(vfs->conn, smb_fname, argv[2]);
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	ret = SMB_VFS_FREMOVEXATTR(pathref_fname->fsp, argv[2]);
 	if (ret == -1) {
 		int err = errno;
 		printf("removexattr returned (%s)\n", strerror(err));
