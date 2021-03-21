@@ -184,7 +184,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         """
         ntacls.backup_offline(
             self.service_root, self.tarfile_path,
-            self.samdb_conn, self.smb_conf_path)
+            self.smb_conf_path, self.dom_sid)
         self._check_tarfile()
 
         self.smb_helper.delete_tree()

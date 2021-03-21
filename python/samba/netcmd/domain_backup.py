@@ -1156,20 +1156,30 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # Backup secrets, sam.ldb and their downstream files
         self.backup_secrets(paths.private_dir, lp, logger)
         self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
+
+        # Get the domain SID so we can later place it in the backup
+        dom_sid_str = samdb.get_domain_sid()
+        dom_sid = security.dom_sid(dom_sid_str)
+
+        # Close the original samdb
         samdb = None
 
         # Open the new backed up samdb, flag it as backed up, and write
-        # the next SID so the restore tool can add objects.
+        # the next SID so the restore tool can add objects. We use
+        # options=["modules:"] here to prevent any modules from loading.
         # WARNING: Don't change this code unless you know what you're doing.
         #          Writing to a .bak file only works because the DN being
         #          written to happens to be top level.
-        samdb = SamDB(url=paths.samdb + self.backup_ext,
+        samdb = Ldb(url=paths.samdb + self.backup_ext,
                       session_info=system_session(), lp=lp,
-                      flags=ldb.FLG_DONT_CREATE_DB)
+                      options=["modules:"], flags=ldb.FLG_DONT_CREATE_DB)
         time_str = get_timestamp()
         add_backup_marker(samdb, "backupDate", time_str)
         add_backup_marker(samdb, "sidForRestore", sid)
         add_backup_marker(samdb, "backupType", "offline")
+
+        # Close the backed up samdb
+        samdb = None
 
         # Now handle all the LDB and TDB files that are not linked to
         # anything else.  Use transactions for LDBs.
@@ -1196,7 +1206,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         logger.info('running offline ntacl backup of sysvol')
         sysvol_tar_fn = 'sysvol.tar.gz'
         sysvol_tar = os.path.join(temp_tar_dir, sysvol_tar_fn)
-        backup_offline(paths.sysvol, sysvol_tar, samdb, paths.smbconf)
+        backup_offline(paths.sysvol, sysvol_tar, paths.smbconf, dom_sid)
         tar.add(sysvol_tar, sysvol_tar_fn)
         os.remove(sysvol_tar)
 

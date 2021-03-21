@@ -551,16 +551,13 @@ def backup_online(smb_conn, dest_tarfile_path, dom_sid):
     shutil.rmtree(localdir)
 
 
-def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_path):
+def backup_offline(src_service_path, dest_tarfile_path, smb_conf_path, dom_sid):
     """
     Backup files and ntacls to a tarfile for a service
     """
     service = src_service_path.rstrip('/').rsplit('/', 1)[-1]
     tempdir = tempfile.mkdtemp()
     session_info = system_session_unix()
-
-    dom_sid_str = samdb_conn.get_domain_sid()
-    dom_sid = security.dom_sid(dom_sid_str)
 
     ntacls_helper = NtaclsHelper(service, smb_conf_path, dom_sid)
 
