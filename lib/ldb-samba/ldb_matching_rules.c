@@ -390,7 +390,7 @@ static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
 
 		memcpy(s, value_to_match->data, value_to_match->length);
 		s[value_to_match->length] = 0;
-		if (s[0] == '\0' || s[0] == '-') {
+		if (s[0] == '\0') {
 			DBG_ERR("Empty timestamp passed\n");
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
