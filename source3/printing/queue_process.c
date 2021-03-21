@@ -76,7 +76,7 @@ static void delete_and_reload_printers_full(struct tevent_context *ev,
 		DEBUG(3, ("reload_printers: "
 			  "Could not create system session_info\n"));
 		/* can't remove stale printers before we
-		 * are fully initilized */
+		 * are fully initialized */
 		return;
 	}
 
@@ -145,7 +145,7 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	 * newly added printers get default values created in the registry.
 	 *
 	 * This will block the process for some time (~1 sec per printer), but
-	 * it doesn't block smbd's servering clients.
+	 * it doesn't block smbd's serving clients.
 	 */
 	delete_and_reload_printers_full(ev, msg_ctx);
 

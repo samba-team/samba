@@ -164,7 +164,7 @@ static int generic_queue_get(const char *printer_name,
 	print_queue_struct *queue = NULL;
 
 	/* never do substitution when running the 'lpq command' since we can't
-	   get it rigt when using the background update daemon.  Make the caller
+	   get it right when using the background update daemon.  Make the caller
 	   do it before passing off the command string to us here. */
 
 	print_run_command(-1, printer_name, False, lpq_command, &fd, NULL);

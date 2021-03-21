@@ -1096,7 +1096,7 @@ static void construct_info_data(struct spoolss_Notify *info_data,
 				uint16_t field, int id);
 
 /***********************************************************************
- Send a change notication message on all handles which have a call
+ Send a change notifation message on all handles which have a call
  back registered
  **********************************************************************/
 

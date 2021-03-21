@@ -144,7 +144,7 @@ void pcap_cache_reload(struct tevent_context *ev,
 		return;
 	}
 
-	/* only go looking if no printcap name supplied */
+	/* only go looking if a printcap name is supplied */
 	if (pcap_name == NULL || *pcap_name == 0) {
 		DEBUG(0, ("No printcap file name configured!\n"));
 		return;
