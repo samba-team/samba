@@ -200,17 +200,6 @@ static int posix_eadb_removeattr(struct tdb_wrap *db_ctx,
 	return 0;
 }
 
-static int posix_eadb_removexattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name)
-{
-	struct tdb_wrap *db;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
-
-	return posix_eadb_removeattr(db, smb_fname->base_name, -1, name);
-}
-
 static int posix_eadb_fremovexattr(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp, const char *name)
 {
@@ -463,7 +452,6 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.fgetxattr_fn = posix_eadb_fgetxattr,
 	.fsetxattr_fn = posix_eadb_fsetxattr,
 	.flistxattr_fn = posix_eadb_flistxattr,
-	.removexattr_fn = posix_eadb_removexattr,
 	.fremovexattr_fn = posix_eadb_fremovexattr,
 	.unlinkat_fn = posix_eadb_unlinkat,
 	.connect_fn = posix_eadb_connect,
