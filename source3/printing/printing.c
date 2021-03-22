@@ -74,13 +74,6 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	print_cache_path = cache_path(talloc_tos(), "printing.tdb");
-	if (print_cache_path == NULL) {
-		return false;
-	}
-	unlink(print_cache_path);
-	TALLOC_FREE(print_cache_path);
-
 	/* handle a Samba upgrade */
 
 	for (snum = 0; snum < services; snum++) {
