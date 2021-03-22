@@ -864,24 +864,26 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		ret = 1;
 		goto done;
 
-	} else {
-		ret = get_file_version(fsp, old_file, &old_major, &old_minor);
-		if (ret == -1) {
+	}
+
+	ret = get_file_version(fsp, old_file, &old_major, &old_minor);
+	if (ret == -1) {
+		goto error_exit;
+	}
+
+	if (!ret) {
+		DEBUG(6,("file_version_is_newer: Version info not found [%s], "
+			 "use mod time\n",
+			 old_file));
+		use_version = false;
+		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			goto error_exit;
 		}
-
-		if (!ret) {
-			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
-					 old_file));
-			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
-				 goto error_exit;
-			}
-			old_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
-				(long)old_create_time));
-		}
+		old_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
+		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+			    (long)old_create_time));
 	}
+
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	fsp = NULL;
 
@@ -923,24 +925,26 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			 "errno = %d\n", smb_fname_str_dbg(smb_fname), errno));
 		goto error_exit;
 
-	} else {
-		ret = get_file_version(fsp, new_file, &new_major, &new_minor);
-		if (ret == -1) {
+	}
+
+	ret = get_file_version(fsp, new_file, &new_major, &new_minor);
+	if (ret == -1) {
+		goto error_exit;
+	}
+
+	if (!ret) {
+		DEBUG(6,("file_version_is_newer: Version info not found [%s], "
+			 "use mod time\n",
+			 new_file));
+		use_version = false;
+		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 			goto error_exit;
 		}
-
-		if (!ret) {
-			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
-					 new_file));
-			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
-				goto error_exit;
-			}
-			new_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
-				(long)new_create_time));
-		}
+		new_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
+		DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+			    (long)new_create_time));
 	}
+
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	fsp = NULL;
 
@@ -1004,6 +1008,8 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	char *printdollar_path = NULL;
 	char *working_dir = NULL;
 	int printdollar_snum;
+	uint32_t major, minor;
+	int ret;
 
 	*perr = WERR_INVALID_PARAMETER;
 
@@ -1134,48 +1140,44 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 			 "%d\n", smb_fname_str_dbg(smb_fname), errno));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
-	} else {
-		uint32_t major;
-		uint32_t minor;
-		int    ret;
-
-		ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
-		if (ret == -1) {
-			*perr = WERR_INVALID_PARAMETER;
-			goto error_exit;
-		} else if (!ret) {
-			DEBUG(6,("get_correct_cversion: Version info not "
-				 "found [%s]\n",
-				 smb_fname_str_dbg(smb_fname)));
-			*perr = WERR_INVALID_PARAMETER;
-			goto error_exit;
-		}
-
-		/*
-		 * This is a Microsoft'ism. See references in MSDN to VER_FILEVERSION
-		 * for more details. Version in this case is not just the version of the
-		 * file, but the version in the sense of kernal mode (2) vs. user mode
-		 * (3) drivers. Other bits of the version fields are the version info.
-		 * JRR 010716
-		*/
-		cversion = major & 0x0000ffff;
-		switch (cversion) {
-			case 2: /* WinNT drivers */
-			case 3: /* Win2K drivers */
-				break;
-
-			default:
-				DEBUG(6,("get_correct_cversion: cversion "
-					 "invalid [%s]  cversion = %d\n",
-					 smb_fname_str_dbg(smb_fname),
-					 cversion));
-				goto error_exit;
-		}
-
-		DEBUG(10,("get_correct_cversion: Version info found [%s] major"
-			  " = 0x%x  minor = 0x%x\n",
-			  smb_fname_str_dbg(smb_fname), major, minor));
 	}
+
+	ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
+	if (ret == -1) {
+		*perr = WERR_INVALID_PARAMETER;
+		goto error_exit;
+	} else if (!ret) {
+		DEBUG(6,("get_correct_cversion: Version info not "
+			 "found [%s]\n",
+			 smb_fname_str_dbg(smb_fname)));
+		*perr = WERR_INVALID_PARAMETER;
+		goto error_exit;
+	}
+
+	/*
+	 * This is a Microsoft'ism. See references in MSDN to VER_FILEVERSION
+	 * for more details. Version in this case is not just the version of the
+	 * file, but the version in the sense of kernal mode (2) vs. user mode
+	 * (3) drivers. Other bits of the version fields are the version info.
+	 * JRR 010716
+	 */
+	cversion = major & 0x0000ffff;
+	switch (cversion) {
+	case 2: /* WinNT drivers */
+	case 3: /* Win2K drivers */
+		break;
+
+	default:
+		DEBUG(6,("get_correct_cversion: cversion "
+			 "invalid [%s]  cversion = %d\n",
+			 smb_fname_str_dbg(smb_fname),
+			 cversion));
+		goto error_exit;
+	}
+
+	DEBUG(10,("get_correct_cversion: Version info found [%s] major"
+		  " = 0x%x  minor = 0x%x\n",
+		  smb_fname_str_dbg(smb_fname), major, minor));
 
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		  smb_fname_str_dbg(smb_fname), cversion));
