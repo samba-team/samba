@@ -203,6 +203,14 @@ static const struct flag_map ace_access_mask[] = {
 	{ NULL, 0 }
 };
 
+static const struct flag_map decode_ace_access_mask[] = {
+	{ "FA", FILE_ALL_ACCESS },
+	{ "FR", FILE_GENERIC_READ },
+	{ "FW", FILE_GENERIC_WRITE },
+	{ "FX", FILE_GENERIC_EXECUTE },
+	{ NULL, 0 },
+};
+
 /*
   decode an ACE
   return true on success, false on failure
@@ -245,7 +253,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	if (strncmp(tok[2], "0x", 2) == 0) {
 		ace->access_mask = strtol(tok[2], NULL, 16);
 	} else {
-		if (!sddl_map_flags(ace_access_mask, tok[2], &v, NULL)) {
+		if (!sddl_map_flags(ace_access_mask, tok[2], &v, NULL) &&
+		    !sddl_map_flags(
+			    decode_ace_access_mask, tok[2], &v, NULL)) {
 			return false;
 		}
 		ace->access_mask = v;
