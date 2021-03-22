@@ -2838,24 +2838,6 @@ static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
-			     const struct smb_filename *smb_fname,
-			     const char *name)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
-
-	do_log(SMB_VFS_OP_REMOVEXATTR,
-	       (result >= 0),
-	       handle,
-	       "%s|%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname),
-	       name);
-
-	return result;
-}
-
 static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
 			      const char *name)
@@ -3063,7 +3045,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.getxattrat_recv_fn = smb_full_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,
 	.flistxattr_fn = smb_full_audit_flistxattr,
-	.removexattr_fn = smb_full_audit_removexattr,
 	.fremovexattr_fn = smb_full_audit_fremovexattr,
 	.fsetxattr_fn = smb_full_audit_fsetxattr,
 	.aio_force_fn = smb_full_audit_aio_force,
