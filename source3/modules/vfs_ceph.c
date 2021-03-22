@@ -1307,18 +1307,6 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	return (ssize_t)ret;
 }
 
-static int cephwrap_removexattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name)
-{
-	int ret;
-	DBG_DEBUG("[CEPH] removexattr(%p, %s, %s)\n", handle,
-			smb_fname->base_name, name);
-	ret = ceph_removexattr(handle->data, smb_fname->base_name, name);
-	DBG_DEBUG("[CEPH] removexattr(...) = %d\n", ret);
-	WRAP_RETURN(ret);
-}
-
 static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
 	int ret;
@@ -1617,7 +1605,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = cephwrap_fgetxattr,
 	.flistxattr_fn = cephwrap_flistxattr,
-	.removexattr_fn = cephwrap_removexattr,
 	.fremovexattr_fn = cephwrap_fremovexattr,
 	.fsetxattr_fn = cephwrap_fsetxattr,
 
