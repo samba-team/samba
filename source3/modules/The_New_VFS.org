@@ -276,7 +276,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_READLINKAT()              | [[Symlink][Symlink]]  | -      |
 | SMB_VFS_REALPATH()                | [[P2px][P2px]]     | -      |
 | SMB_VFS_RECVFILE()                | [[fsp][fsp]]      | -      |
-| SMB_VFS_REMOVEXATTR()             | [[Path][Path]]     | Todo   |
+| SMB_VFS_REMOVEXATTR()             | [[Path][Path]]     | -      |
 | SMB_VFS_RENAMEAT()                | [[Path][Path]]     | Todo   |
 | SMB_VFS_REWINDDIR()               | [[fsp][fsp]]      | -      |
 | SMB_VFS_SEEKDIR()                 | [[fsp][fsp]]      | -      |
