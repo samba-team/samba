@@ -165,7 +165,7 @@ static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 	state = talloc_get_type_abort(pvt, struct bq_state);
 
 	DEBUG(5, ("print queue housekeeping\n"));
-	pcap_cache_reload(state->ev, state->msg, &reload_pcap_change_notify);
+	pcap_cache_reload(state->ev, state->msg, reload_pcap_change_notify);
 
 	return true;
 }
@@ -240,7 +240,7 @@ static void bq_sig_hup_handler(struct tevent_context *ev,
 
 	DEBUG(1, ("Reloading pcap cache after SIGHUP\n"));
 	pcap_cache_reload(state->ev, state->msg,
-			  &reload_pcap_change_notify);
+			  reload_pcap_change_notify);
 	printing_subsystem_queue_tasks(state);
 	bq_reopen_logs(NULL);
 }
@@ -298,7 +298,7 @@ static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	pcap_cache_reload(state->ev, msg_ctx, &reload_pcap_change_notify);
+	pcap_cache_reload(state->ev, msg_ctx, reload_pcap_change_notify);
 	printing_subsystem_queue_tasks(state);
 }
 
@@ -418,7 +418,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 			smb_panic("tevent_add_fd() failed for pause_pipe");
 		}
 
-		pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
+		pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		ret = tevent_loop_wait(ev);
@@ -471,7 +471,7 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 
 		/* Publish nt printers, this requires a working winreg pipe */
 		pcap_cache_reload(ev_ctx, msg_ctx,
-				  &delete_and_reload_printers_full);
+				  delete_and_reload_printers_full);
 
 		return ret;
 	}
@@ -499,5 +499,5 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 	}
 
 	pcap_cache_reload(ev_ctx, msg_ctx,
-			  &delete_and_reload_printers_full);
+			  delete_and_reload_printers_full);
 }
