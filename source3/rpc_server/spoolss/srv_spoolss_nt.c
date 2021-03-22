@@ -5731,7 +5731,8 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	}
 
 	if (pinfo2->drivername == NULL || pinfo2->drivername[0] == '\0') {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+		result = WERR_UNKNOWN_PRINTER_DRIVER;
+		goto done;
 	}
 
 	DBG_INFO("Construct printer driver [%s] for [%s]\n",
@@ -7023,7 +7024,8 @@ static WERROR update_printer(struct pipes_struct *p,
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
-			return WERR_NOT_ENOUGH_MEMORY;
+			result = WERR_NOT_ENOUGH_MEMORY;
+			goto done;
 		}
 
 		/* add_printer_hook() will call reload_services() */
