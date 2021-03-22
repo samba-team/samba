@@ -824,6 +824,7 @@ bool cli_credentials_set_workstation_callback(struct cli_credentials *cred,
 _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained)
 {
 	char *uname, *p;
+	char *uname_free = NULL;
 
 	if (strcmp("%",data) == 0) {
 		cli_credentials_set_anonymous(credentials);
@@ -831,6 +832,8 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 	}
 
 	uname = talloc_strdup(credentials, data); 
+	uname_free = uname;
+
 	if ((p = strchr_m(uname,'%'))) {
 		*p = 0;
 		cli_credentials_set_password(credentials, p+1, obtained);
@@ -848,6 +851,7 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		cli_credentials_set_principal(credentials, uname, obtained);
 		*p = 0;
 		cli_credentials_set_realm(credentials, p+1, obtained);
+		TALLOC_FREE(uname_free);
 		return;
 	} else if ((p = strchr_m(uname,'\\'))
 		   || (p = strchr_m(uname, '/'))
@@ -889,6 +893,8 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		credentials->principal = NULL;
 	}
 	cli_credentials_set_username(credentials, uname, obtained);
+
+	TALLOC_FREE(uname_free);
 }
 
 /**
