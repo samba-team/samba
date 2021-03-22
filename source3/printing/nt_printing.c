@@ -66,7 +66,8 @@ const struct generic_mapping job_generic_mapping = {
 
 static bool print_driver_directories_init(void)
 {
-	int service, i;
+	int service;
+	size_t i;
 	char *driver_path;
 	bool ok;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -1959,11 +1960,10 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 				 struct dcerpc_binding_handle *b,
 				 struct spoolss_DriverInfo8 *info)
 {
-	int 				i;
 	uint32_t 				version;
 	struct spoolss_DriverInfo8 	*driver;
 	bool in_use = false;
-	uint32_t num_drivers;
+	uint32_t i, num_drivers;
 	const char **drivers;
 	WERROR result;
 
@@ -2217,7 +2217,7 @@ jfm: I should use this comment for the text file to explain
 
 void map_printer_permissions(struct security_descriptor *sd)
 {
-	int i;
+	uint32_t i;
 
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 		se_map_generic(&sd->dacl->aces[i].access_mask,
@@ -2227,7 +2227,7 @@ void map_printer_permissions(struct security_descriptor *sd)
 
 void map_job_permissions(struct security_descriptor *sd)
 {
-	int i;
+	uint32_t i;
 
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 		se_map_generic(&sd->dacl->aces[i].access_mask,
