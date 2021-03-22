@@ -120,8 +120,7 @@ static bool test_replay_commands(struct torture_context *tctx, struct smb2_tree 
 				   "Replay tests\n");
 	}
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -246,8 +245,7 @@ static bool test_replay_regular(struct torture_context *tctx,
 				   "replay tests\n");
 	}
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -366,8 +364,7 @@ static bool test_replay_dhv2_oplock1(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -457,8 +454,7 @@ static bool test_replay_dhv2_oplock2(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -549,7 +545,7 @@ static bool test_replay_dhv2_oplock2(struct torture_context *tctx,
 		CHECK_VAL(break_info.count, 1);
 		CHECK_HANDLE(&break_info.handle, &ref1.out.file.handle);
 		CHECK_VAL(break_info.level, smb2_util_oplock_level("s"));
-		ZERO_STRUCT(break_info);
+		torture_reset_break_info(tctx, &break_info);
 	}
 
 done:
@@ -592,8 +588,7 @@ static bool test_replay_dhv2_oplock3(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -675,7 +670,7 @@ static bool test_replay_dhv2_oplock3(struct torture_context *tctx,
 		CHECK_VAL(break_info.count, 1);
 		CHECK_HANDLE(&break_info.handle, &ref1.out.file.handle);
 		CHECK_VAL(break_info.level, smb2_util_oplock_level("s"));
-		ZERO_STRUCT(break_info);
+		torture_reset_break_info(tctx, &break_info);
 	}
 
 done:
@@ -725,8 +720,7 @@ static bool test_replay_dhv2_oplock_lease(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -835,8 +829,7 @@ static bool test_replay_dhv2_lease1(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -976,8 +969,7 @@ static bool test_replay_dhv2_lease2(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -1120,8 +1112,7 @@ static bool test_replay_dhv2_lease3(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -1254,8 +1245,7 @@ static bool test_replay_dhv2_lease_oplock(struct torture_context *tctx,
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
 	tree->session->transport->oplock.private_data = tree;
 
@@ -1658,8 +1648,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	transport1->oplock.handler = torture_oplock_ack_handler;
 	transport1->oplock.private_data = tree1;
 
@@ -1820,8 +1809,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	transport1->oplock.handler = torture_oplock_ack_handler;
 	transport1->oplock.private_data = tree1;
 
@@ -2070,8 +2058,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 		expect_status = NT_STATUS_FILE_NOT_AVAILABLE;
 	}
 
-	ZERO_STRUCT(break_info);
-	break_info.tctx = tctx;
+	torture_reset_break_info(tctx, &break_info);
 	transport->oplock.handler = torture_oplock_ack_handler;
 	transport->oplock.private_data = tree;
 
