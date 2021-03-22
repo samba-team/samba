@@ -2313,26 +2313,6 @@ static ssize_t shadow_copy2_getxattr(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int shadow_copy2_removexattr(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *aname)
-{
-	time_t timestamp = 0;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(),
-				handle,
-				smb_fname,
-				&timestamp,
-				NULL)) {
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, aname);
-}
-
 static int shadow_copy2_fsetxattr(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 const char *aname, const void *value,
@@ -3202,7 +3182,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.getxattr_fn = shadow_copy2_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
-	.removexattr_fn = shadow_copy2_removexattr,
 	.fsetxattr_fn = shadow_copy2_fsetxattr,
 	.chflags_fn = shadow_copy2_chflags,
 	.get_real_filename_fn = shadow_copy2_get_real_filename,
