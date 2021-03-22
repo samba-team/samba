@@ -933,14 +933,6 @@ static ssize_t skel_flistxattr(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_removexattr(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_fremovexattr(vfs_handle_struct *handle,
 			     struct files_struct *fsp, const char *name)
 {
@@ -1120,7 +1112,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.getxattrat_recv_fn = skel_getxattrat_recv,
 	.fgetxattr_fn = skel_fgetxattr,
 	.flistxattr_fn = skel_flistxattr,
-	.removexattr_fn = skel_removexattr,
 	.fremovexattr_fn = skel_fremovexattr,
 	.fsetxattr_fn = skel_fsetxattr,
 

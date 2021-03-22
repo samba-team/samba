@@ -345,6 +345,7 @@
  * Change to Version 45 - will ship with 4.15
  * Version 45 - Remove SMB_VFS_LISTXATTR
  * Version 45 - Remove SMB_VFS_SETXATTR
+ * Version 45 - Remove SMB_VFS_REMOVEXATTR
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1248,9 +1249,6 @@ struct vfs_fn_pointers {
 				      uint8_t **xattr_value);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 	ssize_t (*flistxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
-	int (*removexattr_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
@@ -1765,9 +1763,6 @@ ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, char *list,
 				size_t size);
-int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name);
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name);
 int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
@@ -2177,9 +2172,6 @@ ssize_t vfs_not_implemented_listxattr(vfs_handle_struct *handle,
 ssize_t vfs_not_implemented_flistxattr(vfs_handle_struct *handle,
 				       struct files_struct *fsp, char *list,
 				       size_t size);
-int vfs_not_implemented_removexattr(vfs_handle_struct *handle,
-				    const struct smb_filename *smb_fname,
-				    const char *name);
 int vfs_not_implemented_fremovexattr(vfs_handle_struct *handle,
 				     struct files_struct *fsp, const char *name);
 int vfs_not_implemented_setxattr(vfs_handle_struct *handle,

@@ -1226,13 +1226,6 @@ static ssize_t skel_flistxattr(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
 }
 
-static int skel_removexattr(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name)
-{
-	return SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
-}
-
 static int skel_fremovexattr(vfs_handle_struct *handle,
 			     struct files_struct *fsp, const char *name)
 {
@@ -1426,7 +1419,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.getxattrat_recv_fn = skel_getxattrat_recv,
 	.fgetxattr_fn = skel_fgetxattr,
 	.flistxattr_fn = skel_flistxattr,
-	.removexattr_fn = skel_removexattr,
 	.fremovexattr_fn = skel_fremovexattr,
 	.fsetxattr_fn = skel_fsetxattr,
 

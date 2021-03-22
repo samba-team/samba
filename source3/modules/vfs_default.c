@@ -3636,13 +3636,6 @@ static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files
 	return listxattr(fsp->fsp_name->base_name, list, size);
 }
 
-static int vfswrap_removexattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name)
-{
-	return removexattr(smb_fname->base_name, name);
-}
-
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
 	int fd = fsp_get_pathref_fd(fsp);
@@ -3877,7 +3870,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getxattrat_recv_fn = vfswrap_getxattrat_recv,
 	.fgetxattr_fn = vfswrap_fgetxattr,
 	.flistxattr_fn = vfswrap_flistxattr,
-	.removexattr_fn = vfswrap_removexattr,
 	.fremovexattr_fn = vfswrap_fremovexattr,
 	.fsetxattr_fn = vfswrap_fsetxattr,
 
