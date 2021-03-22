@@ -812,6 +812,14 @@ uint32_t smb2_util_lease_state(const char *ls)
 	return val;
 }
 
+char *smb2_util_lease_state_string(TALLOC_CTX *mem_ctx, uint32_t ls)
+{
+	return talloc_asprintf(mem_ctx, "0x%0x (%s%s%s)",
+			       (unsigned)ls,
+			       ls & SMB2_LEASE_READ ? "R": "",
+			       ls & SMB2_LEASE_HANDLE ? "H": "",
+			       ls & SMB2_LEASE_WRITE ? "W": "");
+}
 
 uint32_t smb2_util_share_access(const char *sharemode)
 {
