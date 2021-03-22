@@ -2134,38 +2134,6 @@ out:
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
  */
-static int mh_removexattr(struct vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		const char *name)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_removexattr\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		goto err;
-	}
-	status = SMB_VFS_NEXT_REMOVEXATTR(handle, clientFname, name);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
-/*
- * Success: return 0
- * Failure: set errno, return -1
- * In this case, "name" is an attr name.
- */
 
 /* VFS operations structure */
 
@@ -2218,7 +2186,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.getxattr_fn = mh_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
-	.removexattr_fn = mh_removexattr,
 
 	/* aio operations */
 };
