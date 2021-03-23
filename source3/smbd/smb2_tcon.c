@@ -612,12 +612,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			/*
-			 * Never cancel anything in a compound
-			 * request. Way too hard to deal with
-			 * the result.
-			 */
-			if (!preq->compound_related && preq->subreq != NULL) {
+			if (preq->subreq != NULL) {
 				tevent_req_cancel(preq->subreq);
 			}
 
