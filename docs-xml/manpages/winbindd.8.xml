@@ -358,10 +358,6 @@ auth  required    /lib/security/pam_unix.so \
 	<para>The following notes are useful when configuring and
 	running <command>winbindd</command>: </para>
 
-	<para><citerefentry><refentrytitle>nmbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> must be running on the local machine
-	for <command>winbindd</command> to work. </para>
-
 	<para>PAM is really easy to misconfigure.  Make sure you know what
 	you are doing when modifying PAM configuration files.  It is possible
 	to set up PAM such that you can no longer log into your system. </para>
