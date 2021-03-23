@@ -214,7 +214,7 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 				 * a tombstone, this will be used
 				 * in dns_common_replace()
 				 */
-				.data.timestamp = 1,
+				.data.EntombedTime = 1,
 			};
 
 			*tombstoned = true;
@@ -1008,7 +1008,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		enum ndr_err_code ndr_err;
 
 		if (records[i].wType == DNS_TYPE_TOMBSTONE) {
-			if (records[i].data.timestamp != 0) {
+			if (records[i].data.EntombedTime != 0) {
 				was_tombstoned = true;
 			}
 			continue;
@@ -1074,7 +1074,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		tbs = (struct dnsp_DnssrvRpcRecord) {
 			.wType = DNS_TYPE_TOMBSTONE,
 			.dwSerial = serial,
-			.data.timestamp = timeval_to_nttime(&tv),
+			.data.EntombedTime = timeval_to_nttime(&tv),
 		};
 
 		ndr_err = ndr_push_struct_blob(v, el->values, &tbs,

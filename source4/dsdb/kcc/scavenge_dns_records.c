@@ -334,7 +334,7 @@ NTSTATUS dns_tombstone_records(TALLOC_CTX *mem_ctx,
 	t /= 3600;
 
 	tombstone_struct = (struct dnsp_DnssrvRpcRecord){
-	    .wType = DNS_TYPE_TOMBSTONE, .data = {.timestamp = t}};
+	    .wType = DNS_TYPE_TOMBSTONE, .data = {.EntombedTime = t}};
 
 	true_struct = (struct ldb_val){.data = true_str, .length = 4};
 
@@ -453,7 +453,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			if (rec->data.timestamp > tombstone_time) {
+			if (rec->data.EntombedTime > tombstone_time) {
 				continue;
 			}
 

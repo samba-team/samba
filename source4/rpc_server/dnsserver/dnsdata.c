@@ -306,7 +306,7 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 	switch (dnsp->wType) {
 
 	case DNS_TYPE_TOMBSTONE:
-		dns->data.timestamp = dnsp->data.timestamp;
+		dns->data.EntombedTime = dnsp->data.EntombedTime;
 		break;
 
 	case DNS_TYPE_A:
@@ -437,7 +437,7 @@ WERROR dns_to_dnsp_convert(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns,
 	switch (dns->wType) {
 
 	case DNS_TYPE_TOMBSTONE:
-		dnsp->data.timestamp = dns->data.timestamp;
+		dnsp->data.EntombedTime = dns->data.EntombedTime;
 		break;
 
 	case DNS_TYPE_A:

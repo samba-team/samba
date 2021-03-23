@@ -200,7 +200,7 @@ interface dnsp
 	} dnsp_string_list;
 
 	typedef [nodiscriminant,gensize] union {
-		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME timestamp;
+		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME EntombedTime;
 		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
 		[case(DNS_TYPE_NS)]                         dnsp_name ns;
 		[case(DNS_TYPE_CNAME)]                      dnsp_name cname;
