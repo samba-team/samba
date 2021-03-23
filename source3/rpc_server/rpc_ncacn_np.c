@@ -476,7 +476,7 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->call = talloc_zero(hs->conn, struct dcesrv_call_state);
+	state->call = talloc_zero(state, struct dcesrv_call_state);
 	if (tevent_req_nomem(state->call, req)) {
 		return tevent_req_post(req, ev);
 	}
