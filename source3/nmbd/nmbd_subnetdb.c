@@ -155,7 +155,7 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 					"interface %s for port %d: %s\n",
 					inet_ntoa(myip),
 					DGRAM_PORT,
-					strerror(-dgram_sock));
+					strerror(-dgram_bcast));
 				goto failed;
 			}
 			set_socket_options(dgram_bcast, "SO_BROADCAST");
