@@ -1408,7 +1408,7 @@ static NTSTATUS cephwrap_create_dfs_pathat(struct vfs_handle_struct *handle,
   out:
 
 	DBG_DEBUG("[CEPH] create_dfs_pathat(%s) = %s\n",
-			full_fname->base_name,
+			full_fname != NULL ? full_fname->base_name : "",
 			nt_errstr(status));
 
 	TALLOC_FREE(frame);
