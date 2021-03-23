@@ -60,12 +60,6 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
-	if (!p->mem_ctx) {
-		talloc_free(p);
-		return ENOMEM;
-	}
-
 	p->msg_ctx = msg_ctx;
 	p->transport = transport;
 
