@@ -57,7 +57,7 @@ static void popt_common_credentials_callback(poptContext con,
 				cmdline_lp_ctx);
 
 		if (!dont_ask) {
-			cli_credentials_set_cmdline_callbacks(
+			s4_cli_credentials_set_cmdline_callbacks(
 				popt_get_cmdline_credentials());
 		}
 
