@@ -26,7 +26,7 @@ o  CVE-2021-20277:
 For more details, please refer to the security advisories.
 
 
-Changes since 4.12.11
+Changes since 4.12.12
 ---------------------
 
 o  Andrew Bartlett <abartlet@samba.org>
