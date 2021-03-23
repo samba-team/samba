@@ -22,6 +22,9 @@
 #ifndef _RPC_CLIENT_CLI_WINREG_SPOOLSS_H_
 #define _RPC_CLIENT_CLI_WINREG_SPOOLSS_H_
 
+#include "replace.h"
+#include "librpc/gen_ndr/spoolss.h"
+
 struct dcerpc_binding_handle;
 
 enum spoolss_PrinterInfo2Mask {
