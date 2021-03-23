@@ -196,16 +196,16 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 
 failed:
 	SAFE_FREE(subrec);
-	if (nmb_sock != -1) {
+	if (nmb_sock >= 0) {
 		close(nmb_sock);
 	}
-	if (nmb_bcast != -1) {
+	if (nmb_bcast >= 0) {
 		close(nmb_bcast);
 	}
-	if (dgram_sock != -1) {
+	if (dgram_sock >= 0) {
 		close(dgram_sock);
 	}
-	if (dgram_bcast != -1) {
+	if (dgram_bcast >= 0) {
 		close(dgram_bcast);
 	}
 	return NULL;
