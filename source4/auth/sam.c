@@ -885,7 +885,8 @@ NTSTATUS authsam_reread_user_logon_data(
 		TALLOC_FREE(res);
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
-	*current = res->msgs[0];
+	*current = talloc_steal(mem_ctx, res->msgs[0]);
+	TALLOC_FREE(res);
 	return NT_STATUS_OK;
 }
 

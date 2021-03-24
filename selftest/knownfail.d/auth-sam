@@ -1,4 +1,3 @@
-^samba.unittests.auth.sam.test_reread_account_not_locked.none
 ^samba.unittests.auth.sam.test_success_accounting_add_control_failed.none
 ^samba.unittests.auth.sam.test_success_accounting_build_mod_req_failed.none
 ^samba.unittests.auth.sam.test_success_accounting_commit_failed.none
