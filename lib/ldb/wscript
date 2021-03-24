@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '2.2.0'
+VERSION = '2.4.0'
 
 import sys, os
 
