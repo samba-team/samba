@@ -2000,6 +2000,9 @@ sub setup_fileserver
 	elasticsearch:address = $ip4
 	elasticsearch:port = 8080
 	elasticsearch:mappings = $srcdir_abs/source3/rpc_server/mdssvc/elasticsearch_mappings.json
+	elasticsearch:wsp_mappings = $srcdir_abs/source3/rpc_server/wsp/elasticsearch_mappings.json
+
+	wsp backend = elasticsearch
 
 	usershare path = $usershare_dir
 	usershare max shares = 10
@@ -2018,6 +2021,10 @@ sub setup_fileserver
 	path = $tarmode2_sharedir
 	comment = tar test share
 	xattr_tdb:file = $prefix/tarmode2-xattr.tdb
+[wsp]
+	path = $share_dir
+	wsp = yes
+	read only = no
 [spotlight]
 	path = $share_dir
 	spotlight = yes
