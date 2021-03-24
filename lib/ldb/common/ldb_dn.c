@@ -570,6 +570,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 					/* trim back */
 					d -= (p - t);
 					l -= (p - t);
+					t = NULL;
 				}
 
 				in_attr = true;
