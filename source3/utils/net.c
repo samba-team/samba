@@ -260,6 +260,8 @@ static int net_changesecretpw(struct net_context *c, int argc,
 static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 {
 	const char *password = NULL;
+	struct cli_credentials *creds = NULL;
+	bool ok;
 
 	if (!secrets_init()) {
 		d_fprintf(stderr, _("Failed to open secrets.tdb.\n"));
@@ -305,21 +307,16 @@ static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 		return 1;
 	}
 
-	if (!secrets_store(SECRETS_AUTH_USER, c->opt_user_name,
-			   strlen(c->opt_user_name) + 1)) {
-		d_fprintf(stderr, _("error storing auth user name\n"));
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		d_fprintf(stderr, _("Failed creating auth credentials\n"));
 		return 1;
 	}
 
-	if (!secrets_store(SECRETS_AUTH_DOMAIN, c->opt_workgroup,
-			   strlen(c->opt_workgroup) + 1)) {
-		d_fprintf(stderr, _("error storing auth user domain\n"));
-		return 1;
-	}
-
-	if (!secrets_store(SECRETS_AUTH_PASSWORD, password,
-			   strlen(password) + 1)) {
-		d_fprintf(stderr, _("error storing auth user password\n"));
+	ok = secrets_store_creds(creds);
+	TALLOC_FREE(creds);
+	if (!ok) {
+		d_fprintf(stderr, _("Failed storing auth user credentials\n"));
 		return 1;
 	}
 
