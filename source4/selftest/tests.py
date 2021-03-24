@@ -1534,6 +1534,8 @@ planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.mdsearch",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.wsp_query_generator")
+planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic")
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic",
