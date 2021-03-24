@@ -989,12 +989,12 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	 * which might be used for the tombstone marker
 	 */
 	el->values = talloc_zero_array(el, struct ldb_val, MAX(1, rec_count));
-	if (rec_count > 0) {
-		if (el->values == NULL) {
-			werr = WERR_NOT_ENOUGH_MEMORY;
-			goto exit;
-		}
+	if (el->values == NULL) {
+		werr = WERR_NOT_ENOUGH_MEMORY;
+		goto exit;
+	}
 
+	if (rec_count > 1) {
 		/*
 		 * We store a sorted list with the high wType values first
 		 * that's what windows does. It also simplifies the
