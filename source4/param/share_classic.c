@@ -27,7 +27,6 @@ NTSTATUS share_classic_init(TALLOC_CTX *);
 
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, 
 			      const struct share_ops *ops, 
-			      struct tevent_context *event_ctx,
 			      struct loadparm_context *lp_ctx,
 			      struct share_context **ctx)
 {

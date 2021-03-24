@@ -421,7 +421,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		unsigned int count = 8;
 		unsigned int i;
 
-		nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+		nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
@@ -519,7 +519,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		unsigned int count = 10;
 		unsigned int i;
 
-		nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+		nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 		if (!NT_STATUS_IS_OK(nterr)) {
 			return ntstatus_to_werror(nterr);
 		}
@@ -703,7 +703,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	/* TODO: - paging of results 
 	 */
 
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}
@@ -954,7 +954,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 		return WERR_INVALID_PARAMETER;
 	}
 
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}
@@ -1208,7 +1208,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 		return WERR_INVALID_PARAMETER;
 	}
 
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}
@@ -1386,7 +1386,7 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 	}
 	all_string_sub(device, "\\", "/", 0);
 
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}
@@ -1796,7 +1796,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	/* TODO: - paging of results 
 	 */
 
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}
@@ -2265,7 +2265,7 @@ static WERROR dcesrv_srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALL
 	NTSTATUS nterr;
 	struct share_context *sctx;
 		
-	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	nterr = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return ntstatus_to_werror(nterr);
 	}

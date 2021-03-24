@@ -126,20 +126,19 @@ NTSTATUS share_register(const struct share_ops *ops)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name,
-				   struct tevent_context *event_ctx, 
-				   struct loadparm_context *lp_ctx,
-				   struct share_context **ctx)
+NTSTATUS share_get_context(TALLOC_CTX *mem_ctx,
+			   struct loadparm_context *lp_ctx,
+			   struct share_context **ctx)
 {
 	const struct share_ops *ops;
 
-	ops = share_backend_by_name(backend_name);
+	ops = share_backend_by_name("classic");
 	if (!ops) {
-		DEBUG(0, ("share_init_connection: share backend [%s] not found!\n", backend_name));
+		DEBUG(0, ("share_init_connection: share backend [classic] not found!\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return ops->init(mem_ctx, ops, event_ctx, lp_ctx, ctx);
+	return ops->init(mem_ctx, ops, lp_ctx, ctx);
 }
 
 /*

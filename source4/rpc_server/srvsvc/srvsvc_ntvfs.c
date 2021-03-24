@@ -55,7 +55,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 
-	status = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
+	status = share_get_context(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

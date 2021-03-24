@@ -891,8 +891,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 			 &Globals.tls_priority,
 			 "NORMAL:-VERS-SSL3.0");
 
-	lpcfg_string_set(Globals.ctx, &Globals.share_backend, "classic");
-
 	Globals._preferred_master = Auto;
 
 	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;

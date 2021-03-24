@@ -24,15 +24,7 @@ bld.SAMBA_MODULE('share_classic',
 	source='share_classic.c',
 	subsystem='share',
 	init_function='share_classic_init',
-	deps='samba-util'
-	)
-
-
-bld.SAMBA_MODULE('share_ldb',
-	source='share_ldb.c',
-	subsystem='share',
-	init_function='share_ldb_init',
-	deps='ldbsamba auth_system_session'
+	deps='samba-util samba-hostconfig'
 	)
 
 

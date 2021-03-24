@@ -156,9 +156,9 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	irpc_add_name(conn->msg_ctx, "smb_server");
 
-	if (!NT_STATUS_IS_OK(share_get_context_by_name(smb_conn, lpcfg_share_backend(smb_conn->lp_ctx),
-						       smb_conn->connection->event.ctx,
-						       smb_conn->lp_ctx, &(smb_conn->share_context)))) {
+	if (!NT_STATUS_IS_OK(share_get_context(smb_conn,
+					       smb_conn->lp_ctx,
+					       &(smb_conn->share_context)))) {
 		smbsrv_terminate_connection(smb_conn, "share_init failed!");
 		return;
 	}
