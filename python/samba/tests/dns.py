@@ -1126,7 +1126,6 @@ class TestZones(DNSTest):
             self.fail(e)
 
     def set_params(self, **kwargs):
-        zone = kwargs.pop('zone', None)
         for key, val in kwargs.items():
             name_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
             name_param.dwParam = val
@@ -1138,7 +1137,7 @@ class TestZones(DNSTest):
                 self.rpc_conn.DnssrvOperation2(client_version,
                                                0,
                                                self.server,
-                                               zone,
+                                               self.zone,
                                                0,
                                                'ResetDwordProperty',
                                                nap_type,
@@ -1218,8 +1217,9 @@ class TestZones(DNSTest):
 
     def set_aging(self, enable=False):
         self.create_zone(self.zone, aging_enabled=enable)
-        self.set_params(NoRefreshInterval=1, RefreshInterval=1,
-                        Aging=int(bool(enable)), zone=self.zone,
+        self.set_params(NoRefreshInterval=1,
+                        RefreshInterval=1,
+                        Aging=int(bool(enable)),
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
 
     def test_set_aging(self, enable=True, name='agingtest', txt=['test txt']):
@@ -1245,7 +1245,7 @@ class TestZones(DNSTest):
         self.set_aging(enable=True)
         before_mod = self.dns_update_record(name, txt)
         if not enable:
-            self.set_params(zone=self.zone, Aging=0)
+            self.set_params(Aging=0)
         dec = 2
 
         def mod_ts(rec):
@@ -1269,8 +1269,9 @@ class TestZones(DNSTest):
         name, txt = 'agingtest', ['test txt']
         self.create_zone(self.zone, aging_enabled=True)
         interval = 10
-        self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
-                        Aging=1, zone=self.zone,
+        self.set_params(NoRefreshInterval=interval,
+                        RefreshInterval=interval,
+                        Aging=1,
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
         before_mod = self.dns_update_record(name, txt)
 
@@ -1367,8 +1368,9 @@ class TestZones(DNSTest):
 
         self.create_zone(self.zone, aging_enabled=True)
         interval = 10
-        self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
-                        Aging=1, zone=self.zone,
+        self.set_params(NoRefreshInterval=interval,
+                        RefreshInterval=interval,
+                        Aging=1,
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
 
         self.dns_update_record(name, txt)
@@ -1422,8 +1424,9 @@ class TestZones(DNSTest):
 
         self.create_zone(self.zone, aging_enabled=True)
         interval = 10
-        self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
-                        Aging=1, zone=self.zone,
+        self.set_params(NoRefreshInterval=interval,
+                        RefreshInterval=interval,
+                        Aging=1,
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
 
         expr = "(dnsRecord:1.3.6.1.4.1.7165.4.5.3:={0})"
@@ -1517,8 +1520,9 @@ class TestZones(DNSTest):
 
         self.create_zone(self.zone, aging_enabled=True)
         interval = 1
-        self.set_params(NoRefreshInterval=interval, RefreshInterval=interval,
-                        zone=self.zone, Aging=1,
+        self.set_params(NoRefreshInterval=interval,
+                        RefreshInterval=interval,
+                        Aging=1,
                         AllowUpdate=dnsp.DNS_ZONE_UPDATE_UNSECURE)
         name, txt = 'agingtest', ['test txt']
         name2, txt2 = 'agingtest2', ['test txt2']
@@ -1747,12 +1751,12 @@ class TestZones(DNSTest):
     def test_rpc_zone_update_while_dnsProperty_zero_length(self):
         self.create_zone(self.zone)
         self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE)
-        self.set_params(zone=self.zone, AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
+        self.set_params(AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
 
     def test_rpc_zone_update_while_other_dnsProperty_zero_length(self):
         self.create_zone(self.zone)
         self.set_dnsProperty_zero_length(dnsp.DSPROPERTY_ZONE_MASTER_SERVERS_DA)
-        self.set_params(zone=self.zone, AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
+        self.set_params(AllowUpdate=dnsp.DNS_ZONE_UPDATE_SECURE)
 
 class TestRPCRoundtrip(DNSTest):
     def setUp(self):
