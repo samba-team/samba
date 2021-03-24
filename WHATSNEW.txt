@@ -1,4 +1,65 @@
                    ==============================
+                   Release Notes for Samba 4.14.2
+                           March 24, 2021
+                   ==============================
+
+
+This is a follow-up release to depend on the correct ldb version. This is only
+needed when building against a system ldb library.
+
+This is a security release in order to address the following defects:
+
+o CVE-2020-27840: Heap corruption via crafted DN strings.
+o CVE-2021-20277: Out of bounds read in AD DC LDAP server.
+
+
+=======
+Details
+=======
+
+o  CVE-2020-27840:
+   An anonymous attacker can crash the Samba AD DC LDAP server by sending easily
+   crafted DNs as part of a bind request. More serious heap corruption is likely
+   also possible.
+
+o  CVE-2021-20277:
+   User-controlled LDAP filter strings against the AD DC LDAP server may crash
+   the LDAP server.
+
+For more details, please refer to the security advisories.
+
+
+Changes since 4.14.1
+--------------------
+
+o  Release with dependency on ldb version 2.3.0.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.14.1
                            March 24, 2021
                    ==============================
@@ -58,8 +119,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
