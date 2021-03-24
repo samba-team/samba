@@ -136,22 +136,22 @@ import "misc.idl", "dnsp.idl";
 		[case(DNS_TYPE_SRV)]   				DNS_RPC_RECORD_SRV srv;
 		[case(DNS_TYPE_DNAME)] 				DNS_RPC_NAME name;
 	}
-	DNS_RPC_DATA;
+	DNS_RPC_RECORD_DATA;
 
 	typedef [public] struct {
-		[value(ndr_size_DNS_RPC_DATA(&data,wType,0))] uint16 wDataLength;
+		[value(ndr_size_DNS_RPC_RECORD_DATA(&data,wType,0))] uint16 wDataLength;
 		dns_record_type        wType;
 		DWORD       dwFlags;
 		DWORD       dwSerial;
 		DWORD       dwTtlSeconds;
 		DWORD       dwTimeStamp;
 		DWORD       dwReserved;
-		[subcontext(0),subcontext_size(wDataLength),switch_is(wType)] DNS_RPC_DATA data;
+		[subcontext(0),subcontext_size(wDataLength),switch_is(wType)] DNS_RPC_RECORD_DATA data;
 	}
 	DNS_RPC_RECORD;
 
 	typedef struct {
-		[value(ndr_size_DNS_RPC_DATA(&rec.data,rec.wType,0))] uint3264 wContextLength;
+		[value(ndr_size_DNS_RPC_RECORD_DATA(&rec.data,rec.wType,0))] uint3264 wContextLength;
 		DNS_RPC_RECORD rec;
 	}
 	DNS_RPC_RECORD_BUF;

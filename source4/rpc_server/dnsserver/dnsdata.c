@@ -406,7 +406,7 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 		break;
 
 	default:
-		memcpy(&dns->data, &dnsp->data, sizeof(union DNS_RPC_DATA));
+		memcpy(&dns->data, &dnsp->data, sizeof(union DNS_RPC_RECORD_DATA));
 		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dnsp->wType));
 	}
 
