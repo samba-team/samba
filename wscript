@@ -99,14 +99,6 @@ def options(opt):
                    help='disable AD DC functionality (enables only Samba FS (File Server, Winbind, NMBD) and client utilities.',
                    action='store_true', dest='without_ad_dc', default=False)
 
-    opt.add_option('--with-ntvfs-fileserver',
-                   help='enable the deprecated NTVFS file server from the original Samba4 branch (default if --enable-selftest specified).  Conflicts with --with-system-mitkrb5 and --without-ad-dc',
-                   action='store_true', dest='with_ntvfs_fileserver')
-
-    opt.add_option('--without-ntvfs-fileserver',
-                   help='disable the deprecated NTVFS file server from the original Samba4 branch',
-                   action='store_false', dest='with_ntvfs_fileserver')
-
     opt.add_option('--with-pie',
                   help=("Build Position Independent Executables " +
                         "(default if supported by compiler)"),
@@ -282,18 +274,9 @@ def configure(conf):
     conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
-        if Options.options.with_ntvfs_fileserver != False:
-            if not (Options.options.without_ad_dc):
-                conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
-        if Options.options.with_ntvfs_fileserver == False:
-            if not (Options.options.without_ad_dc):
-                raise Errors.WafError('--without-ntvfs-fileserver conflicts with --enable-selftest while building the AD DC')
+        if not (Options.options.without_ad_dc):
+            conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
         conf.RECURSE('testsuite/unittests')
-
-    if Options.options.with_ntvfs_fileserver == True:
-        if Options.options.without_ad_dc:
-            raise Errors.WafError('--with-ntvfs-fileserver conflicts with --without-ad-dc')
-        conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
 
     if Options.options.with_pthreadpool:
         if conf.CONFIG_SET('HAVE_PTHREAD'):
