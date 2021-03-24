@@ -31,6 +31,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
+#include "auth/credentials/credentials.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -141,6 +142,49 @@ bool secrets_store(const char *key, const void *data, size_t size)
 				    make_tdb_data((const uint8_t *)data, size),
 				    TDB_REPLACE);
 	return NT_STATUS_IS_OK(status);
+}
+
+bool secrets_store_creds(struct cli_credentials *creds)
+{
+	const char *p = NULL;
+	bool ok;
+
+	p = cli_credentials_get_username(creds);
+	if (p == NULL) {
+		return false;
+	}
+
+	ok = secrets_store(SECRETS_AUTH_USER, p, strlen(p) + 1);
+	if (!ok) {
+		DBG_ERR("Failed storing auth user name\n");
+		return false;
+	}
+
+
+	p = cli_credentials_get_domain(creds);
+	if (p == NULL) {
+		return false;
+	}
+
+	ok = secrets_store(SECRETS_AUTH_DOMAIN, p, strlen(p) + 1);
+	if (!ok) {
+		DBG_ERR("Failed storing auth domain name\n");
+		return 1;
+	}
+
+
+	p = cli_credentials_get_password(creds);
+	if (p == NULL) {
+		return false;
+	}
+
+	ok = secrets_store(SECRETS_AUTH_PASSWORD, p, strlen(p) + 1);
+	if (!ok) {
+		DBG_ERR("Failed storing auth password\n");
+		return false;
+	}
+
+	return true;
 }
 
 

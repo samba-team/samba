@@ -490,6 +490,7 @@ bld.SAMBA3_LIBRARY('secrets3',
                         dbwrap
                         krb5samba
                         LIBCLI_AUTH
+                        samba-credentials
                         ''',
                    private_library=True)
 
