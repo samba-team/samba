@@ -1535,11 +1535,11 @@ class TestZones(DNSTest):
         self.dns_update_record(name3, txt)
         self.dns_update_record(name3, txt2)
 
-        # Create a tomb stoned record.
+        # Create a tombstoned record.
         self.dns_update_record(name4, txt4)
         self.dns_tombstone(name4, txt4, self.zone)
         records = self.ldap_get_records(name4)
-        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertIn("dNSTombstoned", records[0])
         self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         # Create an un-tombstoned record, with dnsTombstoned: FALSE
@@ -1547,7 +1547,7 @@ class TestZones(DNSTest):
         self.dns_tombstone(name5, txt5, self.zone)
         self.dns_update_record(name5, txt5)
         records = self.ldap_get_records(name5)
-        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertIn("dNSTombstoned", records[0])
         self.assertEqual(records[0]["dNSTombstoned"][0], b"FALSE")
 
         last_add = self.dns_update_record(name3, txt3)
@@ -1570,7 +1570,7 @@ class TestZones(DNSTest):
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
         records = self.ldap_get_records(name)
-        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertIn("dNSTombstoned", records[0])
         self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         recs = self.ldap_get_dns_records(name2)
@@ -1589,14 +1589,14 @@ class TestZones(DNSTest):
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
         records = self.ldap_get_records(name4)
-        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertIn("dNSTombstoned", records[0])
         self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         recs = self.ldap_get_dns_records(name5)
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
         records = self.ldap_get_records(name5)
-        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertIn("dNSTombstoned", records[0])
         self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         for make_it_work in [False, True]:

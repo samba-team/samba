@@ -1107,7 +1107,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                   expression="(&(objectClass=dnsZone)(name=_msdcs*))",
                                   attrs=["nTSecurityDescriptor", "objectClass"])
         self.assertEqual(len(zones), 1)
-        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        self.assertIn("nTSecurityDescriptor", zones[0])
         tmp = zones[0]["nTSecurityDescriptor"][0]
         utils = sd_utils.SDUtils(self.samdb)
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1166,7 +1166,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                   attrs=["nTSecurityDescriptor"])
         self.assertEqual(len(zones), 1)
         current_dn = zones[0].dn
-        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        self.assertIn("nTSecurityDescriptor", zones[0])
         tmp = zones[0]["nTSecurityDescriptor"][0]
         utils = sd_utils.SDUtils(self.samdb)
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1205,7 +1205,7 @@ class DnsserverTests(RpcInterfaceTestCase):
             for (key, sec_desc) in security_desc_dict:
                 zones = self.samdb.search(base=key, scope=ldb.SCOPE_BASE,
                                           attrs=["nTSecurityDescriptor"])
-                self.assertTrue("nTSecurityDescriptor" in zones[0])
+                self.assertIn("nTSecurityDescriptor", zones[0])
                 tmp = zones[0]["nTSecurityDescriptor"][0]
                 utils = sd_utils.SDUtils(self.samdb)
 
@@ -1238,7 +1238,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                   attrs=["nTSecurityDescriptor"])
         self.assertEqual(len(zones), 1)
         current_dn = zones[0].dn
-        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        self.assertIn("nTSecurityDescriptor", zones[0])
         tmp = zones[0]["nTSecurityDescriptor"][0]
         utils = sd_utils.SDUtils(self.samdb)
         sd = ndr_unpack(security.descriptor, tmp)
@@ -1277,7 +1277,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         for (key, sec_desc) in security_desc_dict:
             zones = self.samdb.search(base=key, scope=ldb.SCOPE_BASE,
                                       attrs=["nTSecurityDescriptor"])
-            self.assertTrue("nTSecurityDescriptor" in zones[0])
+            self.assertIn("nTSecurityDescriptor", zones[0])
             tmp = zones[0]["nTSecurityDescriptor"][0]
             utils = sd_utils.SDUtils(self.samdb)
 

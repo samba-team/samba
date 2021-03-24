@@ -108,15 +108,15 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
 
         dns_c = "samba_dnsupdate --verbose --use-file={0}".format(tmp_uc)
         out = get_string(self.check_output(dns_c))
-        self.assertFalse(site_name.lower() in out, out)
+        self.assertNotIn(site_name.lower(), out)
 
         self.samdb.modify(m)
 
         shutil.copyfile(uc_fn, tmp_uc)
         out = get_string(self.check_output(dns_c))
 
-        self.assertFalse("No DNS updates needed" in out, out)
-        self.assertTrue(site_name.lower() in out, out)
+        self.assertNotIn("No DNS updates needed", out)
+        self.assertIn(site_name.lower(), out)
 
         result = cmd._run("samba-tool %s" % name, 'remove', site_name)
         if result is not None:
