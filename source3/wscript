@@ -73,7 +73,6 @@ def options(opt):
     opt.samba_add_onoff_option('avahi', with_name="enable", without_name="disable")
     opt.samba_add_onoff_option('iconv')
     opt.samba_add_onoff_option('acl-support')
-    opt.samba_add_onoff_option('dnsupdate')
     opt.samba_add_onoff_option('syslog')
     opt.samba_add_onoff_option('automount')
     opt.samba_add_onoff_option('dmapi', default=None) # None means autodetection
@@ -1067,11 +1066,6 @@ syscall(SYS_setgroups32, 0, NULL);
                                 execute=True,
                                 mandatory=True,
                                 msg="Checking whether setuidx is available")
-    if Options.options.with_dnsupdate:
-        if not conf.CONFIG_SET('HAVE_KRB5'):
-            Logs.warn("--with-dnsupdate=yes but gssapi support not sufficient")
-        else:
-            conf.DEFINE('WITH_DNS_UPDATES', 1)
     # valgrind.h or valgrind/valgrind.h is checked in lib/replace/wscript
     if Options.options.developer:
         if conf.CONFIG_SET('HAVE_VALGRIND_H') or conf.CONFIG_SET('HAVE_VALGRIND_VALGRIND_H'):

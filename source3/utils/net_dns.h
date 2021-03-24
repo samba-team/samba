@@ -28,7 +28,7 @@
 #define	DNS_UPDATE_PROBE		0x10
 #define	DNS_UPDATE_PROBE_SUFFICIENT	0x20
 
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 
 #include "../lib/addns/dns.h"
 
@@ -38,4 +38,4 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      size_t num_addrs,
 		      uint32_t flags, bool remove_host);
 
-#endif /* defined(WITH_DNS_UPDATES) */
+#endif /* defined(HAVE_KRB5) */

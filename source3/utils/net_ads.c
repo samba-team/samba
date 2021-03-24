@@ -1506,7 +1506,7 @@ static WERROR check_ads_config( void )
  Send a DNS update request
 *******************************************************************/
 
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 #include "../lib/addns/dns.h"
 
 static NTSTATUS net_update_dns_internal(struct net_context *c,
@@ -1741,7 +1741,7 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 
 static void _net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
 {
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 	ADS_STRUCT *ads_dns = NULL;
 	int ret;
 	NTSTATUS status;
@@ -2030,7 +2030,7 @@ fail:
 
 static int net_ads_dns_register(struct net_context *c, int argc, const char **argv)
 {
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
@@ -2129,7 +2129,7 @@ static int net_ads_dns_unregister(struct net_context *c,
 				  int argc,
 				  const char **argv)
 {
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;

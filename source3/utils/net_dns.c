@@ -24,7 +24,7 @@
 #include "../lib/addns/dns.h"
 #include "utils/net_dns.h"
 
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 
 /*********************************************************************
 *********************************************************************/
@@ -207,4 +207,4 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 	return count;
 }
 
-#endif	/* defined(WITH_DNS_UPDATES) */
+#endif	/* defined(HAVE_KRB5) */

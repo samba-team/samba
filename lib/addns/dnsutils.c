@@ -136,7 +136,7 @@ DNS_ERROR dns_domain_name_from_string( TALLOC_CTX *mem_ctx,
 char *dns_generate_keyname( TALLOC_CTX *mem_ctx )
 {
 	char *result = NULL;
-#if defined(WITH_DNS_UPDATES)
+#if defined(HAVE_KRB5)
 
 	struct GUID guid;
 
