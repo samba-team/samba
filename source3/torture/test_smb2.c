@@ -2937,3 +2937,210 @@ bool run_smb2_quota1(int dummy)
 
 	return true;
 }
+
+bool run_smb2_stream_acl(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	const char *fname = "stream_acl_test_file";
+	const char *sname = "stream_acl_test_file:streamname";
+	struct security_descriptor *sd_dacl = NULL;
+	bool ret = false;
+
+	printf("SMB2 stream acl\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure file doesn't exist. */
+	(void)cli_unlink(cli, fname, 0);
+
+	/* Create the file. */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_NONE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+                goto fail;
+	}
+
+	/* Close the handle. */
+	cli_smb2_close_fnum(cli, fnum);
+	fnum = (uint16_t)-1;
+
+	/* Create the stream. */
+	status = cli_ntcreate(cli,
+				sname,
+				0,
+				FILE_READ_DATA|
+					SEC_STD_READ_CONTROL|
+					SEC_STD_WRITE_DAC,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_NONE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s failed (%s)\n",
+			sname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	/* Close the handle. */
+	cli_smb2_close_fnum(cli, fnum);
+	fnum = (uint16_t)-1;
+
+	/*
+	 * Open the stream - for Samba this ensures
+	 * we prove we have a pathref fsp.
+	 */
+	status = cli_ntcreate(cli,
+				sname,
+				0,
+				FILE_READ_DATA|
+					SEC_STD_READ_CONTROL|
+					SEC_STD_WRITE_DAC,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_NONE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Open of %s failed (%s)\n",
+			sname,
+			nt_errstr(status));
+                goto fail;
+	}
+
+	/* Read the security descriptor off the stream handle. */
+	status = cli_query_security_descriptor(cli,
+				fnum,
+				SECINFO_DACL,
+				talloc_tos(),
+				&sd_dacl);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Reading DACL on stream %s got (%s)\n",
+			sname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	if (sd_dacl == NULL || sd_dacl->dacl == NULL ||
+			sd_dacl->dacl->num_aces < 1) {
+		printf("Invalid DACL returned on stream %s "
+			"(this should not happen)\n",
+			sname);
+		goto fail;
+	}
+
+	/*
+	 * Ensure it allows FILE_READ_DATA in the first ace.
+	 * It always should.
+	 */
+	if ((sd_dacl->dacl->aces[0].access_mask & FILE_READ_DATA) == 0) {
+		printf("DACL->ace[0] returned on stream %s "
+			"doesn't have read access (should not happen)\n",
+			sname);
+		goto fail;
+	}
+
+	/* Remove FILE_READ_DATA from the first ace and set. */
+	sd_dacl->dacl->aces[0].access_mask &= ~FILE_READ_DATA;
+
+	status = cli_set_security_descriptor(cli,
+				fnum,
+				SECINFO_DACL,
+				sd_dacl);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Setting DACL on stream %s got (%s)\n",
+			sname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	TALLOC_FREE(sd_dacl);
+
+	/* Read again and check it changed. */
+	status = cli_query_security_descriptor(cli,
+				fnum,
+				SECINFO_DACL,
+				talloc_tos(),
+				&sd_dacl);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Reading DACL on stream %s got (%s)\n",
+			sname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	if (sd_dacl == NULL || sd_dacl->dacl == NULL ||
+			sd_dacl->dacl->num_aces < 1) {
+		printf("Invalid DACL (1) returned on stream %s "
+			"(this should not happen)\n",
+			sname);
+		goto fail;
+	}
+
+	/* FILE_READ_DATA should be gone from the first ace. */
+	if ((sd_dacl->dacl->aces[0].access_mask & FILE_READ_DATA) != 0) {
+		printf("DACL on stream %s did not change\n",
+			sname);
+		goto fail;
+	}
+
+	ret = true;
+
+  fail:
+
+	if (fnum != (uint16_t)-1) {
+		cli_smb2_close_fnum(cli, fnum);
+		fnum = (uint16_t)-1;
+	}
+
+	(void)cli_unlink(cli, fname, 0);
+	return ret;
+}

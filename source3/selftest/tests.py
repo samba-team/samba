@@ -227,6 +227,21 @@ plantestsuite("samba3.smbtorture_s3.smb1.MSDFS-ATTRIBUTE",
                 "-mNT1",
                 "-f msdfs-src1"])
 
+#
+# SMB2-STREAM-ACL needs to run against a special share - vfs_wo_fruit
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-STREAM-ACL",
+                "fileserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-STREAM-ACL',
+                '//$SERVER_IP/vfs_wo_fruit',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
+
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
     "vfs_aio_pthread_async_dosmode_default2",

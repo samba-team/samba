@@ -15218,6 +15218,10 @@ static struct {
 		.fn    = run_smb2_quota1,
 	},
 	{
+		.name  = "SMB2-STREAM-ACL",
+		.fn    = run_smb2_stream_acl,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},
