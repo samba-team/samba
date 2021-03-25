@@ -647,11 +647,13 @@ NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
 	if (!VALID_STAT(smb_fname->st)) {
 		ret = vfs_stat(dirfsp->conn, smb_fname);
 		if (ret != 0) {
-			DBG_ERR("stat [%s] failed: %s\n",
+			int err = errno;
+			int lvl = err == ENOENT ? DBGLVL_INFO : DBGLVL_ERR;
+			DBG_PREFIX(lvl, ("stat [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
-				strerror(errno));
+				strerror(err)));
 			TALLOC_FREE(smb_fname);
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix(err);
 		}
 	}
 
