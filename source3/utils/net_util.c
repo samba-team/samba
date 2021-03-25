@@ -475,7 +475,13 @@ struct cli_credentials *net_context_creds(struct net_context *c,
 	struct cli_credentials *creds = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	/*
+	 * Do not query the password if we defined we want to use the
+	 * machine account.
+	 */
+	if (c->opt_machine_pass) {
+		c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	}
 
 	creds = cli_credentials_init(mem_ctx);
 	if (creds == NULL) {
