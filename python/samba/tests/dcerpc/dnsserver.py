@@ -763,23 +763,8 @@ class DnsserverTests(RpcInterfaceTestCase):
         elif record_type_str == 'TXT':
             return TXTRecord(record_str)
 
-    def record_type_int(self, record_type_str):
-        if record_type_str == 'A':
-            return dnsp.DNS_TYPE_A
-        elif record_type_str == 'AAAA':
-            return dnsp.DNS_TYPE_AAAA
-        elif record_type_str == 'PTR':
-            return dnsp.DNS_TYPE_PTR
-        elif record_type_str == 'CNAME':
-            return dnsp.DNS_TYPE_CNAME
-        elif record_type_str == 'NS':
-            return dnsp.DNS_TYPE_NS
-        elif record_type_str == 'MX':
-            return dnsp.DNS_TYPE_MX
-        elif record_type_str == 'SRV':
-            return dnsp.DNS_TYPE_SRV
-        elif record_type_str == 'TXT':
-            return dnsp.DNS_TYPE_TXT
+    def record_type_int(self, s):
+        return getattr(dnsp, 'DNS_TYPE_' + s)
 
     def add_record(self, zone, name, record_type_str, record_str,
                    assertion=True, client_version=dnsserver.DNS_CLIENT_VERSION_LONGHORN):
