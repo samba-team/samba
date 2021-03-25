@@ -1256,6 +1256,7 @@ static int rpc_user_list(struct net_context *c, int argc, const char **argv)
 int net_rpc_user(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
+	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -1309,14 +1310,19 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		return -1;
+	}
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
-	libnetapi_set_password(c->netapi_ctx, c->opt_password);
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
+
+	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	if (status != 0) {
+		return -1;
 	}
 
 	if (argc == 0) {
@@ -3441,6 +3447,7 @@ static int rpc_group_rename(struct net_context *c, int argc, const char **argv)
 int net_rpc_group(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
+	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -3502,14 +3509,19 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		return -1;
+	}
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
-	libnetapi_set_password(c->netapi_ctx, c->opt_password);
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
+
+	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	if (status != 0) {
+		return -1;
 	}
 
 	if (argc == 0) {
@@ -5428,6 +5440,7 @@ int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
 int net_rpc_share(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
+	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -5473,15 +5486,21 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		return -1;
+	}
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
-	libnetapi_set_password(c->netapi_ctx, c->opt_password);
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
+
+	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	if (status != 0) {
+		return -1;
 	}
+
 
 	if (argc == 0) {
 		if (c->display_usage) {
@@ -5724,6 +5743,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 int net_rpc_file(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
+	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -5755,14 +5775,19 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		return -1;
+	}
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
-	libnetapi_set_password(c->netapi_ctx, c->opt_password);
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
+
+	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	if (status != 0) {
+		return -1;
 	}
 
 	if (argc == 0) {
@@ -8176,6 +8201,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 int net_rpc(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
+	struct cli_credentials *creds = NULL;
 
 	struct functable func[] = {
 		{
@@ -8366,17 +8392,19 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		return -1;
+	}
+
 	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}
-	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
-	libnetapi_set_password(c->netapi_ctx, c->opt_password);
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
-	}
-	if (c->opt_ccache) {
-		libnetapi_set_use_ccache(c->netapi_ctx);
+
+	status = libnetapi_set_creds(c->netapi_ctx, creds);
+	if (status != 0) {
+		return -1;
 	}
 
 	return net_run_function(c, argc, argv, "net rpc", func);
