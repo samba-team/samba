@@ -544,7 +544,7 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
 	static const uint8_t zero = 0;
-	const size_t digest_len = gnutls_hash_get_len(GNUTLS_MAC_SHA256);
+	const size_t digest_len = gnutls_hash_get_len(GNUTLS_DIG_SHA256);
 	uint8_t digest[digest_len];
 	uint32_t i = 1;
 	uint32_t L = KO_len * 8;
