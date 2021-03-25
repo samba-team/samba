@@ -1247,40 +1247,36 @@ error:
 
 }
 
-static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
-					    struct ldb_message *msg_mod,
-					    struct ldb_dn *domain_dn,
-					    NTTIME old_timestamp,
-					    NTTIME now)
+/*
+ * msDS-LogonTimeSyncInterval is an int32_t number of days.
+ *
+ * The docs say: "the initial update, after the domain functional
+ * level is raised to DS_BEHAVIOR_WIN2003 or higher, is calculated as
+ * 14 days minus a random percentage of 5 days", but we aren't doing
+ * that. The blogosphere seems to think that this randomised update
+ * happens everytime, but [MS-ADA1] doesn't agree.
+ *
+ * Dochelp referred us to the following blog post:
+ * http://blogs.technet.com/b/askds/archive/2009/04/15/the-lastlogontimestamp-attribute-what-it-was-designed-for-and-how-it-works.aspx
+ *
+ * when msDS-LogonTimeSyncInterval is zero, the lastLogonTimestamp is
+ * not changed.
+ */
+
+static NTSTATUS authsam_calculate_lastlogon_sync_interval(
+	struct ldb_context *sam_ctx,
+	TALLOC_CTX *ctx,
+	struct ldb_dn *domain_dn,
+	NTTIME *sync_interval_nt)
 {
-	/*
-	 * We only set lastLogonTimestamp if the current value is older than
-	 * now - msDS-LogonTimeSyncInterval days.
-	 *
-	 * msDS-LogonTimeSyncInterval is an int32_t number of days, while
-	 * lastLogonTimestamp is in the 64 bit 100ns NTTIME format.
-	 *
-	 * The docs say: "the initial update, after the domain functional
-	 * level is raised to DS_BEHAVIOR_WIN2003 or higher, is calculated as
-	 * 14 days minus a random percentage of 5 days", but we aren't doing
-	 * that. The blogosphere seems to think that this randomised update
-	 * happens everytime, but [MS-ADA1] doesn't agree.
-	 *
-	 * Dochelp referred us to the following blog post:
-	 * http://blogs.technet.com/b/askds/archive/2009/04/15/the-lastlogontimestamp-attribute-what-it-was-designed-for-and-how-it-works.aspx
-	 *
-	 * en msDS-LogonTimeSyncInterval is zero, the lastLogonTimestamp is
-	 * not changed.
-	 */
 	static const char *attrs[] = { "msDS-LogonTimeSyncInterval",
 					NULL };
 	int ret;
 	struct ldb_result *domain_res = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-	int32_t sync_interval;
-	NTTIME sync_interval_nt;
+	uint32_t sync_interval;
 
-	mem_ctx = talloc_new(msg_mod);
+	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1296,15 +1292,7 @@ static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
 						 "msDS-LogonTimeSyncInterval",
 						 14);
 	DEBUG(5, ("sync interval is %d\n", sync_interval));
-	if (sync_interval == 0){
-		/*
-		 * Setting msDS-LogonTimeSyncInterval to zero is how you ask
-		 * that nothing happens here.
-		 */
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_OK;
-	}
-	else if (sync_interval >= 5){
+	if (sync_interval >= 5){
 		/*
 		 * Subtract "a random percentage of 5" days. Presumably this
 		 * percentage is between 0 and 100, and modulus is accurate
@@ -1312,17 +1300,47 @@ static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
 		 */
 		uint32_t r = generate_random() % 6;
 		sync_interval -= r;
-		DEBUG(5, ("randomised sync interval is %d (-%d)\n", sync_interval, r));
+		DBG_INFO("randomised sync interval is %d (-%d)\n", sync_interval, r);
 	}
 	/* In the case where sync_interval < 5 there is no randomisation */
 
-	sync_interval_nt = sync_interval * 24LL * 3600LL * 10000000LL;
+	/*
+	 * msDS-LogonTimeSyncInterval is an int32_t number of days,
+	 * while lastLogonTimestamp (to be updated) is in the 64 bit
+	 * 100ns NTTIME format so we must convert.
+	 */
+	*sync_interval_nt = sync_interval * 24LL * 3600LL * 10000000LL;
+	TALLOC_FREE(mem_ctx);
+	return NT_STATUS_OK;
+}
 
+
+/*
+ * We only set lastLogonTimestamp if the current value is older than
+ * now - msDS-LogonTimeSyncInterval days.
+ *
+ * lastLogonTimestamp is in the 64 bit 100ns NTTIME format
+ */
+static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
+						   struct ldb_message *msg_mod,
+						   struct ldb_dn *domain_dn,
+						   NTTIME old_timestamp,
+						   NTTIME now,
+						   NTTIME sync_interval_nt)
+{
+	int ret;
 	DEBUG(5, ("old timestamp is %lld, threshold %lld, diff %lld\n",
 		  (long long int)old_timestamp,
 		  (long long int)(now - sync_interval_nt),
 		  (long long int)(old_timestamp - now + sync_interval_nt)));
 
+	if (sync_interval_nt == 0){
+		/*
+		 * Setting msDS-LogonTimeSyncInterval to zero is how you ask
+		 * that nothing happens here.
+		 */
+		return NT_STATUS_OK;
+	}
 	if (old_timestamp > now){
 		DEBUG(0, ("lastLogonTimestamp is in the future! (%lld > %lld)\n",
 			  (long long int)old_timestamp, (long long int)now));
@@ -1337,11 +1355,9 @@ static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
 					  "lastLogonTimestamp", now);
 
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -1550,8 +1566,23 @@ get_transaction:
 	}
 
 	if (!am_rodc) {
-		status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
-							    lastLogonTimestamp, now);
+		NTTIME sync_interval_nt;
+
+		status = authsam_calculate_lastlogon_sync_interval(
+			sam_ctx, mem_ctx, domain_dn, &sync_interval_nt);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		status = authsam_update_lastlogon_timestamp(
+			sam_ctx,
+			msg_mod,
+			domain_dn,
+			lastLogonTimestamp,
+			now,
+			sync_interval_nt);
 		if (!NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto error;
