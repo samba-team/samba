@@ -1479,11 +1479,17 @@ get_transaction:
 
 	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
 	dbBadPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
+	tv_now = timeval_current();
+	now = timeval_to_nttime(&tv_now);
+
 	if (interactive_or_kerberos) {
 		badPwdCount = dbBadPwdCount;
 	} else {
-		badPwdCount = samdb_result_effective_badPwdCount(sam_ctx, mem_ctx,
-								 domain_dn, msg);
+		int64_t lockOutObservationWindow =
+			samdb_result_msds_LockoutObservationWindow(
+				sam_ctx, mem_ctx, domain_dn, msg);
+		badPwdCount = dsdb_effective_badPwdCount(
+			msg, lockOutObservationWindow, now);
 	}
 	lastLogonTimestamp =
 		ldb_msg_find_attr_as_int64(msg, "lastLogonTimestamp", 0);
@@ -1520,9 +1526,6 @@ get_transaction:
 			goto error;
 		}
 	}
-
-	tv_now = timeval_current();
-	now = timeval_to_nttime(&tv_now);
 
 	if (interactive_or_kerberos ||
 	    (badPwdCount != 0 && lockoutTime == 0)) {
