@@ -135,8 +135,16 @@ static bool test_lzxpress(struct torture_context *test)
 		0x20, 0x10, 0x00, 0x61, 0x20, 0x74, 0x65, 0x73,
 		0x74, 0x2E, 0x20, 0x61, 0x6E, 0x64, 0x20, 0x9F,
 		0x00, 0x04, 0x20, 0x74, 0x6F, 0x6F };
+
+	const uint8_t fixed_out_old_version[] = {
+		0x00, 0x20, 0x00, 0x04, 0x74, 0x68, 0x69, 0x73,
+		0x20, 0x10, 0x00, 0x61, 0x20, 0x74, 0x65, 0x73,
+		0x74, 0x2E, 0x20, 0x61, 0x6E, 0x64, 0x20, 0x9F,
+		0x00, 0x04, 0x20, 0x74, 0x6F, 0x6F, 0x00, 0x00,
+		0x00, 0x00 };
+
 	ssize_t c_size;
-	uint8_t *out, *out2;
+	uint8_t *out, *out2, *out3;
 
 	out  = talloc_size(tmp_ctx, 2048);
 	memset(out, 0x42, talloc_get_size(out));
@@ -163,6 +171,20 @@ static bool test_lzxpress(struct torture_context *test)
 				 "fixed lzxpress_decompress size");
 	torture_assert_mem_equal(test, out2, fixed_data, c_size,
 				 "fixed lzxpress_decompress data");
+
+
+	torture_comment(test, "lzxpress fixed decompression (old data)\n");
+	out3  = talloc_size(tmp_ctx, strlen(fixed_data));
+	c_size = lzxpress_decompress(fixed_out_old_version,
+				     sizeof(fixed_out_old_version),
+				     out3,
+				     talloc_get_size(out3));
+
+	torture_assert_int_equal(test, c_size, strlen(fixed_data),
+				 "fixed lzxpress_decompress size");
+	torture_assert_mem_equal(test, out3, fixed_data, c_size,
+				 "fixed lzxpress_decompress data");
+
 	talloc_free(tmp_ctx);
 	return true;
 }
