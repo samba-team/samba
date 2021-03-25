@@ -1536,6 +1536,8 @@ planoldpythontestsuite("fileserver",
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.wsp_query_generator")
 planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.wsp_test")
+planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic")
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic",
