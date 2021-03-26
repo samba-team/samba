@@ -1828,15 +1828,6 @@ main() {
                            define=None,
                            on_target=False)
 
-    Logs.info("Checking for flex")
-    conf.find_program('flex', var='FLEX')
-    if conf.env['FLEX']:
-        conf.env.FLEXFLAGS = ['-t']
-        conf.CHECK_COMMAND('%s --version' % conf.env.FLEX[0],
-                           msg='Using flex version',
-                           define=None,
-                           on_target=False)
-
     with_spotlight_tracker_backend = (
         conf.CONFIG_SET('HAVE_TRACKER')
         and conf.CONFIG_SET('HAVE_GLIB')
