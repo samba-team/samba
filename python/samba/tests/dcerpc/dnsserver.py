@@ -330,24 +330,79 @@ class DnsserverTests(RpcInterfaceTestCase):
         self.delete_record(self.custom_zone, "testrecord", record_type_str, record_str)
         self.assert_num_records(self.custom_zone, "testrecord", record_type_str, 0)
 
-    def test_dns_tombstoned(self):
-        """
-        See what happens when we set a record to be tombstoned.
-        """
+    def test_dns_tombstoned_zero_timestamp(self):
+        """What happens with a zero EntombedTime tombstone?"""
+        # A zero-timestamp tombstone record has a special meaning for
+        # dns_common_replace(), which is the function exposed by
+        # samdb.dns_replace_by_dn(), and which is *NOT* a general
+        # purpose record replacement function but a specialised part
+        # of the dns update mechanism (for both DLZ and internal).
+        #
+        # In the earlier stages of handling updates, a record that
+        # needs to be deleted is set to be a tombstone with a zero
+        # timestamp. dns_common_replace() notices this specific
+        # marker, and if there are no other records, marks the node as
+        # tombstoned, in the process adding a "real" tombstone.
+        #
+        # If the tombstone has a non-zero timestamp, as you'll see in
+        # the next test, dns_common_replace will decide that the node
+        # is already tombstoned, and that no action needs to be taken.
+        #
+        # This test has worked historically, entirely by accident, as
+        # changing the wType appears to
 
         record_str = "192.168.50.50"
-        record_type_str = "A"
-        self.add_record(self.custom_zone, "testrecord", record_type_str, record_str)
+        self.add_record(self.custom_zone, "testrecord", 'A', record_str)
 
         dn, record = self.get_record_from_db(self.custom_zone, "testrecord")
         record.wType = dnsp.DNS_TYPE_TOMBSTONE
-        res = self.samdb.dns_replace_by_dn(dn, [record])
-        if res is not None:
-            self.fail("Unable to update dns record to be tombstoned.")
+        record.data = 0
+        self.samdb.dns_replace_by_dn(dn, [record])
 
-        self.assert_num_records(self.custom_zone, "testrecord", record_type_str)
-        self.delete_record(self.custom_zone, "testrecord", record_type_str, record_str)
-        self.assert_num_records(self.custom_zone, "testrecord", record_type_str, 0)
+        # there should be no A record, and one TOMBSTONE record.
+        self.assert_num_records(self.custom_zone, "testrecord", 'A', 0)
+        # we can't make assertions about the tombstone count based on
+        # RPC calls, as ther are no tombstones in RPCs (there is
+        # "DNS_TYPE_ZERO" instead). Nor do tombstones show up if we
+        # use DNS_TYPE_ALL.
+        self.assert_num_records(self.custom_zone, "testrecord", 'ALL', 0)
+
+        # But we can use LDAP:
+        records = self.ldap_get_records(self.custom_zone, "testrecord")
+        self.assertEqual(len(records), 1)
+        r = records[0]
+        self.assertEqual(r.wType, dnsp.DNS_TYPE_TOMBSTONE)
+        self.assertGreater(r.data, 1e17) # ~ October 1916
+
+        # this should fail, because no A records.
+        self.delete_record(self.custom_zone, "testrecord", 'A', record_str,
+                           assertion=False)
+
+    def test_dns_tombstoned_nonzero_timestamp(self):
+        """See what happens when we set a record to be tombstoned with an
+        EntombedTime timestamp.
+        """
+        # Because this tombstone has a non-zero EntombedTime,
+        # dns_common_replace() will decide the node was already
+        # tombstoned and there is nothing to be done, leaving the A
+        # record where it was.
+
+        record_str = "192.168.50.50"
+        self.add_record(self.custom_zone, "testrecord", 'A', record_str)
+
+        dn, record = self.get_record_from_db(self.custom_zone, "testrecord")
+        record.wType = dnsp.DNS_TYPE_TOMBSTONE
+        record.data = 0x123456789A
+        self.samdb.dns_replace_by_dn(dn, [record])
+
+        # there should be the A record and no TOMBSTONE
+        self.assert_num_records(self.custom_zone, "testrecord", 'A', 1)
+        self.assert_num_records(self.custom_zone, "testrecord", 'TOMBSTONE', 0)
+        # this should succeed
+        self.delete_record(self.custom_zone, "testrecord", 'A', record_str,
+                           assertion=True)
+        self.assert_num_records(self.custom_zone, "testrecord", 'TOMBSTONE', 0)
+        self.assert_num_records(self.custom_zone, "testrecord", 'A', 0)
 
     def get_record_from_db(self, zone_name, record_name):
         """
@@ -375,6 +430,19 @@ class DnsserverTests(RpcInterfaceTestCase):
             if record_name in str(old_packed_record.dn):
                 rec = ndr_unpack(dnsp.DnssrvRpcRecord, old_packed_record["dnsRecord"][0])
                 return (old_packed_record.dn, rec)
+
+    def ldap_get_records(self, zone, name):
+        zone_dn = (f"DC={zone},CN=MicrosoftDNS,DC=DomainDNSZones,"
+                   f"{self.samdb.get_default_basedn()}")
+
+        expr = f"(&(objectClass=dnsNode)(name={name}))"
+        nodes = self.samdb.search(base=zone_dn,
+                                  scope=ldb.SCOPE_SUBTREE,
+                                  expression=expr,
+                                  attrs=["dnsRecord"])
+
+        records = nodes[0].get('dnsRecord')
+        return [ndr_unpack(dnsp.DnssrvRpcRecord, r) for r in records]
 
     def test_duplicate_matching(self):
         """
