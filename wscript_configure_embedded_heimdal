@@ -1,1 +1,4 @@
+if not conf.env['FLEX']:
+    conf.fatal("Embedded Heimdal build requires flex but it was not found.  Install flex or use --with-system-mitkrb5 or --with-system-heimdalkrb5")
+
 conf.RECURSE('source4/heimdal_build')

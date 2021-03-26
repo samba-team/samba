@@ -240,6 +240,19 @@ def configure(conf):
     if not (Options.options.without_ad_dc):
         conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
 
+    # Check for flex before doing the embedded heimdal checks so we can bail if we don't have it.
+    Logs.info("Checking for flex")
+    conf.find_program('flex', var='FLEX')
+    if conf.env['FLEX']:
+        conf.CHECK_COMMAND('%s --version' % conf.env.FLEX[0],
+                           msg='Using flex version',
+                           define=None,
+                           on_target=False)
+    conf.env.FLEXFLAGS = ['-t']
+
+    # #line statements in these generated files cause issues for lcov
+    conf.env.FLEXFLAGS += ["--noline"]
+
     if Options.options.with_system_mitkrb5:
         if not Options.options.with_experimental_mit_ad_dc and \
            not Options.options.without_ad_dc:
@@ -371,9 +384,6 @@ def configure(conf):
         if conf.check_cc(cflags='', ldflags='-Wl,-z,relro,-z,now', mandatory=need_relro,
                          msg="Checking compiler for full RELRO support"):
             conf.env['ENABLE_RELRO'] = True
-
-    # #line statements in these generated files cause issues for lcov
-    conf.env.FLEXFLAGS += ["--noline"]
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
