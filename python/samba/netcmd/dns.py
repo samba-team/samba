@@ -40,7 +40,7 @@ from samba.netcmd import (
 )
 from samba.dcerpc import dnsp, dnsserver
 
-from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNAMERecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
+from samba.dnsserver import record_from_string, DNSParseError
 
 
 def dns_connect(server, lp, creds):
@@ -406,51 +406,11 @@ def print_dnsrecords(outf, records):
 
 # Convert data into a dns record
 def data_to_dns_record(record_type, data):
-    if record_type == dnsp.DNS_TYPE_A:
-        rec = ARecord(data)
-    elif record_type == dnsp.DNS_TYPE_AAAA:
-        rec = AAAARecord(data)
-    elif record_type == dnsp.DNS_TYPE_PTR:
-        rec = PTRRecord(data)
-    elif record_type == dnsp.DNS_TYPE_CNAME:
-        rec = CNAMERecord(data)
-    elif record_type == dnsp.DNS_TYPE_NS:
-        rec = NSRecord(data)
-    elif record_type == dnsp.DNS_TYPE_MX:
-        tmp = data.split()
-        if len(tmp) != 2:
-            raise CommandError('Data requires 2 elements - mail_server, preference')
-        mail_server = tmp[0]
-        preference = int(tmp[1])
-        rec = MXRecord(mail_server, preference)
-    elif record_type == dnsp.DNS_TYPE_SRV:
-        tmp = data.split()
-        if len(tmp) != 4:
-            raise CommandError('Data requires 4 elements - server, port, priority, weight')
-        server = tmp[0]
-        port = int(tmp[1])
-        priority = int(tmp[2])
-        weight = int(tmp[3])
-        rec = SRVRecord(server, port, priority=priority, weight=weight)
-    elif record_type == dnsp.DNS_TYPE_SOA:
-        tmp = data.split()
-        if len(tmp) != 7:
-            raise CommandError('Data requires 7 elements - nameserver, email, serial, '
-                               'refresh, retry, expire, minimumttl')
-        nameserver = tmp[0]
-        email = tmp[1]
-        serial = int(tmp[2])
-        refresh = int(tmp[3])
-        retry = int(tmp[4])
-        expire = int(tmp[5])
-        minimum = int(tmp[6])
-        rec = SOARecord(nameserver, email, serial=serial, refresh=refresh,
-                        retry=retry, expire=expire, minimum=minimum)
-    elif record_type == dnsp.DNS_TYPE_TXT:
-        slist = shlex.split(data)
-        rec = TXTRecord(slist)
-    else:
-        raise CommandError('Unsupported record type')
+    try:
+        rec = record_from_string(record_type, data)
+    except DNSParseError as e:
+        raise CommandError(*e.args) from None
+
     return rec
 
 
