@@ -1547,6 +1547,7 @@ extern void build_options(bool screen);
 	int opt;
 	poptContext pc;
 	bool print_build_options = False;
+	bool serving_printers = false;
 	struct server_id main_server_id = {0};
         enum {
 		OPT_DAEMON = 1000,
@@ -2108,6 +2109,9 @@ extern void build_options(bool screen);
 		daemon_ready("smbd");
 	}
 
+	serving_printers = (!lp__disable_spoolss() &&
+			    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED));
+
 	/* only start other daemons if we are running as a daemon
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */
@@ -2125,8 +2129,7 @@ extern void build_options(bool screen);
 			start_fssd(ev_ctx, msg_ctx, dce_ctx);
 		}
 
-		if (!lp__disable_spoolss() &&
-		    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
+		if (serving_printers) {
 			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
 			bool ok = printing_subsystem_init(ev_ctx,
 							  msg_ctx,
@@ -2144,8 +2147,7 @@ extern void build_options(bool screen);
 			start_mdssd(ev_ctx, msg_ctx, dce_ctx);
 		}
 #endif
-	} else if (!lp__disable_spoolss() &&
-		   (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
+	} else if (serving_printers) {
 		bool ok = printing_subsystem_init(ev_ctx,
 						  msg_ctx,
 						  dce_ctx,
