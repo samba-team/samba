@@ -18,7 +18,6 @@
  */
 
 #include "includes.h"
-#include "auth_info.h"
 
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
