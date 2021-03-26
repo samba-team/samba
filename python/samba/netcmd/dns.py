@@ -40,7 +40,7 @@ from samba.netcmd import (
 )
 from samba.dcerpc import dnsp, dnsserver
 
-from samba.dnsserver import record_from_string, DNSParseError
+from samba.dnsserver import record_from_string, DNSParseError, flag_from_string
 
 
 def dns_connect(server, lp, creds):
@@ -166,30 +166,10 @@ def dns_addr_array_string(array):
 
 
 def dns_type_flag(rec_type):
-    rtype = rec_type.upper()
-    if rtype == 'A':
-        record_type = dnsp.DNS_TYPE_A
-    elif rtype == 'AAAA':
-        record_type = dnsp.DNS_TYPE_AAAA
-    elif rtype == 'PTR':
-        record_type = dnsp.DNS_TYPE_PTR
-    elif rtype == 'NS':
-        record_type = dnsp.DNS_TYPE_NS
-    elif rtype == 'CNAME':
-        record_type = dnsp.DNS_TYPE_CNAME
-    elif rtype == 'SOA':
-        record_type = dnsp.DNS_TYPE_SOA
-    elif rtype == 'MX':
-        record_type = dnsp.DNS_TYPE_MX
-    elif rtype == 'SRV':
-        record_type = dnsp.DNS_TYPE_SRV
-    elif rtype == 'TXT':
-        record_type = dnsp.DNS_TYPE_TXT
-    elif rtype == 'ALL':
-        record_type = dnsp.DNS_TYPE_ALL
-    else:
-        raise CommandError('Unknown type of DNS record %s' % rec_type)
-    return record_type
+    try:
+        return flag_from_string(rec_type)
+    except DNSParseError as e:
+        raise CommandError(*e.args)
 
 
 def dns_client_version(cli_version):
