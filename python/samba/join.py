@@ -41,7 +41,7 @@ from samba import werror
 from base64 import b64encode
 from samba import WERRORError, NTSTATUSError
 from samba import sd_utils
-from samba.dnsserver import ARecord, AAAARecord, CNameRecord
+from samba.dnsserver import ARecord, AAAARecord, CNAMERecord
 import logging
 import random
 import time
@@ -1192,7 +1192,7 @@ class DCJoinContext(object):
                             % (msdcs_cname, msdcs_zone, cname_target))
 
             add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
-            rec = CNameRecord(cname_target)
+            rec = CNAMERecord(cname_target)
             add_rec_buf.rec = rec
             dns_conn.DnssrvUpdateRecord2(client_version,
                                          0,

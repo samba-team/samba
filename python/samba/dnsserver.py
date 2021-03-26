@@ -65,11 +65,11 @@ class PTRRecord(dnsserver.DNS_RPC_RECORD):
         self.data = ptr_name
 
 
-class CNameRecord(dnsserver.DNS_RPC_RECORD):
+class CNAMERecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, cname, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(CNameRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_CNAME
         self.dwFlags = rank | node_flag
         self.dwSerial = serial

@@ -40,7 +40,7 @@ from samba.netcmd import (
 )
 from samba.dcerpc import dnsp, dnsserver
 
-from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
+from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNAMERecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
 
 
 def dns_connect(server, lp, creds):
@@ -413,7 +413,7 @@ def data_to_dns_record(record_type, data):
     elif record_type == dnsp.DNS_TYPE_PTR:
         rec = PTRRecord(data)
     elif record_type == dnsp.DNS_TYPE_CNAME:
-        rec = CNameRecord(data)
+        rec = CNAMERecord(data)
     elif record_type == dnsp.DNS_TYPE_NS:
         rec = NSRecord(data)
     elif record_type == dnsp.DNS_TYPE_MX:
