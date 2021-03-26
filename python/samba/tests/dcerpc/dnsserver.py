@@ -26,7 +26,7 @@ from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import dnsp, dnsserver, security
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
-from samba.dnsserver import record_from_string, ARecord
+from samba.dnsserver import record_from_string, flag_from_string, ARecord
 from samba import sd_utils, descriptor
 from samba import WERRORError, werror
 
@@ -178,7 +178,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                  self.custom_zone,
                                                  "@",
                                                  None,
-                                                 self.record_type_int(record_type_str),
+                                                 flag_from_string(record_type_str),
                                                  dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
                                                  None,
                                                  None)
@@ -219,7 +219,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                  self.custom_zone,
                                                  "@",
                                                  None,
-                                                 self.record_type_int(record_type_str),
+                                                 flag_from_string(record_type_str),
                                                  dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
                                                  None,
                                                  None)
@@ -261,7 +261,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                  self.custom_zone,
                                                  "a.b",
                                                  None,
-                                                 self.record_type_int(record_type_str),
+                                                 flag_from_string(record_type_str),
                                                  dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
                                                  None,
                                                  None)
@@ -291,7 +291,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                  self.custom_zone,
                                                  "a.b",
                                                  None,
-                                                 self.record_type_int(record_type_str),
+                                                 flag_from_string(record_type_str),
                                                  dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
                                                  None,
                                                  None)
@@ -734,13 +734,10 @@ class DnsserverTests(RpcInterfaceTestCase):
                                             zone,
                                             name,
                                             None,
-                                            self.record_type_int(record_type_str),
+                                            flag_from_string(record_type_str),
                                             dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA | dnsserver.DNS_RPC_VIEW_NO_CHILDREN,
                                             None,
                                             None)
-
-    def record_type_int(self, s):
-        return getattr(dnsp, 'DNS_TYPE_' + s)
 
     def add_record(self, zone, name, record_type_str, record_str,
                    assertion=True, client_version=dnsserver.DNS_CLIENT_VERSION_LONGHORN):
