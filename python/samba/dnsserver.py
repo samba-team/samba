@@ -18,10 +18,26 @@
 
 from samba.dcerpc import dnsserver, dnsp
 
+# Note: these are not quite the same as similar looking classes in
+# provision/sambadns.py -- those ones are based on
+# dnsp.DnssrvRpcRecord, these are based on dnsserver.DNS_RPC_RECORD.
+# They encode the same information in slightly different ways.
 #
-# Always create a copy of strings when creating DNS_RPC_RECORDs
-# to overcome the bug in pidl generated python bindings.
+# DNS_RPC_RECORD structures ([MS-DNSP]2.2.2.2.5 "DNS_RPC_RECORD") are
+# used on the wire by DnssrvEnumRecords2. The dnsp.DnssrvRpcRecord
+# versions have the in-database version of the same information, where
+# the flags field is unpacked, and the struct ordering is different.
+# See [MS-DNSP] 2.3.2.2 "DnsRecord".
 #
+# In both cases the structure and contents of .data depend on .wType.
+# For example, if .wType is DNS_TYPE_A, .data is an IPv4 address. If
+# the .wType is changed to DNS_TYPE_CNAME, the contents of .data will
+# be interpreted as a cname blob, but the bytes there will still be
+# those of the IPv4 address. If you don't also set the .data you may
+# encounter stability problems. These DNS_RPC_RECORD subclasses
+# attempt to hide that from you, but are only pretending -- any of
+# them can represent any type of record.
+
 
 
 class ARecord(dnsserver.DNS_RPC_RECORD):
