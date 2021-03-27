@@ -26,7 +26,7 @@ from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import dnsp, dnsserver, security
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
-from samba.netcmd.dns import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SRVRecord, TXTRecord
+from samba.dnsserver import record_from_string, ARecord
 from samba import sd_utils, descriptor
 from samba import WERRORError, werror
 
@@ -739,30 +739,6 @@ class DnsserverTests(RpcInterfaceTestCase):
                                             None,
                                             None)
 
-    def record_obj_from_str(self, record_type_str, record_str):
-        if record_type_str == 'A':
-            return ARecord(record_str)
-        elif record_type_str == 'AAAA':
-            return AAAARecord(record_str)
-        elif record_type_str == 'PTR':
-            return PTRRecord(record_str)
-        elif record_type_str == 'CNAME':
-            return CNameRecord(record_str)
-        elif record_type_str == 'NS':
-            return NSRecord(record_str)
-        elif record_type_str == 'MX':
-            split = record_str.split(' ')
-            return MXRecord(split[0], int(split[1]))
-        elif record_type_str == 'SRV':
-            split = record_str.split(' ')
-            target = split[0]
-            port = int(split[1])
-            priority = int(split[2])
-            weight = int(split[3])
-            return SRVRecord(target, port, priority, weight)
-        elif record_type_str == 'TXT':
-            return TXTRecord(record_str)
-
     def record_type_int(self, s):
         return getattr(dnsp, 'DNS_TYPE_' + s)
 
@@ -774,7 +750,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         Also asserts whether or not the add was successful.
         This can also update existing records if they have the same name.
         """
-        record = self.record_obj_from_str(record_type_str, record_str)
+        record = record_from_string(record_type_str, record_str, sep=' ')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = record
 
@@ -801,7 +777,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         from the given zone.
         Also asserts whether or not the deletion was successful.
         """
-        record = self.record_obj_from_str(record_type_str, record_str)
+        record = record_from_string(record_type_str, record_str, sep=' ')
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = record
 
@@ -990,7 +966,6 @@ class DnsserverTests(RpcInterfaceTestCase):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
         record_type = dnsp.DNS_TYPE_A
         select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA
-
         name = 'dummy'
         rec = ARecord('1.2.3.4')
         rec2 = ARecord('5.6.7.8')
