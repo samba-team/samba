@@ -1017,7 +1017,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 	const char **names = NULL;
 	uint32_t offset = 0, num_vals = 0;
 	DATA_BLOB result = data_blob_null;
-	int i = 0;
+	uint32_t i = 0;
 	WERROR err = WERR_OK;
 
 	if (!regkey) {
