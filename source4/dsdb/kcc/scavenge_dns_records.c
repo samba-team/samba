@@ -324,17 +324,20 @@ NTSTATUS dns_tombstone_records(TALLOC_CTX *mem_ctx,
 	struct dnsp_DnssrvRpcRecord tombstone_struct;
 	struct ldb_val tombstone_blob;
 	struct ldb_val true_struct;
-	NTTIME t;
+	uint32_t dns_timestamp;
+	NTTIME nttime;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint8_t true_str[4] = "TRUE";
+	time_t unix_now = time(NULL);
 
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10 * 1000 * 1000;
-	t /= 3600;
+	unix_to_nt_time(&nttime, unix_now);
+	dns_timestamp = unix_to_dns_timestamp(unix_now);
 
 	tombstone_struct = (struct dnsp_DnssrvRpcRecord){
-	    .wType = DNS_TYPE_TOMBSTONE, .data = {.EntombedTime = t}};
+	    .wType = DNS_TYPE_TOMBSTONE,
+	    .data = {.EntombedTime = nttime}
+	};
 
 	true_struct = (struct ldb_val){.data = true_str, .length = 4};
 
@@ -358,7 +361,7 @@ NTSTATUS dns_tombstone_records(TALLOC_CTX *mem_ctx,
 						 z,
 						 &true_struct,
 						 &tombstone_blob,
-						 t,
+						 dns_timestamp,
 						 error_string);
 		TALLOC_FREE(tmp_ctx);
 		if (NT_STATUS_EQUAL(ret, NT_STATUS_PROPSET_NOT_FOUND)) {
