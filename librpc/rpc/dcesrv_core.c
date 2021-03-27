@@ -33,6 +33,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "system/network.h"
 
 
 #undef DBGC_CLASS
@@ -2633,16 +2634,6 @@ _PUBLIC_ void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)
 		dcesrv_terminate_connection(cur, cur->terminate);
 	}
 }
-
-/* We need this include to be able to compile on some plateforms
- * (ie. freebsd 7.2) as it seems that <sys/uio.h> is not included
- * correctly.
- * It has to be that deep because otherwise we have a conflict on
- * const struct dcesrv_interface declaration.
- * This is mostly due to socket_wrapper defining #define bind swrap_bind
- * which conflict with the bind used before.
- */
-#include "system/network.h"
 
 struct dcesrv_sock_reply_state {
 	struct dcesrv_connection *dce_conn;
