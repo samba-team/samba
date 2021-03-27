@@ -325,6 +325,48 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_dns_unix_to_dns_timestamp(PyObject *self, PyObject *args)
+{
+	uint32_t timestamp;
+	time_t t;
+	long long lt;
+
+	if (!PyArg_ParseTuple(args, "L", &lt)) {
+		return NULL;
+	}
+
+	t = lt;
+	if (t != lt) {
+		/* time_t is presumably 32 bit here */
+		PyErr_SetString(PyExc_ValueError, "Time out of range");
+		return NULL;
+	}
+	timestamp = unix_to_dns_timestamp(t);
+	return Py_BuildValue("k", (unsigned long) timestamp);
+}
+
+static PyObject *py_dsdb_dns_timestamp_to_nt_time(PyObject *self, PyObject *args)
+{
+	unsigned long long timestamp;
+	NTSTATUS status;
+	NTTIME nt;
+	if (!PyArg_ParseTuple(args, "K", &timestamp)) {
+		return NULL;
+	}
+
+	if (timestamp > UINT32_MAX || timestamp < 0) {
+		PyErr_SetString(PyExc_ValueError, "Time out of range");
+		return NULL;
+	}
+	status = dns_timestamp_to_nt_time(&nt, (uint32_t)timestamp);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_ValueError, "Time out of range");
+		return NULL;
+	}
+	return Py_BuildValue("L", (long long) nt);
+}
+
+
 static PyMethodDef py_dsdb_dns_methods[] = {
 
 	{ "lookup", PY_DISCARD_FUNC_SIG(PyCFunction, py_dsdb_dns_lookup),
@@ -336,6 +378,12 @@ static PyMethodDef py_dsdb_dns_methods[] = {
 		METH_VARARGS, "Replace the DNS database entries for a LDB DN"},
 	{ "extract", (PyCFunction)py_dsdb_dns_extract,
 		METH_VARARGS, "Return the DNS database entry as a python structure from an Ldb.MessageElement of type dnsRecord"},
+	{ "unix_to_dns_timestamp", (PyCFunction)py_dsdb_dns_unix_to_dns_timestamp,
+	  METH_VARARGS,
+	  "Convert a time.time() value to a dns timestamp (hours since 1601)"},
+	{ "dns_timestamp_to_nt_time", (PyCFunction)py_dsdb_dns_timestamp_to_nt_time,
+	  METH_VARARGS,
+	  "Convert a dns timestamp to an NTTIME value"},
 	{0}
 };
 
