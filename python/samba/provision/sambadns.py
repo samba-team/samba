@@ -97,10 +97,10 @@ class AAAARecord(dnsp.DnssrvRpcRecord):
         self.data = ip6_addr
 
 
-class CNameRecord(dnsp.DnssrvRpcRecord):
+class CNAMERecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, cname, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
-        super(CNameRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_CNAME
         self.rank = rank
         self.dwSerial = serial
@@ -447,7 +447,7 @@ def add_ns_glue_record(samdb, container_dn, prefix, host):
 
 
 def add_cname_record(samdb, container_dn, prefix, host):
-    cname_record = CNameRecord(host)
+    cname_record = CNAMERecord(host)
     msg = ldb.Message(ldb.Dn(samdb, "%s,%s" % (prefix, container_dn)))
     msg["objectClass"] = ["top", "dnsNode"]
     msg["dnsRecord"] = ldb.MessageElement(ndr_pack(cname_record), ldb.FLAG_MOD_ADD, "dnsRecord")

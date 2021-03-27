@@ -52,7 +52,7 @@ from samba.provision.common import (
 from samba.provision.sambadns import (
     ARecord,
     AAAARecord,
-    CNameRecord,
+    CNAMERecord,
     NSRecord,
     SOARecord,
     SRVRecord,
@@ -92,7 +92,7 @@ def convert_dns_rdata(rdata, serial=1):
     elif rdata.rdtype == dns.rdatatype.AAAA:
         rec = AAAARecord(rdata.address, serial=serial)
     elif rdata.rdtype == dns.rdatatype.CNAME:
-        rec = CNameRecord(rdata.target.to_text(), serial=serial)
+        rec = CNAMERecord(rdata.target.to_text(), serial=serial)
     elif rdata.rdtype == dns.rdatatype.NS:
         rec = NSRecord(rdata.target.to_text(), serial=serial)
     elif rdata.rdtype == dns.rdatatype.SRV:
