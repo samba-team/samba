@@ -41,8 +41,3 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 				    struct ldb_val *tombstone_blob,
 				    uint32_t dns_timestamp,
 				    char **error_string);
-
-NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
-			      struct ldb_message_element *old_el,
-			      struct ldb_message_element *el,
-			      uint32_t dns_timestamp);

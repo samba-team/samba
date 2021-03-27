@@ -43,10 +43,10 @@
 /*
  * Copy only non-expired dns records from one message element to another.
  */
-NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
-			      struct ldb_message_element *old_el,
-			      struct ldb_message_element *el,
-			      uint32_t dns_timestamp)
+static NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
+				     struct ldb_message_element *old_el,
+				     struct ldb_message_element *el,
+				     uint32_t dns_timestamp)
 {
 	unsigned int i, num_kept = 0;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
