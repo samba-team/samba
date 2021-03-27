@@ -46,7 +46,7 @@
 NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
 			      struct ldb_message_element *old_el,
 			      struct ldb_message_element *el,
-			      NTTIME t)
+			      uint32_t dns_timestamp)
 {
 	unsigned int i, num_kept = 0;
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
@@ -75,7 +75,7 @@ NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
 			DBG_ERR("Failed to pull dns rec blob.\n");
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		if (recs[num_kept].dwTimeStamp > t ||
+		if (recs[num_kept].dwTimeStamp > dns_timestamp ||
 		    recs[num_kept].dwTimeStamp == 0) {
 			num_kept++;
 		}
@@ -117,7 +117,7 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 				    struct dns_server_zone *zone,
 				    struct ldb_val *true_struct,
 				    struct ldb_val *tombstone_blob,
-				    NTTIME t,
+				    uint32_t dns_timestamp,
 				    char **error_string)
 {
 	WERROR werr;
@@ -154,7 +154,7 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 
 	/* Subtract them from current time to get the earliest possible.
 	 * timestamp allowed for a non-expired DNS record. */
-	t -= zi->dwNoRefreshInterval + zi->dwRefreshInterval;
+	dns_timestamp -= zi->dwNoRefreshInterval + zi->dwRefreshInterval;
 
 	/* Custom match gets dns records in the zone with dwTimeStamp < t. */
 	ret = ldb_search(samdb,
@@ -166,8 +166,8 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			 "(&(objectClass=dnsNode)"
 			 "(&(!(dnsTombstoned=TRUE))"
 			 "(dnsRecord:" DSDB_MATCH_FOR_DNS_TO_TOMBSTONE_TIME
-			 ":=%"PRIu64")))",
-			 t);
+			 ":=%"PRIu32")))",
+			 dns_timestamp);
 	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx,
 						"Failed to search for dns "
@@ -213,7 +213,7 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 		}
 
 		el->num_values = old_el->num_values;
-		status = copy_current_records(mem_ctx, old_el, el, t);
+		status = copy_current_records(mem_ctx, old_el, el, dns_timestamp);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(old_msg);
