@@ -330,11 +330,10 @@ static NTSTATUS enum_devices_in_toc(struct gp_inifile_context *ctx,
 				    const char ***pdevice_values)
 {
 	NTSTATUS status;
-	size_t num_manufacturers = 0;
+	size_t i, num_manufacturers = 0;
 	const char **manufacturers = NULL;
 	const char **values = NULL;
 	char *p;
-	int i;
 	bool ok;
 
 	status = gp_inifile_enum_section(ctx, "Manufacturer", &num_manufacturers, &manufacturers, &values);
@@ -370,10 +369,9 @@ static NTSTATUS enum_devices_in_toc(struct gp_inifile_context *ctx,
 			 */
 
 			const char *decorated_models_section_name;
-			size_t num_devices = 0;
+			size_t d, num_devices = 0;
 			const char **devices = NULL;
 			const char **device_values = NULL;
-			int d;
 			size_t c = 0;
 
 			decorated_models_section_name = talloc_asprintf(mem_ctx, "%s.%s",
@@ -430,10 +428,9 @@ static NTSTATUS find_device_in_toc(struct gp_inifile_context *ctx,
 				   const char **value)
 {
 	NTSTATUS status;
-	size_t num_devices = 0;
+	size_t d, num_devices = 0;
 	const char **devices = NULL;
 	const char **device_values = NULL;
-	int d;
 
 	if (device_description == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -477,11 +474,10 @@ static NTSTATUS process_driver_section_copyfiles(struct gp_inifile_context *ctx,
 						 struct spoolss_AddDriverInfo8 *r)
 {
 	NTSTATUS status;
-	size_t num_keys = 0;
+	size_t i, num_keys = 0;
 	char *p, *key;
 	const char **keys = NULL;
 	const char **values = NULL;
-	int i;
 	char *str;
 	const char *s;
 
@@ -643,10 +639,9 @@ static NTSTATUS process_one_core_driver_section(struct gp_inifile_context *core_
 						struct spoolss_AddDriverInfo8 *r)
 {
 	NTSTATUS status;
-	size_t num_keys = 0;
+	size_t i, num_keys = 0;
 	const char **keys = NULL;
 	const char **values = NULL;
-	int i;
 
 	DEBUG(10,("CoreDriverSection is: %s\n", driver_section));
 
@@ -924,10 +919,9 @@ static NTSTATUS process_source_disk_name(struct gp_inifile_context *ctx,
 	NTSTATUS status;
 	bool ok;
 	const char *key;
-	size_t num_keys = 0;
+	size_t i, num_keys = 0;
 	const char **keys = NULL;
 	const char **values = NULL;
-	int i;
 
 	key = talloc_asprintf(mem_ctx, "SourceDisksNames.%s", short_environment);
 	if (key == NULL) {
@@ -1207,11 +1201,10 @@ NTSTATUS driver_inf_list(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	const char *short_environment;
-	size_t num_devices = 0;
+	size_t d, num_devices = 0;
 	const char **devices = NULL;
 	const char **device_values = NULL;
 	struct inf_context *inf_ctx;
-	int d;
 
 	if (!filename || !environment) {
 		return NT_STATUS_INVALID_PARAMETER;
