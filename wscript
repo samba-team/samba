@@ -340,7 +340,8 @@ def configure(conf):
     # allows us to find problems on our development hosts faster.
     # It also results in faster load time.
 
-    conf.add_as_needed()
+    if conf.CHECK_LDFLAGS('-Wl,--as-needed'):
+        conf.env.append_unique('LINKFLAGS', '-Wl,--as-needed')
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
