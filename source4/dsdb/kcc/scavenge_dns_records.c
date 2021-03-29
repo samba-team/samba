@@ -229,8 +229,6 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		el->flags = LDB_FLAG_MOD_ADD;
-
 		/* If everything was expired, we tombstone the node. */
 		if (el->num_values == 0) {
 			el->values = tombstone_blob;
