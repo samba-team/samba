@@ -396,9 +396,8 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	struct ldb_message_element *el = NULL;
-	struct dnsp_DnssrvRpcRecord *rec = NULL;
+	struct dnsp_DnssrvRpcRecord rec = {0};
 	const char *attrs[] = {"dnsRecord", "dNSTombstoned", NULL};
-	rec = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
 
 	current_time = unix_to_dns_timestamp(time(NULL));
 
@@ -458,7 +457,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			ndr_err = ndr_pull_struct_blob(
 			    el->values,
 			    tmp_ctx,
-			    rec,
+			    &rec,
 			    (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				TALLOC_FREE(tmp_ctx);
@@ -466,11 +465,11 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 
-			if (rec->wType != DNS_TYPE_TOMBSTONE) {
+			if (rec.wType != DNS_TYPE_TOMBSTONE) {
 				continue;
 			}
 
-			if (rec->data.EntombedTime > tombstone_nttime) {
+			if (rec.data.EntombedTime > tombstone_nttime) {
 				continue;
 			}
 			/*
@@ -489,8 +488,8 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			 * 4383000 would be a fine threshold. We round up to
 			 * the crore-second (c. 2741CE) in honour of NTTIME.
 			 */
-			if ((rec->data.EntombedTime < 10000000) &&
-			    (rec->data.EntombedTime > tombstone_hours)) {
+			if ((rec.data.EntombedTime < 10000000) &&
+			    (rec.data.EntombedTime > tombstone_hours)) {
 				continue;
 			}
 
