@@ -13,7 +13,6 @@ import build.charset
 from wafsamba import samba_utils
 from samba_utils import TO_LIST
 import samba3
-from waflib.Tools import bison
 
 default_prefix = Options.default_prefix = '/usr/local/samba'
 
@@ -1814,14 +1813,6 @@ main() {
             conf.env['libtracker'] = testlib
             conf.DEFINE('HAVE_TRACKER', '1')
             break
-
-    Logs.info("Checking for bison")
-    bison.configure(conf)
-    if conf.env['BISON']:
-        conf.CHECK_COMMAND('%s --version  | head -n1' % conf.env.BISON[0],
-                           msg='Using bison version',
-                           define=None,
-                           on_target=False)
 
     with_spotlight_tracker_backend = (
         conf.CONFIG_SET('HAVE_TRACKER')

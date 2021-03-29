@@ -11,6 +11,7 @@ sys.path.insert(0, top+"/buildtools/wafsamba")
 import shutil
 import wafsamba, samba_dist, samba_git, samba_version, samba_utils
 from waflib import Options, Scripting, Logs, Context, Errors
+from waflib.Tools import bison
 
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
@@ -244,6 +245,17 @@ def configure(conf):
 
     # #line statements in these generated files cause issues for lcov
     conf.env.FLEXFLAGS += ["--noline"]
+
+    Logs.info("Checking for bison")
+    bison.configure(conf)
+    if conf.env['BISON']:
+        conf.CHECK_COMMAND('%s --version  | head -n1' % conf.env.BISON[0],
+                           msg='Using bison version',
+                           define=None,
+                           on_target=False)
+
+    # #line statements in these generated files cause issues for lcov
+    conf.env.BISONFLAGS += ["--no-line"]
 
     if Options.options.with_system_mitkrb5:
         if not Options.options.with_experimental_mit_ad_dc and \

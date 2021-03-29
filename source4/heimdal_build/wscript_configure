@@ -82,6 +82,12 @@ for flag in heimdal_no_error_flags:
 
 if len(bld.env.HEIMDAL_PICKY_CFLAGS) == len(heimdal_no_error_flags):
     conf.env.enable_heimdal_warnings = True
+else:
+    # Needed on CentOS 7 and Ubuntu 16.04 only for Bison generated
+    # files when we are not doing strict warnings -> errors
+    conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS',
+                          '-Wno-strict-overflow',
+                          testflags=True)
 
 conf.DEFINE('SAMBA4_USES_HEIMDAL', 1)
 
