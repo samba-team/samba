@@ -1166,21 +1166,27 @@ void anonymous_shared_free(void *ptr)
 */
 void samba_start_debugger(void)
 {
-	char *cmd = NULL;
+	pid_t pid = fork();
+	if (pid == -1) {
+		return;
+	} else if (pid) {
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
-	/*
-	 * Make sure all children can attach a debugger.
-	 */
-	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
+		/*
+		 * Make sure the child process can attach a debugger.
+		 */
+		prctl(PR_SET_PTRACER, pid, 0, 0, 0);
 #endif
-	if (asprintf(&cmd, "xterm -e \"gdb --pid %u\"&", getpid()) == -1) {
-		return;
-	}
-	if (system(cmd) == -1) {
+		sleep(2);
+	} else {
+		char *cmd = NULL;
+
+		if (asprintf(&cmd, "gdb --pid %u", getppid()) == -1) {
+			_exit(EXIT_FAILURE);
+		}
+
+		execlp("xterm", "xterm", "-e", cmd, (char *) NULL);
 		free(cmd);
-		return;
+		_exit(errno);
 	}
-	free(cmd);
-	sleep(2);
 }
 #endif
