@@ -3030,6 +3030,10 @@ static int net_ads_keytab_flush(struct net_context *c, int argc, const char **ar
 		return 0;
 	}
 
+	if (!c->opt_user_specified && c->opt_password == NULL) {
+		net_use_krb_machine_account(c);
+	}
+
 	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
 		return -1;
 	}
@@ -3058,6 +3062,11 @@ static int net_ads_keytab_add(struct net_context *c,
 	}
 
 	d_printf(_("Processing principals to add...\n"));
+
+	if (!c->opt_user_specified && c->opt_password == NULL) {
+		net_use_krb_machine_account(c);
+	}
+
 	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
 		return -1;
 	}
@@ -3094,6 +3103,10 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			 _("Usage:"),
 			 _("Create new default keytab"));
 		return 0;
+	}
+
+	if (!c->opt_user_specified && c->opt_password == NULL) {
+		net_use_krb_machine_account(c);
 	}
 
 	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
