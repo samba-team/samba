@@ -48,64 +48,33 @@ static NTSTATUS copy_current_records(TALLOC_CTX *mem_ctx,
 				     struct ldb_message_element *el,
 				     uint32_t dns_timestamp)
 {
-	unsigned int i, num_kept = 0;
-	struct dnsp_DnssrvRpcRecord *recs = NULL;
+	unsigned int i;
+	struct dnsp_DnssrvRpcRecord rec;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
-	if (tmp_ctx == NULL) {
+	el->values = talloc_zero_array(mem_ctx, struct ldb_val,
+				       old_el->num_values);
+	if (el->values == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	recs = talloc_zero_array(
-	    tmp_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
-	if (recs == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i = 0; i < el->num_values; i++) {
+	for (i = 0; i < old_el->num_values; i++) {
 		ndr_err = ndr_pull_struct_blob(
 		    &(old_el->values[i]),
-		    tmp_ctx,
-		    &(recs[num_kept]),
+		    mem_ctx,
+		    &rec,
 		    (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			TALLOC_FREE(tmp_ctx);
 			DBG_ERR("Failed to pull dns rec blob.\n");
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		if (recs[num_kept].dwTimeStamp > dns_timestamp ||
-		    recs[num_kept].dwTimeStamp == 0) {
-			num_kept++;
+		if (rec.dwTimeStamp > dns_timestamp ||
+		    rec.dwTimeStamp == 0) {
+			el->values[el->num_values] = old_el->values[i];
+			el->num_values++;
 		}
 	}
 
-	if (num_kept == el->num_values) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_OK;
-	}
-
-	el->values = talloc_zero_array(mem_ctx, struct ldb_val, num_kept);
-	if (el->values == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	el->num_values = num_kept;
-	for (i = 0; i < el->num_values; i++) {
-		ndr_err = ndr_push_struct_blob(
-		    &(el->values[i]),
-		    mem_ctx,
-		    &(recs[i]),
-		    (ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			TALLOC_FREE(tmp_ctx);
-			DBG_ERR("Failed to push dnsp_DnssrvRpcRecord\n");
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-
-	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -235,7 +204,6 @@ static NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		el->num_values = old_el->num_values;
 		status = copy_current_records(mem_ctx, old_el, el, dns_timestamp);
 
 		if (!NT_STATUS_IS_OK(status)) {
