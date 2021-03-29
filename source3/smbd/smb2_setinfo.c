@@ -214,6 +214,7 @@ static bool delay_rename_lease_break_fn(
 		return false;
 	}
 
+	state->delay = true;
 	break_to = (e_lease_type & ~SMB2_LEASE_HANDLE);
 
 	send_break_message(
