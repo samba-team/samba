@@ -337,13 +337,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_dn *user_dn = NULL;
 	int ret;
-	struct ldb_message **res;
-	const char * const attrs[] = { "unicodePwd", "dBCSPwd",
-				       "userAccountControl",
-				       "msDS-ResultantPSO",
-				       "msDS-User-Account-Control-Computed",
-				       "badPwdCount", "badPasswordTime",
-				       "objectSid", NULL };
+	struct ldb_message *msg = NULL;
 	struct samr_Password *nt_pwd, *lm_pwd;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
@@ -380,24 +374,26 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	/* we need the users dn and the domain dn (derived from the
-	   user SID). We also need the current lm and nt password hashes
-	   in order to decrypt the incoming passwords */
-	ret = gendb_search(sam_ctx,
-			   mem_ctx, NULL, &res, attrs,
-			   "(&(sAMAccountName=%s)(objectclass=user))",
-			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
-	if (ret != 1) {
-		status = NT_STATUS_NO_SUCH_USER; /* Converted to WRONG_PASSWORD below */
+	/*
+	 * We use authsam_search_account() to be consistent with the
+	 * other callers in the bad password and audit log handling
+	 * systems.  It ensures we get DSDB_SEARCH_SHOW_EXTENDED_DN.
+	 */
+	status = authsam_search_account(mem_ctx,
+					sam_ctx,
+					r->in.account->string,
+					ldb_get_default_basedn(sam_ctx),
+					&msg);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
-	user_dn = res[0]->dn;
-	user_samAccountName = ldb_msg_find_attr_as_string(res[0], "samAccountName", NULL);
-	user_objectSid = samdb_result_dom_sid(res, res[0], "objectSid");
+	user_dn = msg->dn;
+	user_samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	user_objectSid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
 
 	status = samdb_result_passwords(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
-					res[0], &lm_pwd, &nt_pwd);
+					msg, &lm_pwd, &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) ) {
 		goto failed;
 	}
@@ -538,7 +534,7 @@ failed:
 
 	/* Only update the badPwdCount if we found the user */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
+		authsam_update_bad_pwd_count(sam_ctx, msg, ldb_get_default_basedn(sam_ctx));
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		/* Don't give the game away:  (don't allow anonymous users to prove the existence of usernames) */
 		status = NT_STATUS_WRONG_PASSWORD;
