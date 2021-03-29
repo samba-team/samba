@@ -229,9 +229,30 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		/* If everything was expired, we tombstone the node. */
+		/*
+		 * If everything was expired, we tombstone the node, which
+		 * involves adding a tombstone dnsRecord and a 'dnsTombstoned:
+		 * TRUE' attribute. That is, we want to end up with this:
+		 *
+		 *  objectClass: dnsNode
+		 *  dnsRecord:  { .wType = DNSTYPE_TOMBSTONE,
+		 *                .data.EntombedTime = <now> }
+		 *  dnsTombstoned: TRUE
+		 *
+		 * and no other dnsRecords.
+		 */
 		if (el->num_values == 0) {
-			el->values = tombstone_blob;
+			struct ldb_val *vals = talloc_realloc(new_msg->elements,
+							      el->values,
+							      struct ldb_val,
+							      1);
+			if (!vals) {
+				TALLOC_FREE(old_msg);
+				TALLOC_FREE(new_msg);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			el->values = vals;
+			el->values[0] = *tombstone_blob;
 			el->num_values = 1;
 
 			tombstone_el = ldb_msg_find_element(new_msg,
@@ -248,8 +269,22 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 				}
 				tombstone_el->flags = LDB_FLAG_MOD_ADD;
 			} else {
+				if (tombstone_el->num_values != 1) {
+					vals = talloc_realloc(
+						new_msg->elements,
+						tombstone_el->values,
+						struct ldb_val,
+						1);
+					if (!vals) {
+						TALLOC_FREE(old_msg);
+						TALLOC_FREE(new_msg);
+						return NT_STATUS_INTERNAL_ERROR;
+					}
+					tombstone_el->values = vals;
+					tombstone_el->num_values = 1;
+				}
 				tombstone_el->flags = LDB_FLAG_MOD_REPLACE;
-				tombstone_el->values = true_struct;
+				tombstone_el->values[0] = *true_struct;
 			}
 			tombstone_el->num_values = 1;
 		} else {
