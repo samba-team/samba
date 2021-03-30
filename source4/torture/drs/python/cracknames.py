@@ -60,8 +60,7 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
             drsuapi.DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
             drsuapi.DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
             drsuapi.DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
-            # We currently don't support this
-            # drsuapi.DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
+            drsuapi.DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
             # This format is not supported by Windows (or us)
             # drsuapi.DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN,
         }

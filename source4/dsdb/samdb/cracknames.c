@@ -889,6 +889,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
 
+	const char * const _domain_attrs_sid[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_sid[] = { "objectSid", NULL};
+
 	const char * const _domain_attrs_none[] = { "ncName", "dnsRoot" , NULL};
 	const char * const _result_attrs_none[] = { NULL};
 
@@ -922,6 +925,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL:
 		domain_attrs = _domain_attrs_spn;
 		result_attrs = _result_attrs_spn;
+		break;
+	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY:
+		domain_attrs = _domain_attrs_sid;
+		result_attrs = _result_attrs_sid;
 		break;
 	default:
 		domain_attrs = _domain_attrs_none;
@@ -1271,10 +1278,23 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		}
 		return WERR_OK;
 	}
-	case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
-	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
+	case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	{
 		info1->dns_domain_name = NULL;
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_OK;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
+		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result, "objectSid");
+
+		if (sid == NULL) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
+			return WERR_OK;
+		}
+
+		info1->result_name = dom_sid_string(mem_ctx, sid);
+		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
+
+		info1->status = DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
@@ -1487,6 +1507,12 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * Here we only consider a subset of the possible name forms listed in
+	 * [MS-ADTS] 5.1.1.1.1, and we don't retry with a different name form if
+	 * the first attempt fails.
+	 */
+
 	if (strchr_m(name, '=')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	} else if (strchr_m(name, '@')) {
@@ -1495,6 +1521,8 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	} else if (strchr_m(name, '/')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	} else if ((name[0] == 'S' || name[0] == 's') && name[1] == '-') {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
 	} else {
 		return NT_STATUS_NO_SUCH_USER;
 	}
