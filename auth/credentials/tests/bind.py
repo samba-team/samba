@@ -53,6 +53,7 @@ creds_user1 = create_credential(lp, creds)
 creds_user2 = create_credential(lp, creds)
 creds_user3 = create_credential(lp, creds)
 creds_user4 = create_credential(lp, creds)
+creds_user5 = create_credential(lp, creds)
 
 class BindTests(samba.tests.TestCase):
 
@@ -169,7 +170,8 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         self.ldb.newuser(username=self.username, password=self.password)
         ldb_res = self.ldb.search(base=self.domain_dn,
                                   scope=SCOPE_SUBTREE,
-                                  expression="(samAccountName=%s)" % self.username)
+                                  expression="(samAccountName=%s)" % self.username,
+                                  attrs=["objectSid"])
         self.assertEqual(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
         self.addCleanup(delete_force, self.ldb, user_dn)
@@ -197,6 +199,17 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         ldb_user3 = samba.tests.connect_samdb(host, credentials=creds_user3,
                                               lp=lp, ldap_only=True)
         res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+        # do a simple bind and search with the user account SID
+        creds_user5.set_bind_dn(self.ldb.schema_format_value("objectSid", ldb_res[0]["objectSid"][0]).decode('utf8'))
+        creds_user5.set_password(self.password)
+        print("BindTest with: " + creds_user5.get_bind_dn())
+        try:
+            ldb_user5 = samba.tests.connect_samdb(host, credentials=creds_user5,
+                                                  lp=lp, ldap_only=True)
+        except:
+            self.fail("Failed to connect with user account SID")
+        res = ldb_user5.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_user_account_bind_no_domain(self):
         # create user
