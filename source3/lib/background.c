@@ -40,9 +40,8 @@ struct background_job_state {
 static int background_job_state_destructor(struct background_job_state *s);
 static void background_job_waited(struct tevent_req *subreq);
 static void background_job_done(struct tevent_req *subreq);
-static void background_job_trigger(
-	struct messaging_context *msg, void *private_data, uint32_t msg_type,
-	struct server_id server_id, DATA_BLOB *data);
+static bool background_job_trigger(
+	struct messaging_rec *rec, void *private_data);
 
 struct tevent_req *background_job_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
@@ -83,10 +82,9 @@ struct tevent_req *background_job_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state, background_job_state_destructor);
 
 	for (i=0; i<num_trigger_msgs; i++) {
-		NTSTATUS status;
-		status = messaging_register(msg, state, trigger_msgs[i],
-					    background_job_trigger);
-		if (tevent_req_nterror(req, status)) {
+		subreq = messaging_filtered_read_send(
+			state, ev, msg, background_job_trigger, state);
+		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
 	}
@@ -103,36 +101,38 @@ struct tevent_req *background_job_send(TALLOC_CTX *mem_ctx,
 
 static int background_job_state_destructor(struct background_job_state *state)
 {
-	size_t i;
-
 	TALLOC_FREE(state->pipe_req);
 	if (state->pipe_fd != -1) {
 		close(state->pipe_fd);
 		state->pipe_fd = -1;
 	}
 
-	for (i=0; i<state->num_trigger_msgs; i++) {
-		messaging_deregister(state->msg, state->trigger_msgs[i],
-				     state);
-	}
-
 	return 0;
 }
 
-static void background_job_trigger(
-	struct messaging_context *msg, void *private_data, uint32_t msg_type,
-	struct server_id server_id, DATA_BLOB *data)
+static bool background_job_trigger(
+	struct messaging_rec *rec, void *private_data)
 {
 	struct background_job_state *state = talloc_get_type_abort(
 		private_data, struct background_job_state);
+	size_t i;
 
 	if (state->wakeup_req == NULL) {
-		return;
+		return false;
+	}
+	for (i=0; i<state->num_trigger_msgs; i++) {
+		if (rec->msg_type == state->trigger_msgs[i]) {
+			break;
+		}
+	}
+	if (i == state->num_trigger_msgs) {
+		return false;
 	}
 	if (!tevent_req_set_endtime(state->wakeup_req, state->ev,
 				    timeval_zero())) {
 		DEBUG(10, ("tevent_req_set_endtime failed\n"));
 	}
+	return false;
 }
 
 static void background_job_waited(struct tevent_req *subreq)
