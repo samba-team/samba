@@ -28,7 +28,11 @@ set -u
 
 # It is critical that this script, just as the rest of Samba's GitLab
 # CI docker has LANG set to en_US.utf8 (oss-fuzz fails to set this)
-. /etc/default/locale
+if [ -f /etc/default/locale ]; then
+	. /etc/default/locale
+elif [ -f /etc/locale.conf ]; then
+	. /etc/locale.conf
+fi
 export LANG
 export LC_ALL
 
