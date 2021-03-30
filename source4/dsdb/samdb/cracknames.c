@@ -1519,6 +1519,8 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		format_offered = DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL;
 	} else if (strchr_m(name, '\\')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	} else if (strchr_m(name, '\n')) {
+		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX;
 	} else if (strchr_m(name, '/')) {
 		format_offered = DRSUAPI_DS_NAME_FORMAT_CANONICAL;
 	} else if ((name[0] == 'S' || name[0] == 's') && name[1] == '-') {
