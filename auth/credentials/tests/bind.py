@@ -55,6 +55,7 @@ creds_user3 = create_credential(lp, creds)
 creds_user4 = create_credential(lp, creds)
 creds_user5 = create_credential(lp, creds)
 creds_user6 = create_credential(lp, creds)
+creds_user7 = create_credential(lp, creds)
 
 class BindTests(samba.tests.TestCase):
 
@@ -219,6 +220,17 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         ldb_user6 = samba.tests.connect_samdb(host, credentials=creds_user6,
                                               lp=lp, ldap_only=True)
         res = ldb_user6.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+        # do a simple bind and search with the extended canonical name
+        creds_user7.set_bind_dn(user_dn.canonical_ex_str())
+        creds_user7.set_password(self.password)
+        print("BindTest with: " + creds_user7.get_bind_dn())
+        try:
+            ldb_user7 = samba.tests.connect_samdb(host, credentials=creds_user7,
+                                                  lp=lp, ldap_only=True)
+        except:
+            self.fail("Failed to connect with extended canonical name")
+        res = ldb_user7.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_user_account_bind_no_domain(self):
         # create user
