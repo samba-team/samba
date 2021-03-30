@@ -206,11 +206,8 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         creds_user5.set_bind_dn(self.ldb.schema_format_value("objectSid", ldb_res[0]["objectSid"][0]).decode('utf8'))
         creds_user5.set_password(self.password)
         print("BindTest with: " + creds_user5.get_bind_dn())
-        try:
-            ldb_user5 = samba.tests.connect_samdb(host, credentials=creds_user5,
-                                                  lp=lp, ldap_only=True)
-        except:
-            self.fail("Failed to connect with user account SID")
+        ldb_user5 = samba.tests.connect_samdb(host, credentials=creds_user5,
+                                              lp=lp, ldap_only=True)
         res = ldb_user5.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
         # do a simple bind and search with the canonical name
@@ -225,11 +222,8 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         creds_user7.set_bind_dn(user_dn.canonical_ex_str())
         creds_user7.set_password(self.password)
         print("BindTest with: " + creds_user7.get_bind_dn())
-        try:
-            ldb_user7 = samba.tests.connect_samdb(host, credentials=creds_user7,
-                                                  lp=lp, ldap_only=True)
-        except:
-            self.fail("Failed to connect with extended canonical name")
+        ldb_user7 = samba.tests.connect_samdb(host, credentials=creds_user7,
+                                              lp=lp, ldap_only=True)
         res = ldb_user7.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_user_account_bind_no_domain(self):
