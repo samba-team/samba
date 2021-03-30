@@ -54,6 +54,7 @@ creds_user2 = create_credential(lp, creds)
 creds_user3 = create_credential(lp, creds)
 creds_user4 = create_credential(lp, creds)
 creds_user5 = create_credential(lp, creds)
+creds_user6 = create_credential(lp, creds)
 
 class BindTests(samba.tests.TestCase):
 
@@ -210,6 +211,14 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         except:
             self.fail("Failed to connect with user account SID")
         res = ldb_user5.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+        # do a simple bind and search with the canonical name
+        creds_user6.set_bind_dn(user_dn.canonical_str())
+        creds_user6.set_password(self.password)
+        print("BindTest with: " + creds_user6.get_bind_dn())
+        ldb_user6 = samba.tests.connect_samdb(host, credentials=creds_user6,
+                                              lp=lp, ldap_only=True)
+        res = ldb_user6.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_user_account_bind_no_domain(self):
         # create user
