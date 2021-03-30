@@ -1073,7 +1073,9 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 	NTSTATUS status;
 	struct ldb_result *domain_res;
 	struct ldb_message *msg_mod = NULL;
+	struct ldb_message *current = NULL;
 	struct ldb_message *pso_msg = NULL;
+	bool txn_active = false;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_new(msg);
@@ -1098,14 +1100,65 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 			ret, ldb_dn_get_linearized(msg->dn));
 	}
 
-	status = dsdb_update_bad_pwd_count(mem_ctx, sam_ctx,
-					   msg, domain_res->msgs[0], pso_msg,
-					   &msg_mod);
+	/*
+	 * To ensure that the bad password count is updated atomically,
+	 * we need to:
+	 *    begin a transaction
+	 *       re-read the account details,
+	 *         using the <GUID= part of the DN
+	 *       update the bad password count
+	 *    commit the transaction.
+	 */
+
+	/*
+	 * Start a new transaction
+	 */
+	ret = ldb_transaction_start(sam_ctx);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
+	}
+	txn_active = true;
+
+	/*
+	 * Re-read the account details, using the GUID in case the DN
+	 * is being changed.
+	 */
+	status = authsam_reread_user_logon_data(
+		sam_ctx, mem_ctx, msg, &current);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
-		return status;
+		/* The re-read can return account locked out, as well
+		 * as an internal error
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+			/*
+			 * For NT_STATUS_ACCOUNT_LOCKED_OUT we want to commit
+			 * the transaction. Again to avoid cluttering the
+			 * audit logs with spurious errors
+			 */
+			goto exit;
+		}
+		goto error;
 	}
 
+	/*
+	 * Update the bad password count and if required lock the account
+	 */
+	status = dsdb_update_bad_pwd_count(
+		mem_ctx,
+		sam_ctx,
+		current,
+		domain_res->msgs[0],
+		pso_msg,
+		&msg_mod);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
+	}
+
+	/*
+	 * Write the data back to disk if required.
+	 */
 	if (msg_mod != NULL) {
 		struct ldb_request *req;
 
@@ -1116,7 +1169,9 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 					ldb_op_default_callback,
 					NULL);
 		if (ret != LDB_SUCCESS) {
-			goto done;
+			TALLOC_FREE(msg_mod);
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
 		}
 
 		ret = ldb_request_add_control(req,
@@ -1124,31 +1179,72 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 					      false, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(req);
-			goto done;
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
 		}
 
-		ret = dsdb_autotransaction_request(sam_ctx, req);
+		/*
+		 * As we're in a transaction, make the ldb request directly
+		 * to avoid the nested transaction that would result if we
+		 * called dsdb_autotransaction_request
+		 */
+		ret = ldb_request(sam_ctx, req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
 		talloc_free(req);
-
+		if (ret != LDB_SUCCESS) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
 		status = authsam_set_bad_password_indicator(
 			sam_ctx, mem_ctx, msg);
-		/* Failure is ignored for now */
+		if (!NT_STATUS_IS_OK(status)) {
+			goto error;
+		}
 	}
-
-done:
+	/*
+	 * Note that we may not have updated the user record, but
+	 * committing the transaction in that case is still the correct
+	 * thing to do.
+	 * If the transaction was cancelled, this would be logged by
+	 * the dsdb audit log as a failure. When in fact it is expected
+	 * behaviour.
+	 */
+exit:
+	TALLOC_FREE(mem_ctx);
+	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to update badPwdCount, badPasswordTime or "
-			"set lockoutTime on %s: %s\n",
-			ldb_dn_get_linearized(msg->dn),
-			ldb_errstring(sam_ctx));
-		TALLOC_FREE(mem_ctx);
+		DBG_ERR("Error (%d) %s, committing transaction,"
+			" while updating bad password count"
+			" for (%s)\n",
+			ret,
+			ldb_errstring(sam_ctx),
+			ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+	return status;
 
+error:
+	DBG_ERR("Failed to update badPwdCount, badPasswordTime or "
+		"set lockoutTime on %s: %s\n",
+		ldb_dn_get_linearized(msg->dn),
+		ldb_errstring(sam_ctx) != NULL ?
+			ldb_errstring(sam_ctx) :nt_errstr(status));
+	if (txn_active) {
+		ret = ldb_transaction_cancel(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("Error rolling back transaction,"
+				" while updating bad password count"
+				" on %s: %s\n",
+				ldb_dn_get_linearized(msg->dn),
+				ldb_errstring(sam_ctx));
+		}
+	}
 	TALLOC_FREE(mem_ctx);
-	return NT_STATUS_OK;
-}
+	return status;
 
+}
 
 static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
 					    struct ldb_message *msg_mod,
@@ -1296,6 +1392,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	NTTIME now;
 	NTTIME lastLogonTimestamp;
 	bool am_rodc = false;
+	bool txn_active = false;
 	bool need_db_reread;
 
 	mem_ctx = talloc_new(msg);
@@ -1303,14 +1400,40 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * Any update of the last logon data, needs to be done inside a
+	 * transaction.
+	 * And the user data needs to be re-read, and the account re-checked
+	 * for lockout.
+	 *
+	 * Howevver we have long-running transactions like replication
+	 * that could otherwise grind the system to a halt so we first
+	 * determine if *this* account has seen a bad password,
+	 * otherwise we only start a transaction if there was a need
+	 * (because a change was to be made).
+	 */
+
 	status = authsam_check_bad_password_indicator(
 		sam_ctx, mem_ctx, &need_db_reread, msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+get_transaction:
+
 	if (need_db_reread) {
 		struct ldb_message *current = NULL;
+
+		/*
+		 * Start a new transaction
+		 */
+		ret = ldb_transaction_start(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		txn_active = true;
 
 		/*
 		 * Re-read the account details, using the GUID
@@ -1324,7 +1447,15 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 			 * The re-read can return account locked out, as well
 			 * as an internal error
 			 */
-			return status;
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+				/*
+				 * For NT_STATUS_ACCOUNT_LOCKED_OUT we want to commit
+				 * the transaction. Again to avoid cluttering the
+				 * audit logs with spurious errors
+				 */
+				goto exit;
+			}
+			goto error;
 		}
 		msg = current;
 	}
@@ -1345,9 +1476,15 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 
 	msg_mod = ldb_msg_new(mem_ctx);
 	if (msg_mod == NULL) {
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
 	}
+
+	/*
+	 * By using the DN from msg->dn directly, we allow LDB to
+	 * prefer the embedded GUID form, so this is actually quite
+	 * safe even in the case where DN has been changed
+	 */
 	msg_mod->dn = msg->dn;
 
 	if (lockoutTime != 0) {
@@ -1356,14 +1493,14 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		 */
 		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod, "lockoutTime", 0);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
 		}
 	} else if (badPwdCount != 0) {
 		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod, "badPwdCount", 0);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
 		}
 	}
 
@@ -1375,8 +1512,8 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		ret = samdb_msg_add_int64(sam_ctx, msg_mod, msg_mod,
 					  "lastLogon", now);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
 		}
 	}
 
@@ -1390,8 +1527,8 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod,
 					"logonCount", logonCount);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
 		}
 	} else {
 		/* Set an unset logonCount to 0 on first successful login */
@@ -1407,16 +1544,16 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 
 	ret = samdb_rodc(sam_ctx, &am_rodc);
 	if (ret != LDB_SUCCESS) {
-		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
 	}
 
 	if (!am_rodc) {
 		status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
 							    lastLogonTimestamp, now);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
 		}
 	} else {
 		/* Perform the (async) SendToSAM calls for MS-SAMS */
@@ -1436,6 +1573,16 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		unsigned int i;
 		struct ldb_request *req;
 
+		/*
+		 * If it turns out we are going to update the DB, go
+		 * back to the start, get a transaction and the
+		 * current DB state and try again
+		 */
+		if (txn_active == false) {
+			need_db_reread = true;
+			goto get_transaction;
+		}
+
 		/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
 		for (i=0;i<msg_mod->num_elements;i++) {
 			msg_mod->elements[i].flags = LDB_FLAG_MOD_REPLACE;
@@ -1448,35 +1595,84 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 					ldb_op_default_callback,
 					NULL);
 		if (ret != LDB_SUCCESS) {
-			goto done;
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
 		}
 
 		ret = ldb_request_add_control(req,
 					      DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE,
 					      false, NULL);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(req);
-			goto done;
+			TALLOC_FREE(req);
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
 		}
-
-		ret = dsdb_autotransaction_request(sam_ctx, req);
-		talloc_free(req);
+		/*
+		 * As we're in a transaction, make the ldb request directly
+		 * to avoid the nested transaction that would result if we
+		 * called dsdb_autotransaction_request
+		 */
+		ret = ldb_request(sam_ctx, req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
+		TALLOC_FREE(req);
+		if (ret != LDB_SUCCESS) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+	}
+	status = authsam_clear_bad_password_indicator(sam_ctx, mem_ctx, msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
 	}
 
-	status = authsam_clear_bad_password_indicator(sam_ctx, mem_ctx, msg);
-	/* Failure is ignored for now */
+	/*
+	 * Note that we may not have updated the user record, but
+	 * committing the transaction in that case is still the correct
+	 * thing to do.
+	 * If the transaction was cancelled, this would be logged by
+	 * the dsdb audit log as a failure. When in fact it is expected
+	 * behaviour.
+	 *
+	 * Thankfully both TDB and LMDB seem to optimise for the empty
+	 * transaction case
+	 */
+exit:
+	TALLOC_FREE(mem_ctx);
 
-done:
+	if (txn_active == false) {
+		return status;
+	}
+
+	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to set badPwdCount and lockoutTime "
-			  "to 0 and/or  lastlogon to now (%lld) "
-			  "%s: %s\n", (long long int)now,
-			  ldb_dn_get_linearized(msg_mod->dn),
-			  ldb_errstring(sam_ctx)));
-		TALLOC_FREE(mem_ctx);
+		DBG_ERR("Error (%d) %s, committing transaction,"
+			" while updating successful logon accounting"
+			" for (%s)\n",
+			ret,
+			ldb_errstring(sam_ctx),
+			ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+	return status;
 
+error:
+	DBG_ERR("Failed to update badPwdCount, badPasswordTime or "
+		"set lockoutTime on %s: %s\n",
+		ldb_dn_get_linearized(msg->dn),
+		ldb_errstring(sam_ctx) != NULL ?
+			ldb_errstring(sam_ctx) :nt_errstr(status));
+	if (txn_active) {
+		ret = ldb_transaction_cancel(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("Error rolling back transaction,"
+				" while updating bad password count"
+				" on %s: %s\n",
+				ldb_dn_get_linearized(msg->dn),
+				ldb_errstring(sam_ctx));
+		}
+	}
 	TALLOC_FREE(mem_ctx);
-	return NT_STATUS_OK;
+	return status;
 }
