@@ -1408,6 +1408,8 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	struct timeval tv_now;
 	NTTIME now;
 	NTTIME lastLogonTimestamp;
+	int64_t lockOutObservationWindow;
+	NTTIME sync_interval_nt = 0;
 	bool am_rodc = false;
 	bool txn_active = false;
 	bool need_db_reread;
@@ -1434,6 +1436,36 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		sam_ctx, mem_ctx, &need_db_reread, msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (interactive_or_kerberos == false) {
+		/*
+		 * Avoid calculating this twice, it reads the PSO.  A
+		 * race on this is unimportant.
+		 */
+		lockOutObservationWindow
+			= samdb_result_msds_LockoutObservationWindow(
+				sam_ctx, mem_ctx, domain_dn, msg);
+	}
+
+	ret = samdb_rodc(sam_ctx, &am_rodc);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
+	}
+
+	if (!am_rodc) {
+		/*
+		 * Avoid reading the main domain DN twice.  A race on
+		 * this is unimportant.
+		 */
+		status = authsam_calculate_lastlogon_sync_interval(
+			sam_ctx, mem_ctx, domain_dn, &sync_interval_nt);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
 	}
 
 get_transaction:
@@ -1485,9 +1517,10 @@ get_transaction:
 	if (interactive_or_kerberos) {
 		badPwdCount = dbBadPwdCount;
 	} else {
-		int64_t lockOutObservationWindow =
-			samdb_result_msds_LockoutObservationWindow(
-				sam_ctx, mem_ctx, domain_dn, msg);
+		/*
+		 * We get lockOutObservationWindow above, before the
+		 * transaction
+		 */
 		badPwdCount = dsdb_effective_badPwdCount(
 			msg, lockOutObservationWindow, now);
 	}
@@ -1562,23 +1595,7 @@ get_transaction:
 		}
 	}
 
-	ret = samdb_rodc(sam_ctx, &am_rodc);
-	if (ret != LDB_SUCCESS) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto error;
-	}
-
 	if (!am_rodc) {
-		NTTIME sync_interval_nt;
-
-		status = authsam_calculate_lastlogon_sync_interval(
-			sam_ctx, mem_ctx, domain_dn, &sync_interval_nt);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto error;
-		}
-
 		status = authsam_update_lastlogon_timestamp(
 			sam_ctx,
 			msg_mod,
