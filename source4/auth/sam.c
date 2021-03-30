@@ -827,6 +827,68 @@ static int authsam_get_user_pso(struct ldb_context *sam_ctx,
 	return LDB_SUCCESS;
 }
 
+/*
+ * Re-read the bad password and successful logon data for a user.
+ *
+ * The DN in the passed user record should contain the "objectGUID" in case the
+ * object DN has changed.
+ */
+NTSTATUS authsam_reread_user_logon_data(
+	struct ldb_context *sam_ctx,
+	TALLOC_CTX *mem_ctx,
+	const struct ldb_message *user_msg,
+	struct ldb_message **current)
+{
+	const struct ldb_val *v = NULL;
+	struct ldb_result *res = NULL;
+	uint16_t acct_flags = 0;
+	const char *attr_name = "msDS-User-Account-Control-Computed";
+
+	int ret;
+
+	/*
+	 * Re-read the account details, using the GUID in case the DN
+	 * is being changed (this is automatic in LDB because the
+	 * original search also used DSDB_SEARCH_SHOW_EXTENDED_DN)
+	 *
+	 * We re read all the attributes in user_attrs, rather than using a
+	 * subset to ensure that we can reuse existing validation code.
+	 */
+	ret = dsdb_search_dn(sam_ctx,
+			     mem_ctx,
+			     &res,
+			     user_msg->dn,
+			     user_attrs,
+			     DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Unable to re-read account control data for %s\n",
+			ldb_dn_get_linearized(user_msg->dn));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * Ensure the account has not been locked out by another request
+	 */
+	v = ldb_msg_find_ldb_val(res->msgs[0], attr_name);
+	if (v == NULL || v->data == NULL) {
+		DBG_ERR("No %s attribute for %s\n",
+			attr_name,
+			ldb_dn_get_linearized(user_msg->dn));
+		TALLOC_FREE(res);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	acct_flags = samdb_result_acct_flags(res->msgs[0], attr_name);
+	if (acct_flags & ACB_AUTOLOCK) {
+		DBG_WARNING(
+			"Account for user %s was locked out.\n",
+			ldb_dn_get_linearized(user_msg->dn));
+		TALLOC_FREE(res);
+		return NT_STATUS_ACCOUNT_LOCKED_OUT;
+	}
+	*current = res->msgs[0];
+	return NT_STATUS_OK;
+}
+
 static struct db_context *authsam_get_bad_password_db(
 	TALLOC_CTX *mem_ctx,
 	struct ldb_context *sam_ctx)
@@ -1245,6 +1307,26 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		sam_ctx, mem_ctx, &need_db_reread, msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (need_db_reread) {
+		struct ldb_message *current = NULL;
+
+		/*
+		 * Re-read the account details, using the GUID
+		 * embedded in DN so this is safe against a race where
+		 * it is being renamed.
+		 */
+		status = authsam_reread_user_logon_data(
+			sam_ctx, mem_ctx, msg, &current);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * The re-read can return account locked out, as well
+			 * as an internal error
+			 */
+			return status;
+		}
+		msg = current;
 	}
 
 	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
