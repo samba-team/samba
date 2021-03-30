@@ -1096,7 +1096,7 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 		 * fallback to using the domain defaults so that we still
 		 * record the bad password attempt
 		 */
-		DBG_ERR("Error (%d) checking PSO for %s",
+		DBG_ERR("Error (%d) checking PSO for %s\n",
 			ret, ldb_dn_get_linearized(msg->dn));
 	}
 
