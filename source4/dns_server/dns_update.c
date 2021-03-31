@@ -431,8 +431,18 @@ static WERROR handle_one_update(struct dns_server *dns,
 	if (tombstoned) {
 		/*
 		 * we need to keep the existing tombstone record
-		 * and ignore it
+		 * and ignore it.
+		 *
+		 * There *should* only be a single record of type TOMBSTONE,
+		 * but we don't insist.
 		 */
+		if (rcount != 1) {
+			DBG_WARNING("Tombstoned dnsNode has %u records, "
+				    "expected 1\n", rcount);
+			if (DEBUGLVL(1)) {
+				NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
+			}
+		}
 		first = rcount;
 	}
 
@@ -519,11 +529,20 @@ static WERROR handle_one_update(struct dns_server *dns,
 			    mem_ctx, update, &recs[i], name_is_static);
 			W_ERROR_NOT_OK_RETURN(werror);
 
+			/*
+			 * There should only be one SOA, which we have already
+			 * found and replaced. We now check for and tombstone
+			 * any others.
+			 */
 			for (i++; i < rcount; i++) {
 				if (recs[i].wType != DNS_TYPE_SOA) {
 					continue;
 				}
-
+				DBG_ERR("Duplicate SOA records found.\n");
+				if (DEBUGLVL(0)) {
+					NDR_PRINT_DEBUG(dns_res_rec,
+							discard_const(update));
+				}
 				recs[i] = (struct dnsp_DnssrvRpcRecord) {
 					.wType = DNS_TYPE_TOMBSTONE,
 				};
