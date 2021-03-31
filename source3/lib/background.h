@@ -20,6 +20,12 @@
 #ifndef _LIB_BACKGROUND_H_
 #define _LIB_BACKGROUND_H_
 
+#include "replace.h"
+#include <tevent.h>
+#include "libcli/util/ntstatus.h"
+
+struct messaging_context;
+
 /*
  * From a parent process regularly fork a process and execute fn(). fn()
  * returns the number of seconds to wait before it is run next time. Returning
