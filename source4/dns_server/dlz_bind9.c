@@ -1945,7 +1945,9 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		}
 	}
 	if (i == UINT16_MAX) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to already %u dnsRecord values for %s",
+		state->log(ISC_LOG_ERROR,
+			   "samba_dlz: failed to find record to modify, and "
+			   "there are already %u dnsRecord values for %s",
 			   i, ldb_dn_get_linearized(dn));
 		talloc_free(rec);
 		result = ISC_R_FAILURE;
