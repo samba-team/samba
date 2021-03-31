@@ -28,6 +28,13 @@ def build(bld):
                           ''',
                      for_selftest=True)
 
+    bld.SAMBA_BINARY('test_background_send',
+                     source='test_background_send.c',
+                     deps='''
+                     samba3core
+                     ''',
+                     for_selftest=True)
+
     bld.SAMBA_MODULE('rpc_test_dummy_module',
                      source='rpc_test_dummy_module.c',
                      deps='ndr smbd_base',

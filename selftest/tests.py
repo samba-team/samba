@@ -378,6 +378,12 @@ plantestsuite("samba.unittests.sambafs_srv_pipe", "none",
               [os.path.join(bindir(), "default/testsuite/unittests/test_sambafs_srv_pipe")])
 plantestsuite("samba.unittests.lib_util_modules", "none",
               [os.path.join(bindir(), "default/testsuite/unittests/test_lib_util_modules")])
+plantestsuite("samba.unittests.background_send",
+              "none",
+              [os.path.join(
+                  bindir(),
+                  "default/testsuite/unittests/test_background_send"),
+               "$SMB_CONF_PATH"])
 
 plantestsuite("samba.unittests.smb1cli_session", "none",
               [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
