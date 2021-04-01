@@ -287,3 +287,11 @@ def record_from_string(t, data, sep=None, **kwargs):
         raise DNSParseError("Unsupported record type") from e
 
     return Record.from_string(data, sep=sep, **kwargs)
+
+
+def flag_from_string(rec_type):
+    rtype = rec_type.upper()
+    try:
+        return getattr(dnsp, 'DNS_TYPE_' + rtype)
+    except AttributeError:
+        raise DNSParseError('Unknown type of DNS record %s' % rec_type) from e
