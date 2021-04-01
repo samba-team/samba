@@ -130,7 +130,7 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred);
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
 						 struct loadparm_context *lp_ctx);
-void cli_credentials_set_conf(struct cli_credentials *cred, 
+bool cli_credentials_set_conf(struct cli_credentials *cred,
 			      struct loadparm_context *lp_ctx);
 char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx);
 int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 

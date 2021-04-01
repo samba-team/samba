@@ -227,7 +227,8 @@ static void torture_creds_krb5_state(void **state)
 	assert_int_equal(creds->kerberos_state_obtained, CRED_UNINITIALISED);
 	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
 
-	cli_credentials_set_conf(creds, lp_ctx);
+	ok = cli_credentials_set_conf(creds, lp_ctx);
+	assert_true(ok);
 	assert_int_equal(creds->kerberos_state_obtained, CRED_SMB_CONF);
 	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
 

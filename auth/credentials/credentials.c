@@ -64,13 +64,18 @@ struct cli_credentials *cli_credentials_init_server(TALLOC_CTX *mem_ctx,
 {
 	struct cli_credentials *server_creds = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	server_creds = cli_credentials_init(mem_ctx);
 	if (server_creds == NULL) {
 		return NULL;
 	}
 
-	cli_credentials_set_conf(server_creds, lp_ctx);
+	ok = cli_credentials_set_conf(server_creds, lp_ctx);
+	if (!ok) {
+		TALLOC_FREE(server_creds);
+		return NULL;
+	}
 
 	status = cli_credentials_set_machine_account(server_creds, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -985,38 +990,86 @@ _PUBLIC_ char *cli_credentials_get_unparsed_name(struct cli_credentials *credent
 	return name;
 }
 
+
 /**
  * Specifies default values for domain, workstation and realm
  * from the smb.conf configuration file
  *
  * @param cred Credentials structure to fill in
+ *
+ * @return true on success, false on error.
  */
-_PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred, 
-			      struct loadparm_context *lp_ctx)
+_PUBLIC_ bool cli_credentials_set_conf(struct cli_credentials *cred,
+				       struct loadparm_context *lp_ctx)
 {
 	const char *sep = NULL;
 	const char *realm = lpcfg_realm(lp_ctx);
 	enum credentials_client_protection protection =
 		lpcfg_client_protection(lp_ctx);
+	const char *workgroup = lpcfg_workgroup(lp_ctx);
+	const char *netbios_name = lpcfg_netbios_name(lp_ctx);
+	bool ok;
 
-	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
-	if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
-		cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_SPECIFIED);
-	} else {
-		cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_SMB_CONF);
+	(void)cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
+
+	if (workgroup != NULL && strlen(workgroup) == 0) {
+		workgroup = NULL;
 	}
-	if (lpcfg_parm_is_cmdline(lp_ctx, "netbios name")) {
-		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
-	} else {
-		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SMB_CONF);
+
+	if (workgroup != NULL) {
+		if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
+			ok = cli_credentials_set_domain(cred,
+							workgroup,
+							CRED_SPECIFIED);
+			if (!ok) {
+				DBG_ERR("Failed to set domain!\n");
+				return false;
+			}
+		} else {
+			(void)cli_credentials_set_domain(cred,
+							 workgroup,
+							 CRED_SMB_CONF);
+		}
 	}
+
+	if (netbios_name != NULL && strlen(netbios_name) == 0) {
+		netbios_name = NULL;
+	}
+
+	if (netbios_name != NULL) {
+		if (lpcfg_parm_is_cmdline(lp_ctx, "netbios name")) {
+			ok = cli_credentials_set_workstation(cred,
+							     netbios_name,
+							     CRED_SPECIFIED);
+			if (!ok) {
+				DBG_ERR("Failed to set workstation!\n");
+				return false;
+			}
+		} else {
+			(void)cli_credentials_set_workstation(cred,
+							      netbios_name,
+							      CRED_SMB_CONF);
+		}
+	}
+
 	if (realm != NULL && strlen(realm) == 0) {
 		realm = NULL;
 	}
-	if (lpcfg_parm_is_cmdline(lp_ctx, "realm")) {
-		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
-	} else {
-		cli_credentials_set_realm(cred, realm, CRED_SMB_CONF);
+
+	if (realm != NULL) {
+		if (lpcfg_parm_is_cmdline(lp_ctx, "realm")) {
+			ok = cli_credentials_set_realm(cred,
+						       realm,
+						       CRED_SPECIFIED);
+			if (!ok) {
+				DBG_ERR("Failed to set realm!\n");
+				return false;
+			}
+		} else {
+			(void)cli_credentials_set_realm(cred,
+							realm,
+							CRED_SMB_CONF);
+		}
 	}
 
 	sep = lpcfg_winbind_separator(lp_ctx);
@@ -1091,6 +1144,8 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 		}
 		cred->gensec_features_obtained = CRED_SMB_CONF;
 	}
+
+	return true;
 }
 
 /**
