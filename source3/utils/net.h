@@ -97,6 +97,8 @@ struct net_context {
 	struct libnetapi_ctx *netapi_ctx;
 	struct messaging_context *msg_ctx;
 	struct netlogon_creds_cli_context *netlogon_creds;
+	struct cli_credentials *creds;
+	struct loadparm_context *lp_ctx;
 
 	bool display_usage;
 	void *private_data;
