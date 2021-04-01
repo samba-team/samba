@@ -48,8 +48,7 @@ class ARecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._ip_addr = ip_addr[:]
-        self.data = self._ip_addr
+        self.data = ip_addr
 
 
 class AAAARecord(dnsserver.DNS_RPC_RECORD):
@@ -61,8 +60,7 @@ class AAAARecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._ip6_addr = ip6_addr[:]
-        self.data = self._ip6_addr
+        self.data = ip6_addr
 
 
 class PTRRecord(dnsserver.DNS_RPC_RECORD):
@@ -74,9 +72,8 @@ class PTRRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._ptr = ptr[:]
         ptr_name = dnsserver.DNS_RPC_NAME()
-        ptr_name.str = self._ptr
+        ptr_name.str = ptr
         ptr_name.len = len(ptr)
         self.data = ptr_name
 
@@ -90,9 +87,8 @@ class CNAMERecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._cname = cname[:]
         cname_name = dnsserver.DNS_RPC_NAME()
-        cname_name.str = self._cname
+        cname_name.str = cname
         cname_name.len = len(cname)
         self.data = cname_name
 
@@ -106,9 +102,8 @@ class NSRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._dns_server = dns_server[:]
         ns = dnsserver.DNS_RPC_NAME()
-        ns.str = self._dns_server
+        ns.str = dns_server
         ns.len = len(dns_server)
         self.data = ns
 
@@ -122,10 +117,9 @@ class MXRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._mail_server = mail_server[:]
         mx = dnsserver.DNS_RPC_RECORD_NAME_PREFERENCE()
         mx.wPreference = preference
-        mx.nameExchange.str = self._mail_server
+        mx.nameExchange.str = mail_server
         mx.nameExchange.len = len(mail_server)
         self.data = mx
 
@@ -140,17 +134,15 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._mname = mname[:]
-        self._rname = rname[:]
         soa = dnsserver.DNS_RPC_RECORD_SOA()
         soa.dwSerialNo = serial
         soa.dwRefresh = refresh
         soa.dwRetry = retry
         soa.dwExpire = expire
         soa.dwMinimumTtl = minimum
-        soa.NamePrimaryServer.str = self._mname
+        soa.NamePrimaryServer.str = mname
         soa.NamePrimaryServer.len = len(mname)
-        soa.ZoneAdministratorEmail.str = self._rname
+        soa.ZoneAdministratorEmail.str = rname
         soa.ZoneAdministratorEmail.len = len(rname)
         self.data = soa
 
@@ -164,12 +156,11 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._target = target[:]
         srv = dnsserver.DNS_RPC_RECORD_SRV()
         srv.wPriority = priority
         srv.wWeight = weight
         srv.wPort = port
-        srv.nameTarget.str = self._target
+        srv.nameTarget.str = target
         srv.nameTarget.len = len(target)
         self.data = srv
 
@@ -183,11 +174,8 @@ class TXTRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self._slist = []
-        for s in slist:
-            self._slist.append(s[:])
         names = []
-        for s in self._slist:
+        for s in slist:
             name = dnsserver.DNS_RPC_NAME()
             name.str = s
             name.len = len(s)
