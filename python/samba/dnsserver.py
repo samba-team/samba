@@ -255,3 +255,35 @@ class TXTRecord(dnsserver.DNS_RPC_RECORD):
     def from_string(cls, data, sep=None, **kwargs):
         slist = shlex.split(data)
         return cls(slist, **kwargs)
+
+
+#
+# Don't add new Record types after this line
+
+_RECORD_TYPE_LUT = {}
+def _setup_record_type_lut():
+    for k, v in globals().items():
+        if k[-6:] == 'Record':
+            k = k[:-6]
+            flag = getattr(dnsp, 'DNS_TYPE_' + k)
+            _RECORD_TYPE_LUT[k] = v
+            _RECORD_TYPE_LUT[flag] = v
+
+_setup_record_type_lut()
+del _setup_record_type_lut
+
+
+def record_from_string(t, data, sep=None, **kwargs):
+    """Get a DNS record of type t based on the data string.
+    Additional keywords (ttl, rank, etc) can be passed in.
+
+    t can be a dnsp.DNS_TYPE_* integer or a string like "A", "TXT", etc.
+    """
+    if isinstance(t, str):
+        t = t.upper()
+    try:
+        Record = _RECORD_TYPE_LUT[t]
+    except KeyError as e:
+        raise DNSParseError("Unsupported record type") from e
+
+    return Record.from_string(data, sep=sep, **kwargs)
