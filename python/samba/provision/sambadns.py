@@ -75,6 +75,15 @@ def get_dnsadmins_sid(samdb, domaindn):
     return dnsadmins_sid
 
 
+# Note: these classses are not quite the same as similar looking ones
+# in ../dnsserver.py -- those ones are based on
+# dnsserver.DNS_RPC_RECORD ([MS-DNSP]2.2.2.2.5 "DNS_RPC_RECORD"),
+# these are based on dnsp.DnssrvRpcRecord ([MS-DNSP] 2.3.2.2
+# "DnsRecord").
+#
+# They are not interchangeable or mergeable. If you're talking over
+# the wire you want those other ones; these are the on-disk format.
+
 class ARecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
