@@ -93,12 +93,11 @@ static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
 
 static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 				 files_struct *fsp,
-				 const struct smb_filename *smb_fname_in,
 				 TALLOC_CTX *mem_ctx,
 				 DATA_BLOB *blob)
 {
 	struct nfs4acl_config *config = NULL;
-	const struct smb_filename *smb_fname = NULL;
+	const struct smb_filename *smb_fname = fsp->fsp_name;
 	size_t allocsize = 256;
 	ssize_t length;
 	bool ok;
@@ -108,17 +107,6 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	*blob = data_blob_null;
-
-	if (fsp == NULL && smb_fname_in == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	smb_fname = smb_fname_in;
-	if (smb_fname == NULL) {
-		smb_fname = fsp->fsp_name;
-	}
-	if (smb_fname == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	ok = nfs4acl_validate_blob(handle, smb_fname);
 	if (!ok) {
@@ -133,19 +121,11 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (fsp != NULL && fsp_get_pathref_fd(fsp) != -1) {
-			length = SMB_VFS_NEXT_FGETXATTR(handle,
-							fsp,
-							config->xattr_name,
-							blob->data,
-							blob->length);
-		} else {
-			length = SMB_VFS_NEXT_GETXATTR(handle,
-						       smb_fname,
-						       config->xattr_name,
-						       blob->data,
-						       blob->length);
-		}
+		length = SMB_VFS_NEXT_FGETXATTR(handle,
+						fsp,
+						config->xattr_name,
+						blob->data,
+						blob->length);
 	} while (length == -1 && errno == ERANGE && allocsize <= 65536);
 
 	if (length == -1) {
@@ -239,7 +219,7 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = nfs4acl_get_blob(handle, fsp, NULL, frame, &blob);
+	status = nfs4acl_get_blob(handle, fsp, frame, &blob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		TALLOC_FREE(frame);
 		return nfs4acl_xattr_default_sd(
@@ -331,7 +311,6 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl_at(struct vfs_handle_struct *handle,
 
 	status = nfs4acl_get_blob(handle,
 				smb_fname->fsp,
-				smb_fname,
 				frame,
 				&blob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
