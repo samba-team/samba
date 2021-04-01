@@ -637,13 +637,16 @@ static int rec_cmp(const struct dnsp_DnssrvRpcRecord *r1,
 {
 	if (r1->wType != r2->wType) {
 		/*
-		 * The records are sorted with higher types first
+		 * The records are sorted with higher types first,
+		 * which puts tombstones (type 0) last.
 		 */
 		return r2->wType - r1->wType;
 	}
-
 	/*
-	 * Then we need to sort from the oldest to newest timestamp
+	 * Then we need to sort from the oldest to newest timestamp.
+	 *
+	 * Note that dwTimeStamp == 0 (never expiring) records come first,
+	 * then the ones whose expiry is soonest.
 	 */
 	return r1->dwTimeStamp - r2->dwTimeStamp;
 }
