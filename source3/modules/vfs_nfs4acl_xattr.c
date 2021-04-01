@@ -52,7 +52,7 @@ static const struct enum_list nfs4acl_encoding[] = {
  * directories 0777. Discard the ACL blob if the mode is different.
  */
 static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
-				  const struct smb_filename *smb_fname)
+				  files_struct *fsp)
 {
 	struct nfs4acl_config *config = NULL;
 	mode_t expected_mode;
@@ -66,22 +66,17 @@ static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
 		return true;
 	}
 
-	if (!VALID_STAT(smb_fname->st)) {
-		/* might be a create */
-		return true;
-	}
-
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 		expected_mode = 0777;
 	} else {
 		expected_mode = 0666;
 	}
-	if ((smb_fname->st.st_ex_mode & expected_mode) == expected_mode) {
+	if ((fsp->fsp_name->st.st_ex_mode & expected_mode) == expected_mode) {
 		return true;
 	}
 
-	ret = SMB_VFS_NEXT_REMOVEXATTR(handle,
-				       smb_fname,
+	ret = SMB_VFS_NEXT_FREMOVEXATTR(handle,
+				       fsp,
 				       config->xattr_name);
 	if (ret != 0 && errno != ENOATTR) {
 		DBG_ERR("Removing NFS4 xattr failed: %s\n", strerror(errno));
@@ -97,7 +92,6 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 				 DATA_BLOB *blob)
 {
 	struct nfs4acl_config *config = NULL;
-	const struct smb_filename *smb_fname = fsp->fsp_name;
 	size_t allocsize = 256;
 	ssize_t length;
 	bool ok;
@@ -108,7 +102,7 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 
 	*blob = data_blob_null;
 
-	ok = nfs4acl_validate_blob(handle, smb_fname);
+	ok = nfs4acl_validate_blob(handle, fsp);
 	if (!ok) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
