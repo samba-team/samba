@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "rpc_client/rpc_transport.h"
 #include "librpc/ndr/ndr_table.h"
 #include "libcli/smb/smbXcli_base.h"

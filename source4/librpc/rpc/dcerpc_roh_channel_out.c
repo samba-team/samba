@@ -37,6 +37,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_roh.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "libcli/http/http.h"
 
 struct roh_request_state {

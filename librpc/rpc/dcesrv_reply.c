@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/rpc/dcesrv_core_proto.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "auth/gensec/gensec.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"

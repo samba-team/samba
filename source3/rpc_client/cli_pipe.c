@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "rpc_dce.h"
 #include "cli_pipe.h"
 #include "libsmb/libsmb.h"
