@@ -1036,9 +1036,11 @@ bld.SAMBA3_LIBRARY('cli_spoolss',
                           rpc_client/init_spoolss.c
                           ''',
                    deps='''
-                        RPC_NDR_SPOOLSS
-                        smbconf
-                        secrets3''',
+                   RPC_NDR_SPOOLSS
+                   smbconf
+                   secrets3
+                   gensec
+                   ''',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',

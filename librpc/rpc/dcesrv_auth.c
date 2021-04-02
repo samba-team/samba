@@ -24,6 +24,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/rpc/dcesrv_core_proto.h"
 #include "librpc/rpc/dcerpc_util.h"
+#include "librpc/rpc/dcerpc_pkt_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

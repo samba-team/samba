@@ -649,11 +649,23 @@ bld.SAMBA_LIBRARY('ndr',
     )
 
 bld.SAMBA_LIBRARY('dcerpc-binding',
-    source='rpc/dcerpc_error.c rpc/binding.c rpc/dcerpc_util.c rpc/binding_handle.c',
-    deps='ndr tevent NDR_DCERPC LIBTSOCKET tevent-util gensec',
+    source='''
+    rpc/dcerpc_error.c
+    rpc/binding.c
+    rpc/dcerpc_util.c
+    rpc/binding_handle.c
+    ''',
+    deps='ndr tevent NDR_DCERPC LIBTSOCKET tevent-util',
     pc_files=[],
     public_headers='rpc/rpc_common.h',
     vnum='0.0.1')
+
+bld.SAMBA_LIBRARY('dcerpc-pkt-auth',
+                  private_library=True,
+                  source='''
+                   rpc/dcerpc_pkt_auth.c
+                   ''',
+                  deps='dcerpc-binding gensec')
 
 bld.SAMBA_LIBRARY('dcerpc-server-core',
     source='''
@@ -663,7 +675,14 @@ bld.SAMBA_LIBRARY('dcerpc-server-core',
            rpc/dcesrv_reply.c
            rpc/dcesrv_handles.c
            ''',
-    deps='ndr dcerpc-binding samba-util-core gnutls GNUTLS_HELPERS',
+    deps='''
+    ndr
+    dcerpc-binding
+    samba-util-core
+    gnutls
+    GNUTLS_HELPERS
+    dcerpc-pkt-auth
+    ''',
     pc_files=[],
     public_headers='rpc/dcesrv_core.h',
     autoproto='rpc/dcesrv_core_proto.h',
