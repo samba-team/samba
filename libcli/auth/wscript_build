@@ -30,7 +30,15 @@ bld.SAMBA_SUBSYSTEM('COMMON_SCHANNEL',
 
 bld.SAMBA_SUBSYSTEM('NETLOGON_CREDS_CLI',
         source='netlogon_creds_cli.c',
-        deps='dbwrap util_tdb tevent-util samba-hostconfig RPC_NDR_NETLOGON NDR_NETLOGON'
+        deps='''
+        dbwrap
+        util_tdb
+        tevent-util
+        samba-hostconfig
+        gensec
+        RPC_NDR_NETLOGON
+        NDR_NETLOGON
+        '''
         )
 
 bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
