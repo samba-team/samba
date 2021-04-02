@@ -25,6 +25,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "rpc_common.h"
 #include "lib/util/bitmap.h"
