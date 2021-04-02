@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "librpc/rpc/dcerpc_util.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/gensec/gensec.h"

@@ -37,6 +37,7 @@
 #include "rpc_server/rpc_config.h"
 #include "librpc/ndr/ndr_table.h"
 #include "rpc_server/rpc_server.h"
+#include "librpc/rpc/dcerpc_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
