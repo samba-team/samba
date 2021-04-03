@@ -43,13 +43,6 @@
 static const struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;
 
-/* Return all the registered mechs.  Don't modify the return pointer,
- * but you may talloc_referen it if convient */
-_PUBLIC_ const struct gensec_security_ops * const *gensec_security_all(void)
-{
-	return generic_security_ops;
-}
-
 bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security)
 {
 	bool ok = lpcfg_parm_bool(security->settings->lp_ctx,
@@ -157,7 +150,8 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 				struct gensec_security *gensec_security,
 				TALLOC_CTX *mem_ctx)
 {
-	const struct gensec_security_ops * const *backends = gensec_security_all();
+	const struct gensec_security_ops * const *backends =
+		generic_security_ops;
 	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
 	bool keep_schannel = false;
 

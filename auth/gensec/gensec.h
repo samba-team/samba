@@ -300,7 +300,6 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 		     const DATA_BLOB *in,
 		     DATA_BLOB *out);
 
-const struct gensec_security_ops * const *gensec_security_all(void);
 bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security);
 
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
