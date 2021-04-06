@@ -703,6 +703,16 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * We know that the parent name must
+	 * exist, and the name has been canonicalized
+	 * even if this was a POSIX pathname.
+	 * Ensure that we follow symlinks for
+	 * the parent. See the torture test
+	 * POSIX-SYMLINK-PARENT for details.
+	 */
+	parent->flags &= ~SMB_FILENAME_POSIX_PATH;
+
 	ret = vfs_stat(dirfsp->conn, parent);
 	if (ret != 0) {
 		TALLOC_FREE(parent);
