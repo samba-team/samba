@@ -249,19 +249,11 @@ static NTSTATUS prepare_gensec(const struct auth_context *auth_context,
 	talloc_reparent(frame, msg_ctx, server_id);
 
 	server_credentials
-		= cli_credentials_init(frame);
+		= cli_credentials_init_server(frame, lp_ctx);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_SERVER_STATE;
-	}
-
-	cli_credentials_set_conf(server_credentials, lp_ctx);
-	status = cli_credentials_set_machine_account(server_credentials, lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
-		TALLOC_FREE(frame);
-		return status;
 	}
 
 	status = samba_server_gensec_start(mem_ctx,
