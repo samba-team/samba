@@ -875,7 +875,19 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 	int result;
 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
-	result = ceph_fchmod(handle->data, fsp_get_io_fd(fsp), mode);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to remove xattrs.
+		 */
+		result = ceph_fchmod(handle->data, fsp_get_io_fd(fsp), mode);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		result = ceph_chmod(handle->data,
+				    fsp->fsp_name->base_name,
+				    mode);
+	}
 	DBG_DEBUG("[CEPH] fchmod(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
