@@ -256,13 +256,10 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 		DEBUG(5, ("CIFS backend: Using S4U2Proxy credentials\n"));
 
-		credentials = cli_credentials_init(p);
-		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
-		if (domain) {
-			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
-		}
-		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
+		credentials = cli_credentials_init_server(p,
+							  ntvfs->ctx->lp_ctx);
+		if (credentials == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
