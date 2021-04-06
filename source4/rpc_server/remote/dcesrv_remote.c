@@ -134,19 +134,13 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
 	} else if (machine_account) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
-		credentials = cli_credentials_init(priv);
+		credentials = cli_credentials_init_server(
+				priv,
+				dce_call->conn->dce_ctx->lp_ctx);
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		must_free_credentials = true;
-		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
-		if (domain) {
-			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
-		}
-		status = cli_credentials_set_machine_account(credentials, dce_call->conn->dce_ctx->lp_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 	} else if (credentials != NULL) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using delegated credentials\n"));
 	} else if (allow_anonymous) {
