@@ -28,7 +28,11 @@
 static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
- * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
+ * Decode a base64 string into a DATA_BLOB - simple and slow algorithm.
+ *
+ * A DATA_BLOB like {.data = NULL, length = 0} indicates memory error.
+ *
+ * Decoding stops at the first invalid character.
  **/
 _PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const char *s)
 {
@@ -36,6 +40,11 @@ _PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const cha
 	DATA_BLOB decoded = data_blob_talloc(mem_ctx, s, strlen(s)+1);
 	unsigned char *d = decoded.data;
 	char *p;
+
+	if (decoded.data == NULL) {
+		decoded.length = 0;
+		return decoded;
+	}
 
 	n=i=0;
 
