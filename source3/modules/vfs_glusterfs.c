@@ -1486,7 +1486,17 @@ static int vfs_gluster_fchmod(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = glfs_fchmod(glfd, mode);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to remove xattrs.
+		 */
+		ret = glfs_fchmod(glfd, mode);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		ret = glfs_chmod(handle->data, fsp->fsp_name->base_name, mode);
+	}
 	END_PROFILE(syscall_fchmod);
 
 	return ret;
