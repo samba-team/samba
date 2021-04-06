@@ -2026,9 +2026,9 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		}
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("open_pathref_fsp [%s] failed: %s\n",
-			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status));
+		DBG_DEBUG("open_pathref_fsp [%s] failed: %s\n",
+			  smb_fname_str_dbg(smb_fname),
+			  nt_errstr(status));
 		return status;
 	}
 
