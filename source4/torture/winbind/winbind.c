@@ -194,14 +194,10 @@ static bool torture_winbind_pac(struct torture_context *tctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
-	machine_credentials = cli_credentials_init(tmp_ctx);
+	machine_credentials = cli_credentials_init_server(tmp_ctx,
+							  tctx->lp_ctx);
 	torture_assert(tctx, machine_credentials != NULL, "cli_credentials_init() failed");
 
-	cli_credentials_set_conf(machine_credentials, tctx->lp_ctx);
-
-	status = cli_credentials_set_machine_account(machine_credentials, tctx->lp_ctx);
-	torture_assert_ntstatus_ok(tctx, status, " cli_credentials_set_machine_account() (for server) failed");
-	
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
 
