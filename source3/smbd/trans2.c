@@ -8328,14 +8328,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			  "setting mode 0%o for file %s\n",
 			  (unsigned int)unixmode,
 			  smb_fname_str_dbg(smb_fname)));
-		if (fsp &&
-		    !fsp->fsp_flags.is_pathref &&
-		    fsp_get_io_fd(fsp) != -1)
-		{
-			ret = SMB_VFS_FCHMOD(fsp, unixmode);
-		} else {
-			ret = SMB_VFS_CHMOD(conn, smb_fname, unixmode);
-		}
+		ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		if (ret != 0) {
 			return map_nt_error_from_unix(errno);
 		}
