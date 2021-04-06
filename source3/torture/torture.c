@@ -14948,6 +14948,10 @@ static struct {
 		.fn    = run_posix_stat_test,
 	},
 	{
+		.name  = "POSIX-SYMLINK-PARENT",
+		.fn    = run_posix_symlink_parent_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},

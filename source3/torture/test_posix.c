@@ -734,3 +734,181 @@ out:
 	TALLOC_FREE(frame);
 	return correct;
 }
+
+/*
+  Test Creating files and directories directly
+  under a symlink.
+ */
+bool run_posix_symlink_parent_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	uint16_t fnum = (uint16_t)-1;
+	NTSTATUS status;
+	const char *parent_dir = "target_dir";
+	const char *parent_symlink = "symlink_to_target_dir";
+	const char *fname_real = "target_dir/file";
+	const char *dname_real = "target_dir/dir";
+	const char *fname_link = "symlink_to_target_dir/file";
+	const char *dname_link = "symlink_to_target_dir/dir";
+	const char *sname_link = "symlink_to_target_dir/symlink";
+	const char *hname_link = "symlink_to_target_dir/hardlink";
+	bool correct = false;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-SYMLINK-PARENT test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Start with a clean slate. */
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_rmdir(cli_unix, dname_real);
+	cli_posix_unlink(cli_unix, fname_link);
+	cli_posix_rmdir(cli_unix, dname_link);
+	cli_posix_unlink(cli_unix, sname_link);
+	cli_posix_unlink(cli_unix, hname_link);
+	cli_posix_unlink(cli_unix, parent_symlink);
+	cli_posix_rmdir(cli_unix, parent_dir);
+
+	/* Create parent_dir. */
+	status = cli_posix_mkdir(cli_unix, parent_dir, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed error %s\n",
+		       parent_dir,
+		       nt_errstr(status));
+		goto out;
+	}
+	/* Create symlink to parent_dir. */
+	status = cli_posix_symlink(cli_unix,
+				   parent_dir,
+				   parent_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       parent_symlink,
+		       parent_dir,
+		       nt_errstr(status));
+		goto out;
+	}
+	/* Try and create a directory under the symlink. */
+	status = cli_posix_mkdir(cli_unix, dname_link, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed error %s\n",
+		       dname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+	/* Try and create a file under the symlink. */
+	status = cli_posix_open(cli_unix,
+				fname_link,
+				O_RDWR|O_CREAT,
+				0666,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+		       fname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_unix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Try and create a symlink to the file under the symlink. */
+	status = cli_posix_symlink(cli_unix,
+				   fname_link,
+				   sname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+			sname_link,
+			fname_link,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Try and create a hardlink to the file under the symlink. */
+	status = cli_posix_hardlink(cli_unix,
+				   fname_link,
+				   hname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_hardlink of %s -> %s failed error %s\n",
+			hname_link,
+			fname_link,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Ensure we can delete the symlink via the parent symlink */
+	status = cli_posix_unlink(cli_unix, sname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s failed error %s\n",
+		       sname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Ensure we can delete the hardlink via the parent symlink */
+	status = cli_posix_unlink(cli_unix, hname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s failed error %s\n",
+		       hname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Ensure we can delete the directory via the parent symlink */
+	status = cli_posix_rmdir(cli_unix, dname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_rmdir of %s failed error %s\n",
+		       dname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+	/* Ensure we can delete the file via the parent symlink */
+	status = cli_posix_unlink(cli_unix, fname_link);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s failed error %s\n",
+		       fname_link,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	printf("POSIX-SYMLINK-PARENT test passed\n");
+	correct = true;
+
+out:
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli_unix, fnum);
+	}
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_rmdir(cli_unix, dname_real);
+	cli_posix_unlink(cli_unix, fname_link);
+	cli_posix_rmdir(cli_unix, dname_link);
+	cli_posix_unlink(cli_unix, sname_link);
+	cli_posix_unlink(cli_unix, hname_link);
+	cli_posix_unlink(cli_unix, parent_symlink);
+	cli_posix_rmdir(cli_unix, parent_dir);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+
