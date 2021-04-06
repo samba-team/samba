@@ -63,7 +63,7 @@ struct regsubkey_ctr {
  talloc()'d since the methods use the object pointer as the talloc
  context for internal private data.
 
- There is no longer a regval_ctr_intit() and regval_ctr_destroy()
+ There is no longer a regval_ctr_init() and regval_ctr_destroy()
  pair of functions.  Simply talloc_zero() and TALLOC_FREE() the
  object.
 
