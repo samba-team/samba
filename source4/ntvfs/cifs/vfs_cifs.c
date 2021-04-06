@@ -228,13 +228,10 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
 	} else if (machine_account) {
 		DEBUG(5, ("CIFS backend: Using machine account\n"));
-		credentials = cli_credentials_init(p);
-		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
-		if (domain) {
-			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
-		}
-		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
+		credentials = cli_credentials_init_server(p,
+							  ntvfs->ctx->lp_ctx);
+		if (credentials == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 	} else if (req->session_info->credentials) {
