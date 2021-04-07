@@ -55,6 +55,7 @@ bld.SAMBA3_LIBRARY('msrpc3',
                           rpc_client/rpc_transport_np.c
                           rpc_client/rpc_transport_sock.c
                           rpc_client/rpc_transport_tstream.c
+                          rpc_client/local_np.c
                           librpc/rpc/dcerpc_helpers.c
                           ''',
                    deps='''
@@ -65,6 +66,7 @@ bld.SAMBA3_LIBRARY('msrpc3',
                         COMMON_SCHANNEL
                         LIBCLI_AUTH
                         LIBTSOCKET
+                        npa_tstream
                         gse
                         dcerpc-binding
                         libsmb
