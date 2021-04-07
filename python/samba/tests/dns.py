@@ -31,7 +31,8 @@ import samba.ndr as ndr
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.dnsserver import TXTRecord
-from samba.netcmd.dns import dns_record_match, data_to_dns_record
+from samba.dnsserver import record_from_string
+from samba.netcmd.dns import dns_record_match
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
@@ -1778,7 +1779,7 @@ class TestRPCRoundtrip(DNSTest):
     def rpc_update(self, fqn=None, data=None, wType=None, delete=False):
         fqn = fqn or ("rpctestrec." + self.get_dns_domain())
 
-        rec = data_to_dns_record(wType, data)
+        rec = record_from_string(wType, data)
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
 
@@ -1824,7 +1825,7 @@ class TestRPCRoundtrip(DNSTest):
 
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""')
+        rec = record_from_string(dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
@@ -1903,7 +1904,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
+        rec = record_from_string(dnsp.DNS_TYPE_TXT,
                                  '"\\"This is a test\\"" "" ""')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
@@ -1936,7 +1937,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
+        rec = record_from_string(dnsp.DNS_TYPE_TXT,
                                  '"\\"This is a test\\"" "" "" "more text"')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
@@ -1969,7 +1970,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
+        rec = record_from_string(dnsp.DNS_TYPE_TXT,
                                  '"" "" "\\"This is a test\\""')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
@@ -2026,7 +2027,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpcnulltextrec'
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"NULL\x00BYTE"')
+        rec = record_from_string(dnsp.DNS_TYPE_TXT, '"NULL\x00BYTE"')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
@@ -2072,7 +2073,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"')
+        rec = record_from_string(dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
@@ -2121,7 +2122,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"')
+        rec = record_from_string(dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
@@ -2171,7 +2172,7 @@ class TestRPCRoundtrip(DNSTest):
         prefix = 'rpc' + prefix
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
+        rec = record_from_string(dnsp.DNS_TYPE_TXT,
                                  '"\\"This is a test\\""' +
                                  ' "\\"and this is a test, too\\""')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
@@ -2219,7 +2220,7 @@ class TestRPCRoundtrip(DNSTest):
 
         name = "%s.%s" % (prefix, self.get_dns_domain())
 
-        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '')
+        rec = record_from_string(dnsp.DNS_TYPE_TXT, '')
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:

@@ -28,7 +28,7 @@ from samba import credentials, param
 from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.dnsserver import TXTRecord
-from samba.netcmd.dns import dns_record_match, data_to_dns_record
+from samba.netcmd.dns import dns_record_match
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 import optparse

@@ -18,7 +18,7 @@
 import sys
 from samba import credentials
 from samba.dcerpc import dns, dnsserver
-from samba.netcmd.dns import data_to_dns_record
+from samba.dnsserver import record_from_string
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
@@ -117,7 +117,7 @@ class TestWildCardQueries(DNSTest):
 
     def delete_record(self, dns_conn, typ, name, data):
 
-        rec = data_to_dns_record(typ, data)
+        rec = record_from_string(typ, data)
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         del_rec_buf.rec = rec
 
@@ -136,7 +136,7 @@ class TestWildCardQueries(DNSTest):
 
     def add_record(self, dns_conn, typ, name, data):
 
-        rec = data_to_dns_record(typ, data)
+        rec = record_from_string(typ, data)
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
         try:
