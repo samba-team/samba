@@ -1479,7 +1479,8 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 {
 	struct spoolss_PrinterInfo2 *info2;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct policy_handle hive_hnd, key_hnd;
+	struct policy_handle hive_hnd = { .handle_type = 0 };
+	struct policy_handle key_hnd = { .handle_type = 0 };
 	struct spoolss_PrinterEnumValues enum_value;
 	struct spoolss_PrinterEnumValues *v = NULL;
 	enum ndr_err_code ndr_err;
@@ -1503,8 +1504,8 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 
 	path = winreg_printer_data_keyname(tmp_ctx, printer);
 	if (path == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return WERR_NOT_ENOUGH_MEMORY;
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
