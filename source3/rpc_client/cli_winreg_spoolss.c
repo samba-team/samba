@@ -38,16 +38,6 @@
 #define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
-#define FILL_STRING(mem_ctx, in, out) \
-	do { \
-		if (in && strlen(in)) { \
-			out = talloc_strdup(mem_ctx, in); \
-		} else { \
-			out = talloc_strdup(mem_ctx, ""); \
-		} \
-		W_ERROR_HAVE_NO_MEMORY(out); \
-	} while (0);
-
 #define CHECK_ERROR(result) \
 	if (W_ERROR_IS_OK(result)) continue; \
 	if (W_ERROR_EQUAL(result, WERR_NOT_FOUND)) result = WERR_OK; \
@@ -1549,23 +1539,57 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	result = WERR_NOT_ENOUGH_MEMORY;
+
 	info2 = talloc_zero(tmp_ctx, struct spoolss_PrinterInfo2);
 	if (info2 == NULL) {
-		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
-	FILL_STRING(info2, "", info2->servername);
-	FILL_STRING(info2, "", info2->printername);
-	FILL_STRING(info2, "", info2->sharename);
-	FILL_STRING(info2, "", info2->portname);
-	FILL_STRING(info2, "", info2->drivername);
-	FILL_STRING(info2, "", info2->comment);
-	FILL_STRING(info2, "", info2->location);
-	FILL_STRING(info2, "", info2->sepfile);
-	FILL_STRING(info2, "", info2->printprocessor);
-	FILL_STRING(info2, "", info2->datatype);
-	FILL_STRING(info2, "", info2->parameters);
+	info2->servername = talloc_strdup(info2, "");
+	if (info2->servername == NULL) {
+		goto done;
+	}
+	info2->printername = talloc_strdup(info2, "");
+	if (info2->printername == NULL) {
+		goto done;
+	}
+	info2->sharename = talloc_strdup(info2, "");
+	if (info2->sharename == NULL) {
+		goto done;
+	}
+	info2->portname = talloc_strdup(info2, "");
+	if (info2->portname == NULL) {
+		goto done;
+	}
+	info2->drivername = talloc_strdup(info2, "");
+	if (info2->drivername == NULL) {
+		goto done;
+	}
+	info2->comment = talloc_strdup(info2, "");
+	if (info2->comment == NULL) {
+		goto done;
+	}
+	info2->location = talloc_strdup(info2, "");
+	if (info2->location == NULL) {
+		goto done;
+	}
+	info2->sepfile = talloc_strdup(info2, "");
+	if (info2->sepfile == NULL) {
+		goto done;
+	}
+	info2->printprocessor = talloc_strdup(info2, "");
+	if (info2->printprocessor == NULL) {
+		goto done;
+	}
+	info2->datatype = talloc_strdup(info2, "");
+	if (info2->datatype == NULL) {
+		goto done;
+	}
+	info2->parameters = talloc_strdup(info2, "");
+	if (info2->parameters == NULL) {
+		goto done;
+	}
 
 	for (i = 0; i < num_values; i++) {
 		enum_value.value_name = enum_names[i];
