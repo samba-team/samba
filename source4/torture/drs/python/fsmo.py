@@ -62,7 +62,7 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
     def _net_fsmo_role_transfer(self, DC, role, noop=False):
         # make command line credentials string
         ccache_name = self.get_creds_ccache_name()
-        cmd_line_auth = "--krb5-ccache=%s" % ccache_name
+        cmd_line_auth = "--use-krb5-ccache=%s" % ccache_name
         (result, out, err) = self.runsubcmd("fsmo", "transfer",
                                             "--role=%s" % role,
                                             "-H", "ldap://%s:389" % DC,

@@ -121,7 +121,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
             # Tunnel the command line credentials down to the
             # subcommand to avoid a new kinit
-            cmdline_auth = "--krb5-ccache=%s" % ccache_name
+            cmdline_auth = "--use-krb5-ccache=%s" % ccache_name
 
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return ["drs", drs_command, cmdline_auth]

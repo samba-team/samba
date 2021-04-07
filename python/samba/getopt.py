@@ -107,13 +107,25 @@ class VersionOptions(optparse.OptionGroup):
         sys.exit(0)
 
 
-def parse_kerberos_arg(arg, opt_str):
+def parse_kerberos_arg_legacy(arg, opt_str):
     if arg.lower() in ["yes", 'true', '1']:
         return MUST_USE_KERBEROS
     elif arg.lower() in ["no", 'false', '0']:
         return DONT_USE_KERBEROS
     elif arg.lower() in ["auto"]:
         return AUTO_USE_KERBEROS
+    else:
+        raise optparse.OptionValueError("invalid %s option value: %s" %
+                                        (opt_str, arg))
+
+
+def parse_kerberos_arg(arg, opt_str):
+    if arg.lower() == 'required':
+        return MUST_USE_KERBEROS
+    elif arg.lower() == 'desired':
+        return AUTO_USE_KERBEROS
+    elif arg.lower() == 'off':
+        return DONT_USE_KERBEROS
     else:
         raise optparse.OptionValueError("invalid %s option value: %s" %
                                         (opt_str, arg))
@@ -147,9 +159,6 @@ class CredentialsOptions(optparse.OptionGroup):
         self._add_option("-N", "--no-pass", action="callback",
                          help="Don't ask for a password",
                          callback=self._set_no_password)
-        self._add_option("-k", "--kerberos", metavar="KERBEROS",
-                         action="callback", type=str,
-                         help="Use Kerberos", callback=self._set_kerberos)
         self._add_option("", "--ipaddress", metavar="IPADDRESS",
                          action="callback", type=str,
                          help="IP address of server",
@@ -158,10 +167,18 @@ class CredentialsOptions(optparse.OptionGroup):
                          action="callback",
                          help="Use stored machine account password",
                          callback=self._set_machine_pass)
-        self._add_option("--krb5-ccache", metavar="KRB5CCNAME",
+        self._add_option("--use-kerberos", metavar="desired|required|off",
+                         action="callback", type=str,
+                         help="Use Kerberos authentication", callback=self._set_kerberos)
+        self._add_option("--use-krb5-ccache", metavar="KRB5CCNAME",
                          action="callback", type=str,
                          help="Kerberos Credentials cache",
                          callback=self._set_krb5_ccache)
+
+        # LEGACY
+        self._add_option("-k", "--kerberos", metavar="KERBEROS",
+                         action="callback", type=str,
+                         help="DEPRECATED: Migrate to --use-kerberos", callback=self._set_kerberos_legacy)
         self.creds = Credentials()
 
     def _ensure_secure_proctitle(self, opt_str, secret_data, data_type="password"):
@@ -244,6 +261,10 @@ class CredentialsOptions(optparse.OptionGroup):
     def _set_ipaddress(self, option, opt_str, arg, parser):
         self.ipaddress = arg
 
+    def _set_kerberos_legacy(self, option, opt_str, arg, parser):
+        print('WARNING: The option -k|--kerberos is deprecated!')
+        self.creds.set_kerberos_state(parse_kerberos_arg_legacy(arg, opt_str))
+
     def _set_kerberos(self, option, opt_str, arg, parser):
         self.creds.set_kerberos_state(parse_kerberos_arg(arg, opt_str))
 
@@ -251,6 +272,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.set_bind_dn(arg)
 
     def _set_krb5_ccache(self, option, opt_str, arg, parser):
+        self.creds.set_kerberos_state(MUST_USE_KERBEROS)
         self.creds.set_named_ccache(arg)
 
     def get_credentials(self, lp, fallback_machine=False):
@@ -298,9 +320,14 @@ class CredentialsOptionsDouble(CredentialsOptions):
                         callback=self._parse_workgroup2)
         self.add_option("--no-pass2", action="store_true",
                         help="Don't ask for a password for the second server")
+        self.add_option("--use-kerberos2", metavar="desired|required|off",
+                        action="callback", type=str,
+                        help="Use Kerberos authentication", callback=self._set_kerberos2)
+
+        # LEGACY
         self.add_option("--kerberos2", metavar="KERBEROS2",
                         action="callback", type=str,
-                        help="Use Kerberos", callback=self._set_kerberos2)
+                        help="Use Kerberos", callback=self._set_kerberos2_legacy)
         self.creds2 = Credentials()
 
     def _parse_username2(self, option, opt_str, arg, parser):
@@ -312,6 +339,9 @@ class CredentialsOptionsDouble(CredentialsOptions):
     def _set_password2(self, option, opt_str, arg, parser):
         self.creds2.set_password(arg)
         self.no_pass2 = False
+
+    def _set_kerberos2_legacy(self, option, opt_str, arg, parser):
+        self.creds2.set_kerberos_state(parse_kerberos_arg(arg, opt_str))
 
     def _set_kerberos2(self, option, opt_str, arg, parser):
         self.creds2.set_kerberos_state(parse_kerberos_arg(arg, opt_str))

@@ -24,6 +24,7 @@ from samba.getopt import (
     AUTO_USE_KERBEROS,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
+    parse_kerberos_arg_legacy,
     parse_kerberos_arg,
 )
 import samba.tests
@@ -31,26 +32,38 @@ import samba.tests
 
 class KerberosOptionTests(samba.tests.TestCase):
 
-    def test_parse_true(self):
+    def test_legacy_parse_true(self):
         self.assertEqual(
-            MUST_USE_KERBEROS, parse_kerberos_arg("yes", "--kerberos"))
+            MUST_USE_KERBEROS, parse_kerberos_arg_legacy("yes", "--kerberos"))
         self.assertEqual(
-            MUST_USE_KERBEROS, parse_kerberos_arg("true", "--kerberos"))
+            MUST_USE_KERBEROS, parse_kerberos_arg_legacy("true", "--kerberos"))
         self.assertEqual(
-            MUST_USE_KERBEROS, parse_kerberos_arg("1", "--kerberos"))
+            MUST_USE_KERBEROS, parse_kerberos_arg_legacy("1", "--kerberos"))
 
-    def test_parse_false(self):
+    def test_legacy_parse_false(self):
         self.assertEqual(
-            DONT_USE_KERBEROS, parse_kerberos_arg("no", "--kerberos"))
+            DONT_USE_KERBEROS, parse_kerberos_arg_legacy("no", "--kerberos"))
         self.assertEqual(
-            DONT_USE_KERBEROS, parse_kerberos_arg("false", "--kerberos"))
+            DONT_USE_KERBEROS, parse_kerberos_arg_legacy("false", "--kerberos"))
         self.assertEqual(
-            DONT_USE_KERBEROS, parse_kerberos_arg("0", "--kerberos"))
+            DONT_USE_KERBEROS, parse_kerberos_arg_legacy("0", "--kerberos"))
 
-    def test_parse_auto(self):
+    def test_legacy_parse_auto(self):
         self.assertEqual(
-            AUTO_USE_KERBEROS, parse_kerberos_arg("auto", "--kerberos"))
+            AUTO_USE_KERBEROS, parse_kerberos_arg_legacy("auto", "--kerberos"))
+
+    def test_legacy_parse_invalid(self):
+        self.assertRaises(optparse.OptionValueError,
+                          parse_kerberos_arg_legacy, "blah?", "--kerberos")
+
+    def test_parse_valid(self):
+        self.assertEqual(
+            MUST_USE_KERBEROS, parse_kerberos_arg("required", "--use-kerberos"))
+        self.assertEqual(
+            AUTO_USE_KERBEROS, parse_kerberos_arg("desired", "--use-kerberos"))
+        self.assertEqual(
+            DONT_USE_KERBEROS, parse_kerberos_arg("off", "--use-kerberos"))
 
     def test_parse_invalid(self):
         self.assertRaises(optparse.OptionValueError,
-                          parse_kerberos_arg, "blah?", "--kerberos")
+                          parse_kerberos_arg, "wurst", "--use-kerberos")
