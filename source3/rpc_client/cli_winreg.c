@@ -717,7 +717,7 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 	uint32_t secdescsize = 0;
 	uint32_t i;
 	NTTIME last_changed_time = 0;
-	struct winreg_String classname;
+	struct winreg_String classname = { .name = NULL };
 
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;
@@ -734,8 +734,6 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 		*pwerr = ntstatus_to_werror(status);
 		return status;
 	}
-
-	ZERO_STRUCT(classname);
 
 	status = dcerpc_winreg_QueryInfoKey(h,
 					    tmp_ctx,
