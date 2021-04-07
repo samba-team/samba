@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import shlex
 from samba.dcerpc import dnsserver, dnsp
 
 # Note: these are not quite the same as similar looking classes in
@@ -39,6 +40,9 @@ from samba.dcerpc import dnsserver, dnsp
 # them can represent any type of record.
 
 
+class DNSParseError(ValueError):
+    pass
+
 
 class ARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
@@ -49,6 +53,10 @@ class ARecord(dnsserver.DNS_RPC_RECORD):
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = ip_addr
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        return cls(data, **kwargs)
 
 
 class AAAARecord(dnsserver.DNS_RPC_RECORD):
@@ -61,6 +69,10 @@ class AAAARecord(dnsserver.DNS_RPC_RECORD):
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = ip6_addr
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        return cls(data, **kwargs)
 
 
 class PTRRecord(dnsserver.DNS_RPC_RECORD):
@@ -77,6 +89,10 @@ class PTRRecord(dnsserver.DNS_RPC_RECORD):
         ptr_name.len = len(ptr)
         self.data = ptr_name
 
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        return cls(data, **kwargs)
+
 
 class CNAMERecord(dnsserver.DNS_RPC_RECORD):
 
@@ -91,6 +107,10 @@ class CNAMERecord(dnsserver.DNS_RPC_RECORD):
         cname_name.str = cname
         cname_name.len = len(cname)
         self.data = cname_name
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        return cls(data, **kwargs)
 
 
 class NSRecord(dnsserver.DNS_RPC_RECORD):
@@ -107,6 +127,10 @@ class NSRecord(dnsserver.DNS_RPC_RECORD):
         ns.len = len(dns_server)
         self.data = ns
 
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        return cls(data, **kwargs)
+
 
 class MXRecord(dnsserver.DNS_RPC_RECORD):
 
@@ -122,6 +146,16 @@ class MXRecord(dnsserver.DNS_RPC_RECORD):
         mx.nameExchange.str = mail_server
         mx.nameExchange.len = len(mail_server)
         self.data = mx
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        try:
+            server, priority = data.split(sep)
+            priority = int(priority)
+        except ValueError as e:
+            raise DNSParseError("MX data must have server and priority "
+                                "(space separated), not %r" % data) from e
+        return cls(server, priority, **kwargs)
 
 
 class SOARecord(dnsserver.DNS_RPC_RECORD):
@@ -146,6 +180,21 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
         soa.ZoneAdministratorEmail.len = len(rname)
         self.data = soa
 
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        args = data.split(sep)
+        if len(args) != 7:
+            raise DNSParseError('Data requires 7 space separated elements - '
+                                'nameserver, email, serial, '
+                                'refresh, retry, expire, minimumttl')
+        try:
+            for i in range(2, 7):
+                args[i] = int(args[i])
+        except ValueError as e:
+            raise DNSParseError("SOA serial, refresh, retry, expire, minimumttl' "
+                                "should be integers") from e
+        return cls(*args, **kwargs)
+
 
 class SRVRecord(dnsserver.DNS_RPC_RECORD):
 
@@ -163,6 +212,23 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
         srv.nameTarget.str = target
         srv.nameTarget.len = len(target)
         self.data = srv
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        try:
+            target, port, priority, weight = data.split(sep)
+        except ValueError as e:
+            raise DNSParseError("SRV data must have four space "
+                                "separated elements: "
+                                "server, port, priority, weight; "
+                                "not %r" % data) from e
+        try:
+            args = (target, int(port), int(priority), int(weight))
+        except ValueError as e:
+            raise DNSParseError("SRV port, priority, and weight "
+                                "must be integers") from e
+
+        return cls(*args, **kwargs)
 
 
 class TXTRecord(dnsserver.DNS_RPC_RECORD):
@@ -184,3 +250,8 @@ class TXTRecord(dnsserver.DNS_RPC_RECORD):
         txt.count = len(slist)
         txt.str = names
         self.data = txt
+
+    @classmethod
+    def from_string(cls, data, sep=None, **kwargs):
+        slist = shlex.split(data)
+        return cls(slist, **kwargs)
