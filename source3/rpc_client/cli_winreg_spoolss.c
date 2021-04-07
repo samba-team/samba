@@ -1495,12 +1495,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;
 	DATA_BLOB *enum_data_blobs = NULL;
-	TALLOC_CTX *tmp_ctx;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	path = winreg_printer_data_keyname(tmp_ctx, printer);
 	if (path == NULL) {
