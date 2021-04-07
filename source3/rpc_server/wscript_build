@@ -19,6 +19,20 @@ bld.SAMBA_BINARY('samba-dcerpcd',
                  ''',
                  install_path='${SAMBA_LIBEXECDIR}')
 
+bld.SAMBA_LIBRARY('RPC_WORKER',
+                  private_library=True,
+                  source='''
+                  rpc_worker.c
+                  ''',
+                  deps='''
+                  smbd_base
+                  CMDLINE_S3
+                  NDR_RPC_HOST
+                  RPC_SERVER
+                  RPC_NCACN_NP
+                  npa_tstream
+                  ''')
+
 bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
                     source='rpc_config.c',
                     deps='talloc')
