@@ -29,6 +29,7 @@
 #include "auth_generic.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/auth.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_util.h"
 #include "rpc_dce.h"
@@ -36,7 +37,12 @@
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "auth/auth_util.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/tsocket/tsocket.h"
+#include "libcli/named_pipe_auth/npa_tstream.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
+#include "local_np.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -3033,6 +3039,111 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 	if (fd != -1) {
 		close(fd);
 	}
+	TALLOC_FREE(result);
+	return status;
+}
+
+NTSTATUS rpc_pipe_open_local_np(
+	TALLOC_CTX *mem_ctx,
+	const struct ndr_interface_table *table,
+	const char *remote_client_name,
+	const struct tsocket_address *remote_client_addr,
+	const char *local_server_name,
+	const struct tsocket_address *local_server_addr,
+	const struct auth_session_info *session_info,
+	struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result = NULL;
+	struct pipe_auth_data *auth = NULL;
+	const char *pipe_name = NULL;
+	struct tstream_context *npa_stream = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int ret;
+
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		goto fail;
+	}
+	result->abstract_syntax = table->syntax_id;
+	result->transfer_syntax = ndr_transfer_syntax_ndr;
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	pipe_name = dcerpc_default_transport_endpoint(
+		result, NCACN_NP, table);
+	if (pipe_name == NULL) {
+		DBG_DEBUG("dcerpc_default_transport_endpoint failed\n");
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto fail;
+	}
+
+	if (local_server_name == NULL) {
+		result->desthost = get_myname(result);
+	} else {
+		result->desthost = talloc_strdup(result, local_server_name);
+	}
+	if (result->desthost == NULL) {
+		goto fail;
+	}
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if (result->srv_name_slash == NULL) {
+		goto fail;
+	}
+
+	ret = local_np_connect(
+		pipe_name,
+		NCALRPC,
+		remote_client_name,
+		remote_client_addr,
+		local_server_name,
+		local_server_addr,
+		session_info,
+		true,
+		result,
+		&npa_stream);
+	if (ret != 0) {
+		DBG_DEBUG("local_np_connect for %s and "
+			  "user %s\\%s failed: %s\n",
+			  pipe_name,
+			  session_info->info->domain_name,
+			  session_info->info->account_name,
+			  strerror(ret));
+		status = map_nt_error_from_unix(ret);
+		goto fail;
+	}
+
+	status = rpc_transport_tstream_init(
+		result, &npa_stream, &result->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_transport_tstream_init failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
+	if (result->binding_handle == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		DBG_DEBUG("Failed to create binding handle.\n");
+		goto fail;
+	}
+
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_anon_bind_data failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_bind failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+
+fail:
 	TALLOC_FREE(result);
 	return status;
 }

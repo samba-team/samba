@@ -53,6 +53,16 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult);
 
+NTSTATUS rpc_pipe_open_local_np(
+	TALLOC_CTX *mem_ctx,
+	const struct ndr_interface_table *table,
+	const char *remote_client_name,
+	const struct tsocket_address *remote_client_addr,
+	const char *local_server_name,
+	const struct tsocket_address *local_server_addr,
+	const struct auth_session_info *session_info,
+	struct rpc_pipe_client **presult);
+
 struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 					const struct GUID *object,
 					const struct ndr_interface_table *table);
