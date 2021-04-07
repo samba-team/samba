@@ -33,6 +33,79 @@ bld.SAMBA_LIBRARY('RPC_WORKER',
                   npa_tstream
                   ''')
 
+bld.SAMBA3_BINARY('rpcd_rpcecho',
+                  source='rpcd_rpcecho.c',
+                  deps='''
+                  RPC_WORKER
+                  RPC_RPCECHO
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_classic',
+                  source='rpcd_classic.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_SERVICE
+                  RPC_SOCK_HELPER
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_lsad',
+                  source='rpcd_lsad.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_LSARPC
+                  RPC_SAMR
+                  RPC_DSSETUP
+                  RPC_NETLOGON
+                  RPC_SOCK_HELPER
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_winreg',
+                  source='rpcd_winreg.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_WINREG
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_spoolss',
+                  source='rpcd_spoolss.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_SPOOLSS
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_epmapper',
+                  source='rpcd_epmapper.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_EPMAPPER
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
+bld.SAMBA3_BINARY('rpcd_fsrvp',
+                  source='rpcd_fsrvp.c',
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  RPC_FSS_AGENT
+                  smbd_base
+                  ''',
+                  install_path='${SAMBA_LIBEXECDIR}')
+
 bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
                     source='rpc_config.c',
                     deps='talloc')
@@ -185,6 +258,15 @@ bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   deps=rpc_mdssvc_deps,
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_mdssvc_module'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'))
+
+bld.SAMBA3_BINARY('rpcd_mdssvc',
+                  source='rpcd_mdssvc.c ' + rpc_mdssvc_sources,
+                  deps='''
+                  CMDLINE_S3
+                  RPC_WORKER
+                  smbd_base
+                  ''' + rpc_mdssvc_deps,
+                  install_path='${SAMBA_LIBEXECDIR}')
 
 # RPC_SERVICE
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',

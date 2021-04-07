@@ -1,0 +1,2 @@
+^samba3.rpc.epmapper\ over\ ncalrpc.epmapper.Map_full\(nt4_dc:local\)
+^samba3.rpc.epmapper\ over\ ncalrpc.epmapper.Insert_noreplace\(nt4_dc:local\)

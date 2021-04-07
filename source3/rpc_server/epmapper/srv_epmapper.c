@@ -23,13 +23,17 @@
 #include "ntdomain.h"
 #include "../libcli/security/security.h"
 #include "../lib/tsocket/tsocket.h"
-#include "srv_epmapper.h"
 #include "auth.h"
 
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_scompat.h"
 #include "rpc_server/rpc_server.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/util_tdb.h"
+#include "lib/util/strv.h"
+
+static struct tdb_wrap *epmdb = NULL;
 
 /* handle types for this module */
 enum handle_types {HTYPE_LOOKUP};
@@ -80,283 +84,181 @@ struct rpc_eps {
 	uint32_t count;
 };
 
-static struct dcesrv_epm_endpoint *endpoint_table = NULL;
+struct build_ep_list_state {
+	const struct GUID *uuid;
+	const char *srv_addr;
+	TALLOC_CTX *mem_ctx;
+	struct dcesrv_ep_iface *ifaces;
+};
 
-/*
- * Check if the UUID and if_version match to an interface.
- */
-static bool interface_match(const struct dcesrv_iface *if1,
-			    const struct dcesrv_iface *if2)
+static bool build_ep_list_fill_iface(
+	TALLOC_CTX *mem_ctx,
+	const struct ndr_syntax_id *syntax_id,
+	const char *endpoint,
+	const char *name,
+	const char *srv_addr,
+	struct dcesrv_ep_iface *dst)
 {
-	return GUID_equal(&if1->syntax_id.uuid, &if2->syntax_id.uuid);
-}
+	struct dcesrv_ep_iface iface = {
+		.syntax_id = *syntax_id,
+	};
+	struct dcerpc_binding *binding = NULL;
+	enum dcerpc_transport_t transport;
+	char *name_dup = NULL;
+	const char *host_addr = NULL;
+	NTSTATUS status;
 
-/*
- * Find the interface operations on an endpoint.
- */
-static const struct dcesrv_iface *find_interface(const struct dcesrv_epm_endpoint *endpoint,
-						 const struct dcesrv_iface *iface)
-{
-	struct dcesrv_iface_list *iflist;
+	/* copy without const for error path TALLOC_FREE */
+	name_dup = talloc_strdup(mem_ctx, name);
+	if (name_dup == NULL) {
+		goto fail;
+	}
+	iface.name = name_dup;
 
-	for (iflist = endpoint->iface_list; iflist; iflist = iflist->next) {
-		if (interface_match(iflist->iface, iface)) {
-			return iflist->iface;
+	status = dcerpc_parse_binding(mem_ctx, endpoint, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_parse_binding failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	status = dcerpc_binding_set_abstract_syntax(binding, syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_set_abstract_syntax failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	transport = dcerpc_binding_get_transport(binding);
+	if (transport == NCACN_IP_TCP) {
+		const char *host = NULL;
+
+		host = dcerpc_binding_get_string_option(binding, "host");
+		if (host == NULL) {
+			host_addr = srv_addr;
+		} else if (!is_ipaddress_v4(host)) {
+			host_addr = srv_addr;
+		} else if (strcmp(host, "0.0.0.0") == 0) {
+			host_addr = srv_addr;
 		}
 	}
 
-	return NULL;
-}
-
-#if 0
-/*
- * See if a uuid and if_version match to an interface
- */
-static bool interface_match_by_uuid(const struct dcesrv_iface *iface,
-				    const struct GUID *uuid)
-{
-	return GUID_equal(&iface->syntax_id.uuid, uuid);
-}
-#endif
-
-static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_epm_endpoint *endpoint,
-						     const struct dcesrv_iface *iface)
-{
-	struct dcesrv_iface_list *iflist;
-
-	for (iflist = endpoint->iface_list; iflist; iflist = iflist->next) {
-		if (interface_match(iflist->iface, iface)) {
-			return iflist;
+	if (host_addr != NULL) {
+		status = dcerpc_binding_set_string_option(
+			binding, "host", host_addr);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dcerpc_binding_set_string_option "
+				  "failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
 		}
 	}
 
-	return NULL;
-}
-
-/*
- * Check if two endpoints match.
- */
-static bool endpoints_match(const struct dcerpc_binding *b1,
-			    const struct dcerpc_binding *b2)
-{
-	enum dcerpc_transport_t t1;
-	const char *ep1;
-	const char *h1;
-	enum dcerpc_transport_t t2;
-	const char *ep2;
-	const char *h2;
-
-	t1 = dcerpc_binding_get_transport(b1);
-	ep1 = dcerpc_binding_get_string_option(b1, "endpoint");
-	h1 = dcerpc_binding_get_string_option(b1, "host");
-
-	t2 = dcerpc_binding_get_transport(b2);
-	ep2 = dcerpc_binding_get_string_option(b2, "endpoint");
-	h2 = dcerpc_binding_get_string_option(b2, "host");
-
-	if (t1 != t2) {
-		return false;
+	status = dcerpc_binding_build_tower(mem_ctx, binding, &iface.ep);
+	TALLOC_FREE(binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_binding_build_tower failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
 	}
 
-	if ((ep1 != NULL) || (ep2 != NULL)) {
-		if (!strequal(ep1, ep2)) {
-			return false;
-		}
-	}
-
-	if ((h1 != NULL) || (h2 != NULL)) {
-		if (!strequal(h1, h2)) {
-			return false;
-		}
-	}
-
+	*dst = iface;
 	return true;
+
+fail:
+	TALLOC_FREE(binding);
+	TALLOC_FREE(name_dup);
+	TALLOC_FREE(iface.ep.floors);
+	return false;
 }
 
-static struct dcesrv_epm_endpoint *find_endpoint(struct dcesrv_epm_endpoint *endpoint_list,
-					     struct dcerpc_binding *ep_description) {
-	struct dcesrv_epm_endpoint *ep = NULL;
+static int build_ep_list_fn(
+	struct tdb_context *tdb,
+	TDB_DATA key,
+	TDB_DATA value,
+	void *private_data)
+{
+	struct build_ep_list_state *state = private_data;
+	struct ndr_syntax_id syntax_id = { .if_version = 0 };
+	const char *name = NULL;
+	char *endpoints = NULL;
+	const char *endpoint = NULL;
+	bool ok;
 
-	for (ep = endpoint_list; ep != NULL; ep = ep->next) {
-		if (endpoints_match(ep->ep_description, ep_description)) {
-			return ep;
+	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != '\0') ||
+	    (value.dsize == 0) || (value.dptr[value.dsize-1] != '\0')) {
+		DBG_DEBUG("Invalid record\n");
+		return 0;
+	}
+
+	ok = ndr_syntax_id_from_string((char *)key.dptr, &syntax_id);
+	if (!ok) {
+		DBG_DEBUG("Invalid interface: %s\n", (char *)key.dptr);
+		return 0;
+	}
+
+	endpoints = (char *)value.dptr;
+	endpoint = endpoints;
+	name = endpoints;
+
+	while ((endpoint = strv_len_next(endpoints, value.dsize, endpoint))) {
+		size_t num_ifaces = talloc_array_length(state->ifaces);
+		struct dcesrv_ep_iface *tmp = NULL;
+
+		if (num_ifaces+1 < num_ifaces) {
+			return 1;
+		}
+
+		tmp = talloc_realloc(
+			state->mem_ctx,
+			state->ifaces,
+			struct dcesrv_ep_iface,
+			num_ifaces+1);
+		if (tmp == NULL) {
+			return 1;
+		}
+		state->ifaces = tmp;
+
+		ok = build_ep_list_fill_iface(
+			state->ifaces,
+			&syntax_id,
+			endpoint,
+			name,
+			state->srv_addr,
+			&state->ifaces[num_ifaces]);
+		if (!ok) {
+			state->ifaces = talloc_realloc(
+				state->mem_ctx,
+				state->ifaces,
+				struct dcesrv_ep_iface,
+				num_ifaces);
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
 /*
  * Build a list of all interfaces handled by all endpoint servers.
  */
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
-			      struct dcesrv_epm_endpoint *endpoint_list,
 			      const struct GUID *uuid,
 			      const char *srv_addr,
 			      struct dcesrv_ep_iface **peps)
 {
-	struct dcesrv_ep_iface *eps = NULL;
-	struct dcesrv_epm_endpoint *d = NULL;
-	uint32_t total = 0;
-	NTSTATUS status;
+	struct build_ep_list_state state = {
+		.mem_ctx = mem_ctx, .uuid = uuid, .srv_addr = srv_addr,
+	};
+	int ret;
 
-	*peps = NULL;
-
-	for (d = endpoint_list; d != NULL; d = d->next) {
-		struct dcesrv_iface_list *iface;
-		struct dcerpc_binding *description;
-
-		for (iface = d->iface_list; iface != NULL; iface = iface->next) {
-			enum dcerpc_transport_t transport;
-			const char *host = NULL;
-			const char *host_addr = NULL;
-
-#if 0
-			/*
-			 * Windows ignores the object uuid by default. There is
-			 * one corner case. It is checked for the mgmt
-			 * interface, which we do not implement here yet.
-			 */
-			if (uuid && !interface_match_by_uuid(iface->iface, uuid)) {
-				continue;
-			}
-#endif
-
-			eps = talloc_realloc(mem_ctx,
-					     eps,
-					     struct dcesrv_ep_iface,
-					     total + 1);
-			if (eps == NULL) {
-				return 0;
-			}
-			eps[total].name = talloc_strdup(eps,
-							iface->iface->name);
-			if (eps[total].name == NULL) {
-				return 0;
-			}
-			eps[total].syntax_id = iface->iface->syntax_id;
-
-			description = dcerpc_binding_dup(mem_ctx, d->ep_description);
-			if (description == NULL) {
-				return 0;
-			}
-
-			status = dcerpc_binding_set_abstract_syntax(description,
-							&iface->iface->syntax_id);
-			if (!NT_STATUS_IS_OK(status)) {
-				return 0;
-			}
-
-			transport = dcerpc_binding_get_transport(description);
-			host = dcerpc_binding_get_string_option(description, "host");
-
-			if (transport == NCACN_IP_TCP) {
-				if (host == NULL) {
-					host_addr = srv_addr;
-				} else if (!is_ipaddress_v4(host)) {
-					host_addr = srv_addr;
-				} else if (strcmp(host, "0.0.0.0") == 0) {
-					host_addr = srv_addr;
-				}
-			}
-
-			if (host_addr != NULL) {
-				status = dcerpc_binding_set_string_option(description,
-									  "host",
-									  host_addr);
-				if (!NT_STATUS_IS_OK(status)) {
-					return 0;
-				}
-			}
-
-			status = dcerpc_binding_build_tower(eps,
-							    description,
-							    &eps[total].ep);
-			TALLOC_FREE(description);
-			if (NT_STATUS_IS_ERR(status)) {
-				DEBUG(1, ("Unable to build tower for %s\n",
-					  iface->iface->name));
-				continue;
-			}
-			total++;
-		}
+	ret = tdb_traverse_read(epmdb->tdb, build_ep_list_fn, &state);
+	if (ret == -1) {
+		DBG_DEBUG("tdb_traverse_read failed\n");
+		return 0;
 	}
 
-	*peps = eps;
-
-	return total;
-}
-
-static bool is_privileged_pipe(struct auth_session_info *info) {
-	/* If the user is not root, or has the system token, fail */
-	if ((info->unix_token->uid != sec_initial_uid()) &&
-	    !security_token_is_system(info->security_token)) {
-		return false;
-	}
-
-	return true;
-}
-
-void srv_epmapper_delete_endpoints(struct dcesrv_connection *conn,
-				   void *private_data)
-{
-	struct pipes_struct *p = dcesrv_get_pipes_struct(conn);
-	struct dcesrv_auth *auth = NULL;
-	struct epm_Delete r;
-	struct dcesrv_ep_entry_list *el = p->ep_entries;
-	error_status_t result;
-
-	/* We have to set p->session_info to check if the connection is
-	 * privileged and delete the endpoints registered by this connection.
-	 * Set the default session info created at connection time as a
-	 * fallback.
-	 */
-	p->session_info = conn->default_auth_state->session_info;
-
-	/* Due to security context multiplexing we can have several states
-	 * in the connection. Search the one of type NCALRPC_AS_SYSTEM to
-	 * replace the default.
-	 */
-	for (auth = conn->auth_states; auth != NULL; auth = auth->next) {
-		if (auth->auth_type == DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM) {
-			p->session_info = auth->session_info;
-		}
-	}
-
-	while (el) {
-		struct dcesrv_ep_entry_list *next = el->next;
-
-		r.in.num_ents = el->num_ents;
-		r.in.entries = el->entries;
-
-		DEBUG(10, ("Delete_endpoints for: %s\n",
-			   el->entries[0].annotation));
-
-		result = _epm_Delete(p, &r);
-		if (result != EPMAPPER_STATUS_OK) {
-			DBG_ERR("Failed to delete endpoint maps\n");
-			return;
-		}
-
-		DLIST_REMOVE(p->ep_entries, el);
-		TALLOC_FREE(el);
-
-		el = next;
-	}
-}
-
-void srv_epmapper_cleanup(void)
-{
-	struct dcesrv_epm_endpoint *ep = endpoint_table;
-
-	while (ep) {
-		struct dcesrv_epm_endpoint *next = ep->next;
-
-		DLIST_REMOVE(endpoint_table, ep);
-		TALLOC_FREE(ep);
-
-		ep = next;
-	}
+	*peps = state.ifaces;
+	return talloc_array_length(*peps);
 }
 
 /*
@@ -367,134 +269,9 @@ void srv_epmapper_cleanup(void)
 error_status_t _epm_Insert(struct pipes_struct *p,
 			   struct epm_Insert *r)
 {
-	TALLOC_CTX *tmp_ctx;
-	error_status_t rc;
-	NTSTATUS status;
-	uint32_t i;
-	struct dcerpc_binding *b;
-	struct dcesrv_epm_endpoint *ep = NULL;
-	struct dcesrv_iface_list *iflist;
-	struct dcesrv_iface *iface;
-	bool add_ep;
-
-	/* If this is not a privileged users, return */
-	if (p->transport != NCALRPC ||
-	    !is_privileged_pipe(p->session_info)) {
-		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-		return EPMAPPER_STATUS_CANT_PERFORM_OP;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
-
-	DBG_NOTICE("Trying to add %"PRIu32" new entries.\n",
-		   r->in.num_ents);
-
-	for (i = 0; i < r->in.num_ents; i++) {
-		enum dcerpc_transport_t transport;
-		add_ep = false;
-		b = NULL;
-
-		status = dcerpc_binding_from_tower(tmp_ctx,
-						   &r->in.entries[i].tower->tower,
-						   &b);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
-			goto done;
-		}
-
-		transport = dcerpc_binding_get_transport(b);
-		DEBUG(3, ("_epm_Insert: Adding transport %s for %s\n",
-			  derpc_transport_string_by_transport(transport),
-			  r->in.entries[i].annotation));
-
-		/* Check if the entry already exits */
-		ep = find_endpoint(endpoint_table, b);
-		if (ep == NULL) {
-			/* No entry found, create it */
-			ep = talloc_zero(NULL, struct dcesrv_epm_endpoint);
-			if (ep == NULL) {
-				rc = EPMAPPER_STATUS_NO_MEMORY;
-				goto done;
-			}
-			add_ep = true;
-
-			ep->ep_description = talloc_steal(ep, b);
-		}
-
-		/* TODO Replace the entry if the replace flag is set */
-
-		/* Create an interface */
-		iface = talloc(tmp_ctx, struct dcesrv_iface);
-		if (iface == NULL) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		iface->name = talloc_strdup(iface, r->in.entries[i].annotation);
-		if (iface->name == NULL) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-		iface->syntax_id = dcerpc_binding_get_abstract_syntax(b);
-
-		/*
-		 * Check if the rpc service is already registered on the
-		 * endpoint.
-		 */
-		if (find_interface(ep, iface) != NULL) {
-			DBG_INFO("interface '%s' already registered on "
-				 "endpoint\n",
-				 iface->name);
-			/* FIXME wrong error code? */
-			rc = EPMAPPER_STATUS_OK;
-			goto done;
-		}
-
-		/* Create an entry for the interface */
-		iflist = talloc(ep, struct dcesrv_iface_list);
-		if (iflist == NULL) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-		iflist->iface = talloc_move(iflist, &iface);
-
-		/* Finally add the interface on the endpoint */
-		DLIST_ADD(ep->iface_list, iflist);
-
-		/* If it's a new endpoint add it to the endpoint_table */
-		if (add_ep) {
-			DLIST_ADD(endpoint_table, ep);
-		}
-	}
-
-	if (r->in.num_ents > 0) {
-		struct dcesrv_ep_entry_list *el;
-
-		el = talloc_zero(p, struct dcesrv_ep_entry_list);
-		if (el == NULL) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-		el->num_ents = r->in.num_ents;
-		el->entries = talloc_move(el, &r->in.entries);
-
-		DLIST_ADD(p->ep_entries, el);
-	}
-
-	rc = EPMAPPER_STATUS_OK;
-done:
-	talloc_free(tmp_ctx);
-
-	return rc;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return EPMAPPER_STATUS_CANT_PERFORM_OP;
 }
-
 
 /*
  * epm_Delete
@@ -504,87 +281,9 @@ done:
 error_status_t _epm_Delete(struct pipes_struct *p,
 			   struct epm_Delete *r)
 {
-	TALLOC_CTX *tmp_ctx;
-	error_status_t rc;
-	NTSTATUS status;
-	uint32_t i;
-	struct dcerpc_binding *b;
-	struct dcesrv_epm_endpoint *ep = NULL;
-	struct dcesrv_iface iface;
-	struct dcesrv_iface_list *iflist;
-
-	DEBUG(3, ("_epm_Delete: Trying to delete %u entries.\n",
-		  r->in.num_ents));
-
-	/* If this is not a privileged users, return */
-	if (p->transport != NCALRPC ||
-	    !is_privileged_pipe(p->session_info)) {
-		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-		return EPMAPPER_STATUS_CANT_PERFORM_OP;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
-
-	for (i = 0; i < r->in.num_ents; i++) {
-		enum dcerpc_transport_t transport;
-
-		b = NULL;
-
-		status = dcerpc_binding_from_tower(tmp_ctx,
-						   &r->in.entries[i].tower->tower,
-						   &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		transport = dcerpc_binding_get_transport(b);
-		DEBUG(3, ("_epm_Delete: Deleting transport '%s' for '%s'\n",
-			  derpc_transport_string_by_transport(transport),
-			  r->in.entries[i].annotation));
-
-		ep = find_endpoint(endpoint_table, b);
-		if (ep == NULL) {
-			rc = EPMAPPER_STATUS_OK;
-			goto done;
-		}
-
-		iface.name = r->in.entries[i].annotation;
-		iface.syntax_id = dcerpc_binding_get_abstract_syntax(b);
-
-		iflist = find_interface_list(ep, &iface);
-		if (iflist == NULL) {
-			DEBUG(0, ("_epm_Delete: No interfaces left, delete endpoint\n"));
-			DLIST_REMOVE(endpoint_table, ep);
-			talloc_free(ep);
-
-			rc = EPMAPPER_STATUS_OK;
-			goto done;
-		}
-
-		DLIST_REMOVE(ep->iface_list, iflist);
-
-		if (ep->iface_list == NULL) {
-			DEBUG(0, ("_epm_Delete: No interfaces left, delete endpoint\n"));
-			DLIST_REMOVE(endpoint_table, ep);
-			talloc_free(ep);
-
-			rc = EPMAPPER_STATUS_OK;
-			goto done;
-		}
-
-	}
-
-	rc = EPMAPPER_STATUS_OK;
-done:
-	talloc_free(tmp_ctx);
-
-	return rc;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return EPMAPPER_STATUS_CANT_PERFORM_OP;
 }
-
 
 /*
  * epm_Lookup
@@ -643,7 +342,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			 * be ignored.
 			 */
 			eps->count = build_ep_list(eps,
-						   endpoint_table,
 						   NULL,
 						   srv_addr,
 						   &eps->e);
@@ -666,7 +364,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			 * interface_id, vers_option, and object.
 			 */
 			eps->count = build_ep_list(eps,
-						   endpoint_table,
 						   &r->in.interface_id->uuid,
 						   srv_addr,
 						   &eps->e);
@@ -677,7 +374,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			 * UUID specified by object.
 			 */
 			eps->count = build_ep_list(eps,
-						   endpoint_table,
 						   r->in.object,
 						   srv_addr,
 						   &eps->e);
@@ -922,6 +618,126 @@ done:
 	return rc;
 }
 
+static struct rpc_eps *epm_map_get_towers(
+	TALLOC_CTX *mem_ctx,
+	const struct ndr_syntax_id *iface,
+	enum dcerpc_transport_t transport,
+	const char *local_address)
+{
+	struct ndr_syntax_id_buf idbuf;
+	char *iface_string = ndr_syntax_id_buf_string(iface, &idbuf);
+	struct rpc_eps *eps = NULL;
+	uint8_t *buf = NULL;
+	size_t buflen;
+	char *bindings = NULL;
+	char *binding = NULL;
+	char *name = NULL;
+	NTSTATUS status;
+	int ret;
+
+	DBG_DEBUG("Mapping interface %s\n", iface_string);
+
+	eps = talloc_zero(mem_ctx, struct rpc_eps);
+	if (eps == NULL) {
+		goto fail;
+	}
+
+	ret = tdb_fetch_talloc(
+		epmdb->tdb, string_term_tdb_data(iface_string), eps, &buf);
+	if (ret != 0) {
+		DBG_DEBUG("Could not find epm entry for %s: %s\n",
+			  iface_string,
+			  strerror(ret));
+		goto fail;
+	}
+	buflen = talloc_array_length(buf);
+
+	if ((buflen < 1) || (buf[buflen-1] != '\0')) {
+		DBG_DEBUG("epm entry for %s invalid\n", iface_string);
+		goto fail;
+	}
+	bindings = (char *)buf;
+
+	name = bindings;	/* name comes first */
+	binding = name;		/* strv_next will skip name */
+
+	while ((binding = strv_next(bindings, binding)) != NULL) {
+		struct dcerpc_binding *b = NULL;
+		enum dcerpc_transport_t found_transport;
+		struct dcesrv_ep_iface *tmp = NULL, *new_ep = NULL;
+
+		DBG_DEBUG("Found %s for %s\n", binding, name);
+
+		status = dcerpc_parse_binding(mem_ctx, binding, &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dcerpc_parse_binding() for %s failed: %s\n",
+				  binding,
+				  nt_errstr(status));
+			goto fail;
+		}
+
+		found_transport = dcerpc_binding_get_transport(b);
+		if (found_transport != transport) {
+			DBG_DEBUG("Transport %d does not match %d\n",
+				  (int)found_transport,
+				  (int)transport);
+			TALLOC_FREE(b);
+			continue;
+		}
+
+		if (found_transport == NCACN_IP_TCP) {
+			status = dcerpc_binding_set_string_option(
+				b, "host", local_address);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("Could not set host: %s\n",
+					  nt_errstr(status));
+				goto fail;
+			}
+		}
+
+		status = dcerpc_binding_set_abstract_syntax(b, iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Could not set abstract syntax: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+
+		tmp = talloc_realloc(
+			eps,
+			eps->e,
+			struct dcesrv_ep_iface,
+			eps->count+1);
+		if (tmp == NULL) {
+			goto fail;
+		}
+		eps->e = tmp;
+
+		new_ep = &eps->e[eps->count];
+
+		new_ep->name = talloc_strdup(eps->e, name);
+		if (new_ep->name == NULL) {
+			goto fail;
+		}
+		new_ep->syntax_id = *iface;
+
+		status = dcerpc_binding_build_tower(eps->e, b, &new_ep->ep);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dcerpc_binding_build_tower failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+
+		eps->count += 1;
+
+		TALLOC_FREE(b);
+	}
+	return eps;
+
+fail:
+	TALLOC_FREE(eps);
+	return NULL;
+}
+
 /*
  * epm_Map
  *
@@ -980,7 +796,13 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	floors = r->in.map_tower->tower.floors;
 
 	/* We accept NDR as the transfer syntax */
-	dcerpc_floor_get_lhs_data(&floors[1], &ifid);
+	status = dcerpc_floor_get_lhs_data(&floors[1], &ifid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dcerpc_floor_get_lhs_data() failed: %s\n",
+			  nt_errstr(status));
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    !ndr_syntax_id_equal(&ifid, &ndr_transfer_syntax_ndr)) {
@@ -1003,91 +825,42 @@ error_status_t _epm_Map(struct pipes_struct *p,
 
 	if (r->in.entry_handle == NULL ||
 	    ndr_policy_handle_empty(r->in.entry_handle)) {
-		struct GUID *obj;
-		char *srv_addr = NULL;
+		char *local_address = NULL;
+		struct ndr_syntax_id_buf buf;
+		char *if_string = NULL;
 
 		DEBUG(7, ("_epm_Map: No entry_handle found, creating it.\n"));
 
-		eps = talloc_zero(tmp_ctx, struct rpc_eps);
-		if (eps == NULL) {
-			rc = EPMAPPER_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		/*
-		 * *** ATTENTION ***
-		 * CDE 1.1 states:
-		 *
-		 * ept_map()
-		 *     Apply some algorithm (using the fields in the map_tower)
-		 *     to an endpoint map to produce a list of protocol towers.
-		 *
-		 * The following code is the mysterious "some algorithm"!
-		 */
-
-		/* Filter by object id if one was given. */
-		if (r->in.object == NULL || GUID_all_zero(r->in.object)) {
-			obj = NULL;
-		} else {
-			obj = r->in.object;
-		}
-
-		if (p->local_address != NULL &&
-		    tsocket_address_is_inet(p->local_address, "ipv4"))
-		{
-			srv_addr = tsocket_address_inet_addr_string(p->local_address,
-								    tmp_ctx);
-		}
-
-		eps->count = build_ep_list(eps,
-					   endpoint_table,
-					   obj,
-					   srv_addr,
-					   &eps->e);
-		if (eps->count == 0) {
+		status = dcerpc_floor_get_lhs_data(&floors[0], &ifid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dcerpc_floor_get_lhs_data() failed: %s\n",
+				  nt_errstr(status));
 			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 			goto done;
 		}
 
-		/* Filter out endpoints which match the interface. */
-		{
-			struct rpc_eps *teps;
-			uint32_t total = 0;
+		if_string = ndr_syntax_id_buf_string(&ifid, &buf);
 
-			teps = talloc_zero(tmp_ctx, struct rpc_eps);
-			if (teps == NULL) {
-				rc = EPMAPPER_STATUS_NO_MEMORY;
-				goto done;
-			}
+		DBG_INFO("Mapping interface %s\n", if_string);
 
-			for (i = 0; i < eps->count; i++) {
-				if (data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data,
-				                  &eps->e[i].ep.floors[0].lhs.lhs_data) != 0 ||
-				    transport != dcerpc_transport_by_tower(&eps->e[i].ep)) {
-					continue;
-				}
-
-				teps->e = talloc_realloc(tmp_ctx,
-							 teps->e,
-							 struct dcesrv_ep_iface,
-							 total + 1);
-				if (teps->e == NULL) {
-					return 0;
-				}
-
-				teps->e[total].ep.floors = talloc_move(teps, &eps->e[i].ep.floors);
-				teps->e[total].ep.num_floors = eps->e[i].ep.num_floors;
-				teps->e[total].name = talloc_move(teps, &eps->e[i].name);
-				teps->e[total].syntax_id = eps->e[i].syntax_id;
-
-				total++;
-			}
-
-			teps->count = total;
-			talloc_free(eps);
-			eps = teps;
+		if ((transport == NCACN_IP_TCP) &&
+		    tsocket_address_is_inet(p->local_address, "ip")) {
+			/*
+			 * We don't have the host ip in the epm
+			 * database. For NCACN_IP_TCP, add the IP that
+			 * the client connected to.
+			 */
+			local_address = tsocket_address_inet_addr_string(
+				p->local_address, tmp_ctx);
 		}
-		/* end of "some algorithm" */
+
+		eps = epm_map_get_towers(
+			tmp_ctx, &ifid, transport, local_address);
+		if (eps == NULL) {
+			DBG_DEBUG("No bindings found\n");
+			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+			goto done;
+		}
 
 		ok = create_policy_hnd(p, r->out.entry_handle, HTYPE_LOOKUP, eps);
 		if (!ok) {
@@ -1245,10 +1018,43 @@ static NTSTATUS epmapper__op_shutdown_server(struct dcesrv_context *dce_ctx,
 static NTSTATUS epmapper_shutdown_server(struct dcesrv_context *dce_ctx,
 		const struct dcesrv_endpoint_server *ep_server)
 {
-	srv_epmapper_cleanup();
-
 	return epmapper__op_shutdown_server(dce_ctx, ep_server);
 }
+
+static NTSTATUS epmapper__op_init_server(
+	struct dcesrv_context *dce_ctx,
+	const struct dcesrv_endpoint_server *ep_server);
+
+static NTSTATUS epmapper_init_server(
+	struct dcesrv_context *dce_ctx,
+	const struct dcesrv_endpoint_server *ep_server)
+{
+	char *epmdb_path = NULL;
+	NTSTATUS status;
+
+	epmdb_path = lock_path(dce_ctx, "epmdb.tdb");
+	if (epmdb_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	epmdb = tdb_wrap_open(
+		dce_ctx,
+		epmdb_path,
+		0,
+		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+		O_RDONLY,
+		0644);
+	if (epmdb == NULL) {
+		DBG_DEBUG("Could not open epmdb.tdb: %s\n", strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+	TALLOC_FREE(epmdb_path);
+
+	status = epmapper__op_init_server(dce_ctx, ep_server);
+	return status;
+}
+
+#define DCESRV_INTERFACE_EPMAPPER_INIT_SERVER epmapper_init_server
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_epmapper_scompat.c"

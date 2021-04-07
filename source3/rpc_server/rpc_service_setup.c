@@ -52,7 +52,6 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/rpc_modules.h"
-#include "rpc_server/epmapper/srv_epmapper.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

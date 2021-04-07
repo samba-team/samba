@@ -32,7 +32,6 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_sock_helper.h"
-#include "rpc_server/epmapper/srv_epmapper.h"
 #include "rpc_server/epmd.h"
 
 #undef DBGC_CLASS
@@ -214,10 +213,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 		if (transport == NCACN_HTTP) {
 			continue;
-		}
-
-		if (transport == NCALRPC) {
-			term_fn = srv_epmapper_delete_endpoints;
 		}
 
 		status = dcesrv_setup_endpoint_sockets(ev_ctx,
