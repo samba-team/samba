@@ -38,8 +38,6 @@
 #define TOP_LEVEL_CONTROL_KEY "SYSTEM\\CurrentControlSet\\Control\\Print"
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
-#define EMPTY_STRING ""
-
 #define FILL_STRING(mem_ctx, in, out) \
 	do { \
 		if (in && strlen(in)) { \
@@ -555,7 +553,7 @@ static WERROR winreg_enumval_to_sz(TALLOC_CTX *mem_ctx,
 	}
 
 	if (v->data_length == 0) {
-		*_str = talloc_strdup(mem_ctx, EMPTY_STRING);
+		*_str = talloc_strdup(mem_ctx, "");
 		if (*_str == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
@@ -1557,17 +1555,17 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	FILL_STRING(info2, EMPTY_STRING, info2->servername);
-	FILL_STRING(info2, EMPTY_STRING, info2->printername);
-	FILL_STRING(info2, EMPTY_STRING, info2->sharename);
-	FILL_STRING(info2, EMPTY_STRING, info2->portname);
-	FILL_STRING(info2, EMPTY_STRING, info2->drivername);
-	FILL_STRING(info2, EMPTY_STRING, info2->comment);
-	FILL_STRING(info2, EMPTY_STRING, info2->location);
-	FILL_STRING(info2, EMPTY_STRING, info2->sepfile);
-	FILL_STRING(info2, EMPTY_STRING, info2->printprocessor);
-	FILL_STRING(info2, EMPTY_STRING, info2->datatype);
-	FILL_STRING(info2, EMPTY_STRING, info2->parameters);
+	FILL_STRING(info2, "", info2->servername);
+	FILL_STRING(info2, "", info2->printername);
+	FILL_STRING(info2, "", info2->sharename);
+	FILL_STRING(info2, "", info2->portname);
+	FILL_STRING(info2, "", info2->drivername);
+	FILL_STRING(info2, "", info2->comment);
+	FILL_STRING(info2, "", info2->location);
+	FILL_STRING(info2, "", info2->sepfile);
+	FILL_STRING(info2, "", info2->printprocessor);
+	FILL_STRING(info2, "", info2->datatype);
+	FILL_STRING(info2, "", info2->parameters);
 
 	for (i = 0; i < num_values; i++) {
 		enum_value.value_name = enum_names[i];
