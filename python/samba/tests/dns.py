@@ -30,7 +30,8 @@ import socket
 import samba.ndr as ndr
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
-from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
+from samba.dnsserver import TXTRecord
+from samba.netcmd.dns import dns_record_match, data_to_dns_record
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
