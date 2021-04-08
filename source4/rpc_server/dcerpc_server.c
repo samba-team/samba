@@ -679,12 +679,21 @@ NTSTATUS dcesrv_gensec_prepare(
 	struct cli_credentials *server_creds = NULL;
 	struct imessaging_context *imsg_ctx =
 		dcesrv_imessaging_context(call->conn);
+	bool ok;
 
 	server_creds = cli_credentials_init_server(call->auth_state,
 						   call->conn->dce_ctx->lp_ctx);
 	if (server_creds == NULL) {
 		DEBUG(1, ("Failed to init server credentials\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
+	/* This is required for ncalrpc_as_system. */
+	ok = cli_credentials_set_kerberos_state(server_creds,
+						CRED_USE_KERBEROS_DESIRED,
+						CRED_SPECIFIED);
+	if (!ok) {
+		DBG_WARNING("Failed to set kerberos state\n");
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	return samba_server_gensec_start(mem_ctx,
