@@ -380,7 +380,6 @@ static NTSTATUS acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
 	.unlinkat_fn = acl_xattr_unlinkat,
-	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
 	.fget_nt_acl_fn = acl_xattr_fget_nt_acl,
 	.get_nt_acl_at_fn = acl_xattr_get_nt_acl_at,
