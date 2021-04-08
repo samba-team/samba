@@ -1458,19 +1458,6 @@ static int vfs_gluster_unlinkat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static int vfs_gluster_chmod(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				mode_t mode)
-{
-	int ret;
-
-	START_PROFILE(syscall_chmod);
-	ret = glfs_chmod(handle->data, smb_fname->base_name, mode);
-	END_PROFILE(syscall_chmod);
-
-	return ret;
-}
-
 static int vfs_gluster_fchmod(struct vfs_handle_struct *handle,
 			      files_struct *fsp, mode_t mode)
 {
@@ -2336,7 +2323,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.get_alloc_size_fn = vfs_gluster_get_alloc_size,
 	.unlinkat_fn = vfs_gluster_unlinkat,
 
-	.chmod_fn = vfs_gluster_chmod,
 	.fchmod_fn = vfs_gluster_fchmod,
 	.fchown_fn = vfs_gluster_fchown,
 	.lchown_fn = vfs_gluster_lchown,
