@@ -911,6 +911,8 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 {
 	struct smb_filename *smb_fname = NULL;
 	mode_t mode;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 	if (argc != 3) {
 		printf("Usage: chmod <path> <mode>\n");
 		return NT_STATUS_OK;
@@ -918,17 +920,25 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 	mode = atoi(argv[2]);
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
 					argv[1],
-					NULL,
-					NULL,
-					0,
-					ssf_flags());
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (SMB_VFS_CHMOD(vfs->conn, smb_fname, mode) == -1) {
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (SMB_VFS_FCHMOD(pathref_fname->fsp, mode) == -1) {
 		printf("chmod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
