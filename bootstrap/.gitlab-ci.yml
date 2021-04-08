@@ -5,8 +5,12 @@ services:
   image: docker:latest
   stage: images
   tags:
+    # We need to make sure we only use gitlab.com
+    # runners and not our own runners, as our current runners
+    # don't allow 'docker build ...' to run.
     - docker
     - gce
+    - shared
   variables:
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
     SAMBA_CI_TEST_JOB: "samba-o3"
