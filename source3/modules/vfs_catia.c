@@ -742,44 +742,6 @@ static int catia_lchown(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int catia_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	char *name = NULL;
-	NTSTATUS status;
-	int ret;
-	int saved_errno;
-	struct smb_filename *catia_smb_fname = NULL;
-
-	status = catia_string_replace_allocate(handle->conn,
-					smb_fname->base_name,
-					&name,
-					vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
-					name,
-					NULL,
-					&smb_fname->st,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (catia_smb_fname == NULL) {
-		TALLOC_FREE(name);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_CHMOD(handle, catia_smb_fname, mode);
-	saved_errno = errno;
-	TALLOC_FREE(name);
-	TALLOC_FREE(catia_smb_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static int catia_mkdirat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -2185,7 +2147,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fstat_fn = catia_fstat,
 	.lstat_fn = catia_lstat,
 	.unlinkat_fn = catia_unlinkat,
-	.chmod_fn = catia_chmod,
 	.fchmod_fn = catia_fchmod,
 	.fchown_fn = catia_fchown,
 	.lchown_fn = catia_lchown,
