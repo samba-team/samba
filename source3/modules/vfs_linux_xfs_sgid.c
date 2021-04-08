@@ -94,7 +94,7 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 	 * return success. What can you do...
 	 */
 	become_root();
-	res = SMB_VFS_NEXT_CHMOD(handle, fname, fname->st.st_ex_mode);
+	res = SMB_VFS_NEXT_FCHMOD(handle, smb_fname->fsp, fname->st.st_ex_mode);
 	unbecome_root();
 
 	if (res == -1) {
