@@ -456,10 +456,10 @@ sub setup_namespaces
 	$namespaces .= $cmd_config;
 	unless (system($namespaces) == 0) {
 		warn("Failed to add namespaces \n$namespaces");
-		return;
+		return -1;
 	}
 
-	return;
+	return 0;
 }
 
 sub setup_trust($$$$$)
@@ -2410,7 +2410,9 @@ sub setup_fl2008r2dc
 		my $upn_array = ["$env->{REALM}.upn"];
 		my $spn_array = ["$env->{REALM}.spn"];
 
-		$self->setup_namespaces($env, $upn_array, $spn_array);
+		if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+			return undef;
+		}
 
 		$env = $self->setup_trust($env, $dc_vars, "forest", "");
 	}
@@ -2595,7 +2597,9 @@ sub _setup_ad_dc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2653,7 +2657,9 @@ sub setup_ad_dc_no_nss
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2685,7 +2691,9 @@ sub setup_ad_dc_no_ntlm
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2717,7 +2725,9 @@ sub setup_ad_dc_fips
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2762,7 +2772,9 @@ sub setup_preforkrestartdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2801,7 +2813,9 @@ sub setup_proclimitdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2832,7 +2846,9 @@ sub setup_schema_dc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -2929,7 +2945,9 @@ sub setup_backupfromdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	# Set up a dangling forward link to an expunged object
 	#
@@ -3225,7 +3243,9 @@ sub setup_renamedc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -3344,7 +3364,9 @@ sub setup_labdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
@@ -3464,7 +3486,9 @@ sub setup_customdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	$self->setup_namespaces($env, $upn_array, $spn_array);
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+		return undef;
+	}
 
 	return $env;
 }
