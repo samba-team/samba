@@ -321,36 +321,6 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 	return acl;
 }
 
-
-static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T acltype,
-			SMB_ACL_T theacl)
-{
-	int ret;
-	const char *name = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
-	DATA_BLOB blob = fake_acls_acl2blob(frame, theacl);
-	if (!blob.data) {
-		DEBUG(0, ("Failed to convert ACL to linear blob for xattr storage\n"));
-		TALLOC_FREE(frame);
-		errno = EINVAL;
-		return -1;
-	}
-	switch (acltype) {
-	case SMB_ACL_TYPE_ACCESS:
-		name = FAKE_ACL_ACCESS_XATTR;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		name = FAKE_ACL_DEFAULT_XATTR;
-		break;
-	}
-	ret = SMB_VFS_NEXT_FSETXATTR(handle, smb_fname->fsp,
-			name, blob.data, blob.length, 0);
-	TALLOC_FREE(frame);
-	return ret;
-}
-
 static int fake_acls_sys_acl_set_fd(vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    SMB_ACL_TYPE_T type,
@@ -604,70 +574,6 @@ static int fake_acl_process_chmod(SMB_ACL_T *pp_the_acl,
 	return 0;
 }
 
-static int fake_acls_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_in,
-			mode_t mode)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	int ret = -1;
-	SMB_ACL_T the_acl = NULL;
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
-	status = synthetic_pathref(talloc_tos(),
-				handle->conn->cwd_fsp,
-				smb_fname_in->base_name,
-				NULL,
-				NULL,
-				smb_fname_in->twrp,
-				smb_fname_in->flags,
-				&smb_fname);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	/*
-	 * Passthrough first to preserve the
-	 * S_ISUID | S_ISGID | S_ISVTX
-	 * bits.
-	 */
-
-	ret = SMB_VFS_NEXT_CHMOD(handle,
-				smb_fname,
-				mode);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	the_acl = fake_acls_sys_acl_get_file(handle,
-				smb_fname,
-				SMB_ACL_TYPE_ACCESS,
-				talloc_tos());
-	if (the_acl == NULL) {
-		TALLOC_FREE(frame);
-		if (errno == ENOATTR) {
-			/* No ACL on this file. Just passthrough. */
-			return 0;
-		}
-		return -1;
-	}
-	ret = fake_acl_process_chmod(&the_acl,
-			smb_fname->st.st_ex_uid,
-			mode);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-	ret = fake_acls_sys_acl_set_file(handle,
-				smb_fname,
-				SMB_ACL_TYPE_ACCESS,
-				the_acl);
-	TALLOC_FREE(frame);
-	return ret;
-}
-
 static int fake_acls_fchmod(vfs_handle_struct *handle,
 			files_struct *fsp,
 			mode_t mode)
@@ -720,7 +626,6 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.stat_fn = fake_acls_stat,
 	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
-	.chmod_fn = fake_acls_chmod,
 	.fchmod_fn = fake_acls_fchmod,
 	.sys_acl_get_file_fn = fake_acls_sys_acl_get_file,
 	.sys_acl_get_fd_fn = fake_acls_sys_acl_get_fd,
