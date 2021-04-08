@@ -3262,6 +3262,12 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 		fsp = file_fsp_smb2(req, file_id_persistent, file_id_volatile);
 		if (fsp == NULL) {
+			if (req->compound_related &&
+			    !NT_STATUS_IS_OK(req->compound_create_err))
+			{
+				return smbd_smb2_request_error(req,
+						req->compound_create_err);
+			}
 			if (!call->allow_invalid_fileid) {
 				return smbd_smb2_request_error(req,
 						NT_STATUS_FILE_CLOSED);

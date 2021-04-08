@@ -741,6 +741,7 @@ struct smbd_smb2_request {
 	bool do_encryption;
 	struct tevent_timer *async_te;
 	bool compound_related;
+	NTSTATUS compound_create_err;
 
 	/*
 	 * Give the implementation of an SMB2 req a way to tell the SMB2 request

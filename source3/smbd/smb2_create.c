@@ -331,6 +331,9 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 				       &out_file_id_volatile,
 				       &out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (smbd_smb2_is_compound(smb2req)) {
+			smb2req->compound_create_err = status;
+		}
 		error = smbd_smb2_request_error(smb2req, status);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(smb2req->xconn,
