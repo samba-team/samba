@@ -971,6 +971,105 @@ done:
 	return ret;
 }
 
+static bool test_compound_related9(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	const char *fname = "compound_related9.dat";
+	struct security_descriptor *sd = NULL;
+	struct smb2_handle hd;
+	struct smb2_create cr;
+	union smb_setfileinfo set;
+	struct smb2_notify nt;
+	struct smb2_close cl;
+	NTSTATUS status;
+	struct smb2_request *req[3];
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(cr);
+	cr.level = RAW_OPEN_SMB2;
+	cr.in.create_flags = 0;
+	cr.in.desired_access = SEC_STD_READ_CONTROL |
+				SEC_STD_WRITE_DAC |
+				SEC_STD_WRITE_OWNER;
+	cr.in.create_options = 0;
+	cr.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE |
+				NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	cr.in.alloc_size = 0;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	cr.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	cr.in.security_flags = 0;
+	cr.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	hd = cr.out.file.handle;
+
+	smb2_transport_compound_start(tree->session->transport, 3);
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(nt);
+	nt.in.recursive          = true;
+	nt.in.buffer_size        = 0x1000;
+	nt.in.completion_filter  = FILE_NOTIFY_CHANGE_NAME;
+
+	req[0] = smb2_notify_send(tree, &nt);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_notify_send failed\n");
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = hd;
+
+	req[1] = smb2_close_send(tree, &cl);
+	torture_assert_not_null_goto(tctx, req[1], ret, done,
+				     "smb2_close_send failed\n");
+
+	sd = security_descriptor_dacl_create(tctx,
+			0, NULL, NULL,
+			SID_CREATOR_OWNER,
+			SEC_ACE_TYPE_ACCESS_ALLOWED,
+			SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+			0,
+			NULL);
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+				     "security_descriptor_dacl_create failed\n");
+
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = hd;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	req[2] = smb2_setinfo_file_send(tree, &set);
+	torture_assert_not_null_goto(tctx, req[2], ret, done,
+				     "smb2_setinfo_file_send failed\n");
+
+	status = smb2_notify_recv(req[0], tree, &nt);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_INVALID_PARAMETER,
+					   ret, done,
+					   "smb2_notify_recv failed\n");
+
+	status = smb2_close_recv(req[1], &cl);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_INVALID_PARAMETER,
+					   ret, done,
+					   "smb2_close_recv failed\n");
+
+	status = smb2_setinfo_recv(req[2]);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_INVALID_PARAMETER,
+					   ret, done,
+					   "smb2_setinfo_recv failed\n");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_tdis(tree);
+	smb2_logoff(tree->session);
+	return ret;
+}
+
 static bool test_compound_padding(struct torture_context *tctx,
 				  struct smb2_tree *tree)
 {
@@ -1976,6 +2075,8 @@ struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 				     test_compound_related7);
 	torture_suite_add_1smb2_test(suite, "related8",
 				     test_compound_related8);
+	torture_suite_add_1smb2_test(suite, "related9",
+				     test_compound_related9);
 	torture_suite_add_1smb2_test(suite, "unrelated1", test_compound_unrelated1);
 	torture_suite_add_1smb2_test(suite, "invalid1", test_compound_invalid1);
 	torture_suite_add_1smb2_test(suite, "invalid2", test_compound_invalid2);
