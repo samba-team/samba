@@ -858,18 +858,6 @@ static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_chmod(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	int result;
-
-	DBG_DEBUG("[CEPH] chmod(%p, %s, %d)\n", handle, smb_fname->base_name, mode);
-	result = ceph_chmod(handle->data, smb_fname->base_name, mode);
-	DBG_DEBUG("[CEPH] chmod(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
@@ -1588,7 +1576,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fstat_fn = cephwrap_fstat,
 	.lstat_fn = cephwrap_lstat,
 	.unlinkat_fn = cephwrap_unlinkat,
-	.chmod_fn = cephwrap_chmod,
 	.fchmod_fn = cephwrap_fchmod,
 	.fchown_fn = cephwrap_fchown,
 	.lchown_fn = cephwrap_lchown,
