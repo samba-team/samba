@@ -1480,39 +1480,6 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
-static int mh_chmod(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_chmod\n"));
-	if (!is_in_media_files(smb_fname->base_name))
-	{
-		status = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_CHMOD(handle, clientFname, mode);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
-/*
- * Success: return 0
- * Failure: set errno, return -1
- */
 static int mh_lchown(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname,
 		uid_t uid,
@@ -2161,7 +2128,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.lstat_fn = mh_lstat,
 	.fstat_fn = mh_fstat,
 	.unlinkat_fn = mh_unlinkat,
-	.chmod_fn = mh_chmod,
 	.lchown_fn = mh_lchown,
 	.chdir_fn = mh_chdir,
 	.ntimes_fn = mh_ntimes,
