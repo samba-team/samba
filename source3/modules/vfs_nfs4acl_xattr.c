@@ -421,15 +421,9 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 
 		restored_mode = existing_mode | expected_mode;
 
-		if (fsp_get_io_fd(fsp) != -1) {
-			ret = SMB_VFS_NEXT_FCHMOD(handle,
-						  fsp,
-						  restored_mode);
-		} else {
-			ret = SMB_VFS_NEXT_CHMOD(handle,
-						 fsp->fsp_name,
-						 restored_mode);
-		}
+		ret = SMB_VFS_NEXT_FCHMOD(handle,
+					  fsp,
+					  restored_mode);
 		if (ret != 0) {
 			DBG_ERR("Resetting POSIX mode on [%s] from [0%o]: %s\n",
 				fsp_str_dbg(fsp), existing_mode,
