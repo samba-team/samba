@@ -435,8 +435,8 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 				break;
 			case E2BIG:
 				reason = "output buffer is too small";
-				DBG_NOTICE("Conversion error: %s\n",
-					   reason);
+				DBG_ERR("Conversion error: %s\n",
+					reason);
 				break;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
