@@ -1499,38 +1499,6 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	return 0; /* ok for [f]chmod */
 }
 
-static int vfs_gpfs_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	struct smb_filename *smb_fname_cpath;
-	int rc;
-
-	smb_fname_cpath = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_cpath == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
-		TALLOC_FREE(smb_fname_cpath);
-		return -1;
-	}
-
-	/* avoid chmod() if possible, to preserve acls */
-	if ((smb_fname_cpath->st.st_ex_mode & ~S_IFMT) == mode) {
-		TALLOC_FREE(smb_fname_cpath);
-		return 0;
-	}
-
-	rc = gpfsacl_emu_chmod(handle, smb_fname, mode);
-	if (rc == 1)
-		return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-
-	TALLOC_FREE(smb_fname_cpath);
-	return rc;
-}
-
 static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 		 SMB_STRUCT_STAT st;
@@ -2594,7 +2562,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = gpfsacl_sys_acl_delete_def_file,
-	.chmod_fn = vfs_gpfs_chmod,
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
 	.stat_fn = vfs_gpfs_stat,
