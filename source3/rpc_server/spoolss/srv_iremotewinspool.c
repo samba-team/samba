@@ -100,6 +100,7 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 	/* Update pipes struct opnum */
 	p->opnum = opnum;
 	p->dce_call = dce_call;
+	p->mem_ctx = mem_ctx;
 	/* Update pipes struct session info */
 	pipe_session_info = p->session_info;
 	p->session_info = dce_call->auth_state->session_info;
@@ -1238,6 +1239,7 @@ fail:
 	}
 
 	p->dce_call = NULL;
+	p->mem_ctx = NULL;
 	/* Restore session info */
 	p->session_info = pipe_session_info;
 	p->auth.auth_type = 0;
