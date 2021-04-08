@@ -1807,7 +1807,7 @@ int main(int argc, char *argv[])
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char **const_argv = discard_const_p(const char *, argv);
 	struct program_options options = {0};
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	const char *service_name = SERVICE_NAME;
 	char *service_filename = NULL;
 #ifdef HAVE_WINEXE_CC_WIN32
@@ -1843,12 +1843,12 @@ int main(int argc, char *argv[])
 
 	status = cli_full_connection_creds(
 		&cli,
-		NULL,
+		lp_netbios_name(),
 		options.hostname,
 		NULL,
 		options.port,
 		"IPC$",
-		"?????",
+		"IPC",
 		options.credentials,
 		CLI_FULL_CONNECTION_IPC);
 
