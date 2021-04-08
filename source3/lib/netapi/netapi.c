@@ -352,6 +352,24 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS libnetapi_get_use_kerberos(struct libnetapi_ctx *ctx,
+					  int *use_kerberos)
+{
+	enum credentials_use_kerberos creds_use_kerberos;
+
+	*use_kerberos = 0;
+
+	creds_use_kerberos = cli_credentials_get_kerberos_state(ctx->creds);
+	if (creds_use_kerberos > CRED_USE_KERBEROS_DESIRED) {
+		*use_kerberos = 1;
+	}
+
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
 	uint32_t gensec_features;
