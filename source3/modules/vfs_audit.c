@@ -294,22 +294,6 @@ static int audit_unlinkat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-
-	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
-	       smb_fname->base_name, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
-
-	return result;
-}
-
 static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
@@ -332,7 +316,6 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.close_fn = audit_close,
 	.renameat_fn = audit_renameat,
 	.unlinkat_fn = audit_unlinkat,
-	.chmod_fn = audit_chmod,
 	.fchmod_fn = audit_fchmod,
 };
 
