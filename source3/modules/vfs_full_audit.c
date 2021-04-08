@@ -141,7 +141,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LSTAT,
 	SMB_VFS_OP_GET_ALLOC_SIZE,
 	SMB_VFS_OP_UNLINKAT,
-	SMB_VFS_OP_CHMOD,
 	SMB_VFS_OP_FCHMOD,
 	SMB_VFS_OP_FCHOWN,
 	SMB_VFS_OP_LCHOWN,
@@ -280,7 +279,6 @@ static struct {
 	{ SMB_VFS_OP_LSTAT,	"lstat" },
 	{ SMB_VFS_OP_GET_ALLOC_SIZE,	"get_alloc_size" },
 	{ SMB_VFS_OP_UNLINKAT,	"unlinkat" },
-	{ SMB_VFS_OP_CHMOD,	"chmod" },
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
 	{ SMB_VFS_OP_FCHOWN,	"fchown" },
 	{ SMB_VFS_OP_LCHOWN,	"lchown" },
@@ -1573,24 +1571,6 @@ static int smb_full_audit_unlinkat(vfs_handle_struct *handle,
 	       smb_fname_str_do_log(handle->conn, full_fname));
 
 	TALLOC_FREE(full_fname);
-	return result;
-}
-
-static int smb_full_audit_chmod(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				mode_t mode)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-
-	do_log(SMB_VFS_OP_CHMOD,
-	       (result >= 0),
-	       handle,
-	       "%s|%o",
-	       smb_fname_str_do_log(handle->conn, smb_fname),
-	       mode);
-
 	return result;
 }
 
@@ -2964,7 +2944,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.lstat_fn = smb_full_audit_lstat,
 	.get_alloc_size_fn = smb_full_audit_get_alloc_size,
 	.unlinkat_fn = smb_full_audit_unlinkat,
-	.chmod_fn = smb_full_audit_chmod,
 	.fchmod_fn = smb_full_audit_fchmod,
 	.fchown_fn = smb_full_audit_fchown,
 	.lchown_fn = smb_full_audit_lchown,
