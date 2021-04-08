@@ -346,6 +346,7 @@
  * Version 45 - Remove SMB_VFS_SETXATTR
  * Version 45 - Remove SMB_VFS_REMOVEXATTR
  * Version 45 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
+ * Version 45 - Remove SMB_VFS_CHMOD
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1005,9 +1006,6 @@ struct vfs_fn_pointers {
 			struct files_struct *srcdir_fsp,
 			const struct smb_filename *smb_fname,
 			int flags);
-	int (*chmod_fn)(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode);
 	int (*fchmod_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 	int (*fchown_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
 	int (*lchown_fn)(struct vfs_handle_struct *handle,
@@ -1518,9 +1516,6 @@ int smb_vfs_call_unlinkat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			int flags);
-int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode);
 int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode);
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
@@ -1949,9 +1944,6 @@ int vfs_not_implemented_unlinkat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				int flags);
-int vfs_not_implemented_chmod(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      mode_t mode);
 int vfs_not_implemented_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 			       mode_t mode);
 int vfs_not_implemented_fchown(vfs_handle_struct *handle, files_struct *fsp,

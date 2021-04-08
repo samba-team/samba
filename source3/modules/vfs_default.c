@@ -2408,18 +2408,6 @@ static int vfswrap_unlinkat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	int result;
-
-	START_PROFILE(syscall_chmod);
-	result = chmod(smb_fname->base_name, mode);
-	END_PROFILE(syscall_chmod);
-	return result;
-}
-
 static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
@@ -3819,7 +3807,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.lstat_fn = vfswrap_lstat,
 	.get_alloc_size_fn = vfswrap_get_alloc_size,
 	.unlinkat_fn = vfswrap_unlinkat,
-	.chmod_fn = vfswrap_chmod,
 	.fchmod_fn = vfswrap_fchmod,
 	.fchown_fn = vfswrap_fchown,
 	.lchown_fn = vfswrap_lchown,
