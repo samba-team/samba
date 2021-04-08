@@ -55,25 +55,31 @@ variables:
   # Please see the samba-o3 sections at the end of this file!
   # We should run that for each available image
   #
-  SAMBA_CI_CONTAINER_IMAGE_ubuntu1604: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1604:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_ubuntu1804: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1804:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_ubuntu2004: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu2004:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_debian9: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-debian9:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_debian10: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-debian10:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_opensuse151: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-opensuse151:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_opensuse152: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-opensuse152:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_fedora32: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-fedora32:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_fedora33: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-fedora33:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_centos7: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-centos7:${SAMBA_CI_CONTAINER_TAG}
-  SAMBA_CI_CONTAINER_IMAGE_centos8: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-centos8:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu1604: ubuntu1604
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu1804: ubuntu1804
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu2004: ubuntu2004
+  SAMBA_CI_CONTAINER_IMAGE_debian9: debian9
+  SAMBA_CI_CONTAINER_IMAGE_debian10: debian10
+  SAMBA_CI_CONTAINER_IMAGE_opensuse151: opensuse151
+  SAMBA_CI_CONTAINER_IMAGE_opensuse152: opensuse152
+  SAMBA_CI_CONTAINER_IMAGE_fedora32: fedora32
+  SAMBA_CI_CONTAINER_IMAGE_fedora33: fedora33
+  SAMBA_CI_CONTAINER_IMAGE_centos7: centos7
+  SAMBA_CI_CONTAINER_IMAGE_centos8: centos8
 
 include:
   # The image creation details are specified in a separate file
   # See bootstrap/README.md for details
   - 'bootstrap/.gitlab-ci.yml'
 
-.shared_template:
+.shared_runner_build_image:
   extends: .shared_runner_build
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE}
+  image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_JOB_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
+
+.shared_template:
+  extends: .shared_runner_build_image
   # All Samba jobs are interruptible, this avoids burning CPU when a
   # newer branch is pushed.
   interruptible: true
@@ -81,10 +87,9 @@ include:
 
   variables:
     AUTOBUILD_JOB_NAME: $CI_JOB_NAME
-  image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
   stage: build
   cache:
-    key: ccache.${CI_JOB_NAME}
+    key: ccache.${CI_JOB_NAME}.${SAMBA_CI_JOB_IMAGE}
     paths:
       - ccache
   before_script:
@@ -102,6 +107,8 @@ include:
       # See bootstrap/.gitlab-ci.yml how to generate a new image
     - echo "SAMBA_CI_CONTAINER_REGISTRY[${SAMBA_CI_CONTAINER_REGISTRY}]"
     - echo "SAMBA_CI_CONTAINER_TAG[${SAMBA_CI_CONTAINER_TAG}]"
+    - echo "SAMBA_CI_JOB_IMAGE[${SAMBA_CI_JOB_IMAGE}]"
+    - echo "CI_JOB_IMAGE[${CI_JOB_IMAGE}]"
     - bootstrap/template.py --sha1sum > /tmp/sha1sum-template.txt
     - diff -u bootstrap/sha1sum.txt /tmp/sha1sum-template.txt
     - echo "${SAMBA_CI_CONTAINER_TAG}" > /tmp/sha1sum-tag.txt
@@ -298,7 +305,8 @@ samba-libs:
 
 samba-fuzz:
   extends: .shared_template
-  image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1604:${SAMBA_CI_CONTAINER_TAG}
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1604}
 
 ctdb:
   extends: .shared_template
@@ -319,7 +327,8 @@ samba-ad-dc-4-mitkrb5:
 # main run as it is the fastest full compile of Samba.
 samba-fips:
   extends: .shared_template
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora33
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora33}
 
 .private_test_only:
   extends: .private_runner_test
@@ -374,8 +383,7 @@ samba-no-opath:
 
 # 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
 pages:
-  extends: .shared_runner_build
-  image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
+  extends: .shared_runner_build_image
   stage: report
   dependencies:  # tell gitlab to download artifacts for these jobs
     - others
@@ -418,9 +426,10 @@ pages:
 
 # Coverity Scan
 coverity:
-  extends: .shared_runner_build
+  extends: .shared_runner_build_image
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora33}
   stage: build
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora33
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
     - tar xf /tmp/coverity_tool.tgz
@@ -463,28 +472,33 @@ coverity:
 
 ubuntu1804-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1804
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
 
 ubuntu2004-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu2004
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu2004}
 
 debian10-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_debian10
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_debian10}
 
 opensuse151-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_opensuse151
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_opensuse151}
 
 opensuse152-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_opensuse152
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_opensuse152}
 
 centos7-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_centos7
   variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_centos7}
     # Git on CentOS doesn't support shallow git cloning
     GIT_DEPTH: ""
     # We need a newer GnuTLS version on CentOS7
@@ -492,15 +506,18 @@ centos7-samba-o3:
 
 centos8-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_centos8
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_centos8}
 
 fedora32-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora32
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora32}
 
 fedora33-samba-o3:
   extends: .samba-o3-template
-  image: $SAMBA_CI_CONTAINER_IMAGE_fedora33
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora33}
 
 #
 # Keep the samba-o3 sections at the end ...
