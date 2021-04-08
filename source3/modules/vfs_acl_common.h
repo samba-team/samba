@@ -43,9 +43,6 @@ int unlink_acl_common(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			int flags);
-int chmod_acl_module_common(struct vfs_handle_struct *handle,
-			    const struct smb_filename *smb_fname,
-			    mode_t mode);
 int fchmod_acl_module_common(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp, mode_t mode);
 int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
