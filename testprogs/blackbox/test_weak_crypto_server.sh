@@ -35,7 +35,7 @@ test_weak_crypto_allowed()
 {
     local testparm_stderr_output_path="$PREFIX/testparm_stderr_output"
 
-    $samba_testparm -s $configuration 2>$testparm_stderr_output_path >/dev/null
+    $samba_testparm --suppress-prompt $configuration 2>$testparm_stderr_output_path >/dev/null
 
     grep "Weak crypto is allowed" $testparm_stderr_output_path >/dev/null 2>&1
     if [ $ret -ne 0 ]; then
