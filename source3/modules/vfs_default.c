@@ -2426,7 +2426,31 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t m
 
 	START_PROFILE(syscall_fchmod);
 
-	result = fchmod(fsp_get_io_fd(fsp), mode);
+	if (!fsp->fsp_flags.is_pathref) {
+		result = fchmod(fsp_get_io_fd(fsp), mode);
+		END_PROFILE(syscall_fchmod);
+		return result;
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p != NULL) {
+			result = chmod(p, mode);
+		} else {
+			result = -1;
+		}
+		END_PROFILE(syscall_fchmod);
+		return result;
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	result = chmod(fsp->fsp_name->base_name, mode);
 
 	END_PROFILE(syscall_fchmod);
 	return result;
