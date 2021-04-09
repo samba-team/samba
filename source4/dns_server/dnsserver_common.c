@@ -1055,7 +1055,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 			goto exit;
 		}
 
-		return WERR_OK;
+		werr = WERR_OK;
 		goto exit;
 	}
 
