@@ -22,7 +22,9 @@
 #ifndef _____LIB_UTIL_UTIL_TDB_H__
 #define _____LIB_UTIL_UTIL_TDB_H__
 
+#include "replace.h"
 #include <tdb.h>
+#include "libcli/util/ntstatus.h"
 
 /***************************************************************
  Make a TDB_DATA and keep the const warning in one place
