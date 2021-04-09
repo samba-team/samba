@@ -338,7 +338,6 @@
  * Version 44 - Add 'have_proc_fds' flag to struct connection_struct.
  * Version 44 - Add 'have_proc_fds' flag to struct files_struct.
  * Version 44 - Add dirfsp arg to SMB_VFS_READDIR()
- * Version 44 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  * Version 44 - Replace SMB_VFS_GET_COMPRESSION() with SMB_VFS_FGET_COMPRESSION()
  * Version 44 - Add type argument to SMB_VFS_SYS_ACL_SET_FD()
  * Version 44 - Remove SMB_VFS_SYS_ACL_SET_FILE()
@@ -346,6 +345,7 @@
  * Version 45 - Remove SMB_VFS_LISTXATTR
  * Version 45 - Remove SMB_VFS_SETXATTR
  * Version 45 - Remove SMB_VFS_REMOVEXATTR
+ * Version 45 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
