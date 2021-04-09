@@ -453,6 +453,8 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			}
 
 			if (rec.wType != DNS_TYPE_TOMBSTONE) {
+				DBG_ERR("A tombstoned dnsNode has non-tombstoned"
+					" records, which should not happen.\n");
 				continue;
 			}
 
