@@ -2146,6 +2146,66 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	return rc;
 }
 
+static int fruit_fchmod(vfs_handle_struct *handle,
+                      struct files_struct *fsp,
+                      mode_t mode)
+{
+	int rc = -1;
+	struct fruit_config_data *config = NULL;
+	struct smb_filename *smb_fname_adp = NULL;
+	const struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	rc = SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
+	if (rc != 0) {
+		return rc;
+	}
+
+	smb_fname = fsp->fsp_name;
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (config->rsrc != FRUIT_RSRC_ADFILE) {
+		return 0;
+	}
+
+	if (!VALID_STAT(smb_fname->st)) {
+		return 0;
+	}
+
+	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
+		return 0;
+	}
+
+	rc = adouble_path(talloc_tos(), smb_fname, &smb_fname_adp);
+	if (rc != 0) {
+		return -1;
+	}
+
+	status = openat_pathref_fsp(handle->conn->cwd_fsp,
+				    smb_fname_adp);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* detect ENOENT (mapped to OBJECT_NAME_NOT_FOUND) */
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_OBJECT_NAME_NOT_FOUND)){
+			rc = 0;
+			goto out;
+		}
+		rc = -1;
+		goto out;
+	}
+
+	DBG_DEBUG("%s\n", smb_fname_adp->base_name);
+
+	rc = SMB_VFS_NEXT_FCHMOD(handle, smb_fname_adp->fsp, mode);
+	if (errno == ENOENT) {
+		rc = 0;
+	}
+out:
+	TALLOC_FREE(smb_fname_adp);
+	return rc;
+}
+
 static int fruit_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -5179,6 +5239,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 
 	/* File operations */
 	.chmod_fn = fruit_chmod,
+	.fchmod_fn = fruit_fchmod,
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
 	.openat_fn = fruit_openat,
