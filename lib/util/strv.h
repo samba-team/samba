@@ -20,7 +20,8 @@
 #ifndef _STRV_H_
 #define _STRV_H_
 
-#include "talloc.h"
+#include "replace.h"
+#include <talloc.h>
 
 int strv_add(TALLOC_CTX *mem_ctx, char **strv, const char *string);
 int strv_addn(TALLOC_CTX *mem_ctx, char **strv, const char *src, size_t srclen);
