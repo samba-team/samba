@@ -1415,94 +1415,6 @@ static int streams_xattr_fsetxattr(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static SMB_ACL_T streams_xattr_sys_acl_get_fd(vfs_handle_struct *handle,
-					      files_struct *fsp,
-					      TALLOC_CTX *mem_ctx)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
-	}
-
-	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(
-		handle, fsp->base_fsp->fsp_name,
-		SMB_ACL_TYPE_ACCESS, mem_ctx);
-}
-
-static int streams_xattr_sys_acl_set_fd(vfs_handle_struct *handle,
-					files_struct *fsp,
-					SMB_ACL_TYPE_T type,
-					SMB_ACL_T theacl)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
-	}
-
-	return 0;
-}
-
-static int streams_xattr_sys_acl_blob_get_fd(vfs_handle_struct *handle,
-					     files_struct *fsp,
-					     TALLOC_CTX *mem_ctx,
-					     char **blob_description,
-					     DATA_BLOB *blob)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx,
-							blob_description, blob);
-	}
-
-	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(
-		handle, fsp->base_fsp->fsp_name, mem_ctx,
-		blob_description, blob);
-}
-
-static NTSTATUS streams_xattr_fget_nt_acl(vfs_handle_struct *handle,
-					  files_struct *fsp,
-					  uint32_t security_info,
-					  TALLOC_CTX *mem_ctx,
-					  struct security_descriptor **ppdesc)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
-						mem_ctx, ppdesc);
-	}
-
-	return SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					handle->conn->cwd_fsp,
-					fsp->base_fsp->fsp_name,
-					security_info,
-					mem_ctx,
-					ppdesc);
-}
-
-static NTSTATUS streams_xattr_fset_nt_acl(vfs_handle_struct *handle,
-					  files_struct *fsp,
-					  uint32_t security_info_sent,
-					  const struct security_descriptor *psd)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp,
-						security_info_sent, psd);
-	}
-
-	return NT_STATUS_OK;
-}
-
 struct streams_xattr_fsync_state {
 	int ret;
 	struct vfs_aio_state vfs_aio_state;
@@ -1693,13 +1605,6 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.flistxattr_fn = streams_xattr_flistxattr,
 	.fremovexattr_fn = streams_xattr_fremovexattr,
 	.fsetxattr_fn = streams_xattr_fsetxattr,
-
-	.sys_acl_get_fd_fn = streams_xattr_sys_acl_get_fd,
-	.sys_acl_blob_get_fd_fn = streams_xattr_sys_acl_blob_get_fd,
-	.sys_acl_set_fd_fn = streams_xattr_sys_acl_set_fd,
-
-	.fget_nt_acl_fn = streams_xattr_fget_nt_acl,
-	.fset_nt_acl_fn = streams_xattr_fset_nt_acl,
 };
 
 static_decl_vfs;
