@@ -2425,12 +2425,8 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t m
 	int result;
 
 	START_PROFILE(syscall_fchmod);
-#if defined(HAVE_FCHMOD)
+
 	result = fchmod(fsp_get_io_fd(fsp), mode);
-#else
-	result = -1;
-	errno = ENOSYS;
-#endif
 
 	END_PROFILE(syscall_fchmod);
 	return result;
