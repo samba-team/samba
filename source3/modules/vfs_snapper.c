@@ -2150,26 +2150,6 @@ static int snapper_gmt_unlinkat(vfs_handle_struct *handle,
 			flags);
 }
 
-static int snapper_gmt_chmod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	time_t timestamp = 0;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(),
-				handle,
-				smb_fname,
-				&timestamp,
-				NULL)) {
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-}
-
 static int snapper_gmt_fchmod(vfs_handle_struct *handle,
                        struct files_struct *fsp,
                        mode_t mode)
@@ -2749,7 +2729,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.lstat_fn = snapper_gmt_lstat,
 	.openat_fn = snapper_gmt_openat,
 	.unlinkat_fn = snapper_gmt_unlinkat,
-	.chmod_fn = snapper_gmt_chmod,
 	.fchmod_fn = snapper_gmt_fchmod,
 	.chdir_fn = snapper_gmt_chdir,
 	.ntimes_fn = snapper_gmt_ntimes,
