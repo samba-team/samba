@@ -2102,50 +2102,6 @@ static int fruit_unlink_rsrc(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_chmod(vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname,
-		       mode_t mode)
-{
-	int rc = -1;
-	struct fruit_config_data *config = NULL;
-	struct smb_filename *smb_fname_adp = NULL;
-
-	rc = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-	if (rc != 0) {
-		return rc;
-	}
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->rsrc != FRUIT_RSRC_ADFILE) {
-		return 0;
-	}
-
-	if (!VALID_STAT(smb_fname->st)) {
-		return 0;
-	}
-
-	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
-		return 0;
-	}
-
-	rc = adouble_path(talloc_tos(), smb_fname, &smb_fname_adp);
-	if (rc != 0) {
-		return -1;
-	}
-
-	DEBUG(10, ("fruit_chmod: %s\n", smb_fname_adp->base_name));
-
-	rc = SMB_VFS_NEXT_CHMOD(handle, smb_fname_adp, mode);
-	if (errno == ENOENT) {
-		rc = 0;
-	}
-
-	TALLOC_FREE(smb_fname_adp);
-	return rc;
-}
-
 static int fruit_fchmod(vfs_handle_struct *handle,
                       struct files_struct *fsp,
                       mode_t mode)
@@ -5238,7 +5194,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.disk_free_fn = fruit_disk_free,
 
 	/* File operations */
-	.chmod_fn = fruit_chmod,
 	.fchmod_fn = fruit_fchmod,
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
