@@ -1038,6 +1038,11 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	}
 
 	if (needs_add) {
+		/*
+		 * This is a new dnsNode, which simplifies everything as we
+		 * know there is nothing to delete or change. We add the
+		 * records and get out.
+		 */
 		if (el->num_values == 0) {
 			werr = WERR_OK;
 			goto exit;
