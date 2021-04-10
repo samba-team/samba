@@ -436,6 +436,21 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 	return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, 0, NULL);
 }
 
+static void set_record_rank(struct dnsserver_zone *z,
+			    const char *name,
+			    struct dnsp_DnssrvRpcRecord *rec)
+{
+	if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_PRIMARY) {
+		if (strcmp(name, "@") != 0 && rec->wType == DNS_TYPE_NS) {
+			rec->rank = DNS_RANK_NS_GLUE;
+		} else {
+			rec->rank = DNS_RANK_ZONE;
+		}
+	} else if (strcmp(z->name, ".") == 0) {
+		rec->rank = DNS_RANK_ROOT_HINT;
+	}
+}
+
 
 /* Add a DNS record */
 WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
@@ -462,15 +477,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Set the correct rank for the record. */
-	if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_PRIMARY) {
-		if (strcmp(name, "@") != 0 && rec->wType == DNS_TYPE_NS) {
-			rec->rank = DNS_RANK_NS_GLUE;
-		} else {
-			rec->rank |= DNS_RANK_ZONE;
-		}
-	} else if (strcmp(z->name, ".") == 0) {
-		rec->rank |= DNS_RANK_ROOT_HINT;
-	}
+	set_record_rank(z, name, rec);
 
 	serial = dnsserver_update_soa(mem_ctx, samdb, z, &werr);
 	if (serial < 0) {
