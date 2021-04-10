@@ -596,7 +596,9 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
 }
 
 /*
- * check to see if any dns entries need scavenging
+ * Check to see if any dns entries need scavenging. This only occurs if aging
+ * is enabled in general ("zone scavenging" lpcfg) and on the zone
+ * (zone->fAging is true).
  */
 static NTSTATUS kccsrv_dns_zone_scavenging(
 	struct kccsrv_service *s,
@@ -605,15 +607,15 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 
 	time_t current_time = time(NULL);
 	time_t dns_scavenge_interval;
-	time_t dns_collection_interval;
-
 	NTSTATUS status;
 	char *error_string = NULL;
 
 	/*
 	 * Only perform zone scavenging if it's been enabled.
+	 * (it still might be disabled on all zones).
 	 */
 	if (!lpcfg_dns_zone_scavenging(s->task->lp_ctx)) {
+		DBG_INFO("DNS scavenging not enabled");
 		return NT_STATUS_OK;
 	}
 
@@ -622,12 +624,6 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 					       "dnsserver",
 					       "scavenging_interval",
 					       2 * 60 * 60);
-	dns_collection_interval =
-	    lpcfg_parm_int(s->task->lp_ctx,
-			   NULL,
-			   "dnsserver",
-			   "tombstone_collection_interval",
-			   24 * 60 * 60);
 	if ((current_time - s->last_dns_scavenge) > dns_scavenge_interval) {
 		s->last_dns_scavenge = current_time;
 		status = dns_tombstone_records(mem_ctx, s->samdb,
@@ -644,6 +640,28 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 			return status;
 		}
 	}
+	DBG_INFO("Successfully tombstoned stale DNS records");
+	return NT_STATUS_OK;
+}
+/*
+ * check to see if any dns tombstones should be deleted. This is not optional
+ * ([MS-DNSP] "DsTombstoneInterval") -- stale tombstones are useless clutter.
+ *
+ * Windows does it daily at 2am; we do it roughly daily at an uncontrolled
+ * time.
+ */
+static NTSTATUS kccsrv_dns_zone_tombstone_deletion(struct kccsrv_service *s,
+						   TALLOC_CTX *mem_ctx)
+{
+	time_t current_time = time(NULL);
+	NTSTATUS status;
+	char *error_string = NULL;
+	time_t dns_collection_interval =
+		lpcfg_parm_int(s->task->lp_ctx,
+			       NULL,
+			       "dnsserver",
+			       "tombstone_collection_interval",
+			       24 * 60 * 60);
 
 	if ((current_time - s->last_dns_tombstone_collection) >
 	    dns_collection_interval) {
@@ -661,7 +679,7 @@ static NTSTATUS kccsrv_dns_zone_scavenging(
 			return status;
 		}
 	}
-
+	DBG_INFO("Successfully deleted DNS tombstones");
 	return NT_STATUS_OK;
 }
 
@@ -737,7 +755,12 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	}
 	status = kccsrv_dns_zone_scavenging(service, mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("kccsrv_dns_zone_scavenging failed - %s\n",
+		DBG_ERR("kccsrv_dns_zone_aging failed - %s\n",
+			nt_errstr(status));
+	}
+	status = kccsrv_dns_zone_tombstone_deletion(service, mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("kccsrv_dns_zone_tombstone_scavenging failed - %s\n",
 			nt_errstr(status));
 	}
 	talloc_free(mem_ctx);
