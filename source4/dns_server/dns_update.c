@@ -554,7 +554,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 
 			return WERR_OK;
 		}
-
+		/* All but CNAME, SOA */
 		recs = talloc_realloc(mem_ctx, recs,
 				struct dnsp_DnssrvRpcRecord, rcount+1);
 		W_ERROR_HAVE_NO_MEMORY(recs);
@@ -579,13 +579,18 @@ static WERROR handle_one_update(struct dns_server *dns,
 
 			return WERR_OK;
 		}
-
+		/* we did not find a matching record. This is new. */
 		werror = dns_replace_records(dns, mem_ctx, dn,
 					     needs_add, recs, rcount+1);
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		return WERR_OK;
 	} else if (update->rr_class == DNS_QCLASS_ANY) {
+		/*
+		 * Mass-deleting records by type, which we do by adding a
+		 * tombstone with zero timestamp. dns_replace_records() will
+		 * work out if the node as a whole needs tombstoning.
+		 */
 		if (update->rr_type == DNS_QTYPE_ALL) {
 			if (dns_name_equal(update->name, zone->name)) {
 				for (i = first; i < rcount; i++) {
@@ -635,6 +640,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 
 		return WERR_OK;
 	} else if (update->rr_class == DNS_QCLASS_NONE) {
+		/* deleting individual records */
 		struct dnsp_DnssrvRpcRecord *del_rec;
 
 		if (update->rr_type == DNS_QTYPE_SOA) {
