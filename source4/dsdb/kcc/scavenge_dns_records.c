@@ -449,7 +449,29 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 		}
 
 		for (i = 0; i < res->count; i++) {
-			el = ldb_msg_find_element(res->msgs[i], "dnsRecord");
+			struct ldb_message *msg = res->msgs[i];
+			el = ldb_msg_find_element(msg, "dnsRecord");
+			if (el == NULL) {
+				DBG_ERR("The tombstoned dns node %s has no dns "
+					"records, which should not happen.\n",
+					ldb_dn_get_linearized(msg->dn)
+					);
+				continue;
+			}
+			/*
+			 * Below we assume the element has one value, which we
+			 * expect because when we tombstone a node we remove
+			 * all the records except for the tombstone.
+			 */
+			if (el->num_values != 1) {
+				DBG_ERR("The tombstoned dns node %s has %u "
+					"dns records, expected one.\n",
+					ldb_dn_get_linearized(msg->dn),
+					el->num_values
+					);
+				continue;
+			}
+
 			ndr_err = ndr_pull_struct_blob(
 			    el->values,
 			    tmp_ctx,
@@ -491,7 +513,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			ret = dsdb_delete(samdb, res->msgs[i]->dn, 0);
+			ret = dsdb_delete(samdb, msg->dn, 0);
 			if (ret != LDB_ERR_NO_SUCH_OBJECT &&
 			    ret != LDB_SUCCESS) {
 				TALLOC_FREE(tmp_ctx);
