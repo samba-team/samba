@@ -34,10 +34,3 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 NTSTATUS remove_expired_records(TALLOC_CTX *mem_ctx,
 				struct ldb_message_element *el,
 				NTTIME t);
-NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
-				    struct ldb_context *samdb,
-				    struct dns_server_zone *zone,
-				    struct ldb_val *true_struct,
-				    struct ldb_val *tombstone_blob,
-				    uint32_t dns_timestamp,
-				    char **error_string);
