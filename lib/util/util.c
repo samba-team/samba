@@ -1166,27 +1166,56 @@ void anonymous_shared_free(void *ptr)
 */
 void samba_start_debugger(void)
 {
-	pid_t pid = fork();
-	if (pid == -1) {
-		return;
-	} else if (pid) {
+	int ready_pipe[2];
+	char c;
+	int ret;
+	pid_t pid;
+
+	ret = pipe(ready_pipe);
+	SMB_ASSERT(ret == 0);
+
+	pid = fork();
+	SMB_ASSERT(pid >= 0);
+
+	if (pid) {
+		c = 0;
+
+		ret = close(ready_pipe[0]);
+		SMB_ASSERT(ret == 0);
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
 		/*
 		 * Make sure the child process can attach a debugger.
+		 *
+		 * We don't check the error code as the debugger
+		 * will tell us if it can't attach.
 		 */
-		prctl(PR_SET_PTRACER, pid, 0, 0, 0);
+		(void)prctl(PR_SET_PTRACER, pid, 0, 0, 0);
 #endif
+		ret = write(ready_pipe[1], &c, 1);
+		SMB_ASSERT(ret == 1);
+
+		ret = close(ready_pipe[1]);
+		SMB_ASSERT(ret == 0);
+
+		/* Wait for gdb to attach. */
 		sleep(2);
 	} else {
 		char *cmd = NULL;
 
-		if (asprintf(&cmd, "gdb --pid %u", getppid()) == -1) {
-			_exit(EXIT_FAILURE);
-		}
+		ret = close(ready_pipe[1]);
+		SMB_ASSERT(ret == 0);
+
+		ret = read(ready_pipe[0], &c, 1);
+		SMB_ASSERT(ret == 1);
+
+		ret = close(ready_pipe[0]);
+		SMB_ASSERT(ret == 0);
+
+		ret = asprintf(&cmd, "gdb --pid %u", getppid());
+		SMB_ASSERT(ret != -1);
 
 		execlp("xterm", "xterm", "-e", cmd, (char *) NULL);
-		free(cmd);
-		_exit(errno);
+		smb_panic("execlp() failed");
 	}
 }
 #endif
