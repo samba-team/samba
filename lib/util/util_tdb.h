@@ -98,12 +98,12 @@ TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr);
 int tdb_delete_bystring(struct tdb_context *tdb, const char *keystr);
 
 /****************************************************************************
- Atomic integer change. Returns old value. To create, set initial value in *oldval. 
+ Atomic integer change. Returns old value. To create, set initial value in *oldval.
 ****************************************************************************/
 int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32_t *oldval, int32_t change_val);
 
 /****************************************************************************
- Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
+ Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval.
 ****************************************************************************/
 bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val);
 
