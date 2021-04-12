@@ -33,6 +33,7 @@
 #include "dns_server/dnsserver_common.h"
 #include "rpc_server/dnsserver/dnsserver.h"
 #include "lib/util/dlinklist.h"
+#include "system/network.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
@@ -1265,6 +1266,88 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 	*_dn = dn;
 	return WERR_OK;
 }
+
+
+/*
+  see if two dns records match
+ */
+
+
+bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
+		       struct dnsp_DnssrvRpcRecord *rec2)
+{
+	int i;
+	struct in6_addr rec1_in_addr6;
+	struct in6_addr rec2_in_addr6;
+
+	if (rec1->wType != rec2->wType) {
+		return false;
+	}
+
+	/* see if the data matches */
+	switch (rec1->wType) {
+	case DNS_TYPE_A:
+		return strcmp(rec1->data.ipv4, rec2->data.ipv4) == 0;
+	case DNS_TYPE_AAAA: {
+		int ret;
+
+		ret = inet_pton(AF_INET6, rec1->data.ipv6, &rec1_in_addr6);
+		if (ret != 1) {
+			return false;
+		}
+		ret = inet_pton(AF_INET6, rec2->data.ipv6, &rec2_in_addr6);
+		if (ret != 1) {
+			return false;
+		}
+
+		return memcmp(&rec1_in_addr6, &rec2_in_addr6, sizeof(rec1_in_addr6)) == 0;
+	}
+	case DNS_TYPE_CNAME:
+		return dns_name_equal(rec1->data.cname, rec2->data.cname);
+	case DNS_TYPE_TXT:
+		if (rec1->data.txt.count != rec2->data.txt.count) {
+			return false;
+		}
+		for (i = 0; i < rec1->data.txt.count; i++) {
+			if (strcmp(rec1->data.txt.str[i], rec2->data.txt.str[i]) != 0) {
+				return false;
+			}
+		}
+		return true;
+	case DNS_TYPE_PTR:
+		return dns_name_equal(rec1->data.ptr, rec2->data.ptr);
+	case DNS_TYPE_NS:
+		return dns_name_equal(rec1->data.ns, rec2->data.ns);
+
+	case DNS_TYPE_SRV:
+		return rec1->data.srv.wPriority == rec2->data.srv.wPriority &&
+			rec1->data.srv.wWeight  == rec2->data.srv.wWeight &&
+			rec1->data.srv.wPort    == rec2->data.srv.wPort &&
+			dns_name_equal(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget);
+
+	case DNS_TYPE_MX:
+		return rec1->data.mx.wPriority == rec2->data.mx.wPriority &&
+			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget);
+
+	case DNS_TYPE_HINFO:
+		return strcmp(rec1->data.hinfo.cpu, rec2->data.hinfo.cpu) == 0 &&
+			strcmp(rec1->data.hinfo.os, rec2->data.hinfo.os) == 0;
+
+	case DNS_TYPE_SOA:
+		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) &&
+			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) &&
+			rec1->data.soa.serial == rec2->data.soa.serial &&
+			rec1->data.soa.refresh == rec2->data.soa.refresh &&
+			rec1->data.soa.retry == rec2->data.soa.retry &&
+			rec1->data.soa.expire == rec2->data.soa.expire &&
+			rec1->data.soa.minimum == rec2->data.soa.minimum;
+	default:
+		break;
+	}
+
+	return false;
+}
+
 
 static int dns_common_sort_zones(struct ldb_message **m1, struct ldb_message **m2)
 {
