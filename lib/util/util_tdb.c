@@ -191,20 +191,20 @@ int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
+static int fetch_uint32_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	if (data.dsize != sizeof(uint32_t)) {
+		return -1;
+	}
+	*((uint32_t *)private_data) = PULL_LE_U32(data.dptr, 0);
+	return 0;
+}
+
 static bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key,
 				    uint32_t *value)
 {
-	TDB_DATA data;
-
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(uint32_t)) {
-		SAFE_FREE(data.dptr);
-		return false;
-	}
-
-	*value = IVAL(data.dptr,0);
-	SAFE_FREE(data.dptr);
-	return true;
+	int ret = tdb_parse_record(tdb, key, fetch_uint32_parser, value);
+	return ret;
 }
 
 /****************************************************************************
