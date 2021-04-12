@@ -1341,6 +1341,8 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 			rec1->data.soa.retry == rec2->data.soa.retry &&
 			rec1->data.soa.expire == rec2->data.soa.expire &&
 			rec1->data.soa.minimum == rec2->data.soa.minimum;
+	case DNS_TYPE_TOMBSTONE:
+		return true;
 	default:
 		break;
 	}
