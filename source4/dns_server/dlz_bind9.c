@@ -1753,11 +1753,12 @@ exit:
 	return result;
 }
 
+
 /*
   see if two dns records match
  */
-static bool b9_record_match(struct dlz_bind9_data *state,
-			    struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2)
+static bool b9_record_match(struct dnsp_DnssrvRpcRecord *rec1,
+			    struct dnsp_DnssrvRpcRecord *rec2)
 {
 	bool status;
 	int i;
@@ -1827,8 +1828,6 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 			rec1->data.soa.expire == rec2->data.soa.expire &&
 			rec1->data.soa.minimum == rec2->data.soa.minimum;
 	default:
-		state->log(ISC_LOG_ERROR, "samba_dlz b9_record_match: unhandled record type %u",
-			   rec1->wType);
 		break;
 	}
 
@@ -1944,11 +1943,11 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		first = num_recs;
 	}
 
-	/* there are existing records. We need to see if this will
+	/* there may be existing records. We need to see if this will
 	 * replace a record or add to it
 	 */
 	for (i=first; i < num_recs; i++) {
-		if (b9_record_match(state, rec, &recs[i])) {
+		if (b9_record_match(rec, &recs[i])) {
 			break;
 		}
 	}
@@ -2066,7 +2065,7 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	for (i=0; i < num_recs; i++) {
-		if (b9_record_match(state, rec, &recs[i])) {
+		if (b9_record_match(rec, &recs[i])) {
 			recs[i] = (struct dnsp_DnssrvRpcRecord) {
 				.wType = DNS_TYPE_TOMBSTONE,
 			};
