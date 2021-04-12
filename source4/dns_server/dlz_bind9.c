@@ -313,7 +313,7 @@ static bool b9_single_valued(enum dns_record_type dns_type)
 }
 
 /*
-  see if a DNS type is single valued
+  get a DNS_TYPE_* value from the corresponding string
  */
 static bool b9_dns_type(const char *type, enum dns_record_type *dtype)
 {
