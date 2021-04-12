@@ -132,20 +132,19 @@ void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval)
  Output is int32_t in native byte order.
 ****************************************************************************/
 
+static int fetch_int32_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	if (data.dsize == sizeof(int32_t)) {
+		*((int32_t *)private_data) = PULL_LE_I32(data.dptr, 0);
+	}
+	return 0;
+}
+
 static int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key)
 {
-	TDB_DATA data;
-	int32_t ret;
-
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int32_t)) {
-		SAFE_FREE(data.dptr);
-		return -1;
-	}
-
-	ret = IVAL(data.dptr,0);
-	SAFE_FREE(data.dptr);
-	return ret;
+	int v = -1;
+	tdb_parse_record(tdb, key, fetch_int32_parser, &v);
+	return v;
 }
 
 /****************************************************************************
