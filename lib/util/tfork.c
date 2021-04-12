@@ -612,7 +612,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 
 	/*
 	 * We're going to stay around until child2 exits, so lets close all fds
-	 * other then the pipe fd we may have inherited from the caller.
+	 * other than the pipe fd we may have inherited from the caller.
 	 *
 	 * Dup event_sp_waiter_fd and status_sp_waiter_fd onto fds 0 and 1 so we
 	 * can then call closefrom(2).
