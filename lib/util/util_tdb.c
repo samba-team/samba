@@ -367,16 +367,6 @@ bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint3
 }
 
 /****************************************************************************
- Allow tdb_delete to be used as a tdb_traversal_fn.
-****************************************************************************/
-
-int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
-                     void *state)
-{
-    return tdb_delete(the_tdb, key);
-}
-
-/****************************************************************************
  Return an NTSTATUS from a TDB_ERROR
 ****************************************************************************/
 
