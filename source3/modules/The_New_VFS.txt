@@ -271,7 +271,7 @@ Table of Contents
    SMB_VFS_BRL_UNLOCK_WINDOWS()       [fsp]       -
    SMB_VFS_CHDIR()                    [Path]      Todo
    SMB_VFS_CHFLAGS()                  [Path]      Todo
-   SMB_VFS_CHMOD()                    [Path]      Todo
+   SMB_VFS_CHMOD()                    [Path]      -
    SMB_VFS_CLOSE()                    [fsp]       -
    SMB_VFS_CLOSEDIR()                 [fsp]       -
    SMB_VFS_CONNECT()                  [Disk]      -
