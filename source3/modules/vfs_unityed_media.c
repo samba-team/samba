@@ -1209,32 +1209,6 @@ err:
 	return status;
 }
 
-static int um_ntimes(vfs_handle_struct *handle,
-		     const struct smb_filename *smb_fname,
-		     struct smb_file_time *ft)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_ntimes\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname, &client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_NTIMES(handle, client_fname, ft);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static int um_symlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
@@ -1769,7 +1743,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.unlinkat_fn = um_unlinkat,
 	.lchown_fn = um_lchown,
 	.chdir_fn = um_chdir,
-	.ntimes_fn = um_ntimes,
 	.symlinkat_fn = um_symlinkat,
 	.readlinkat_fn = um_readlinkat,
 	.linkat_fn = um_linkat,
