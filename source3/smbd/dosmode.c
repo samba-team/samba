@@ -1210,14 +1210,14 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 
 	errno = 0;
 
-	DEBUG(6, ("file_ntime: actime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ft->atime))));
-	DEBUG(6, ("file_ntime: modtime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ft->mtime))));
-	DEBUG(6, ("file_ntime: ctime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ft->ctime))));
-	DEBUG(6, ("file_ntime: createtime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ft->create_time))));
+	DBG_INFO("actime: %s",
+		 time_to_asc(convert_timespec_to_time_t(ft->atime)));
+	DBG_INFO("modtime: %s",
+		 time_to_asc(convert_timespec_to_time_t(ft->mtime)));
+	DBG_INFO("ctime: %s",
+		 time_to_asc(convert_timespec_to_time_t(ft->ctime)));
+	DBG_INFO("createtime: %s",
+		 time_to_asc(convert_timespec_to_time_t(ft->create_time)));
 
 	/* Don't update the time on read-only shares */
 	/* We need this as set_filetime (which can be called on
