@@ -1473,8 +1473,10 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	}
 
 	*pinfo3 = info3;
-	DEBUG(10, ("Authenticaticating user %s\\%s returned %s\n", domain,
-		   user, nt_errstr(status)));
+	DBG_DEBUG("Authenticating user %s\\%s returned %s\n",
+		  domain,
+		  user,
+		  nt_errstr(status));
 	TALLOC_FREE(frame);
 	return status;
 }
