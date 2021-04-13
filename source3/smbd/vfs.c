@@ -238,7 +238,7 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
 		return ext_data;
 	}
 
-	ext = (struct vfs_fsp_data *)TALLOC_ZERO(
+	ext = talloc_zero_size(
 		handle->conn, sizeof(struct vfs_fsp_data) + ext_size);
 	if (ext == NULL) {
 		return NULL;
