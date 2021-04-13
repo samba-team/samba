@@ -75,7 +75,7 @@ static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 {
 	struct share_mapping_entry *sme = NULL;
 
-	sme = TALLOC_ZERO(NULL, sizeof(struct share_mapping_entry));
+	sme = talloc_zero(NULL, struct share_mapping_entry);
 	if (sme == NULL)
 		return sme;
 
