@@ -1560,45 +1560,6 @@ static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 	return smb_fname;
 }
 
-static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      struct smb_file_time *ft)
-{
-	int ret = -1;
-	struct timespec times[2];
-
-	START_PROFILE(syscall_ntimes);
-
-	if (is_omit_timespec(&ft->atime)) {
-		times[0].tv_sec = smb_fname->st.st_ex_atime.tv_sec;
-		times[0].tv_nsec = smb_fname->st.st_ex_atime.tv_nsec;
-	} else {
-		times[0].tv_sec = ft->atime.tv_sec;
-		times[0].tv_nsec = ft->atime.tv_nsec;
-	}
-
-	if (is_omit_timespec(&ft->mtime)) {
-		times[1].tv_sec = smb_fname->st.st_ex_mtime.tv_sec;
-		times[1].tv_nsec = smb_fname->st.st_ex_mtime.tv_nsec;
-	} else {
-		times[1].tv_sec = ft->mtime.tv_sec;
-		times[1].tv_nsec = ft->mtime.tv_nsec;
-	}
-
-	if ((timespec_compare(&times[0],
-			      &smb_fname->st.st_ex_atime) == 0) &&
-	    (timespec_compare(&times[1],
-			      &smb_fname->st.st_ex_mtime) == 0)) {
-		END_PROFILE(syscall_ntimes);
-		return 0;
-	}
-
-	ret = glfs_utimens(handle->data, smb_fname->base_name, times);
-	END_PROFILE(syscall_ntimes);
-
-	return ret;
-}
-
 static int vfs_gluster_fntimes(struct vfs_handle_struct *handle,
 			       files_struct *fsp,
 			       struct smb_file_time *ft)
@@ -2375,7 +2336,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.lchown_fn = vfs_gluster_lchown,
 	.chdir_fn = vfs_gluster_chdir,
 	.getwd_fn = vfs_gluster_getwd,
-	.ntimes_fn = vfs_gluster_ntimes,
 	.fntimes_fn = vfs_gluster_fntimes,
 	.ftruncate_fn = vfs_gluster_ftruncate,
 	.fallocate_fn = vfs_gluster_fallocate,
