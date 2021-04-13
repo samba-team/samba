@@ -1329,10 +1329,6 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		return rec1->data.mx.wPriority == rec2->data.mx.wPriority &&
 			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget);
 
-	case DNS_TYPE_HINFO:
-		return strcmp(rec1->data.hinfo.cpu, rec2->data.hinfo.cpu) == 0 &&
-			strcmp(rec1->data.hinfo.os, rec2->data.hinfo.os) == 0;
-
 	case DNS_TYPE_SOA:
 		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) &&
 			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) &&
