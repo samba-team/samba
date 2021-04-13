@@ -529,28 +529,28 @@ NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 				     struct auth_context **auth_context)
 {
 	const char *methods = NULL;
+	const char *role = NULL;
 
 	switch (lp_server_role()) {
 	case ROLE_ACTIVE_DIRECTORY_DC:
-		DEBUG(5,("Making default auth method list for server role = "
-			 "'active directory domain controller'\n"));
+		role = "'active directory domain controller'";
 		methods = "samba4";
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		DEBUG(5,("Making default auth method list for server role = 'domain member'\n"));
+		role = "'domain member'";
 		methods = "anonymous sam winbind sam_ignoredomain";
 		break;
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
-		DEBUG(5,("Making default auth method list for DC\n"));
+		role = "'DC'";
 		methods = "anonymous sam winbind sam_ignoredomain";
 		break;
 	case ROLE_STANDALONE:
-		DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = yes\n"));
 		if (lp_encrypt_passwords()) {
+			role = "'standalone server', encrypt passwords = yes";
 			methods = "anonymous sam_ignoredomain";
 		} else {
-			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = no\n"));
+			role = "'standalone server', encrypt passwords = no";
 			methods = "anonymous unix";
 		}
 		break;
@@ -558,6 +558,9 @@ NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 		DEBUG(5,("Unknown auth method!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	DBG_INFO("Making default auth method list for server role = %s\n",
+		 role);
 
 	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
