@@ -405,36 +405,6 @@ static int cap_chdir(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int cap_ntimes(vfs_handle_struct *handle,
-		      const struct smb_filename *smb_fname,
-		      struct smb_file_time *ft)
-{
-	struct smb_filename *smb_fname_tmp = NULL;
-	char *cappath = NULL;
-	int ret;
-
-	cappath = capencode(talloc_tos(), smb_fname->base_name);
-
-	if (!cappath) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	/* Setup temporary smb_filename structs. */
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	smb_fname_tmp->base_name = cappath;
-
-	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, ft);
-
-	TALLOC_FREE(smb_fname_tmp);
-	return ret;
-}
-
 static int cap_symlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *link_contents,
 			struct files_struct *dirfsp,
@@ -985,7 +955,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.unlinkat_fn = cap_unlinkat,
 	.lchown_fn = cap_lchown,
 	.chdir_fn = cap_chdir,
-	.ntimes_fn = cap_ntimes,
 	.symlinkat_fn = cap_symlinkat,
 	.readlinkat_fn = cap_readlinkat,
 	.linkat_fn = cap_linkat,
