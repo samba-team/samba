@@ -1292,7 +1292,7 @@ NTSTATUS make_server_info_pw(TALLOC_CTX *mem_ctx,
 	result->utok.uid = pwd->pw_uid;
 	result->utok.gid = pwd->pw_gid;
 
-	*server_info = talloc_steal(mem_ctx, result);
+	*server_info = talloc_move(mem_ctx, &result);
 	status = NT_STATUS_OK;
 done:
 	talloc_free(tmp_ctx);

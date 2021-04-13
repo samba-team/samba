@@ -96,7 +96,7 @@ NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	server_info->unix_name = talloc_steal(server_info, pwd->pw_name);
+	server_info->unix_name = talloc_move(server_info, &pwd->pw_name);
 
 	server_info->utok.gid = pwd->pw_gid;
 	server_info->utok.uid = pwd->pw_uid;
@@ -121,7 +121,7 @@ NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
 		 pdb_get_username(sampass), server_info->unix_name));
 
-	*pserver_info = talloc_steal(mem_ctx, server_info);
+	*pserver_info = talloc_move(mem_ctx, &server_info);
 
 	status = NT_STATUS_OK;
 out:

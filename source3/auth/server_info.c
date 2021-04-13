@@ -781,7 +781,7 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*pinfo3 = talloc_steal(mem_ctx, info3);
+	*pinfo3 = talloc_move(mem_ctx, &info3);
 
 	status = NT_STATUS_OK;
 done:

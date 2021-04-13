@@ -399,7 +399,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	*gensec_security_out = talloc_steal(mem_ctx, gensec_security);
+	*gensec_security_out = talloc_move(mem_ctx, &gensec_security);
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
