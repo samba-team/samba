@@ -336,23 +336,32 @@ NTSTATUS dns_tombstone_records(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&entombed_time, unix_now);
 	dns_timestamp = unix_to_dns_timestamp(unix_now);
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	dns_common_zones(samdb, mem_ctx, NULL, &zones);
+	ret = dns_common_zones(samdb, tmp_ctx, NULL, &zones);
+	if (!NT_STATUS_IS_OK(ret)) {
+		TALLOC_FREE(tmp_ctx);
+		return ret;
+	}
+
 	for (z = zones; z; z = z->next) {
-		tmp_ctx = talloc_new(NULL);
 		ret = dns_tombstone_records_zone(tmp_ctx,
 						 samdb,
 						 z,
 						 dns_timestamp,
 						 entombed_time,
 						 error_string);
-		TALLOC_FREE(tmp_ctx);
 		if (NT_STATUS_EQUAL(ret, NT_STATUS_PROPSET_NOT_FOUND)) {
 			continue;
 		} else if (!NT_STATUS_IS_OK(ret)) {
+			TALLOC_FREE(tmp_ctx);
 			return ret;
 		}
 	}
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
