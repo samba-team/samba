@@ -49,6 +49,15 @@ static int vfs_delay_inject_ntimes(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 }
 
+static int vfs_delay_inject_fntimes(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    struct smb_file_time *ft)
+{
+	inject_delay("fntimes", handle);
+
+	return SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
+}
+
 struct vfs_delay_inject_pread_state {
 	struct tevent_context *ev;
 	struct vfs_handle_struct *handle;
@@ -423,6 +432,7 @@ static bool vfs_delay_inject_brl_unlock_windows(struct vfs_handle_struct *handle
 
 static struct vfs_fn_pointers vfs_delay_inject_fns = {
 	.ntimes_fn = vfs_delay_inject_ntimes,
+	.fntimes_fn = vfs_delay_inject_fntimes,
 	.pread_send_fn = vfs_delay_inject_pread_send,
 	.pread_recv_fn = vfs_delay_inject_pread_recv,
 	.pwrite_send_fn = vfs_delay_inject_pwrite_send,
