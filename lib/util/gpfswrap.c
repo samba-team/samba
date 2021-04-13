@@ -38,8 +38,6 @@ static int (*gpfs_get_winattrs_path_fn)(const char *pathname,
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
-static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
-				     gpfs_timestruc_t times[4]);
 static int (*gpfs_set_times_fn)(int fd, int flags, gpfs_timestruc_t times[4]);
 static int (*gpfs_quotactl_fn)(const char *pathname,
 			       int cmd,
@@ -78,7 +76,6 @@ int gpfswrap_init(void)
 	gpfs_get_winattrs_fn	      = dlsym(l, "gpfs_get_winattrs");
 	gpfs_ftruncate_fn	      = dlsym(l, "gpfs_ftruncate");
 	gpfs_lib_init_fn	      = dlsym(l, "gpfs_lib_init");
-	gpfs_set_times_path_fn	      = dlsym(l, "gpfs_set_times_path");
 	gpfs_set_times_fn	      = dlsym(l, "gpfs_set_times");
 	gpfs_quotactl_fn	      = dlsym(l, "gpfs_quotactl");
 	gpfs_init_trace_fn	      = dlsym(l, "gpfs_init_trace");
@@ -204,17 +201,6 @@ int gpfswrap_lib_init(int flags)
 	}
 
 	return gpfs_lib_init_fn(flags);
-}
-
-int gpfswrap_set_times_path(char *pathname, int flags,
-			    gpfs_timestruc_t times[4])
-{
-	if (gpfs_set_times_path_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_set_times_path_fn(pathname, flags, times);
 }
 
 int gpfswrap_set_times(int fd, int flags, gpfs_timestruc_t times[4])

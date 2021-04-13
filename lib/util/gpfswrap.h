@@ -43,8 +43,6 @@ int gpfswrap_get_winattrs_path(const char *pathname,
 int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs);
 int gpfswrap_ftruncate(int fd, gpfs_off64_t length);
 int gpfswrap_lib_init(int flags);
-int gpfswrap_set_times_path(char *pathname, int flags,
-			    gpfs_timestruc_t times[4]);
 int gpfswrap_set_times(int fd, int flags, gpfs_timestruc_t times[4]);
 int gpfswrap_quotactl(const char *pathname, int cmd, int id, void *bufp);
 int gpfswrap_init_trace(void);
