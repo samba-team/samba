@@ -243,7 +243,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			      struct gensec_security **gensec_security_out)
 {
 	struct gensec_security *gensec_security;
-	struct auth_context *auth_context;
+	struct auth_context *auth_context = NULL;
 	NTSTATUS nt_status;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -251,16 +251,14 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 
 	nt_status = make_auth3_context_for_ntlm(tmp_ctx, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
+		goto done;
 	}
 
 	if (auth_context->prepare_gensec) {
 		nt_status = auth_context->prepare_gensec(auth_context, tmp_ctx,
 							 &gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			TALLOC_FREE(tmp_ctx);
-			return nt_status;
+			goto done;
 		}
 	} else {
 		const struct gensec_security_ops **backends = NULL;
@@ -272,22 +270,20 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		const char *dns_domain;
 		struct auth4_context *auth4_context = make_auth4_context_s3(tmp_ctx, auth_context);
 		if (auth4_context == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("loadparm_init_s3 failed\n"));
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_INVALID_SERVER_STATE;
+			nt_status = NT_STATUS_INVALID_SERVER_STATE;
+			goto done;
 		}
 
 		gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("lpcfg_gensec_settings failed\n"));
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		/*
@@ -310,21 +306,18 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 
 		gensec_settings->server_dns_name = strlower_talloc(gensec_settings, dns_name);
 		if (gensec_settings->server_dns_name == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		gensec_settings->server_dns_domain = strlower_talloc(gensec_settings, dns_domain);
 		if (gensec_settings->server_dns_domain == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		backends = talloc_zero_array(gensec_settings,
 					     const struct gensec_security_ops *, 6);
 		if (backends == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 		gensec_settings->backends = backends;
 
@@ -350,7 +343,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		server_credentials = cli_credentials_init_anon(tmp_ctx);
 		if (!server_credentials) {
 			DEBUG(0, ("auth_generic_prepare: Failed to init server credentials\n"));
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		cli_credentials_set_conf(server_credentials, lp_ctx);
@@ -365,8 +358,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 						auth4_context, &gensec_security);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			TALLOC_FREE(tmp_ctx);
-			return nt_status;
+			goto done;
 		}
 
 		gensec_set_credentials(gensec_security, server_credentials);
@@ -380,28 +372,29 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	nt_status = gensec_set_remote_address(gensec_security,
 					      remote_address);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
+		goto done;
 	}
 
 	nt_status = gensec_set_local_address(gensec_security,
 					     local_address);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
+		goto done;
 	}
 
 	nt_status = gensec_set_target_service_description(gensec_security,
 							  service_description);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
+		goto done;
 	}
 
 	*gensec_security_out = talloc_move(mem_ctx, &gensec_security);
+	nt_status = NT_STATUS_OK;
+	goto done;
+nomem:
+	nt_status = NT_STATUS_NO_MEMORY;
+done:
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 /*
