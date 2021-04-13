@@ -850,6 +850,25 @@ static int catia_ntimes(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int catia_fntimes(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 struct smb_file_time *ft)
+{
+	struct catia_cache *cc = NULL;
+	int ret;
+
+	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
+
+	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
+
+	return ret;
+}
+
 static struct smb_filename *
 catia_realpath(vfs_handle_struct *handle,
 		TALLOC_CTX *ctx,
@@ -2152,6 +2171,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.lchown_fn = catia_lchown,
 	.chdir_fn = catia_chdir,
 	.ntimes_fn = catia_ntimes,
+	.fntimes_fn = catia_fntimes,
 	.ftruncate_fn = catia_ftruncate,
 	.fallocate_fn = catia_fallocate,
 	.lock_fn = catia_lock,
