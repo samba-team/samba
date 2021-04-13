@@ -590,6 +590,20 @@ bld.SAMBA_PYTHON('python_file_id',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_wsp_data',
+        source='../../librpc/gen_ndr/py_wsp_data.c',
+        deps='NDR_WSP NDR_WSP_DATA %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/wsp_data.so',
+        cflags_end=gen_cflags
+        )
+
+bld.SAMBA_PYTHON('python_wsp',
+        source='../../librpc/gen_ndr/py_wsp.c',
+        deps='NDR_WSP NDR_WSP_DATA %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/wsp.so',
+        cflags_end=gen_cflags
+        )
+
 if bld.PYTHON_BUILD_IS_ENABLED():
     bld.SAMBA_SCRIPT('python_dcerpc_init',
 		    pattern='rpc/dcerpc.py',
