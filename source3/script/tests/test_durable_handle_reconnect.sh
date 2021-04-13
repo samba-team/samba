@@ -11,7 +11,7 @@ cd $SELFTEST_TMPDIR || exit 1
 
 delay_inject_conf=$(dirname $SMB_CONF_PATH)/delay_inject.conf
 
-echo 'delay_inject:ntimes = 5000' > $delay_inject_conf
+echo 'delay_inject:fntimes = 5000' > $delay_inject_conf
 
 testit "durable_v2_delay.durable_v2_reconnect_delay" $VALGRIND \
        $BINDIR/smbtorture //$SERVER_IP/delay_inject \

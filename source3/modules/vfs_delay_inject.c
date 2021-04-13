@@ -40,15 +40,6 @@ static void inject_delay(const char *vfs_func, vfs_handle_struct *handle)
 	smb_msleep(delay);
 }
 
-static int vfs_delay_inject_ntimes(vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname,
-				   struct smb_file_time *ft)
-{
-	inject_delay("ntimes", handle);
-
-	return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
-}
-
 static int vfs_delay_inject_fntimes(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    struct smb_file_time *ft)
@@ -431,7 +422,6 @@ static bool vfs_delay_inject_brl_unlock_windows(struct vfs_handle_struct *handle
 }
 
 static struct vfs_fn_pointers vfs_delay_inject_fns = {
-	.ntimes_fn = vfs_delay_inject_ntimes,
 	.fntimes_fn = vfs_delay_inject_fntimes,
 	.pread_send_fn = vfs_delay_inject_pread_send,
 	.pread_recv_fn = vfs_delay_inject_pread_recv,
