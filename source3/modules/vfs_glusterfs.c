@@ -1599,6 +1599,53 @@ static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_fntimes(struct vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       struct smb_file_time *ft)
+{
+	int ret = -1;
+	struct timespec times[2];
+	glfs_fd_t *glfd = NULL;
+
+	START_PROFILE(syscall_fntimes);
+
+	if (is_omit_timespec(&ft->atime)) {
+		times[0].tv_sec = fsp->fsp_name->st.st_ex_atime.tv_sec;
+		times[0].tv_nsec = fsp->fsp_name->st.st_ex_atime.tv_nsec;
+	} else {
+		times[0].tv_sec = ft->atime.tv_sec;
+		times[0].tv_nsec = ft->atime.tv_nsec;
+	}
+
+	if (is_omit_timespec(&ft->mtime)) {
+		times[1].tv_sec = fsp->fsp_name->st.st_ex_mtime.tv_sec;
+		times[1].tv_nsec = fsp->fsp_name->st.st_ex_mtime.tv_nsec;
+	} else {
+		times[1].tv_sec = ft->mtime.tv_sec;
+		times[1].tv_nsec = ft->mtime.tv_nsec;
+	}
+
+	if ((timespec_compare(&times[0],
+			      &fsp->fsp_name->st.st_ex_atime) == 0) &&
+	    (timespec_compare(&times[1],
+			      &fsp->fsp_name->st.st_ex_mtime) == 0)) {
+		END_PROFILE(syscall_fntimes);
+		return 0;
+	}
+
+	glfd = vfs_gluster_fetch_glfd(handle, fsp);
+	if (glfd == NULL) {
+		END_PROFILE(syscall_fntimes);
+		DBG_ERR("Failed to fetch gluster fd\n");
+		return -1;
+	}
+
+	ret = glfs_futimens(glfd, times);
+	END_PROFILE(syscall_fntimes);
+
+	return ret;
+}
+
 static int vfs_gluster_ftruncate(struct vfs_handle_struct *handle,
 				 files_struct *fsp, off_t offset)
 {
@@ -2329,6 +2376,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.chdir_fn = vfs_gluster_chdir,
 	.getwd_fn = vfs_gluster_getwd,
 	.ntimes_fn = vfs_gluster_ntimes,
+	.fntimes_fn = vfs_gluster_fntimes,
 	.ftruncate_fn = vfs_gluster_ftruncate,
 	.fallocate_fn = vfs_gluster_fallocate,
 	.lock_fn = vfs_gluster_lock,
