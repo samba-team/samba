@@ -86,7 +86,7 @@ finally:
     f.close()
 
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
-have_gnutls_crypto_policies = ("HAVE_GNUTLS_CRYPTO_POLICIES" in config_hash)
+have_gnutls_fips_mode_support = ("HAVE_GNUTLS_FIPS_MODE_SUPPORTED" in config_hash)
 
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_ntvfs)" % options, "ad_dc_ntvfs",
@@ -567,7 +567,7 @@ plantestsuite("samba4.blackbox.net_ads_dns_async(ad_member:local)",
             '$REALM'])
 plantestsuite("samba4.blackbox.samba-tool_ntacl(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_samba-tool_ntacl.sh"), '$PREFIX', '$DOMSID'])
 
-if have_gnutls_crypto_policies:
+if have_gnutls_fips_mode_support:
     plantestsuite("samba4.blackbox.weak_crypto.client", "ad_dc", [os.path.join(bbdir, "test_weak_crypto.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc"])
 
     for env in ["ad_dc_fips", "ad_member_fips"]:
@@ -722,7 +722,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite_loadlist(name, env, args)
 
-if have_gnutls_crypto_policies:
+if have_gnutls_fips_mode_support:
     planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
     planoldpythontestsuite("ad_dc_fips", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
 

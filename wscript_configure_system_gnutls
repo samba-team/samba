@@ -1,4 +1,5 @@
 from waflib import Options
+import os
 
 def parse_version(v):
     return tuple(map(int, (v.split("."))))
@@ -35,9 +36,31 @@ conf.CHECK_FUNCS_IN('gnutls_set_default_priority_append', 'gnutls')
 if (parse_version(gnutls_version) > parse_version('3.6.14')):
     conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
 
-# Check if we have support for crypto policies
-if conf.CHECK_FUNCS_IN('gnutls_get_system_config_file', 'gnutls'):
-    conf.DEFINE('HAVE_GNUTLS_CRYPTO_POLICIES', 1)
+# Check if gnutls has fips mode support
+# gnutls_fips140_mode_enabled() is available since 3.3.0
+fragment = '''
+#include <gnutls/gnutls.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    unsigned int ok;
+
+    ok = gnutls_fips140_mode_enabled();
+
+    return !ok;
+}
+'''
+
+os.environ['GNUTLS_FORCE_FIPS_MODE'] = '1'
+conf.CHECK_CODE(fragment,
+                'HAVE_GNUTLS_FIPS_MODE_SUPPORTED',
+                execute=True,
+                addmain=False,
+                add_headers=False,
+                lib='gnutls',
+                msg='Checking for gnutls fips mode support')
+del os.environ['GNUTLS_FORCE_FIPS_MODE']
 
 if conf.CHECK_VALUEOF('GNUTLS_CIPHER_AES_128_CFB8', headers='gnutls/gnutls.h'):
     conf.DEFINE('HAVE_GNUTLS_AES_CFB8', 1)
