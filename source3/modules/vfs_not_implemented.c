@@ -404,6 +404,14 @@ int vfs_not_implemented_ntimes(vfs_handle_struct *handle,
 	return -1;
 }
 
+int vfs_not_implemented_fntimes(vfs_handle_struct *handle,
+				files_struct *fsp,
+				struct smb_file_time *ft)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 int vfs_not_implemented_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 				  off_t offset)
 {
@@ -1039,6 +1047,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.chdir_fn = vfs_not_implemented_chdir,
 	.getwd_fn = vfs_not_implemented_getwd,
 	.ntimes_fn = vfs_not_implemented_ntimes,
+	.fntimes_fn = vfs_not_implemented_fntimes,
 	.ftruncate_fn = vfs_not_implemented_ftruncate,
 	.fallocate_fn = vfs_not_implemented_fallocate,
 	.lock_fn = vfs_not_implemented_lock,

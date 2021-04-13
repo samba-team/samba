@@ -2601,6 +2601,93 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 }
 
 /*********************************************************************
+ nsec timestamp resolution call. Convert down to whatever the underlying
+ system will support.
+**********************************************************************/
+
+static int vfswrap_fntimes(vfs_handle_struct *handle,
+			   files_struct *fsp,
+			   struct smb_file_time *ft)
+{
+	int result = -1;
+	struct timespec ts[2];
+	struct timespec *times = NULL;
+
+	START_PROFILE(syscall_fntimes);
+
+	if (is_named_stream(fsp->fsp_name)) {
+		errno = ENOENT;
+		goto out;
+	}
+
+	if (ft != NULL) {
+		if (is_omit_timespec(&ft->atime)) {
+			ft->atime = fsp->fsp_name->st.st_ex_atime;
+		}
+
+		if (is_omit_timespec(&ft->mtime)) {
+			ft->mtime = fsp->fsp_name->st.st_ex_mtime;
+		}
+
+		if (!is_omit_timespec(&ft->create_time)) {
+			set_create_timespec_ea(handle->conn,
+					       fsp->fsp_name,
+					       ft->create_time);
+		}
+
+		if ((timespec_compare(&ft->atime,
+				      &fsp->fsp_name->st.st_ex_atime) == 0) &&
+		    (timespec_compare(&ft->mtime,
+				      &fsp->fsp_name->st.st_ex_mtime) == 0)) {
+			result = 0;
+			goto out;
+		}
+
+		ts[0] = ft->atime;
+		ts[1] = ft->mtime;
+		times = ts;
+	} else {
+		times = NULL;
+	}
+
+	if (!fsp->fsp_flags.is_pathref) {
+		result = futimens(fsp_get_io_fd(fsp), times);
+		goto out;
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p != NULL) {
+			/*
+			 * The dirfd argument of utimensat is ignored when
+			 * pathname is an absolute path
+			 */
+			result = utimensat(AT_FDCWD, p, times, 0);
+		} else {
+			result = -1;
+		}
+
+		goto out;
+	}
+
+	/*
+	 * The fd is a pathref (opened with O_PATH) and there isn't fd to
+	 * path translation mechanism. Fallback to path based call.
+	 */
+	result = utimensat(AT_FDCWD, fsp->fsp_name->base_name, times, 0);
+
+out:
+	END_PROFILE(syscall_fntimes);
+
+	return result;
+}
+
+
+/*********************************************************************
  A version of ftruncate that will write the space on disk if strict
  allocate is set.
 **********************************************************************/
@@ -3814,6 +3901,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.chdir_fn = vfswrap_chdir,
 	.getwd_fn = vfswrap_getwd,
 	.ntimes_fn = vfswrap_ntimes,
+	.fntimes_fn = vfswrap_fntimes,
 	.ftruncate_fn = vfswrap_ftruncate,
 	.fallocate_fn = vfswrap_fallocate,
 	.lock_fn = vfswrap_lock,

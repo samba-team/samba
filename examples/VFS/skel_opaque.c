@@ -407,6 +407,14 @@ static int skel_ntimes(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int skel_fntimes(vfs_handle_struct *handle,
+			files_struct *fsp,
+			struct smb_file_time *ft)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			  off_t offset)
 {
@@ -1035,6 +1043,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.chdir_fn = skel_chdir,
 	.getwd_fn = skel_getwd,
 	.ntimes_fn = skel_ntimes,
+	.fntimes_fn = skel_fntimes,
 	.ftruncate_fn = skel_ftruncate,
 	.fallocate_fn = skel_fallocate,
 	.lock_fn = skel_lock,

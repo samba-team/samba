@@ -147,6 +147,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CHDIR,
 	SMB_VFS_OP_GETWD,
 	SMB_VFS_OP_NTIMES,
+	SMB_VFS_OP_FNTIMES,
 	SMB_VFS_OP_FTRUNCATE,
 	SMB_VFS_OP_FALLOCATE,
 	SMB_VFS_OP_LOCK,
@@ -285,6 +286,7 @@ static struct {
 	{ SMB_VFS_OP_CHDIR,	"chdir" },
 	{ SMB_VFS_OP_GETWD,	"getwd" },
 	{ SMB_VFS_OP_NTIMES,	"ntimes" },
+	{ SMB_VFS_OP_FNTIMES,	"fntimes" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
 	{ SMB_VFS_OP_FALLOCATE,"fallocate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
@@ -1689,6 +1691,56 @@ static int smb_full_audit_ntimes(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_fntimes(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  struct smb_file_time *ft)
+{
+	int result;
+	time_t create_time = convert_timespec_to_time_t(ft->create_time);
+	time_t atime = convert_timespec_to_time_t(ft->atime);
+	time_t mtime = convert_timespec_to_time_t(ft->mtime);
+	time_t ctime = convert_timespec_to_time_t(ft->ctime);
+	const char *create_time_str = "";
+	const char *atime_str = "";
+	const char *mtime_str = "";
+	const char *ctime_str = "";
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (frame == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	result = SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
+
+	if (create_time > 0) {
+		create_time_str = timestring(frame, create_time);
+	}
+	if (atime > 0) {
+		atime_str = timestring(frame, atime);
+	}
+	if (mtime > 0) {
+		mtime_str = timestring(frame, mtime);
+	}
+	if (ctime > 0) {
+		ctime_str = timestring(frame, ctime);
+	}
+
+	do_log(SMB_VFS_OP_FNTIMES,
+	       (result >= 0),
+	       handle,
+	       "%s|%s|%s|%s|%s",
+	       fsp_str_do_log(fsp),
+	       create_time_str,
+	       atime_str,
+	       mtime_str,
+	       ctime_str);
+
+	TALLOC_FREE(frame);
+
+	return result;
+}
+
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   off_t len)
 {
@@ -2950,6 +3002,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.chdir_fn = smb_full_audit_chdir,
 	.getwd_fn = smb_full_audit_getwd,
 	.ntimes_fn = smb_full_audit_ntimes,
+	.fntimes_fn = smb_full_audit_fntimes,
 	.ftruncate_fn = smb_full_audit_ftruncate,
 	.fallocate_fn = smb_full_audit_fallocate,
 	.lock_fn = smb_full_audit_lock,

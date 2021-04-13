@@ -273,6 +273,11 @@
 #define SMB_VFS_NEXT_NTIMES(handle, path, ts) \
 	smb_vfs_call_ntimes((handle)->next, (path), (ts))
 
+#define SMB_VFS_FNTIMES(fsp, ts) \
+	smb_vfs_call_fntimes((fsp)->conn->vfs_handles, (fsp), (ts))
+#define SMB_VFS_NEXT_FNTIMES(handle, fsp, ts) \
+	smb_vfs_call_fntimes((handle)->next, (fsp), (ts))
+
 #define SMB_VFS_FTRUNCATE(fsp, offset) \
 	smb_vfs_call_ftruncate((fsp)->conn->vfs_handles, (fsp), (offset))
 #define SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset) \

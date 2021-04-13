@@ -1259,6 +1259,26 @@ static int smb_time_audit_ntimes(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_fntimes(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  struct smb_file_time *ft)
+{
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("fntimes", timediff, fsp);
+	}
+
+	return result;
+}
+
 static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    off_t len)
@@ -2792,6 +2812,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.chdir_fn = smb_time_audit_chdir,
 	.getwd_fn = smb_time_audit_getwd,
 	.ntimes_fn = smb_time_audit_ntimes,
+	.fntimes_fn = smb_time_audit_fntimes,
 	.ftruncate_fn = smb_time_audit_ftruncate,
 	.fallocate_fn = smb_time_audit_fallocate,
 	.lock_fn = smb_time_audit_lock,

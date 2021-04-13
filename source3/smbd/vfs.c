@@ -2253,6 +2253,14 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 	return handle->fns->ntimes_fn(handle, smb_fname, ft);
 }
 
+int smb_vfs_call_fntimes(struct vfs_handle_struct *handle,
+			 struct files_struct *fsp,
+			 struct smb_file_time *ft)
+{
+	VFS_FIND(fntimes);
+	return handle->fns->fntimes_fn(handle, fsp, ft);
+}
+
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, off_t offset)
 {

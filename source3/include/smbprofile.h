@@ -75,6 +75,7 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_chdir) \
 	SMBPROFILE_STATS_BASIC(syscall_getwd) \
 	SMBPROFILE_STATS_BASIC(syscall_ntimes) \
+	SMBPROFILE_STATS_BASIC(syscall_fntimes) \
 	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
 	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
 	SMBPROFILE_STATS_BASIC(syscall_fcntl_lock) \
