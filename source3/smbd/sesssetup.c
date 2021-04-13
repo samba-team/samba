@@ -581,7 +581,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	uint64_t sess_vuid;
 	uint16_t smb_bufsize;
 	char *tmp;
-	fstring sub_user; /* Sanitised username for substituion */
+	fstring sub_user; /* Sanitised username for substitution */
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
