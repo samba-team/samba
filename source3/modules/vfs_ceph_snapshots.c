@@ -1003,27 +1003,6 @@ static int ceph_snap_gmt_chdir(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int ceph_snap_gmt_ntimes(vfs_handle_struct *handle,
-			      const struct smb_filename *csmb_fname,
-			      struct smb_file_time *ft)
-{
-	time_t timestamp = 0;
-	int ret;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname,
-					&timestamp, NULL, 0);
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_NTIMES(handle, csmb_fname, ft);
-}
-
 static int ceph_snap_gmt_fntimes(vfs_handle_struct *handle,
 				 files_struct *fsp,
 				 struct smb_file_time *ft)
@@ -1487,7 +1466,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.unlinkat_fn = ceph_snap_gmt_unlinkat,
 	.fchmod_fn = ceph_snap_gmt_fchmod,
 	.chdir_fn = ceph_snap_gmt_chdir,
-	.ntimes_fn = ceph_snap_gmt_ntimes,
 	.fntimes_fn = ceph_snap_gmt_fntimes,
 	.readlinkat_fn = ceph_snap_gmt_readlinkat,
 	.mknodat_fn = ceph_snap_gmt_mknodat,
