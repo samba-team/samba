@@ -1203,7 +1203,8 @@ NTSTATUS file_set_sparse(connection_struct *conn,
  than POSIX.
 *******************************************************************/
 
-int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
+int file_ntimes(connection_struct *conn,
+		files_struct *fsp,
 		struct smb_file_time *ft)
 {
 	int ret = -1;
@@ -1230,7 +1231,7 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 		return 0;
 	}
 
-	if(SMB_VFS_NTIMES(conn, smb_fname, ft) == 0) {
+	if (SMB_VFS_NTIMES(conn, fsp->fsp_name, ft) == 0) {
 		return 0;
 	}
 
@@ -1250,12 +1251,12 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 
 	/* Check if we have write access. */
 	if (can_write_to_file(conn,
-			conn->cwd_fsp,
-			smb_fname))
+			      conn->cwd_fsp,
+			      fsp->fsp_name))
 	{
 		/* We are allowed to become root and change the filetime. */
 		become_root();
-		ret = SMB_VFS_NTIMES(conn, smb_fname, ft);
+		ret = SMB_VFS_NTIMES(conn, fsp->fsp_name, ft);
 		unbecome_root();
 	}
 

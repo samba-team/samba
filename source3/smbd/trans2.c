@@ -6622,7 +6622,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
-	ret = file_ntimes(conn, set_fsp->fsp_name, ft);
+	ret = file_ntimes(conn, set_fsp, ft);
 	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}

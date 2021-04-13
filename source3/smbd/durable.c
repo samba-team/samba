@@ -224,7 +224,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 
 		if (!is_omit_timespec(&ft.mtime)) {
 			round_timespec(conn->ts_res, &ft.mtime);
-			file_ntimes(conn, fsp->fsp_name, &ft);
+			file_ntimes(conn, fsp, &ft);
 		}
 
 		ok = mark_share_mode_disconnected(lck, fsp);
