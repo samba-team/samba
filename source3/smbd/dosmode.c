@@ -1231,7 +1231,7 @@ int file_ntimes(connection_struct *conn,
 		return 0;
 	}
 
-	if (SMB_VFS_NTIMES(conn, fsp->fsp_name, ft) == 0) {
+	if (SMB_VFS_FNTIMES(fsp, ft) == 0) {
 		return 0;
 	}
 
@@ -1256,7 +1256,7 @@ int file_ntimes(connection_struct *conn,
 	{
 		/* We are allowed to become root and change the filetime. */
 		become_root();
-		ret = SMB_VFS_NTIMES(conn, fsp->fsp_name, ft);
+		ret = SMB_VFS_FNTIMES(fsp, ft);
 		unbecome_root();
 	}
 
