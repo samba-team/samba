@@ -1545,43 +1545,6 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
-static int mh_ntimes(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		struct smb_file_time *ft)
-{
-	int status;
-	struct smb_filename *clientFname;
-	TALLOC_CTX *ctx;
-
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_ntimes\n"));
-	if (!is_in_media_files(smb_fname->base_name))
-	{
-		status = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
-		goto out;
-	}
-
-	clientFname = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname,
-				&clientFname)))
-	{
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_NTIMES(handle, clientFname, ft);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
-/*
- * Success: return 0
- * Failure: set errno, return -1
- */
 
 static int mh_symlinkat(vfs_handle_struct *handle,
 		const struct smb_filename *link_contents,
@@ -2130,7 +2093,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.unlinkat_fn = mh_unlinkat,
 	.lchown_fn = mh_lchown,
 	.chdir_fn = mh_chdir,
-	.ntimes_fn = mh_ntimes,
 	.symlinkat_fn = mh_symlinkat,
 	.readlinkat_fn = mh_readlinkat,
 	.linkat_fn = mh_linkat,
