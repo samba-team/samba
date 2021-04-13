@@ -101,7 +101,7 @@ struct char_mappings **string_replace_init_map(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	cmaps = TALLOC_ZERO(mem_ctx, MAP_NUM * sizeof(struct char_mappings *));
+	cmaps = talloc_zero_array(mem_ctx, struct char_mappings *, MAP_NUM);
 	if (cmaps == NULL) {
 		return NULL;
 	}
