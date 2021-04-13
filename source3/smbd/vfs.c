@@ -2245,14 +2245,6 @@ struct smb_filename *smb_vfs_call_getwd(struct vfs_handle_struct *handle,
 	return handle->fns->getwd_fn(handle, ctx);
 }
 
-int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			struct smb_file_time *ft)
-{
-	VFS_FIND(ntimes);
-	return handle->fns->ntimes_fn(handle, smb_fname, ft);
-}
-
 int smb_vfs_call_fntimes(struct vfs_handle_struct *handle,
 			 struct files_struct *fsp,
 			 struct smb_file_time *ft)

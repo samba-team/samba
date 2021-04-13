@@ -348,6 +348,7 @@
  * Version 45 - Remove SMB_VFS_GET_DOS_ATTRIBUTES()
  * Version 45 - Remove SMB_VFS_CHMOD
  * Version 45 - Add SMB_VFS_FNTIMES
+ * Version 45 - Remove SMB_VFS_NTIMES
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1017,9 +1018,6 @@ struct vfs_fn_pointers {
 			 const struct smb_filename *smb_fname);
 	struct smb_filename *(*getwd_fn)(struct vfs_handle_struct *handle,
 				TALLOC_CTX *mem_ctx);
-	int (*ntimes_fn)(struct vfs_handle_struct *handle,
-			 const struct smb_filename *smb_fname,
-			 struct smb_file_time *ft);
 	int (*fntimes_fn)(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp,
 			  struct smb_file_time *ft);

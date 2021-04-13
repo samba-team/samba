@@ -268,11 +268,6 @@
 #define SMB_VFS_NEXT_GETWD(handle, ctx) \
 	smb_vfs_call_getwd((handle)->next, (ctx))
 
-#define SMB_VFS_NTIMES(conn, path, ts) \
-	smb_vfs_call_ntimes((conn)->vfs_handles, (path), (ts))
-#define SMB_VFS_NEXT_NTIMES(handle, path, ts) \
-	smb_vfs_call_ntimes((handle)->next, (path), (ts))
-
 #define SMB_VFS_FNTIMES(fsp, ts) \
 	smb_vfs_call_fntimes((fsp)->conn->vfs_handles, (fsp), (ts))
 #define SMB_VFS_NEXT_FNTIMES(handle, fsp, ts) \

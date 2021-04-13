@@ -260,7 +260,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_LSTAT()                   | [[Path][Path]]     | Todo   |
 | SMB_VFS_MKDIRAT()                 | [[NsC][NsC]]      | -      |
 | SMB_VFS_MKNODAT()                 | [[NsC][NsC]]      | -      |
-| SMB_VFS_NTIMES()                  | [[Path][Path]]     | Todo   |
+| SMB_VFS_NTIMES()                  | [[Path][Path]]    | -      |
 | SMB_VFS_OFFLOAD_READ_RECV()       | [[fsp][fsp]]      | -      |
 | SMB_VFS_OFFLOAD_READ_SEND()       | [[fsp][fsp]]      | -      |
 | SMB_VFS_OFFLOAD_WRITE_RECV()      | [[fsp][fsp]]      | -      |
@@ -310,7 +310,7 @@ whenever VFS access is done in a piecemeal fashion.
 |---------------------------------+----------+--------|
 | SMB_VFS_SYS_ACL_DELETE_DEF_FD() | [[xpathref][xpathref]] | Todo   |
 | SMB_VFS_READDIR_ATTRAT()        | [[Enum][Enum]]     | Todo   |
-| SMB_VFS_FUTIMENS()              | [[fsp][fsp]]      | Todo   |
+| SMB_VFS_FNTIMENS()              | [[fsp][fsp]]      | -      |
 |---------------------------------+----------+--------|
 
 ** VFS functions by category
