@@ -1810,93 +1810,6 @@ static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
 	}
 }
 
-static int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
-{
-	gpfs_timestruc_t gpfs_times[4];
-	int flags = 0;
-	int rc;
-
-	ZERO_ARRAY(gpfs_times);
-	timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
-	timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
-	/* No good mapping from LastChangeTime to ctime, not storing */
-	timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
-
-	if (!flags) {
-		DEBUG(10, ("nothing to do, return to avoid EINVAL\n"));
-		return 0;
-	}
-
-	rc = gpfswrap_set_times_path(path, flags, gpfs_times);
-
-	if (rc != 0 && errno != ENOSYS) {
-		DBG_WARNING("gpfs_set_times() returned with error %s for %s\n",
-			    strerror(errno),
-			    path);
-	}
-
-	return rc;
-}
-
-static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
-                        const struct smb_filename *smb_fname,
-			struct smb_file_time *ft)
-{
-
-        struct gpfs_winattr attrs;
-        int ret;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	/* Try to use gpfs_set_times if it is enabled and available */
-	if (config->settimes) {
-		ret = smbd_gpfs_set_times_path(smb_fname->base_name, ft);
-
-		if (ret == 0 || (ret == -1 && errno != ENOSYS)) {
-			return ret;
-		}
-	}
-
-	DEBUG(10,("gpfs_set_times() not available or disabled, "
-		  "use ntimes and winattr\n"));
-
-        ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
-        if(ret == -1){
-		/* don't complain if access was denied */
-		if (errno != EPERM && errno != EACCES) {
-			DEBUG(1,("vfs_gpfs_ntimes: SMB_VFS_NEXT_NTIMES failed:"
-				 "%s", strerror(errno)));
-		}
-                return -1;
-        }
-
-        if (is_omit_timespec(&ft->create_time)){
-                DEBUG(10,("vfs_gpfs_ntimes:Create Time is NULL\n"));
-                return 0;
-        }
-
-	if (!config->winattr) {
-		return 0;
-	}
-
-        attrs.winAttrs = 0;
-        attrs.creationTime.tv_sec = ft->create_time.tv_sec;
-        attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
-
-	ret = gpfswrap_set_winattrs_path(smb_fname->base_name,
-					 GPFS_WINATTR_SET_CREATION_TIME,
-					 &attrs);
-        if(ret == -1 && errno != ENOSYS){
-                DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));
-	        return -1;
-        }
-        return 0;
-
-}
-
 static int smbd_gpfs_set_times(int fd, char *path, struct smb_file_time *ft)
 {
 	gpfs_timestruc_t gpfs_times[4];
@@ -2655,7 +2568,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.close_fn = vfs_gpfs_close,
 	.stat_fn = vfs_gpfs_stat,
 	.lstat_fn = vfs_gpfs_lstat,
-	.ntimes_fn = vfs_gpfs_ntimes,
 	.fntimes_fn = vfs_gpfs_fntimes,
 	.aio_force_fn = vfs_gpfs_aio_force,
 	.sendfile_fn = vfs_gpfs_sendfile,
