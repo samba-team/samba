@@ -2516,95 +2516,6 @@ static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
  system will support.
 **********************************************************************/
 
-static int vfswrap_ntimes(vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname,
-			  struct smb_file_time *ft)
-{
-	int result = -1;
-
-	START_PROFILE(syscall_ntimes);
-
-	if (is_named_stream(smb_fname)) {
-		errno = ENOENT;
-		goto out;
-	}
-
-	if (ft != NULL) {
-		if (is_omit_timespec(&ft->atime)) {
-			ft->atime= smb_fname->st.st_ex_atime;
-		}
-
-		if (is_omit_timespec(&ft->mtime)) {
-			ft->mtime = smb_fname->st.st_ex_mtime;
-		}
-
-		if (!is_omit_timespec(&ft->create_time)) {
-			set_create_timespec_ea(handle->conn,
-					       smb_fname,
-					       ft->create_time);
-		}
-
-		if ((timespec_compare(&ft->atime,
-				      &smb_fname->st.st_ex_atime) == 0) &&
-		    (timespec_compare(&ft->mtime,
-				      &smb_fname->st.st_ex_mtime) == 0)) {
-			result = 0;
-			goto out;
-		}
-	}
-
-#if defined(HAVE_UTIMENSAT)
-	if (ft != NULL) {
-		struct timespec ts[2];
-		ts[0] = ft->atime;
-		ts[1] = ft->mtime;
-		result = utimensat(AT_FDCWD, smb_fname->base_name, ts, 0);
-	} else {
-		result = utimensat(AT_FDCWD, smb_fname->base_name, NULL, 0);
-	}
-	if (!((result == -1) && (errno == ENOSYS))) {
-		goto out;
-	}
-#endif
-#if defined(HAVE_UTIMES)
-	if (ft != NULL) {
-		struct timeval tv[2];
-		tv[0] = convert_timespec_to_timeval(ft->atime);
-		tv[1] = convert_timespec_to_timeval(ft->mtime);
-		result = utimes(smb_fname->base_name, tv);
-	} else {
-		result = utimes(smb_fname->base_name, NULL);
-	}
-	if (!((result == -1) && (errno == ENOSYS))) {
-		goto out;
-	}
-#endif
-#if defined(HAVE_UTIME)
-	if (ft != NULL) {
-		struct utimbuf times;
-		times.actime = convert_timespec_to_time_t(ft->atime);
-		times.modtime = convert_timespec_to_time_t(ft->mtime);
-		result = utime(smb_fname->base_name, &times);
-	} else {
-		result = utime(smb_fname->base_name, NULL);
-	}
-	if (!((result == -1) && (errno == ENOSYS))) {
-		goto out;
-	}
-#endif
-	errno = ENOSYS;
-	result = -1;
-
- out:
-	END_PROFILE(syscall_ntimes);
-	return result;
-}
-
-/*********************************************************************
- nsec timestamp resolution call. Convert down to whatever the underlying
- system will support.
-**********************************************************************/
-
 static int vfswrap_fntimes(vfs_handle_struct *handle,
 			   files_struct *fsp,
 			   struct smb_file_time *ft)
@@ -3900,7 +3811,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.lchown_fn = vfswrap_lchown,
 	.chdir_fn = vfswrap_chdir,
 	.getwd_fn = vfswrap_getwd,
-	.ntimes_fn = vfswrap_ntimes,
 	.fntimes_fn = vfswrap_fntimes,
 	.ftruncate_fn = vfswrap_ftruncate,
 	.fallocate_fn = vfswrap_fallocate,
