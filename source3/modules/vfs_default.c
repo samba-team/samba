@@ -2548,7 +2548,8 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 				      &smb_fname->st.st_ex_atime) == 0) &&
 		    (timespec_compare(&ft->mtime,
 				      &smb_fname->st.st_ex_mtime) == 0)) {
-			return 0;
+			result = 0;
+			goto out;
 		}
 	}
 
