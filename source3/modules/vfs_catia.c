@@ -817,39 +817,6 @@ static int catia_chdir(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int catia_ntimes(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			struct smb_file_time *ft)
-{
-	struct smb_filename *smb_fname_tmp = NULL;
-	char *name = NULL;
-	NTSTATUS status;
-	int ret;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	smb_fname_tmp->base_name = name;
-	smb_fname_tmp->fsp = smb_fname->fsp;
-
-	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, ft);
-	TALLOC_FREE(name);
-	TALLOC_FREE(smb_fname_tmp);
-
-	return ret;
-}
-
 static int catia_fntimes(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 struct smb_file_time *ft)
@@ -2170,7 +2137,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fchown_fn = catia_fchown,
 	.lchown_fn = catia_lchown,
 	.chdir_fn = catia_chdir,
-	.ntimes_fn = catia_ntimes,
 	.fntimes_fn = catia_fntimes,
 	.ftruncate_fn = catia_ftruncate,
 	.fallocate_fn = catia_fallocate,
