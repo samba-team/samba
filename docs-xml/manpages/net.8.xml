@@ -3014,6 +3014,74 @@ Dump the locking table of a certain global lock.
 </refsect2>
 
 <refsect2>
+<title>OFFLINEJOIN</title>
+
+<para>Starting with version 4.15 Samba has support for offline join APIs. Windows supports offline join capabilities since Windows 7 and Windows 2008 R2.
+</para>
+
+<para>The following offline commands are implemented:
+<simplelist>
+<member>net offlinejoin provision - Provisions a machine account in AD.</member>
+<member>net offlinejoin requestodj - Requests a domain offline join.</member>
+</simplelist>
+</para>
+
+<refsect3>
+	<title>OFFLINEJOIN PROVISION <replaceable>domain=DOMAIN</replaceable> <replaceable>machine_name=MACHINE_NAME</replaceable> <replaceable>machine_account_ou=MACHINE_ACCOUNT_OU</replaceable> <replaceable>dcname=DCNAME</replaceable> <replaceable>defpwd</replaceable> <replaceable>reuse</replaceable> <replaceable>savefile=FILENAME</replaceable> <replaceable>printblob</replaceable></title>
+
+<para>
+Provisions a machine account in AD. This command needs network connectivity to the domain controller to succeed. This command supports the following additional parameters:
+</para>
+
+<itemizedlist>
+
+<listitem><para><replaceable>DOMAIN</replaceable> can be a NetBIOS domain name (also known as short domain name) or a DNS domain name for Active Directory Domains. The <replaceable>DOMAIN</replaceable> parameter cannot be NULL.</para></listitem>
+
+<listitem><para><replaceable>MACHINE_NAME</replaceable> defines the machine account name that will be provisioned in AD. The <replaceable>MACHINE_NAME</replaceable> parameter cannot be NULL.</para></listitem>
+
+<listitem><para><replaceable>MACHINE_ACCOUNT_OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP container. This optional parameter is only supported when joining Active Directory Domains.</para></listitem>
+
+<listitem><para><replaceable>DCNAME</replaceable> defines a specific domain controller for creating the machine account in AD.</para></listitem>
+
+<listitem><para><replaceable>DEFPWD</replaceable> is an optional parameter that can be set to enforce using the default machine account password. The use of this parameter is not recommended as the default machine account password can be easily guessed. </para></listitem>
+
+<listitem><para><replaceable>REUSE</replaceable> is an optional parameter that can be set to enforce reusing an exisiting machine account in AD.</para></listitem>
+
+<listitem><para><replaceable>SAVEFILE</replaceable> is an optional parameter to store the generated provisioning data on disk.</para></listitem>
+
+<listitem><para><replaceable>PRINTBLOB</replaceable> is an optional parameter to print the generated provisioning data on stdout.</para></listitem>
+
+</itemizedlist>
+
+<para>
+	Example:
+	net offlinejoin provision -U administrator%secret domain=MYDOM machine_name=MYHOST savefile=provisioning.txt
+</para>
+</refsect3>
+
+<refsect3>
+	<title>OFFLINEJOIN REQUESTODJ <replaceable>loadfile=FILENAME</replaceable></title>
+
+<para>
+Requests an offline domain join by providing file-based provisioning data. This command supports the following additional parameters:
+</para>
+
+<itemizedlist>
+
+<listitem><para><replaceable>LOADFILE</replaceable> is a required parameter to load the provisioning from a file.</para></listitem>
+
+</itemizedlist>
+
+<para>
+	Example:
+	net offlinejoin requestodj -U administrator%secret loadfile=provisioning.txt
+</para>
+
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
