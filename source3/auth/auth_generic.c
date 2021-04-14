@@ -361,7 +361,11 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		gensec_set_credentials(gensec_security, server_credentials);
+		nt_status = gensec_set_credentials(
+			gensec_security, server_credentials);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			goto done;
+		}
 	}
 
 	nt_status = gensec_set_remote_address(gensec_security,
