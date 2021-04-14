@@ -24,13 +24,7 @@ import os
 import re
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 
-for p in ["../../../../../source4/librpc/tests",
-          "../../../../../librpc/tests"]:
-    data_path_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), p))
-    print(data_path_dir)
-    if os.path.exists(data_path_dir):
-        break
-
+data_path_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../source4/librpc/tests"))
 
 class NdrDumpTests(BlackboxTestCase):
     """Blackbox tests for ndrdump."""
