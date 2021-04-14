@@ -476,7 +476,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
-	struct auth_session_info *session_info;
+	struct auth_session_info *session_info = NULL;
 	struct unixid *ids;
 
 	/* Ensure we can't possible take a code path leading to a
@@ -497,7 +497,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		session_info = copy_session_info(mem_ctx,
 				server_info->cached_session_info);
 		if (session_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		/* This is a potentially untrusted username for use in %U */
@@ -506,8 +506,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 					    smb_username,
 					    SAFE_NETBIOS_CHARS "$");
 		if (session_info->unix_info->sanitized_username == NULL) {
-			TALLOC_FREE(session_info);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 
 		session_info->unique_session_token = GUID_random();
@@ -518,13 +517,12 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!session_info) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	session_info->unix_token = talloc_zero(session_info, struct security_unix_token);
 	if (!session_info->unix_token) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	session_info->unix_token->uid = server_info->utok.uid;
@@ -532,14 +530,12 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
 	if (!session_info->unix_info) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	session_info->unix_info->unix_name = talloc_strdup(session_info, server_info->unix_name);
 	if (!session_info->unix_info->unix_name) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	/* This is a potentially untrusted username for use in %U */
@@ -548,8 +544,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 				    smb_username,
 				    SAFE_NETBIOS_CHARS "$");
 	if (session_info->unix_info->sanitized_username == NULL) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	if (session_key) {
@@ -558,7 +553,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 								  session_key->data,
 								  session_key->length);
 		if (!session_info->session_key.data && session_key->length) {
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 	} else {
 		session_info->session_key = data_blob_talloc( session_info, server_info->session_key.data,
@@ -571,8 +566,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 					    &session_info->info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("conversion of info3 into auth_user_info failed!\n"));
-		TALLOC_FREE(session_info);
-		return status;
+		goto fail;
 	}
 
 	/*
@@ -603,7 +597,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto fail;
 	}
 
 	/* Convert the SIDs to gids. */
@@ -616,12 +610,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	ids = talloc_array(talloc_tos(), struct unixid,
 			   t->num_sids);
 	if (ids == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	if (!sids_to_unixids(t->sids, t->num_sids, ids)) {
-		TALLOC_FREE(ids);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	for (i=0; i<t->num_sids; i++) {
@@ -642,7 +635,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 					     ids[i].id,
 					     &session_info->unix_token->groups,
 					     &session_info->unix_token->ngroups)) {
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 	}
 
@@ -685,13 +678,18 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	status = log_nt_token(session_info->security_token);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto fail;
 	}
 
 	session_info->unique_session_token = GUID_random();
 
 	*session_info_out = session_info;
 	return NT_STATUS_OK;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(session_info);
+	return status;
 }
 
 NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
