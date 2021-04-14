@@ -480,7 +480,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct unixid *ids;
 
 	/* Ensure we can't possible take a code path leading to a
-	 * null defref. */
+	 * null deref. */
 	if (!server_info) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
