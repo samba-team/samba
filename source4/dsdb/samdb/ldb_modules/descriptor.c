@@ -257,7 +257,6 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	struct auth_session_info *session_info
 		= ldb_get_opaque(ldb, DSDB_SESSION_INFO);
 	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
-	char *sddl_sd;
 	struct dom_sid *default_owner;
 	struct dom_sid *default_group;
 	struct security_descriptor *default_descriptor = NULL;
@@ -414,8 +413,13 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 		final_sd->sacl->revision = SECURITY_ACL_REVISION_ADS;
 	}
 
-	sddl_sd = sddl_encode(mem_ctx, final_sd, domain_sid);
-	DEBUG(10, ("Object %s created with descriptor %s\n\n", ldb_dn_get_linearized(dn), sddl_sd));
+	{
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		DBG_DEBUG("Object %s created with descriptor %s\n\n",
+			  ldb_dn_get_linearized(dn),
+			  sddl_encode(tmp_ctx, final_sd, domain_sid));
+		TALLOC_FREE(tmp_ctx);
+	}
 
 	linear_sd = talloc(mem_ctx, DATA_BLOB);
 	if (!linear_sd) {
