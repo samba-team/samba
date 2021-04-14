@@ -1048,7 +1048,7 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return status;
 	}
 
-	if (SMB_VFS_NTIMES(vfs->conn, smb_fname, &ft) != 0) {
+	if (SMB_VFS_FNTIMES(smb_fname->fsp, &ft) != 0) {
 		printf("utime: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
