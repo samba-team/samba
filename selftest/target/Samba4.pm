@@ -607,10 +607,10 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{nsswrap_hostname} = "$ctx->{hostname}.$ctx->{dnsname}";
 	if ($ENV{SAMBA_DNS_FAKING}) {
 		$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
-		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
+		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --configfile=$ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
 		$ctx->{samba_dnsupdate} = $python_cmd .  $ctx->{samba_dnsupdate};
 	} else {
-	        $ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces";
+	        $ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --configfile=$ctx->{smb_conf} --all-interfaces";
 		$ctx->{samba_dnsupdate} = $python_cmd .  $ctx->{samba_dnsupdate};
 		$ctx->{use_resolv_wrapper} = 1;
 	}
@@ -782,8 +782,8 @@ sub provision_raw_step1($$)
 	server min protocol = SMB2_02
 	mangled names = yes
 	dns update command = $ctx->{samba_dnsupdate}
-	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
-	gpo update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate -s $ctx->{smb_conf} --target=Computer
+	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate --configfile $ctx->{smb_conf}
+	gpo update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba-gpupdate --configfile $ctx->{smb_conf} --target=Computer
 	samba kcc command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_kcc
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
@@ -3250,7 +3250,7 @@ sub setup_offlinebackupdc
 
 	# create an offline backup of the 'backupfromdc' target
 	my $backupdir = File::Temp->newdir();
-	my $cmd = "offline -s $dcvars->{SERVERCONFFILE}";
+	my $cmd = "offline --configfile $dcvars->{SERVERCONFFILE}";
 	my $backup_file = $self->create_backup($env, $dcvars,
 					       $backupdir, $cmd);
 

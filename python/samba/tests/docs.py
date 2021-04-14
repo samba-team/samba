@@ -310,8 +310,11 @@ class SmbDotConfTests(TestCase):
                 else:
                     self.fail("%s has no valid context" % param)
 
-                cmdline = program + ["-s",
-                                     self.smbconf,
+                program_arg1 = ["--configfile=%s" % (self.smbconf)]
+                if (program[0] == 'bin/testparm'):
+                    program_arg1 = ["--suppress-prompt", self.smbconf]
+
+                cmdline = program + program_arg1 + [
                                      "--section-name",
                                      section,
                                      "--parameter-name",
@@ -360,8 +363,11 @@ class SmbDotConfTests(TestCase):
                 else:
                     self.fail("%s has no valid context" % param)
 
-                cmdline = program + ["-s",
-                                     self.smbconf,
+                program_arg1 = ["--configfile=%s" % (self.smbconf)]
+                if (program[0] == 'bin/testparm'):
+                    program_arg1 = ["--suppress-prompt", self.smbconf]
+
+                cmdline = program + program_arg1 + [
                                      "--section-name",
                                      section,
                                      "--parameter-name",
@@ -434,8 +440,11 @@ class SmbDotConfTests(TestCase):
                 if value_to_use is None:
                     self.fail("%s has an invalid type" % param)
 
-                cmdline = program + ["-s",
-                                     self.smbconf,
+                program_arg1 = ["--configfile=%s" % (self.smbconf)]
+                if (program[0] == 'bin/testparm'):
+                    program_arg1 = ["--suppress-prompt", self.smbconf]
+
+                cmdline = program + program_arg1 + [
                                      "--section-name",
                                      section,
                                      "--parameter-name",
@@ -478,9 +487,12 @@ class SmbDotConfTests(TestCase):
         if program[0] == 'bin/samba-tool' and os.getenv("PYTHON", None):
             program = [os.environ["PYTHON"]] + program
 
-        p = subprocess.Popen(program + ["-s",
-                                        self.blankconf,
-                                        "--suppress-prompt"],
+        program_arg1 = ["--configfile=%s" % (self.blankconf), "--suppress-prompt"]
+        if (program[0] == 'bin/testparm'):
+            program_arg1 = ["--suppress-prompt", self.blankconf]
+
+        print(program + program_arg1)
+        p = subprocess.Popen(program + program_arg1,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              cwd=self.topdir).communicate()

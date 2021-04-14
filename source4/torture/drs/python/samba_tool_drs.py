@@ -203,7 +203,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         new_dc_config_file = "%s/etc/smb.conf" % self.tempdir
 
-        self.check_output("samba-tool drs replicate --local %s %s %s %s -s %s"
+        self.check_output("samba-tool drs replicate --local %s %s %s %s --configfile=%s"
                           % ("invalid", self.dc1, nc_name,
                              self.cmdline_creds, new_dc_config_file))
 
@@ -227,7 +227,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
 
         # pull that change with --local into local db from dc1: should send link and some objects
-        out = self.check_output("samba-tool drs replicate --local %s %s %s %s -s %s"
+        out = self.check_output("samba-tool drs replicate --local %s %s %s %s --configfile=%s"
                                 % ("invalid", self.dc1, nc_name,
                                    self.cmdline_creds, new_dc_config_file))
 
@@ -238,7 +238,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         # pull that change with --local into local db from dc2: shouldn't send link or object
         # as we sent an up-to-dateness vector showing that we had already synced with DC1
-        out = self.check_output("samba-tool drs replicate --local %s %s %s %s -s %s"
+        out = self.check_output("samba-tool drs replicate --local %s %s %s %s --configfile=%s"
                                 % ("invalid", self.dc2, nc_name,
                                    self.cmdline_creds, new_dc_config_file))
 
@@ -247,7 +247,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(obj_2, 0)
         self.assertEqual(link_2, 0)
 
-        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s -s %s"
+        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s --configfile=%s"
                           % (netbiosname, self.dc1, self.cmdline_creds, new_dc_config_file))
 
     def test_samba_tool_replicate_machine_creds_P(self):

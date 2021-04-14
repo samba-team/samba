@@ -24,7 +24,7 @@ cd $RUNDIR
 
 failed=0
 
-net_tool="$BINDIR/net -s $BASEDIR/$WORKDIR/client.conf --option=security=ads"
+net_tool="$BINDIR/net --configfile=$BASEDIR/$WORKDIR/client.conf --option=security=ads"
 
 # Load test functions
 . `dirname $0`/subunit.sh

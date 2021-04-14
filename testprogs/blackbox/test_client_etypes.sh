@@ -44,7 +44,7 @@ cd $RUNDIR
 
 failed=0
 
-net_tool="$BINDIR/net -s $BASEDIR/$WORKDIR/client.conf --option=security=ads --option=kerberosencryptiontypes=$ETYPE_CONF"
+net_tool="$BINDIR/net --configfile=$BASEDIR/$WORKDIR/client.conf --option=security=ads --option=kerberosencryptiontypes=$ETYPE_CONF"
 pcap_file=$BASEDIR/$WORKDIR/test.pcap
 
 export SOCKET_WRAPPER_PCAP_FILE=$pcap_file

@@ -22,7 +22,7 @@ failed=0
 
 samba_bindir="$BINDIR"
 wbinfo_tool="$VALGRIND $samba_bindir/wbinfo"
-net_tool="$VALGRIND $samba_bindir/net -s $SERVERCONFFILE"
+net_tool="$VALGRIND $samba_bindir/net --configfile=$SERVERCONFFILE"
 
 . $(dirname $0)/../../testprogs/blackbox/subunit.sh
 

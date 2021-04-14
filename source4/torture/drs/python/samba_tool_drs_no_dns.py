@@ -103,11 +103,11 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         forestdns_dn = ldb.binary_encode('DC=ForestDNSZones,' + str(nc_name))
         domaindns_dn = ldb.binary_encode('DC=DomainDNSZones,' + str(nc_name))
 
-        self.check_output("samba-tool drs replicate --local %s %s %s %s -s %s --full-sync"
+        self.check_output("samba-tool drs replicate --local %s %s %s %s --configfile=%s --full-sync"
                           % ("invalid", self.dc1, forestdns_dn,
                              self.cmdline_creds, new_dc_config_file))
 
-        self.check_output("samba-tool drs replicate --local %s %s %s %s -s %s --full-sync"
+        self.check_output("samba-tool drs replicate --local %s %s %s %s --configfile=%s --full-sync"
                           % ("invalid", self.dc1, domaindns_dn,
                              self.cmdline_creds, new_dc_config_file))
 
@@ -122,7 +122,7 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
                            expression="(msds-hasmasterncs=%s)" % domaindns_dn)
         self.assertEqual(len(res), 0)
 
-        self.check_output("samba_upgradedns -s %s" % (new_dc_config_file))
+        self.check_output("samba_upgradedns --configfile=%s" % (new_dc_config_file))
 
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % forestdns_dn)
@@ -143,11 +143,11 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
 
         try:
             # This fixes any forward-link-backward-link issues with the tools
-            self.check_output("samba-tool dbcheck -s %s --cross-ncs --fix --yes" % (new_dc_config_file))
+            self.check_output("samba-tool dbcheck --configfile=%s --cross-ncs --fix --yes" % (new_dc_config_file))
         except BlackboxProcessError as e:
             self.assertTrue("Checked " in get_string(e.stdout))
 
-        self.check_output("samba-tool dbcheck -s %s --cross-ncs" % (new_dc_config_file))
+        self.check_output("samba-tool dbcheck --configfile=%s --cross-ncs" % (new_dc_config_file))
 
         # Compare the two directories
         self.check_output("samba-tool ldapcmp ldap://%s ldb://%s %s --filter=%s" %
@@ -179,5 +179,5 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(len(res), 1)
 
         # Demote the DC we created in the test
-        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s -s %s"
+        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s --configfile=%s"
                           % (netbiosname, self.dc1, self.cmdline_creds, new_dc_config_file))

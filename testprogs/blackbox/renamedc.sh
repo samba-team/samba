@@ -30,7 +30,7 @@ testrenamedc() {
 	$PYTHON $SRCDIR/source4/scripting/bin/renamedc \
 		--oldname="BAR" \
 		--newname="RAYMONBAR" \
-		-s $PREFIX/renamedc_test/etc/smb.conf
+		--configfile=$PREFIX/renamedc_test/etc/smb.conf
 }
 
 confirmrenamedc() {
@@ -61,19 +61,19 @@ testrenamedc2() {
 	$PYTHON $SRCDIR/source4/scripting/bin/renamedc \
 		--oldname="RAYMONBAR" \
 		--newname="BAR" \
-		-s $PREFIX/renamedc_test/etc/smb.conf
+		--configfile=$PREFIX/renamedc_test/etc/smb.conf
 }
 
 dbcheck_fix() {
         # Unlike most calls to dbcheck --fix, this will not trigger an error, as
         # we do not flag an error count for this old DN string case.
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -s $PREFIX/renamedc_test/etc/smb.conf --fix \
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --configfile=$PREFIX/renamedc_test/etc/smb.conf --fix \
 		--quiet --yes fix_all_old_dn_string_component_mismatch \
 		--attrs="fsmoRoleOwner interSiteTopologyGenerator msDS-NC-Replica-Locations"
 }
 
 dbcheck() {
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -s $PREFIX/renamedc_test/etc/smb.conf
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --configfile=$PREFIX/renamedc_test/etc/smb.conf
 }
 
 

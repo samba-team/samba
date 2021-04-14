@@ -1843,7 +1843,7 @@ sub make_bin_cmd
 		@preargs = split(/ /, $valgrind);
 	}
 	my @args = ("-F", "--no-process-group",
-		    "-s", $env_vars->{SERVERCONFFILE},
+		    "--configfile=$env_vars->{SERVERCONFFILE}",
 		    "-l", $env_vars->{LOGDIR});
 
 	if (not defined($dont_log_stdout)) {
@@ -3058,7 +3058,7 @@ force_user:x:$gid_force_user:
 	$ret{SMBD_TEST_LOG_POS} = 0;
 	$ret{SERVERCONFFILE} = $conffile;
 	$ret{TESTENV_DIR} = $prefix_abs;
-	$ret{CONFIGURATION} ="-s $conffile";
+	$ret{CONFIGURATION} ="--configfile=$conffile";
 	$ret{LOCK_DIR} = $lockdir;
 	$ret{SERVER} = $server;
 	$ret{USERNAME} = $unix_name;

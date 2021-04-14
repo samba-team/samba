@@ -11,7 +11,7 @@ NT_DOM=$(get_nt_dom $1)
 SERVER=$2
 
 search_users () {
-	${NET} ads search '(objectCategory=user)' sAMAccountName -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads search '(objectCategory=user)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -20,7 +20,7 @@ search_users () {
 }
 
 search_groups () {
-	${NET} ads search '(objectCategory=group)' sAMAccountName -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads search '(objectCategory=group)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1
@@ -28,7 +28,7 @@ search_groups () {
 }
 
 search_computers () {
-	${NET} ads search '(objectCategory=computer)' sAMAccountName -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads search '(objectCategory=computer)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1
@@ -36,7 +36,7 @@ search_computers () {
 }
 
 search_wildcard () {
-	${NET} ads search '(objectCategory=*)' sAMAccountName -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads search '(objectCategory=*)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1
@@ -44,7 +44,7 @@ search_wildcard () {
 }
 
 search_unindexed () {
-	${NET} ads search '(description=Built-in account for adminstering the computer/domain)' sAMAccountName -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads search '(description=Built-in account for adminstering the computer/domain)' sAMAccountName -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1

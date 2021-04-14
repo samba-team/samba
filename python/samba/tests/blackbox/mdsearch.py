@@ -123,7 +123,7 @@ class MdfindBlackboxTests(BlackboxTestCase):
         self.server.json_in = json_in.replace("%BASEPATH%", self.sharepath)
         self.server.json_out = json_out.replace("%BASEPATH%", self.sharepath)
 
-        output = self.check_output("mdsearch -s %s -U %s%%%s fileserver spotlight '*==\"samba*\"'" % (config, username, password))
+        output = self.check_output("mdsearch --configfile=%s -U %s%%%s fileserver spotlight '*==\"samba*\"'" % (config, username, password))
 
         actual = output.decode('utf-8').splitlines()
         expected = ["%s/%s" % (self.sharepath, file) for file in testfiles]

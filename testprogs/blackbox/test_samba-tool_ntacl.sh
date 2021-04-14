@@ -50,7 +50,7 @@ test_get_acl_ntvfs()
 	testfile="$1"
 	exptextedacl="$2"
 
-	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl --use-ntvfs --xattr-backend=tdb -s $PREFIX/ad_member/lib/server.conf) || return $?
+	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl --use-ntvfs --xattr-backend=tdb --configfile=$PREFIX/ad_member/lib/server.conf) || return $?
 
 	test "$retacl" = "$exptextedacl"
 }
@@ -60,7 +60,7 @@ test_set_acl_ntvfs()
 	testfile="$1"
 	acl="$2"
 
-	$PYTHON $samba_tool ntacl set "$acl" "$testfile" --use-ntvfs --xattr-backend=tdb -s $PREFIX/ad_member/lib/server.conf
+	$PYTHON $samba_tool ntacl set "$acl" "$testfile" --use-ntvfs --xattr-backend=tdb --configfile=$PREFIX/ad_member/lib/server.conf
 }
 
 test_changedomsid()
@@ -70,13 +70,13 @@ test_changedomsid()
 	$PYTHON $samba_tool ntacl changedomsid \
 		"$domain_sid" "$new_domain_sid" "$testfile" \
 		--service=tmp \
-		-s $PREFIX/ad_member/lib/server.conf
+		--configfile=$PREFIX/ad_member/lib/server.conf
 
 	retacl=$($PYTHON $samba_tool ntacl get \
 			"$testfile" \
 			--as-sddl \
 			--service=tmp \
-			-s $PREFIX/ad_member/lib/server.conf) || return $?
+			--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
 
 	test "$retacl" = "$new_acl"
 }
@@ -89,14 +89,14 @@ test_changedomsid_ntvfs()
 		"$domain_sid" "$new_domain_sid" "$testfile" \
 		--use-ntvfs \
 		--xattr-backend=tdb \
-		-s $PREFIX/ad_member/lib/server.conf
+		--configfile=$PREFIX/ad_member/lib/server.conf
 
 	retacl=$($PYTHON $samba_tool ntacl get \
 			"$testfile" \
 			--as-sddl \
 			--xattr-backend=tdb \
 			--use-ntvfs \
-			-s $PREFIX/ad_member/lib/server.conf) || return $?
+			--configfile=$PREFIX/ad_member/lib/server.conf) || return $?
 
 	test "$retacl" = "$new_acl"
 }

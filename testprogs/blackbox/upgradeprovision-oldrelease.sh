@@ -156,7 +156,7 @@ dbcheck_full_clean_well_known_acls() {
 
 upgradeprovision() {
 	# bring the really old Samba schema in line with a more recent 2008R2 schema
-	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf" --debugchange
+	$PYTHON $BINDIR/samba_upgradeprovision --configfile="$PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf" --debugchange
 
 	# on top of this, also apply 2008R2 changes we accidentally missed in the past
 	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --ldf-file=samba-4.7-missing-for-schema45.ldif,fix-forest-rev.ldf
@@ -169,11 +169,11 @@ upgradeprovision_full() {
 	# add missing domain prep for 2008R2
 	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --domain --function-level 2008_R2
 
-	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf" --full --debugchange
+	$PYTHON $BINDIR/samba_upgradeprovision --configfile="$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf" --full --debugchange
 }
 
 samba_upgradedns() {
-        $PYTHON $BINDIR/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s "$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf"
+        $PYTHON $BINDIR/samba_upgradedns --dns-backend=SAMBA_INTERNAL --configfile="$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf"
 }
 
 referenceprovision() {

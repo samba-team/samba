@@ -30,7 +30,7 @@ SERVER=$2
 
 add_user () {
 	USER=$1
-	${NET} ads user add "${USER}" 'Sup3rS3cr3T!' -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user add "${USER}" 'Sup3rS3cr3T!' -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} ads user add returned error: $RET"
@@ -40,7 +40,7 @@ add_user () {
 
 del_user () {
 	USER=$1
-	${NET} ads user delete "${USER}" -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user delete "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -49,7 +49,7 @@ del_user () {
 }
 
 enum_user () {
-	${NET} ads user -k -s $CONFIG_FILE -S $SERVER > /dev/null
+	${NET} ads user -k --configfile=$CONFIG_FILE -S $SERVER > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -59,7 +59,7 @@ enum_user () {
 
 info_user () {
 	USER=$1
-	${NET} ads user info "${USER}" -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads user info "${USER}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"

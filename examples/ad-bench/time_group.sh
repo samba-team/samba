@@ -30,7 +30,7 @@ SERVER=$2
 
 add_group () {
 	GROUP=$1
-	${NET} ads group add "${GROUP}" -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group add "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} ads group add returned error: $RET"
@@ -40,7 +40,7 @@ add_group () {
 
 del_group () {
 	GROUP=$1
-	${NET} ads group delete "${GROUP}" -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group delete "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -49,7 +49,7 @@ del_group () {
 }
 
 enum_group () {
-	${NET} ads group -k -s $CONFIG_FILE -S $SERVER > /dev/null
+	${NET} ads group -k --configfile=$CONFIG_FILE -S $SERVER > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -59,7 +59,7 @@ enum_group () {
 
 info_group () {
 	GROUP=$1
-	${NET} ads group info "${GROUP}" -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads group info "${GROUP}" -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"

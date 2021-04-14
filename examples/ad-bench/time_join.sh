@@ -29,7 +29,7 @@ NT_DOM=$(get_nt_dom $1)
 
 join_domain () {
 	SERVER=$1
-	${NET} ads join -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads join -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	RET=$?
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
@@ -39,7 +39,7 @@ join_domain () {
 
 leave_domain () {
 	SERVER=$1
-	${NET} ads leave -k -s $CONFIG_FILE -S ${SERVER} > /dev/null
+	${NET} ads leave -k --configfile=$CONFIG_FILE -S ${SERVER} > /dev/null
 	if [ $RET -ne 0 ]; then
 		echo "${NET} returned error: $RET"
 		exit 1

@@ -293,7 +293,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
             self.assertFalse("rIDSetReferences" in res[0])
 
-            (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
+            (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "--configfile=%s" % (smbconf), "--force")
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "Shouldn't be any error messages")
 
@@ -621,7 +621,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             self.assertTrue("rIDSetReferences" in res[0])
             rid_set_dn = ldb.Dn(new_ldb, res[0]["rIDSetReferences"][0].decode('utf8'))
             # 4. Seize the RID Manager role
-            (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
+            (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "--configfile=%s" % (smbconf), "--force")
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "Shouldn't be any error messages")
 

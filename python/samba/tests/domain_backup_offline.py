@@ -170,7 +170,7 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
     def backup(self, prov_dir):
         # Run the backup and check we got one backup tar file
         cmd = ("samba-tool domain backup offline --targetdir={prov_dir} "
-               "-s {prov_dir}/etc/smb.conf").format(prov_dir=prov_dir)
+               "--configfile={prov_dir}/etc/smb.conf").format(prov_dir=prov_dir)
         self.check_output(cmd)
 
         tar_files = [fn for fn in os.listdir(prov_dir)
