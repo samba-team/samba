@@ -417,33 +417,38 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_tmp = NULL;
 	struct smb_file_time ft;
 	int ret, err;
+	NTSTATUS status;
 
 	init_smb_file_time(&ft);
 
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
+	status = synthetic_pathref(talloc_tos(),
+				   handle->conn->cwd_fsp,
+				   smb_fname->base_name,
+				   smb_fname->stream_name,
+				   NULL,
+				   smb_fname->twrp,
+				   smb_fname->flags,
+				   &smb_fname_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("synthetic_pathref for '%s' failed: %s\n",
+			  smb_fname_str_dbg(smb_fname), nt_errstr(status));
 		return;
 	}
 
-	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) != 0) {
-		DEBUG(0,("recycle: stat for %s returned %s\n",
-			 smb_fname_str_dbg(smb_fname_tmp), strerror(errno)));
-		goto out;
-	}
 	/* atime */
 	ft.atime = timespec_current();
 	/* mtime */
 	ft.mtime = touch_mtime ? ft.atime : smb_fname_tmp->st.st_ex_mtime;
 
 	become_root();
-	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, &ft);
+	ret = SMB_VFS_NEXT_FNTIMES(handle, smb_fname_tmp->fsp, &ft);
 	err = errno;
 	unbecome_root();
 	if (ret == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n",
 			  smb_fname_str_dbg(smb_fname_tmp), strerror(err)));
 	}
- out:
+
 	TALLOC_FREE(smb_fname_tmp);
 }
 
