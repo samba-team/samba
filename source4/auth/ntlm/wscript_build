@@ -28,7 +28,7 @@ bld.SAMBA_MODULE('auth4_developer',
 	source='auth_developer.c',
 	subsystem='auth4',
 	init_function='auth4_developer_init',
-	deps='talloc'
+	deps='tevent'
 	)
 
 

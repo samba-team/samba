@@ -20,9 +20,11 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "libcli/security/security.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -135,10 +137,67 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	return nt_status;
 }
 
+struct name_to_ntstatus_check_password_state {
+	struct auth_user_info_dc *user_info_dc;
+	bool authoritative;
+};
+
+static struct tevent_req *name_to_ntstatus_check_password_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth_method_context *ctx,
+	const struct auth_usersupplied_info *user_info)
+{
+	struct tevent_req *req = NULL;
+	struct name_to_ntstatus_check_password_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx,
+		&state,
+		struct name_to_ntstatus_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = name_to_ntstatus_check_password(
+		ctx,
+		state,
+		user_info,
+		&state->user_info_dc,
+		&state->authoritative);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS name_to_ntstatus_check_password_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct auth_user_info_dc **interim_info,
+	bool *authoritative)
+{
+	struct name_to_ntstatus_check_password_state *state = tevent_req_data(
+		req, struct name_to_ntstatus_check_password_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*interim_info = talloc_move(mem_ctx, &state->user_info_dc);
+	*authoritative = state->authoritative;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static const struct auth_operations name_to_ntstatus_auth_ops = {
 	.name		= "name_to_ntstatus",
 	.want_check	= name_to_ntstatus_want_check,
-	.check_password	= name_to_ntstatus_check_password
+	.check_password_send	= name_to_ntstatus_check_password_send,
+	.check_password_recv	= name_to_ntstatus_check_password_recv,
 };
 
 _PUBLIC_ NTSTATUS auth4_developer_init(TALLOC_CTX *ctx)
