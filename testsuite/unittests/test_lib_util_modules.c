@@ -22,14 +22,6 @@ static int teardown(void **state)
 	return 0;
 }
 
-static void test_samba_module_probe(void **state)
-{
-	NTSTATUS status;
-
-	status = smb_probe_module("auth", "skel");
-	assert_true(NT_STATUS_IS_OK(status));
-}
-
 static void test_samba_module_probe_dummy(void **state)
 {
 	const char *module_env;
@@ -63,8 +55,6 @@ static void test_samba_module_probe_slash(void **state)
 
 int main(void) {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_teardown(test_samba_module_probe,
-					  teardown),
 		cmocka_unit_test_teardown(test_samba_module_probe_dummy,
 					  teardown),
 		cmocka_unit_test_teardown(test_samba_module_probe_slash,

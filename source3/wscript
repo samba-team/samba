@@ -1912,7 +1912,7 @@ main() {
         default_static_modules.extend(['charset_weird'])
         default_shared_modules.extend(['perfcount_test',
                                        'vfs_skel_opaque', 'vfs_skel_transparent', 'vfs_shadow_copy_test',
-                                       'auth_skel', 'pdb_test',
+                                       'pdb_test',
                                        'vfs_fake_dfq',
                                        'gpext_security', 'gpext_registry', 'gpext_scripts'])
 
