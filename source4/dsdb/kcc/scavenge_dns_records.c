@@ -267,8 +267,11 @@ static NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			}
 		} else {
 			/*
-			 * Do not change the status of dnsTombstoned
-			 * if we found any live records
+			 * Do not change the status of dnsTombstoned if we
+			 * found any live records. If it exists, its value
+			 * will be the harmless "FALSE", which is what we end
+			 * up with when a tombstoned record is untombstoned.
+			 * (in dns_common_replace).
 			 */
 			ldb_msg_remove_attr(new_msg,
 					    "dnsTombstoned");
