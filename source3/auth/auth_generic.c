@@ -362,11 +362,6 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		}
 
 		gensec_set_credentials(gensec_security, server_credentials);
-
-		talloc_unlink(tmp_ctx, lp_ctx);
-		talloc_unlink(tmp_ctx, server_credentials);
-		talloc_unlink(tmp_ctx, gensec_settings);
-		talloc_unlink(tmp_ctx, auth4_context);
 	}
 
 	nt_status = gensec_set_remote_address(gensec_security,
