@@ -45,8 +45,8 @@ finally:
 have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_pam = ("WITH_PAM" in config_hash)
 with_elasticsearch_backend = ("HAVE_SPOTLIGHT_BACKEND_ES" in config_hash)
-pam_wrapper_so_path = config_hash["LIBPAM_WRAPPER_SO_PATH"]
-pam_set_items_so_path = config_hash["PAM_SET_ITEMS_SO_PATH"]
+pam_wrapper_so_path = config_hash.get("LIBPAM_WRAPPER_SO_PATH")
+pam_set_items_so_path = config_hash.get("PAM_SET_ITEMS_SO_PATH")
 
 planpythontestsuite("none", "samba.tests.source")
 if have_man_pages_support:
