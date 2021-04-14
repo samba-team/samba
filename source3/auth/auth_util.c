@@ -653,20 +653,35 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	 */
 
 	uid_to_unix_users_sid(session_info->unix_token->uid, &tmp_sid);
-	add_sid_to_array_unique(session_info->security_token, &tmp_sid,
-				&session_info->security_token->sids,
-				&session_info->security_token->num_sids);
+	status = add_sid_to_array_unique(
+		session_info->security_token,
+		&tmp_sid,
+		&session_info->security_token->sids,
+		&session_info->security_token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	gid_to_unix_groups_sid(session_info->unix_token->gid, &tmp_sid);
-	add_sid_to_array_unique(session_info->security_token, &tmp_sid,
-				&session_info->security_token->sids,
-				&session_info->security_token->num_sids);
+	status = add_sid_to_array_unique(
+		session_info->security_token,
+		&tmp_sid,
+		&session_info->security_token->sids,
+		&session_info->security_token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	for ( i=0; i<session_info->unix_token->ngroups; i++ ) {
 		gid_to_unix_groups_sid(session_info->unix_token->groups[i], &tmp_sid);
-		add_sid_to_array_unique(session_info->security_token, &tmp_sid,
-					&session_info->security_token->sids,
-					&session_info->security_token->num_sids);
+		status = add_sid_to_array_unique(
+			session_info->security_token,
+			&tmp_sid,
+			&session_info->security_token->sids,
+			&session_info->security_token->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	security_token_debug(DBGC_AUTH, 10, session_info->security_token);
