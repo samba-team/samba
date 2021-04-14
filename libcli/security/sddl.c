@@ -506,6 +506,7 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 {
 	char *sddl = NULL;
 	TALLOC_CTX *tmp_ctx;
+	struct GUID_txt_buf object_buf, iobject_buf;
 	const char *sddl_type="", *sddl_flags="", *sddl_mask="",
 		*sddl_object="", *sddl_iobject="", *sddl_trustee="";
 
@@ -540,19 +541,18 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 	    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
 	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
 	    ace->type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
+		const struct security_ace_object *object = &ace->object.object;
+
 		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
-			sddl_object = GUID_string(
-				tmp_ctx, &ace->object.object.type.type);
-			if (sddl_object == NULL) {
-				goto failed;
-			}
+			sddl_object = GUID_buf_string(
+				&object->type.type, &object_buf);
 		}
 
-		if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
-			sddl_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
-			if (sddl_iobject == NULL) {
-				goto failed;
-			}
+		if (ace->object.object.flags &
+		    SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
+			sddl_iobject = GUID_buf_string(
+				&object->inherited_type.inherited_type,
+				&iobject_buf);
 		}
 	}
 
