@@ -416,13 +416,17 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dns_common_zones(samdb, mem_ctx, NULL, &zones);
-	for (z = zones; z; z = z->next) {
-		tmp_ctx = talloc_new(NULL);
-		if (tmp_ctx == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = dns_common_zones(samdb, tmp_ctx, NULL, &zones);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
 
+	for (z = zones; z; z = z->next) {
 		/*
 		 * This can load a very large set, but on the
 		 * assumption that the number of tombstones is
@@ -441,7 +445,6 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 				 "(&(objectClass=dnsNode)(dNSTombstoned=TRUE))");
 
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(tmp_ctx);
 			*error_string =
 			    talloc_asprintf(mem_ctx,
 					    "Failed to "
@@ -449,6 +452,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 					    "dns objects in zone %s: %s",
 					    ldb_dn_get_linearized(z->dn),
 					    ldb_errstring(samdb));
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -502,7 +506,7 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		TALLOC_FREE(tmp_ctx);
 	}
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
