@@ -108,11 +108,12 @@ static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
  * services the AD DC.  It is tested via pdbtest.
  */
 
-static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
-				      void *my_private_data,
-				      TALLOC_CTX *mem_ctx,
-				      const struct auth_usersupplied_info *user_info,
-				      struct auth_serversupplied_info **server_info)
+static NTSTATUS check_samba4_security(
+	const struct auth_context *auth_context,
+	void *my_private_data,
+	TALLOC_CTX *mem_ctx,
+	const struct auth_usersupplied_info *user_info,
+	struct auth_serversupplied_info **pserver_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct netr_SamInfo3 *info3 = NULL;
@@ -120,6 +121,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
 	uint8_t authoritative = 0;
+	struct auth_serversupplied_info *server_info = NULL;
 
 	nt_status = make_auth4_context_s4(auth_context, mem_ctx, &auth4_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -161,17 +163,19 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	}
 
 	if (user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ) {
-		*server_info = make_server_info(mem_ctx);
-		if (*server_info == NULL) {
+		server_info = make_server_info(mem_ctx);
+		if (server_info == NULL) {
 			nt_status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		(*server_info)->info3 = talloc_steal(*server_info, info3);
-
+		server_info->info3 = talloc_move(server_info, &info3);
 	} else {
-		nt_status = make_server_info_info3(mem_ctx, user_info->client.account_name,
-						   user_info->mapped.domain_name, server_info,
-						   info3);
+		nt_status = make_server_info_info3(
+			mem_ctx,
+			user_info->client.account_name,
+			user_info->mapped.domain_name,
+			&server_info,
+			info3);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(10, ("make_server_info_info3 failed: %s\n",
 				   nt_errstr(nt_status)));
@@ -179,6 +183,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 		}
 	}
 
+	*pserver_info = server_info;
 	nt_status = NT_STATUS_OK;
 
  done:
