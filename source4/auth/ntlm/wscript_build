@@ -12,7 +12,7 @@ bld.SAMBA_MODULE('auth4_anonymous',
 	source='auth_anonymous.c',
 	subsystem='auth4',
 	init_function='auth4_anonymous_init',
-	deps='talloc'
+	deps='tevent'
 	)
 
 

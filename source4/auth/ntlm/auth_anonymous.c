@@ -20,9 +20,11 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -84,19 +86,65 @@ static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
  * anonymou logons to be dealt with in one place.  Non-anonymou logons 'fail'
  * and pass onto the next module.
  **/
-static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
-			      		 TALLOC_CTX *mem_ctx,
-					 const struct auth_usersupplied_info *user_info, 
-					 struct auth_user_info_dc **_user_info_dc,
-					 bool *authoritative)
+
+struct anonymous_check_password_state {
+	struct auth_user_info_dc *user_info_dc;
+};
+
+static struct tevent_req *anonymous_check_password_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth_method_context *ctx,
+	const struct auth_usersupplied_info *user_info)
 {
-	return auth_anonymous_user_info_dc(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx), _user_info_dc);
+	struct tevent_req *req = NULL;
+	struct anonymous_check_password_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx,
+		&state,
+		struct anonymous_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = auth_anonymous_user_info_dc(
+		state,
+		lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+		&state->user_info_dc);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
 }
 
+static NTSTATUS anonymous_check_password_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct auth_user_info_dc **interim_info,
+	bool *authoritative)
+{
+	struct anonymous_check_password_state *state = tevent_req_data(
+		req, struct anonymous_check_password_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*interim_info = talloc_move(mem_ctx, &state->user_info_dc);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+
 static const struct auth_operations anonymous_auth_ops = {
-	.name		= "anonymous",
-	.want_check	= anonymous_want_check,
-	.check_password	= anonymous_check_password
+	.name			= "anonymous",
+	.want_check		= anonymous_want_check,
+	.check_password_send	= anonymous_check_password_send,
+	.check_password_recv	= anonymous_check_password_recv,
 };
 
 _PUBLIC_ NTSTATUS auth4_anonymous_init(TALLOC_CTX *ctx)
