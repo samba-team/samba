@@ -404,9 +404,10 @@ static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-bool load_auth_module(struct auth_context *auth_context, 
-		      const char *module,
-		      struct auth_methods **ret)
+static bool load_auth_module(
+	struct auth_context *auth_context,
+	const char *module,
+	struct auth_methods **ret)
 {
 	static bool initialised_static_modules = False;
 
