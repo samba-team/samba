@@ -61,10 +61,6 @@ struct auth_operations {
 
 	/* Given the user supplied info, check a password */
 
-	NTSTATUS (*check_password)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
-				   const struct auth_usersupplied_info *user_info,
-				   struct auth_user_info_dc **interim_info,
-				   bool *authoritative);
 	struct tevent_req *(*check_password_send)(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct auth_method_context *ctx,
