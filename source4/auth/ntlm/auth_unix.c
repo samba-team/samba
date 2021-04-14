@@ -27,6 +27,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "../libcli/auth/pam_errors.h"
 #include "param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -713,46 +714,78 @@ static NTSTATUS authunix_want_check(struct auth_method_context *ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
-					TALLOC_CTX *mem_ctx,
-					const struct auth_usersupplied_info *user_info,
-					struct auth_user_info_dc **user_info_dc,
-					bool *authoritative)
+struct authunix_check_password_state {
+	struct auth_user_info_dc *user_info_dc;
+};
+
+static struct tevent_req *authunix_check_password_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth_method_context *ctx,
+	const struct auth_usersupplied_info *user_info)
 {
-	TALLOC_CTX *check_ctx;
-	NTSTATUS nt_status;
-	struct passwd *pwd;
+	struct tevent_req *req = NULL;
+	struct authunix_check_password_state *state = NULL;
+	struct passwd *pwd = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx,
+		&state,
+		struct authunix_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	if (user_info->password_state != AUTH_PASSWORD_PLAIN) {
-		return NT_STATUS_INVALID_PARAMETER;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
-	check_ctx = talloc_named_const(mem_ctx, 0, "check_unix_password");
-	if (check_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = check_unix_password(
+		state, ctx->auth_ctx->lp_ctx, user_info, &pwd);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
-	nt_status = check_unix_password(check_ctx, ctx->auth_ctx->lp_ctx, user_info, &pwd);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(check_ctx);
-		return nt_status;
+	status = authunix_make_user_info_dc(
+		state,
+		lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+		user_info,
+		pwd,
+		&state->user_info_dc);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
-	nt_status = authunix_make_user_info_dc(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
-					      user_info, pwd, user_info_dc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(check_ctx);
-		return nt_status;
-	}
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
 
-	talloc_free(check_ctx);
+static NTSTATUS authunix_check_password_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct auth_user_info_dc **interim_info,
+	bool *authoritative)
+{
+	struct authunix_check_password_state *state = tevent_req_data(
+		req, struct authunix_check_password_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*interim_info = talloc_move(mem_ctx, &state->user_info_dc);
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
 static const struct auth_operations unix_ops = {
-	.name		= "unix",
-	.want_check	= authunix_want_check,
-	.check_password	= authunix_check_password
+	.name			= "unix",
+	.want_check		= authunix_want_check,
+	.check_password_send	= authunix_check_password_send,
+	.check_password_recv	= authunix_check_password_recv,
 };
 
 _PUBLIC_ NTSTATUS auth4_unix_init(TALLOC_CTX *ctx)
