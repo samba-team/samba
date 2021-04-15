@@ -65,9 +65,9 @@
     full_audit:1@/var/log/audit.log</parameter>.</para>
 
     <para>Authentication and authorization audit information is logged
-    under the auth_audit, and if Samba was not compiled with
+    under the <parameter>auth_audit</parameter>, and if Samba was not compiled with
     --without-json, a JSON representation is logged under
-    auth_json_audit.</para>
+    <parameter>auth_json_audit</parameter>.</para>
 
     <para>Support is comprehensive for all authentication and authorisation
     of user accounts in the Samba Active Directory Domain Controller,
@@ -75,7 +75,8 @@
     the file server, NTLM authentication, SMB and RPC authorization is
     covered.</para>
 
-    <para>Log levels for auth_audit and auth_audit_json are:</para>
+    <para>Log levels for <parameter>auth_audit</parameter> and
+    <parameter>auth_audit_json</parameter> are:</para>
     <itemizedlist>
 	<listitem><para>2: Authentication Failure</para></listitem>
 	<listitem><para>3: Authentication Success</para></listitem>
@@ -83,21 +84,24 @@
 	<listitem><para>5: Anonymous Authentication and Authorization Success</para></listitem>
     </itemizedlist>
 
-    <para>Changes to the sam.ldb database are logged
-    under the dsdb_audit and a JSON representation is logged under
-    dsdb_json_audit.</para>
+    <para>Changes to the <command moreinfo="none">sam.ldb</command>
+    database are logged under the <parameter>dsdb_audit</parameter>
+    and a JSON representation is logged under
+    <parameter>dsdb_json_audit</parameter>.</para>
 
-    <para>Group membership changes to the sam.ldb database are logged
-    under the dsdb_group_audit and a JSON representation is logged under
-    dsdb_group_json_audit.</para>
+    <para>Group membership changes to the <command
+    moreinfo="none">sam.ldb</command> database are logged under the
+    <parameter>dsdb_group_audit</parameter> and a JSON representation
+    is logged under
+    <parameter>dsdb_group_json_audit</parameter>.</para>
 
     <para>Password changes and Password resets are logged under
-    dsdb_password_audit and a JSON representation is logged under the
-    dsdb_password_json_audit.</para>
+    <parameter>dsdb_password_audit</parameter> and a JSON representation is logged under the
+    <parameter>dsdb_password_json_audit</parameter>.</para>
 
     <para>Transaction rollbacks and prepare commit failures are logged under
-    the dsdb_transaction_audit and a JSON representation is logged under the
-    dsdb_transaction_json_audit. </para>
+    the <parameter>dsdb_transaction_audit</parameter> and a JSON representation is logged under the
+    <parameter>dsdb_transaction_json_audit</parameter>. </para>
 
     <para>Transaction roll-backs are possible in Samba, and whilst
     they rarely reflect anything more than the failure of an
