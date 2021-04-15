@@ -807,6 +807,20 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	locking_close_file(fsp, close_type);
 
+	/*
+	 * Ensure pending modtime is set before closing underlying fd.
+	 */
+
+	tmp = update_write_time_on_close(fsp);
+	if (NT_STATUS_EQUAL(tmp, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * Someone renamed the file or a parent directory containing
+		 * this file. We can't do anything about this, eat the error.
+		 */
+		tmp = NT_STATUS_OK;
+	}
+	status = ntstatus_keeperror(status, tmp);
+
 	tmp = fd_close(fsp);
 	status = ntstatus_keeperror(status, tmp);
 
@@ -815,21 +829,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		tmp = check_magic(fsp);
 		status = ntstatus_keeperror(status, tmp);
 	}
-
-	/*
-	 * Ensure pending modtime is set after close.
-	 */
-
-	tmp = update_write_time_on_close(fsp);
-	if (NT_STATUS_EQUAL(tmp, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		/* Someone renamed the file or a parent directory containing
-		 * this file. We can't do anything about this, we don't have
-		 * an "update timestamp by fd" call in POSIX. Eat the error. */
-
-		tmp = NT_STATUS_OK;
-	}
-
-	status = ntstatus_keeperror(status, tmp);
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		conn->session_info->unix_info->unix_name, fsp_str_dbg(fsp),
