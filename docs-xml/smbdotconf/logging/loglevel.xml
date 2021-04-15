@@ -87,6 +87,10 @@
     under the dsdb_audit and a JSON representation is logged under
     dsdb_json_audit.</para>
 
+    <para>Group membership changes to the sam.ldb database are logged
+    under the dsdb_group_audit and a JSON representation is logged under
+    dsdb_group_json_audit.</para>
+
     <para>Password changes and Password resets are logged under
     dsdb_password_audit and a JSON representation is logged under the
     dsdb_password_json_audit.</para>
