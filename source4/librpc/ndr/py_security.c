@@ -464,10 +464,12 @@ static PyObject *py_random_sid(PyObject *self,
 {
 	struct dom_sid *sid;
 	PyObject *ret;
-    	char *str = talloc_asprintf(NULL, "S-1-5-21-%u-%u-%u", 
-			(unsigned)generate_random(), 
-			(unsigned)generate_random(), 
-			(unsigned)generate_random());
+	char *str = talloc_asprintf(
+		NULL,
+		"S-1-5-21-%"PRIu32"-%"PRIu32"-%"PRIu32,
+		generate_random(),
+		generate_random(),
+		generate_random());
 
         sid = dom_sid_parse_talloc(NULL, str);
 	talloc_free(str);
