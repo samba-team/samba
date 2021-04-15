@@ -84,24 +84,52 @@
 	<listitem><para>5: Anonymous Authentication and Authorization Success</para></listitem>
     </itemizedlist>
 
-    <para>Changes to the <command moreinfo="none">sam.ldb</command>
+    <para>Changes to the AD DC <command moreinfo="none">sam.ldb</command>
     database are logged under the <parameter>dsdb_audit</parameter>
     and a JSON representation is logged under
     <parameter>dsdb_json_audit</parameter>.</para>
 
-    <para>Group membership changes to the <command
+    <para>Group membership changes to the AD DC <command
     moreinfo="none">sam.ldb</command> database are logged under the
     <parameter>dsdb_group_audit</parameter> and a JSON representation
     is logged under
     <parameter>dsdb_group_json_audit</parameter>.</para>
 
-    <para>Password changes and Password resets are logged under
-    <parameter>dsdb_password_audit</parameter> and a JSON representation is logged under the
-    <parameter>dsdb_password_json_audit</parameter>.</para>
+    <para>Log levels for <parameter>dsdb_audit</parameter>,
+    <parameter>dsdb_json_audit</parameter>,
+    <parameter>dsdb_group_audit</parameter>,
+    <parameter>dsdb_group_json_audit</parameter> and
+    <parameter>dsdb_json_audit</parameter> are:</para>
+    <itemizedlist>
+	<listitem><para>5: Database modifications</para></listitem>
+	<listitem><para>5: Replicated updates from another DC</para></listitem>
+    </itemizedlist>
+
+    <para>Password changes and Password resets in the AD DC are logged
+    under <parameter>dsdb_password_audit</parameter> and a JSON
+    representation is logged under the
+    <parameter>dsdb_password_json_audit</parameter>.  Password changes
+    will also appears as authentication events via
+    <parameter>auth_audit</parameter> and
+    <parameter>auth_audit_json</parameter>.</para>
+
+    <para>Log levels for <parameter>dsdb_password_audit</parameter> and
+    <parameter>dsdb_password_json_audit</parameter> are:</para>
+    <itemizedlist>
+	<listitem><para>5: Successful password changes and resets</para></listitem>
+    </itemizedlist>
 
     <para>Transaction rollbacks and prepare commit failures are logged under
     the <parameter>dsdb_transaction_audit</parameter> and a JSON representation is logged under the
     <parameter>dsdb_transaction_json_audit</parameter>. </para>
+
+    <para>Log levels for <parameter>dsdb_transaction_audit</parameter> and
+    <parameter>dsdb_transaction_json</parameter> are:</para>
+
+    <itemizedlist>
+	<listitem><para>5: Transaction failure (rollback)</para></listitem>
+	<listitem><para>10: Transaction success (commit)</para></listitem>
+    </itemizedlist>
 
     <para>Transaction roll-backs are possible in Samba, and whilst
     they rarely reflect anything more than the failure of an
