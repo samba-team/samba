@@ -4879,79 +4879,14 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
-				     uint16_t fde_flags)
+static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, int ret)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
 	struct smbd_smb2_request *req = NULL;
 	size_t min_recvfile_size = UINT32_MAX;
-	unsigned recvmsg_flags = 0;
-	int ret;
-	int err;
-	bool retry;
 	NTSTATUS status;
 	NTTIME now;
-
-	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
-		/*
-		 * we're not supposed to do any io
-		 */
-		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
-		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
-		return NT_STATUS_OK;
-	}
-
-	if (fde_flags & TEVENT_FD_WRITE) {
-		status = smbd_smb2_flush_send_queue(xconn);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	if (!(fde_flags & TEVENT_FD_READ)) {
-		return NT_STATUS_OK;
-	}
-
-	if (state->req == NULL) {
-		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
-		return NT_STATUS_OK;
-	}
-
-again:
-
-	state->msg = (struct msghdr) {
-		.msg_iov = &state->vector,
-		.msg_iovlen = 1,
-	};
-
-#ifdef MSG_NOSIGNAL
-	recvmsg_flags |= MSG_NOSIGNAL;
-#endif
-#ifdef MSG_DONTWAIT
-	recvmsg_flags |= MSG_DONTWAIT;
-#endif
-
-	ret = recvmsg(xconn->transport.sock, &state->msg, recvmsg_flags);
-	if (ret == 0) {
-		/* propagate end of file */
-		status = NT_STATUS_END_OF_FILE;
-		smbXsrv_connection_disconnect_transport(xconn,
-							status);
-		return status;
-	}
-	err = socket_error_from_errno(ret, errno, &retry);
-	if (retry) {
-		/* retry later */
-		TEVENT_FD_READABLE(xconn->transport.fde);
-		return NT_STATUS_OK;
-	}
-	if (err != 0) {
-		status = map_nt_error_from_unix_common(err);
-		smbXsrv_connection_disconnect_transport(xconn,
-							status);
-		return status;
-	}
 
 	if (ret < state->vector.iov_len) {
 		uint8_t *base;
@@ -4959,9 +4894,7 @@ again:
 		base += ret;
 		state->vector.iov_base = (void *)base;
 		state->vector.iov_len -= ret;
-		/* we have more to read */
-		TEVENT_FD_READABLE(xconn->transport.fde);
-		return NT_STATUS_OK;
+		return NT_STATUS_PENDING;
 	}
 
 	if (state->pktlen > 0) {
@@ -4988,7 +4921,7 @@ again:
 			};
 
 			state->pktlen = state->pktfull;
-			goto again;
+			return NT_STATUS_RETRY;
 		}
 
 		/*
@@ -5039,7 +4972,7 @@ again:
 		.iov_len = state->pktlen,
 	};
 
-	goto again;
+	return NT_STATUS_RETRY;
 
 got_full:
 
@@ -5056,8 +4989,7 @@ got_full:
 				.iov_len = NBT_HDR_SIZE,
 			},
 		};
-		req = NULL;
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	req = state->req;
@@ -5124,6 +5056,96 @@ got_full:
 	}
 
 	status = smbd_smb2_request_next_incoming(xconn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
+				     uint16_t fde_flags)
+{
+	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
+	unsigned recvmsg_flags = 0;
+	int ret;
+	int err;
+	bool retry;
+	NTSTATUS status;
+
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
+		/*
+		 * we're not supposed to do any io
+		 */
+		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
+		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
+		return NT_STATUS_OK;
+	}
+
+	if (fde_flags & TEVENT_FD_WRITE) {
+		status = smbd_smb2_flush_send_queue(xconn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	if (!(fde_flags & TEVENT_FD_READ)) {
+		return NT_STATUS_OK;
+	}
+
+	if (state->req == NULL) {
+		TEVENT_FD_NOT_READABLE(xconn->transport.fde);
+		return NT_STATUS_OK;
+	}
+
+again:
+
+	state->msg = (struct msghdr) {
+		.msg_iov = &state->vector,
+		.msg_iovlen = 1,
+	};
+
+#ifdef MSG_NOSIGNAL
+	recvmsg_flags |= MSG_NOSIGNAL;
+#endif
+#ifdef MSG_DONTWAIT
+	recvmsg_flags |= MSG_DONTWAIT;
+#endif
+
+	ret = recvmsg(xconn->transport.sock, &state->msg, recvmsg_flags);
+	if (ret == 0) {
+		/* propagate end of file */
+		status = NT_STATUS_END_OF_FILE;
+		smbXsrv_connection_disconnect_transport(xconn,
+							status);
+		return status;
+	}
+	err = socket_error_from_errno(ret, errno, &retry);
+	if (retry) {
+		/* retry later */
+		TEVENT_FD_READABLE(xconn->transport.fde);
+		return NT_STATUS_OK;
+	}
+	if (err != 0) {
+		status = map_nt_error_from_unix_common(err);
+		smbXsrv_connection_disconnect_transport(xconn,
+							status);
+		return status;
+	}
+
+	status = smbd_smb2_advance_incoming(xconn, ret);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PENDING)) {
+		/* we have more to read */
+		TEVENT_FD_READABLE(xconn->transport.fde);
+		return NT_STATUS_OK;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/*
+		 * smbd_smb2_advance_incoming setup a new vector
+		 * that we should try to read immediately.
+		 */
+		goto again;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
