@@ -10,14 +10,18 @@
 	registering as the service
 	<filename moreinfo="none">dsdb_event</filename>.</para>
 
-	<para>This should be considered a developer option (it assists
-	in the Samba testsuite) rather than a facility for external
-	auditing, as message delivery is not guaranteed (a feature
-	that the testsuite works around).</para>
+	<para>This is <emphasis>not</emphasis> needed for the audit
+	logging described in <smbconfoption name="log level"/>.</para>
+
+	<para>Instead, this should instead be considered a developer
+	option (it assists in the Samba testsuite) rather than a
+	facility for external auditing, as message delivery is not
+	guaranteed (a feature that the testsuite works around).</para>
 
 	<para>The Samba database events are also logged via the normal
 	logging methods when the <smbconfoption name="log level"/> is
-	set appropriately.</para>
+	set appropriately, say to
+	<command moreinfo="none">dsdb_json_audit:5</command>.</para>
 
 </description>
 
