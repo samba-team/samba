@@ -97,11 +97,24 @@
 
     <para>Transaction rollbacks and prepare commit failures are logged under
     the dsdb_transaction_audit and a JSON representation is logged under the
-    password_json_audit. Logging the transaction details allows the
-    identification of password and sam.ldb operations that have been rolled
-    back.</para>
+    dsdb_transaction_json_audit. </para>
 
+    <para>Transaction roll-backs are possible in Samba, and whilst
+    they rarely reflect anything more than the failure of an
+    individual operation (say due to the add of a conflicting record),
+    they are possible.  Audit logs are already generated and sent to
+    the system logs before the transaction is complete.  Logging the
+    transaction details allows the identification of password and
+    <command moreinfo="none">sam.ldb</command> operations that have
+    been rolled back, and so have not actually persisted.</para>
 
+    <warning><para> Changes to <command
+    moreinfo="none">sam.ldb</command> made locally by the <command
+    moreinfo="none">root</command> user with direct access to the
+    database are not logged to the system logs, but to the
+    administrator's own console.  While less than ideal, any user able
+    to make such modifications could disable the audit logging in any
+    case. </para></warning>
 </description>
 <value type="default">0</value>
 <value type="example">3 passdb:5 auth:10 winbind:2</value>
