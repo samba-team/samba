@@ -460,7 +460,6 @@ struct smbXsrv_connection {
 			struct smbd_smb2_request *req;
 			struct {
 				uint8_t nbt[NBT_HDR_SIZE];
-				bool done;
 			} hdr;
 			struct iovec vector;
 			struct msghdr msg;

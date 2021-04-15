@@ -4589,6 +4589,10 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 	*state = (struct smbd_smb2_request_read_state) {
 		.req = req,
 		.min_recv_size = lp_min_receive_file_size(),
+		.vector = (struct iovec) {
+			.iov_base = (void *)state->hdr.nbt,
+			.iov_len = NBT_HDR_SIZE,
+		},
 	};
 
 	TEVENT_FD_READABLE(xconn->transport.fde);
@@ -4915,12 +4919,6 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 	}
 
 again:
-	if (!state->hdr.done) {
-		state->hdr.done = true;
-
-		state->vector.iov_base = (void *)state->hdr.nbt;
-		state->vector.iov_len = NBT_HDR_SIZE;
-	}
 
 	state->msg = (struct msghdr) {
 		.msg_iov = &state->vector,
@@ -5053,6 +5051,10 @@ got_full:
 		*state = (struct smbd_smb2_request_read_state) {
 			.req = req,
 			.min_recv_size = lp_min_receive_file_size(),
+			.vector = (struct iovec) {
+				.iov_base = (void *)state->hdr.nbt,
+				.iov_len = NBT_HDR_SIZE,
+			},
 		};
 		req = NULL;
 		goto again;
