@@ -10,16 +10,19 @@
 	registering as the service
 	<filename moreinfo="none">auth_event</filename>.</para>
 
-	<para>This should be considered a developer option (it assists
-	in the Samba testsuite) rather than a facility for external
-	auditing, as message delivery is not guaranteed (a feature
-	that the testsuite works around).  Additionally Samba must be
-	compiled with the jansson support for this option to be
-	effective.</para>
+	<para>This is <emphasis>not</emphasis> needed for the audit
+	logging described in <smbconfoption name="log level"/>.</para>
+
+	<para>Instead, this should instead be considered a developer
+	option (it assists in the Samba testsuite) rather than a
+	facility for external auditing, as message delivery is not
+	guaranteed (a feature that the testsuite works around).</para>
 
 	<para>The authentication events are also logged via the normal
 	logging methods when the <smbconfoption name="log level"/> is
-	set appropriately.</para>
+	set appropriately, say to
+	<command moreinfo="none">auth_json_audit:3</command>.</para>
+
 </description>
 
 <value type="default">no</value>
