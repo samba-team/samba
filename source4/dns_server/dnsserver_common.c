@@ -1146,6 +1146,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 
 	werr = WERR_OK;
 exit:
+	talloc_free(msg);
 	DNS_COMMON_LOG_OPERATION(
 		win_errstr(werr),
 		&start,
