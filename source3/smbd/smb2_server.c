@@ -4589,10 +4589,14 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 	*state = (struct smbd_smb2_request_read_state) {
 		.req = req,
 		.min_recv_size = lp_min_receive_file_size(),
-		.vector = (struct iovec) {
-			.iov_base = (void *)state->hdr.nbt,
-			.iov_len = NBT_HDR_SIZE,
+		._vector = {
+			[0] = (struct iovec) {
+				.iov_base = (void *)state->hdr.nbt,
+				.iov_len = NBT_HDR_SIZE,
+			},
 		},
+		.vector = state->_vector,
+		.count = 1,
 	};
 
 	TEVENT_FD_READABLE(xconn->transport.fde);
@@ -4879,7 +4883,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, int ret)
+static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, size_t n)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct smbd_smb2_request_read_state *state = &xconn->smb2.request_read_state;
@@ -4887,13 +4891,14 @@ static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, int
 	size_t min_recvfile_size = UINT32_MAX;
 	NTSTATUS status;
 	NTTIME now;
+	bool ok;
 
-	if (ret < state->vector.iov_len) {
-		uint8_t *base;
-		base = (uint8_t *)state->vector.iov_base;
-		base += ret;
-		state->vector.iov_base = (void *)base;
-		state->vector.iov_len -= ret;
+	ok = iov_advance(&state->vector, &state->count, n);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (state->count > 0) {
 		return NT_STATUS_PENDING;
 	}
 
@@ -4915,10 +4920,12 @@ static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, int
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			state->vector = (struct iovec) {
+			state->_vector[0]  = (struct iovec) {
 				.iov_base = (void *)(state->pktbuf + ofs),
 				.iov_len = (state->pktfull - ofs),
 			};
+			state->vector = state->_vector;
+			state->count = 1;
 
 			state->pktlen = state->pktfull;
 			return NT_STATUS_RETRY;
@@ -4967,10 +4974,12 @@ static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, int
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->vector = (struct iovec) {
+	state->_vector[0] = (struct iovec) {
 		.iov_base = (void *)state->pktbuf,
 		.iov_len = state->pktlen,
 	};
+	state->vector = state->_vector;
+	state->count = 1;
 
 	return NT_STATUS_RETRY;
 
@@ -4984,10 +4993,14 @@ got_full:
 		*state = (struct smbd_smb2_request_read_state) {
 			.req = req,
 			.min_recv_size = lp_min_receive_file_size(),
-			.vector = (struct iovec) {
-				.iov_base = (void *)state->hdr.nbt,
-				.iov_len = NBT_HDR_SIZE,
+			._vector = {
+				[0] = (struct iovec) {
+					.iov_base = (void *)state->hdr.nbt,
+					.iov_len = NBT_HDR_SIZE,
+				},
 			},
+			.vector = state->_vector,
+			.count = 1,
 		};
 		return NT_STATUS_RETRY;
 	}
@@ -5101,8 +5114,8 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 again:
 
 	state->msg = (struct msghdr) {
-		.msg_iov = &state->vector,
-		.msg_iovlen = 1,
+		.msg_iov = state->vector,
+		.msg_iovlen = state->count,
 	};
 
 #ifdef MSG_NOSIGNAL

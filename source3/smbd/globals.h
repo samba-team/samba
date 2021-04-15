@@ -461,7 +461,9 @@ struct smbXsrv_connection {
 			struct {
 				uint8_t nbt[NBT_HDR_SIZE];
 			} hdr;
-			struct iovec vector;
+			struct iovec _vector[1];
+			struct iovec *vector;
+			int count;
 			struct msghdr msg;
 			bool doing_receivefile;
 			size_t min_recv_size;
