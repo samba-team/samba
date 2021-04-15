@@ -36,6 +36,7 @@
 #include "lib/messaging/irpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libds/common/roles.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -733,6 +734,68 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	return NT_STATUS_OK;
 }
 
+struct authsam_check_password_state {
+	struct auth_user_info_dc *user_info_dc;
+	bool authoritative;
+};
+
+static struct tevent_req *authsam_check_password_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth_method_context *ctx,
+	const struct auth_usersupplied_info *user_info)
+{
+	struct tevent_req *req = NULL;
+	struct authsam_check_password_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct authsam_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	/*
+	 * authsam_check_password_internals() sets this to false in
+	 * the rodc case, otherwise it leaves it untouched. Default to
+	 * "we're authoritative".
+	 */
+	state->authoritative = true;
+
+	status = authsam_check_password_internals(
+		ctx,
+		state,
+		user_info,
+		&state->user_info_dc,
+		&state->authoritative);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS authsam_check_password_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct auth_user_info_dc **interim_info,
+	bool *authoritative)
+{
+	struct authsam_check_password_state *state = tevent_req_data(
+		req, struct authsam_check_password_state);
+	NTSTATUS status;
+
+	*authoritative = state->authoritative;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*interim_info = talloc_move(mem_ctx, &state->user_info_dc);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS authsam_ignoredomain_want_check(struct auth_method_context *ctx,
 						TALLOC_CTX *mem_ctx,
 						const struct auth_usersupplied_info *user_info)
@@ -888,14 +951,16 @@ static NTSTATUS authsam_get_user_info_dc_principal_wrapper(TALLOC_CTX *mem_ctx,
 static const struct auth_operations sam_ignoredomain_ops = {
 	.name		           = "sam_ignoredomain",
 	.want_check	           = authsam_ignoredomain_want_check,
-	.check_password	           = authsam_check_password_internals,
+	.check_password_send	   = authsam_check_password_send,
+	.check_password_recv	   = authsam_check_password_recv,
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
 };
 
 static const struct auth_operations sam_ops = {
 	.name		           = "sam",
 	.want_check	           = authsam_want_check,
-	.check_password	           = authsam_check_password_internals,
+	.check_password_send	   = authsam_check_password_send,
+	.check_password_recv	   = authsam_check_password_recv,
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
 };
 
