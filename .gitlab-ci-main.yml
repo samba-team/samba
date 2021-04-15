@@ -131,6 +131,7 @@ include:
       - "*.stdout"
       - "*.stderr"
       - "*.info"
+      - public
       - system-info.txt
   retry:
     max: 2

@@ -114,6 +114,11 @@ if options.enable_coverage:
 else:
     LCOV_CMD = 'echo "lcov skipped since no --enable-coverage specified"'
 
+if options.enable_coverage:
+    PUBLISH_DOCS = "mkdir -p ${LOG_BASE}/public && mv output/htmldocs ${LOG_BASE}/public/htmldocs"
+else:
+    PUBLISH_DOCS = 'echo "HTML documentation publishing skipped since no --enable-coverage specified"'
+
 CLEAN_SOURCE_TREE_CMD = "cd ${TEST_SOURCE_DIR} && script/clean-source-tree.sh"
 
 if args:
@@ -211,6 +216,7 @@ tasks = {
             ("autoconf", "autoconf"),
             ("configure", "./configure"),
             ("make", "make html htmlman"),
+            ("publish-docs", PUBLISH_DOCS),
             ("clean", "make clean"),
         ],
     },
