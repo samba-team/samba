@@ -4888,7 +4888,6 @@ static NTSTATUS smbd_smb2_io_handler(struct smbXsrv_connection *xconn,
 	bool retry;
 	NTSTATUS status;
 	NTTIME now;
-	struct msghdr msg;
 
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
@@ -4923,7 +4922,7 @@ again:
 		state->vector.iov_len = NBT_HDR_SIZE;
 	}
 
-	msg = (struct msghdr) {
+	state->msg = (struct msghdr) {
 		.msg_iov = &state->vector,
 		.msg_iovlen = 1,
 	};
@@ -4935,7 +4934,7 @@ again:
 	recvmsg_flags |= MSG_DONTWAIT;
 #endif
 
-	ret = recvmsg(xconn->transport.sock, &msg, recvmsg_flags);
+	ret = recvmsg(xconn->transport.sock, &state->msg, recvmsg_flags);
 	if (ret == 0) {
 		/* propagate end of file */
 		status = NT_STATUS_END_OF_FILE;

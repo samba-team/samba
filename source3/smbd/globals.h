@@ -463,6 +463,7 @@ struct smbXsrv_connection {
 				bool done;
 			} hdr;
 			struct iovec vector;
+			struct msghdr msg;
 			bool doing_receivefile;
 			size_t min_recv_size;
 			size_t pktfull;
