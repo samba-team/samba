@@ -169,7 +169,7 @@ bool secrets_store_creds(struct cli_credentials *creds)
 	ok = secrets_store(SECRETS_AUTH_DOMAIN, p, strlen(p) + 1);
 	if (!ok) {
 		DBG_ERR("Failed storing auth domain name\n");
-		return 1;
+		return false;
 	}
 
 
