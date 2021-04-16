@@ -251,11 +251,6 @@ NTSTATUS auth3_user_info_dc_add_hints(struct auth_user_info_dc *user_info_dc,
 				      uid_t uid,
 				      gid_t gid,
 				      uint32_t flags);
-NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
-				   const struct auth_user_info_dc *user_info_dc,
-				   const char *original_user_name,
-				   uint32_t session_info_flags,
-				   struct auth_session_info **session_info_out);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,

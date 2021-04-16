@@ -774,11 +774,12 @@ fail:
 	return status;
 }
 
-NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
-				   const struct auth_user_info_dc *user_info_dc,
-				   const char *original_user_name,
-				   uint32_t session_info_flags,
-				   struct auth_session_info **session_info_out)
+static NTSTATUS auth3_session_info_create(
+	TALLOC_CTX *mem_ctx,
+	const struct auth_user_info_dc *user_info_dc,
+	const char *original_user_name,
+	uint32_t session_info_flags,
+	struct auth_session_info **session_info_out)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_session_info *session_info = NULL;
