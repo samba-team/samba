@@ -30,6 +30,9 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/cmdline.h"
+#include "system/network.h"
+#include "dns_server/dnsserver_common.h"
+
 
 /* Tests that configure multiple DLZs will use this. Increase to add stress. */
 #define NUM_DLZS_TO_CONFIGURE 4
@@ -373,7 +376,46 @@ static bool dlz_bind9_putnamedrr_torture_hook(struct test_expected_rr *expected,
 		}
 
 		if (expected->records[i].data != NULL) {
-			if (strcmp(data, expected->records[i].data) != 0) {
+			/*
+			 * For most types the data will have been reformatted
+			 * or normalised, so we need to do approximately the
+			 * same to compare.
+			 */
+			const char *data2 = expected->records[i].data;
+			if (strcmp(type, "aaaa") == 0) {
+				struct in6_addr adr1;
+				struct in6_addr adr2;
+				int ret;
+				ret = inet_pton(AF_INET6, data, &adr1);
+				if (ret != 1) {
+					continue;
+				}
+				ret = inet_pton(AF_INET6, data2, &adr2);
+				if (ret != 1) {
+					continue;
+				}
+				if (memcmp(&adr1, &adr2, sizeof(adr1)) != 0) {
+					continue;
+				}
+			} else if (strcmp(type, "cname") == 0 ||
+				 strcmp(type, "ptr") == 0   ||
+				 strcmp(type, "ns") == 0) {
+				if (! dns_name_equal(data, data2)) {
+					continue;
+				}
+			} else if (strcmp(type, "mx") == 0) {
+				/*
+				 * dns_name_equal works for MX records because
+				 * the space in "10 example.com." is
+				 * theoretically OK as a DNS character. And we
+				 * need it because dlz will add the trailing
+				 * dot.
+				 */
+				if (! dns_name_equal(data, data2)) {
+					continue;
+				}
+			} else if (strcmp(data, data2) != 0) {
+				/* default, works for A records */
 				continue;
 			}
 		}
