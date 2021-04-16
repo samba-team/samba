@@ -32,14 +32,6 @@ bld.SAMBA_MODULE('auth4_developer',
 	)
 
 
-bld.SAMBA_MODULE('auth4_unix',
-	source='auth_unix.c',
-	subsystem='auth4',
-	init_function='auth4_unix_init',
-	deps='pam PAM_ERRORS LIBTSOCKET crypt'
-	)
-
-
 bld.SAMBA_LIBRARY('auth4',
 	source='auth.c auth_util.c auth_simple.c',
 	autoproto='auth_proto.h',
