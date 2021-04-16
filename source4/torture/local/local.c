@@ -55,7 +55,6 @@
 	torture_local_socket, 
 	torture_pac, 
 	torture_local_resolve,
-	torture_local_sddl,
 	torture_local_ndr, 
 	torture_local_tdr, 
 	torture_local_share,
