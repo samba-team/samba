@@ -309,9 +309,46 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 	{0}
 };
 
+static PyObject *py_descriptor_richcmp(
+	PyObject *py_self, PyObject *py_other, int op)
+{
+	struct security_descriptor *self = pytalloc_get_ptr(py_self);
+	struct security_descriptor *other = pytalloc_get_ptr(py_other);
+	bool eq;
+
+	if (other == NULL) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+
+	eq = security_descriptor_equal(self, other);
+
+	switch(op) {
+	case Py_EQ:
+		if (eq) {
+			Py_RETURN_TRUE;
+		} else {
+			Py_RETURN_FALSE;
+		}
+		break;
+	case Py_NE:
+		if (eq) {
+			Py_RETURN_FALSE;
+		} else {
+			Py_RETURN_TRUE;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return Py_NotImplemented;
+}
+
 static void py_descriptor_patch(PyTypeObject *type)
 {
 	type->tp_new = py_descriptor_new;
+	type->tp_richcompare = py_descriptor_richcmp;
 	PyType_AddMethods(type, py_descriptor_extra_methods);
 }
 
