@@ -32,7 +32,13 @@
 #include "lib/cmdline/cmdline.h"
 #include "system/network.h"
 #include "dns_server/dnsserver_common.h"
+#include "librpc/gen_ndr/ndr_dnsserver.h"
+#include "librpc/gen_ndr/ndr_dnsserver_c.h"
+#include "torture/rpc/torture_rpc.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
 
+#include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_proto.h"
 
 /* Tests that configure multiple DLZs will use this. Increase to add stress. */
 #define NUM_DLZS_TO_CONFIGURE 4
@@ -138,6 +144,7 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 {
 	void *dbdata = NULL;
 	dns_dlzdb_t *dlzdb = NULL;
+	int ret;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
@@ -343,6 +350,7 @@ struct test_expected_record {
 	const char *data;
 	int ttl;
 	bool printed;
+	const char *rdata;
 };
 
 struct test_expected_rr {
@@ -438,6 +446,9 @@ static bool dlz_bind9_putnamedrr_torture_hook(struct test_expected_rr *expected,
 	return true;
 }
 
+/*
+ * Lookups in these tests end up coming round to run this function.
+ */
 static isc_result_t dlz_bind9_putrr_hook(dns_sdlzlookup_t *lookup,
 					 const char *type,
 					 dns_ttl_t ttl,
@@ -1318,6 +1329,1148 @@ static bool test_dlz_bind9_allowzonexfr(struct torture_context *tctx)
     return true;
 }
 
+
+static int init_dlz(struct torture_context *tctx,
+		    void **dbdata)
+{
+	isc_result_t ret;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		NULL
+	};
+
+	ret = dlz_create("samba_dlz", 3, argv, dbdata,
+			 "log", dlz_bind9_log_wrapper,
+			 "writeable_zone", dlz_bind9_writeable_zone_hook,
+			 "putrr", dlz_bind9_putrr_hook,
+			 "putnamedrr", dlz_bind9_putnamedrr_hook,
+			 NULL);
+
+	torture_assert_int_equal(tctx,
+				 ret,
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	ret = dlz_configure((void*)tctx, NULL, *dbdata);
+	torture_assert_int_equal(tctx,
+				 ret,
+				 ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	return true;
+}
+
+
+static int init_gensec(struct torture_context *tctx,
+		       struct gensec_security **gensec_client_context)
+{
+	NTSTATUS status;
+	/*
+	 * Prepare session info
+	 */
+	status = gensec_client_start(tctx, gensec_client_context,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status,
+				   "gensec_client_start (client) failed");
+
+	/*
+	 * dlz_bind9 use the special dns/host.domain account
+	 */
+	status = gensec_set_target_hostname(*gensec_client_context,
+					    talloc_asprintf(tctx,
+				"%s.%s",
+				torture_setting_string(tctx, "host", NULL),
+				lpcfg_dnsdomain(tctx->lp_ctx)));
+	torture_assert_ntstatus_ok(tctx, status,
+				   "gensec_set_target_hostname (client) failed");
+
+	status = gensec_set_target_service(*gensec_client_context, "dns");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "gensec_set_target_service failed");
+
+	status = gensec_set_credentials(*gensec_client_context,
+					samba_cmdline_get_creds());
+	torture_assert_ntstatus_ok(tctx, status,
+				   "gensec_set_credentials (client) failed");
+
+	status = gensec_start_mech_by_sasl_name(*gensec_client_context,
+						"GSS-SPNEGO");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "gensec_start_mech_by_sasl_name (client) failed");
+
+
+	return true;
+}
+
+
+
+static bool expected_record(TALLOC_CTX *mem_ctx,
+			    struct test_expected_record *r,
+			    const char *name,
+			    const char *type,
+			    const char *data)
+{
+	unsigned int ttl = 3600;
+	const char *rdata = talloc_asprintf(
+		mem_ctx,
+		"%s.\t" "%u\t" "in\t" "%s\t" "%s",
+		name, ttl, type, data);
+	if (rdata == NULL) {
+		return false;
+	}
+
+	*r = (struct test_expected_record){
+		.name = name,
+		.type = type,
+		.data = data,
+		.ttl = ttl,
+		.printed = false,
+		.rdata = rdata
+	};
+	return true;
+}
+
+
+struct dlz_test_handle {
+	struct dcerpc_pipe *p;
+};
+
+
+static bool set_zone_aging(struct torture_context *tctx,
+			   const char *zone,
+			   int value)
+{
+	int ret;
+	char *cmd = talloc_asprintf(tctx,
+				    "bin/samba-tool dns zoneoptions "
+				    "$SERVER %s -U$USERNAME%%$PASSWORD "
+				    "--aging %d", zone, value);
+
+	if (cmd == NULL) {
+		return false;
+	}
+
+	ret = system(cmd);
+	if (ret != 0) {
+		TALLOC_FREE(cmd);
+		return false;
+	}
+	TALLOC_FREE(cmd);
+	return true;
+}
+
+
+static struct ldb_context* get_samdb(struct torture_context *tctx)
+{
+	struct ldb_context *samdb = NULL;
+	char *errstring;
+	int ret = samdb_connect_url(
+		tctx,
+		NULL,
+		tctx->lp_ctx,
+		system_session(tctx->lp_ctx),
+		0,
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		NULL,
+		&samdb,
+		&errstring);
+	if (ret != LDB_SUCCESS) {
+		return NULL;
+	}
+	return samdb;
+}
+
+
+static void print_node_records(struct torture_context *tctx,
+			       struct ldb_context *samdb,
+			       struct ldb_dn *node_dn,
+			       const char *msg)
+{
+	int ret;
+	struct ldb_result *result = NULL;
+	struct dnsp_DnssrvRpcRecord rec;
+	struct ldb_message_element *el = NULL;
+	size_t i;
+
+	if (msg != NULL) {
+		torture_comment(tctx,
+				"\033[1;32m%s\033[0m\n",
+				msg);
+	}
+
+	ret = dsdb_search(samdb, tctx, &result, node_dn,
+			  LDB_SCOPE_SUBTREE, NULL,
+			  0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_comment(tctx,
+				"Failed to find node: %s",
+				ldb_errstring(samdb));
+	}
+
+	el = ldb_msg_find_element(result->msgs[0], "dnsRecord");
+
+	for (i = 0; i < el->num_values; i++) {
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			result,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ret)) {
+			DBG_ERR("Failed to pull dns rec blob [%zu].\n",
+				i);
+			TALLOC_FREE(result);
+		}
+		torture_comment(tctx, "record[%zu]:\n", i);
+		torture_comment(tctx, "type: %d\n", rec.wType);
+		torture_comment(tctx, "timestamp: %u\n", rec.dwTimeStamp);
+		torture_comment(tctx, "%s\n",
+				NDR_PRINT_STRUCT_STRING(result,
+							dnsp_DnssrvRpcRecord,
+							&rec));
+	}
+}
+
+
+
+/*
+ * Test some MORE updates, this time focussing on more record types and aging.
+ */
+static bool test_dlz_bind9_aging(struct torture_context *tctx)
+{
+	struct gensec_security *gensec_client_context = NULL;
+	DATA_BLOB client_to_server, server_to_client;
+	NTSTATUS status;
+	void *dbdata = NULL;
+	void *version = NULL;
+	struct test_expected_rr *testdata = NULL;
+	bool ok = false;
+	struct ldb_context *samdb = NULL;
+	isc_result_t ret;
+	size_t i, j;
+	const char *domain = lpcfg_dnsdomain(tctx->lp_ctx);
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *node_dn = NULL;
+	struct ldb_result *result = NULL;
+	uint32_t dns_timestamp_before;
+	uint32_t dns_timestamp_after;
+	const char *name = NULL;
+	const char *attrs[] = {"dnsrecord", NULL};
+	const char *node_dn_str = NULL;
+	struct ldb_message_element *el = NULL;
+	struct ldb_message *msg = NULL;
+
+	tctx_static = tctx;
+
+	/* Step 0. set things up */
+
+	ok = init_dlz(tctx, &dbdata);
+	if (! ok) {
+		torture_fail(tctx, "Failed to init_dlz");
+	}
+	ok = init_gensec(tctx, &gensec_client_context);
+	if (! ok) {
+		torture_fail(tctx, "Failed to init_gensec");
+	}
+
+	samdb = get_samdb(tctx);
+	if (samdb == NULL) {
+		torture_fail(tctx, "Failed to connect to samdb");
+	}
+
+	domain_dn = ldb_get_default_basedn(samdb);
+	testdata = talloc_zero(tctx, struct test_expected_rr);
+	torture_assert(tctx, testdata != NULL, "talloc failed");
+	testdata->tctx = tctx;
+
+	testdata->query_name = __func__;
+
+	name = talloc_asprintf(testdata, "%s.%s",
+			       testdata->query_name,
+			       domain);
+	torture_assert(tctx, name != NULL, "talloc failed");
+
+	testdata->num_records = 6;
+	testdata->records = talloc_zero_array(testdata,
+					      struct test_expected_record,
+					      testdata->num_records);
+	torture_assert(tctx, testdata->records != NULL, "talloc failed");
+
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[0],
+				       testdata->query_name,
+				       "aaaa",
+				       "::1"),
+		       "failed to add record");
+
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[1],
+				       testdata->query_name,
+				       "a",
+				       "127.11.12.13"),
+		       "failed to add record");
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[2],
+				       testdata->query_name,
+				       "a",
+				       "127.11.12.14"),
+		       "failed to add record");
+
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[3],
+				       testdata->query_name,
+				       "ptr",
+				       "samba.example.com"),
+		       "failed to add record");
+
+	/*
+	 * NOTE: Here we add the MX record with the priority before the name,
+	 * rather than the other way around which you are more likely to see
+	 * ("samba.example.com 11" e.g. in samba-tool dns), because this is
+	 * how it goes in BIND9 configuration.
+	 */
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[4],
+				       testdata->query_name,
+				       "mx",
+				       "11 samba.example.com."),
+		       "failed to add record");
+
+	torture_assert(tctx,
+		       expected_record(testdata->records,
+				       &testdata->records[5],
+				       testdata->query_name,
+				       "cname",
+				       "samba.example.com"),
+		       "failed to add record");
+
+
+	server_to_client = data_blob(NULL, 0);
+
+	/* Do one step of the client-server update dance */
+	status = gensec_update(gensec_client_context, tctx, server_to_client,
+			       &client_to_server);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
+		torture_assert_ntstatus_ok(tctx, status,
+					   "gensec_update (client) failed");
+	}
+
+	torture_assert_int_equal(tctx, dlz_ssumatch(
+				cli_credentials_get_username(
+					samba_cmdline_get_creds()),
+				domain,
+				"127.0.0.1",
+				testdata->records[0].type,
+				"key",
+				client_to_server.length,
+				client_to_server.data,
+				dbdata),
+				ISC_TRUE,
+			 "Failed to check key for update rights samba_dlz");
+
+	/* remember the DN for use below */
+	node_dn = ldb_dn_copy(testdata, domain_dn);
+	if (node_dn == NULL) {
+		torture_fail(tctx, "Failed to make node dn");
+	}
+
+	ok = ldb_dn_add_child_fmt(
+		node_dn,
+		"DC=%s,DC=%s,CN=MicrosoftDNS,DC=DomainDnsZones",
+		testdata->query_name,
+		domain);
+	if (! ok) {
+		torture_fail(tctx, "Failed to make node dn");
+	}
+	node_dn_str = ldb_dn_get_linearized(node_dn);
+	if (node_dn_str == NULL) {
+		torture_fail(tctx, "Failed to linearise node dn");
+	}
+
+	/* LOOK: we are chopping off the last one (the CNAME) for now */
+	testdata->num_records = 5;
+
+	/*
+	 * We test the following:
+	 *
+	 * Step 1.  Ensure we are starting with an empty node.
+	 * Step 2.  Add all the records (with aging off).
+	 * Step 3.  Check the timestamps are now-ish.
+	 * Step 4.  Add all the records AGAIN.
+	 * Step 5:  Turn aging on.
+	 * Step 6.  Add all the records again.
+	 * Step 7.  Check the timestamps are still now-ish.
+	 * Step 8.  Wind back the timestamps in the database.
+	 * Step 9.  Do another update, changing some timestamps
+	 * Step 10. Check that the timestamps are right.
+	 * Step 11. Set one record to be static.
+	 * Step 12. Do updates on some records, zeroing their timestamps
+	 * Step 13. Check that the record timeouts are *mostly* zero.
+	 * Step 14. Turn aging off
+	 * Step 15. Update, setting timestamps to zero
+	 * Step 16. Check that the timestmaps are all zero.
+	 * Step 17. Reset to non-zero via ldb, with aging still off.
+	 * Step 18. Update with aging off. Nothing should change.
+	 * Step 19. Check that the timestamps didn't change.
+	 * Step 20. Delete all the records, 1 by 1.
+	 */
+
+
+	/*
+	 * Step 1. Ensure we are starting with an empty node.
+	 */
+	torture_comment(tctx, "step 1: %s records are not there\n",
+			testdata->query_name);
+	testdata->num_rr = 0;
+	torture_assert_int_equal(tctx, dlz_lookup(domain,
+						  testdata->query_name,
+						  dbdata,
+						  (dns_sdlzlookup_t *)testdata,
+						  NULL, NULL),
+				 ISC_R_NOTFOUND,
+				 "Found hostname");
+	torture_assert_int_equal(tctx, testdata->num_rr, 0,
+				 "Got records when there should be none");
+
+
+	dns_timestamp_before = unix_to_dns_timestamp(time(NULL));
+
+	/*
+	 * Step 2. Add all the records (with aging off).
+	 * After adding each one, expect to find it and earlier ones.
+	 */
+	torture_comment(tctx,
+			"step 2: add %zu records\n",
+			testdata->num_records);
+
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		torture_assert_int_equal_goto(
+			tctx, ret, ISC_R_SUCCESS, ok,
+			cancel_version,
+			talloc_asprintf(tctx,
+					"Failed to add record %zu «%s»\n",
+					i, r.rdata));
+
+		dlz_closeversion(domain, true, dbdata, &version);
+
+		testdata->num_rr = 0;
+
+		ret = dlz_lookup(domain, testdata->query_name, dbdata,
+				 (dns_sdlzlookup_t *)testdata, NULL, NULL);
+
+		torture_assert_int_equal(tctx, ret,
+					 ISC_R_SUCCESS,
+					 "Not found hostname");
+		torture_assert_int_equal(tctx, testdata->num_rr, i + 1,
+					 "Got wrong record count");
+
+		for (j = 0; j < testdata->num_records; j++) {
+			struct test_expected_record *r2 = &testdata->records[j];
+			if (j <= i) {
+				torture_assertf(
+					tctx,
+					r2->printed,
+					"putrr callback not run on %s «%s»",
+					r2->type, r2->name);
+			} else {
+				torture_assertf(
+					tctx,
+					! r2->printed,
+					"putrr callback should not see %s «%s»",
+					r2->type, r2->name);
+			}
+			r2->printed = false;
+		}
+	}
+
+	dns_timestamp_after = unix_to_dns_timestamp(time(NULL));
+	/*
+	 * Step 3. Check the timestamps are now-ish.
+	 *
+	 * Those records should have DNS timestamps between
+	 * dns_timestamp_before and dns_timestamp_after (the resolution is
+	 * hourly, so probably both are equal).
+	 */
+	ret = dsdb_search(samdb, tctx, &result, node_dn,
+			  LDB_SCOPE_SUBTREE, NULL,
+			  0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+	torture_assert_int_equal(tctx, result->count, 1,
+				 "Should be one node");
+
+	el = ldb_msg_find_element(result->msgs[0], "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert(tctx, dns_timestamp_before <= dns_timestamp_after, "<");
+	torture_assert_int_equal(tctx, el->num_values, testdata->num_records,
+				 "num_values != num_records");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			result,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ret)) {
+			DBG_ERR("Failed to pull dns rec blob [%zu].\n",
+				i);
+			TALLOC_FREE(result);
+			torture_fail(tctx, "Failed to pull dns rec blob");
+		}
+		torture_comment(tctx, "record[%zu]:\n", i);
+		torture_comment(tctx, "type: %d\n", rec.wType);
+		torture_comment(tctx, "timestamp: %u\n", rec.dwTimeStamp);
+		torture_comment(tctx, "%s\n",
+				NDR_PRINT_STRUCT_STRING(result,
+							dnsp_DnssrvRpcRecord,
+							&rec));
+
+		torture_assert(tctx, rec.dwTimeStamp >= dns_timestamp_before,
+			       "timestamp < dns_timestamp_before");
+		torture_assert(tctx, rec.dwTimeStamp <= dns_timestamp_after,
+			       "timestamp > dns_timestamp_after");
+	}
+
+	talloc_free(result);
+
+	/*
+	 * Step 4. Add all the records AGAIN.
+	 *
+	 * After adding each one, we expect no change in the number or nature
+	 * of records.
+	 */
+	torture_comment(tctx, "step 4: add the records again\n");
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		torture_assert_int_equal_goto(
+			tctx, ret, ISC_R_SUCCESS, ok,
+			cancel_version,
+			talloc_asprintf(tctx,
+					"Failed to add record %zu «%s»\n",
+					i, r.rdata));
+
+		dlz_closeversion(domain, true, dbdata, &version);
+
+		testdata->num_rr = 0;
+
+		ret = dlz_lookup(domain, testdata->query_name, dbdata,
+				 (dns_sdlzlookup_t *)testdata, NULL, NULL);
+
+		torture_assert_int_equal(tctx, ret,
+					 ISC_R_SUCCESS,
+					 "Not found hostname");
+		torture_assert_int_equal(tctx,
+					 testdata->num_rr,
+					 testdata->num_records,
+					 "Got wrong record count");
+
+		for (j = 0; j <= i; j++) {
+			/* these ones are printed again. */
+			struct test_expected_record *r2 = &testdata->records[j];
+			torture_assert(
+				tctx,
+				r2->printed,
+				talloc_asprintf(
+					tctx,
+					"putrr callback not run on %s «%s»",
+					r2->type, r2->name));
+			r2->printed = false;
+		}
+	}
+
+	print_node_records(tctx, samdb, node_dn, "after adding again");
+
+
+	/*
+	 * Step 5: Turn aging on.
+	 */
+	torture_comment(tctx, "step 5: turn aging on\n");
+	ok = set_zone_aging(tctx, domain, 1);
+	torture_assert(tctx, ok, "failed to enable aging");
+
+	print_node_records(tctx, samdb, node_dn, "aging on");
+
+	/*
+	 * Step 6. Add all the records again.
+	 *
+	 * We expect no change in the number or nature of records, even with
+	 * aging on, because the default noRefreshInterval is 7 days (also,
+	 * there should be no change because almost no time has passed).
+	 */
+	torture_comment(tctx, "step 6: add records again\n");
+
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(domain, r.rdata, dbdata, version);
+		torture_assert_int_equal_goto(
+			tctx, ret, ISC_R_SUCCESS, ok,
+			cancel_version,
+			talloc_asprintf(tctx,
+					"Failed to add record %zu «%s»\n",
+					i, r.rdata));
+
+		dlz_closeversion(domain, true, dbdata, &version);
+	}
+
+	print_node_records(tctx, samdb, node_dn, "add again");
+
+
+	/*
+	 * Step 7. Check the timestamps are still now-ish.
+	 *
+	 */
+	ret = dsdb_search(samdb, tctx, &result, node_dn,
+			  LDB_SCOPE_SUBTREE, NULL,
+			  0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+	torture_assert_int_equal(tctx, result->count, 1,
+				 "Should be one node");
+
+	el = ldb_msg_find_element(result->msgs[0], "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert(tctx, dns_timestamp_before <= dns_timestamp_after, "<");
+	torture_assert_int_equal(tctx, el->num_values, testdata->num_records,
+				 "num_values != num_records");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			result,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ret)) {
+			DBG_ERR("Failed to pull dns rec blob [%zu].\n",
+				i);
+			TALLOC_FREE(result);
+			torture_fail(tctx, "Failed to pull dns rec blob");
+		}
+		torture_comment(tctx, "record[%zu]:\n", i);
+		torture_comment(tctx, "type: %d\n", rec.wType);
+		torture_comment(tctx, "timestamp: %u\n", rec.dwTimeStamp);
+		torture_comment(tctx, "%s\n",
+				NDR_PRINT_STRUCT_STRING(result,
+							dnsp_DnssrvRpcRecord,
+							&rec));
+
+		torture_assert(tctx, rec.dwTimeStamp >= dns_timestamp_before,
+			       "timestamp < dns_timestamp_before");
+		torture_assert(tctx, rec.dwTimeStamp <= dns_timestamp_after,
+			       "timestamp > dns_timestamp_after");
+	}
+
+	talloc_free(result);
+
+	/*
+	 * Step 8. Wind back the timestamps in the database.
+	 *
+	 * We use a different number of days for each record, so that some
+	 * should be refreshed, and some shouldn't.
+	 */
+	torture_comment(tctx, "step 8: alter timestamps\n");
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert_int_equal(tctx, el->num_values,
+				 testdata->num_records,
+				 "num_values != num_records");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to pull record");
+
+		rec.dwTimeStamp = dns_timestamp_after + 3 - 24 * (i + 5);
+
+		ret = ndr_push_struct_blob(
+			&el->values[i],
+			msg,
+			&rec,
+			(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to PUSH record");
+	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(samdb, msg);
+	torture_assert_int_equal(tctx, ret, 0, "failed to ldb_modify");
+	print_node_records(tctx, samdb, node_dn, "after ldb_modify");
+
+
+	/*
+	 * Step 9. Do another update, changing some timestamps
+	 */
+
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		dlz_closeversion(domain, ret == ISC_R_SUCCESS, dbdata,
+				 &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to update record\n");
+	}
+	print_node_records(tctx, samdb, node_dn, "after update");
+
+	/*
+	 * Step 10. Check that the timestamps are right.
+	 *
+	 * The formula was
+	 *    (i + 5) days + 3 hours
+	 * so 1 is 6 days + 3 hours, and should not be renewed.
+	 *    2 is 7 days + 3 hours, and should be renewed
+	 *
+	 * NOTE: the ldb record order is different from the insertion order,
+	 * but it should stay the same betweeen searches.
+	 */
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert_int_equal(tctx, el->num_values,
+				 testdata->num_records,
+				 "num_values != num_records");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to pull record");
+		if (i < 3) {
+			/* records 0 and 1 should not have been renewed */
+			int old_ts = dns_timestamp_after + 3 - 24 * (i + 5);
+			torture_assertf(
+				tctx,
+				rec.dwTimeStamp == old_ts,
+				"record[%zu] timestamp should not be altered."
+				" diff is %d\n",
+				i, rec.dwTimeStamp - old_ts);
+		} else {
+			/* records 3+ should have a now-ish timestamp */
+			int old_ts = dns_timestamp_after + 3 - 24 * (i + 5);
+			torture_assertf(
+				tctx,
+				rec.dwTimeStamp >= dns_timestamp_before,
+				"record[%zu] should have altered timestamp "
+				"now ~= %d, then ~= %d, has %d, diff %d\n", i,
+				dns_timestamp_before, old_ts, rec.dwTimeStamp,
+				dns_timestamp_before - rec.dwTimeStamp
+				);
+		}
+	}
+
+	/*
+	 * Step 11. Set one record to be static.
+	 *
+	 * This should make the node static, but it won't "know" that until we
+	 * force it with an update.
+	 */
+	torture_comment(tctx, "step 11: alter one timestamp to be 0\n");
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert_int_equal(tctx, el->num_values,
+				 testdata->num_records,
+				 "num_values != num_records");
+
+	{
+		/* we're arbitrarily picking on record 3 */
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[3]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to pull record");
+
+		rec.dwTimeStamp = 0;
+
+		ret = ndr_push_struct_blob(
+			&el->values[3],
+			msg,
+			&rec,
+			(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to PUSH record");
+	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(samdb, msg);
+	torture_assert_int_equal(tctx, ret, 0, "failed to ldb_modify");
+	print_node_records(tctx, samdb, node_dn, "after ldb_modify");
+
+
+	/*
+	 * Step 12. Do updates on some records, zeroing their timestamps
+	 *
+	 * Zero means static. A single zero timestmap is infectious, so other
+	 * records get it when they are updated.
+	 */
+
+	for (i = 0; i < testdata->num_records - 2; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		dlz_closeversion(domain, ret == ISC_R_SUCCESS, dbdata,
+				 &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to update record\n");
+	}
+	print_node_records(tctx, samdb, node_dn, "after update to static");
+
+
+	/*
+	 * Step 13. Check that the record timeouts are *mostly* zero.
+	 *
+	 * one or two will be non-zero: we updated all but two, but one of
+	 * excluded ones might be the el->records[3] that we explicitly set to
+	 * zero.
+	 */
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	{
+		unsigned n_zero = 0;
+		for (i = 0; i < el->num_values; i++) {
+			struct dnsp_DnssrvRpcRecord rec;
+			ret = ndr_pull_struct_blob(
+				&(el->values[i]),
+				msg,
+				&rec,
+				(ndr_pull_flags_fn_t)\
+				ndr_pull_dnsp_DnssrvRpcRecord);
+			torture_assert_ndr_success(tctx, ret,
+						   "failed to pull record");
+			if (rec.dwTimeStamp == 0) {
+				n_zero++;
+			}
+		}
+		if (n_zero != el->num_values - 1 &&
+		    n_zero != el->num_values - 2) {
+			torture_comment(tctx, "got %u zeros, expected %u or %u",
+					n_zero,
+					el->num_values - 2,
+					el->num_values - 1);
+			torture_fail(tctx,
+				     "static node not setting zero timestamps\n");
+
+		}
+	}
+
+
+	/*
+	 * Step 14. Turn aging off.
+	 */
+	torture_comment(tctx, "step 14: turn aging off\n");
+	ok = set_zone_aging(tctx, domain, 0);
+	torture_assert(tctx, ok, "failed to disable aging");
+	print_node_records(tctx, samdb, node_dn, "aging off");
+
+	/*
+	 * Step 15. Update, setting timestamps to zero.
+	 *
+	 * Even with aging off, timestamps are still changed to static.
+	 */
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		dlz_closeversion(domain, ret == ISC_R_SUCCESS, dbdata,
+				 &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to update record\n");
+	}
+	print_node_records(tctx, samdb, node_dn, "after update with aging off");
+
+
+	/*
+	 * Step 16. Check that the timestmaps are all zero.
+	 */
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t) ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret,
+					   "failed to pull record");
+		torture_assertf(tctx, rec.dwTimeStamp == 0,
+				"record[%zu].dwTimeStamp is %u, expected 0\n",
+				i, rec.dwTimeStamp);
+
+	}
+
+
+	/*
+	 * Step 17. Reset to non-zero via ldb, with aging still off.
+	 *
+	 * We chose timestamps in the distant past that would all be updated
+	 * if aging was on.
+	 */
+	torture_comment(tctx, "step 17: reset to non-zero timestamps\n");
+	ret = dsdb_search_one(samdb, tctx, &msg, node_dn,
+			      LDB_SCOPE_BASE, attrs,
+			      0, NULL);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(
+				     tctx,
+				     "Failed to find %s node: %s",
+				     name, ldb_errstring(samdb)));
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to pull record");
+
+		rec.dwTimeStamp = 10000 + i; /* a long time ago */
+
+		ret = ndr_push_struct_blob(
+			&el->values[i],
+			msg,
+			&rec,
+			(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to PUSH record");
+	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(samdb, msg);
+	torture_assert_int_equal(tctx, ret, 0, "failed to ldb_modify");
+	print_node_records(tctx, samdb, node_dn, "timestamps no-zero, aging off");
+
+
+	/*
+	 * Step 18. Update with aging off. Nothing should change.
+	 *
+	 */
+
+	/* now, with another update, some will be updated and some won't */
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_addrdataset(name, r.rdata, dbdata, version);
+		dlz_closeversion(domain, ret == ISC_R_SUCCESS, dbdata,
+				 &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to update record\n");
+	}
+	print_node_records(tctx, samdb, node_dn, "after update");
+
+
+	/*
+	 * Step 19. Check that the timestamps didn't change.
+	 */
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	torture_assert_not_null(tctx, el, "el");
+	torture_assert_int_equal(tctx, el->num_values,
+				 testdata->num_records,
+				 "num_values != num_records");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		ret = ndr_pull_struct_blob(
+			&(el->values[i]),
+			msg,
+			&rec,
+			(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		torture_assert_ndr_success(tctx, ret, "failed to pull record");
+		torture_assertf(
+			tctx,
+			rec.dwTimeStamp == 10000 + i,
+			"record[%zu] timestamp should not be altered.\n",
+			i);
+	}
+
+
+	/*
+	 * Step 20. Delete all the records, 1 by 1.
+	 *
+	 */
+	torture_comment(tctx, "step 20: delete the records\n");
+
+	for (i = 0; i < testdata->num_records; i++) {
+		struct test_expected_record r = testdata->records[i];
+
+		ret = dlz_newversion(domain, dbdata, &version);
+		torture_assert_int_equal(tctx, ret, ISC_R_SUCCESS,
+					 "Failed to start transaction");
+
+		ret = dlz_subrdataset(name, r.rdata, dbdata, version);
+		torture_assert_int_equal_goto(
+			tctx, ret, ISC_R_SUCCESS, ok,
+			cancel_version,
+			talloc_asprintf(tctx,
+					"Failed to delete record %zu «%s»\n",
+					i, r.rdata));
+
+		dlz_closeversion(domain, true, dbdata, &version);
+
+		testdata->num_rr = 0;
+
+		ret = dlz_lookup(domain, testdata->query_name, dbdata,
+				 (dns_sdlzlookup_t *)testdata, NULL, NULL);
+
+		if (i ==  testdata->num_records - 1) {
+			torture_assert_int_equal(tctx, ret,
+						 ISC_R_NOTFOUND,
+						 "no records should exist");
+		} else {
+			torture_assert_int_equal(tctx, ret,
+						 ISC_R_SUCCESS,
+						 "records not found");
+		}
+
+		torture_assert_int_equal(tctx,
+					 testdata->num_rr,
+					 testdata->num_records - 1 - i,
+					 "Got wrong record count");
+
+		for (j = 0; j < testdata->num_records; j++) {
+			struct test_expected_record *r2 = &testdata->records[j];
+			if (j > i) {
+				torture_assert(
+					tctx,
+					r2->printed,
+					talloc_asprintf(tctx,
+					    "putrr callback not run on %s «%s»",
+							r2->type, r2->name));
+			} else {
+				torture_assert(
+					tctx,
+					! r2->printed,
+					talloc_asprintf(tctx,
+					    "putrr callback should not see  %s «%s»",
+							r2->type, r2->name));
+			}
+			r2->printed = false;
+		}
+	}
+
+	dlz_destroy(dbdata);
+
+	return true;
+
+cancel_version:
+	DBG_ERR("exiting with %d\n", ret);
+	dlz_closeversion(domain, false, dbdata, &version);
+	return ret;
+}
+
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -1339,6 +2492,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "lookup", test_dlz_bind9_lookup);
 	torture_suite_add_simple_test(suite, "zonedump", test_dlz_bind9_zonedump);
 	torture_suite_add_simple_test(suite, "update01", test_dlz_bind9_update01);
+	torture_suite_add_simple_test(suite, "aging", test_dlz_bind9_aging);
 	torture_suite_add_simple_test(suite, "allowzonexfr", test_dlz_bind9_allowzonexfr);
 	return suite;
 }
