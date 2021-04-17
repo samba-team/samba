@@ -1538,6 +1538,8 @@ planoldpythontestsuite("fileserver",
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.wsp_test")
 planoldpythontestsuite("fileserver",
+                       "samba.tests.wsp_test", extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
+planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic")
 planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_basic",
