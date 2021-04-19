@@ -317,17 +317,27 @@ def HEIMDAL_BINARY(binname, source,
 
     source = heimdal_paths(source)
 
+    obj_target = binname + '.heimdal.objlist'
+
+    HEIMDAL_SUBSYSTEM(obj_target,
+                      source         = source,
+                      deps           = deps,
+                      includes       = includes,
+                      cflags         = cflags,
+                      group          = group,
+                      use_hostcc     = use_hostcc,
+                      use_global_deps= use_global_deps)
+
     bld.SAMBA_BINARY(binname,
-                     source         = source,
-                     deps           = deps,
+                     source         = '',
+                     deps           = obj_target,
                      includes       = includes,
                      cflags         = cflags,
                      group          = group,
                      use_hostcc     = use_hostcc,
                      use_global_deps= use_global_deps,
                      install_path   = None,
-                     install        = install,
-                     allow_warnings = True)
+                     install        = install)
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
