@@ -1,4 +1,4 @@
-#!@PERL@
+#!/usr/bin/env perl
 #
 # Prints info on all smb responding machines on a subnet.
 # This script needs to be run on a machine without nmbd running and be
@@ -13,14 +13,14 @@
 # local master browsers for that workgroup. There will be an "*" in front
 # of the workgroup name for machines that are the domain master browser for
 # that workgroup.
-# 
+#
 # Options:
 #
 # -d|-D		enable debug
 # -r		add -r option to nmblookup when finding netbios name
 #
 
-$SAMBABIN = "@BINDIR@";
+$SAMBABIN = "/usr/bin";
 
 for ($i = 0; $i < 2; $i++) {	# test for -d and -r options
 	$_ = shift;
@@ -38,7 +38,7 @@ if ($_) {			# set broadcast address if it was specified
 
 ######################################################################
 # do numeric sort on last field of IP address
-sub ipsort			
+sub ipsort
 {
 	@t1 = split(/\./,$a);
 	@t2 = split(/\./,$b);
@@ -48,7 +48,7 @@ sub ipsort
 
 # look for all machines that respond to a name lookup
 
-open(NMBLOOKUP,"$SAMBABIN/nmblookup $BCAST '*' --debuglevel=0|") || 
+open(NMBLOOKUP,"$SAMBABIN/nmblookup $BCAST '*' --debuglevel=0|") ||
 	die("Can't run nmblookup '*'.\n");
 
 # get rid of all lines that are not a response IP address,
@@ -68,10 +68,10 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 	# find the netbios names registered by each machine
 
-	open(NMBLOOKUP,"$SAMBABIN/nmblookup $R_OPTION -A $ip --debuglevel=0|") || 
+	open(NMBLOOKUP,"$SAMBABIN/nmblookup $R_OPTION -A $ip --debuglevel=0|") ||
 		die("Can't get nmb name list.\n");
 	@nmblookup = <NMBLOOKUP>;
-  	close NMBLOOKUP;
+	close NMBLOOKUP;
 
 	# get the first <00> name
 
@@ -80,7 +80,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 	if ($_) {			# we have a netbios name
 		if (/GROUP/) {		# is it a group name
-			($name, $aliases, $type, $length, @addresses) = 
+			($name, $aliases, $type, $length, @addresses) =
 			gethostbyaddr(pack('C4',split('\.',$ip)),2);
 			if (! $name) {			# could not get name
 				$name = "unknown nis name";
@@ -92,7 +92,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 			/(.{1,15})\s+<00>\s+/;
 			$name = $1;
 			$name =~ s/^\s+//g;
-    		}
+		}
 
 		# do an smbclient command on the netbios name.
 
@@ -146,7 +146,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 	} else {				# no netbios name found
 		# try getting the host name
-		($name, $aliases, $type, $length, @addresses) = 
+		($name, $aliases, $type, $length, @addresses) =
 		gethostbyaddr(pack('C4',split('\.',$ip)),2);
 		if (! $name) {			# could not get name
 			$name = "unknown nis name";
@@ -157,5 +157,4 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 		}
 		print "$ip".' 'x(16-length($ip))."$name\n";
 	}
-} 
-
+}

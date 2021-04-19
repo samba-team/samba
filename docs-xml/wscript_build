@@ -5,7 +5,6 @@ manpages='''
          manpages/cifsdd.8
          manpages/dbwrap_tool.1
          manpages/eventlogadm.8
-         manpages/findsmb.1
          manpages/idmap_ad.8
          manpages/idmap_autorid.8
          manpages/idmap_hash.8

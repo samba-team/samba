@@ -187,13 +187,6 @@
 		a Samba server.</para></listitem></varlistentry>
 
 		<varlistentry>
-		<term><citerefentry><refentrytitle>findsmb</refentrytitle>
-		<manvolnum>1</manvolnum></citerefentry></term>
-		<listitem><para>The <command>findsmb</command> command
-		can be used to find SMB servers on the local network.
-		</para></listitem></varlistentry>
-
-		<varlistentry>
 		<term><citerefentry><refentrytitle>net</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry></term>
 		<listitem><para>The <command>net</command> command
