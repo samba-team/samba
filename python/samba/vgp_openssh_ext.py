@@ -69,7 +69,7 @@ class vgp_openssh_ext(gp_xml_ext):
                     if not os.path.isdir(cfg_dir):
                         os.mkdir(cfg_dir, 0o640)
                     if fname and os.path.exists(fname):
-                        f = open(fname, 'w')
+                        f = open(fname, 'wb')
                     else:
                         f = NamedTemporaryFile(prefix='gp_',
                                                delete=False,
