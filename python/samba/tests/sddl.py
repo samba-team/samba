@@ -182,5 +182,6 @@ class SddlDecodeEncode(TestCase):
     def test_multiflag(self):
         sid = security.dom_sid("S-1-2-3-4")
         raised = False
-        with self.assertRaises(Exception):
-            sd = security.descriptor.from_sddl("D:(A;;GWFX;;;DA)", sid)
+        sd = security.descriptor.from_sddl("D:(A;;GWFX;;;DA)", sid)
+        sddl = sd.as_sddl(sid)
+        self.assertEqual(sd, security.descriptor.from_sddl(sddl, sid))

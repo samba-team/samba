@@ -234,6 +234,39 @@ static const struct flag_map decode_ace_access_mask[] = {
 	{ NULL, 0 },
 };
 
+static bool sddl_decode_access(const char *str, uint32_t *pmask)
+{
+	const char *str0 = str;
+	uint32_t mask = 0;
+	int cmp;
+
+	cmp = strncmp(str, "0x", 2);
+	if (cmp == 0) {
+		*pmask = strtol(str, NULL, 16);
+		return true;
+	}
+
+	while ((str[0] != '\0') && isupper(str[0])) {
+		uint32_t flags = 0;
+		size_t len = 0;
+		bool found;
+
+		found = sddl_map_flag(
+			ace_access_mask, str, &len, &flags);
+		found |= sddl_map_flag(
+			decode_ace_access_mask, str, &len, &flags);
+		if (!found) {
+			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
+			return false;
+		}
+		mask |= flags;
+		str += len;
+	}
+
+	*pmask = mask;
+	return true;
+}
+
 /*
   decode an ACE
   return true on success, false on failure
@@ -247,6 +280,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	int i;
 	uint32_t v;
 	struct dom_sid *sid;
+	bool ok;
 
 	ZERO_STRUCTP(ace);
 
@@ -273,15 +307,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 	ace->flags = v;
 	
 	/* access mask */
-	if (strncmp(tok[2], "0x", 2) == 0) {
-		ace->access_mask = strtol(tok[2], NULL, 16);
-	} else {
-		if (!sddl_map_flags(ace_access_mask, tok[2], &v, NULL) &&
-		    !sddl_map_flags(
-			    decode_ace_access_mask, tok[2], &v, NULL)) {
-			return false;
-		}
-		ace->access_mask = v;
+	ok = sddl_decode_access(tok[2], &ace->access_mask);
+	if (!ok) {
+		return false;
 	}
 
 	/* object */
