@@ -17,6 +17,7 @@
 
 import os
 import ldb
+import re
 
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -910,3 +911,56 @@ class DnsCmdTestCase(SambaToolCmdTest):
                               err,
                               "Failed to print zoneinfo")
         self.assertTrue(out != '')
+
+    def test_zoneoptions(self):
+        for options, vals, error in (
+                (['--aging=1'], {'fAging': 'TRUE'}, False),
+                (['--aging=0'], {'fAging': 'FALSE'}, False),
+                (['--aging=-1'], {'fAging': 'FALSE'}, True),
+                (['--aging=2'], {}, True),
+                (['--aging=2', '--norefreshinterval=1'], {}, True),
+                (['--aging=1', '--norefreshinterval=1'],
+                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '1'}, False),
+                (['--aging=1', '--norefreshinterval=0'],
+                 {'fAging': 'TRUE', 'dwNoRefreshInterval': '0'}, False),
+                (['--aging=0', '--norefreshinterval=99', '--refreshinterval=99'],
+                 {'fAging': 'FALSE',
+                  'dwNoRefreshInterval': '99',
+                  'dwRefreshInterval': '99'}, False),
+                (['--aging=0', '--norefreshinterval=-99', '--refreshinterval=99'],
+                 {}, True),
+                (['--refreshinterval=9999999'], {}, True),
+                (['--norefreshinterval=9999999'], {}, True),
+                ):
+            result, out, err = self.runsubcmd("dns",
+                                              "zoneoptions",
+                                              os.environ["SERVER"],
+                                              self.zone,
+                                              self.creds_string,
+                                              *options)
+            if error:
+                self.assertCmdFail(result, "zoneoptions should fail")
+            else:
+                self.assertCmdSuccess(result,
+                                      out,
+                                      err,
+                                      "zoneoptions shouldn't fail")
+
+
+            info_r, info_out, info_err = self.runsubcmd("dns",
+                                                        "zoneinfo",
+                                                        os.environ["SERVER"],
+                                                        self.zone,
+                                                        self.creds_string)
+
+            self.assertCmdSuccess(info_r,
+                                  info_out,
+                                  info_err,
+                                  "zoneinfo shouldn't fail after zoneoptions")
+
+            info = {k: v for k, v in re.findall(r'^\s*(\w+)\s*:\s*(\w+)\s*$',
+                                                info_out,
+                                                re.MULTILINE)}
+            for k, v in vals.items():
+                self.assertIn(k, info)
+                self.assertEqual(v, info[k])

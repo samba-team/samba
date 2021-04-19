@@ -505,6 +505,94 @@ class cmd_serverinfo(Command):
         print_serverinfo(self.outf, typeid, res)
 
 
+def _add_integer_options(table, takes_options, integer_properties):
+    """Generate options for cmd_zoneoptions"""
+    for k, doc, _min, _max in table:
+        o = '--' + k.lower()
+        opt =  Option(o,
+                      help=f"{doc} [{_min}-{_max}]",
+                      type="int",
+                      dest=k)
+        takes_options.append(opt)
+        integer_properties.append((k, _min, _max, o))
+
+
+class cmd_zoneoptions(Command):
+    """Change zone aging options."""
+
+    synopsis = '%prog <server> <zone> [options]'
+
+    takes_args = ['server', 'zone']
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option('--client-version', help='Client Version',
+               default='longhorn', metavar='w2k|dotnet|longhorn',
+               choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
+    ]
+
+    integer_properties = []
+    # Any zone parameter that is stored as an integer (which is most of
+    # them) can be added to this table. The name should be the dnsp
+    # mixed case name, which will get munged into a lowercase name for
+    # the option. (e.g. "Aging" becomes "--aging").
+    #
+    # Note: just because we add a name here doesn't mean we will use
+    # it.
+    _add_integer_options([
+    #       ( name,   help-string,         min, max )
+            ('Aging', 'Enable record aging', 0, 1),
+            ('NoRefreshInterval',
+             'Aging no refresh interval in hours (0: use default)',
+             0, 10 * 365 * 24),
+            ('RefreshInterval',
+             'Aging refresh interval in hours (0: use default)',
+             0, 10 * 365 * 24),
+            ],
+                         takes_options,
+                         integer_properties)
+
+    def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
+            versionopts=None, **kwargs):
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp)
+        dns_conn = dns_connect(server, self.lp, self.creds)
+
+        client_version = dns_client_version(cli_ver)
+        nap_type = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
+
+        for k, _min, _max, o in self.integer_properties:
+            if kwargs.get(k) is None:
+                continue
+            v = kwargs[k]
+            if _min is not None and v < _min:
+                raise CommandError(f"{o} must be at least {_min}")
+            if _max is not None and v > _max:
+                raise CommandError(f"{o} can't exceed {_max}")
+
+            name_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
+            name_param.dwParam = v
+            name_param.pszNodeName = k
+            try:
+                dns_conn.DnssrvOperation2(client_version,
+                                          0,
+                                          server,
+                                          zone,
+                                          0,
+                                          'ResetDwordProperty',
+                                          nap_type,
+                                          name_param)
+            except WERRORError as e:
+                raise CommandError(f"Could not set {k} to {v}") from None
+
+            print(f"Set {k} to {v}", file=self.outf)
+
+
 class cmd_zoneinfo(Command):
     """Query for zone information."""
 
@@ -1065,6 +1153,7 @@ class cmd_dns(SuperCommand):
 
     subcommands = {}
     subcommands['serverinfo'] = cmd_serverinfo()
+    subcommands['zoneoptions'] = cmd_zoneoptions()
     subcommands['zoneinfo'] = cmd_zoneinfo()
     subcommands['zonelist'] = cmd_zonelist()
     subcommands['zonecreate'] = cmd_zonecreate()
