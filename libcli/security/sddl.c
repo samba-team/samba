@@ -29,30 +29,53 @@ struct flag_map {
 	uint32_t flag;
 };
 
+static bool sddl_map_flag(
+	const struct flag_map *map,
+	const char *str,
+	size_t *plen,
+	uint32_t *pflag)
+{
+	while (map->name != NULL) {
+		size_t len = strlen(map->name);
+		int cmp = strncmp(map->name, str, len);
+
+		if (cmp == 0) {
+			*plen = len;
+			*pflag = map->flag;
+			return true;
+		}
+		map += 1;
+	}
+	return false;
+}
+
 /*
   map a series of letter codes into a uint32_t
 */
 static bool sddl_map_flags(const struct flag_map *map, const char *str, 
-			   uint32_t *flags, size_t *len)
+			   uint32_t *pflags, size_t *plen)
 {
 	const char *str0 = str;
-	if (len) *len = 0;
-	*flags = 0;
+	if (plen != NULL) {
+		*plen = 0;
+	}
+	*pflags = 0;
 	while (str[0] && isupper(str[0])) {
-		int i;
-		for (i=0;map[i].name;i++) {
-			size_t l = strlen(map[i].name);
-			if (strncmp(map[i].name, str, l) == 0) {
-				*flags |= map[i].flag;
-				str += l;
-				if (len) *len += l;
-				break;
-			}
-		}
-		if (map[i].name == NULL) {
+		size_t len;
+		uint32_t flags;
+		bool found;
+
+		found = sddl_map_flag(map, str, &len, &flags);
+		if (!found) {
 			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
 			return false;
 		}
+
+		*pflags |= flags;
+		if (plen != NULL) {
+			*plen += len;
+		}
+		str += len;
 	}
 	return true;
 }
