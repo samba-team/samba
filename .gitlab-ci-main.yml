@@ -433,6 +433,7 @@ pages:
     - samba-fips
     - samba-no-opath1
     - samba-no-opath2
+    - ubuntu1804-samba-o3
   script:
     - ls -la *.info
     - ./configure.developer
@@ -486,6 +487,15 @@ coverity:
 # We build samba-o3 on all supported distributions
 #
 
+# This job, which matches the main CI, needs to still do coverage so
+# we show the coverage on the "none" environment tests
+ubuntu1804-samba-o3:
+  extends: .shared_template
+  variables:
+    AUTOBUILD_JOB_NAME: samba-o3
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
+
+# All other jobs do not want code coverage.
 .samba-o3-template:
   extends: .shared_template
   variables:
@@ -494,11 +504,6 @@ coverity:
     variables:
       # do not run o3 for coverage since they are using different images
       - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == ""
-
-ubuntu1804-samba-o3:
-  extends: .samba-o3-template
-  variables:
-    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
 
 ubuntu2004-samba-o3:
   extends: .samba-o3-template
