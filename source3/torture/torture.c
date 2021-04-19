@@ -14952,6 +14952,10 @@ static struct {
 		.fn    = run_posix_symlink_parent_test,
 	},
 	{
+		.name  = "POSIX-SYMLINK-CHMOD",
+		.fn    = run_posix_symlink_chmod_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},

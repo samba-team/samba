@@ -911,4 +911,141 @@ out:
 	return correct;
 }
 
+/*
+  Ensure we get an error when doing chmod on a symlink,
+  whether it is pointing to a real object or dangling.
+ */
+bool run_posix_symlink_chmod_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	const char *fname_real = "file_real";
+	const char *fname_real_symlink = "file_real_symlink";
+	const char *nonexist = "nonexist";
+	const char *nonexist_symlink = "dangling_symlink";
+	bool correct = false;
 
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-SYMLINK-CHMOD test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Start with a clean slate. */
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	/* Create a real file. */
+	status = cli_posix_open(cli_unix,
+				fname_real,
+				O_RDWR|O_CREAT,
+				0644,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_unix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Create symlink to real target. */
+	status = cli_posix_symlink(cli_unix,
+				   fname_real,
+				   fname_real_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       fname_real_symlink,
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* We should not be able to chmod symlinks that point to something. */
+	status = cli_posix_chmod(cli_unix, fname_real_symlink, 0777);
+
+	/* This should fail with something other than server crashed. */
+	if (NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_chmod of %s succeeded (should have failed)\n",
+			fname_real_symlink);
+		goto out;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
+		/* Oops. Server crashed. */
+		printf("cli_posix_chmod of %s failed error %s\n",
+			fname_real_symlink,
+			nt_errstr(status));
+		goto out;
+	}
+	/* Any other failure is ok. */
+
+	/* Now create symlink to non-existing target. */
+	status = cli_posix_symlink(cli_unix,
+				   nonexist,
+				   nonexist_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       nonexist_symlink,
+		       nonexist,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* We should not be able to chmod symlinks that point to nothing. */
+	status = cli_posix_chmod(cli_unix, nonexist_symlink, 0777);
+
+	/* This should fail with something other than server crashed. */
+	if (NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_chmod of %s succeeded (should have failed)\n",
+			nonexist_symlink);
+		goto out;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
+		/* Oops. Server crashed. */
+		printf("cli_posix_chmod of %s failed error %s\n",
+			nonexist_symlink,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Any other failure is ok. */
+	printf("POSIX-SYMLINK-CHMOD test passed (expected failure was %s)\n",
+			nt_errstr(status));
+	correct = true;
+
+out:
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli_unix, fnum);
+	}
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
