@@ -489,11 +489,18 @@ coverity:
 
 # This job, which matches the main CI, needs to still do coverage so
 # we show the coverage on the "none" environment tests
+#
+# We want --enable-coverage specified here otherwise we will have a
+# different set of build options on the coverage build and can fail
+# when -O3 gets combined with --enable-coverage in the scheduled
+# builds.
+
 ubuntu1804-samba-o3:
   extends: .shared_template
   variables:
     AUTOBUILD_JOB_NAME: samba-o3
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1804}
+    SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE: "--enable-coverage"
 
 # All other jobs do not want code coverage.
 .samba-o3-template:
