@@ -542,7 +542,7 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	       != NULL)
 	{
 		struct smb_filename *smb_fname;
-		time_t snap_secs;
+		time_t snap_secs = 0;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
