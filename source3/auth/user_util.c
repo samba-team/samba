@@ -24,19 +24,6 @@
 #include "auth.h"
 #include "lib/gencache.h"
 
-#ifdef HAVE_NETGROUP
-/* rpc/xdr.h uses TRUE and FALSE */
-#ifdef TRUE
-#undef TRUE
-#endif
-
-#ifdef FALSE
-#undef FALSE
-#endif
-
-#include "system/nis.h"
-#endif
-
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username
  map. Note that this modifies the name in place.
@@ -142,141 +129,44 @@ static void store_map_in_gencache(TALLOC_CTX *ctx, const char *from, const char 
 }
 
 /****************************************************************************
- Check if a user is in a netgroup user list. If at first we don't succeed,
- try lower case.
-****************************************************************************/
+ Check if a user is in a user list
 
-bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
-{
-#ifdef HAVE_NETGROUP
-	static char *my_yp_domain = NULL;
-	char *lowercase_user = NULL;
+ We removed NIS support in 2021, but need to keep configs working.
 
-	if (my_yp_domain == NULL) {
-		yp_get_default_domain(&my_yp_domain);
-	}
-
-	if (my_yp_domain == NULL) {
-		DEBUG(5,("Unable to get default yp domain, "
-			"let's try without specifying it\n"));
-	}
-
-	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
-
-	if (innetgr(ngname, NULL, user, my_yp_domain)) {
-		DEBUG(5,("user_in_netgroup: Found\n"));
-		return true;
-	}
-
-	/*
-	 * Ok, innetgr is case sensitive. Try once more with lowercase
-	 * just in case. Attempt to fix #703. JRA.
-	 */
-	lowercase_user = talloc_strdup(ctx, user);
-	if (!lowercase_user) {
-		return false;
-	}
-	if (!strlower_m(lowercase_user)) {
-		return false;
-	}
-
-	if (strcmp(user,lowercase_user) == 0) {
-		/* user name was already lower case! */
-		return false;
-	}
-
-	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		lowercase_user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
-
-	if (innetgr(ngname, NULL, lowercase_user, my_yp_domain)) {
-		DEBUG(5,("user_in_netgroup: Found\n"));
-		return true;
-	}
-#endif /* HAVE_NETGROUP */
-	return false;
-}
-
-/****************************************************************************
- Check if a user is in a user list - can check combinations of UNIX
- and netgroup lists.
+ TOOD FIXME: Remove this funciton
 ****************************************************************************/
 
 bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list)
 {
-	if (!list || !*list)
-		return False;
 
-	DEBUG(10,("user_in_list: checking user %s in list\n", user));
+	if (list == NULL || *list == NULL) {
+		return false;
+	}
+
+	DBG_DEBUG("Checking user %s in list\n", user);
 
 	while (*list) {
+		const char *p = *list;
+		bool ok;
 
-		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n",
-			  user, *list));
+		/* Check raw username */
+		if (strequal(user, p)) {
+			return true;
+		}
 
-		/*
-		 * Check raw username.
-		 */
-		if (strequal(user, *list))
-			return(True);
+		while (*p == '@' || *p == '&' || *p == '+') {
+			p++;
+		}
 
-		/*
-		 * Now check to see if any combination
-		 * of UNIX and netgroups has been specified.
-		 */
-
-		if(**list == '@') {
-			/*
-			 * Old behaviour. Check netgroup list
-			 * followed by UNIX list.
-			 */
-			if(user_in_netgroup(ctx, user, *list +1))
-				return True;
-			if(user_in_group(user, *list +1))
-				return True;
-		} else if (**list == '+') {
-
-			if((*(*list +1)) == '&') {
-				/*
-				 * Search UNIX list followed by netgroup.
-				 */
-				if(user_in_group(user, *list +2))
-					return True;
-				if(user_in_netgroup(ctx, user, *list +2))
-					return True;
-
-			} else {
-
-				/*
-				 * Just search UNIX list.
-				 */
-
-				if(user_in_group(user, *list +1))
-					return True;
-			}
-
-		} else if (**list == '&') {
-
-			if(*(*list +1) == '+') {
-				/*
-				 * Search netgroup list followed by UNIX list.
-				 */
-				if(user_in_netgroup(ctx, user, *list +2))
-					return True;
-				if(user_in_group(user, *list +2))
-					return True;
-			} else {
-				/*
-				 * Just search netgroup list.
-				 */
-				if(user_in_netgroup(ctx, user, *list +1))
-					return True;
-			}
+		ok = user_in_group(user, p);
+		if (ok) {
+			return true;
 		}
 
 		list++;
 	}
-	return(False);
+
+	return false;
 }
 
 bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)

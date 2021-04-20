@@ -736,10 +736,6 @@ sub provision_ad_member
     path = $share_dir
     valid users = \"+$dcvars->{DOMAIN}/domain users\"
 
-[valid_users_nis_group]
-    path = $share_dir
-    valid users = \"&$dcvars->{DOMAIN}/domain users\"
-
 [valid_users_unix_nis_group]
     path = $share_dir
     valid users = \"+&$dcvars->{DOMAIN}/domain users\"

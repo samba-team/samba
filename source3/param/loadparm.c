@@ -682,15 +682,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
 	Globals.lm_announce = Auto;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
-#if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
-	Globals.nis_homedir = false;
-#ifdef WITH_NISPLUS_HOME
-	lpcfg_string_set(Globals.ctx, &Globals.homedir_map,
-			 "auto_home.org_dir");
-#else
-	lpcfg_string_set(Globals.ctx, &Globals.homedir_map, "auto.home");
-#endif
-#endif
 	Globals.time_server = false;
 	Globals.bind_interfaces_only = false;
 	Globals.unix_password_sync = false;
