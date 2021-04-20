@@ -290,7 +290,7 @@ else:
 
     bld.SAMBA_SUBSYSTEM('access',
                         source='access.c',
-                        deps='interfaces samba-util tirpc nsl',
+                        deps='interfaces samba-util',
                         local_include=False)
 
     bld.SAMBA_SUBSYSTEM('util_str_escape',
