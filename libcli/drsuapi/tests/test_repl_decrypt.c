@@ -67,7 +67,7 @@ static void test_drsuapi_rid_encrypt_decrypt_attribute_value(void **state)
 	const DATA_BLOB plaintext = data_blob_const(test_data,
 					     sizeof(test_data));
 	DATA_BLOB encrypted;
-	DATA_BLOB decrypted;
+	DATA_BLOB decrypted = data_blob_null;
 
 	werr = drsuapi_encrypt_attribute_value(mem_ctx,
 					       &key_blob,
@@ -192,7 +192,7 @@ static void test_drsuapi_encrypt_decrypt_attribute_value(void **state)
 	const DATA_BLOB plaintext = data_blob_const(test_data,
 					     sizeof(test_data));
 	DATA_BLOB encrypted;
-	DATA_BLOB decrypted;
+	DATA_BLOB decrypted = data_blob_null;
 
 	werr = drsuapi_encrypt_attribute_value(mem_ctx,
 					       &key_blob,
@@ -255,7 +255,7 @@ static void test_drsuapi_decrypt_attribute_value(void **state)
 	const DATA_BLOB encrypted
 		= data_blob_const(encrypted_test_data,
 				  sizeof(encrypted_test_data));
-	DATA_BLOB decrypted;
+	DATA_BLOB decrypted = data_blob_null;
 
 	werr = drsuapi_decrypt_attribute_value(mem_ctx,
 					       &key_blob,
@@ -310,7 +310,7 @@ static void test_drsuapi_rid_decrypt_attribute_value(void **state)
 	const DATA_BLOB encrypted
 		= data_blob_const(encrypted_test_data,
 				  sizeof(encrypted_test_data));
-	DATA_BLOB decrypted;
+	DATA_BLOB decrypted = data_blob_null;
 
 	werr = drsuapi_decrypt_attribute_value(mem_ctx,
 					       &key_blob,
