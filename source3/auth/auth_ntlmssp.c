@@ -43,7 +43,7 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 	 * Some callers pass auth_user_info_dc, the SCHANNEL and
 	 * NCALRPC_AS_SYSTEM gensec modules.
 	 *
-	 * While the reset passes auth3_check_password() returned.
+	 * While the rest passes auth3_check_password() returned.
 	 */
 	user_info = talloc_get_type(server_returned_info,
 				    struct auth_user_info_dc);
