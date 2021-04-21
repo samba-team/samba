@@ -61,8 +61,8 @@ static bool test_dlz_bind9_version(struct torture_context *tctx)
 	return true;
 }
 
-static char *test_dlz_bind9_binddns_dir(struct torture_context *tctx,
-					const char *file)
+static char *dlz_bind9_binddns_dir(struct torture_context *tctx,
+				   const char *file)
 {
 	return talloc_asprintf(tctx,
 			       "ldb://%s/%s",
@@ -76,7 +76,7 @@ static bool test_dlz_bind9_create(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -104,7 +104,7 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 			tctx->lp_ctx,
 			system_session(tctx->lp_ctx),
 			0,
-			test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+			dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 			NULL,
 			&samdb,
 			&errstring);
@@ -138,7 +138,7 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -179,7 +179,7 @@ static bool configure_multiple_dlzs(struct torture_context *tctx,
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 
@@ -258,7 +258,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -481,7 +481,7 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;
@@ -610,7 +610,7 @@ static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;
@@ -723,7 +723,7 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;
@@ -1255,7 +1255,7 @@ static bool test_dlz_bind9_allowzonexfr(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+		dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	isc_result_t ret;
