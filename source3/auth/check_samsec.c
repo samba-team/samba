@@ -394,7 +394,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	ret = pdb_getsampwnam(sampass, user_info->mapped.account_name);
 	unbecome_root();
 
-	if (ret == False) {
+	if (!ret) {
 		DEBUG(3,("check_sam_security: Couldn't find user '%s' in "
 			 "passdb.\n", user_info->mapped.account_name));
 		TALLOC_FREE(sampass);
