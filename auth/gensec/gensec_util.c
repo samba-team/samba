@@ -38,6 +38,8 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct auth_session_info **session_info)
 {
 	uint32_t session_info_flags = 0;
+	struct auth4_context *auth_context = NULL;
+	NTSTATUS status;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
 		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
@@ -55,19 +57,25 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 			   "user lookup\n", principal_string);
 	}
 
-	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info_pac) {
-		return gensec_security->auth_context->generate_session_info_pac(gensec_security->auth_context,
-										mem_ctx,
-										smb_krb5_context,
-										pac_blob,
-										principal_string,
-										remote_address,
-										session_info_flags,
-										session_info);
-	} else {
-		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
+	auth_context = gensec_security->auth_context;
+
+	if ((auth_context == NULL) ||
+	    (auth_context->generate_session_info_pac == NULL)) {
+		DBG_ERR("Cannot generate a session_info without "
+			"the auth_context\n");
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	status = auth_context->generate_session_info_pac(
+		auth_context,
+		mem_ctx,
+		smb_krb5_context,
+		pac_blob,
+		principal_string,
+		remote_address,
+		session_info_flags,
+		session_info);
+	return status;
 }
 
 /*
