@@ -627,13 +627,6 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<term>%N</term>
 		<listitem><para>This value is the same as %L.</para></listitem>
 		</varlistentry>
-	
-		<varlistentry>
-		<term>%p</term>
-		<listitem><para>
-			the path of the service's home directory, obtained from your NIS auto.map entry. The NIS
-			auto.map entry is split up as <literal>%N:%p</literal>.</para></listitem>
-		</varlistentry>
 	</variablelist>
 	
 	<para>

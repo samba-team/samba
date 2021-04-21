@@ -14,17 +14,14 @@
     received then the password is not changed.</para>
 
     <para>This chat sequence is often quite site specific, depending 
-    on what local methods are used for password control (such as NIS 
-    etc).</para>
+    on what local methods are used for password control.</para>
 
     <para>Note that this parameter only is used if the <smbconfoption
     name="unix password sync"/> parameter is set  to <constant>yes</constant>. This sequence is 
     then called <emphasis>AS ROOT</emphasis> when the SMB password  in the 
     smbpasswd file is being changed, without access to the old password
     cleartext. This means that root must be able to reset the user's password without
-    knowing the text of the previous password. In the presence of
-    NIS/YP,  this means that the <smbconfoption name="passwd program"/> must
-    be executed on the NIS master.
+    knowing the text of the previous password.
     </para>
 
     <para>The string can contain the macro <parameter
