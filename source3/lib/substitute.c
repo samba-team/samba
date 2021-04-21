@@ -245,107 +245,6 @@ static char *realloc_expand_env_var(char *str, char *p)
 	return r;
 }
 
-/*******************************************************************
- Patch from jkf@soton.ac.uk
- Added this to implement %p (NIS auto-map version of %H)
-*******************************************************************/
-
-static const char *automount_path(const char *user_name)
-{
-	TALLOC_CTX *ctx = talloc_tos();
-	const char *server_path;
-
-	/* use the passwd entry as the default */
-	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-
-	server_path = talloc_strdup(ctx, get_user_home_dir(ctx, user_name));
-	if (!server_path) {
-		return "";
-	}
-
-#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-
-	if (lp_nis_homedir()) {
-		const char *home_path_start;
-		char *automount_value = automount_lookup(ctx, user_name);
-
-		if(automount_value && strlen(automount_value) > 0) {
-			home_path_start = strchr_m(automount_value,':');
-			if (home_path_start != NULL) {
-				DEBUG(5, ("NIS lookup succeeded. "
-					"Home path is: %s\n",
-					home_path_start ?
-						(home_path_start+1):""));
-				server_path = talloc_strdup(ctx,
-							home_path_start+1);
-				if (!server_path) {
-					server_path = "";
-				}
-			}
-		} else {
-			/* NIS key lookup failed: default to
-			 * user home directory from password file */
-			DEBUG(5, ("NIS lookup failed. Using Home path from "
-			"passwd file. Home path is: %s\n", server_path ));
-		}
-	}
-#endif
-
-	DEBUG(4,("Home server path: %s\n", server_path));
-	return server_path;
-}
-
-/*******************************************************************
- Patch from jkf@soton.ac.uk
- This is Luke's original function with the NIS lookup code
- moved out to a separate function.
-*******************************************************************/
-
-static const char *automount_server(const char *user_name)
-{
-	TALLOC_CTX *ctx = talloc_tos();
-	const char *server_name;
-	const char *local_machine_name = get_local_machine_name();
-
-	/* use the local machine name as the default */
-	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	if (local_machine_name && *local_machine_name) {
-		server_name = talloc_strdup(ctx, local_machine_name);
-	} else {
-		server_name = talloc_strdup(ctx, lp_netbios_name());
-	}
-
-	if (!server_name) {
-		return "";
-	}
-
-#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-	if (lp_nis_homedir()) {
-		char *p;
-		char *srv;
-		char *automount_value = automount_lookup(ctx, user_name);
-		if (!automount_value) {
-			return "";
-		}
-		srv = talloc_strdup(ctx, automount_value);
-		if (!srv) {
-			return "";
-		}
-		p = strchr_m(srv, ':');
-		if (!p) {
-			return "";
-		}
-		*p = '\0';
-		server_name = srv;
-		DEBUG(5, ("NIS lookup succeeded.  Home server %s\n",
-					server_name));
-	}
-#endif
-
-	DEBUG(4,("Home server: %s\n", server_name));
-	return server_name;
-}
-
 /****************************************************************************
  Do some standard substitutions in a string.
  len is the length in bytes of the space allowed in string str. If zero means
@@ -503,8 +402,10 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 				a_string = realloc_string_sub(a_string, "%L", lp_netbios_name());
 			}
 			break;
-		case 'N':
-			a_string = realloc_string_sub(a_string, "%N", automount_server(smb_name));
+		case 'N' :
+			a_string = realloc_string_sub(a_string,
+						      "%N",
+						      lp_netbios_name());
 			break;
 		case 'M' :
 			a_string = realloc_string_sub(a_string, "%M",
@@ -655,10 +556,9 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			a_string = talloc_string_sub(tmp_ctx, a_string,
 						     "%D", domain);
 			break;
-		case 'N' : 
-			a_string = talloc_string_sub(
-				tmp_ctx, a_string, "%N",
-				automount_server(username)); 
+		case 'N' :
+			a_string = talloc_string_sub(tmp_ctx, a_string,
+						     "%N", lp_netbios_name());
 			break;
 		default: 
 			break;
@@ -704,8 +604,10 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 		b = a_string;
 
 		switch (*(p+1)) {
-		case 'N' :
-			a_string = realloc_string_sub(a_string, "%N", automount_server(user));
+		case 'N':
+			a_string = realloc_string_sub(a_string,
+						      "%N",
+						      lp_netbios_name());
 			break;
 		case 'H': {
 			char *h;
@@ -726,19 +628,6 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 		case 'u': 
 			a_string = realloc_string_sub(a_string, "%u", user); 
 			break;
-
-			/* Patch from jkf@soton.ac.uk Left the %N (NIS
-			 * server name) in standard_sub_basic as it is
-			 * a feature for logon servers, hence uses the
-			 * username.  The %p (NIS server path) code is
-			 * here as it is used instead of the default
-			 * "path =" string in [homes] and so needs the
-			 * service name, not the username.  */
-		case 'p': 
-			a_string = realloc_string_sub(a_string, "%p",
-						      automount_path(servicename)); 
-			break;
-
 		default: 
 			break;
 		}

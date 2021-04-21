@@ -625,10 +625,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 		<varlistentry>
 		<term>%N</term>
-		<listitem><para>
-			the name of your NIS home directory server.  This is obtained from your NIS auto.map entry. 
-			If you have not compiled Samba with the <emphasis>--with-automount</emphasis> option, this
-			value will be the same as %L.</para></listitem>
+		<listitem><para>This value is the same as %L.</para></listitem>
 		</varlistentry>
 	
 		<varlistentry>
