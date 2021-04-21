@@ -609,8 +609,10 @@ NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
 	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
 
-bool auth3_context_set_challenge(struct auth_context *ctx, uint8_t chal[8],
-				 const char *challenge_set_by)
+bool auth3_context_set_challenge(
+	struct auth_context *ctx,
+	const uint8_t chal[8],
+	const char *challenge_set_by)
 {
 	ctx->challenge = data_blob_talloc(ctx, chal, 8);
 	if (ctx->challenge.data == NULL) {

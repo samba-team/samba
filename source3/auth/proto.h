@@ -42,8 +42,10 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 					 struct auth_context **auth_context);
 NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
 					struct auth_context **auth_context);
-bool auth3_context_set_challenge(struct auth_context *ctx, uint8_t chal[8],
-				 const char *challenge_set_by);
+bool auth3_context_set_challenge(
+	struct auth_context *ctx,
+	const uint8_t chal[8],
+	const char *challenge_set_by);
 
 /****************************************************************************
  Try to get a challenge out of the various authentication modules.
