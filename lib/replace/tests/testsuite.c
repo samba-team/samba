@@ -338,24 +338,30 @@ static int test_setegid(void)
 
 static int test_asprintf(void)
 {
-	char *x;
+	char *x = NULL;
+
 	printf("test: asprintf\n");
 	if (asprintf(&x, "%d", 9) != 1) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (strcmp(x, "9") != 0) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (asprintf(&x, "dat%s", "a") != 4) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
 	if (strcmp(x, "data") != 0) {
 		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		free(x);
 		return false;
 	}
+	free(x);
 	printf("success: asprintf\n");
 	return true;
 }
