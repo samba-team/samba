@@ -170,8 +170,8 @@ import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl", "server_id.idl";
 	******************************************************/
 	/**
 	 * Force dreplsrv to fefresh internal cache.
-	 * @param partition_dn Partition to refresh cacheh for.
-	 *                     If empy/NULL, refresh all partitions.
+	 * @param partition_dn Partition to refresh cache for.
+	 *                     If empty/NULL, refresh all partitions.
 	 */
 	WERROR dreplsrv_refresh();
 
