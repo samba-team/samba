@@ -65,13 +65,8 @@ NTSTATUS make_server_info_sam(TALLOC_CTX *mem_ctx,
 	struct passwd *pwd;
 	struct auth_serversupplied_info *server_info;
 	const char *username = pdb_get_username(sampass);
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	server_info = make_server_info(tmp_ctx);
 	if (server_info == NULL) {
