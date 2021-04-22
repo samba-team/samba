@@ -1089,6 +1089,7 @@ static bool test_closefrom(void)
 		fd = dup(0);
 		if (fd == -1) {
 			perror("dup failed");
+			closefrom(3);
 			return false;
 		}
 
@@ -1096,6 +1097,7 @@ static bool test_closefrom(void)
 
 		if (fd >= 1000) {
 			printf("fd=%d\n", fd);
+			closefrom(3);
 			return false;
 		}
 	}
