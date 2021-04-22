@@ -77,7 +77,7 @@
 #endif /* TEST_BE */
 
 const int RECORD_SIZE = 6144;
-const int ITERATIONS = 3;
+const int ITERATIONS = 192;
 
 struct test_ctx {
 	struct tevent_context *ev;
@@ -155,9 +155,9 @@ static int setup(void **state)
 				 "@IDX_DN_GUID: GUID\n"
 				 "\n";
 	/*
-	 * Use a 64KiB DB for this test
+	 * Use a 1MiB DB for this test
 	 */
-	const char *options[] = {"lmdb_env_size:65536", NULL};
+	const char *options[] = {"lmdb_env_size:1048576", NULL};
 
 	noconn_setup((void **)&test_ctx);
 
