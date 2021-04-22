@@ -1131,8 +1131,8 @@ static WERROR dnsserver_operate_server(struct dnsserver_state *dsstate,
 	} else if (strcasecmp(operation, "ZoneCreate") == 0) {
 		struct dnsserver_zone *z, *z2;
 		WERROR status;
-		int len;
-
+		size_t len;
+		const char *name;
 		z = talloc_zero(mem_ctx, struct dnsserver_zone);
 		W_ERROR_HAVE_NO_MEMORY(z);
 		z->partition = talloc_zero(z, struct dnsserver_partition);
@@ -1141,32 +1141,20 @@ static WERROR dnsserver_operate_server(struct dnsserver_state *dsstate,
 		W_ERROR_HAVE_NO_MEMORY_AND_FREE(z->zoneinfo, z);
 
 		if (typeid == DNSSRV_TYPEID_ZONE_CREATE_W2K) {
-			len = strlen(r->ZoneCreateW2K->pszZoneName);
-			if (r->ZoneCreateW2K->pszZoneName[len-1] == '.') {
-				len -= 1;
-			}
-			z->name = talloc_strndup(z, r->ZoneCreateW2K->pszZoneName, len);
+			name = r->ZoneCreateW2K->pszZoneName;
 			z->zoneinfo->dwZoneType = r->ZoneCreateW2K->dwZoneType;
 			z->zoneinfo->fAllowUpdate = r->ZoneCreateW2K->fAllowUpdate;
 			z->zoneinfo->fAging = r->ZoneCreateW2K->fAging;
 			z->zoneinfo->Flags = r->ZoneCreateW2K->dwFlags;
 		} else if (typeid == DNSSRV_TYPEID_ZONE_CREATE_DOTNET) {
-			len = strlen(r->ZoneCreateDotNet->pszZoneName);
-			if (r->ZoneCreateDotNet->pszZoneName[len-1] == '.') {
-				len -= 1;
-			}
-			z->name = talloc_strndup(z, r->ZoneCreateDotNet->pszZoneName, len);
+			name = r->ZoneCreateDotNet->pszZoneName;
 			z->zoneinfo->dwZoneType = r->ZoneCreateDotNet->dwZoneType;
 			z->zoneinfo->fAllowUpdate = r->ZoneCreateDotNet->fAllowUpdate;
 			z->zoneinfo->fAging = r->ZoneCreateDotNet->fAging;
 			z->zoneinfo->Flags = r->ZoneCreateDotNet->dwFlags;
 			z->partition->dwDpFlags = r->ZoneCreateDotNet->dwDpFlags;
 		} else if (typeid == DNSSRV_TYPEID_ZONE_CREATE) {
-			len = strlen(r->ZoneCreate->pszZoneName);
-			if (r->ZoneCreate->pszZoneName[len-1] == '.') {
-				len -= 1;
-			}
-			z->name = talloc_strndup(z, r->ZoneCreate->pszZoneName, len);
+			name = r->ZoneCreate->pszZoneName;
 			z->zoneinfo->dwZoneType = r->ZoneCreate->dwZoneType;
 			z->zoneinfo->fAllowUpdate = r->ZoneCreate->fAllowUpdate;
 			z->zoneinfo->fAging = r->ZoneCreate->fAging;
@@ -1175,6 +1163,16 @@ static WERROR dnsserver_operate_server(struct dnsserver_state *dsstate,
 		} else {
 			talloc_free(z);
 			return WERR_DNS_ERROR_INVALID_PROPERTY;
+		}
+
+		len = strlen(name);
+		if (name[len-1] == '.') {
+			len -= 1;
+		}
+		z->name = talloc_strndup(z, name, len);
+		if (z->name == NULL) {
+			talloc_free(z);
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		z2 = dnsserver_find_zone(dsstate->zones, z->name);
