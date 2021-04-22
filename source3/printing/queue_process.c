@@ -21,9 +21,11 @@
 */
 
 #include "includes.h"
+#include <spawn.h>
 #include "smbd/globals.h"
 #include "include/messages.h"
 #include "lib/util/util_process.h"
+#include "lib/util/sys_rw.h"
 #include "printing.h"
 #include "printing/pcap.h"
 #include "printing/printer_list.h"
@@ -204,30 +206,6 @@ static void bq_reopen_logs(char *logfile)
 	reopen_logs();
 }
 
-static void bq_sig_term_handler(struct tevent_context *ev,
-				struct tevent_signal *se,
-				int signum,
-				int count,
-				void *siginfo,
-				void *private_data)
-{
-	exit_server_cleanly("termination signal");
-}
-
-static void bq_setup_sig_term_handler(void)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(global_event_context(),
-			       global_event_context(),
-			       SIGTERM, 0,
-			       bq_sig_term_handler,
-			       NULL);
-	if (!se) {
-		exit_server("failed to setup SIGTERM handler");
-	}
-}
-
 static void bq_sig_hup_handler(struct tevent_context *ev,
 				struct tevent_signal *se,
 				int signum,
@@ -305,6 +283,7 @@ struct bq_state *register_printing_bq_handlers(
 {
 	struct bq_state *state = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	state = talloc_zero(mem_ctx, struct bq_state);
 	if (state == NULL) {
@@ -340,6 +319,11 @@ struct bq_state *register_printing_bq_handlers(
 		goto fail_free_handlers;
 	}
 
+	ok = printing_subsystem_queue_tasks(state);
+	if (!ok) {
+		goto fail_free_handlers;
+	}
+
 	talloc_set_destructor(state, bq_state_destructor);
 
 	return state;
@@ -358,6 +342,8 @@ fail:
 	return NULL;
 }
 
+extern char **environ;
+
 /****************************************************************************
 main thread of the background lpq updater
 ****************************************************************************/
@@ -366,74 +352,68 @@ pid_t start_background_queue(struct tevent_context *ev,
 			     char *logfile)
 {
 	pid_t pid;
-	struct bq_state *state;
 	int ret;
-	NTSTATUS status;
+	ssize_t nread;
+	char **argv = NULL;
+	int ready_fds[2];
 
 	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
 
-	/*
-	 * Block signals before forking child as it will have to
-	 * set its own handlers. Child will re-enable SIGHUP as
-	 * soon as the handlers are set up.
-	 */
-	BlockSignals(true, SIGTERM);
-	BlockSignals(true, SIGHUP);
-
-	pid = fork();
-
-	/* parent or error */
-	if (pid != 0) {
-		/* Re-enable SIGHUP before returnig */
-		BlockSignals(false, SIGTERM);
-		BlockSignals(false, SIGHUP);
-		return pid;
+	ret = pipe(ready_fds);
+	if (ret == -1) {
+		return -1;
 	}
 
-	/* Child. */
-	DEBUG(5,("start_background_queue: background LPQ thread started\n"));
-
-	status = smbd_reinit_after_fork(msg_ctx, ev, true, "lpqd");
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		smb_panic("reinit_after_fork() failed");
+	argv = str_list_make_empty(talloc_tos());
+	str_list_add_printf(
+		&argv, "%s/samba-bgqd", get_dyn_SAMBA_LIBEXECDIR());
+	str_list_add_printf(
+		&argv, "--ready-signal-fd=%d", ready_fds[1]);
+	str_list_add_printf(
+		&argv, "--parent-watch-fd=%d", parent_watch_fd());
+	str_list_add_printf(
+		&argv, "--debuglevel=%d", debuglevel_get_class(DBGC_RPC_SRV));
+	if (!is_default_dyn_CONFIGFILE()) {
+		str_list_add_printf(
+			&argv, "--configfile=%s", get_dyn_CONFIGFILE());
+	}
+	if (!is_default_dyn_LOGFILEBASE()) {
+		str_list_add_printf(
+			&argv, "--log-basename=%s", get_dyn_LOGFILEBASE());
+	}
+	str_list_add_printf(&argv, "-F");
+	if (argv == NULL) {
+		goto nomem;
 	}
 
-	/* Remove previous forwarder message set in parent. */
-	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
-
-	state = register_printing_bq_handlers(NULL, msg_ctx);
-	if (state == NULL) {
-		DBG_ERR("Could not register bq handlers\n");
-		exit(1);
+	ret = posix_spawn(&pid, argv[0], NULL, NULL, argv, environ);
+	if (ret == -1) {
+		goto fail;
 	}
+	TALLOC_FREE(argv);
 
-	bq_reopen_logs(logfile);
-	bq_setup_sig_term_handler();
+	close(ready_fds[1]);
 
-	BlockSignals(false, SIGTERM);
-	BlockSignals(false, SIGHUP);
-
-	if (!printing_subsystem_queue_tasks(state)) {
-		exit(1);
+	nread = sys_read(ready_fds[0], &pid, sizeof(pid));
+	close(ready_fds[0]);
+	if (nread != sizeof(pid)) {
+		goto fail;
 	}
-
-	if (!locking_init()) {
-		exit(1);
-	}
-
-	pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
-
-	DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-	ret = tevent_loop_wait(ev);
-	/* should not be reached */
-	DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
-		 ret, (ret == 0) ? "out of events" : strerror(errno)));
-	exit(1);
 
 	return pid;
+
+nomem:
+	errno = ENOMEM;
+fail:
+	{
+		int err = errno;
+		TALLOC_FREE(argv);
+		errno = err;
+	}
+
+	return -1;
 }
+
 
 /* Run before the parent forks */
 bool printing_subsystem_init(struct tevent_context *ev_ctx,

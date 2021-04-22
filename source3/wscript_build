@@ -840,6 +840,16 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
                          cups
                          ''')
 
+bld.SAMBA_BINARY('samba-bgqd',
+                 source='printing/samba-bgqd.c',
+                 deps='''
+                 samba3core
+                 popt_samba3
+                 AUTH_COMMON
+                 smbd_base
+                 ''',
+                 install_path='${LIBEXECDIR}/samba')
+
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source='lib/filename_util.c',
                     deps='samba-util')

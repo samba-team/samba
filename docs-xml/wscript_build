@@ -44,6 +44,7 @@ manpages='''
          manpages/smbpasswd.8
          manpages/smbspool_krb5_wrapper.8
          manpages/smbspool.8
+         manpages/samba-bgqd.8
          manpages/smbstatus.1
          manpages/smbtar.1
          manpages/smbtree.1
