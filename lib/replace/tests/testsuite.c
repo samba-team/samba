@@ -264,26 +264,34 @@ static int test_setenv(void)
 static int test_strndup(void)
 {
 	char *x;
+	int cmp;
+
 	printf("test: strndup\n");
 	x = strndup("bla", 0);
-	if (strcmp(x, "") != 0) {
+	cmp = strcmp(x, "");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
 		return false;
 	}
-	free(x);
+
 	x = strndup("bla", 2);
-	if (strcmp(x, "bl") != 0) {
+	cmp = strcmp(x, "bl");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
 		return false;
 	}
-	free(x);
+
 	x = strndup("bla", 10);
-	if (strcmp(x, "bla") != 0) {
+	cmp = strcmp(x, "bla");
+	free(x);
+	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
 		free(x);
 		return false;
 	}
-	free(x);
+
 	printf("success: strndup\n");
 	return true;
 }
