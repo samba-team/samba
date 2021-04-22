@@ -173,6 +173,8 @@ def make_s3_param_proto(path_in, path_out):
         header = get_header(path_out)
         file_out.write("#ifndef %s\n" % header)
         file_out.write("#define %s\n\n" % header)
+        file_out.write("struct share_params;\n")
+        file_out.write("struct loadparm_substitution;\n")
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
