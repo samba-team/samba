@@ -25,7 +25,7 @@ interface auth
 	} auth_method;
 
 	/* This is the parts of the session_info that don't change
-	 * during local privilage and group manipulations */
+	 * during local privilege and group manipulations */
 	typedef [public] struct {
 		[unique,charset(UTF8),string] char *account_name;
 		[unique,charset(UTF8),string] char *user_principal_name;
