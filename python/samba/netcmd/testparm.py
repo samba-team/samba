@@ -103,7 +103,7 @@ class cmd_testparm(Command):
         else:
             if section_name is not None or parameter_name is not None:
                 if parameter_name is None:
-                    lp[section_name].dump(verbose)
+                    lp[section_name].dump(lp.default_service, verbose)
                 else:
                     lp.dump_a_parameter(parameter_name, section_name)
             else:
