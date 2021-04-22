@@ -164,11 +164,16 @@ static int test_memmove(void)
 static int test_strdup(void)
 {
 	char *x;
+	int cmp;
+
 	printf("test: strdup\n");
 	x = strdup("bla");
-	if (strcmp("bla", x) != 0) {
+
+	cmp = strcmp("bla", x);
+	if (cmp != 0) {
 		printf("failure: strdup [\nfailed: expected \"bla\", got \"%s\"\n]\n",
 			   x);
+		free(x);
 		return false;
 	}
 	free(x);
