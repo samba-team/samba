@@ -311,6 +311,8 @@ pid_t start_background_queue(struct tevent_context *ev,
 {
 	pid_t pid;
 	struct bq_state *state;
+	int ret;
+	NTSTATUS status;
 
 	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
 
@@ -332,61 +334,56 @@ pid_t start_background_queue(struct tevent_context *ev,
 		return pid;
 	}
 
-	if (pid == 0) {
-		int ret;
-		NTSTATUS status;
+	/* Child. */
+	DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
-		/* Child. */
-		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
+	status = smbd_reinit_after_fork(msg_ctx, ev, true, "lpqd");
 
-		status = smbd_reinit_after_fork(msg_ctx, ev, true, "lpqd");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
+		smb_panic("reinit_after_fork() failed");
+	}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("reinit_after_fork() failed\n"));
-			smb_panic("reinit_after_fork() failed");
-		}
-
-		state = talloc_zero(NULL, struct bq_state);
-		if (state == NULL) {
-			exit(1);
-		}
-		state->ev = ev;
-		state->msg = msg_ctx;
-
-		bq_reopen_logs(logfile);
-		bq_setup_sig_term_handler();
-		bq_setup_sig_hup_handler(state);
-		bq_setup_sig_chld_handler(ev);
-
-		BlockSignals(false, SIGTERM);
-		BlockSignals(false, SIGHUP);
-
-		if (!printing_subsystem_queue_tasks(state)) {
-			exit(1);
-		}
-
-		if (!locking_init()) {
-			exit(1);
-		}
-		messaging_register(msg_ctx, state, MSG_SMB_CONF_UPDATED,
-				   bq_smb_conf_updated);
-		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
-				   print_queue_receive);
-		/* Remove previous forwarder message set in parent. */
-		messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
-
-		messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
-				   do_drv_upgrade_printer);
-
-		pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
-
-		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		ret = tevent_loop_wait(ev);
-		/* should not be reached */
-		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
-			 ret, (ret == 0) ? "out of events" : strerror(errno)));
+	state = talloc_zero(NULL, struct bq_state);
+	if (state == NULL) {
 		exit(1);
 	}
+	state->ev = ev;
+	state->msg = msg_ctx;
+
+	bq_reopen_logs(logfile);
+	bq_setup_sig_term_handler();
+	bq_setup_sig_hup_handler(state);
+	bq_setup_sig_chld_handler(ev);
+
+	BlockSignals(false, SIGTERM);
+	BlockSignals(false, SIGHUP);
+
+	if (!printing_subsystem_queue_tasks(state)) {
+		exit(1);
+	}
+
+	if (!locking_init()) {
+		exit(1);
+	}
+	messaging_register(msg_ctx, state, MSG_SMB_CONF_UPDATED,
+			   bq_smb_conf_updated);
+	messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
+			   print_queue_receive);
+	/* Remove previous forwarder message set in parent. */
+	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
+
+	messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
+			   do_drv_upgrade_printer);
+
+	pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
+
+	DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
+	ret = tevent_loop_wait(ev);
+	/* should not be reached */
+	DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
+		 ret, (ret == 0) ? "out of events" : strerror(errno)));
+	exit(1);
 
 	return pid;
 }
