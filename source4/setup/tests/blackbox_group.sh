@@ -132,6 +132,15 @@ testit_expect_failure "group addmembers contact failure" $PYTHON $samba_tool gro
 # test add contact with --object-types=all
 testit "group addmembers contact object-type all" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact --object-types=all
 
+# test listing contacts as group members
+testit_grep "group listmembers contact" "^testcontact" $PYTHON $samba_tool group listmembers $CONFIG dsg
+
+# test listing contacts as group members
+# Make sure that the test contact is listed, because it does not have the
+# accountExpires attribute and can not expire.
+testit_grep "group listmembers contact hide-expired" "^testcontact" $PYTHON $samba_tool group listmembers $CONFIG dsg --hide-expired
+testit_grep "group listmembers contact hide-disabled" "^testcontact" $PYTHON $samba_tool group listmembers $CONFIG dsg --hide-disabled
+
 # test remove contact with --object-types=all
 testit "group removemembers contact object-type all" $PYTHON $samba_tool group removemembers $CONFIG dsg testcontact --object-types=all
 
