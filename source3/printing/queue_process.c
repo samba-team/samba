@@ -264,14 +264,20 @@ static void bq_sig_chld_handler(struct tevent_context *ev_ctx,
 	int status;
 	pid_t pid;
 
-	pid = waitpid(-1, &status, WNOHANG);
-	if (WIFEXITED(status)) {
-		DEBUG(6, ("Bq child process %d terminated with %d\n",
-			  (int)pid, WEXITSTATUS(status)));
-	} else {
-		DEBUG(3, ("Bq child process %d terminated abnormally\n",
-			  (int)pid));
-	}
+	do {
+		do {
+			pid = waitpid(-1, &status, WNOHANG);
+		} while ((pid == -1) && (errno == EINTR));
+
+		if (WIFEXITED(status)) {
+			DBG_INFO("Bq child process %d terminated with %d\n",
+				 (int)pid,
+				 WEXITSTATUS(status));
+		} else {
+			DBG_NOTICE("Bq child process %d terminated abnormally\n",
+				   (int)pid);
+		}
+	} while (pid > 0);
 }
 
 static void bq_setup_sig_chld_handler(struct tevent_context *ev_ctx)
