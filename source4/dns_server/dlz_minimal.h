@@ -27,11 +27,9 @@
 #include <stdbool.h>
 
 #if defined (BIND_VERSION_9_8)
-# define DLZ_DLOPEN_VERSION 1
+# error Bind 9.8 is not supported!
 #elif defined (BIND_VERSION_9_9)
-# define DLZ_DLOPEN_VERSION 2
-# define DNS_CLIENTINFO_VERSION 1
-# define ISC_BOOLEAN_AS_BOOL 0
+# error Bind 9.9 is not supported!
 #elif defined (BIND_VERSION_9_10)
 # define DLZ_DLOPEN_VERSION 3
 # define DNS_CLIENTINFO_VERSION 1
@@ -58,9 +56,7 @@
 #define ISC_BOOLEAN_AS_BOOL 1
 #endif
 
-#if DLZ_DLOPEN_VERSION > 1
 # define DLZ_DLOPEN_AGE 0
-#endif
 
 typedef unsigned int isc_result_t;
 #if ISC_BOOLEAN_AS_BOOL == 1
@@ -111,7 +107,6 @@ typedef void *dns_sdlzallnodes_t;
 typedef void *dns_view_t;
 typedef void *dns_dlzdb_t;
 
-#if DLZ_DLOPEN_VERSION > 1
 /*
  * Method and type definitions needed for retrieval of client info
  * from the caller.
@@ -172,7 +167,6 @@ typedef struct dns_clientinfomethods {
 
 #endif /* DNS_CLIENTINFO_VERSION */
 
-#endif /* DLZ_DLOPEN_VERSION > 1 */
 
 /*
  * Method definitions for callbacks provided by the dlopen driver
@@ -191,14 +185,10 @@ typedef isc_result_t dns_sdlz_putnamedrr_t(dns_sdlzallnodes_t *allnodes,
 					   dns_ttl_t ttl,
 					   const char *data);
 
-#if DLZ_DLOPEN_VERSION < 3
-typedef isc_result_t dns_dlz_writeablezone_t(dns_view_t *view,
-					     const char *zone_name);
-#else /* DLZ_DLOPEN_VERSION >= 3 */
 typedef isc_result_t dns_dlz_writeablezone_t(dns_view_t *view,
 					     dns_dlzdb_t *dlzdb,
 					     const char *zone_name);
-#endif /* DLZ_DLOPEN_VERSION */
+
 
 /*
  * prototypes for the functions you can include in your module
@@ -231,30 +221,19 @@ dlz_destroy(void *dbdata);
 /*
  * dlz_findzonedb is required for all DLZ external drivers
  */
-#if DLZ_DLOPEN_VERSION < 3
-isc_result_t
-dlz_findzonedb(void *dbdata, const char *name);
-#else /* DLZ_DLOPEN_VERSION >= 3 */
 isc_result_t
 dlz_findzonedb(void *dbdata, const char *name,
 	       dns_clientinfomethods_t *methods,
 	       dns_clientinfo_t *clientinfo);
-#endif /* DLZ_DLOPEN_VERSION */
 
 /*
  * dlz_lookup is required for all DLZ external drivers
  */
-#if DLZ_DLOPEN_VERSION == 1
-isc_result_t
-dlz_lookup(const char *zone, const char *name, void *dbdata,
-	   dns_sdlzlookup_t *lookup);
-#else /* DLZ_DLOPEN_VERSION > 1 */
 isc_result_t
 dlz_lookup(const char *zone, const char *name, void *dbdata,
 	   dns_sdlzlookup_t *lookup,
 	   dns_clientinfomethods_t *methods,
 	   dns_clientinfo_t *clientinfo);
-#endif /* DLZ_DLOPEN_VERSION */
 
 /*
  * dlz_authority() is optional if dlz_lookup() supplies
@@ -296,13 +275,8 @@ dlz_closeversion(const char *zone, isc_boolean_t commit, void *dbdata,
  * dlz_configure() is optional, but must be supplied if you want to support
  * dynamic updates
  */
-#if DLZ_DLOPEN_VERSION < 3
-isc_result_t
-dlz_configure(dns_view_t *view, void *dbdata);
-#else /* DLZ_DLOPEN_VERSION >= 3 */
 isc_result_t
 dlz_configure(dns_view_t *view, dns_dlzdb_t *dlzdb, void *dbdata);
-#endif /* DLZ_DLOPEN_VERSION */
 
 /*
  * dlz_ssumatch() is optional, but must be supplied if you want to support
