@@ -29,10 +29,10 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
 #include "lib/param/param.h"
+#include "lib/param/loadparm.h"
 #include "lib/util/tsort.h"
 #include "lib/util/samba_modules.h"
 #include "lib/util/base64.h"
-#include "lib/crypto/gnutls_helpers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -51,7 +51,8 @@ bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct g
 				  ops->name,
 				  ops->enabled);
 
-	if (!samba_gnutls_weak_crypto_allowed() && ops->weak_crypto) {
+	if (ops->weak_crypto &&
+	    lpcfg_weak_crypto(security->settings->lp_ctx) != SAMBA_WEAK_CRYPTO_ALLOWED) {
 		ok = false;
 	}
 
