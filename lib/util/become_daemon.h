@@ -33,15 +33,6 @@
  */
 
 /**
- * @brief Close the low 3 file descriptors and open /dev/null in their place
- *
- * @param[in] stdin_too Should stdin be closed?
- * @param[in] stdout_too Should stdout be closed?
- * @param[in] stderr_too Should stderr be closed?
-**/
-void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too);
-
-/**
  * @brief Enable or disable daemon status systemd notifications
  *
  * When samba runs as AD DC only the main 'samba' process has to

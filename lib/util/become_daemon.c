@@ -45,33 +45,6 @@ void daemon_sd_notifications(bool enable)
 		  sd_notifications ? "enabled" : "disabled");
 }
 
-/*******************************************************************
- Close the low 3 fd's and open dev/null in their place.
-********************************************************************/
-
-void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
-{
-
-	if (stdin_too) {
-		int ret = close_low_fd(0);
-		if (ret != 0) {
-			DBG_ERR("close_low_fd(0) failed: %s\n", strerror(ret));
-		}
-	}
-	if (stdout_too) {
-		int ret = close_low_fd(1);
-		if (ret != 0) {
-			DBG_ERR("close_low_fd(1) failed: %s\n", strerror(ret));
-		}
-	}
-	if (stderr_too) {
-		int ret = close_low_fd(2);
-		if (ret != 0) {
-			DBG_ERR("close_low_fd(2) failed: %s\n", strerror(ret));
-		}
-	}
-}
-
 /****************************************************************************
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
