@@ -230,13 +230,6 @@ static bool b9_format(struct dlz_bind9_data *state,
 					rec->data.mx.wPriority, fqdn);
 		break;
 
-	case DNS_TYPE_HINFO:
-		*type = "hinfo";
-		*data = talloc_asprintf(mem_ctx, "%s %s",
-					rec->data.hinfo.cpu,
-					rec->data.hinfo.os);
-		break;
-
 	case DNS_TYPE_NS:
 		*type = "ns";
 		*data = b9_format_fqdn(mem_ctx, rec->data.ns);
@@ -299,7 +292,6 @@ static const struct {
 	{ DNS_TYPE_PTR,   "PTR"   , false},
 	{ DNS_TYPE_SRV,   "SRV"   , false},
 	{ DNS_TYPE_MX,    "MX"    , false},
-	{ DNS_TYPE_HINFO, "HINFO" , false},
 	{ DNS_TYPE_NS,    "NS"    , false},
 	{ DNS_TYPE_SOA,   "SOA"   , true},
 };
@@ -430,11 +422,6 @@ static bool b9_parse(struct dlz_bind9_data *state,
 	case DNS_TYPE_MX:
 		DNS_PARSE_UINT(rec->data.mx.wPriority, NULL, " ", saveptr);
 		DNS_PARSE_STR(rec->data.mx.nameTarget, NULL, " ", saveptr);
-		break;
-
-	case DNS_TYPE_HINFO:
-		DNS_PARSE_STR(rec->data.hinfo.cpu, NULL, " ", saveptr);
-		DNS_PARSE_STR(rec->data.hinfo.os, NULL, " ", saveptr);
 		break;
 
 	case DNS_TYPE_NS:
