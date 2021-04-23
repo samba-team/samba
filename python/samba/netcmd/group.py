@@ -544,8 +544,11 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
             filter_expires = ""
             if hide_expired is True:
                 current_nttime = samdb.get_nttime()
-                filter_expires = \
-                "(|(accountExpires=0)(accountExpires>=%u))" % (current_nttime)
+                filter_expires = ("(|"
+                                  "(!(accountExpires=*))"
+                                  "(accountExpires=0)"
+                                  "(accountExpires>=%u)"
+                                  ")" % (current_nttime))
 
             filter_disabled = ""
             if hide_disabled is True:
