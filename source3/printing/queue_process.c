@@ -332,11 +332,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 		return pid;
 	}
 
-	if (pid == -1) {
-		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
-		exit(1);
-	}
-
 	if (pid == 0) {
 		int ret;
 		NTSTATUS status;
