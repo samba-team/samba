@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
+#include "lib/util/close_low_fd.h"
 #include "popt_common.h"
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
@@ -2159,7 +2160,7 @@ extern void build_options(bool screen);
 	}
 
 	if (!is_daemon) {
-		int sock;
+		int ret, sock;
 
 		/* inetd mode */
 		TALLOC_FREE(frame);
@@ -2170,7 +2171,19 @@ extern void build_options(bool screen);
 		sock = dup(0);
 
 		/* close stdin, stdout (if not logging to it), but not stderr */
-		close_low_fds(true, !debug_get_output_is_stdout(), false);
+		ret = close_low_fd(0);
+		if (ret != 0) {
+			DBG_ERR("close_low_fd(0) failed: %s\n", strerror(ret));
+			return 1;
+		}
+		if (!debug_get_output_is_stdout()) {
+			ret = close_low_fd(1);
+			if (ret != 0) {
+				DBG_ERR("close_low_fd(1) failed: %s\n",
+					strerror(ret));
+				return 1;
+			}
+		}
 
 #ifdef HAVE_ATEXIT
 		atexit(killkids);
