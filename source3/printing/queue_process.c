@@ -302,18 +302,6 @@ static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 	printing_subsystem_queue_tasks(state);
 }
 
-static void printing_pause_fd_handler(struct tevent_context *ev,
-				      struct tevent_fd *fde,
-				      uint16_t flags,
-				      void *private_data)
-{
-	/*
-	 * If pause_pipe[1] is closed it means the parent smbd
-	 * and children exited or aborted.
-	 */
-	exit_server_cleanly(NULL);
-}
-
 /****************************************************************************
 main thread of the background lpq updater
 ****************************************************************************/
@@ -324,18 +312,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 	pid_t pid;
 	struct bq_state *state;
 
-	/* Use local variables for this as we don't
-	 * need to save the parent side of this, just
-	 * ensure it closes when the process exits.
-	 */
-	int pause_pipe[2];
-
 	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
-
-	if (pipe(pause_pipe) == -1) {
-		DEBUG(5,("start_background_queue: cannot create pipe. %s\n", strerror(errno) ));
-		exit(1);
-	}
 
 	/*
 	 * Block signals before forking child as it will have to
@@ -361,15 +338,11 @@ pid_t start_background_queue(struct tevent_context *ev,
 	}
 
 	if (pid == 0) {
-		struct tevent_fd *fde;
 		int ret;
 		NTSTATUS status;
 
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
-
-		close(pause_pipe[0]);
-		pause_pipe[0] = -1;
 
 		status = smbd_reinit_after_fork(msg_ctx, ev, true, "lpqd");
 
@@ -410,14 +383,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
 				   do_drv_upgrade_printer);
 
-		fde = tevent_add_fd(ev, ev, pause_pipe[1], TEVENT_FD_READ,
-				    printing_pause_fd_handler,
-				    NULL);
-		if (!fde) {
-			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
-			smb_panic("tevent_add_fd() failed for pause_pipe");
-		}
-
 		pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
@@ -427,8 +392,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 			 ret, (ret == 0) ? "out of events" : strerror(errno)));
 		exit(1);
 	}
-
-	close(pause_pipe[1]);
 
 	return pid;
 }
