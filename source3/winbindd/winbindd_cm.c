@@ -2070,6 +2070,10 @@ void invalidate_cm_connection(struct winbindd_domain *domain)
 	NTSTATUS result;
 	struct winbindd_cm_conn *conn = &domain->conn;
 
+	domain->sequence_number = DOM_SEQUENCE_NONE;
+	domain->last_seq_check = 0;
+	domain->last_status = NT_STATUS_SERVER_DISABLED;
+
 	/* We're closing down a possibly dead
 	   connection. Don't have impossibly long (10s) timeouts. */
 
