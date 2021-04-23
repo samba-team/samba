@@ -156,6 +156,8 @@ struct bq_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg;
 	struct idle_event *housekeep;
+	struct tevent_signal *sighup_handler;
+	struct tevent_signal *sigchld_handler;
 };
 
 static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
@@ -245,17 +247,6 @@ static void bq_sig_hup_handler(struct tevent_context *ev,
 	bq_reopen_logs(NULL);
 }
 
-static void bq_setup_sig_hup_handler(struct bq_state *state)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(state->ev, state->ev, SIGHUP, 0,
-			       bq_sig_hup_handler, state);
-	if (!se) {
-		exit_server("failed to setup SIGHUP handler");
-	}
-}
-
 static void bq_sig_chld_handler(struct tevent_context *ev_ctx,
 				struct tevent_signal *se,
 				int signum, int count,
@@ -280,17 +271,6 @@ static void bq_sig_chld_handler(struct tevent_context *ev_ctx,
 	} while (pid > 0);
 }
 
-static void bq_setup_sig_chld_handler(struct tevent_context *ev_ctx)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(ev_ctx, ev_ctx, SIGCHLD, 0,
-				bq_sig_chld_handler, NULL);
-	if (!se) {
-		exit_server("failed to setup SIGCHLD handler");
-	}
-}
-
 static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 				void *private_data,
 				uint32_t msg_type,
@@ -306,6 +286,76 @@ static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 	change_to_root_user();
 	pcap_cache_reload(state->ev, msg_ctx, reload_pcap_change_notify);
 	printing_subsystem_queue_tasks(state);
+}
+
+static int bq_state_destructor(struct bq_state *s)
+{
+	struct messaging_context *msg_ctx = s->msg;
+	TALLOC_FREE(s->sighup_handler);
+	TALLOC_FREE(s->sigchld_handler);
+	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
+	messaging_deregister(msg_ctx, MSG_PRINTER_UPDATE, NULL);
+	messaging_deregister(msg_ctx, MSG_SMB_CONF_UPDATED, s);
+	return 0;
+}
+
+struct bq_state *register_printing_bq_handlers(
+	TALLOC_CTX *mem_ctx,
+	struct messaging_context *msg_ctx)
+{
+	struct bq_state *state = NULL;
+	NTSTATUS status;
+
+	state = talloc_zero(mem_ctx, struct bq_state);
+	if (state == NULL) {
+		return NULL;
+	}
+	state->ev = messaging_tevent_context(msg_ctx);
+	state->msg = msg_ctx;
+
+	status = messaging_register(
+		msg_ctx, state, MSG_SMB_CONF_UPDATED, bq_smb_conf_updated);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = messaging_register(
+		msg_ctx, NULL, MSG_PRINTER_UPDATE, print_queue_receive);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail_dereg_smb_conf_updated;
+	}
+	status = messaging_register(
+		msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail_dereg_printer_update;
+	}
+
+	state->sighup_handler = tevent_add_signal(
+		state->ev, state, SIGHUP, 0, bq_sig_hup_handler, state);
+	if (state->sighup_handler == NULL) {
+		goto fail_dereg_printer_drvupgrade;
+	}
+	state->sigchld_handler = tevent_add_signal(
+		state->ev, state, SIGCHLD, 0, bq_sig_chld_handler, NULL);
+	if (state->sigchld_handler == NULL) {
+		goto fail_free_handlers;
+	}
+
+	talloc_set_destructor(state, bq_state_destructor);
+
+	return state;
+
+fail_free_handlers:
+	TALLOC_FREE(state->sighup_handler);
+	TALLOC_FREE(state->sigchld_handler);
+fail_dereg_printer_drvupgrade:
+	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
+fail_dereg_printer_update:
+	messaging_deregister(msg_ctx, MSG_PRINTER_UPDATE, NULL);
+fail_dereg_smb_conf_updated:
+	messaging_deregister(msg_ctx, MSG_SMB_CONF_UPDATED, state);
+fail:
+	TALLOC_FREE(state);
+	return NULL;
 }
 
 /****************************************************************************
@@ -350,17 +400,17 @@ pid_t start_background_queue(struct tevent_context *ev,
 		smb_panic("reinit_after_fork() failed");
 	}
 
-	state = talloc_zero(NULL, struct bq_state);
+	/* Remove previous forwarder message set in parent. */
+	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
+
+	state = register_printing_bq_handlers(NULL, msg_ctx);
 	if (state == NULL) {
+		DBG_ERR("Could not register bq handlers\n");
 		exit(1);
 	}
-	state->ev = ev;
-	state->msg = msg_ctx;
 
 	bq_reopen_logs(logfile);
 	bq_setup_sig_term_handler();
-	bq_setup_sig_hup_handler(state);
-	bq_setup_sig_chld_handler(ev);
 
 	BlockSignals(false, SIGTERM);
 	BlockSignals(false, SIGHUP);
@@ -372,15 +422,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 	if (!locking_init()) {
 		exit(1);
 	}
-	messaging_register(msg_ctx, state, MSG_SMB_CONF_UPDATED,
-			   bq_smb_conf_updated);
-	messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
-			   print_queue_receive);
-	/* Remove previous forwarder message set in parent. */
-	messaging_deregister(msg_ctx, MSG_PRINTER_DRVUPGRADE, NULL);
-
-	messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
-			   do_drv_upgrade_printer);
 
 	pcap_cache_reload(ev, msg_ctx, reload_pcap_change_notify);
 

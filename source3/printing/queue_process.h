@@ -37,4 +37,9 @@ pid_t start_background_queue(struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     char *logfile);
 
+struct bq_state;
+struct bq_state *register_printing_bq_handlers(
+	TALLOC_CTX *mem_ctx,
+	struct messaging_context *msg_ctx);
+
 #endif /* _SOURCE3_PRINTING_QUEUE_PROCESS_H_ */
