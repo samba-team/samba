@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "torture/smbtorture.h"
+#include "system/network.h"
 #include "dns_server/dlz_minimal.h"
 #include <talloc.h>
 #include <ldb.h>
@@ -88,7 +89,8 @@ static bool test_dlz_bind9_create(struct torture_context *tctx)
 static bool calls_zone_hook = false;
 
 static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
-					   const char *zone_name)
+						  dns_dlzdb_t *dlzdb,
+						  const char *zone_name)
 {
 	struct torture_context *tctx = talloc_get_type((void *)view, struct torture_context);
 	struct ldb_context *samdb = NULL;
@@ -128,7 +130,8 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 
 static bool test_dlz_bind9_configure(struct torture_context *tctx)
 {
-	void *dbdata;
+	void *dbdata = NULL;
+	dns_dlzdb_t *dlzdb = NULL;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
@@ -143,7 +146,9 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 				 "Failed to create samba_dlz");
 
 	calls_zone_hook = false;
-	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx,
+						     dlzdb,
+						     dbdata),
 						     ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
@@ -167,6 +172,7 @@ static bool configure_multiple_dlzs(struct torture_context *tctx,
 				    void **dbdata, int count)
 {
 	int i, res;
+	dns_dlzdb_t *dlzdb = NULL;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
@@ -183,7 +189,7 @@ static bool configure_multiple_dlzs(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, res, ISC_R_SUCCESS,
 					 "Failed to create samba_dlz");
 
-		res = dlz_configure((void*)tctx, dbdata[i]);
+		res = dlz_configure((void*)tctx, dlzdb, dbdata[i]);
 		torture_assert_int_equal(tctx, res, ISC_R_SUCCESS,
 					 "Failed to configure samba_dlz");
 	}
@@ -239,6 +245,7 @@ static bool test_dlz_bind9_destroy_newest_first(struct torture_context *tctx)
 static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech)
 {
 	NTSTATUS status;
+	dns_dlzdb_t *dlzdb = NULL;
 
 	struct gensec_security *gensec_client_context;
 
@@ -258,7 +265,8 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 				 ISC_R_SUCCESS,
 				 "Failed to create samba_dlz");
 
-	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx,
+						     dlzdb, dbdata),
 						     ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
@@ -424,7 +432,10 @@ static isc_result_t dlz_bind9_putnamedrr_hook(dns_sdlzallnodes_t *allnodes,
 static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 {
 	size_t i;
-	void *dbdata;
+	void *dbdata = NULL;
+	dns_clientinfomethods_t *methods = NULL;
+	dns_clientinfo_t *clientinfo = NULL;
+	dns_dlzdb_t *dlzdb = NULL;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
@@ -444,8 +455,9 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 				 ISC_R_SUCCESS,
 				 "Failed to create samba_dlz");
 
-	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
-						     ISC_R_SUCCESS,
+	torture_assert_int_equal(tctx,
+				 dlz_configure((void*)tctx, dlzdb, dbdata),
+				 ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
 	expected1 = talloc_zero(tctx, struct test_expected_rr);
@@ -488,7 +500,8 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Failed to lookup @");
 	for (i = 0; i < expected1->num_records; i++) {
@@ -524,7 +537,8 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected2->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected2),
+						  (dns_sdlzlookup_t *)expected2,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Failed to lookup hostname");
 	for (i = 0; i < expected2->num_records; i++) {
@@ -549,7 +563,8 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 {
 	size_t i;
-	void *dbdata;
+	void *dbdata = NULL;
+	dns_dlzdb_t *dlzdb = NULL;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
@@ -568,7 +583,7 @@ static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 				 ISC_R_SUCCESS,
 				 "Failed to create samba_dlz");
 
-	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dlzdb, dbdata),
 						     ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
@@ -660,7 +675,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	NTSTATUS status;
 	struct gensec_security *gensec_client_context;
 	DATA_BLOB client_to_server, server_to_client;
-	void *dbdata;
+	void *dbdata = NULL;
+	dns_dlzdb_t *dlzdb = NULL;
 	void *version = NULL;
 	const char *argv[] = {
 		"samba_dlz",
@@ -674,6 +690,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	char *data1 = NULL;
 	char *data2 = NULL;
 	bool ret = false;
+	dns_clientinfomethods_t *methods = NULL;
+	dns_clientinfo_t *clientinfo = NULL;
 
 	tctx_static = tctx;
 	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
@@ -685,7 +703,7 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 				 ISC_R_SUCCESS,
 				 "Failed to create samba_dlz");
 
-	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dlzdb, dbdata),
 						     ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
@@ -823,7 +841,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_NOTFOUND,
 				 "Found hostname");
 	torture_assert_int_equal(tctx, expected1->num_rr, 0,
@@ -873,7 +892,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -902,7 +922,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -936,7 +957,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -970,7 +992,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[1].printed,
@@ -999,7 +1022,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_NOTFOUND,
 				 "Found hostname");
 	torture_assert_int_equal(tctx, expected1->num_rr, 0,
@@ -1023,7 +1047,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -1052,7 +1077,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -1086,7 +1112,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -1120,7 +1147,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_SUCCESS,
 				 "Not found hostname");
 	torture_assert(tctx, expected1->records[0].printed,
@@ -1156,7 +1184,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	expected1->records[1].printed = false;
 	torture_assert_int_equal(tctx, dlz_lookup(lpcfg_dnsdomain(tctx->lp_ctx),
 						  expected1->query_name, dbdata,
-						  (dns_sdlzlookup_t *)expected1),
+						  (dns_sdlzlookup_t *)expected1,
+						  methods, clientinfo),
 				 ISC_R_NOTFOUND,
 				 "Found hostname");
 	torture_assert_int_equal(tctx, expected1->num_rr, 0,
