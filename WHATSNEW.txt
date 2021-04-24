@@ -49,6 +49,8 @@ supported release of Tru64 UNIX was in 2012.
 NIS support has been removed from this release. This is not
 available in Linux distributions anymore.
 
+The DLZ DNS plugin is no longer built for Bind versions 9.8 and 9.9,
+which have been out of support since 2018.
 
 smb.conf changes
 ================
