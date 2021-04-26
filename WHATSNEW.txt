@@ -1,4 +1,69 @@
                    ==============================
+                   Release Notes for Samba 4.14.4
+                           April 29, 2021
+                   ==============================
+
+
+This is a security release in order to address the following defect:
+
+o CVE-2021-20254: Negative idmap cache entries can cause incorrect group entries
+  in the Samba file server process token.
+
+
+=======
+Details
+=======
+
+o  CVE-2021-20254:
+   The Samba smbd file server must map Windows group identities (SIDs) into unix
+   group ids (gids). The code that performs this had a flaw that could allow it
+   to read data beyond the end of the array in the case where a negative cache
+   entry had been added to the mapping cache. This could cause the calling code
+   to return those values into the process token that stores the group
+   membership for a user.
+
+   Most commonly this flaw caused the calling code to crash, but an alert user
+   (Peter Eriksson, IT Department, Linköping University) found this flaw by
+   noticing an unprivileged user was able to delete a file within a network
+   share that they should have been disallowed access to.
+
+   Analysis of the code paths has not allowed us to discover a way for a
+   remote user to be able to trigger this flaw reproducibly or on demand,
+   but this CVE has been issued out of an abundance of caution.
+
+
+Changes since 4.14.3
+--------------------
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14571: CVE-2021-20254: Fix buffer overrun in sids_to_unixids().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.14.3
                            April 20, 2021
                    ==============================
@@ -67,8 +132,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
