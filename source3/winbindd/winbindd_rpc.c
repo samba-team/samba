@@ -606,65 +606,6 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* Find the sequence number for a domain */
-NTSTATUS rpc_sequence_number(TALLOC_CTX *mem_ctx,
-			     struct rpc_pipe_client *samr_pipe,
-			     struct policy_handle *samr_policy,
-			     const char *domain_name,
-			     uint32_t *pseq)
-{
-	union samr_DomainInfo *info = NULL;
-	bool got_seq_num = false;
-	NTSTATUS status, result;
-	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
-
-	/* query domain info */
-	status = dcerpc_samr_QueryDomainInfo(b,
-					     mem_ctx,
-					     samr_policy,
-					     8,
-					     &info,
-					     &result);
-	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
-		*pseq = info->info8.sequence_num;
-		got_seq_num = true;
-		goto seq_num;
-	}
-
-	/* retry with info-level 2 in case the dc does not support info-level 8
-	 * (like all older samba2 and samba3 dc's) - Guenther */
-	status = dcerpc_samr_QueryDomainInfo(b,
-					     mem_ctx,
-					     samr_policy,
-					     2,
-					     &info,
-					     &result);
-	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
-		*pseq = info->general.sequence_num;
-		got_seq_num = true;
-		goto seq_num;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto seq_num;
-	}
-
-	status = result;
-
-seq_num:
-	if (got_seq_num) {
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n",
-			  domain_name, (unsigned) *pseq));
-	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence "
-			  "number (%u) for domain %s\n",
-			  (unsigned) *pseq, domain_name ));
-		status = NT_STATUS_OK;
-	}
-
-	return status;
-}
-
 /* Get a list of trusted domains */
 NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *lsa_pipe,

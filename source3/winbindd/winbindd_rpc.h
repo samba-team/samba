@@ -76,13 +76,6 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 			     char ***pnames,
 			     uint32_t **pname_types);
 
-/* Find the sequence number for a domain */
-NTSTATUS rpc_sequence_number(TALLOC_CTX *mem_ctx,
-			     struct rpc_pipe_client *samr_pipe,
-			     struct policy_handle *samr_policy,
-			     const char *domain_name,
-			     uint32_t *pseq);
-
 /* Get a list of trusted domains */
 NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *lsa_pipe,
