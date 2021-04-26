@@ -1324,54 +1324,6 @@ done:
 	return status;
 }
 
-/* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
-{
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS rc;
-
-	DEBUG(3,("ads: fetch sequence_number for %s\n", domain->name));
-
-	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(10,("sequence: No incoming trust for domain %s\n",
-			  domain->name));
-		*seq = time(NULL);		
-		return NT_STATUS_OK;
-	}
-
-	if (IS_AD_DC) {
-		DEBUG(10,("sequence: Avoid LDAP connection for domain %s\n",
-			  domain->name));
-		*seq = time(NULL);
-		return NT_STATUS_OK;
-	}
-
-	*seq = DOM_SEQUENCE_NONE;
-
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	rc = ads_USN(ads, seq);
-
-	if (!ADS_ERR_OK(rc)) {
-
-		/* its a dead connection, destroy it */
-
-		if (domain->private_data) {
-			ads = (ADS_STRUCT *)domain->private_data;
-			ads->is_mine = True;
-			ads_destroy(&ads);
-			ads_kdestroy(WINBIND_CCACHE_NAME);
-			domain->private_data = NULL;
-		}
-	}
-	return ads_ntstatus(rc);
-}
-
 /* find the lockout policy of a domain - use rpc methods */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -1574,7 +1526,7 @@ struct winbindd_methods ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	sequence_number,
+	NULL,
 	lockout_policy,
 	password_policy,
 	trusted_domains,
