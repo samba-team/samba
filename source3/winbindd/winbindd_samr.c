@@ -1274,57 +1274,6 @@ done:
 	return status;
 }
 
-/* find the sequence number for a domain */
-static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
-				    uint32_t *pseq)
-{
-	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol = { 0 };
-	uint32_t seq = DOM_SEQUENCE_NONE;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	NTSTATUS status;
-	bool retry = false;
-
-	DEBUG(3,("samr: sequence number\n"));
-
-	if (pseq) {
-		*pseq = DOM_SEQUENCE_NONE;
-	}
-
-again:
-	status = open_cached_internal_pipe_conn(domain,
-						&samr_pipe,
-						&dom_pol,
-						NULL,
-						NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = rpc_sequence_number(tmp_ctx,
-				     samr_pipe,
-				     &dom_pol,
-				     domain->name,
-				     &seq);
-
-	if (!retry && reset_connection_on_error(domain, samr_pipe, status)) {
-		retry = true;
-		goto again;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	if (pseq) {
-		*pseq = seq;
-	}
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods builtin_passdb_methods = {
 	.consistent            = false,
@@ -1338,7 +1287,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
-	.sequence_number       = sam_sequence_number,
+	.sequence_number       = NULL,
 	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = sam_password_policy,
 	.trusted_domains       = builtin_trusted_domains
@@ -1357,7 +1306,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
-	.sequence_number       = sam_sequence_number,
+	.sequence_number       = NULL,
 	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = sam_password_policy,
 	.trusted_domains       = sam_trusted_domains
