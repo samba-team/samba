@@ -269,15 +269,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 {
-	NTSTATUS result;
+	*seq = time(NULL);
 
-	result = ads_methods.sequence_number(domain, seq);
-
-	if (ldap_reconnect_need_retry(result, domain)) {
-		result = ads_methods.sequence_number(domain, seq);
-	}
-
-	return result;
+	return NT_STATUS_OK;
 }
 
 /* find the lockout policy of a domain */
