@@ -46,6 +46,9 @@ REMOVED FEATURES
 Tru64 ACL support has been removed from this release. The last
 supported release of Tru64 UNIX was in 2012.
 
+NIS support has been removed from this release. This is not
+available in Linux distributions anymore.
+
 
 smb.conf changes
 ================
