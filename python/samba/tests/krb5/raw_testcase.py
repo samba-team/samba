@@ -25,7 +25,7 @@ import random
 
 import samba.tests
 from samba.credentials import Credentials
-from samba.tests import TestCase
+from samba.tests import TestCaseInTempDir
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 import samba.tests.krb5.kcrypto as kcrypto
 
@@ -178,11 +178,11 @@ class Krb5EncryptionKey(object):
         return EncryptionKey_obj
 
 
-class RawKerberosTest(TestCase):
+class RawKerberosTest(TestCaseInTempDir):
     """A raw Kerberos Test case."""
 
     def setUp(self):
-        super(RawKerberosTest, self).setUp()
+        super().setUp()
         self.do_asn1_print = False
         self.do_hexdump = False
 
@@ -192,7 +192,7 @@ class RawKerberosTest(TestCase):
 
     def tearDown(self):
         self._disconnect("tearDown")
-        super(TestCase, self).tearDown()
+        super().tearDown()
 
     def _disconnect(self, reason):
         if self.s is None:

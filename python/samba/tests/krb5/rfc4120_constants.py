@@ -46,6 +46,7 @@ KDC_ERR_SKEW = 37
 # Name types
 NT_UNKNOWN = int(krb5_asn1.NameTypeValues('kRB5-NT-UNKNOWN'))
 NT_PRINCIPAL = int(krb5_asn1.NameTypeValues('kRB5-NT-PRINCIPAL'))
+NT_SRV_HST = int(krb5_asn1.NameTypeValues('kRB5-NT-SRV-HST'))
 NT_SRV_INST = int(krb5_asn1.NameTypeValues('kRB5-NT-SRV-INST'))
 NT_ENTERPRISE_PRINCIPAL = int(krb5_asn1.NameTypeValues(
     'kRB5-NT-ENTERPRISE-PRINCIPAL'))
