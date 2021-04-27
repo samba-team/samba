@@ -52,12 +52,13 @@ parameters, see here: https://github.com/jplana/python-etcd/
 """
 import signal
 import time
-import etcd
 import sys
 import os
 import argparse
 import logging
 import subprocess
+
+import etcd
 
 # Globals ---------------------------------------------------------------------
 #
