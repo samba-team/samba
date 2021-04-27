@@ -36,15 +36,7 @@
 */
 _PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 {
-	char **ret = NULL;
-
-	ret = talloc_array(mem_ctx, char *, 1);
-	if (ret == NULL) {
-		return NULL;
-	}
-
-	ret[0] = NULL;
-
+	char **ret = talloc_zero_array(mem_ctx, char *, 1);
 	return ret;
 }
 
