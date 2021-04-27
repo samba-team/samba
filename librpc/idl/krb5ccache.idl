@@ -1,0 +1,115 @@
+/*
+  krb5 credentials cache (version 3 or 4)
+  specification: https://web.mit.edu/kerberos/krb5-devel/doc/formats/ccache_file_format.html
+*/
+
+#include "idl_types.h"
+
+[
+  uuid("1702b695-99ca-4f32-93e4-1e1c4d5ddb53"),
+  version(0.0),
+  pointer_default(unique),
+  helpstring("KRB5 credentials cache")
+]
+interface krb5ccache
+{
+	typedef struct {
+		uint32 name_type;
+		uint32 component_count;
+		[flag(STR_SIZE4|STR_NOTERM|STR_UTF8)] string realm;
+		[flag(STR_SIZE4|STR_NOTERM|STR_UTF8)] string components[component_count];
+	} PRINCIPAL;
+
+	typedef struct {
+		uint16 enctype;
+		DATA_BLOB data;
+	} KEYBLOCK;
+
+	typedef struct {
+		uint16 addrtype;
+		DATA_BLOB data;
+	} ADDRESS;
+
+	typedef struct {
+		uint32 count;
+		ADDRESS data[count];
+	} ADDRESSES;
+
+	typedef struct {
+		uint16 ad_type;
+		DATA_BLOB data;
+	} AUTHDATUM;
+
+	typedef struct {
+		uint32 count;
+		AUTHDATUM data[count];
+	} AUTHDATA;
+
+	typedef struct {
+		PRINCIPAL client;
+		PRINCIPAL server;
+		KEYBLOCK keyblock;
+		uint32 authtime;
+		uint32 starttime;
+		uint32 endtime;
+		uint32 renew_till;
+		uint8 is_skey;
+		uint32 ticket_flags;
+		ADDRESSES addresses;
+		AUTHDATA authdata;
+		DATA_BLOB ticket;
+		DATA_BLOB second_ticket;
+	} CREDENTIAL;
+
+	typedef struct {
+		[value(0)] int32 kdc_sec_offset;
+		[value(0)] int32 kdc_usec_offset;
+	} DELTATIME_TAG;
+
+	typedef [nodiscriminant] union {
+		[case(1)] DELTATIME_TAG deltatime_tag;
+	} FIELD;
+
+	typedef struct {
+		[value(1)] uint16 tag;
+		[subcontext(2),switch_is(tag)] FIELD field;
+	} V4TAG;
+
+	typedef struct {
+		V4TAG tag;
+		/*
+		 * We should allow for more than one tag to be properly parsed, but that
+		 * would require manual parsing.
+		 */
+		[flag(NDR_REMAINING)] DATA_BLOB further_tags;
+	} V4TAGS;
+
+	typedef struct {
+		[subcontext(2)] V4TAGS v4tags;
+	} V4HEADER;
+
+	typedef [nodiscriminant] union {
+		/*
+		 * We don't attempt to support file format versions 1 and 2 as they
+		 * assume native CPU byte order, which makes no sense in PIDL.
+		 */
+		[case(3)] ;
+		[case(4)] V4HEADER v4header;
+	} OPTIONAL_HEADER;
+
+	/* Public structures. */
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		[value(5)] uint8 pvno;
+		[value(4)] uint8 version;
+		[switch_is(version)] OPTIONAL_HEADER optional_header;
+		PRINCIPAL principal;
+		CREDENTIAL cred;
+		[flag(NDR_REMAINING)] DATA_BLOB further_creds;
+	} CCACHE;
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		CREDENTIAL cred;
+		[flag(NDR_REMAINING)] DATA_BLOB further_creds;
+	} MULTIPLE_CREDENTIALS;
+}
