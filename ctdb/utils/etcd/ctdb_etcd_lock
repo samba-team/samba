@@ -196,10 +196,10 @@ def main():
                 break
             os.kill(ppid, 0)
             time.sleep(etcd_config['lock_refresh'])
-    except (OSError, SystemExit) as e:
+    except (OSError, SystemExit):
         if lock is not None and lock.is_acquired:
             lock.release()
-    except:
+    except Exception:
         print_nonl(3)
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
             raise
