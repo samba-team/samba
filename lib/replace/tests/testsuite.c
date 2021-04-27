@@ -288,7 +288,6 @@ static int test_strndup(void)
 	free(x);
 	if (cmp != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
-		free(x);
 		return false;
 	}
 
