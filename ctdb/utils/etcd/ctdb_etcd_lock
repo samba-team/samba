@@ -61,148 +61,156 @@ import subprocess
 
 # Globals ---------------------------------------------------------------------
 #
-defaults = { 'config': os.path.join(
-                         os.getenv('CTDB_BASE', '/usr/local/etc/ctdb'),
-                         'etcd'),
-             'verbose' : 0,
-           }
-helpmsg  = { 'config': 'Configuration file to use. The default behavior ' + \
-                       'is to look is the base CTDB configuration ' + \
-                       'directory, which can be overwritten by setting the' + \
-                       'CTDB_BASE environment variable, for a file called' + \
-                       '\'etcd\'. Default value is ' + defaults['config'],
-             'verbose' : 'Display verbose output to stderr. Default is no output.',
+defaults = {'config': os.path.join(
+    os.getenv('CTDB_BASE', '/usr/local/etc/ctdb'),
+    'etcd'),
+    'verbose': 0,
+}
+helpmsg = {'config': 'Configuration file to use. The default behavior ' +
+           'is to look is the base CTDB configuration '
+           + 'directory, which can be overwritten by setting the'
+           + 'CTDB_BASE environment variable, for a file called'
+           + '\'etcd\'. Default value is ' + defaults['config'],
+           'verbose': 'Display verbose output to stderr. Default is no output.',
            }
 
-log_levels = { 0: logging.ERROR,
-               1: logging.WARNING,
-               2: logging.DEBUG,
-             }
+log_levels = {0: logging.ERROR,
+              1: logging.WARNING,
+              2: logging.DEBUG,
+              }
 
 config_file = defaults['config']
 verbose = defaults['verbose']
 
 # Helper Functions ------------------------------------------------------------
 #
+
+
 def sigterm_handler(signum, frame):
-  """Handler for SIGTERM signals.
-  """
-  sys.exit()
+    """Handler for SIGTERM signals.
+    """
+    sys.exit()
+
 
 def print_nonl(out):
-  """Dumb shortcut for printing to stdout with no newline.
-  """
-  sys.stdout.write(str(out))
-  sys.stdout.flush()
+    """Dumb shortcut for printing to stdout with no newline.
+    """
+    sys.stdout.write(str(out))
+    sys.stdout.flush()
+
 
 def int_or_not(s):
-  """Try to convert input to an integer.
-  """
-  try:
-    return int(s)
-  except ValueError:
-    return s
+    """Try to convert input to an integer.
+    """
+    try:
+        return int(s)
+    except ValueError:
+        return s
 
 # Mainline --------------------------------------------------------------------
 #
+
+
 def main():
-  global config_file
-  global verbose
+    global config_file
+    global verbose
 
-  logging.basicConfig(level=log_levels[verbose])
+    logging.basicConfig(level=log_levels[verbose])
 
-  # etcd config defaults
-  etcd_config = {
-    'port'        : 2379,
-    'locks_dir'   : '_ctdb',
-    'lock_ttl'    : 9,
-    'lock_refresh': 2,
-  }
-  # Find and read etcd config file
-  etcd_client_params = (
-    'host',
-    'port',
-    'srv_domain',
-    'version_prefix',
-    'read_timeout',
-    'allow_redirect',
-    'protocol',
-    'cert',
-    'ca_cert',
-    'username',
-    'password',
-    'allow_reconnect',
-    'use_proxies',
-    'expected_cluster_id',
-    'per_host_pool_size',
-  )
-  if os.path.isfile(config_file):
-    f = open(config_file, 'r')
-    for line in f:
-      (key, value) = line.split("=",1)
-      etcd_config[key.strip()] = int_or_not(value.strip())
+    # etcd config defaults
+    etcd_config = {
+        'port': 2379,
+        'locks_dir': '_ctdb',
+        'lock_ttl': 9,
+        'lock_refresh': 2,
+    }
+    # Find and read etcd config file
+    etcd_client_params = (
+        'host',
+        'port',
+        'srv_domain',
+        'version_prefix',
+        'read_timeout',
+        'allow_redirect',
+        'protocol',
+        'cert',
+        'ca_cert',
+        'username',
+        'password',
+        'allow_reconnect',
+        'use_proxies',
+        'expected_cluster_id',
+        'per_host_pool_size',
+    )
+    if os.path.isfile(config_file):
+        f = open(config_file, 'r')
+        for line in f:
+            (key, value) = line.split("=", 1)
+            etcd_config[key.strip()] = int_or_not(value.strip())
 
-  # Minor hack: call out to shell to retrieve CTDB netbios name and PNN.
-  tmp = subprocess.Popen("testparm -s --parameter-name 'netbios name'; \
+    # Minor hack: call out to shell to retrieve CTDB netbios name and PNN.
+    tmp = subprocess.Popen("testparm -s --parameter-name 'netbios name'; \
                           ctdb pnn",
-                         shell=True,
-                         universal_newlines=True,
-                         stdout=subprocess.PIPE
-                        ).stdout.read().strip()
-  nb_name, pnn = tmp.split()
+                           shell=True,
+                           universal_newlines=True,
+                           stdout=subprocess.PIPE
+                           ).stdout.read().strip()
+    nb_name, pnn = tmp.split()
 
-  # Try to get and hold the lock
-  try:
-    client = etcd.Client(**{k: etcd_config[k] for k in \
-                         set(etcd_client_params).intersection(etcd_config)})
-    lock = etcd.Lock(client, etcd_config['locks_dir'] + "/" + nb_name)
-    lock._uuid = lock._uuid + "_" + pnn
-    logging.debug("Updated lock UUID: " + lock.uuid)
-    ppid = os.getppid()
-    while True:
-      lock.acquire(blocking=False, lock_ttl=etcd_config['lock_ttl'])
-      if lock.is_acquired:
-        print_nonl(0)
-      else:
-        locks = "No locks found."
+    # Try to get and hold the lock
+    try:
+        client = etcd.Client(**{k: etcd_config[k] for k in
+                                set(etcd_client_params).intersection(etcd_config)})
+        lock = etcd.Lock(client, etcd_config['locks_dir'] + "/" + nb_name)
+        lock._uuid = lock._uuid + "_" + pnn
+        logging.debug("Updated lock UUID: " + lock.uuid)
+        ppid = os.getppid()
+        while True:
+            lock.acquire(blocking=False, lock_ttl=etcd_config['lock_ttl'])
+            if lock.is_acquired:
+                print_nonl(0)
+            else:
+                locks = "No locks found."
+                if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+                    keys = client.read(lock.path, recursive=True)
+                    if keys is not None:
+                        locks = "Existing locks:\n  "
+                        locks += '\n  '.join((child.key + ": "
+                                              + child.value for child in keys.children))
+                logging.debug("Lock contention. " + locks)
+                print_nonl(1)
+                break
+            os.kill(ppid, 0)
+            time.sleep(etcd_config['lock_refresh'])
+    except (OSError, SystemExit) as e:
+        if lock is not None and lock.is_acquired:
+            lock.release()
+    except:
+        print_nonl(3)
         if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
-          keys = client.read(lock.path, recursive=True)
-          if keys is not None:
-            locks = "Existing locks:\n  "
-            locks += '\n  '.join((child.key + ": " + child.value  for child in keys.children))
-        logging.debug("Lock contention. " + locks)
-        print_nonl(1)
-        break
-      os.kill(ppid, 0)
-      time.sleep(etcd_config['lock_refresh'])
-  except (OSError, SystemExit) as e:
-    if lock is not None and lock.is_acquired:
-      lock.release()
-  except:
-    print_nonl(3)
-    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
-      raise
+            raise
 
-if __name__== "__main__":
-  signal.signal(signal.SIGTERM, sigterm_handler)
 
-  parser = argparse.ArgumentParser(
-                          description=__doc__,
-                          epilog='',
-                          formatter_class=argparse.RawDescriptionHelpFormatter )
-  parser.add_argument( '-v', '--verbose',
-                       action='count',
-                       help=helpmsg['verbose'],
-                       default=defaults['verbose'],
-                     )
-  parser.add_argument( '-c', '--config',
-                       action='store',
-                       help=helpmsg['config'],
-                       default=defaults['config'],
-                     )
-  args = parser.parse_args()
+if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
-  config_file = args.config
-  verbose     = args.verbose if args.verbose <= 2 else 2
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog='',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-v', '--verbose',
+                        action='count',
+                        help=helpmsg['verbose'],
+                        default=defaults['verbose'],
+                        )
+    parser.add_argument('-c', '--config',
+                        action='store',
+                        help=helpmsg['config'],
+                        default=defaults['config'],
+                        )
+    args = parser.parse_args()
 
-  main()
+    config_file = args.config
+    verbose = args.verbose if args.verbose <= 2 else 2
+
+    main()
