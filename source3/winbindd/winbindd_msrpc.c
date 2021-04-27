@@ -1069,7 +1069,6 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
 	msrpc_lookup_groupmem,
-	NULL,
 	msrpc_lockout_policy,
 	msrpc_password_policy,
 	msrpc_trusted_domains,

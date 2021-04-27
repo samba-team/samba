@@ -326,7 +326,6 @@ struct winbindd_methods reconnect_ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	NULL,
 	lockout_policy,
 	password_policy,
 	trusted_domains,

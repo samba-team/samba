@@ -285,9 +285,6 @@ struct winbindd_methods {
 				    struct dom_sid **sid_mem, char ***names,
 				    uint32_t **name_types);
 
-	/* return the current global sequence number */
-	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32_t *seq);
-
 	/* return the lockout policy */
 	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain,
  				   TALLOC_CTX *mem_ctx,

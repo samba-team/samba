@@ -1526,7 +1526,6 @@ struct winbindd_methods ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	NULL,
 	lockout_policy,
 	password_policy,
 	trusted_domains,
