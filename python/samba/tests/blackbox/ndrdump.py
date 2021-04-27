@@ -319,6 +319,43 @@ dump OK
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
 
+    def test_ndrdump_Krb5ccache(self):
+        expected = open(self.data_path("../../../source3/selftest/"
+                                       "ktest-krb5_ccache-2.txt")).read()
+        try:
+            # Specify -d1 to match the generated output file, because ndrdump
+            # only outputs some additional info if this parameter is specified,
+            # and the --configfile parameter gives us an empty smb.conf to avoid
+            # extraneous output.
+            actual = self.check_output(
+                "ndrdump krb5ccache CCACHE struct "
+                "--configfile /dev/null -d1 --validate " +
+                self.data_path("../../../source3/selftest/"
+                               "ktest-krb5_ccache-2"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+        expected = open(self.data_path("../../../source3/selftest/"
+                                       "ktest-krb5_ccache-3.txt")).read()
+        try:
+            # Specify -d1 to match the generated output file, because ndrdump
+            # only outputs some additional info if this parameter is specified,
+            # and the --configfile parameter gives us an empty smb.conf to avoid
+            # extraneous output.
+            actual = self.check_output(
+                "ndrdump krb5ccache CCACHE struct "
+                "--configfile /dev/null -d1 --validate " +
+                self.data_path("../../../source3/selftest/"
+                               "ktest-krb5_ccache-3"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
     # This is a good example of a union with an empty default
     # and no buffers to parse.
     def test_ndrdump_fuzzed_spoolss_EnumForms(self):
