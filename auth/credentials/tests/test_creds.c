@@ -118,12 +118,14 @@ static void torture_creds_guess(void **state)
 	TALLOC_CTX *mem_ctx = *state;
 	struct cli_credentials *creds = NULL;
 	const char *env_user = getenv("USER");
+	bool ok;
 
 	creds = cli_credentials_init(mem_ctx);
 	assert_non_null(creds);
 
 	setenv("PASSWD", "SECRET", 1);
-	cli_credentials_guess(creds, NULL);
+	ok = cli_credentials_guess(creds, NULL);
+	assert_true(ok);
 
 	assert_string_equal(creds->username, env_user);
 	assert_int_equal(creds->username_obtained, CRED_GUESS_ENV);
@@ -137,12 +139,14 @@ static void torture_creds_anon_guess(void **state)
 {
 	TALLOC_CTX *mem_ctx = *state;
 	struct cli_credentials *creds = NULL;
+	bool ok;
 
 	creds = cli_credentials_init_anon(mem_ctx);
 	assert_non_null(creds);
 
 	setenv("PASSWD", "SECRET", 1);
-	cli_credentials_guess(creds, NULL);
+	ok = cli_credentials_guess(creds, NULL);
+	assert_true(ok);
 
 	assert_string_equal(creds->username, "");
 	assert_int_equal(creds->username_obtained, CRED_SPECIFIED);
@@ -232,7 +236,8 @@ static void torture_creds_krb5_state(void **state)
 	assert_int_equal(creds->kerberos_state_obtained, CRED_SMB_CONF);
 	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
 
-	cli_credentials_guess(creds, lp_ctx);
+	ok = cli_credentials_guess(creds, lp_ctx);
+	assert_true(ok);
 	assert_int_equal(creds->kerberos_state_obtained, CRED_SMB_CONF);
 	assert_int_equal(creds->kerberos_state, CRED_USE_KERBEROS_DESIRED);
 	assert_int_equal(creds->ccache_obtained, CRED_GUESS_FILE);

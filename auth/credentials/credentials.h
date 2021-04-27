@@ -204,7 +204,7 @@ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credentials *cred
 						    struct db_context *db_ctx);
 
 bool cli_credentials_authentication_requested(struct cli_credentials *cred);
-void cli_credentials_guess(struct cli_credentials *cred,
+bool cli_credentials_guess(struct cli_credentials *cred,
 			   struct loadparm_context *lp_ctx);
 bool cli_credentials_set_bind_dn(struct cli_credentials *cred, 
 				 const char *bind_dn);

@@ -1154,14 +1154,18 @@ _PUBLIC_ bool cli_credentials_set_conf(struct cli_credentials *cred,
  * 
  * @param cred Credentials structure to fill in
  */
-_PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
-			   struct loadparm_context *lp_ctx)
+_PUBLIC_ bool cli_credentials_guess(struct cli_credentials *cred,
+				    struct loadparm_context *lp_ctx)
 {
 	const char *error_string;
 	const char *env = NULL;
+	bool ok;
 
 	if (lp_ctx != NULL) {
-		cli_credentials_set_conf(cred, lp_ctx);
+		ok = cli_credentials_set_conf(cred, lp_ctx);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	env = getenv("LOGNAME");
@@ -1169,7 +1173,9 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 		size_t len = strlen(env);
 
 		if (len > 0 && len <= 1024) {
-			cli_credentials_set_username(cred, env, CRED_GUESS_ENV);
+			(void)cli_credentials_set_username(cred,
+							   env,
+							   CRED_GUESS_ENV);
 		}
 	}
 
@@ -1180,7 +1186,9 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 		if (len > 0 && len <= 1024) {
 			char *p = NULL;
 
-			cli_credentials_parse_string(cred, env, CRED_GUESS_ENV);
+			(void)cli_credentials_parse_string(cred,
+							   env,
+							   CRED_GUESS_ENV);
 			if ((p = strchr_m(env, '%'))) {
 				memset(p, '\0', strlen(cred->password));
 			}
@@ -1192,18 +1200,22 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 		size_t len = strlen(env);
 
 		if (len > 0 && len <= 1024) {
-			cli_credentials_set_password(cred, env, CRED_GUESS_ENV);
+			(void)cli_credentials_set_password(cred,
+							   env,
+							   CRED_GUESS_ENV);
 		}
 	}
 
-	env = getenv("PASSWD");
+	env = getenv("PASSWD_FD");
 	if (env != NULL) {
 		size_t len = strlen(env);
 
 		if (len > 0 && len <= 1024) {
 			int fd = atoi(env);
 
-			cli_credentials_parse_password_fd(cred, fd, CRED_GUESS_FILE);
+			(void)cli_credentials_parse_password_fd(cred,
+								fd,
+								CRED_GUESS_FILE);
 		}
 	}
 
@@ -1212,15 +1224,22 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 		size_t len = strlen(env);
 
 		if (len > 0 && len <= 4096) {
-			cli_credentials_parse_password_file(cred, env, CRED_GUESS_FILE);
+			(void)cli_credentials_parse_password_file(cred,
+								  env,
+								  CRED_GUESS_FILE);
 		}
 	}
 
 	if (lp_ctx != NULL &&
 	    cli_credentials_get_kerberos_state(cred) != CRED_USE_KERBEROS_DISABLED) {
-		cli_credentials_set_ccache(cred, lp_ctx, NULL, CRED_GUESS_FILE,
-					   &error_string);
+		(void)cli_credentials_set_ccache(cred,
+						 lp_ctx,
+						 NULL,
+						 CRED_GUESS_FILE,
+						 &error_string);
 	}
+
+	return true;
 }
 
 /**
