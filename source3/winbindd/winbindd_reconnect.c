@@ -261,19 +261,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
-{
-	NTSTATUS result;
-
-	result = msrpc_methods.sequence_number(domain, seq);
-
-	if (reconnect_need_retry(result, domain))
-		result = msrpc_methods.sequence_number(domain, seq);
-
-	return result;
-}
-
 /* find the lockout policy of a domain */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx,
@@ -332,7 +319,7 @@ struct winbindd_methods reconnect_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	sequence_number,
+	NULL,
 	lockout_policy,
 	password_policy,
 	trusted_domains,
