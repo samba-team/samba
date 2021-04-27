@@ -326,6 +326,7 @@ char *unix_clean_name(TALLOC_CTX *ctx, const char *s);
 char *clean_name(TALLOC_CTX *ctx, const char *s);
 ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, off_t pos);
 NTSTATUS init_before_fork(void);
+int parent_watch_fd(void);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct tevent_context *ev_ctx,
 			   bool parent_longlived,

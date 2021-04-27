@@ -21,6 +21,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**
+ * @brief  Small functions that don't fit anywhere else
+ * @file   util.c
+ */
+
 #include "includes.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
@@ -385,6 +390,20 @@ NTSTATUS init_before_fork(void)
 	}
 
 	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Get a fd to watch for our parent process to exit
+ *
+ * Samba parent processes open a pipe that naturally closes when the
+ * parent exits. Child processes can watch the read end of the pipe
+ * for readability: Readability with 0 bytes to read means the parent
+ * has exited and the child process might also want to exit.
+ */
+
+int parent_watch_fd(void)
+{
+	return reinit_after_fork_pipe[0];
 }
 
 /**
