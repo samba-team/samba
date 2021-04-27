@@ -16,8 +16,16 @@
 #ifndef __LOCKING_SHARE_MODE_LOCK_H__
 #define __LOCKING_SHARE_MODE_LOCK_H__
 
+#include "replace.h"
+#include <tevent.h>
+#include "librpc/gen_ndr/file_id.h"
+#include "lib/util/time.h"
+
 struct share_mode_data;
 struct share_mode_lock;
+struct share_mode_entry;
+struct smb_filename;
+struct files_struct;
 
 bool locking_init(void);
 bool locking_init_readonly(void);
@@ -30,9 +38,12 @@ struct share_mode_lock *get_share_mode_lock(
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time);
 
-bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
-bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
-bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
+bool del_share_mode(struct share_mode_lock *lck,
+		    struct files_struct *fsp);
+bool downgrade_share_oplock(struct share_mode_lock *lck,
+			    struct files_struct *fsp);
+bool remove_share_oplock(struct share_mode_lock *lck,
+			 struct files_struct *fsp);
 bool file_has_read_lease(struct files_struct *fsp);
 
 bool set_share_mode(
