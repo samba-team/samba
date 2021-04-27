@@ -1157,38 +1157,65 @@ _PUBLIC_ bool cli_credentials_set_conf(struct cli_credentials *cred,
 _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 			   struct loadparm_context *lp_ctx)
 {
-	char *p;
 	const char *error_string;
+	const char *env = NULL;
 
 	if (lp_ctx != NULL) {
 		cli_credentials_set_conf(cred, lp_ctx);
 	}
-	
-	if (getenv("LOGNAME")) {
-		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESS_ENV);
-	}
 
-	if (getenv("USER")) {
-		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESS_ENV);
-		if ((p = strchr_m(getenv("USER"),'%'))) {
-			memset(p,0,strlen(cred->password));
+	env = getenv("LOGNAME");
+	if (env != NULL) {
+		size_t len = strlen(env);
+
+		if (len > 0 && len <= 1024) {
+			cli_credentials_set_username(cred, env, CRED_GUESS_ENV);
 		}
 	}
 
-	if (getenv("PASSWD")) {
-		cli_credentials_set_password(cred, getenv("PASSWD"), CRED_GUESS_ENV);
+	env = getenv("USER");
+	if (env != NULL) {
+		size_t len = strlen(env);
+
+		if (len > 0 && len <= 1024) {
+			char *p = NULL;
+
+			cli_credentials_parse_string(cred, env, CRED_GUESS_ENV);
+			if ((p = strchr_m(env, '%'))) {
+				memset(p, '\0', strlen(cred->password));
+			}
+		}
 	}
 
-	if (getenv("PASSWD_FD")) {
-		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), 
-						  CRED_GUESS_FILE);
+	env = getenv("PASSWD");
+	if (env != NULL) {
+		size_t len = strlen(env);
+
+		if (len > 0 && len <= 1024) {
+			cli_credentials_set_password(cred, env, CRED_GUESS_ENV);
+		}
 	}
-	
-	p = getenv("PASSWD_FILE");
-	if (p && p[0]) {
-		cli_credentials_parse_password_file(cred, p, CRED_GUESS_FILE);
+
+	env = getenv("PASSWD");
+	if (env != NULL) {
+		size_t len = strlen(env);
+
+		if (len > 0 && len <= 1024) {
+			int fd = atoi(env);
+
+			cli_credentials_parse_password_fd(cred, fd, CRED_GUESS_FILE);
+		}
 	}
-	
+
+	env = getenv("PASSWD_FILE");
+	if (env != NULL) {
+		size_t len = strlen(env);
+
+		if (len > 0 && len <= 4096) {
+			cli_credentials_parse_password_file(cred, env, CRED_GUESS_FILE);
+		}
+	}
+
 	if (lp_ctx != NULL &&
 	    cli_credentials_get_kerberos_state(cred) != CRED_USE_KERBEROS_DISABLED) {
 		cli_credentials_set_ccache(cred, lp_ctx, NULL, CRED_GUESS_FILE,
