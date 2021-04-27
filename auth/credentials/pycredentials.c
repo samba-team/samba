@@ -800,6 +800,7 @@ static PyObject *py_creds_set_named_ccache(PyObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "s|iO", &newval, &_obt, &py_lp_ctx))
 		return NULL;
+	obt = _obt;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -815,7 +816,7 @@ static PyObject *py_creds_set_named_ccache(PyObject *self, PyObject *args)
 
 	ret = cli_credentials_set_ccache(creds,
 					 lp_ctx,
-					 newval, CRED_SPECIFIED,
+					 newval, obt,
 					 &error_string);
 
 	if (ret != 0) {
