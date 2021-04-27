@@ -173,8 +173,9 @@ def main():
 
     # Try to get and hold the lock
     try:
-        client = etcd.Client(**{k: etcd_config[k] for k in
-                                set(etcd_client_params).intersection(etcd_config)})
+        client = etcd.Client(
+            **{k: etcd_config[k] for k in
+               set(etcd_client_params).intersection(etcd_config)})
         lock = etcd.Lock(client, etcd_config['locks_dir'] + "/" + nb_name)
         lock._uuid = lock._uuid + "_" + pnn
         logging.debug("Updated lock UUID: " + lock.uuid)
@@ -189,8 +190,9 @@ def main():
                     keys = client.read(lock.path, recursive=True)
                     if keys is not None:
                         locks = "Existing locks:\n  "
-                        locks += '\n  '.join((child.key + ": "
-                                              + child.value for child in keys.children))
+                        locks += '\n  '.join(
+                            (child.key + ": " + child.value for child in
+                             keys.children))
                 logging.debug("Lock contention. " + locks)
                 print_nonl(1)
                 break
