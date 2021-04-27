@@ -266,14 +266,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
-{
-	*seq = time(NULL);
-
-	return NT_STATUS_OK;
-}
-
 /* find the lockout policy of a domain */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -334,7 +326,7 @@ struct winbindd_methods reconnect_ads_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	sequence_number,
+	NULL,
 	lockout_policy,
 	password_policy,
 	trusted_domains,
