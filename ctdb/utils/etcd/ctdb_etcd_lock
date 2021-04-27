@@ -62,19 +62,6 @@ import etcd
 
 # Globals ---------------------------------------------------------------------
 #
-defaults = {'config': os.path.join(
-    os.getenv('CTDB_BASE', '/usr/local/etc/ctdb'),
-    'etcd'),
-    'verbose': 0,
-}
-helpmsg = {'config': 'Configuration file to use. The default behavior ' +
-           'is to look is the base CTDB configuration '
-           + 'directory, which can be overwritten by setting the'
-           + 'CTDB_BASE environment variable, for a file called'
-           + '\'etcd\'. Default value is ' + defaults['config'],
-           'verbose': 'Display verbose output to stderr. Default is no output.',
-           }
-
 log_levels = {0: logging.ERROR,
               1: logging.WARNING,
               2: logging.DEBUG,
@@ -93,13 +80,20 @@ def process_args():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-v', '--verbose',
                         action='count',
-                        help=helpmsg['verbose'],
-                        default=defaults['verbose'],
+                        help='Display verbose output to stderr. '
+                             'Default is no output.',
+                        default=0,
                         )
     parser.add_argument('-c', '--config',
                         action='store',
-                        help=helpmsg['config'],
-                        default=defaults['config'],
+                        help='Configuration file to use. The default behavior '
+                             'is to look is the base CTDB configuration '
+                             'directory, which can be overwritten by setting '
+                             'the CTDB_BASE environment variable, for a file '
+                             'called \'etcd\'.  Default value is %(default)s.',
+                        default=os.path.join(os.getenv('CTDB_BASE',
+                                                       '/usr/local/etc/ctdb'),
+                                             'etcd'),
                         )
     args = parser.parse_args()
 
