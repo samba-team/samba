@@ -1136,6 +1136,69 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS streams_depot_fstreaminfo(vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 TALLOC_CTX *mem_ctx,
+					 unsigned int *pnum_streams,
+					 struct stream_struct **pstreams)
+{
+	struct smb_filename *smb_fname_base = NULL;
+	int ret;
+	NTSTATUS status;
+	struct streaminfo_state state;
+
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+					fsp->fsp_name->base_name,
+					NULL,
+					NULL,
+					fsp->fsp_name->twrp,
+					fsp->fsp_name->flags);
+	if (smb_fname_base == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &smb_fname_base->st);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	state.streams = *pstreams;
+	state.num_streams = *pnum_streams;
+	state.mem_ctx = mem_ctx;
+	state.handle = handle;
+	state.status = NT_STATUS_OK;
+
+	status = walk_streams(handle,
+				smb_fname_base,
+				NULL,
+				collect_one_stream,
+				&state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state.streams);
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(state.status)) {
+		TALLOC_FREE(state.streams);
+		status = state.status;
+		goto out;
+	}
+
+	*pnum_streams = state.num_streams;
+	*pstreams = state.streams;
+	status = SMB_VFS_NEXT_FSTREAMINFO(handle,
+				fsp->base_fsp ? fsp->base_fsp : fsp,
+				mem_ctx,
+				pnum_streams,
+				pstreams);
+
+ out:
+	TALLOC_FREE(smb_fname_base);
+	return status;
+}
+
 static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
 			enum timestamp_set_resolution *p_ts_res)
 {
@@ -1150,6 +1213,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.unlinkat_fn = streams_depot_unlinkat,
 	.renameat_fn = streams_depot_renameat,
 	.streaminfo_fn = streams_depot_streaminfo,
+	.fstreaminfo_fn = streams_depot_fstreaminfo,
 };
 
 static_decl_vfs;
