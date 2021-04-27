@@ -602,8 +602,6 @@ static PyObject *py_creds_get_forced_sasl_mech(PyObject *self, PyObject *unused)
 static PyObject *py_creds_set_forced_sasl_mech(PyObject *self, PyObject *args)
 {
 	char *newval;
-	enum credentials_obtained obt = CRED_SPECIFIED;
-	int _obt = obt;
 	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
 	if (creds == NULL) {
 		PyErr_Format(PyExc_TypeError, "Credentials expected");
@@ -613,7 +611,6 @@ static PyObject *py_creds_set_forced_sasl_mech(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &newval)) {
 		return NULL;
 	}
-	obt = _obt;
 
 	cli_credentials_set_forced_sasl_mech(creds, newval);
 	Py_RETURN_NONE;
