@@ -1053,89 +1053,6 @@ static bool collect_one_stream(const struct smb_filename *dirfname,
 	return ret;
 }
 
-static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
-					 struct files_struct *fsp,
-					 const struct smb_filename *smb_fname,
-					 TALLOC_CTX *mem_ctx,
-					 unsigned int *pnum_streams,
-					 struct stream_struct **pstreams)
-{
-	struct smb_filename *smb_fname_base = NULL;
-	int ret;
-	NTSTATUS status;
-	struct streaminfo_state state;
-
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if ((fsp != NULL) && (fsp_get_pathref_fd(fsp) != -1)) {
-		ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &smb_fname_base->st);
-	}
-	else {
-		if (smb_fname_base->flags & SMB_FILENAME_POSIX_PATH) {
-			ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
-		} else {
-			ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
-		}
-	}
-
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		goto out;
-	}
-
-	state.streams = *pstreams;
-	state.num_streams = *pnum_streams;
-	state.mem_ctx = mem_ctx;
-	state.handle = handle;
-	state.status = NT_STATUS_OK;
-
-	if (S_ISLNK(smb_fname_base->st.st_ex_mode)) {
-		/*
-		 * Currently we do't have SMB_VFS_LLISTXATTR
-		 * inside the VFS which means there's no way
-		 * to cope with a symlink when lp_posix_pathnames().
-		 * returns true. For now ignore links.
-		 * FIXME - by adding SMB_VFS_LLISTXATTR. JRA.
-		 */
-		status = NT_STATUS_OK;
-	} else {
-		status = walk_streams(handle, smb_fname_base, NULL, collect_one_stream,
-			      &state);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state.streams);
-		goto out;
-	}
-
-	if (!NT_STATUS_IS_OK(state.status)) {
-		TALLOC_FREE(state.streams);
-		status = state.status;
-		goto out;
-	}
-
-	*pnum_streams = state.num_streams;
-	*pstreams = state.streams;
-	status = SMB_VFS_NEXT_STREAMINFO(handle,
-				fsp,
-				smb_fname_base,
-				mem_ctx,
-				pnum_streams,
-				pstreams);
-
- out:
-	TALLOC_FREE(smb_fname_base);
-	return status;
-}
-
 static NTSTATUS streams_depot_fstreaminfo(vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 TALLOC_CTX *mem_ctx,
@@ -1212,7 +1129,6 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.lstat_fn = streams_depot_lstat,
 	.unlinkat_fn = streams_depot_unlinkat,
 	.renameat_fn = streams_depot_renameat,
-	.streaminfo_fn = streams_depot_streaminfo,
 	.fstreaminfo_fn = streams_depot_fstreaminfo,
 };
 
