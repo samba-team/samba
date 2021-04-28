@@ -794,7 +794,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			}
 		}
 
-		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
+		status = vfs_fstreaminfo(smb_fname->fsp, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */
 		if (NT_STATUS_IS_OK(status) && num_streams > 1) {
@@ -1480,7 +1480,7 @@ static void call_nt_transact_create(connection_struct *conn,
 			}
 		}
 
-		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
+		status = vfs_fstreaminfo(smb_fname->fsp, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */
 		if (NT_STATUS_IS_OK(status) && num_streams > 1) {
