@@ -60,7 +60,7 @@ def stat_from_mode(mode):
 
 class vgp_files_ext(gp_xml_ext):
     def __str__(self):
-        return 'VGP/Unix Settings/Sudo Rights'
+        return 'VGP/Unix Settings/Files'
 
     def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
         for guid, settings in deleted_gpo_list:
