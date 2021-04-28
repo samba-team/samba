@@ -215,12 +215,34 @@ static int do_global_checks(void)
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
+	fprintf(stderr, "\n");
+
 	if (lp_security() >= SEC_DOMAIN && !lp_encrypt_passwords()) {
 		fprintf(stderr, "ERROR: in 'security=domain' mode the "
 				"'encrypt passwords' parameter must always be "
 				"set to 'true'.\n\n");
 		ret = 1;
 	}
+
+	if (lp_security() == SEC_ADS) {
+		const char *workgroup = lp_workgroup();
+		const char *realm = lp_realm();
+
+		if (workgroup == NULL || strlen(workgroup) == 0) {
+			fprintf(stderr,
+				"ERROR: The 'security=ADS' mode requires "
+				"'workgroup' parameter to be set!\n\n ");
+			ret = 1;
+		}
+
+		if (realm == NULL || strlen(realm) == 0) {
+			fprintf(stderr,
+				"ERROR: The 'security=ADS' mode requires "
+				"'realm' parameter to be set!\n\n ");
+			ret = 1;
+		}
+	}
+
 
 	if (lp_we_are_a_wins_server() && lp_wins_server_list()) {
 		fprintf(stderr, "ERROR: both 'wins support = true' and "
