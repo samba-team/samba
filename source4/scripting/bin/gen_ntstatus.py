@@ -20,9 +20,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import unicode_literals
-# this file is a bin script and was not imported by any other modules
-# so it should be fine to enable unicode string for python2
 
 import sys, os.path, io, string
 from gen_error_common import parseErrorDescriptions, ErrorDef
