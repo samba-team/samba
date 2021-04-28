@@ -36,7 +36,6 @@
 #  $
 #
 
-from __future__ import print_function
 import sys
 
 # Find right direction when running from source tree

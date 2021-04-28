@@ -19,7 +19,6 @@
 # in the preforkrestartdc test environment to prevent them impacting other
 # tests.
 #
-from __future__ import print_function
 import time
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 from samba.messaging import Messaging

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # This is unit with tests for LDAP access checks
 
-from __future__ import print_function
 import optparse
 import sys
 import base64

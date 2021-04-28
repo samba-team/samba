@@ -25,7 +25,6 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN fsmo -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-from __future__ import print_function
 import sys
 import time
 import os

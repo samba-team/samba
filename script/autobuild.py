@@ -3,7 +3,6 @@
 # Copyright Andrew Tridgell 2010
 # released under GNU GPL v3 or later
 
-from __future__ import print_function
 from subprocess import call, check_call, check_output, Popen, PIPE, CalledProcessError
 import os
 import tarfile

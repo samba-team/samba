@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Originally based on ./sam.py
-from __future__ import print_function
 from unicodedata import normalize
 import locale
 locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))

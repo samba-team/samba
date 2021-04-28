@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 """Test communication of credentials etc, between an RODC and a RWDC.
 
 How does it work when the password is changed on the RWDC?

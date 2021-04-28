@@ -7,7 +7,6 @@
 #
 # Copyright Andrew Bartlett 2018
 #
-from __future__ import print_function
 import optparse
 import sys
 from samba.tests.subunitrun import TestProgram, SubunitOptions

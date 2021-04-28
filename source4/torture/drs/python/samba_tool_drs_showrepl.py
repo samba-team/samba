@@ -17,7 +17,6 @@
 #
 
 """Blackbox tests for samba-tool drs showrepl."""
-from __future__ import print_function
 import samba.tests
 import drs_base
 from samba.dcerpc import drsuapi

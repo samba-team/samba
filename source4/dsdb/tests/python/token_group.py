@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # test tokengroups attribute against internal token calculation
 
-from __future__ import print_function
 import optparse
 import sys
 import os

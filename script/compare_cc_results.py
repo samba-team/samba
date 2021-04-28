@@ -6,7 +6,6 @@ bin/c4che/.
 
 USAGE: compare_cc_results.py CONFIG_1 CONFIG_2 [CONFIG_3 [CONFIG_4 ...]]
 """
-from __future__ import print_function
 import sys
 import difflib
 

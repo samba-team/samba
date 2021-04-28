@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # This is a port of the original in testprogs/ejs/ldap.js
 
-from __future__ import print_function
 import optparse
 import sys
 import os

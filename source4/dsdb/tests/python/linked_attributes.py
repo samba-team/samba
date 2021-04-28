@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Originally based on ./sam.py
-from __future__ import print_function
 import optparse
 import sys
 import os

@@ -22,7 +22,6 @@
 #
 
 
-from __future__ import print_function
 import sys, os.path, io, string
 
 # parsed error data

@@ -17,7 +17,6 @@
 # by the name of the test, the environment it needs and the command to run, all
 # three separated by newlines. All other lines in the output are considered
 # comments.
-from __future__ import print_function
 
 import os
 import sys

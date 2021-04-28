@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Based on the EchoServer example from python docs
-from __future__ import print_function
+
 import socketserver as SocketServer
 import sys
 from threading import Timer

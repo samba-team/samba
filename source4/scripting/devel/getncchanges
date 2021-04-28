@@ -2,7 +2,6 @@
 
 # script to call a DRS GetNCChanges from the command line
 # this is useful for plugfest testing
-from __future__ import print_function
 import sys
 from optparse import OptionParser
 

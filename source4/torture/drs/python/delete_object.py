@@ -26,7 +26,6 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN delete_object -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-from __future__ import print_function
 import time
 
 

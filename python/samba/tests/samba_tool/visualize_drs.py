@@ -24,7 +24,6 @@ others we try to grasp control of replication and make more specific
 assertions.
 """
 
-from __future__ import print_function
 import os
 import re
 import json

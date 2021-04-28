@@ -22,7 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import print_function
 from __future__ import division
 import samba.getopt as options
 import ldb

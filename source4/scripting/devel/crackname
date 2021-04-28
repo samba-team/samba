@@ -3,7 +3,6 @@
 # Copyright Matthieu Patou <mat@matws.net> 2011
 # script to call a DRSUAPI crackname
 # this is useful for plugfest testing and replication debug
-from __future__ import print_function
 import sys
 from optparse import OptionParser
 

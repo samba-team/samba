@@ -8,7 +8,6 @@
 # Licenced under the GPLv3
 #
 
-from __future__ import print_function
 import optparse
 import sys
 import unittest

@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import print_function
 from samba import sites, subnets
 from samba.samdb import SamDB
 import samba.getopt as options

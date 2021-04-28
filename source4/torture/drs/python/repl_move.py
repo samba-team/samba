@@ -27,7 +27,6 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN repl_move -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-from __future__ import print_function
 import time
 import uuid
 import samba.tests

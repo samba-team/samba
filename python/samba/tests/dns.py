@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import print_function
-
 from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.samdb import SamDB

@@ -8,7 +8,6 @@
 # secured enough (SASL with a minimum of 128 Bit encryption) - consider
 # MS-ADTS 3.1.1.3.1.5
 
-from __future__ import print_function
 import optparse
 import sys
 import base64

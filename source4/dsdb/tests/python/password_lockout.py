@@ -7,7 +7,6 @@
 # Copyright Stefan Metzmacher 2014
 #
 
-from __future__ import print_function
 import optparse
 import sys
 import base64

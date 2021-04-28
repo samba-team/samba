@@ -20,8 +20,6 @@
 
 """Tests for samba.graph"""
 
-from __future__ import print_function
-
 import samba
 import samba.tests
 from samba import graph
