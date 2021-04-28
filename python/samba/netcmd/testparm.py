@@ -103,9 +103,17 @@ class cmd_testparm(Command):
         else:
             if section_name is not None or parameter_name is not None:
                 if parameter_name is None:
-                    lp[section_name].dump(lp.default_service, verbose)
+                    try:
+                        section = lp[section_name]
+                    except KeyError:
+                        raise CommandError("Unknown section %s" % section_name)
+                    else:
+                        section.dump(lp.default_service, verbose)
                 else:
-                    lp.dump_a_parameter(parameter_name, section_name)
+                    try:
+                        lp.dump_a_parameter(parameter_name, section_name)
+                    except RuntimeError as e:
+                        raise CommandError(e)
             else:
                 if not suppress_prompt:
                     self.outf.write("Press enter to see a dump of your service definitions\n")
