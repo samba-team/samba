@@ -447,7 +447,7 @@ static PyMethodDef py_token_extra_methods[] = {
 	{ "has_sid", (PyCFunction)py_token_has_sid, METH_VARARGS,
 		NULL },
 	{ "is_anonymous", (PyCFunction)py_token_is_anonymous, METH_NOARGS,
-		"S.is_anonymus() -> bool\n"
+		"S.is_anonymous() -> bool\n"
 		"Check whether this is an anonymous token." },
 	{ "is_system", (PyCFunction)py_token_is_system, METH_NOARGS,
 		NULL },

@@ -577,7 +577,7 @@ static PyMethodDef tdb_object_methods[] = {
 	{ "add_flags", (PyCFunction)obj_add_flags, METH_VARARGS, "S.add_flags(flags) -> None" },
 	{ "remove_flags", (PyCFunction)obj_remove_flags, METH_VARARGS, "S.remove_flags(flags) -> None" },
 #if PY_MAJOR_VERSION >= 3
-	{ "keys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
+	{ "keys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.keys() -> iterator" },
 #else
 	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
 #endif
