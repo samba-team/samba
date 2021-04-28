@@ -1329,12 +1329,6 @@ int vfs_stat_smb_basename(struct connection_struct *conn,
 			const struct smb_filename *smb_fname_in,
 			SMB_STRUCT_STAT *psbuf);
 NTSTATUS vfs_stat_fsp(files_struct *fsp);
-NTSTATUS vfs_streaminfo(connection_struct *conn,
-			struct files_struct *fsp,
-			const struct smb_filename *smb_fname,
-			TALLOC_CTX *mem_ctx,
-			unsigned int *num_streams,
-			struct stream_struct **streams);
 NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *num_streams,

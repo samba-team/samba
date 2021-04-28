@@ -1576,22 +1576,6 @@ void init_smb_file_time(struct smb_file_time *ft)
 /**
  * Initialize num_streams and streams, then call VFS op streaminfo
  */
-NTSTATUS vfs_streaminfo(connection_struct *conn,
-			struct files_struct *fsp,
-			const struct smb_filename *smb_fname,
-			TALLOC_CTX *mem_ctx,
-			unsigned int *num_streams,
-			struct stream_struct **streams)
-{
-	*num_streams = 0;
-	*streams = NULL;
-	return SMB_VFS_STREAMINFO(conn,
-			fsp,
-			smb_fname,
-			mem_ctx,
-			num_streams,
-			streams);
-}
 
 NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
 			TALLOC_CTX *mem_ctx,
