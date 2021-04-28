@@ -150,8 +150,8 @@ class TestProtocolClient(unittest.TestResult):
 
     def addSkip(self, test, reason=None):
         """Report a skipped test."""
-        if reason is None:
-            self._addOutcome("skip", test, error=None)
+        if not reason:
+            self._addOutcome("skip", test, error_permitted=None)
         else:
             self._stream.write("skip: %s [\n" % test.id())
             self._stream.write("%s\n" % reason)
