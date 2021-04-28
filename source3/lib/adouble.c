@@ -1603,9 +1603,7 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 		return false;
 	}
 
-	status = vfs_streaminfo(handle->conn,
-				fsp,
-				fsp->fsp_name,
+	status = vfs_fstreaminfo(fsp,
 				mem_ctx,
 				num_streams,
 				streams);
