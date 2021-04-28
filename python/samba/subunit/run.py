@@ -27,47 +27,7 @@
 import datetime
 import os
 import sys
-import traceback
 import unittest
-
-
-# Whether or not to hide layers of the stack trace that are
-# unittest/testtools internal code.  Defaults to True since the
-# system-under-test is rarely unittest or testtools.
-HIDE_INTERNAL_STACK = True
-
-
-def write_traceback(stream, err, test):
-    """Converts a sys.exc_info()-style tuple of values into a string.
-
-    Copied from Python 2.7's unittest.TestResult._exc_info_to_string.
-    """
-    def _is_relevant_tb_level(tb):
-        return '__unittest' in tb.tb_frame.f_globals
-
-    def _count_relevant_tb_levels(tb):
-        length = 0
-        while tb and not _is_relevant_tb_level(tb):
-            length += 1
-            tb = tb.tb_next
-        return length
-
-    exctype, value, tb = err
-    # Skip test runner traceback levels
-    if HIDE_INTERNAL_STACK:
-        while tb and _is_relevant_tb_level(tb):
-            tb = tb.tb_next
-
-    format_exception = traceback.format_exception
-
-    if (HIDE_INTERNAL_STACK and test.failureException
-        and isinstance(value, test.failureException)):
-        # Skip assert*() traceback levels
-        length = _count_relevant_tb_levels(tb)
-        msgLines = format_exception(exctype, value, tb, length)
-    else:
-        msgLines = format_exception(exctype, value, tb)
-    stream.writelines(msgLines)
 
 
 class TestProtocolClient(unittest.TestResult):
@@ -103,7 +63,8 @@ class TestProtocolClient(unittest.TestResult):
         :param error: Standard unittest positional argument form - an
             exc_info tuple.
         """
-        self._addOutcome("error", test, error=error)
+        super().addError(test, error)
+        self._addOutcome("error", test, error=self.errors[-1][1])
         self.failed = True
 
     def addExpectedFailure(self, test, error=None):
@@ -112,7 +73,8 @@ class TestProtocolClient(unittest.TestResult):
         :param error: Standard unittest positional argument form - an
             exc_info tuple.
         """
-        self._addOutcome("xfail", test, error=error)
+        super().addExpectedFailure(test, error)
+        self._addOutcome("xfail", test, error=self.expectedFailures[-1][1])
 
     def addFailure(self, test, error=None):
         """Report a failure in test test.
@@ -120,7 +82,8 @@ class TestProtocolClient(unittest.TestResult):
         :param error: Standard unittest positional argument form - an
             exc_info tuple.
         """
-        self._addOutcome("failure", test, error=error)
+        super().addFailure(test, error)
+        self._addOutcome("failure", test, error=self.failures[-1][1])
         self.failed = True
 
     def _addOutcome(self, outcome, test, error=None, error_permitted=True):
@@ -142,7 +105,7 @@ class TestProtocolClient(unittest.TestResult):
                 raise ValueError
         if error is not None:
             self._stream.write(" [\n")
-            write_traceback(self._stream, error, test)
+            self._stream.write(error)
         else:
             self._stream.write("\n")
         if error is not None:
