@@ -2401,18 +2401,6 @@ uint64_t smb_vfs_call_fs_file_id(struct vfs_handle_struct *handle,
 	return handle->fns->fs_file_id_fn(handle, sbuf);
 }
 
-NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 const struct smb_filename *smb_fname,
-				 TALLOC_CTX *mem_ctx,
-				 unsigned int *num_streams,
-				 struct stream_struct **streams)
-{
-	VFS_FIND(streaminfo);
-	return handle->fns->streaminfo_fn(handle, fsp, smb_fname, mem_ctx,
-					  num_streams, streams);
-}
-
 NTSTATUS smb_vfs_call_fstreaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,

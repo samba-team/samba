@@ -3021,66 +3021,6 @@ static uint64_t vfswrap_fs_file_id(struct vfs_handle_struct *handle,
 	return file_id;
 }
 
-static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
-				   struct files_struct *fsp,
-				   const struct smb_filename *smb_fname,
-				   TALLOC_CTX *mem_ctx,
-				   unsigned int *pnum_streams,
-				   struct stream_struct **pstreams)
-{
-	SMB_STRUCT_STAT sbuf;
-	struct stream_struct *tmp_streams = NULL;
-	int ret;
-
-	if ((fsp != NULL) && (fsp->fsp_flags.is_directory)) {
-		/*
-		 * No default streams on directories
-		 */
-		goto done;
-	}
-
-	if ((fsp != NULL) && (fsp_get_pathref_fd(fsp) != -1)) {
-		ret = SMB_VFS_FSTAT(fsp, &sbuf);
-	}
-	else {
-		struct smb_filename *smb_fname_cp = NULL;
-
-		smb_fname_cp = cp_smb_filename_nostream(talloc_tos(), smb_fname);
-		if (smb_fname_cp == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		ret = vfs_stat(handle->conn, smb_fname_cp);
-		sbuf = smb_fname_cp->st;
-		TALLOC_FREE(smb_fname_cp);
-	}
-
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	if (S_ISDIR(sbuf.st_ex_mode)) {
-		goto done;
-	}
-
-	tmp_streams = talloc_realloc(mem_ctx, *pstreams, struct stream_struct,
-					(*pnum_streams) + 1);
-	if (tmp_streams == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tmp_streams[*pnum_streams].name = talloc_strdup(tmp_streams, "::$DATA");
-	if (tmp_streams[*pnum_streams].name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tmp_streams[*pnum_streams].size = sbuf.st_ex_size;
-	tmp_streams[*pnum_streams].alloc_size = SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp, &sbuf);
-
-	*pnum_streams += 1;
-	*pstreams = tmp_streams;
- done:
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS vfswrap_fstreaminfo(vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   TALLOC_CTX *mem_ctx,
@@ -3878,7 +3818,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.chflags_fn = vfswrap_chflags,
 	.file_id_create_fn = vfswrap_file_id_create,
 	.fs_file_id_fn = vfswrap_fs_file_id,
-	.streaminfo_fn = vfswrap_streaminfo,
 	.fstreaminfo_fn = vfswrap_fstreaminfo,
 	.get_real_filename_fn = vfswrap_get_real_filename,
 	.connectpath_fn = vfswrap_connectpath,

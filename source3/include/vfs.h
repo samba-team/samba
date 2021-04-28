@@ -1113,13 +1113,6 @@ struct vfs_fn_pointers {
 				   char *base_path,
 				   char *snap_path);
 
-	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
-				  struct files_struct *fsp,
-				  const struct smb_filename *smb_fname,
-				  TALLOC_CTX *mem_ctx,
-				  unsigned int *num_streams,
-				  struct stream_struct **streams);
-
 	NTSTATUS (*fstreaminfo_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   TALLOC_CTX *mem_ctx,
@@ -1593,12 +1586,6 @@ struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 					   const SMB_STRUCT_STAT *sbuf);
 uint64_t smb_vfs_call_fs_file_id(struct vfs_handle_struct *handle,
 				 const SMB_STRUCT_STAT *sbuf);
-NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 const struct smb_filename *smb_fname,
-				 TALLOC_CTX *mem_ctx,
-				 unsigned int *num_streams,
-				 struct stream_struct **streams);
 NTSTATUS smb_vfs_call_fstreaminfo(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  TALLOC_CTX *mem_ctx,
@@ -2059,12 +2046,6 @@ NTSTATUS vfs_not_implemented_set_compression(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct files_struct *fsp,
 					     uint16_t compression_fmt);
-NTSTATUS vfs_not_implemented_streaminfo(struct vfs_handle_struct *handle,
-					struct files_struct *fsp,
-					const struct smb_filename *smb_fname,
-					TALLOC_CTX *mem_ctx,
-					unsigned int *num_streams,
-					struct stream_struct **streams);
 NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 TALLOC_CTX *mem_ctx,

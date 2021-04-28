@@ -628,16 +628,6 @@ static NTSTATUS skel_set_compression(struct vfs_handle_struct *handle,
 	return NT_STATUS_INVALID_DEVICE_REQUEST;
 }
 
-static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				const struct smb_filename *smb_fname,
-				TALLOC_CTX *mem_ctx,
-				unsigned int *num_streams,
-				struct stream_struct **streams)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS skel_fstreaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
@@ -1066,7 +1056,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.fget_compression_fn = skel_fget_compression,
 	.set_compression_fn = skel_set_compression,
 
-	.streaminfo_fn = skel_streaminfo,
 	.fstreaminfo_fn = skel_fstreaminfo,
 	.get_real_filename_fn = skel_get_real_filename,
 	.connectpath_fn = skel_connectpath,

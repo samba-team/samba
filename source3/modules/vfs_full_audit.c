@@ -163,7 +163,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_FS_FILE_ID,
-	SMB_VFS_OP_STREAMINFO,
 	SMB_VFS_OP_FSTREAMINFO,
 	SMB_VFS_OP_GET_REAL_FILENAME,
 	SMB_VFS_OP_CONNECTPATH,
@@ -303,7 +302,6 @@ static struct {
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_FS_FILE_ID,	"fs_file_id" },
-	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
 	{ SMB_VFS_OP_FSTREAMINFO,	"fstreaminfo" },
 	{ SMB_VFS_OP_GET_REAL_FILENAME, "get_real_filename" },
 	{ SMB_VFS_OP_CONNECTPATH,	"connectpath" },
@@ -2007,26 +2005,6 @@ static uint64_t smb_full_audit_fs_file_id(struct vfs_handle_struct *handle,
 
 	return result;
 }
-static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
-					  struct files_struct *fsp,
-					  const struct smb_filename *smb_fname,
-					  TALLOC_CTX *mem_ctx,
-					  unsigned int *pnum_streams,
-					  struct stream_struct **pstreams)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
-					 pnum_streams, pstreams);
-
-	do_log(SMB_VFS_OP_STREAMINFO,
-	       NT_STATUS_IS_OK(result),
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
 
 static NTSTATUS smb_full_audit_fstreaminfo(vfs_handle_struct *handle,
                                           struct files_struct *fsp,
@@ -3002,7 +2980,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.snap_check_path_fn =  smb_full_audit_snap_check_path,
 	.snap_create_fn = smb_full_audit_snap_create,
 	.snap_delete_fn = smb_full_audit_snap_delete,
-	.streaminfo_fn = smb_full_audit_streaminfo,
 	.fstreaminfo_fn = smb_full_audit_fstreaminfo,
 	.get_real_filename_fn = smb_full_audit_get_real_filename,
 	.connectpath_fn = smb_full_audit_connectpath,
