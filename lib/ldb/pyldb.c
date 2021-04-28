@@ -839,7 +839,7 @@ static PyMethodDef py_ldb_dn_methods[] = {
 		"S.get_component_value(num) -> string\n"
 		"get the attribute value of the specified component as a binary string" },
 	{ "set_component", (PyCFunction)py_ldb_dn_set_component, METH_VARARGS,
-		"S.get_component_value(num, name, value) -> None\n"
+		"S.set_component(num, name, value) -> None\n"
 		"set the attribute name and value of the specified component" },
 	{ "get_rdn_name", (PyCFunction)py_ldb_dn_get_rdn_name, METH_NOARGS,
 		"S.get_rdn_name() -> string\n"

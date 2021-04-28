@@ -573,7 +573,7 @@ static PyMethodDef py_tevent_context_methods[] = {
 	{ "add_timer", (PyCFunction)py_tevent_context_add_timer,
 		METH_VARARGS, "S.add_timer(next_event, handler) -> timer" },
 	{ "add_timer_offset", (PyCFunction)py_tevent_context_add_timer_offset,
-		METH_VARARGS, "S.add_timer(offset_seconds, handler) -> timer" },
+		METH_VARARGS, "S.add_timer_offset(offset_seconds, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
 	{0},
