@@ -1593,6 +1593,36 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 			streams);
 }
 
+NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
+			TALLOC_CTX *mem_ctx,
+			unsigned int *num_streams,
+			struct stream_struct **streams)
+{
+	*num_streams = 0;
+	*streams = NULL;
+
+	if (fsp == NULL) {
+		/*
+		 * Callers may pass fsp == NULL when passing smb_fname->fsp of a
+		 * symlink. This is ok, handle it here, by just return no
+		 * streams on a symlink.
+		 */
+                return NT_STATUS_OK;
+        }
+
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		/*
+		 * No streams on non-real files/directories.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	return SMB_VFS_FSTREAMINFO(fsp,
+			mem_ctx,
+			num_streams,
+			streams);
+}
+
 int vfs_fake_fd(void)
 {
 	int pipe_fds[2];

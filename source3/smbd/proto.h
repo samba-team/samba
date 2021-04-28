@@ -1335,6 +1335,10 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *num_streams,
 			struct stream_struct **streams);
+NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
+			TALLOC_CTX *mem_ctx,
+			unsigned int *num_streams,
+			struct stream_struct **streams);
 void init_smb_file_time(struct smb_file_time *ft);
 int vfs_fake_fd(void);
 int vfs_fake_fd_close(int fd);
