@@ -1,0 +1,33 @@
+# known failures for python/samba/tests/dns_aging.py
+#
+# These all pass on Windows, apart from test_basic_scavenging, which
+# fails due to technical issues.
+
+samba.tests.dns_aging.+test_add_update_dwFlags
+samba.tests.dns_aging.+test_add_update_dwReserved
+samba.tests.dns_aging.+test_add_update_dwSerial
+samba.tests.dns_aging.+test_add_update_dwSerial_2
+samba.tests.dns_aging.+test_add_update_many
+samba.tests.dns_aging.+test_add_update_timestamp
+samba.tests.dns_aging.+test_add_update_ttl
+samba.tests.dns_aging.+test_add_update_ttl_serial
+samba.tests.dns_aging.+test_basic_scavenging
+samba.tests.dns_aging.+test_dynamic_record_static_update
+samba.tests.dns_aging.+test_rpc_update_timestamps
+samba.tests.dns_aging.+test_static_record_dynamic_update
+samba.tests.dns_aging.+test_update_aging_disabled\b
+samba.tests.dns_aging.+test_update_aging_disabled_beyond_refresh_window
+samba.tests.dns_aging.+test_update_aging_disabled_in_eighteenth_century
+samba.tests.dns_aging.+test_update_aging_disabled_in_no_refresh_window
+samba.tests.dns_aging.+test_update_aging_disabled_in_refresh_window
+samba.tests.dns_aging.+test_update_aging_disabled_on_no_refresh_boundary
+samba.tests.dns_aging.+test_update_aging_disabled_static
+samba.tests.dns_aging.+test_update_aging_enabled
+samba.tests.dns_aging.+test_update_aging_enabled_beyond_refresh_window
+samba.tests.dns_aging.+test_update_aging_enabled_in_eighteenth_century
+samba.tests.dns_aging.+test_update_aging_enabled_in_no_refresh_window
+samba.tests.dns_aging.+test_update_aging_enabled_in_refresh_window
+samba.tests.dns_aging.+test_update_aging_enabled_on_no_refresh_boundary
+samba.tests.dns_aging.+test_update_static_stickiness
+samba.tests.dns_aging.+test_update_timestamp_weirdness_no_refresh_no_aging
+samba.tests.dns_aging.+test_update_timestamp_weirdness_refresh_no_aging
