@@ -4951,7 +4951,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	} else {
 		pathref = smb_fname;
 	}
-	status = vfs_streaminfo(conn, NULL, pathref, talloc_tos(),
+	status = vfs_fstreaminfo(pathref->fsp, talloc_tos(),
 				&num_streams, &stream_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
@@ -4962,7 +4962,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("vfs_streaminfo failed: %s\n",
+		DEBUG(10, ("vfs_fstreaminfo failed: %s\n",
 			   nt_errstr(status)));
 		goto fail;
 	}
