@@ -908,98 +908,6 @@ static int catia_chflags(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS
-catia_streaminfo(struct vfs_handle_struct *handle,
-		 struct files_struct *fsp,
-		 const struct smb_filename *smb_fname,
-		 TALLOC_CTX *mem_ctx,
-		 unsigned int *_num_streams,
-		 struct stream_struct **_streams)
-{
-	char *mapped_name = NULL;
-	NTSTATUS status;
-	unsigned int i;
-	struct smb_filename *catia_smb_fname = NULL;
-	unsigned int num_streams = 0;
-	struct stream_struct *streams = NULL;
-
-	*_num_streams = 0;
-	*_streams = NULL;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = synthetic_pathref(talloc_tos(),
-					handle->conn->cwd_fsp,
-					mapped_name,
-					NULL,
-					&smb_fname->st,
-					smb_fname->twrp,
-					smb_fname->flags,
-					&catia_smb_fname);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mapped_name);
-		return status;
-	}
-
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, catia_smb_fname,
-					 mem_ctx, &num_streams, &streams);
-	TALLOC_FREE(mapped_name);
-	TALLOC_FREE(catia_smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * Translate stream names just like the base names
-	 */
-	for (i = 0; i < num_streams; i++) {
-		/*
-		 * Strip ":" prefix and ":$DATA" suffix to get a
-		 * "pure" stream name and only translate that.
-		 */
-		void *old_ptr = streams[i].name;
-		char *stream_name = streams[i].name + 1;
-		char *stream_type = strrchr_m(stream_name, ':');
-
-		if (stream_type != NULL) {
-			*stream_type = '\0';
-			stream_type += 1;
-		}
-
-		status = catia_string_replace_allocate(handle->conn, stream_name,
-						       &mapped_name, vfs_translate_to_windows);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(streams);
-			return status;
-		}
-
-		if (stream_type != NULL) {
-			streams[i].name = talloc_asprintf(streams, ":%s:%s",
-							  mapped_name, stream_type);
-		} else {
-			streams[i].name = talloc_asprintf(streams, ":%s",
-							  mapped_name);
-		}
-		TALLOC_FREE(mapped_name);
-		TALLOC_FREE(old_ptr);
-		if (streams[i].name == NULL) {
-			TALLOC_FREE(streams);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	*_num_streams = num_streams;
-	*_streams = streams;
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS
 catia_fstreaminfo(struct vfs_handle_struct *handle,
 		 struct files_struct *fsp,
 		 TALLOC_CTX *mem_ctx,
@@ -2247,7 +2155,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.getlock_fn = catia_getlock,
 	.realpath_fn = catia_realpath,
 	.chflags_fn = catia_chflags,
-	.streaminfo_fn = catia_streaminfo,
 	.fstreaminfo_fn = catia_fstreaminfo,
 	.strict_lock_check_fn = catia_strict_lock_check,
 	.translate_name_fn = catia_translate_name,
