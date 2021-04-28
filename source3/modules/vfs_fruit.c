@@ -3834,44 +3834,6 @@ static void fruit_filter_empty_streams(unsigned int *pnum_streams,
 	*pnum_streams = num_streams;
 }
 
-static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 const struct smb_filename *smb_fname,
-				 TALLOC_CTX *mem_ctx,
-				 unsigned int *pnum_streams,
-				 struct stream_struct **pstreams)
-{
-	struct fruit_config_data *config = NULL;
-	NTSTATUS status;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
-				return NT_STATUS_UNSUCCESSFUL);
-
-	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
-
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
-					 pnum_streams, pstreams);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	fruit_filter_empty_streams(pnum_streams, pstreams);
-
-	status = fruit_streaminfo_meta(handle, fsp, smb_fname,
-				       mem_ctx, pnum_streams, pstreams);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = fruit_streaminfo_rsrc(handle, fsp, smb_fname,
-				       mem_ctx, pnum_streams, pstreams);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS fruit_fstreaminfo(vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
@@ -5247,7 +5209,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.stat_fn = fruit_stat,
 	.lstat_fn = fruit_lstat,
 	.fstat_fn = fruit_fstat,
-	.streaminfo_fn = fruit_streaminfo,
 	.fstreaminfo_fn = fruit_fstreaminfo,
 	.fntimes_fn = fruit_fntimes,
 	.ftruncate_fn = fruit_ftruncate,
