@@ -312,6 +312,7 @@ class FilterOps(unittest.TestResult):
         self.error_added += 1
         self.total_error += 1
         self._ops.addError(test, err)
+        self._ops.writeOutcome(test)
         self.output = None
         if self.fail_immediately:
             raise ImmediateFail()
@@ -320,11 +321,13 @@ class FilterOps(unittest.TestResult):
         self.seen_output = True
         test = self._add_prefix(test)
         self._ops.addSkip(test, reason)
+        self._ops.writeOutcome(test)
         self.output = None
 
     def addExpectedFailure(self, test, err=None):
         test = self._add_prefix(test)
         self._ops.addExpectedFailure(test, err)
+        self._ops.writeOutcome(test)
         self.output = None
 
     def addUnexpectedSuccess(self, test):
@@ -332,6 +335,7 @@ class FilterOps(unittest.TestResult):
         self.uxsuccess_added += 1
         self.total_uxsuccess += 1
         self._ops.addUnexpectedSuccess(test)
+        self._ops.writeOutcome(test)
         if self.output:
             self._ops.output_msg(self.output)
         self.output = None
@@ -347,10 +351,12 @@ class FilterOps(unittest.TestResult):
             self.xfail_added += 1
             self.total_xfail += 1
             self._ops.addExpectedFailure(test, err)
+            self._ops.writeOutcome(test)
         else:
             self.fail_added += 1
             self.total_fail += 1
             self._ops.addFailure(test, err)
+            self._ops.writeOutcome(test)
             if self.output:
                 self._ops.output_msg(self.output)
             if self.fail_immediately:
@@ -364,12 +370,14 @@ class FilterOps(unittest.TestResult):
             self.uxsuccess_added += 1
             self.total_uxsuccess += 1
             self._ops.addUnexpectedSuccess(test)
+            self._ops.writeOutcome(test)
             if self.output:
                 self._ops.output_msg(self.output)
             if self.fail_immediately:
                 raise ImmediateFail()
         else:
             self._ops.addSuccess(test)
+            self._ops.writeOutcome(test)
         self.output = None
 
     def skip_testsuite(self, name, reason=None):
