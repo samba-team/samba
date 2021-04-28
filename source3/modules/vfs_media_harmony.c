@@ -1841,52 +1841,6 @@ out:
 	return status;
 }
 
-/*
- * Success: return NT_STATUS_OK
- * Failure: return NT status error
- */
-static NTSTATUS mh_streaminfo(struct vfs_handle_struct *handle,
-		struct files_struct *fsp,
-		const struct smb_filename *smb_fname,
-		TALLOC_CTX *ctx,
-		unsigned int *num_streams,
-		struct stream_struct **streams)
-{
-	NTSTATUS status;
-	int ret;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_streaminfo\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_STREAMINFO(handle,
-				fsp,
-				smb_fname,
-				ctx,
-				num_streams,
-				streams);
-		goto out;
-	}
-
-	ret = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (ret != 0) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	/* This only works on files, so we don't have to worry about
-	 * our fake directory stat'ing here.
-	 */
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, clientFname,
-				ctx, num_streams, streams);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
 /* Ignoring get_real_filename function because the default
  * doesn't do anything.
  */
@@ -2099,7 +2053,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.mknodat_fn = mh_mknodat,
 	.realpath_fn = mh_realpath,
 	.chflags_fn = mh_chflags,
-	.streaminfo_fn = mh_streaminfo,
 
 	/* NT ACL operations. */
 
