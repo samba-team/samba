@@ -1791,6 +1791,23 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
+	if (lp_security() == SEC_ADS) {
+		const char *realm = lp_realm();
+		const char *workgroup = lp_workgroup();
+
+		if (workgroup == NULL || strlen(workgroup) == 0) {
+			DBG_ERR("For 'secuirity = ADS' mode, the 'workgroup' "
+				"parameter is required to be set!\n");
+			exit(1);
+		}
+
+		if (realm == NULL || strlen(realm) == 0) {
+			DBG_ERR("For 'secuirity = ADS' mode, the 'realm' "
+				"parameter is required to be set!\n");
+			exit(1);
+		}
+	}
+
 	if (!cluster_probe_ok()) {
 		exit(1);
 	}
