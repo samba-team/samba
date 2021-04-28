@@ -1758,7 +1758,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Fall back to a case-insensitive scan of all streams on the file. */
-	status = vfs_streaminfo(conn, NULL, pathref, mem_ctx,
+	status = vfs_fstreaminfo(pathref->fsp, mem_ctx,
 				&num_streams, &streams);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		SET_STAT_INVALID(smb_fname->st);
@@ -1767,7 +1767,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("vfs_streaminfo failed: %s\n", nt_errstr(status)));
+		DEBUG(10, ("vfs_fstreaminfo failed: %s\n", nt_errstr(status)));
 		goto fail;
 	}
 
