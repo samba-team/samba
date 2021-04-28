@@ -828,64 +828,6 @@ static bool collect_one_stream(struct ea_struct *ea, void *private_data)
 	return true;
 }
 
-static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
-					 struct files_struct *fsp,
-					 const struct smb_filename *smb_fname,
-					 TALLOC_CTX *mem_ctx,
-					 unsigned int *pnum_streams,
-					 struct stream_struct **pstreams)
-{
-	SMB_STRUCT_STAT sbuf;
-	int ret;
-	NTSTATUS status;
-	struct streaminfo_state state;
-
-	ret = vfs_stat_smb_basename(handle->conn, smb_fname, &sbuf);
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	state.streams = *pstreams;
-	state.num_streams = *pnum_streams;
-	state.mem_ctx = mem_ctx;
-	state.handle = handle;
-	state.status = NT_STATUS_OK;
-
-	if (S_ISLNK(sbuf.st_ex_mode)) {
-		/*
-		 * Currently we do't have SMB_VFS_LLISTXATTR
-		 * inside the VFS which means there's no way
-		 * to cope with a symlink when lp_posix_pathnames().
-		 * returns true. For now ignore links.
-		 * FIXME - by adding SMB_VFS_LLISTXATTR. JRA.
-		 */
-		status = NT_STATUS_OK;
-	} else {
-		status = walk_xattr_streams(handle, fsp, smb_fname,
-				    collect_one_stream, &state);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state.streams);
-		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(state.status)) {
-		TALLOC_FREE(state.streams);
-		return state.status;
-	}
-
-	*pnum_streams = state.num_streams;
-	*pstreams = state.streams;
-
-	return SMB_VFS_NEXT_STREAMINFO(handle,
-			fsp,
-			smb_fname,
-			mem_ctx,
-			pnum_streams,
-			pstreams);
-}
-
 static NTSTATUS streams_xattr_fstreaminfo(vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 TALLOC_CTX *mem_ctx,
@@ -1649,7 +1591,6 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.renameat_fn = streams_xattr_renameat,
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
-	.streaminfo_fn = streams_xattr_streaminfo,
 	.fstreaminfo_fn = streams_xattr_fstreaminfo,
 
 	.fsync_send_fn = streams_xattr_fsync_send,
