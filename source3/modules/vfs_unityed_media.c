@@ -1469,46 +1469,6 @@ err:
 	return status;
 }
 
-static NTSTATUS um_streaminfo(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp,
-			      const struct smb_filename *smb_fname,
-			      TALLOC_CTX *ctx,
-			      unsigned int *num_streams,
-			      struct stream_struct **streams)
-{
-	NTSTATUS status;
-	int ret;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_streaminfo\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname,
-					       ctx, num_streams, streams);
-	}
-
-	ret = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (ret != 0) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	/*
-	 * This only works on files, so we don't have to worry about
-	 * our fake directory stat'ing here.  But what does this
-	 * function do, exactly?  Does it need extra modifications for
-	 * the Avid stuff?
-	 */
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, client_fname,
-					 ctx, num_streams, streams);
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 /*
  * Ignoring get_real_filename function because the default doesn't do
  * anything.
@@ -1749,7 +1709,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.mknodat_fn = um_mknodat,
 	.realpath_fn = um_realpath,
 	.chflags_fn = um_chflags,
-	.streaminfo_fn = um_streaminfo,
 
 	/* NT ACL operations. */
 
