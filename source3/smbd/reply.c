@@ -7052,6 +7052,8 @@ void reply_printwrite(struct smb_request *req)
 
 	DEBUG(3, ("printwrite %s num=%d\n", fsp_fnum_dbg(fsp), numtowrite));
 
+	reply_outbuf(req, 0, 0);
+
 	END_PROFILE(SMBsplwr);
 	return;
 }
