@@ -238,7 +238,8 @@ static bool opt_sanity_check(const struct poptOption *current_opts,
 
 				find_duplicates(o, full_opts, &count);
 				if (count > 1) {
-					DBG_ERR("Duplicate %s (%c) detected!\n",
+					DBG_ERR("Duplicate option '--%s|-%c' "
+						"detected!\n",
 						o->longName,
 						o->shortName != 0 ?
 							o->shortName :
