@@ -820,6 +820,7 @@ planoldpythontestsuite("ad_dc_default:local", "samba.tests.krb5.s4u_tests",
 planoldpythontestsuite("fl2008r2dc:local", "samba.tests.krb5.xrealm_tests")
 
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache")
+planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap")
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
     planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
