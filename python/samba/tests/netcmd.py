@@ -94,6 +94,34 @@ class TestParmTests(NetCmdTestCase):
                          "--section-name=tmp"],
                         retcode=None)
 
+    def test_no_such_section(self):
+        out, err = self.run_netcmd(cmd_testparm,
+                                   ["--configfile=%s" % self.smbconf.name,
+                                    "--section-name=foo"],
+                                   retcode=-1)
+        # Ensure all exceptions are caught.
+        self.assertEqual("", out)
+        self.assertNotIn("uncaught exception", err)
+
+        out, err = self.run_netcmd(cmd_testparm,
+                                   ["--configfile=%s" % self.smbconf.name,
+                                    "--section-name=foo",
+                                    "--parameter-name=foo"],
+                                   retcode=-1)
+        # Ensure all exceptions are caught.
+        self.assertEqual("", out)
+        self.assertNotIn("uncaught exception", err)
+
+    def test_no_such_parameter(self):
+        out, err = self.run_netcmd(cmd_testparm,
+                                   ["--configfile=%s" % self.smbconf.name,
+                                    "--section-name=tmp",
+                                    "--parameter-name=foo"],
+                                   retcode=-1)
+        # Ensure all exceptions are caught.
+        self.assertEqual("", out)
+        self.assertNotIn("uncaught exception", err)
+
 
 class CommandTests(NetCmdTestCase):
 

@@ -1,0 +1,2 @@
+^samba.tests.netcmd.samba.tests.netcmd.TestParmTests.test_no_such_section
+^samba.tests.netcmd.samba.tests.netcmd.TestParmTests.test_no_such_parameter
