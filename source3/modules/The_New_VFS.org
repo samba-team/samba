@@ -290,7 +290,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SNAP_DELETE()             | [[Disk][Disk]]     | -      |
 | SMB_VFS_STAT()                    | [[Path][Path]]     | Todo   |
 | SMB_VFS_STATVFS()                 | [[Disk][Disk]]     | -      |
-| SMB_VFS_STREAMINFO()              | [[Path][Path]]     | Todo   |
+| SMB_VFS_STREAMINFO()              | [[Path][Path]]     | -      |
 | SMB_VFS_STRICT_LOCK_CHECK()       | [[fsp][fsp]]      | -      |
 | SMB_VFS_SYMLINKAT()               | [[NsC][NsC]]      | -      |
 | SMB_VFS_SYS_ACL_BLOB_GET_FD()     | [[xpathref][xpathref]] | -      |

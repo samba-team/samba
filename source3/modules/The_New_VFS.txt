@@ -358,7 +358,7 @@ Table of Contents
    SMB_VFS_SNAP_DELETE()              [Disk]      -
    SMB_VFS_STAT()                     [Path]      Todo
    SMB_VFS_STATVFS()                  [Disk]      -
-   SMB_VFS_STREAMINFO()               [Path]      Todo
+   SMB_VFS_STREAMINFO()               [Path]      -
    SMB_VFS_STRICT_LOCK_CHECK()        [fsp]       -
    SMB_VFS_SYMLINKAT()                [NsC]       -
    SMB_VFS_SYS_ACL_BLOB_GET_FD()      [xpathref]  -
