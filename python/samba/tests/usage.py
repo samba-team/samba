@@ -99,6 +99,7 @@ EXCLUDE_USAGE = {
     'python/samba/tests/krb5/test_ccache.py',
     'python/samba/tests/krb5/test_ldap.py',
     'python/samba/tests/krb5/test_rpc.py',
+    'python/samba/tests/krb5/test_smb.py',
     'python/samba/tests/krb5/ms_kile_client_principal_lookup_tests.py',
 }
 
