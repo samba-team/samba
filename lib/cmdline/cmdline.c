@@ -396,6 +396,8 @@ static void popt_samba_callback(poptContext popt_ctx,
 			}
 			log_to_file = true;
 
+			set_dyn_LOGFILEBASE(arg);
+
 			TALLOC_FREE(new_logfile);
 		}
 		break;
