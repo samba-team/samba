@@ -38,6 +38,8 @@
 #define LIST_ATTRIBUTE_MASK \
 	(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)
 
+static PyTypeObject *dom_sid_Type = NULL;
+
 static PyTypeObject *get_pytype(const char *module, const char *type)
 {
 	PyObject *mod;
@@ -1586,6 +1588,123 @@ static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 }
 
 /*
+ * Does a whoami call
+ */
+static PyObject *py_smb_posix_whoami(struct py_cli_state *self,
+				     PyObject *Py_UNUSED(ignored))
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
+	uint64_t uid;
+	uint64_t gid;
+	uint32_t num_gids;
+	uint64_t *gids = NULL;
+	uint32_t num_sids;
+	struct dom_sid *sids = NULL;
+	bool guest;
+	PyObject *py_gids = NULL;
+	PyObject *py_sids = NULL;
+	PyObject *py_guest = NULL;
+	PyObject *py_ret = NULL;
+	Py_ssize_t i;
+
+	req = cli_posix_whoami_send(frame, self->ev, self->cli);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		goto fail;
+	}
+	status = cli_posix_whoami_recv(req,
+				frame,
+				&uid,
+				&gid,
+				&num_gids,
+				&gids,
+				&num_sids,
+				&sids,
+				&guest);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto fail;
+	}
+	if (num_gids > PY_SSIZE_T_MAX) {
+		PyErr_SetString(PyExc_OverflowError, "posix_whoami: Too many GIDs");
+		goto fail;
+	}
+	if (num_sids > PY_SSIZE_T_MAX) {
+		PyErr_SetString(PyExc_OverflowError, "posix_whoami: Too many SIDs");
+		goto fail;
+	}
+
+	py_gids = PyList_New(num_gids);
+	if (!py_gids) {
+		goto fail;
+	}
+	for (i = 0; i < num_gids; ++i) {
+		int ret;
+		PyObject *py_item = PyLong_FromUnsignedLongLong(gids[i]);
+		if (!py_item) {
+			goto fail2;
+		}
+
+		ret = PyList_SetItem(py_gids, i, py_item);
+		if (ret) {
+			goto fail2;
+		}
+	}
+	py_sids = PyList_New(num_sids);
+	if (!py_sids) {
+		goto fail2;
+	}
+	for (i = 0; i < num_sids; ++i) {
+		int ret;
+		struct dom_sid *sid;
+		PyObject *py_item;
+
+		sid = dom_sid_dup(frame, &sids[i]);
+		if (!sid) {
+			PyErr_NoMemory();
+			goto fail3;
+		}
+
+		py_item = pytalloc_steal(dom_sid_Type, sid);
+		if (!py_item) {
+			PyErr_NoMemory();
+			goto fail3;
+		}
+
+		ret = PyList_SetItem(py_sids, i, py_item);
+		if (ret) {
+			goto fail3;
+		}
+	}
+
+	py_guest = guest ? Py_True : Py_False;
+
+	py_ret = Py_BuildValue("KKNNO",
+			uid,
+			gid,
+			py_gids,
+			py_sids,
+			py_guest);
+	if (!py_ret) {
+		goto fail3;
+	}
+
+	TALLOC_FREE(frame);
+	return py_ret;
+
+fail3:
+	Py_CLEAR(py_sids);
+
+fail2:
+	Py_CLEAR(py_gids);
+
+fail:
+	TALLOC_FREE(frame);
+	return NULL;
+}
+
+/*
  * Checks existence of a directory
  */
 static bool check_dir_path(struct py_cli_state *self, const char *path)
@@ -1721,6 +1840,8 @@ static PyMethodDef py_cli_state_methods[] = {
 	  "unlink(path) -> None\n\n \t\tDelete a file." },
 	{ "mkdir", (PyCFunction)py_smb_mkdir, METH_VARARGS,
 	  "mkdir(path) -> None\n\n \t\tCreate a directory." },
+	{ "posix_whoami", (PyCFunction)py_smb_posix_whoami, METH_NOARGS,
+	"posix_whoami() -> (uid, gid, gids, sids, guest)" },
 	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
 	  "rmdir(path) -> None\n\n \t\tDelete a directory." },
 	{ "rename",
@@ -1774,17 +1895,31 @@ static struct PyModuleDef moduledef = {
 MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 {
 	PyObject *m = NULL;
+	PyObject *mod = NULL;
 
 	talloc_stackframe();
+
+	if (PyType_Ready(&py_cli_state_type) < 0) {
+		return NULL;
+	}
+	if (PyType_Ready(&py_cli_notify_state_type) < 0) {
+		return NULL;
+	}
 
 	m = PyModule_Create(&moduledef);
 	if (m == NULL) {
 		return m;
 	}
-	if (PyType_Ready(&py_cli_state_type) < 0) {
+
+	/* Import dom_sid type from dcerpc.security */
+	mod = PyImport_ImportModule("samba.dcerpc.security");
+	if (mod == NULL) {
 		return NULL;
 	}
-	if (PyType_Ready(&py_cli_notify_state_type) < 0) {
+
+	dom_sid_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "dom_sid");
+	if (dom_sid_Type == NULL) {
+		Py_DECREF(mod);
 		return NULL;
 	}
 
