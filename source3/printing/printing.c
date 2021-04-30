@@ -498,22 +498,24 @@ static uint32_t map_to_spoolss_status(uint32_t lpq_status)
 }
 
 /***************************************************************************
- Append a jobid to the 'jobs changed' list.
+ Append a jobid to a list
 ***************************************************************************/
 
-static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32_t jobid)
+static bool add_to_jobs_list(
+	struct tdb_print_db *pdb, uint32_t jobid, const char *key)
 {
-	TDB_DATA data;
-	uint32_t store_jobid;
+	uint8_t store_jobid[sizeof(uint32_t)];
+	TDB_DATA data = {
+		.dptr = store_jobid, .dsize = sizeof(store_jobid)
+	};
+	int ret;
 
 	SIVAL(&store_jobid, 0, jobid);
-	data.dptr = (uint8_t *) &store_jobid;
-	data.dsize = 4;
 
-	DEBUG(10,("add_to_jobs_added: Added jobid %u\n", (unsigned int)jobid ));
+	DBG_DEBUG("Added jobid %"PRIu32" to %s\n", jobid, key);
 
-	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_changed"),
-			   data) == 0);
+	ret = tdb_append(pdb->tdb, string_tdb_data(key), data);
+	return ret == 0;
 }
 
 /***************************************************************************
@@ -725,7 +727,10 @@ static bool pjob_store(struct tevent_context *ev,
 						  pjob,
 						  &changed);
 				if (changed) {
-					add_to_jobs_changed(pdb, jobid);
+					add_to_jobs_list(
+						pdb,
+						jobid,
+						"INFO/jobs_changed");
 				}
 			}
 			talloc_free(tmp_ctx);
@@ -2523,26 +2528,6 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 }
 
 /***************************************************************************
- Append a jobid to the 'jobs added' list.
-***************************************************************************/
-
-static bool add_to_jobs_added(struct tdb_print_db *pdb, uint32_t jobid)
-{
-	TDB_DATA data;
-	uint32_t store_jobid;
-
-	SIVAL(&store_jobid, 0, jobid);
-	data.dptr = (uint8_t *)&store_jobid;
-	data.dsize = 4;
-
-	DEBUG(10,("add_to_jobs_added: Added jobid %u\n", (unsigned int)jobid ));
-
-	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_added"),
-			   data) == 0);
-}
-
-
-/***************************************************************************
  Do all checks needed to determine if we can start a job.
 ***************************************************************************/
 
@@ -2761,7 +2746,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 	pjob_store(global_event_context(), msg_ctx, sharename, jobid, &pjob);
 
 	/* Update the 'jobs added' entry used by print_queue_status. */
-	add_to_jobs_added(pdb, jobid);
+	add_to_jobs_list(pdb, jobid, "INFO/jobs_added");
 
 	/* Ensure we keep a rough count of the number of total jobs... */
 	tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, 1);
