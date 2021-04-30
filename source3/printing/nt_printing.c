@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "printing/nt_printing_tdb.h"
+#include "printing/queue_process.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/spoolss/srv_spoolss_util.h"
 #include "nt_printing.h"
@@ -29,7 +30,6 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "smbd/smbd.h"
-#include "smbd/globals.h"
 #include "auth.h"
 #include "messages.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
@@ -201,18 +201,7 @@ static void forward_drv_upgrade_printer_msg(struct messaging_context *msg,
 				struct server_id server_id,
 				DATA_BLOB *data)
 {
-	extern pid_t background_lpq_updater_pid;
-
-	if (background_lpq_updater_pid == -1) {
-		DEBUG(3,("no background lpq queue updater\n"));
-		return;
-	}
-
-	messaging_send_buf(msg,
-			pid_to_procid(background_lpq_updater_pid),
-			MSG_PRINTER_DRVUPGRADE,
-			data->data,
-			data->length);
+	send_to_bgqd(msg, msg_type, data->data, data->length);
 }
 
 /****************************************************************************

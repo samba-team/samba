@@ -1553,8 +1553,6 @@ void print_queue_receive(struct messaging_context *msg,
 update the internal database from the system print queue for a queue
 ****************************************************************************/
 
-extern pid_t background_lpq_updater_pid;
-
 static void print_queue_update(struct messaging_context *msg_ctx,
 			       int snum, bool force)
 {
@@ -1679,8 +1677,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 
 	/* finally send the message */
 
-	messaging_send_buf(msg_ctx, pid_to_procid(background_lpq_updater_pid),
-			   MSG_PRINTER_UPDATE, (uint8_t *)buffer, len);
+	send_to_bgqd(msg_ctx, MSG_PRINTER_UPDATE, (uint8_t *)buffer, len);
 
 	SAFE_FREE( buffer );
 

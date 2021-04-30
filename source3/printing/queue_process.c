@@ -41,6 +41,7 @@
 #include "nt_printing.h"
 #include "util_event.h"
 #include "lib/global_contexts.h"
+#include "lib/util/pidfile.h"
 
 /**
  * @brief Purge stale printers and reload from pre-populated pcap cache.
@@ -482,4 +483,18 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 
 	pcap_cache_reload(ev_ctx, msg_ctx,
 			  delete_and_reload_printers_full);
+}
+
+void send_to_bgqd(struct messaging_context *msg_ctx,
+		  uint32_t msg_type,
+		  const uint8_t *buf,
+		  size_t buflen)
+{
+	pid_t bgqd = pidfile_pid(lp_pid_directory(), "samba-bgqd");
+
+	if (bgqd == -1) {
+		return;
+	}
+	messaging_send_buf(
+		msg_ctx, pid_to_procid(bgqd), msg_type, buf, buflen);
 }

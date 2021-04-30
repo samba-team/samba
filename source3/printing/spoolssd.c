@@ -554,8 +554,7 @@ static void print_queue_forward(struct messaging_context *msg,
 				struct server_id server_id,
 				DATA_BLOB *data)
 {
-	messaging_send_buf(msg, pid_to_procid(background_lpq_updater_pid),
-			   MSG_PRINTER_UPDATE, data->data, data->length);
+	send_to_bgqd(msg, msg_type, data->data, data->length);
 }
 
 static char *get_bq_logfile(void)

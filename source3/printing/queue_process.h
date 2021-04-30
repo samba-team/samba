@@ -36,6 +36,10 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 pid_t start_background_queue(struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     char *logfile);
+void send_to_bgqd(struct messaging_context *msg_ctx,
+		  uint32_t msg_type,
+		  const uint8_t *buf,
+		  size_t buflen);
 
 struct bq_state;
 struct bq_state *register_printing_bq_handlers(
