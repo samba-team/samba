@@ -108,7 +108,7 @@ static int generic_job_delete( const char *sharename, const char *lprm_command, 
 	fstring jobstr;
 
 	/* need to delete the spooled entry */
-	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
+	fstr_sprintf(jobstr, "%d", pjob->sysjob);
 	return print_run_command( -1, sharename, False, lprm_command, NULL,
 		   "%j", jobstr,
 		   "%T", http_timestring(talloc_tos(), pjob->starttime),
@@ -125,7 +125,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	fstring jobstr;
 	
 	/* need to pause the spooled entry */
-	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
+	fstr_sprintf(jobstr, "%d", pjob->sysjob);
 	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_lppause_command(snum), NULL,
 				 "%j", jobstr,
@@ -142,7 +142,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	fstring jobstr;
 
 	/* need to pause the spooled entry */
-	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
+	fstr_sprintf(jobstr, "%d", pjob->sysjob);
 	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_lpresume_command(snum), NULL,
 				 "%j", jobstr,
@@ -263,8 +263,8 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 		ret = -1;
 		goto out;
 	}
-	slprintf(job_page_count, sizeof(job_page_count)-1, "%d", pjob->page_count);
-	slprintf(job_size, sizeof(job_size)-1, "%lu", (unsigned long)pjob->size);
+	fstr_sprintf(job_page_count, "%d", pjob->page_count);
+	fstr_sprintf(job_size, "%zu", pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
