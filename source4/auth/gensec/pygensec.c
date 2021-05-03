@@ -426,9 +426,9 @@ static PyObject *py_gensec_have_feature(PyObject *self, PyObject *args)
 		return NULL;
 
 	if (gensec_have_feature(security, feature)) {
-		return Py_True;
+		Py_RETURN_TRUE;
 	} 
-	return Py_False;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *py_gensec_set_max_update_size(PyObject *self, PyObject *args)
