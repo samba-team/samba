@@ -212,7 +212,7 @@ static void find_duplicates(const struct poptOption *needle,
 	}
 }
 
-static bool opt_sanity_check(const struct poptOption *current_opts,
+static bool cmdline_sanity_checker(const struct poptOption *current_opts,
 			     const struct poptOption *full_opts)
 {
 	const struct poptOption *o = current_opts;
@@ -225,7 +225,7 @@ static bool opt_sanity_check(const struct poptOption *current_opts,
 		switch (o->argInfo) {
 		case POPT_ARG_INCLUDE_TABLE:
 			if (o->arg != NULL) {
-				ok = opt_sanity_check(o->arg, full_opts);
+				ok = cmdline_sanity_checker(o->arg, full_opts);
 				if (!ok) {
 					return false;
 				}
@@ -257,7 +257,7 @@ static bool opt_sanity_check(const struct poptOption *current_opts,
 
 bool samba_cmdline_sanity_check(const struct poptOption *opts)
 {
-	return opt_sanity_check(opts, opts);
+	return cmdline_sanity_checker(opts, opts);
 }
 
 poptContext samba_popt_get_context(const char * name,
