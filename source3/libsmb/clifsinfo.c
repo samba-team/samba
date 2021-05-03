@@ -570,6 +570,8 @@ struct posix_whoami_state {
 
 static void cli_posix_whoami_done(struct tevent_req *subreq);
 
+static const uint32_t posix_whoami_max_rdata = 62*1024;
+
 struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli)
@@ -586,7 +588,7 @@ struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(state->param, 0, SMB_QUERY_POSIX_WHOAMI);
 
-	state->max_rdata = 62*1024;
+	state->max_rdata = posix_whoami_max_rdata;
 
 	subreq = cli_trans_send(state,                  /* mem ctx. */
 				ev,                     /* event ctx. */
@@ -650,7 +652,7 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 	 * parsing network packets in C.
 	 */
 
-	if (num_rdata < 40) {
+	if (num_rdata < 40 || num_rdata > posix_whoami_max_rdata) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
