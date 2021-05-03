@@ -33,8 +33,8 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const struct dom_sid *sid,
 			    struct netr_SamInfo3 **info3,
-			    const uint8_t *cached_nt_pass[NT_HASH_LEN],
-			    const uint8_t *cred_salt[NT_HASH_LEN])
+			    const uint8_t **cached_nt_pass,
+			    const uint8_t **cred_salt)
 {
 	struct netr_SamInfo3 *info;
 	NTSTATUS status;
