@@ -36,7 +36,7 @@
 static PyObject *py_is_xattr_supported(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return Py_True;
+	Py_RETURN_TRUE;
 }
 
 static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)

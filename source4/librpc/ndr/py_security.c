@@ -342,7 +342,7 @@ static PyObject *py_descriptor_richcmp(
 		break;
 	}
 
-	return Py_NotImplemented;
+	Py_RETURN_NOTIMPLEMENTED;
 }
 
 static void py_descriptor_patch(PyTypeObject *type)

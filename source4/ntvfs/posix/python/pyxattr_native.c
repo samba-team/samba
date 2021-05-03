@@ -29,9 +29,9 @@ static PyObject *py_is_xattr_supported(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 #if !defined(HAVE_XATTR_SUPPORT)
-	return Py_False;
+	Py_RETURN_FALSE;
 #else
-	return Py_True;
+	Py_RETURN_TRUE;
 #endif
 }
 
