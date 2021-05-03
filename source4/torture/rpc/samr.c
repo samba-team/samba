@@ -2260,7 +2260,7 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 }, new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	DATA_BLOB old_nt_hash_blob
 		= data_blob_const(old_nt_hash, sizeof(old_nt_hash));
@@ -2365,7 +2365,7 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 	struct samr_Password nt_verifier, lm_verifier;
 	const char *oldpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 }, new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	DATA_BLOB old_nt_hash_blob
 		= data_blob_const(old_nt_hash, sizeof(old_nt_hash));
@@ -2470,7 +2470,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 }, new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
@@ -2789,7 +2789,7 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	char *newpass;
 	char *oldpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 }, new_nt_hash[16];
 	DATA_BLOB old_nt_hash_blob
 		= data_blob_const(old_nt_hash,
 				  sizeof(old_nt_hash));

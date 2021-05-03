@@ -1041,7 +1041,7 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key,
 					  char **pwd)
 {
-	uint8_t _confounder[8];
+	uint8_t _confounder[8] = { 0 };
 	DATA_BLOB confounder = data_blob_const(_confounder, 8);
 	uint8_t pwbuf[516] = {0};
 	DATA_BLOB decrypt_pwbuf = data_blob_const(pwbuf, 516);
