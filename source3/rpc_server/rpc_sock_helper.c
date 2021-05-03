@@ -240,7 +240,7 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	}
 
 	/* Set the port in the endpoint */
-	snprintf(port_str, sizeof(port_str), "%u", port);
+	snprintf(port_str, sizeof(port_str), "%"PRIu16, port);
 
 	status = dcerpc_binding_set_string_option(b, "endpoint", port_str);
 	if (!NT_STATUS_IS_OK(status)) {
