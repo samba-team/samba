@@ -41,7 +41,7 @@ static PyObject* GPO_get_##ATTR(PyObject *self, void *closure) \
 	if (gpo_ptr->ATTR) \
 		return PyUnicode_FromString(gpo_ptr->ATTR); \
 	else \
-		return Py_None; \
+		Py_RETURN_NONE; \
 }
 GPO_getter(ds_path)
 GPO_getter(file_sys_path)
