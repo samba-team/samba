@@ -714,6 +714,13 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 		p += sid_size;
 		num_rdata -= sid_size;
 	}
+
+	if (num_rdata != 0) {
+		tevent_req_nterror(req,
+			NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
