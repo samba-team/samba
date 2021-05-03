@@ -650,7 +650,7 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 	 * parsing network packets in C.
 	 */
 
-	if (num_rdata < 40 || rdata + num_rdata < rdata) {
+	if (num_rdata < 40) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
