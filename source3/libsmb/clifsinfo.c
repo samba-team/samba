@@ -661,6 +661,13 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 	state->num_gids = IVAL(rdata, 24);
 	state->num_sids = IVAL(rdata, 28);
 
+	/* Ensure the gid array doesn't overflow */
+	if (state->num_gids > (num_rdata - 40) / sizeof(uint64_t)) {
+		tevent_req_nterror(req,
+			NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	state->gids = talloc_array(state, uint64_t, state->num_gids);
 	if (tevent_req_nomem(state->gids, req)) {
 		return;
@@ -673,11 +680,6 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 	p = rdata + 40;
 
 	for (i = 0; i < state->num_gids; i++) {
-		if (p + 8 > rdata + num_rdata) {
-			tevent_req_nterror(req,
-				NT_STATUS_INVALID_NETWORK_RESPONSE);
-			return;
-		}
 		state->gids[i] = BVAL(p, 0);
 		p += 8;
 	}
