@@ -149,7 +149,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 	struct samr_Password old_nt_hash_enc;
 	struct samr_Password old_lanman_hash_enc;
 
-	uint8_t old_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 };
 	uint8_t old_lanman_hash[16];
 	uint8_t new_nt_hash[16];
 	uint8_t new_lanman_hash[16];
@@ -355,7 +355,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 	struct samr_Password old_nt_hash_enc;
 	struct samr_Password old_lanman_hash_enc;
 
-	uint8_t old_nt_hash[16];
+	uint8_t old_nt_hash[16] = { 0 };
 	uint8_t old_lanman_hash[16];
 	uint8_t new_nt_hash[16];
 	uint8_t new_lanman_hash[16];

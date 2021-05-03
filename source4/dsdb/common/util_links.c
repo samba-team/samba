@@ -34,7 +34,7 @@
  */
 int ndr_guid_compare(const struct GUID *guid1, const struct GUID *guid2)
 {
-	uint8_t v1_data[16];
+	uint8_t v1_data[16] = { 0 };
 	struct ldb_val v1 = data_blob_const(v1_data, sizeof(v1_data));
 	uint8_t v2_data[16];
 	struct ldb_val v2 = data_blob_const(v2_data, sizeof(v2_data));

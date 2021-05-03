@@ -37,7 +37,7 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 	uint32_t unkn1 = 23;
 	uint32_t unkn2 = 0;
 	struct policy_handle share_handle;
-	char share_path[1025];
+	char share_path[1025] = { 0 };
 	uint32_t mds_status;
 	uint32_t flags;	     /* server always returns 0x6b000001 ? */
 	uint32_t unkn3;	     /* server always returns 0 ? */
