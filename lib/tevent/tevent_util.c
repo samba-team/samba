@@ -30,36 +30,6 @@
 #include <fcntl.h>
 
 /**
-  return the number of elements in a string list
-*/
-size_t ev_str_list_length(const char **list)
-{
-	size_t ret;
-	for (ret=0;list && list[ret];ret++) /* noop */ ;
-	return ret;
-}
-
-/**
-  add an entry to a string list
-*/
-const char **ev_str_list_add(const char **list, const char *s)
-{
-	size_t len = ev_str_list_length(list);
-	const char **ret;
-
-	ret = talloc_realloc(NULL, list, const char *, len+2);
-	if (ret == NULL) return NULL;
-
-	ret[len] = talloc_strdup(ret, s);
-	if (ret[len] == NULL) return NULL;
-
-	ret[len+1] = NULL;
-
-	return ret;
-}
-
-
-/**
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
  else
   if SYSV use O_NDELAY

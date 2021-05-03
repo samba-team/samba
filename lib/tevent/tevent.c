@@ -166,14 +166,28 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 {
 	const char **list = NULL;
 	struct tevent_ops_list *e;
+	size_t idx = 0;
 
 	tevent_backend_init();
 
 	for (e=tevent_backends;e;e=e->next) {
-		list = ev_str_list_add(list, e->name);
+		idx += 1;
 	}
 
-	talloc_steal(mem_ctx, list);
+	list = talloc_zero_array(mem_ctx, const char *, idx+1);
+	if (list == NULL) {
+		return NULL;
+	}
+
+	idx = 0;
+	for (e=tevent_backends;e;e=e->next) {
+		list[idx] = talloc_strdup(list, e->name);
+		if (list[idx] == NULL) {
+			TALLOC_FREE(list);
+			return NULL;
+		}
+		idx += 1;
+	}
 
 	return list;
 }
