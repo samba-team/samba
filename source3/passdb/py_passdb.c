@@ -2075,8 +2075,6 @@ static PyObject *py_pdb_enum_group_mapping(PyObject *self, PyObject *args)
 	size_t i, num_entries;
 	PyObject *py_gmap_list, *py_group_map;
 
-	Py_INCREF(Py_None);
-
 	if (!PyArg_ParseTuple(args, "|O!ii:enum_group_mapping", dom_sid_Type, &py_domain_sid,
 					&lsa_sidtype_value, &unix_only)) {
 		talloc_free(frame);
@@ -2813,8 +2811,6 @@ static PyObject *py_pdb_search_aliases(PyObject *self, PyObject *args)
 	PyObject *py_aliaslist, *py_dict;
 	PyObject *py_domain_sid = Py_None;
 	struct dom_sid *domain_sid = NULL;
-
-	Py_INCREF(Py_None);
 
 	if (!PyArg_ParseTuple(args, "|O!:search_aliases", dom_sid_Type, &py_domain_sid)) {
 		talloc_free(frame);
