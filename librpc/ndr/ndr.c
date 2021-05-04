@@ -1471,7 +1471,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_into_fixed_blob(
 
 	if (ndr.offset != blob->length) {
 		return ndr_push_error(&ndr, NDR_ERR_BUFSIZE,
-				      "buffer was either to large or small "
+				      "buffer was either too large or small "
 				      "ofs[%"PRIu32"] size[%zu]",
 				      ndr.offset, blob->length);
 	}

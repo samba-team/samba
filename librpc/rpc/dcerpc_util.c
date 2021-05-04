@@ -330,7 +330,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 		max_pad_len = pkt->frag_length - tmp_length;
 	}
 	if (max_pad_len < auth->auth_pad_length) {
-		DEBUG(1, (__location__ ": ERROR: pad length to large. "
+		DEBUG(1, (__location__ ": ERROR: pad length too large. "
 			  "max %"PRIu32" got %"PRIu8"\n",
 			  max_pad_len,
 			  auth->auth_pad_length));
