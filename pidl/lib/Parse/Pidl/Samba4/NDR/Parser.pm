@@ -371,7 +371,7 @@ sub ParseArrayPullGetSize($$$$$$)
 		} else {
 			$self->pidl("if ($array_size < $low || $array_size > $high) {");
 		}
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_size, (uint32_t)$low, (uint32_t)$high);");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_size, (uint32_t)($low), (uint32_t)($high));");
 
 		$self->pidl("}");
 	}
@@ -411,7 +411,7 @@ sub ParseArrayPullGetLength($$$$$$;$)
 		} else {
 			$self->pidl("if ($array_length < $low || $array_length > $high) {");
 		}
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_length, (uint32_t)$low, (uint32_t)$high);");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_length, (uint32_t)($low), (uint32_t)($high));");
 		$self->pidl("}");
 	}
 
@@ -1050,7 +1050,7 @@ sub ParseDataPull($$$$$$$)
 				}
 			}
 
-			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%$fmt) out of range (%$fmt - %$fmt)\", ($data_type)$var_name, ($data_type)$low, ($data_type)$high);");
+			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%$fmt) out of range (%$fmt - %$fmt)\", ($data_type)($var_name), ($data_type)($low), ($data_type)($high));");
 			$self->pidl("}");
 		}
 	} else {
