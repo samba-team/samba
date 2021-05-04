@@ -707,7 +707,12 @@ static NTSTATUS cm_get_ipc_credentials(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	cli_credentials_set_conf(creds, lp_ctx);
+	ok = cli_credentials_set_conf(creds, lp_ctx);
+	if (!ok) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
 	cli_credentials_set_kerberos_state(creds,
 					   CRED_USE_KERBEROS_DISABLED,
 					   CRED_SPECIFIED);
