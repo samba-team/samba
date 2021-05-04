@@ -268,6 +268,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		struct cli_credentials *server_credentials;
 		const char *dns_name;
 		const char *dns_domain;
+		bool ok;
 		struct auth4_context *auth4_context = make_auth4_context_s3(tmp_ctx, auth_context);
 		if (auth4_context == NULL) {
 			goto nomem;
@@ -346,7 +347,12 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			goto nomem;
 		}
 
-		cli_credentials_set_conf(server_credentials, lp_ctx);
+		ok = cli_credentials_set_conf(server_credentials, lp_ctx);
+		if (!ok) {
+			DBG_ERR("Failed to set server credentials defaults "
+				"from smb.conf.\n");
+			goto nomem;
+		}
 
 		if (lp_security() == SEC_ADS || USE_KERBEROS_KEYTAB) {
 			cli_credentials_set_kerberos_state(server_credentials,
