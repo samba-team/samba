@@ -2590,7 +2590,11 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 			goto fail;
 		}
 
-		cli_credentials_set_conf(creds, lp_ctx);
+		ok = cli_credentials_set_conf(creds, lp_ctx);
+		if (!ok) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
 
 		ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
 		if (!ok) {
@@ -2662,7 +2666,11 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 		goto fail;
 	}
 
-	cli_credentials_set_conf(creds, lp_ctx);
+	ok = cli_credentials_set_conf(creds, lp_ctx);
+	if (!ok) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
 
 	cli_credentials_set_secure_channel_type(creds, channel);
 	cli_credentials_set_password_last_changed_time(creds, last_set_time);
