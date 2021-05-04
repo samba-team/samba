@@ -493,10 +493,32 @@ static bool test_list_append_const(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_list_add_printf_NULL(struct torture_context *tctx)
+{
+	char **list = NULL;
+	str_list_add_printf(&list, "x=%d", 1);
+	torture_assert(tctx, list==NULL, "str_list_add_printf must keep NULL");
+	return true;
+}
+
+static bool test_list_add_printf(struct torture_context *tctx)
+{
+	const char *list2[] = { "foo", "bar=baz", NULL };
+	char **list = str_list_make_empty(tctx);
+	str_list_add_printf(&list, "foo");
+	str_list_add_printf(&list, "bar=%s", "baz");
+	torture_assert(
+		tctx,
+		str_list_equal((const char * const *)list, list2),
+		"str_list_add_printf failed");
+	TALLOC_FREE(list);
+	return true;
+}
+
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "strlist");
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(test_lists_shell_strings); i++) {
 		char *name;
@@ -528,6 +550,9 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "list_unique_2", test_list_unique_2);
 	torture_suite_add_simple_test(suite, "list_append", test_list_append);
 	torture_suite_add_simple_test(suite, "list_append_const", test_list_append_const);
-
+	torture_suite_add_simple_test(
+		suite, "list_add_printf_NULL", test_list_add_printf_NULL);
+	torture_suite_add_simple_test(
+		suite, "list_add_printf", test_list_add_printf);
 	return suite;
 }

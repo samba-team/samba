@@ -300,6 +300,57 @@ _PUBLIC_ const char **str_list_add(const char **list, const char *s)
 }
 
 /**
+ * @brief Extend a talloc'ed string list with a printf'ed string
+ *
+ * str_list_add_printf() does nothing if *plist is NULL and it sets
+ * *plist to NULL on failure. It is designed to avoid intermediate
+ * NULL checks:
+ *
+ *     argv = str_list_make_empty(ctx);
+ *     str_list_add_printf(&argv, "smbstatus");
+ *     str_list_add_printf(&argv, "--configfile=%s", config);
+ *     if (argv == NULL) {
+ *        goto nomem;
+ *     }
+ *
+ * @param[in,out] plist The talloc'ed list to extend
+ * @param[in] fmt The format string
+ */
+void str_list_add_printf(char ***plist, const char *fmt, ...)
+{
+	char **list = *plist;
+	size_t len;
+	char **tmp = NULL;
+	va_list ap;
+
+	if (list == NULL) {
+		return;
+	}
+	len = str_list_length((const char * const *)list);
+
+	tmp = talloc_realloc(NULL, list, char *, len+2);
+	if (tmp == NULL) {
+		goto fail;
+	}
+	list = tmp;
+	list[len+1] = NULL;
+
+	va_start(ap, fmt);
+	list[len] = talloc_vasprintf(list, fmt, ap);
+	va_end(ap);
+
+	if (list[len] == NULL) {
+		goto fail;
+	}
+	*plist = list;
+
+	return;
+fail:
+	TALLOC_FREE(list);
+	*plist = NULL;
+}
+
+/**
   remove an entry from a string list
 */
 _PUBLIC_ void str_list_remove(const char **list, const char *s)

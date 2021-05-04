@@ -87,6 +87,12 @@ bool str_list_equal(const char * const *list1,
 */
 const char **str_list_add(const char **list, const char *s);
 
+/*
+ * Extend a list with a printf'ed string
+ */
+void str_list_add_printf(char ***plist, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(2,3);
+
 /**
   remove an entry from a string list
 */
