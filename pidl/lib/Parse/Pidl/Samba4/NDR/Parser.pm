@@ -14,7 +14,7 @@ push @ISA, qw(Exporter);
 
 use strict;
 use warnings;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName mapTypeSpecifier typeHasBody);
 use Parse::Pidl::Util qw(has_property
 			 ParseExpr
 			 ParseExprExt
@@ -371,7 +371,8 @@ sub ParseArrayPullGetSize($$$$$$)
 		} else {
 			$self->pidl("if ($array_size < $low || $array_size > $high) {");
 		}
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_size, (uint32_t)$low, (uint32_t)$high);");
+
 		$self->pidl("}");
 	}
 
@@ -410,7 +411,7 @@ sub ParseArrayPullGetLength($$$$$$;$)
 		} else {
 			$self->pidl("if ($array_length < $low || $array_length > $high) {");
 		}
-		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%\"PRIu32\") out of range (%\"PRIu32\" - %\"PRIu32\")\", $array_length, (uint32_t)$low, (uint32_t)$high);");
 		$self->pidl("}");
 	}
 
@@ -1036,7 +1037,20 @@ sub ParseDataPull($$$$$$$)
 			} else {
 				$self->pidl("if ($var_name < $low || $var_name > $high) {");
 			}
-			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+
+			my $data_type = mapTypeName($l->{DATA_TYPE});
+			my $fmt = mapTypeSpecifier($data_type);
+
+			if (!defined($fmt)) {
+				if (getType($l->{DATA_TYPE})->{DATA}->{TYPE} eq "ENUM") {
+					$data_type = "int";
+					$fmt = "d";
+				} else {
+					die("Format ($data_type) not supported");
+				}
+			}
+
+			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value (%$fmt) out of range (%$fmt - %$fmt)\", ($data_type)$var_name, ($data_type)$low, ($data_type)$high);");
 			$self->pidl("}");
 		}
 	} else {

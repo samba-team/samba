@@ -339,7 +339,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &namebuf_len));
 	if (namebuf_len < 1 || namebuf_len > 255) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "value out of range");
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "value (%"PRIu32") out of range (1 - 255)", namebuf_len);
 	}
 	NDR_PULL_ALLOC_N(ndr, namebuf, namebuf_len);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
