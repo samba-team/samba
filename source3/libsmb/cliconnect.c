@@ -72,7 +72,10 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 	if (lp_ctx == NULL) {
 		goto fail;
 	}
-	cli_credentials_set_conf(creds, lp_ctx);
+	ok = cli_credentials_set_conf(creds, lp_ctx);
+	if (!ok) {
+		goto fail;
+	}
 
 	if (username == NULL) {
 		username = "";
