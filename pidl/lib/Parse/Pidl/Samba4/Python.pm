@@ -1988,7 +1988,11 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 			}
 			$self->pidl("for ($counter = 0; $counter < PyList_GET_SIZE($py_var); $counter++) {");
 			$self->indent;
-			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail, 0);
+			if (ArrayDynamicallyAllocated($e, $l)) {
+				$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail, 0);
+			} else {
+				$self->ConvertObjectFromPythonLevel($env, $mem_ctx, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail, 0);
+			}
 			$self->deindent;
 			$self->pidl("}");
 			$self->deindent;
