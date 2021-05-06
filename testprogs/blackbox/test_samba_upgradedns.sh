@@ -28,6 +28,7 @@ fi
 . `dirname $0`/subunit.sh
 
 testit "run samba_upgradedns converting to bind9 DLZ" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=BIND9_DLZ --configfile=$PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "check that dns.keytab is present" test -f $PROVDIR/bind-dns/dns.keytab
 
 testit "run samba_upgradedns converting to internal" $PYTHON $samba4srcdir/scripting/bin/samba_upgradedns --dns-backend=SAMBA_INTERNAL --configfile=$PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
