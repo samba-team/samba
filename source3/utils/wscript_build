@@ -112,11 +112,6 @@ bld.SAMBA3_BINARY('log2pcap',
                  deps='''talloc popt''',
                  install=False)
 
-bld.SAMBA3_BINARY('debug2html',
-                 source='''debug2html.c debugparse.c''',
-                 deps='''talloc popt''',
-                 install=False)
-
 bld.SAMBA3_BINARY('smbfilter',
                  source='smbfilter.c',
                  deps='''
