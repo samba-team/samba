@@ -53,7 +53,6 @@ yum install -y \
     libbsd-devel \
     libcap-devel \
     libicu-devel \
-    libnsl2-devel \
     libpcap-devel \
     libsemanage-python \
     libtasn1-devel \

@@ -126,7 +126,6 @@ PKGS = [
     ('', 'rpcgen'),  # required for test
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
-    ('', 'libnsl2-devel'),  # for <rpcsvc/yp_prot.h> header on fedora
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
 
@@ -508,7 +507,6 @@ RPM_DISTS = {
             'jansson-devel': 'libjansson-devel',
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
-            'libnsl2-devel': 'libnsl-devel',
             'libsemanage-python': 'python2-semanage',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
@@ -540,7 +538,6 @@ RPM_DISTS = {
             'jansson-devel': 'libjansson-devel',
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
-            'libnsl2-devel': 'libnsl-devel',
             'libsemanage-python': 'python2-semanage',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',

@@ -52,7 +52,6 @@ zypper --non-interactive install \
     libcephfs-devel \
     libicu-devel \
     libjansson-devel \
-    libnsl-devel \
     libpcap-devel \
     libtasn1-devel \
     libtirpc-devel \

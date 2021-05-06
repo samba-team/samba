@@ -54,7 +54,6 @@ dnf install -y \
     libcap-devel \
     libcephfs-devel \
     libicu-devel \
-    libnsl2-devel \
     libpcap-devel \
     libtasn1-devel \
     libtasn1-tools \
