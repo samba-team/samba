@@ -41,6 +41,7 @@ struct sessionid {
 	uint16_t connection_dialect;
 	uint8_t encryption_flags;
 	uint16_t cipher;
+	uint16_t signing;
 	uint8_t signing_flags;
 };
 

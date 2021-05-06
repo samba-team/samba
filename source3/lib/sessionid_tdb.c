@@ -72,6 +72,7 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 	session.encryption_flags = global->encryption_flags;
 	session.cipher = global->channels[0].encryption_cipher;
 	session.signing_flags = global->signing_flags;
+	session.signing = global->channels[0].signing_algo;
 
 	return state->fn(NULL, &session, state->private_data);
 }

@@ -358,12 +358,23 @@ static int traverse_connections(const struct connections_key *key,
 	}
 
 	if (smbXsrv_is_signed(crec->signing_flags)) {
-		if (crec->dialect >= SMB3_DIALECT_REVISION_302) {
-			signing = "AES-128-CMAC";
-		} else if (crec->dialect >= SMB2_DIALECT_REVISION_202) {
-			signing = "HMAC-SHA256";
-		} else {
+		switch (crec->signing) {
+		case SMB2_SIGNING_MD5_SMB1:
 			signing = "HMAC-MD5";
+			break;
+		case SMB2_SIGNING_HMAC_SHA256:
+			signing = "HMAC-SHA256";
+			break;
+		case SMB2_SIGNING_AES128_CMAC:
+			signing = "AES-128-CMAC";
+			break;
+		case SMB2_SIGNING_AES128_GMAC:
+			signing = "AES-128-GMAC";
+			break;
+		default:
+			signing = "???";
+			result = -1;
+			break;
 		}
 	}
 
@@ -450,6 +461,12 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		case SMB2_ENCRYPTION_AES128_GCM:
 			encryption = "AES-128-GCM";
 			break;
+		case SMB2_ENCRYPTION_AES256_CCM:
+			encryption = "AES-256-CCM";
+			break;
+		case SMB2_ENCRYPTION_AES256_GCM:
+			encryption = "AES-256-GCM";
+			break;
 		default:
 			encryption = "???";
 			result = -1;
@@ -466,6 +483,12 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		case SMB2_ENCRYPTION_AES128_GCM:
 			encryption = "partial(AES-128-GCM)";
 			break;
+		case SMB2_ENCRYPTION_AES256_CCM:
+			encryption = "partial(AES-256-CCM)";
+			break;
+		case SMB2_ENCRYPTION_AES256_GCM:
+			encryption = "partial(AES-256-GCM)";
+			break;
 		default:
 			encryption = "???";
 			result = -1;
@@ -474,20 +497,42 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 	if (smbXsrv_is_signed(session->signing_flags)) {
-		if (session->connection_dialect >= SMB3_DIALECT_REVISION_302) {
-			signing = "AES-128-CMAC";
-		} else if (session->connection_dialect >= SMB2_DIALECT_REVISION_202) {
-			signing = "HMAC-SHA256";
-		} else {
+		switch (session->signing) {
+		case SMB2_SIGNING_MD5_SMB1:
 			signing = "HMAC-MD5";
+			break;
+		case SMB2_SIGNING_HMAC_SHA256:
+			signing = "HMAC-SHA256";
+			break;
+		case SMB2_SIGNING_AES128_CMAC:
+			signing = "AES-128-CMAC";
+			break;
+		case SMB2_SIGNING_AES128_GMAC:
+			signing = "AES-128-GMAC";
+			break;
+		default:
+			signing = "???";
+			result = -1;
+			break;
 		}
 	} else if (smbXsrv_is_partially_signed(session->signing_flags)) {
-		if (session->connection_dialect >= SMB3_DIALECT_REVISION_302) {
-			signing = "partial(AES-128-CMAC)";
-		} else if (session->connection_dialect >= SMB2_DIALECT_REVISION_202) {
-			signing = "partial(HMAC-SHA256)";
-		} else {
+		switch (session->signing) {
+		case SMB2_SIGNING_MD5_SMB1:
 			signing = "partial(HMAC-MD5)";
+			break;
+		case SMB2_SIGNING_HMAC_SHA256:
+			signing = "partial(HMAC-SHA256)";
+			break;
+		case SMB2_SIGNING_AES128_CMAC:
+			signing = "partial(AES-128-CMAC)";
+			break;
+		case SMB2_SIGNING_AES128_GMAC:
+			signing = "partial(AES-128-GMAC)";
+			break;
+		default:
+			signing = "???";
+			result = -1;
+			break;
 		}
 	}
 
