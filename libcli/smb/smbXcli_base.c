@@ -2896,6 +2896,17 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	struct smbXcli_req_state *substate;
 	NTSTATUS status;
 
+	if (state->smb2.cancel_mid == UINT64_MAX) {
+		/*
+		 * We already send a cancel,
+		 * make sure we don't do it
+		 * twice, otherwise we may
+		 * expose the same NONCE for
+		 * AES-128-GMAC signing
+		 */
+		return true;
+	}
+
 	SSVAL(fixed, 0, 0x04);
 	SSVAL(fixed, 2, 0);
 
@@ -2912,9 +2923,16 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	}
 	substate = tevent_req_data(subreq, struct smbXcli_req_state);
 
+	substate->smb2.cancel_mid = BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID);
+
 	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, state->smb2.cancel_flags);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, state->smb2.cancel_mid);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, state->smb2.cancel_aid);
+
+	/*
+	 * remember that we don't send a cancel again
+	 */
+	state->smb2.cancel_mid = UINT64_MAX;
 
 	status = smb2cli_req_compound_submit(&subreq, 1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3295,7 +3313,8 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT, credits);
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
-		state->smb2.cancel_flags = 0;
+		state->smb2.cancel_flags = SVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
+		state->smb2.cancel_flags &= ~SMB2_HDR_FLAG_CHAINED;
 		state->smb2.cancel_mid = mid;
 		state->smb2.cancel_aid = 0;
 
@@ -3777,8 +3796,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * even if the SMB2_HDR_FLAG_SIGNED flag
 			 * is set.
 			 */
-			state->smb2.cancel_flags = SMB2_HDR_FLAG_ASYNC;
-			state->smb2.cancel_mid = 0;
+			state->smb2.cancel_flags |= SMB2_HDR_FLAG_ASYNC;
 			state->smb2.cancel_aid = async_id;
 
 			if (state->smb2.notify_async) {
