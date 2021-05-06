@@ -21,7 +21,7 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 
 
 class JoinCmdTestCase(SambaToolCmdTest):
-    """Test for samba-tool fsmo show subcommand"""
+    """Test for samba-tool domain join subcommand"""
 
     def test_rejoin(self):
         """Run domain join to confirm it errors because we are already joined"""
