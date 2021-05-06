@@ -103,10 +103,10 @@ ubuntu2004:
 debian10:
   extends: .build_image_template
 
-fedora32:
+fedora33:
   extends: .build_image_template
 
-fedora33:
+fedora34:
   extends: .build_image_template
 
 centos8:

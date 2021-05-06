@@ -472,17 +472,6 @@ RPM_DISTS = {
             'liburing-devel': '', # not available yet, Add me back, once available!
         }
     },
-    'fedora32': {
-        'docker_image': 'fedora:32',
-        'vagrant_box': 'fedora/32-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'libsemanage-python': 'python3-libsemanage',
-            'policycoreutils-python': 'python3-policycoreutils',
-            'perl-FindBin': '',
-        }
-    },
     'fedora33': {
         'docker_image': 'fedora:33',
         'vagrant_box': 'fedora/33-cloud-base',
@@ -491,6 +480,17 @@ RPM_DISTS = {
             'lsb-release': 'redhat-lsb',
             'libsemanage-python': 'python3-libsemanage',
             'policycoreutils-python': 'python3-policycoreutils',
+        }
+    },
+    'fedora34': {
+        'docker_image': 'fedora:34',
+        'vagrant_box': 'fedora/34-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            'libsemanage-python': 'python3-libsemanage',
+            'policycoreutils-python': 'python3-policycoreutils',
+            'perl-FindBin': '',
         }
     },
     'opensuse151': {
