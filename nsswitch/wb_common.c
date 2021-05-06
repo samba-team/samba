@@ -259,7 +259,7 @@ static int make_safe_fd(int fd)
 /**
  * @internal
  *
- * @brief Check if we talk to the priviliged pipe which should be owned by root.
+ * @brief Check if we talk to the privileged pipe which should be owned by root.
  *
  * This checks if we have uid_wrapper running and if this is the case it will
  * allow one to connect to the winbind privileged pipe even it is not owned by root.
