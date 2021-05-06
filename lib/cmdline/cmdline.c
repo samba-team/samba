@@ -282,6 +282,35 @@ poptContext samba_popt_get_context(const char * name,
 
 static bool log_to_file;
 
+static bool set_logfile(TALLOC_CTX *mem_ctx,
+			struct loadparm_context *lp_ctx,
+			const char *log_basename,
+			const char *process_name)
+{
+	bool ok;
+	char *new_logfile = talloc_asprintf(mem_ctx,
+					    "%s/log.%s",
+					    log_basename,
+					    process_name);
+	if (new_logfile == NULL) {
+		return false;
+	}
+
+	ok = lpcfg_set_cmdline(lp_ctx,
+			       "log file",
+			       new_logfile);
+	if (!ok) {
+		fprintf(stderr,
+			"Failed to set log to %s\n",
+			new_logfile);
+		TALLOC_FREE(new_logfile);
+		return false;
+	}
+	TALLOC_FREE(new_logfile);
+
+	return true;
+}
+
 static void popt_samba_callback(poptContext popt_ctx,
 				enum poptCallbackReason reason,
 				const struct poptOption *opt,
@@ -292,10 +321,25 @@ static void popt_samba_callback(poptContext popt_ctx,
 	const char *pname = NULL;
 	bool ok;
 
+	/* Find out basename of current program */
+	pname = strrchr_m(poptGetInvocationName(popt_ctx), '/');
+	if (pname == NULL) {
+		pname = poptGetInvocationName(popt_ctx);
+	} else {
+		pname++;
+	}
+
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		if (lp_ctx == NULL) {
 			fprintf(stderr,
 				"Command line parsing not initialized!\n");
+			exit(1);
+		}
+		ok = set_logfile(mem_ctx, lp_ctx, get_dyn_LOGFILEBASE(), pname);
+		if (!ok) {
+			fprintf(stderr,
+				"Failed to set log file for %s\n",
+				pname);
 			exit(1);
 		}
 		return;
@@ -327,14 +371,6 @@ static void popt_samba_callback(poptContext popt_ctx,
 		}
 
 		return;
-	}
-
-	/* Find out basename of current program */
-	pname = strrchr_m(poptGetInvocationName(popt_ctx), '/');
-	if (pname == NULL) {
-		pname = poptGetInvocationName(popt_ctx);
-	} else {
-		pname++;
 	}
 
 	switch(opt->val) {
@@ -374,31 +410,16 @@ static void popt_samba_callback(poptContext popt_ctx,
 		break;
 	case 'l':
 		if (arg != NULL) {
-			char *new_logfile = talloc_asprintf(mem_ctx,
-							    "%s/log.%s",
-							    arg,
-							    pname);
-			if (new_logfile == NULL) {
-				fprintf(stderr,
-					"Failed to allocate memory\n");
-				exit(1);
-			}
-
-			ok = lpcfg_set_cmdline(lp_ctx,
-					       "log file",
-					       new_logfile);
+			ok = set_logfile(mem_ctx, lp_ctx, arg, pname);
 			if (!ok) {
 				fprintf(stderr,
-					"Failed to set log file: %s\n",
-					new_logfile);
-				TALLOC_FREE(new_logfile);
+					"Failed to set log file for %s\n",
+					arg);
 				exit(1);
 			}
 			log_to_file = true;
 
 			set_dyn_LOGFILEBASE(arg);
-
-			TALLOC_FREE(new_logfile);
 		}
 		break;
 	}
