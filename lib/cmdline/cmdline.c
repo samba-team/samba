@@ -117,7 +117,8 @@ void samba_cmdline_burn(int argc, char *argv[])
 	bool found = false;
 	bool is_user = false;
 	char *p = NULL;
-	int i, ulen = 0;
+	int i;
+	size_t ulen = 0;
 
 	for (i = 0; i < argc; i++) {
 		p = argv[i];
