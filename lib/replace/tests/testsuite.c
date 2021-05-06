@@ -283,6 +283,15 @@ static int test_strndup(void)
 		return false;
 	}
 
+#ifdef __GNUC__
+# if __GNUC__ < 11
+	/*
+	 * This code will not compile with gcc11 -O3 anymore.
+	 *
+	 * error: ‘strndup’ specified bound 10 exceeds source size 4 [-Werror=stringop-overread]
+	 *          x = strndup("bla", 10);
+	 *          ^~~~~~~~~~~~~~~~~~
+	 */
 	x = strndup("bla", 10);
 	cmp = strcmp(x, "bla");
 	free(x);
@@ -290,6 +299,8 @@ static int test_strndup(void)
 		printf("failure: strndup [\ninvalid\n]\n");
 		return false;
 	}
+# endif
+#endif /* __GNUC__ */
 
 	printf("success: strndup\n");
 	return true;
