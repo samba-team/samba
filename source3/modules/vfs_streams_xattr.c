@@ -957,6 +957,27 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if ((offset + n) >= lp_smbd_max_xattr_size(SNUM(handle->conn))) {
+		/*
+		 * Requested write is beyond what can be read based on
+		 * samba configuration.
+		 * ReFS returns STATUS_FILESYSTEM_LIMITATION, which causes
+		 * entire file to be skipped by File Explorer. VFAT returns
+		 * NT_STATUS_OBJECT_NAME_COLLISION causes user to be prompted
+		 * to skip writing metadata, but copy data.
+		 */
+		DBG_ERR("Write to xattr [%s] on file [%s] exceeds maximum "
+			"supported extended attribute size. "
+			"Depending on filesystem type and operating system "
+			"(OS) specifics, this value may be increased using "
+			"the value of the parameter: "
+			"smbd max xattr size = <bytes>. Consult OS and "
+			"filesystem manpages prior to increasing this limit.\n",
+			sio->xattr_name, sio->base);
+		errno = EOVERFLOW;
+		return -1;
+	}
+
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
 					sio->base,

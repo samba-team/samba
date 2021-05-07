@@ -249,6 +249,7 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 	size_t attr_size = 256;
 	char *val = NULL;
 	ssize_t sizeret;
+	size_t max_xattr_size = lp_smbd_max_xattr_size(SNUM(conn));
 
  again:
 
@@ -264,8 +265,8 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 				ea_name, val, attr_size);
 	}
 
-	if (sizeret == -1 && errno == ERANGE && attr_size != 65536) {
-		attr_size = 65536;
+	if (sizeret == -1 && errno == ERANGE && attr_size < max_xattr_size) {
+		attr_size = max_xattr_size;
 		goto again;
 	}
 
@@ -499,6 +500,17 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 			 * We can never return a zero length EA.
 			 * Windows reports the EA's as corrupted.
 			 */
+			TALLOC_FREE(listp);
+			continue;
+		} else if (listp->ea.value.length > 65536) {
+			/*
+			 * SMB clients may report error with file
+			 * if large EA is presented to them.
+			 */
+			DBG_ERR("EA [%s] on file [%s] exceeds "
+				"maximum permitted EA size of 64KiB: %zu\n.",
+				listp->ea.name, fsp_str_dbg(fsp),
+				listp->ea.value.length);
 			TALLOC_FREE(listp);
 			continue;
 		}

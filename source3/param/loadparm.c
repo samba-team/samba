@@ -197,6 +197,7 @@ static const struct loadparm_service _sDefault =
 	.map_hidden = false,
 	.map_archive = true,
 	.store_dos_attributes = true,
+	.smbd_max_xattr_size = 65536,
 	.dmapi_support = false,
 	.locking = true,
 	.strict_locking = Auto,

@@ -1,0 +1,28 @@
+<samba:parameter name="smbd max xattr size"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter controls the maximum size of extended attributes
+	  that may be written to the server as EAs or as alternate data
+	  streams if vfs_streams_xattr is enabled. The maximum size of
+	  extended attributes depends on the Samba server's operating system
+	  and the underlying filesystem. The Linux VFS currently sets an
+	  upper boundary of 64 KiB per extended attribute. FreeBSD does not
+	  set a practical upper limit, but since pread() and pwrite() are not
+	  possible via the extattr on FreeBSD, it is not recommended to
+	  increase this value above a few MiB.
+
+	  If a client attempts to write an overly-large alternate datastream,
+	  the Samba server will return STATUS_FILESYSTEM_LIMITATION.
+	  If this error is encountered, users may try increasing the maximum
+	  size supported for xattr writes. If this is not possible, and
+	  writes are from a MacOS client and to an AFP_Resource extended
+	  attribute, the user may enable the vfs_fruit module and configure
+	  to allow stream writes for AFP_Resource to an alternative storage
+	  location. See vfs_fruit documentation for further details.
+	</para>
+</description>
+<value type="default">65536</value>
+</samba:parameter>
