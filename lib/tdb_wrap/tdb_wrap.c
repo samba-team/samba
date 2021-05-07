@@ -20,6 +20,7 @@
 */
 
 #include "replace.h"
+#include "system/filesys.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "tdb_wrap.h"
@@ -99,6 +100,11 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 	}
 	/* Doesn't fail, see talloc_pooled_object */
 	result->name = talloc_strdup(result, name);
+
+	/*
+	 * TDB files don't make sense after execve()
+	 */
+	open_flags |= O_CLOEXEC;
 
 	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
 				  open_flags, mode, &lctx, NULL);
