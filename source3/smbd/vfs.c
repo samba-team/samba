@@ -2399,6 +2399,17 @@ NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 					  num_streams, streams);
 }
 
+NTSTATUS smb_vfs_call_fstreaminfo(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 TALLOC_CTX *mem_ctx,
+				 unsigned int *num_streams,
+				 struct stream_struct **streams)
+{
+	VFS_FIND(fstreaminfo);
+	return handle->fns->fstreaminfo_fn(handle, fsp, mem_ctx,
+					  num_streams, streams);
+}
+
 int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
 				   const struct smb_filename *path,
 				   const char *name,

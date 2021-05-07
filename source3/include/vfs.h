@@ -349,6 +349,7 @@
  * Version 45 - Remove SMB_VFS_CHMOD
  * Version 45 - Add SMB_VFS_FNTIMES
  * Version 45 - Remove SMB_VFS_NTIMES
+ * Version 45 - ADD SMB_VFS_FSTREAMINFO
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1119,6 +1120,12 @@ struct vfs_fn_pointers {
 				  unsigned int *num_streams,
 				  struct stream_struct **streams);
 
+	NTSTATUS (*fstreaminfo_fn)(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   TALLOC_CTX *mem_ctx,
+				   unsigned int *num_streams,
+				   struct stream_struct **streams);
+
 	int (*get_real_filename_fn)(struct vfs_handle_struct *handle,
 				    const struct smb_filename *path,
 				    const char *name,
@@ -1592,6 +1599,11 @@ NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 TALLOC_CTX *mem_ctx,
 				 unsigned int *num_streams,
 				 struct stream_struct **streams);
+NTSTATUS smb_vfs_call_fstreaminfo(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  TALLOC_CTX *mem_ctx,
+				  unsigned int *num_streams,
+				  struct stream_struct **streams);
 int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
 				   const struct smb_filename *path,
 				   const char *name,
@@ -2053,6 +2065,11 @@ NTSTATUS vfs_not_implemented_streaminfo(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					unsigned int *num_streams,
 					struct stream_struct **streams);
+NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 TALLOC_CTX *mem_ctx,
+					 unsigned int *num_streams,
+					 struct stream_struct **streams);
 int vfs_not_implemented_get_real_filename(struct vfs_handle_struct *handle,
 					  const struct smb_filename *path,
 					  const char *name,

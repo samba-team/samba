@@ -855,6 +855,19 @@ static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				streams);
 }
 
+static NTSTATUS skel_fstreaminfo(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 TALLOC_CTX *mem_ctx,
+				 unsigned int *num_streams,
+				 struct stream_struct **streams)
+{
+	return SMB_VFS_NEXT_FSTREAMINFO(handle,
+				fsp,
+				mem_ctx,
+				num_streams,
+				streams);
+}
+
 static int skel_get_real_filename(struct vfs_handle_struct *handle,
 				  const struct smb_filename *path,
 				  const char *name,
@@ -1364,6 +1377,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.set_compression_fn = skel_set_compression,
 
 	.streaminfo_fn = skel_streaminfo,
+	.fstreaminfo_fn = skel_fstreaminfo,
 	.get_real_filename_fn = skel_get_real_filename,
 	.connectpath_fn = skel_connectpath,
 	.brl_lock_windows_fn = skel_brl_lock_windows,

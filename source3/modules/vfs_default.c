@@ -3081,6 +3081,57 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfswrap_fstreaminfo(vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   TALLOC_CTX *mem_ctx,
+				   unsigned int *pnum_streams,
+				   struct stream_struct **pstreams)
+{
+	struct stream_struct *tmp_streams = NULL;
+	unsigned int num_streams = *pnum_streams;
+	struct stream_struct *streams = *pstreams;
+	NTSTATUS status;
+
+	if (fsp->fsp_flags.is_directory) {
+		/*
+		 * No default streams on directories
+		 */
+		goto done;
+	}
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (num_streams + 1 < 1) {
+		/* Integer wrap. */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	tmp_streams = talloc_realloc(mem_ctx,
+					streams,
+					struct stream_struct,
+					num_streams + 1);
+	if (tmp_streams == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tmp_streams[num_streams].name = talloc_strdup(tmp_streams, "::$DATA");
+	if (tmp_streams[num_streams].name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tmp_streams[num_streams].size = fsp->fsp_name->st.st_ex_size;
+	tmp_streams[num_streams].alloc_size = SMB_VFS_GET_ALLOC_SIZE(
+						handle->conn,
+						fsp,
+						&fsp->fsp_name->st);
+	num_streams += 1;
+
+	*pnum_streams = num_streams;
+	*pstreams = tmp_streams;
+ done:
+	return NT_STATUS_OK;
+}
+
 static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
 				     const struct smb_filename *path,
 				     const char *name,
@@ -3828,6 +3879,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.file_id_create_fn = vfswrap_file_id_create,
 	.fs_file_id_fn = vfswrap_fs_file_id,
 	.streaminfo_fn = vfswrap_streaminfo,
+	.fstreaminfo_fn = vfswrap_fstreaminfo,
 	.get_real_filename_fn = vfswrap_get_real_filename,
 	.connectpath_fn = vfswrap_connectpath,
 	.brl_lock_windows_fn = vfswrap_brl_lock_windows,

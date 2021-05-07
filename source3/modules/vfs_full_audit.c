@@ -164,6 +164,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_FS_FILE_ID,
 	SMB_VFS_OP_STREAMINFO,
+	SMB_VFS_OP_FSTREAMINFO,
 	SMB_VFS_OP_GET_REAL_FILENAME,
 	SMB_VFS_OP_CONNECTPATH,
 	SMB_VFS_OP_BRL_LOCK_WINDOWS,
@@ -303,6 +304,7 @@ static struct {
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_FS_FILE_ID,	"fs_file_id" },
 	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
+	{ SMB_VFS_OP_FSTREAMINFO,	"fstreaminfo" },
 	{ SMB_VFS_OP_GET_REAL_FILENAME, "get_real_filename" },
 	{ SMB_VFS_OP_CONNECTPATH,	"connectpath" },
 	{ SMB_VFS_OP_BRL_LOCK_WINDOWS,  "brl_lock_windows" },
@@ -2005,7 +2007,6 @@ static uint64_t smb_full_audit_fs_file_id(struct vfs_handle_struct *handle,
 
 	return result;
 }
-
 static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  const struct smb_filename *smb_fname,
@@ -2025,6 +2026,26 @@ static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
+}
+
+static NTSTATUS smb_full_audit_fstreaminfo(vfs_handle_struct *handle,
+                                          struct files_struct *fsp,
+                                          TALLOC_CTX *mem_ctx,
+                                          unsigned int *pnum_streams,
+                                          struct stream_struct **pstreams)
+{
+        NTSTATUS result;
+
+        result = SMB_VFS_NEXT_FSTREAMINFO(handle, fsp, mem_ctx,
+                                         pnum_streams, pstreams);
+
+        do_log(SMB_VFS_OP_FSTREAMINFO,
+               NT_STATUS_IS_OK(result),
+               handle,
+               "%s",
+               smb_fname_str_do_log(handle->conn, fsp->fsp_name));
+
+        return result;
 }
 
 static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
@@ -2982,6 +3003,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.snap_create_fn = smb_full_audit_snap_create,
 	.snap_delete_fn = smb_full_audit_snap_delete,
 	.streaminfo_fn = smb_full_audit_streaminfo,
+	.fstreaminfo_fn = smb_full_audit_fstreaminfo,
 	.get_real_filename_fn = smb_full_audit_get_real_filename,
 	.connectpath_fn = smb_full_audit_connectpath,
 	.brl_lock_windows_fn = smb_full_audit_brl_lock_windows,

@@ -353,6 +353,11 @@
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx, num_streams, streams) \
 	smb_vfs_call_streaminfo((handle)->next, (fsp), (smb_fname), (mem_ctx), (num_streams), (streams))
 
+#define SMB_VFS_FSTREAMINFO(fsp, mem_ctx, num_streams, streams) \
+	smb_vfs_call_fstreaminfo((fsp)->conn->vfs_handles, (fsp), (mem_ctx), (num_streams), (streams))
+#define SMB_VFS_NEXT_FSTREAMINFO(handle, fsp, mem_ctx, num_streams, streams) \
+	smb_vfs_call_fstreaminfo(handle->next, (fsp), (mem_ctx), (num_streams), (streams))
+
 #define SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) \
 	smb_vfs_call_get_real_filename((conn)->vfs_handles, (path), (name), (mem_ctx), (found_name))
 #define SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx, found_name) \

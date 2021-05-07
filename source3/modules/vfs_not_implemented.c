@@ -640,6 +640,15 @@ NTSTATUS vfs_not_implemented_streaminfo(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS vfs_not_implemented_fstreaminfo(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					TALLOC_CTX *mem_ctx,
+					unsigned int *num_streams,
+					struct stream_struct **streams)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 int vfs_not_implemented_get_real_filename(struct vfs_handle_struct *handle,
 					  const struct smb_filename *path,
 					  const char *name,
@@ -1062,6 +1071,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.set_compression_fn = vfs_not_implemented_set_compression,
 
 	.streaminfo_fn = vfs_not_implemented_streaminfo,
+	.fstreaminfo_fn = vfs_not_implemented_fstreaminfo,
 	.get_real_filename_fn = vfs_not_implemented_get_real_filename,
 	.connectpath_fn = vfs_not_implemented_connectpath,
 	.brl_lock_windows_fn = vfs_not_implemented_brl_lock_windows,
