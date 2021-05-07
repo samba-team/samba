@@ -908,7 +908,7 @@ int json_add_guid(struct json_object *object,
 /*
  * @brief Convert a JSON object into a string
  *
- * Convert the jsom object into a string suitable for printing on a log line,
+ * Convert the json object into a string suitable for printing on a log line,
  * i.e. with no embedded line breaks.
  *
  * If the object is invalid it logs an error and returns NULL.
