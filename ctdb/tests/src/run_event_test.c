@@ -86,7 +86,7 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     timeout,
 			     false);
 	if (req == NULL) {
-		fprintf(stderr, "run_proc_send() failed\n");
+		fprintf(stderr, "run_event_send() failed\n");
 		return;
 	}
 
@@ -94,7 +94,7 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	status = run_event_recv(req, &ret, mem_ctx, &script_list);
 	if (! status) {
-		fprintf(stderr, "run_proc_recv() failed, ret=%d\n", ret);
+		fprintf(stderr, "run_event_recv() failed, ret=%d\n", ret);
 		return;
 	}
 
