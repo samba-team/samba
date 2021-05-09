@@ -26,7 +26,7 @@ struct smb2_negotiate_context {
 };
 
 struct smb2_negotiate_contexts {
-	uint32_t num_contexts;
+	uint16_t num_contexts;
 	struct smb2_negotiate_context *contexts;
 };
 
@@ -34,7 +34,8 @@ struct smb2_negotiate_contexts {
   parse a set of SMB2 negotiate contexts
 */
 NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
-				struct smb2_negotiate_contexts *contexts);
+				      uint16_t expected_count,
+				      struct smb2_negotiate_contexts *contexts);
 
 /*
   negotiate a buffer of a set of negotiate contexts

@@ -262,14 +262,11 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		in_negotiate_context_blob.length -= ofs;
 
 		status = smb2_negotiate_context_parse(req,
-					in_negotiate_context_blob, &in_c);
+						      in_negotiate_context_blob,
+						      in_negotiate_context_count,
+						      &in_c);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
-		}
-
-		if (in_negotiate_context_count != in_c.num_contexts) {
-			return smbd_smb2_request_error(req,
-					NT_STATUS_INVALID_PARAMETER);
 		}
 	}
 

@@ -31,12 +31,14 @@ static size_t smb2_negotiate_context_padding(uint32_t offset, size_t n)
   parse a set of SMB2 create contexts
 */
 NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
+				      uint16_t expected_count,
 				      struct smb2_negotiate_contexts *contexts)
 {
 	const uint8_t *data = buffer.data;
 	uint32_t remaining = buffer.length;
+	uint16_t idx;
 
-	while (true) {
+	for (idx = 0; idx < expected_count; idx++) {
 		uint16_t data_length;
 		uint16_t type;
 		NTSTATUS status;
@@ -63,6 +65,10 @@ NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffe
 			return status;
 		}
 
+		if (contexts->num_contexts == expected_count) {
+			break;
+		}
+
 		remaining -= next_offset;
 		data += next_offset;
 
@@ -76,6 +82,10 @@ NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffe
 		}
 		remaining -= pad;
 		data += pad;
+	}
+
+	if (contexts->num_contexts != expected_count) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return NT_STATUS_OK;

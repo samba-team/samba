@@ -5059,13 +5059,14 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	negotiate_context_blob.data += ctx_ofs;
 	negotiate_context_blob.length -= ctx_ofs;
 
-	status = smb2_negotiate_context_parse(state, negotiate_context_blob, &c);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	status = smb2_negotiate_context_parse(state,
+					      negotiate_context_blob,
+					      negotiate_context_count,
+					      &c);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-
-	if (negotiate_context_count != c.num_contexts) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
