@@ -1897,6 +1897,7 @@ sub check_or_start($$) {
 	my $winbindd = $args{winbindd} // "no";
 	my $smbd = $args{smbd} // "no";
 	my $child_cleanup = $args{child_cleanup};
+	my $skip_wait = $args{skip_wait} // 0;
 
 	my $STDIN_READER;
 
@@ -1980,6 +1981,10 @@ sub check_or_start($$) {
 
 	# close the parent's read-end of the pipe
 	close($STDIN_READER);
+
+	if ($skip_wait) {
+		return 1;
+	}
 
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
