@@ -18,7 +18,7 @@
 
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import tempfile
 
 sys.path.insert(0, "bin/python")
@@ -519,11 +519,26 @@ class KDCBaseTest(RawKerberosTest):
         cred.server = sprincipal
         cred.keyblock = keyblock
         cred.authtime = int(datetime.strptime(authtime.decode(),
-                                              "%Y%m%d%H%M%SZ").timestamp())
+                                              "%Y%m%d%H%M%SZ")
+                            .replace(tzinfo=timezone.utc).timestamp())
         cred.starttime = int(datetime.strptime(starttime.decode(),
-                                               "%Y%m%d%H%M%SZ").timestamp())
+                                               "%Y%m%d%H%M%SZ")
+                            .replace(tzinfo=timezone.utc).timestamp())
         cred.endtime = int(datetime.strptime(endtime.decode(),
-                                             "%Y%m%d%H%M%SZ").timestamp())
+                                             "%Y%m%d%H%M%SZ")
+                            .replace(tzinfo=timezone.utc).timestamp())
+
+        # Account for clock skew of up to five minutes.
+        self.assertLess(cred.authtime - 5*60,
+                        datetime.now(timezone.utc).timestamp(),
+                        "Ticket not yet valid - clocks may be out of sync.")
+        self.assertLess(cred.starttime - 5*60,
+                        datetime.now(timezone.utc).timestamp(),
+                        "Ticket not yet valid - clocks may be out of sync.")
+        self.assertGreater(cred.endtime - 60*60,
+                           datetime.now(timezone.utc).timestamp(),
+                           "Ticket already expired/about to expire - clocks may be out of sync.")
+
         cred.renew_till = cred.endtime
         cred.is_skey = 0
         cred.ticket_flags = int(enc_part['flags'], 2)
