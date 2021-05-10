@@ -2351,7 +2351,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.realpath_fn = vfs_gluster_realpath,
 	.chflags_fn = vfs_gluster_chflags,
 	.file_id_create_fn = NULL,
-	.streaminfo_fn = NULL,
 	.fstreaminfo_fn = NULL,
 	.get_real_filename_fn = vfs_gluster_get_real_filename,
 	.connectpath_fn = vfs_gluster_connectpath,
