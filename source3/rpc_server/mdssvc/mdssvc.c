@@ -27,6 +27,7 @@
 #include "lib/util/time_basic.h"
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "mdssvc.h"
 #include "mdssvc_noindex.h"
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
@@ -513,10 +514,24 @@ static bool inode_map_add(struct sl_query *slq, uint64_t ino, const char *path)
 
 bool mds_add_result(struct sl_query *slq, const char *path)
 {
+	struct smb_filename *smb_fname = NULL;
 	struct stat_ex sb;
+	uint32_t attr;
 	uint64_t ino64;
 	int result;
+	NTSTATUS status;
 	bool ok;
+
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					path,
+					NULL,
+					NULL,
+					0,
+					0);
+	if (smb_fname == NULL) {
+		DBG_ERR("synthetic_smb_fname() failed\n");
+		return false;
+	}
 
 	/*
 	 * We're in a tevent callback which means in the case of
@@ -539,20 +554,44 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 	 * any function exit below must ensure we switch back
 	 */
 
-	result = sys_stat(path, &sb, false);
+	result = SMB_VFS_STAT(slq->mds_ctx->conn, smb_fname);
 	if (result != 0) {
+		DBG_DEBUG("SMB_VFS_STAT [%s] failed: %s\n",
+			  smb_fname_str_dbg(smb_fname),
+			  strerror(errno));
 		unbecome_authenticated_pipe_user();
+		TALLOC_FREE(smb_fname);
 		return true;
 	}
-	result = access(path, R_OK);
-	if (result != 0) {
+
+	status = smbd_check_access_rights(slq->mds_ctx->conn,
+					  slq->mds_ctx->conn->cwd_fsp,
+					  smb_fname,
+					  false,
+					  FILE_READ_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
 		unbecome_authenticated_pipe_user();
+		TALLOC_FREE(smb_fname);
 		return true;
+	}
+
+	/* This is needed to fetch the itime from the DOS attribute blob */
+	status = SMB_VFS_GET_DOS_ATTRIBUTES(slq->mds_ctx->conn,
+					    smb_fname,
+					    &attr);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Ignore the error, likely no DOS attr xattr */
+		DBG_DEBUG("SMB_VFS_FGET_DOS_ATTRIBUTES [%s]: %s\n",
+			  smb_fname_str_dbg(smb_fname),
+			  nt_errstr(status));
 	}
 
 	unbecome_authenticated_pipe_user();
 
-	ino64 = sb.st_ex_ino;
+	sb = smb_fname->st;
+	TALLOC_FREE(smb_fname);
+	ino64 = SMB_VFS_FS_FILE_ID(slq->mds_ctx->conn, &sb);
+
 	if (slq->cnids) {
 		bool found;
 
@@ -1233,7 +1272,7 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 	sl_array_t *fm_array;
 	sl_nil_t nil;
 	char *path = NULL;
-	struct stat_ex sb = {0};
+	struct smb_filename *smb_fname = NULL;
 	struct stat_ex *sp = NULL;
 	struct sl_inode_path_map *elem = NULL;
 	void *p;
@@ -1302,11 +1341,23 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		elem = talloc_get_type_abort(p, struct sl_inode_path_map);
 		path = elem->path;
 
-		result = sys_stat(path, &sb, false);
+		smb_fname = synthetic_smb_fname(talloc_tos(),
+						path,
+						NULL,
+						NULL,
+						0,
+						0);
+		if (smb_fname == NULL) {
+			DBG_ERR("synthetic_smb_fname() failed\n");
+			goto error;
+		}
+
+		result = SMB_VFS_STAT(mds_ctx->conn, smb_fname);
 		if (result != 0) {
 			goto error;
 		}
-		sp = &sb;
+
+		sp = &smb_fname->st;
 	}
 
 	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, sp);
@@ -1336,9 +1387,12 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
+	TALLOC_FREE(smb_fname);
 	return true;
 
 error:
+
+	TALLOC_FREE(smb_fname);
 	sl_result = UINT64_MAX;
 	result = dalloc_add_copy(array, &sl_result, uint64_t);
 	if (result != 0) {
