@@ -19,7 +19,7 @@ from password_lockout_base import BasePasswordTestCase
 
 sys.path.insert(0, "bin/python")
 
-parser = optparse.OptionParser("password_lockout.py [options] <host>")
+parser = optparse.OptionParser("login_basics.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

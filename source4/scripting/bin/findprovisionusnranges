@@ -33,7 +33,7 @@ from samba.upgradehelpers import get_paths, print_provision_ranges, findprovisio
 from samba.ndr import ndr_unpack
 from samba.dcerpc import misc
 
-parser = optparse.OptionParser("provision [options]")
+parser = optparse.OptionParser("findprovisionusnranges [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

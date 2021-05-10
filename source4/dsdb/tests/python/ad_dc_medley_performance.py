@@ -39,7 +39,7 @@ from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
 from ldb import ERR_NO_SUCH_OBJECT
 
-parser = optparse.OptionParser("ad_dc_performance.py [options] <host>")
+parser = optparse.OptionParser("ad_dc_medley_performance.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 sambaopts.add_option("-p", "--use-paged-search", action="store_true",
                      help="Use paged search module")

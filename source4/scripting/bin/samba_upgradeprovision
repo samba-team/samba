@@ -153,7 +153,7 @@ def define_what_to_log(opts):
     return what
 
 
-parser = optparse.OptionParser("provision [options]")
+parser = optparse.OptionParser("samba_upgradeprovision [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

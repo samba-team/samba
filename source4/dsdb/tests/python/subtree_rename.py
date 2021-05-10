@@ -20,7 +20,7 @@ from samba.samdb import SamDB
 from samba.dcerpc import misc
 from samba import colour
 
-parser = optparse.OptionParser("linked_attributes.py [options] <host>")
+parser = optparse.OptionParser("subtree_rename.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

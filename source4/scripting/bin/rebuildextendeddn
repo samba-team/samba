@@ -38,7 +38,7 @@ from samba import param
 from samba.provision import ProvisionNames, provision_paths_from_lp
 from samba.schema import get_dnsyntax_attributes, get_linked_attributes
 
-parser = optparse.OptionParser("provision [options]")
+parser = optparse.OptionParser("rebuildextendeddn [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

@@ -248,7 +248,7 @@ def cleanup_obsolete_dns_files(paths):
 if __name__ == '__main__':
 
     # Setup command line parser
-    parser = optparse.OptionParser("upgradedns [options]")
+    parser = optparse.OptionParser("samba_upgradedns [options]")
     sambaopts = options.SambaOptions(parser)
     credopts = options.CredentialsOptions(parser)
 

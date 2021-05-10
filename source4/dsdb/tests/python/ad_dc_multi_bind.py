@@ -36,7 +36,7 @@ from ldb import Message, MessageElement, Dn, LdbError
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
 
-parser = optparse.OptionParser("ad_dc_mulit_bind.py [options] <host>")
+parser = optparse.OptionParser("ad_dc_multi_bind.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

@@ -23,7 +23,7 @@ from samba.dcerpc import dns
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.tests.dns_base import DNSTKeyTest
 
-parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
+parser = optparse.OptionParser("dns_tkey.py <server name> <server ip> [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 

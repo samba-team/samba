@@ -11,7 +11,7 @@ from samba.dcerpc import drsblobs, misc
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import Ldb
 
-parser = optparse.OptionParser("get-descriptor [options]")
+parser = optparse.OptionParser("demodirsync [options]")
 sambaopts = options.SambaOptions(parser)
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
