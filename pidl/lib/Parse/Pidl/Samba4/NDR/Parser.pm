@@ -926,7 +926,7 @@ sub ParseElementPrint($$$$$)
 			} else {
 				my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
-				$self->pidl("$ndr->print($ndr, \"%s: ARRAY(%\"PRIu32\")\", \"$e->{NAME}\", (uint32_t)$length);");
+				$self->pidl("$ndr->print($ndr, \"%s: ARRAY(%\"PRIu32\")\", \"$e->{NAME}\", (uint32_t)($length));");
 				$self->pidl("$ndr->depth++;");
 				$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 				$self->indent;
