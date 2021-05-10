@@ -828,12 +828,122 @@ sub provision_ad_member
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start(
-		env_vars => $ret,
-		nmbd => "yes",
-		winbindd => "yes",
-		smbd => "yes")) {
-		return undef;
+	if (defined($offline_logon)) {
+		my $wbinfo = Samba::bindir_path($self, "wbinfo");
+
+		if (not $self->check_or_start(
+			env_vars => $ret,
+			winbindd => "yes")) {
+			return undef;
+		}
+
+		# Fill samlogoncache for alice
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+		$cmd .= "$wbinfo --pam-logon=ADDOMAIN/alice%Secret007";
+		if (system($cmd) != 0) {
+			warn("Filling the cache failed\n$cmd");
+			return undef;
+		}
+
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+		$cmd .= "$wbinfo --ccache-save=ADDOMAIN/alice%Secret007";
+		if (system($cmd) != 0) {
+			warn("Filling the cache failed\n$cmd");
+			return undef;
+		}
+
+		# Fill samlogoncache for bob
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+		$cmd .= "$wbinfo --pam-logon=ADDOMAIN/bob%Secret007";
+		if (system($cmd) != 0) {
+			warn("Filling the cache failed\n$cmd");
+			return undef;
+		}
+
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+		$cmd .= "$wbinfo --ccache-save=ADDOMAIN/bob%Secret007";
+		if (system($cmd) != 0) {
+			warn("Filling the cache failed\n$cmd");
+			return undef;
+		}
+
+		# Set windindd offline
+		my $smbcontrol = Samba::bindir_path($self, "smbcontrol");
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "UID_WRAPPER_ROOT='1' ";
+		$cmd .= "$smbcontrol $ret->{CONFIGURATION} winbindd offline";
+		if (system($cmd) != 0) {
+			warn("Setting winbindd offline failed\n$cmd");
+			return undef;
+		}
+
+		# Validate the offline cache
+		my $smbcontrol = Samba::bindir_path($self, "smbcontrol");
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "UID_WRAPPER_ROOT='1' ";
+		$cmd .= "$smbcontrol $ret->{CONFIGURATION} winbindd validate-cache";
+		if (system($cmd) != 0) {
+			warn("Validation of winbind credential cache failed\n$cmd");
+			teardown_env($self, $ret);
+			return undef;
+		}
+
+		# Shut down winbindd
+		teardown_env($self, $ret);
+
+		### Change SOCKET_WRAPPER_DIR so it can't connect to AD
+		my $swrap_env = $ENV{SOCKET_WRAPPER_DIR};
+		$ENV{SOCKET_WRAPPER_DIR} = "$prefix_abs";
+
+		# Start winbindd in offline mode
+		if (not $self->check_or_start(
+			env_vars => $ret,
+			winbindd => "yes",
+			skip_wait => 1)) {
+			return undef;
+		}
+
+		# Set socket dir again
+		$ENV{SOCKET_WRAPPER_DIR} = $swrap_env;
+
+		print "checking for winbindd\n";
+		my $count = 0;
+		my $rc = 0;
+		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+		$cmd .= "$wbinfo --ping";
+
+		do {
+			$rc = system($cmd);
+			if ($rc != 0) {
+				sleep(1);
+			}
+			$count++;
+		} while ($rc != 0 && $count < 20);
+		if ($count == 20) {
+			print "WINBINDD not reachable after 20 seconds\n";
+			teardown_env($self, $ret);
+			return undef;
+		}
+	} else {
+		if (not $self->check_or_start(
+			env_vars => $ret,
+			nmbd => "yes",
+			winbindd => "yes",
+			smbd => "yes")) {
+			return undef;
+		}
 	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
