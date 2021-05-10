@@ -566,7 +566,7 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 				sizeof(uint64_t),
 				cnid_comp_fn);
 		if (!found) {
-			return false;
+			return true;
 		}
 	}
 
