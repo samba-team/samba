@@ -226,6 +226,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_DURABLE_RECONNECT,
 
 	SMB_VFS_OP_READDIR_ATTR,
+	SMB_VFS_OP_FREADDIR_ATTR,
 
 	/* This should always be last enum value */
 
@@ -348,6 +349,7 @@ static struct {
 	{ SMB_VFS_OP_DURABLE_DISCONNECT, "durable_disconnect" },
 	{ SMB_VFS_OP_DURABLE_RECONNECT, "durable_reconnect" },
 	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
+	{ SMB_VFS_OP_FREADDIR_ATTR,      "freaddir_attr" },
 	{ SMB_VFS_OP_LAST, NULL }
 };
 
@@ -2275,6 +2277,24 @@ static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS smb_full_audit_freaddir_attr(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					TALLOC_CTX *mem_ctx,
+					struct readdir_attr_data **pattr_data)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_FREADDIR_ATTR(handle, fsp, mem_ctx, pattr_data);
+
+	do_log(SMB_VFS_OP_FREADDIR_ATTR,
+	       NT_STATUS_IS_OK(status),
+	       handle,
+	       "%s",
+	       fsp_str_do_log(fsp));
+
+	return status;
+}
+
 struct smb_full_audit_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	vfs_handle_struct *handle;
@@ -3013,8 +3033,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.durable_cookie_fn = smb_full_audit_durable_cookie,
 	.durable_disconnect_fn = smb_full_audit_durable_disconnect,
 	.durable_reconnect_fn = smb_full_audit_durable_reconnect,
-	.readdir_attr_fn = smb_full_audit_readdir_attr
-
+	.readdir_attr_fn = smb_full_audit_readdir_attr,
+	.freaddir_attr_fn = smb_full_audit_freaddir_attr,
 };
 
 static_decl_vfs;

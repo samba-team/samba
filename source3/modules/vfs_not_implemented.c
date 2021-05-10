@@ -708,6 +708,14 @@ NTSTATUS vfs_not_implemented_readdir_attr(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS vfs_not_implemented_freaddir_attr(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					TALLOC_CTX *mem_ctx,
+					struct readdir_attr_data **pattr_data)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 struct vfs_not_implemented_get_dos_attributes_state {
 	struct vfs_aio_state aio_state;
 	uint32_t dosmode;
@@ -1069,6 +1077,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.translate_name_fn = vfs_not_implemented_translate_name,
 	.fsctl_fn = vfs_not_implemented_fsctl,
 	.readdir_attr_fn = vfs_not_implemented_readdir_attr,
+	.freaddir_attr_fn = vfs_not_implemented_freaddir_attr,
 	.audit_file_fn = vfs_not_implemented_audit_file,
 
 	/* DOS attributes. */

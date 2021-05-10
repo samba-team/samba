@@ -350,6 +350,7 @@
  * Version 45 - Add SMB_VFS_FNTIMES
  * Version 45 - Remove SMB_VFS_NTIMES
  * Version 45 - ADD SMB_VFS_FSTREAMINFO
+ * Version 45 - Add SMB_VFS_FREADDIR_ATTR
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1273,6 +1274,10 @@ struct vfs_fn_pointers {
 				    const struct smb_filename *fname,
 				    TALLOC_CTX *mem_ctx,
 				    struct readdir_attr_data **attr_data);
+	NTSTATUS (*freaddir_attr_fn)(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     TALLOC_CTX *mem_ctx,
+				     struct readdir_attr_data **attr_data);
 };
 
 /*
@@ -1785,6 +1790,10 @@ NTSTATUS smb_vfs_call_readdir_attr(struct vfs_handle_struct *handle,
 				   const struct smb_filename *fname,
 				   TALLOC_CTX *mem_ctx,
 				   struct readdir_attr_data **attr_data);
+NTSTATUS smb_vfs_call_freaddir_attr(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    TALLOC_CTX *mem_ctx,
+				    struct readdir_attr_data **attr_data);
 
 NTSTATUS smb_register_vfs(int version, const char *name,
 			  const struct vfs_fn_pointers *fns);
@@ -2084,6 +2093,10 @@ NTSTATUS vfs_not_implemented_readdir_attr(struct vfs_handle_struct *handle,
 					  const struct smb_filename *fname,
 					  TALLOC_CTX *mem_ctx,
 					  struct readdir_attr_data **pattr_data);
+NTSTATUS vfs_not_implemented_freaddir_attr(struct vfs_handle_struct *handle,
+					   struct files_struct *dirfsp,
+					   TALLOC_CTX *mem_ctx,
+					   struct readdir_attr_data **pattr_data);
 struct tevent_req *vfs_not_implemented_get_dos_attributes_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,

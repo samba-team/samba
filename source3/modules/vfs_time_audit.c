@@ -2215,6 +2215,27 @@ static NTSTATUS smb_time_audit_readdir_attr(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS smb_time_audit_freaddir_attr(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					TALLOC_CTX *mem_ctx,
+					struct readdir_attr_data **pattr_data)
+{
+	NTSTATUS status;
+	struct timespec ts1, ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	status = SMB_VFS_NEXT_FREADDIR_ATTR(handle, fsp, mem_ctx, pattr_data);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("freaddir_attr", timediff, fsp);
+	}
+
+	return status;
+}
+
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32_t security_info,
@@ -2849,6 +2870,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.durable_disconnect_fn = smb_time_audit_durable_disconnect,
 	.durable_reconnect_fn = smb_time_audit_durable_reconnect,
 	.readdir_attr_fn = smb_time_audit_readdir_attr,
+	.freaddir_attr_fn = smb_time_audit_freaddir_attr,
 };
 
 

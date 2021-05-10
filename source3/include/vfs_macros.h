@@ -592,4 +592,9 @@
 #define SMB_VFS_NEXT_READDIR_ATTR(conn, fname, mem_ctx, attr_data) \
 	smb_vfs_call_readdir_attr((handle)->next, (fname), (mem_ctx), (attr_data))
 
+#define SMB_VFS_FREADDIR_ATTR(fsp, mem_ctx, attr_data) \
+	smb_vfs_call_freaddir_attr((fsp)->conn->vfs_handles, (fsp), (mem_ctx), (attr_data))
+#define SMB_VFS_NEXT_FREADDIR_ATTR(handle, fsp, mem_ctx, attr_data) \
+	smb_vfs_call_freaddir_attr((handle)->next, (fsp), (mem_ctx), (attr_data))
+
 #endif /* _VFS_MACROS_H */
