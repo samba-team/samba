@@ -194,13 +194,13 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 			return "NB_IPX";
 
 		case EPM_PROTOCOL_HTTP:
-			return talloc_asprintf(mem_ctx, "HTTP:%d", epm_floor->rhs.http.port);
+			return talloc_asprintf(mem_ctx, "HTTP:%"PRIu16, epm_floor->rhs.http.port);
 
 		case EPM_PROTOCOL_TCP:
-			return talloc_asprintf(mem_ctx, "TCP:%d", epm_floor->rhs.tcp.port);
+			return talloc_asprintf(mem_ctx, "TCP:%"PRIu16, epm_floor->rhs.tcp.port);
 
 		case EPM_PROTOCOL_UDP:
-			return talloc_asprintf(mem_ctx, "UDP:%d", epm_floor->rhs.udp.port);
+			return talloc_asprintf(mem_ctx, "UDP:%"PRIu16, epm_floor->rhs.udp.port);
 
 		default:
 			return talloc_asprintf(mem_ctx, "UNK(%02x):", epm_floor->lhs.protocol);
@@ -987,15 +987,15 @@ char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor
 	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
 		if (epm_floor->rhs.tcp.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.tcp.port);
+		return talloc_asprintf(mem_ctx, "%"PRIu16, epm_floor->rhs.tcp.port);
 
 	case EPM_PROTOCOL_UDP:
 		if (epm_floor->rhs.udp.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.udp.port);
+		return talloc_asprintf(mem_ctx, "%"PRIu16, epm_floor->rhs.udp.port);
 
 	case EPM_PROTOCOL_HTTP:
 		if (epm_floor->rhs.http.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.http.port);
+		return talloc_asprintf(mem_ctx, "%"PRIu16, epm_floor->rhs.http.port);
 
 	case EPM_PROTOCOL_IP:
 		return talloc_strdup(mem_ctx, epm_floor->rhs.ip.ipaddr);
@@ -1022,10 +1022,10 @@ char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor
 		return NULL;
 
 	case EPM_PROTOCOL_VINES_SPP:
-		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_spp.port);
+		return talloc_asprintf(mem_ctx, "%"PRIu16, epm_floor->rhs.vines_spp.port);
 
 	case EPM_PROTOCOL_VINES_IPC:
-		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_ipc.port);
+		return talloc_asprintf(mem_ctx, "%"PRIu16, epm_floor->rhs.vines_ipc.port);
 
 	case EPM_PROTOCOL_STREETTALK:
 		return talloc_strdup(mem_ctx, epm_floor->rhs.streettalk.streettalk);

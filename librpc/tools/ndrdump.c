@@ -220,9 +220,9 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 			 */
 			count = (uint32_t *)c;
 
-			n = talloc_asprintf(c, "%s: %s[%llu]",
+			n = talloc_asprintf(c, "%s: %s[%"PRIu64"]",
 					function, pipes->pipes[i].name,
-					(unsigned long long)idx);
+					idx);
 
 			saved_mem_ctx = ndr_pull->current_mem_ctx;
 			ndr_pull->current_mem_ctx = c;
@@ -458,8 +458,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
-		printf("Unable to allocate %d bytes for %s structure\n",
-		       (int)f->struct_size,
+		printf("Unable to allocate %zu bytes for %s structure\n",
+		       f->struct_size,
 		       f->name);
 		TALLOC_FREE(mem_ctx);
 		exit(1);
@@ -467,9 +467,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	v_st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!v_st) {
-		printf("Unable to allocate %d bytes for %s validation "
+		printf("Unable to allocate %zu bytes for %s validation "
 		       "structure\n",
-		       (int)f->struct_size,
+		       f->struct_size,
 		       f->name);
 		TALLOC_FREE(mem_ctx);
 		exit(1);
@@ -511,7 +511,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		}
 
 		if (highest_ofs != ndr_pull->data_size) {
-			printf("WARNING! %d unread bytes while parsing context file\n", ndr_pull->data_size - highest_ofs);
+			printf("WARNING! %"PRIu32" unread bytes while parsing context file\n", ndr_pull->data_size - highest_ofs);
 		}
 
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -594,8 +594,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (sec_vt != NULL && sec_vt->count.count > 0) {
-		printf("SEC_VT: consumed %d bytes\n",
-		       (int)(blob.length - ndr_pull->data_size));
+		printf("SEC_VT: consumed %zu bytes\n",
+		       blob.length - ndr_pull->data_size);
 		if (dumpdata) {
 			ndrdump_data(blob.data + ndr_pull->data_size,
 				     blob.length - ndr_pull->data_size,
@@ -629,7 +629,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (dumpdata) {
-		printf("%d bytes consumed\n", highest_ofs);
+		printf("%"PRIu32" bytes consumed\n", highest_ofs);
 		ndrdump_data(blob.data, blob.length, dumpdata);
 	}
 
@@ -639,7 +639,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (highest_ofs != ndr_pull->data_size) {
-		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - highest_ofs);
+		printf("WARNING! %"PRIu32" unread bytes\n", ndr_pull->data_size - highest_ofs);
 		ndrdump_data(ndr_pull->data+highest_ofs,
 			     ndr_pull->data_size - highest_ofs,
 			     dumpdata);
@@ -705,7 +705,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		v_blob = ndr_push_blob(ndr_v_push);
 
 		if (dumpdata) {
-			printf("%ld bytes generated (validate)\n", (long)v_blob.length);
+			printf("%zu bytes generated (validate)\n", v_blob.length);
 			ndrdump_data(v_blob.data, v_blob.length, dumpdata);
 		}
 
@@ -733,7 +733,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		}
 
 		if (highest_v_ofs != ndr_v_pull->data_size) {
-			printf("WARNING! %d unread bytes in validation\n",
+			printf("WARNING! %"PRIu32" unread bytes in validation\n",
 			       ndr_v_pull->data_size - highest_v_ofs);
 			ndrdump_data(ndr_v_pull->data + highest_v_ofs,
 				     ndr_v_pull->data_size - highest_v_ofs,
@@ -748,13 +748,13 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			     flags, v_st);
 
 		if (blob.length != v_blob.length) {
-			printf("WARNING! orig bytes:%llu validated pushed bytes:%llu\n", 
-			       (unsigned long long)blob.length, (unsigned long long)v_blob.length);
+			printf("WARNING! orig bytes:%zu validated pushed bytes:%zu\n",
+			       blob.length, v_blob.length);
 		}
 
 		if (highest_ofs != highest_v_ofs) {
-			printf("WARNING! orig pulled bytes:%llu validated pulled bytes:%llu\n", 
-			       (unsigned long long)highest_ofs, (unsigned long long)highest_v_ofs);
+			printf("WARNING! orig pulled bytes:%"PRIu32" validated pulled bytes:%"PRIu32"\n",
+			       highest_ofs, highest_v_ofs);
 		}
 
 		differ = false;
@@ -777,8 +777,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			}
 		}
 		if (differ) {
-			printf("WARNING! orig and validated differ at byte 0x%02X (%u)\n", i, i);
-			printf("WARNING! orig byte[0x%02X] = 0x%02X validated byte[0x%02X] = 0x%02X\n",
+			printf("WARNING! orig and validated differ at byte 0x%02"PRIX32" (%"PRIu32")\n", i, i);
+			printf("WARNING! orig byte[0x%02"PRIX32"] = 0x%02"PRIX8" validated byte[0x%02"PRIX32"] = 0x%02"PRIX8"\n",
 				i, byte_a, i, byte_b);
 			ndrdump_data_diff(blob.data, blob.length,
 					  v_blob.data, v_blob.length,

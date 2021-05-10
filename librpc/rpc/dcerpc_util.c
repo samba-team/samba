@@ -331,9 +331,9 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	}
 	if (max_pad_len < auth->auth_pad_length) {
 		DEBUG(1, (__location__ ": ERROR: pad length to large. "
-			  "max %u got %u\n",
-			  (unsigned)max_pad_len,
-			  (unsigned)auth->auth_pad_length));
+			  "max %"PRIu32" got %"PRIu8"\n",
+			  max_pad_len,
+			  auth->auth_pad_length));
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
@@ -357,12 +357,12 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 
 	if (data_and_pad < auth->auth_pad_length) {
 		DBG_WARNING(__location__ ": ERROR: pad length too long. "
-			    "Calculated %u (pkt_trailer->length=%u - auth_length=%u) "
-			    "was less than auth_pad_length=%u\n",
-			    (unsigned)data_and_pad,
-			    (unsigned)pkt_trailer->length,
-			    (unsigned)auth_length,
-			    (unsigned)auth->auth_pad_length);
+			    "Calculated %"PRIu16" (pkt_trailer->length=%zu - auth_length=%"PRIu16") "
+			    "was less than auth_pad_length=%"PRIu8"\n",
+			    data_and_pad,
+			    pkt_trailer->length,
+			    auth_length,
+			    auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
@@ -370,14 +370,14 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 
 	if (auth_data_only && data_and_pad > auth->auth_pad_length) {
 		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
-			    "Client sent a longer BIND packet than expected by %u bytes "
-			    "(pkt_trailer->length=%u - auth_length=%u) "
-			    "= %u auth_pad_length=%u\n",
-			    (unsigned)data_and_pad - (unsigned)auth->auth_pad_length,
-			    (unsigned)pkt_trailer->length,
-			    (unsigned)auth_length,
-			    (unsigned)data_and_pad,
-			    (unsigned)auth->auth_pad_length);
+			    "Client sent a longer BIND packet than expected by %"PRIu16" bytes "
+			    "(pkt_trailer->length=%zu - auth_length=%"PRIu16") "
+			    "= %"PRIu16" auth_pad_length=%"PRIu8"\n",
+			    data_and_pad - auth->auth_pad_length,
+			    pkt_trailer->length,
+			    auth_length,
+			    data_and_pad,
+			    auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
@@ -385,19 +385,19 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 
 	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
 		DBG_WARNING(__location__ ": ERROR: auth_data_only pad length mismatch. "
-			    "Calculated %u (pkt_trailer->length=%u - auth_length=%u) "
-			    "but auth_pad_length=%u\n",
-			    (unsigned)data_and_pad,
-			    (unsigned)pkt_trailer->length,
-			    (unsigned)auth_length,
-			    (unsigned)auth->auth_pad_length);
+			    "Calculated %"PRIu16" (pkt_trailer->length=%zu - auth_length=%"PRIu16") "
+			    "but auth_pad_length=%"PRIu8"\n",
+			    data_and_pad,
+			    pkt_trailer->length,
+			    auth_length,
+			    auth->auth_pad_length);
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
-	DBG_DEBUG("auth_pad_length %u\n",
-		  (unsigned)auth->auth_pad_length);
+	DBG_DEBUG("auth_pad_length %"PRIu8"\n",
+		  auth->auth_pad_length);
 
 	talloc_steal(mem_ctx, auth->credentials.data);
 	talloc_free(ndr);
@@ -1121,7 +1121,7 @@ void dcerpc_log_packet(const char *packet_log_dir,
 		char *name=NULL;
 		int ret;
 		bool saved;
-		ret = asprintf(&name, "%s/%s-%u.%d.%s.%s",
+		ret = asprintf(&name, "%s/%s-%"PRIu32".%d.%s.%s",
 			       packet_log_dir, interface_name, opnum, i,
 			       (flags&NDR_IN)?"in":"out",
 			       why);

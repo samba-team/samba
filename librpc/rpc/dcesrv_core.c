@@ -1934,7 +1934,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		uint8_t extra_flags = 0;
 		if (call->fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			/* we got an unknown call */
-			DEBUG(3,(__location__ ": Unknown RPC call %u on %s\n",
+			DEBUG(3,(__location__ ": Unknown RPC call %"PRIu16" on %s\n",
 				 call->pkt.u.request.opnum,
 				 call->context->iface->name));
 			dcesrv_save_call(call, "unknown");
@@ -1952,7 +1952,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	if (pull->offset != pull->data_size) {
 		dcesrv_save_call(call, "extrabytes");
-		DEBUG(3,("Warning: %d extra bytes in incoming RPC request\n",
+		DEBUG(3,("Warning: %"PRIu32" extra bytes in incoming RPC request\n",
 			 pull->data_size - pull->offset));
 	}
 
