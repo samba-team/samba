@@ -95,12 +95,6 @@ static bool is_non_centry_key(TDB_DATA kbuf)
 	return false;
 }
 
-/* Global online/offline state - False when online. winbindd starts up online
-   and sets this to true if the first query fails and there's an entry in
-   the cache tdb telling us to stay offline. */
-
-static bool global_winbindd_offline_state;
-
 struct winbind_cache {
 	TDB_CONTEXT *tdb;
 };
@@ -575,7 +569,7 @@ done:
 static bool centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
 {
 	/* If we've been told to be offline - stay in that state... */
-	if (lp_winbind_offline_logon() && global_winbindd_offline_state) {
+	if (lp_winbind_offline_logon() && get_global_winbindd_state_offline()) {
 		DEBUG(10,("centry_expired: Key %s for domain %s valid as winbindd is globally offline.\n",
 			keystr, domain->name ));
 		return false;
@@ -3420,40 +3414,43 @@ done:
 /* Change the global online/offline state. */
 bool set_global_winbindd_state_offline(void)
 {
-	TDB_DATA data;
+	bool ok;
+	uint8_t buf[4] = {0};
+	TDB_DATA data = {
+		.dptr = buf,
+		.dsize = sizeof(buf)
+	};
+	int rc;
 
-	DEBUG(10,("set_global_winbindd_state_offline: offline requested.\n"));
-
-	/* Only go offline if someone has created
-	   the key "WINBINDD_OFFLINE" in the cache tdb. */
+	DBG_ERR("Offline requested\n");
 
 	if (wcache == NULL || wcache->tdb == NULL) {
-		DEBUG(10,("set_global_winbindd_state_offline: wcache not open yet.\n"));
+		DBG_ERR("Winbind cache doesn't exist yet\n");
 		return false;
 	}
 
 	if (!lp_winbind_offline_logon()) {
-		DEBUG(10,("set_global_winbindd_state_offline: rejecting.\n"));
+		DBG_ERR("Rejecting to set winbind offline\n");
 		return false;
 	}
 
-	if (global_winbindd_offline_state) {
-		/* Already offline. */
+	ok = get_global_winbindd_state_offline();
+	if (ok) {
 		return true;
 	}
 
-	data = tdb_fetch_bystring( wcache->tdb, "WINBINDD_OFFLINE" );
+	PUSH_LE_U32(buf, 0, time(NULL));
 
-	if (!data.dptr || data.dsize != 4) {
-		DEBUG(10,("set_global_winbindd_state_offline: offline state not set.\n"));
-		SAFE_FREE(data.dptr);
+	rc = tdb_store_bystring(wcache->tdb,
+				"WINBINDD_OFFLINE",
+				data,
+				TDB_INSERT);
+	if (rc != 0) {
 		return false;
-	} else {
-		DEBUG(10,("set_global_winbindd_state_offline: offline state set.\n"));
-		global_winbindd_offline_state = true;
-		SAFE_FREE(data.dptr);
-		return true;
 	}
+
+	return true;
+
 }
 
 void set_global_winbindd_state_online(void)
@@ -3465,12 +3462,6 @@ void set_global_winbindd_state_online(void)
 		return;
 	}
 
-	if (!global_winbindd_offline_state) {
-		/* Already online. */
-		return;
-	}
-	global_winbindd_offline_state = false;
-
 	if (!wcache->tdb) {
 		return;
 	}
@@ -3481,7 +3472,16 @@ void set_global_winbindd_state_online(void)
 
 bool get_global_winbindd_state_offline(void)
 {
-	return global_winbindd_offline_state;
+	TDB_DATA data;
+
+	data = tdb_fetch_bystring(wcache->tdb, "WINBINDD_OFFLINE");
+	if (data.dptr == NULL || data.dsize != 4) {
+		DBG_DEBUG("Offline state not set.\n");
+		SAFE_FREE(data.dptr);
+		return false;
+	}
+
+	return true;
 }
 
 /***********************************************************************
