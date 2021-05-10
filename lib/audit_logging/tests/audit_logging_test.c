@@ -283,14 +283,21 @@ static void test_json_add_timestamp(_UNUSED_ void **state)
 	time_t before;
 	time_t after;
 	time_t actual;
-	const int adjustment = 1;
-
+	struct timeval tv;
+	int ret;
 
 	object = json_new_object();
-	before = time(NULL);
+
+	ret = gettimeofday(&tv, NULL);
+	assert_int_equal(0, ret);
+	before = tv.tv_sec;
+
 	rc = json_add_timestamp(&object);
 	assert_int_equal(0, rc);
-	after = time(NULL);
+
+	ret = gettimeofday(&tv, NULL);
+	assert_int_equal(0, ret);
+	after = tv.tv_sec;
 
 	ts = json_object_get(object.root, "timestamp");
 	assert_true(json_is_string(ts));
@@ -321,10 +328,7 @@ static void test_json_add_timestamp(_UNUSED_ void **state)
 
 	/*
 	 * The timestamp should be before <= actual <= after
-	 * but we adjust the times to cater for any precision issues.
 	 */
-	before -= adjustment;
-	after += adjustment;
 	assert_true(difftime(actual, before) >= 0);
 	assert_true(difftime(after, actual) >= 0);
 
@@ -796,6 +800,8 @@ static void test_audit_get_timestamp(_UNUSED_ void **state)
 	time_t before;
 	time_t after;
 	time_t actual;
+	struct timeval tv;
+	int ret;
 	char *env_tz = NULL;
 	char *orig_tz = NULL;
 
@@ -810,9 +816,15 @@ static void test_audit_get_timestamp(_UNUSED_ void **state)
 	}
 	setenv("TZ", "UTC", 1);
 
-	before = time(NULL);
+	ret = gettimeofday(&tv, NULL);
+	assert_int_equal(0, ret);
+	before = tv.tv_sec;
+
 	t = audit_get_timestamp(ctx);
-	after = time(NULL);
+
+	ret = gettimeofday(&tv, NULL);
+	assert_int_equal(0, ret);
+	after = tv.tv_sec;
 
 	c = strptime(t, "%a, %d %b %Y %H:%M:%S", &tm);
 
