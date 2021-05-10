@@ -1524,6 +1524,7 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
  **/
 struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
+			     struct messaging_context *msg_ctx,
 			     struct auth_session_info *session_info,
 			     int snum,
 			     const char *sharename,

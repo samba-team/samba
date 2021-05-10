@@ -95,6 +95,7 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 
 	mds_ctx = mds_init_ctx(mem_ctx,
 			       messaging_tevent_context(p->msg_ctx),
+			       p->msg_ctx,
 			       p->session_info,
 			       snum,
 			       sharename,
