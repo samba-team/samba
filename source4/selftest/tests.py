@@ -1348,6 +1348,16 @@ planoldpythontestsuite("chgdcpass:local", "samba.tests.blackbox.samba_dnsupdate"
 for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_member"]:
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
+# Offline logon (ad_member)
+plantestsuite("samba.blackbox.offline_logon",
+              "ad_member_offline_logon",
+              [os.path.join(bbdir, "test_offline_logon.sh"),
+               '$DOMAIN',
+               'alice', 'Secret007',
+               'bob', 'Secret007',
+               'jane', 'Secret007',
+               'joe', 'Secret007'])
+
 #
 # KDC Tests
 #
