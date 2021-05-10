@@ -651,7 +651,8 @@ sub provision_ad_member
 	    $dcvars,
 	    $trustvars_f,
 	    $trustvars_e,
-	    $force_fips_mode) = @_;
+	    $force_fips_mode,
+	    $offline_logon) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
@@ -683,6 +684,11 @@ sub provision_ad_member
 	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}/alice/g_$dcvars->{DOMAIN}/domain users";
 	push(@dirs, $substitution_path);
 
+	my $option_offline_logon = "no";
+	if (defined($offline_logon)) {
+		$option_offline_logon = "yes";
+	}
+
 	my $member_options = "
 	security = ads
         workgroup = $dcvars->{DOMAIN}
@@ -693,6 +699,7 @@ sub provision_ad_member
 	password server = $dcvars->{SERVER}
 	winbind scan trusted domains = no
 	winbind use krb5 enterprise principals = yes
+	winbind offline logon = $option_offline_logon
 
 	allow dcerpc auth level connect:lsarpc = yes
 	dcesrv:max auth states = 8
@@ -1232,7 +1239,8 @@ sub setup_ad_member_offline_logon
 					  $dcvars,
 					  $trustvars_f,
 					  $trustvars_e,
-					  undef);
+					  undef,
+					  1);
 }
 
 sub setup_simpleserver
