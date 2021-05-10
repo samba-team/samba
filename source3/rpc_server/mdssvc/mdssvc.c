@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/proto.h"
 #include "librpc/gen_ndr/auth.h"
 #include "dbwrap/dbwrap.h"
 #include "lib/util/dlinklist.h"
@@ -1530,10 +1531,15 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     const char *sharename,
 			     const char *path)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	struct smb_filename conn_basedir;
 	struct mds_ctx *mds_ctx;
 	int backend;
+	int ret;
 	bool ok;
 	smb_iconv_t iconv_hnd = (smb_iconv_t)-1;
+	NTSTATUS status;
 
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
 	if (mds_ctx == NULL) {
@@ -1612,6 +1618,30 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	mds_ctx->ino_path_map = db_open_rbt(mds_ctx);
 	if (mds_ctx->ino_path_map == NULL) {
 		DEBUG(1,("open inode map db failed\n"));
+		goto error;
+	}
+
+	status = create_conn_struct_cwd(mds_ctx,
+					ev,
+					msg_ctx,
+					session_info,
+					snum,
+					lp_path(talloc_tos(), lp_sub, snum),
+					&mds_ctx->conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("failed to create conn for vfs: %s\n",
+			nt_errstr(status));
+		goto error;
+	}
+
+	conn_basedir = (struct smb_filename) {
+		.base_name = mds_ctx->conn->connectpath,
+	};
+
+	ret = vfs_ChDir(mds_ctx->conn, &conn_basedir);
+	if (ret != 0) {
+		DBG_ERR("vfs_ChDir [%s] failed: %s\n",
+			conn_basedir.base_name, strerror(errno));
 		goto error;
 	}
 
