@@ -29,15 +29,15 @@ static char *ndr_compat_xattr_attrib_hex(TALLOC_CTX *mem_ctx,
 
 	switch (r->version) {
 	case 0xFFFF:
-		attrib_hex = talloc_asprintf(mem_ctx, "0x%x",
+		attrib_hex = talloc_asprintf(mem_ctx, "0x%"PRIx32,
 					r->info.compatinfoFFFF.attrib);
 		break;
 	case 1:
-		attrib_hex = talloc_asprintf(mem_ctx, "0x%x",
+		attrib_hex = talloc_asprintf(mem_ctx, "0x%"PRIx32,
 					r->info.info1.attrib);
 		break;
 	case 2:
-		attrib_hex = talloc_asprintf(mem_ctx, "0x%x",
+		attrib_hex = talloc_asprintf(mem_ctx, "0x%"PRIx32,
 					r->info.oldinfo2.attrib);
 		break;
 	case 3:
@@ -45,7 +45,7 @@ static char *ndr_compat_xattr_attrib_hex(TALLOC_CTX *mem_ctx,
 			attrib_hex = talloc_strdup(mem_ctx, "");
 			break;
 		}
-		attrib_hex = talloc_asprintf(mem_ctx, "0x%x",
+		attrib_hex = talloc_asprintf(mem_ctx, "0x%"PRIx32,
 					r->info.info3.attrib);
 		break;
 	default:
@@ -116,7 +116,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DOSATTRIB(struct ndr_pull *ndr, int nd
 		if (r->version == 0xFFFF) {
 			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH,
 					"ndr_pull_xattr_DOSATTRIB: "
-					"invalid level 0x%02X",
+					"invalid level 0x%02"PRIX16,
 					r->version);
 		}
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->version));

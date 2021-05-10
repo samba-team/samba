@@ -191,7 +191,7 @@ enum ndr_err_code ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct 
 	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
 	if (sid->num_auths != num_auths) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
-				      "Bad num_auths %u; should equal %u",
+				      "Bad num_auths %"PRIu32"; should equal %"PRId8,
 				      num_auths, sid->num_auths);
 	}
 	return NDR_ERR_SUCCESS;
@@ -262,7 +262,7 @@ enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const 
 
 	if (sid->num_auths > 5) {
 		return ndr_push_error(ndr, NDR_ERR_RANGE,
-				      "dom_sid28 allows only up to 5 sub auth [%u]",
+				      "dom_sid28 allows only up to 5 sub auths [%"PRId8"]",
 				      sid->num_auths);
 	}
 

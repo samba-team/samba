@@ -209,7 +209,7 @@ _PUBLIC_ char* GUID_buf_string(const struct GUID *guid,
 		return NULL;
 	}
 	snprintf(dst->buf, sizeof(dst->buf),
-		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		 "%08"PRIx32"-%04"PRIx16"-%04"PRIx16"-%02"PRIx8"%02"PRIx8"-%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8"%02"PRIx8,
 		 guid->time_low, guid->time_mid,
 		 guid->time_hi_and_version,
 		 guid->clock_seq[0],

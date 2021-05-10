@@ -379,7 +379,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *
 			ndr, ndr_flags, &r->data.nt5_ex, r->ntver));
 		if (ndr->offset < ndr->data_size) {
 			return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-						 "not all bytes consumed ofs[%u] size[%u]",
+						 "not all bytes consumed ofs[%"PRIu32"] size[%"PRIu32"]",
 						 ndr->offset, ndr->data_size);
 		}
 	} else if (r->ntver & NETLOGON_NT_VERSION_5) {

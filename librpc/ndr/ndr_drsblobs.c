@@ -133,7 +133,7 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
 		ndr_print_uint16(ndr, "entryID", r->entryID);
-		ndr->print(ndr, "%-25s: length=%u", "oid", r->length);
+		ndr->print(ndr, "%-25s: length=%"PRIu16, "oid", r->length);
 		if (r->binary_oid) {
 			char *partial_oid = NULL;
 			DATA_BLOB oid_blob = data_blob_const(r->binary_oid, r->length);

@@ -218,7 +218,7 @@ static enum ndr_err_code ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_pull_set_offset %u failed",
+				      "ndr_pull_set_offset %"PRIu32" failed",
 				      ofs);
 	}
 	return NDR_ERR_SUCCESS;
@@ -266,7 +266,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 
 	if (size < ndr->offset) {
 		/* extra_size overflowed the offset */
-		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand to %u",
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, "Overflow in push_expand to %"PRIu32,
 				      size);
 	}
 
@@ -277,7 +277,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 		return ndr_push_error(ndr,
 				      NDR_ERR_BUFSIZE,
 				      "Overflow of fixed buffer in "
-				      "push_expand to %u",
+				      "push_expand to %"PRIu32,
 				      size);
 	}
 
@@ -294,7 +294,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 	}
 	ndr->data = talloc_realloc(ndr, ndr->data, uint8_t, ndr->alloc_size);
 	if (!ndr->data) {
-		return ndr_push_error(ndr, NDR_ERR_ALLOC, "Failed to push_expand to %u",
+		return ndr_push_error(ndr, NDR_ERR_ALLOC, "Failed to push_expand to %"PRIu32,
 				      ndr->alloc_size);
 	}
 
@@ -707,10 +707,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		uint16_t content_size;
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
-			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) (0x%04x) mismatch content_size %d (0x%04x)",
-						(int)size_is, (int)size_is,
-						(int)content_size,
-						(int)content_size);
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%zd) (0x%04zx) mismatch content_size %"PRIu16" (0x%04"PRIx16")",
+						size_is, size_is,
+						content_size,
+						content_size);
 		}
 		r_content_size = content_size;
 		break;
@@ -720,10 +720,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		uint32_t content_size;
 		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
-			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) (0x%08x) mismatch content_size %d (0x%08x)",
-						(int)size_is, (int)size_is,
-						(int)content_size,
-						(int)content_size);
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%zd) (0x%08zx) mismatch content_size %"PRIu32" (0x%08"PRIx32")",
+						size_is, size_is,
+						content_size,
+						content_size);
 		}
 		r_content_size = content_size;
 		break;
@@ -745,8 +745,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 
 		if (version != 1) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT,
-					      "Bad subcontext (PULL) Common Type Header version %d != 1",
-					      (int)version);
+					      "Bad subcontext (PULL) Common Type Header version %"PRIu8" != 1",
+					      version);
 		}
 
 		/*
@@ -760,16 +760,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 			force_be = true;
 		} else {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT,
-					      "Bad subcontext (PULL) Common Type Header invalid drep 0x%02X",
-					      (unsigned int)drep);
+					      "Bad subcontext (PULL) Common Type Header invalid drep 0x%02"PRIX8,
+					      drep);
 		}
 
 		/* length of the "Private Header for Constructed Type" */
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &hdrlen));
 		if (hdrlen != 8) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT,
-					      "Bad subcontext (PULL) Common Type Header length %d != 8",
-					      (int)hdrlen);
+					      "Bad subcontext (PULL) Common Type Header length %"PRIu16" != 8",
+					      hdrlen);
 		}
 
 		/* filler should be ignored */
@@ -781,14 +781,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		/* length - will be updated later */
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
-			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d",
-					      (int)size_is, (int)content_size);
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%zd) mismatch content_size %"PRIu32,
+					      size_is, content_size);
 		}
 		/* the content size must be a multiple of 8 */
 		if ((content_size % 8) != 0) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT,
-					      "Bad subcontext (PULL) size_is(%d) not padded to 8 content_size %d",
-					      (int)size_is, (int)content_size);
+					      "Bad subcontext (PULL) size_is(%zd) not padded to 8 content_size %"PRIu32,
+					      size_is, content_size);
 		}
 		r_content_size = content_size;
 
@@ -814,8 +814,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		return NDR_ERR_SUCCESS;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d",
-				      (int)header_size);
+		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %zu",
+				      header_size);
 	}
 
 	NDR_PULL_NEED_BYTES(ndr, r_content_size);
@@ -870,7 +870,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_end(struct ndr_pull *ndr,
 	}
 	if (highest_ofs < advance) {
 		return ndr_pull_error(subndr, NDR_ERR_UNREAD_BYTES,
-				      "not all bytes consumed ofs[%u] advance[%u]",
+				      "not all bytes consumed ofs[%"PRIu32"] advance[%"PRIu32"]",
 				      highest_ofs, advance);
 	}
 
@@ -918,8 +918,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 	if (size_is >= 0) {
 		padding_len = size_is - subndr->offset;
 		if (padding_len < 0) {
-			return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PUSH) content_size %d is larger than size_is(%d)",
-					      (int)subndr->offset, (int)size_is);
+			return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PUSH) content_size %"PRIu32" is larger than size_is(%zd)",
+					      subndr->offset, size_is);
 		}
 		subndr->offset = size_is;
 	}
@@ -972,8 +972,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 		break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %d",
-				      (int)header_size);
+		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %zu",
+				      header_size);
 	}
 
 	NDR_CHECK(ndr_push_bytes(ndr, subndr->data, subndr->offset));
@@ -1147,7 +1147,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, const void
 	NDR_CHECK(ndr_get_array_size(ndr, p, &stored));
 	if (stored != size) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
-				      "Bad array size - got %u expected %u\n",
+				      "Bad array size - got %"PRIu32" expected %"PRIu32"\n",
 				      stored, size);
 	}
 	return NDR_ERR_SUCCESS;
@@ -1163,7 +1163,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const voi
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
-				      "non-zero array offset %u\n", offset);
+				      "non-zero array offset %"PRIu32"\n", offset);
 	}
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
 	ret = ndr_token_store(ndr, &ndr->array_length_list, p, length);
@@ -1201,7 +1201,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_steal_array_length(struct ndr_pull *ndr, co
 	NDR_CHECK(ndr_steal_array_length(ndr, p, &stored));
 	if (stored != length) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
-				      "Bad array length - got %u expected %u\n",
+				      "Bad array length: got %"PRIu32" expected %"PRIu32"\n",
 				      stored, length);
 	}
 	return NDR_ERR_SUCCESS;
@@ -1232,10 +1232,10 @@ _PUBLIC_ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, in
 		}
 
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
-			"Bad pipe trailer[%lld should be %lld] size was %lu\"",
-			(unsigned long long)ncount2,
-			(unsigned long long)ncount1,
-			(unsigned long)count);
+			"Bad pipe trailer[%"PRIu64" should be %"PRIu64"] size was %"PRIu32"\"",
+			ncount2,
+			ncount1,
+			count);
 	}
 
 	return NDR_ERR_SUCCESS;
@@ -1337,7 +1337,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 	if (highest_ofs < ndr->data_size) {
 		enum ndr_err_code ret;
 		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-				     "not all bytes consumed ofs[%u] size[%u]",
+				     "not all bytes consumed ofs[%"PRIu32"] size[%"PRIu32"]",
 				     highest_ofs, ndr->data_size);
 		talloc_free(ndr);
 		return ret;
@@ -1423,7 +1423,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 	if (highest_ofs < ndr->data_size) {
 		enum ndr_err_code ret;
 		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-				     "not all bytes consumed ofs[%u] size[%u]",
+				     "not all bytes consumed ofs[%"PRIu32"] size[%"PRIu32"]",
 				     highest_ofs, ndr->data_size);
 		talloc_free(ndr);
 		return ret;
@@ -1472,7 +1472,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_into_fixed_blob(
 	if (ndr.offset != blob->length) {
 		return ndr_push_error(&ndr, NDR_ERR_BUFSIZE,
 				      "buffer was either to large or small "
-				      "ofs[%u] size[%zu]",
+				      "ofs[%"PRIu32"] size[%zu]",
 				      ndr.offset, blob->length);
 	}
 
@@ -1665,13 +1665,13 @@ static enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 ptr_offset(%u) > ndr->offset(%u)",
+				      "ndr_push_relative_ptr2 ptr_offset(%"PRIu32") > ndr->offset(%"PRIu32")",
 				      ptr_offset, ndr->offset);
 	}
 	ndr->offset = ptr_offset;
 	if (save_offset < ndr->relative_base_offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 save_offset(%u) < ndr->relative_base_offset(%u)",
+				      "ndr_push_relative_ptr2 save_offset(%"PRIu32") < ndr->relative_base_offset(%"PRIu32")",
 				      save_offset, ndr->relative_base_offset);
 	}
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
@@ -1696,7 +1696,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 
 	if (ndr->offset < ndr->relative_base_offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 ndr->offset(%u) < ndr->relative_base_offset(%u)",
+				      "ndr_push_relative_ptr2 ndr->offset(%"PRIu32") < ndr->relative_base_offset(%"PRIu32")",
 				      ndr->offset, ndr->relative_base_offset);
 	}
 
@@ -1720,7 +1720,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 	relative_offset = ndr->offset - ndr->relative_base_offset;
 	if (relative_offset > UINT16_MAX) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 relative_offset(%u) > UINT16_MAX",
+				      "ndr_push_relative_ptr2 relative_offset(%"PRIu32") > UINT16_MAX",
 				      relative_offset);
 	}
 
@@ -1728,7 +1728,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_short_relative_ptr2 ptr_offset(%u) > ndr->offset(%u)",
+				      "ndr_push_short_relative_ptr2 ptr_offset(%"PRIu32") > ndr->offset(%"PRIu32")",
 				      ptr_offset, ndr->offset);
 	}
 	ndr->offset = ptr_offset;
@@ -1754,7 +1754,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 
 		if (ndr->offset < ndr->relative_base_offset) {
 			return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2_start ndr->offset(%u) < ndr->relative_base_offset(%u)",
+				      "ndr_push_relative_ptr2_start ndr->offset(%"PRIu32") < ndr->relative_base_offset(%"PRIu32")",
 				      ndr->offset, ndr->relative_base_offset);
 		}
 
@@ -1779,7 +1779,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 	}
 	if (ndr->relative_end_offset == -1) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
-			      "ndr_push_relative_ptr2_start RELATIVE_REVERSE flag set and relative_end_offset %d",
+			      "ndr_push_relative_ptr2_start RELATIVE_REVERSE flag set and relative_end_offset %"PRIu32,
 			      ndr->relative_end_offset);
 	}
 	ret = ndr_token_store(ndr,
@@ -1823,7 +1823,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	if (ndr->relative_end_offset < ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
 				      "ndr_push_relative_ptr2_end:"
-				      "relative_end_offset %u < offset %u",
+				      "relative_end_offset %"PRIu32" < offset %"PRIu32,
 				      ndr->relative_end_offset, ndr->offset);
 	}
 
@@ -1835,15 +1835,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	if (len < 0) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
 				      "ndr_push_relative_ptr2_end:"
-				      "offset %u - begin_offset %u < 0",
+				      "offset %"PRIu32" - begin_offset %"PRIu32" < 0",
 				      ndr->offset, begin_offset);
 	}
 
 	if (ndr->relative_end_offset < len) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
 				      "ndr_push_relative_ptr2_end:"
-				      "relative_end_offset %u < len %lld",
-				      ndr->offset, (long long)len);
+				      "relative_end_offset %"PRIu32" < len %zd",
+				      ndr->offset, len);
 	}
 
 	/* the reversed offset is at the end of the main buffer */
@@ -1868,7 +1868,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	if (correct_offset < begin_offset) {
 		return ndr_push_error(ndr, NDR_ERR_RELATIVE,
 				      "ndr_push_relative_ptr2_end: "
-				      "correct_offset %u < begin_offset %u",
+				      "correct_offset %"PRIu32" < begin_offset %"PRIu32,
 				      correct_offset, begin_offset);
 	}
 
@@ -1951,7 +1951,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const vo
 	rel_offset += ndr->relative_base_offset;
 	if (rel_offset > ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_pull_relative_ptr1 rel_offset(%u) > ndr->data_size(%u)",
+				      "ndr_pull_relative_ptr1 rel_offset(%"PRIu32") > ndr->data_size(%"PRIu32")",
 				      rel_offset, ndr->data_size);
 	}
 	ret = ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);

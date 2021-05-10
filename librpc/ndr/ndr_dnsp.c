@@ -84,7 +84,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name - not NUL terminated");
 	}
 	if (ndr->offset > raw_offset + len) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name - overrun by %u bytes",
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name - overrun by %"PRIu32" bytes",
 				      ndr->offset - (raw_offset + len));
 	}
 	/* there could be additional pad bytes */

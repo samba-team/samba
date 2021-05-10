@@ -61,7 +61,7 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 					return ndr_push_error(ndr, NDR_ERR_STRING,
 							      "offset for dns string " \
 							      "label pointer " \
-							      "%u[%08X] > 0x00003FFF",
+							      "%"PRIu32"[%08"PRIX32"] > 0x00003FFF",
 							      offset, offset);
 				}
 
@@ -77,10 +77,10 @@ enum ndr_err_code ndr_push_dns_string_list(struct ndr_push *ndr,
 		/* the length must fit into 6 bits (i.e. <= 63) */
 		if (complen > 0x3F) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
-					      "component length %u[%08X] > " \
+					      "component length %zu[%08zX] > " \
 					      "0x0000003F",
-					      (unsigned)complen,
-					      (unsigned)complen);
+					      complen,
+					      complen);
 		}
 
 		if (complen == 0 && s[complen] == '.') {

@@ -70,14 +70,14 @@ static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *n
 
 	if (plain_chunk_size > 0x00008000) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "Bad MSZIP CAB plain chunk size %08X > 0x00008000 (PULL)",
+				      "Bad MSZIP CAB plain chunk size %08"PRIX32" > 0x00008000 (PULL)",
 				      plain_chunk_size);
 	}
 
 
 	comp_chunk_size = compressed_len;
 
-	DEBUG(9,("MSZIP CAB plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+	DEBUG(9,("MSZIP CAB plain_chunk_size: %08"PRIX32" (%"PRIu32") comp_chunk_size: %08"PRIX32" (%"PRIu32")\n",
 		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	comp_chunk_offset = ndrpull->offset;
@@ -92,8 +92,8 @@ static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *n
 
 	if (comp_chunk.length < 2) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "Bad MSZIP CAB comp chunk size %u < 2 (PULL)",
-				      (unsigned int)comp_chunk.length);
+				      "Bad MSZIP CAB comp chunk size %zu < 2 (PULL)",
+				      comp_chunk.length);
 	}
 	/* CK = Chris Kirmse, official Microsoft purloiner */
 	if (comp_chunk.data[0] != 'C' ||
@@ -296,9 +296,9 @@ static enum ndr_err_code ndr_push_compression_mszip_cab_chunk(struct ndr_push *n
 	memcpy(state->alg.mszip.dict, plain_chunk.data, plain_chunk.length);
 	state->alg.mszip.dict_size = plain_chunk.length;
 
-	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		 (unsigned int)plain_chunk.length,
-		 (unsigned int)plain_chunk.length,
+	DEBUG(9,("MSZIP comp plain_chunk_size: %08zX (%zu) comp_chunk_size: %08"PRIX32" (%"PRIu32")\n",
+		 plain_chunk.length,
+		 plain_chunk.length,
 		 comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
@@ -321,13 +321,13 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00008000) {
-		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad MSZIP plain chunk size %08X > 0x00008000 (PULL)",
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad MSZIP plain chunk size %08"PRIX32" > 0x00008000 (PULL)",
 				      plain_chunk_size);
 	}
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
-	DEBUG(9,("MSZIP plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+	DEBUG(9,("MSZIP plain_chunk_size: %08"PRIX32" (%"PRIu32") comp_chunk_size: %08"PRIX32" (%"PRIu32")\n",
 		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	comp_chunk_offset = ndrpull->offset;
@@ -342,8 +342,8 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 
 	if (comp_chunk.length < 2) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "Bad MSZIP comp chunk size %u < 2 (PULL)",
-				      (unsigned int)comp_chunk.length);
+				      "Bad MSZIP comp chunk size %zu < 2 (PULL)",
+				      comp_chunk.length);
 	}
 	/* CK = Chris Kirmse, official Microsoft purloiner */
 	if (comp_chunk.data[0] != 'C' ||
@@ -533,9 +533,9 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	NDR_CHECK(ndr_push_uint32(ndrpush, NDR_SCALARS, comp_chunk_size));
 	ndrpush->offset = tmp_offset;
 
-	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
-		 (unsigned int)plain_chunk.length,
-		 (unsigned int)plain_chunk.length,
+	DEBUG(9,("MSZIP comp plain_chunk_size: %08zX (%zu) comp_chunk_size: %08"PRIX32" (%"PRIu32")\n",
+		 plain_chunk.length,
+		 plain_chunk.length,
 		 comp_chunk_size, comp_chunk_size));
 
 	ndrpush->offset += comp_chunk_size;
@@ -556,7 +556,7 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &plain_chunk_size));
 	if (plain_chunk_size > 0x00010000) {
-		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad XPRESS plain chunk size %08X > 0x00010000 (PULL)",
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION, "Bad XPRESS plain chunk size %08"PRIX32" > 0x00010000 (PULL)",
 				      plain_chunk_size);
 	}
 
@@ -572,7 +572,7 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 	plain_chunk.length = plain_chunk_size;
 	plain_chunk.data = ndrpush->data + plain_chunk_offset;
 
-	DEBUG(9,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+	DEBUG(9,("XPRESS plain_chunk_size: %08"PRIX32" (%"PRIu32") comp_chunk_size: %08"PRIX32" (%"PRIu32")\n",
 		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
 
 	/* Uncompressing the buffer using LZ Xpress algorithm */
@@ -582,8 +582,8 @@ static enum ndr_err_code ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrp
 				  plain_chunk.length);
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "XPRESS lzxpress_decompress() returned %d\n",
-				      (int)ret);
+				      "XPRESS lzxpress_decompress() returned %zd\n",
+				      ret);
 	}
 	plain_chunk.length = ret;
 
@@ -636,8 +636,8 @@ static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrp
 				comp_chunk.length);
 	if (ret < 0) {
 		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
-				      "XPRESS lzxpress_compress() returned %d\n",
-				      (int)ret);
+				      "XPRESS lzxpress_compress() returned %zd\n",
+				      ret);
 	}
 	comp_chunk.length = ret;
 
@@ -867,10 +867,10 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 	uncompressed = ndr_push_blob(ndrpush);
 	if (uncompressed.length != decompressed_len) {
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION,
-				      "Bad uncompressed_len [%u] != [%u](0x%08X) (PULL)",
-				      (int)uncompressed.length,
-				      (int)decompressed_len,
-				      (int)decompressed_len);
+				      "Bad uncompressed_len [%zu] != [%zd](0x%08zX) (PULL)",
+				      uncompressed.length,
+				      decompressed_len,
+				      decompressed_len);
 	}
 
 	comndr = talloc_zero(subndr, struct ndr_pull);

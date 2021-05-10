@@ -72,7 +72,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaOID(struct ndr_print *ndr, const char *
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaOID");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "length", r->length);
-	ndr->print(ndr, "%-25s: length=%u", "oid", r->length);
+	ndr->print(ndr, "%-25s: length=%"PRIu32, "oid", r->length);
 	if (r->binary_oid) {
 		char *partial_oid = NULL;
 		DATA_BLOB oid_blob = data_blob_const(r->binary_oid, r->length);
@@ -142,11 +142,11 @@ static void _print_drsuapi_DsAttributeValueCtr(struct ndr_print *ndr,
 	ndr_print_ptr(ndr, "values", r->values);
 	ndr->depth++;
 	if (r->values) {
-		ndr->print(ndr, "%s: ARRAY(%d)", "values", (int)r->num_values);
+		ndr->print(ndr, "%s: ARRAY(%"PRIu32")", "values", r->num_values);
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->num_values;cntr_values_1++) {
 			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_values_1) != -1) {
+			if (asprintf(&idx_1, "[%"PRIu32"]", cntr_values_1) != -1) {
 				//ndr_print_drsuapi_DsAttributeValue(ndr, "values", &r->values[cntr_values_1]);
 				print_val_fn(ndr, "values", &r->values[cntr_values_1]);
 				free(idx_1);

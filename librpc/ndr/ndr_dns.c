@@ -87,7 +87,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 			/* its a reserved length field */
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
 					      "BAD DNS NAME component, " \
-					      "reserved length field: 0x%02x",
+					      "reserved length field: 0x%02"PRIx8,
 					      (len &0xC));
 		}
 		if (*offset + len + 1 > ndr->data_size) {

@@ -49,7 +49,7 @@ _PUBLIC_ void ndr_print_cf_date(struct ndr_print *ndr, const char *name, const s
 	year += 1980;
 	month = (r->date >> 5 & 0xf);
 	day = (r->date & 0x1f);
-	s = talloc_asprintf(ndr, "%02d/%02d/%04d", day, month, year);
+	s = talloc_asprintf(ndr, "%02"PRIu8"/%02"PRIu8"/%04"PRIu16, day, month, year);
 	if (s == NULL) { return; }
 	ndr_print_string(ndr, "date", s);
 	talloc_free(s);

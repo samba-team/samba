@@ -92,7 +92,7 @@ _PUBLIC_ void ndr_check_padding(struct ndr_pull *ndr, size_t n)
 		}
 	}
 	if (i<ofs2) {
-		DEBUG(0,("WARNING: Non-zero padding to %d: ", (int)n));
+		DEBUG(0,("WARNING: Non-zero padding to %zu: ", n));
 		for (i=ndr->offset;i<ofs2;i++) {
 			DEBUG(0,("%02x ", ndr->data[i]));
 		}
@@ -162,7 +162,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint1632(struct ndr_pull *ndr, int ndr_flags
 		enum ndr_err_code err = ndr_pull_uint32(ndr, ndr_flags, &v32);
 		*v = v32;
 		if (unlikely(v32 != *v)) {
-			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08x\n", (unsigned)v32));
+			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08"PRIx32"\n", v32));
 			return NDR_ERR_NDR64;
 		}
 		return err;
@@ -213,10 +213,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint3264(struct ndr_pull *ndr, int ndr_flags
 	}
 	*v = (uint32_t)v64;
 	if (unlikely(v64 != *v)) {
-		DEBUG(0,(__location__ ": non-zero upper 32 bits 0x%016llx\n",
-			 (unsigned long long)v64));
-		return ndr_pull_error(ndr, NDR_ERR_NDR64, __location__ ": non-zero upper 32 bits 0x%016llx\n",
-			 (unsigned long long)v64);
+		DEBUG(0,(__location__ ": non-zero upper 32 bits 0x%016"PRIx64"\n",
+			 v64));
+		return ndr_pull_error(ndr, NDR_ERR_NDR64, __location__ ": non-zero upper 32 bits 0x%016"PRIx64"\n",
+			 v64);
 	}
 	return err;
 }
@@ -421,7 +421,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_enum_uint1632(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &v32));
 		*v = v32;
 		if (v32 != *v) {
-			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08x\n", (unsigned)v32));
+			DEBUG(0,(__location__ ": non-zero upper 16 bits 0x%08"PRIx32"\n", v32));
 			return NDR_ERR_NDR64;
 		}
 		return NDR_ERR_SUCCESS;
@@ -971,8 +971,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uid_t(struct ndr_pull *ndr, int ndr_flags, u
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &uu));
 	*u = (uid_t)uu;
 	if (unlikely(uu != *u)) {
-		DEBUG(0,(__location__ ": uid_t pull doesn't fit 0x%016llx\n",
-			 (unsigned long long)uu));
+		DEBUG(0,(__location__ ": uid_t pull doesn't fit 0x%016"PRIx64"\n",
+			 uu));
 		return NDR_ERR_NDR64;
 	}
 	return NDR_ERR_SUCCESS;
@@ -997,8 +997,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_gid_t(struct ndr_pull *ndr, int ndr_flags, g
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &gg));
 	*g = (gid_t)gg;
 	if (unlikely(gg != *g)) {
-		DEBUG(0,(__location__ ": gid_t pull doesn't fit 0x%016llx\n",
-			 (unsigned long long)gg));
+		DEBUG(0,(__location__ ": gid_t pull doesn't fit 0x%016"PRIx64"\n",
+			 gg));
 		return NDR_ERR_NDR64;
 	}
 	return NDR_ERR_SUCCESS;
@@ -1121,9 +1121,9 @@ _PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char
 		    const char *val, uint32_t value)
 {
 	if (ndr->flags & LIBNDR_PRINT_ARRAY_HEX) {
-		ndr->print(ndr, "%-25s: %s (0x%X)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+		ndr->print(ndr, "%-25s: %s (0x%"PRIX32")", name, val?val:"UNKNOWN_ENUM_VALUE", value);
 	} else {
-		ndr->print(ndr, "%-25s: %s (%d)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+		ndr->print(ndr, "%-25s: %s (%"PRIu32")", name, val?val:"UNKNOWN_ENUM_VALUE", value);
 	}
 }
 
@@ -1141,9 +1141,9 @@ _PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const ch
 		value >>= 1;
 	}
 	if (flag == 1) {
-		ndr->print(ndr, "   %d: %-25s", value, flag_name);
+		ndr->print(ndr, "   %"PRIu32": %-25s", value, flag_name);
 	} else {
-		ndr->print(ndr, "0x%02x: %-25s (%d)", value, flag_name, value);
+		ndr->print(ndr, "0x%02"PRIx32": %-25s (%"PRIu32")", value, flag_name, value);
 	}
 }
 
@@ -1153,7 +1153,7 @@ _PUBLIC_ void ndr_print_int8(struct ndr_print *ndr, const char *name, int8_t v)
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: %d", name, v);
+	ndr->print(ndr, "%-25s: %"PRId8, name, v);
 }
 
 _PUBLIC_ void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
@@ -1162,7 +1162,7 @@ _PUBLIC_ void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%02"PRIx8" (%"PRIu8")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int16(struct ndr_print *ndr, const char *name, int16_t v)
@@ -1171,7 +1171,7 @@ _PUBLIC_ void ndr_print_int16(struct ndr_print *ndr, const char *name, int16_t v
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: %d", name, v);
+	ndr->print(ndr, "%-25s: %"PRId16, name, v);
 }
 
 _PUBLIC_ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
@@ -1180,7 +1180,7 @@ _PUBLIC_ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%04"PRIx16" (%"PRIu16")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v)
@@ -1189,7 +1189,7 @@ _PUBLIC_ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: %d", name, v);
+	ndr->print(ndr, "%-25s: %"PRId32, name, v);
 }
 
 _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
@@ -1198,7 +1198,7 @@ _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%08"PRIx32" (%"PRIu32")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int3264(struct ndr_print *ndr, const char *name, int32_t v)
@@ -1207,7 +1207,7 @@ _PUBLIC_ void ndr_print_int3264(struct ndr_print *ndr, const char *name, int32_t
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: %d", name, v);
+	ndr->print(ndr, "%-25s: %"PRId32, name, v);
 }
 
 _PUBLIC_ void ndr_print_uint3264(struct ndr_print *ndr, const char *name, uint32_t v)
@@ -1216,12 +1216,12 @@ _PUBLIC_ void ndr_print_uint3264(struct ndr_print *ndr, const char *name, uint32
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
+	ndr->print(ndr, "%-25s: 0x%08"PRIx32" (%"PRIu32")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%016llx (%llu)", name, (unsigned long long)v, (unsigned long long)v);
+	ndr->print(ndr, "%-25s: 0x%016"PRIx64" (%"PRIu64")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v)
@@ -1235,7 +1235,7 @@ _PUBLIC_ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v
 		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
 		return;
 	}
-	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, (unsigned long long)v, (long long)v);
+	ndr->print(ndr, "%-25s: 0x%016"PRIx64" (%"PRId64")", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_double(struct ndr_print *ndr, const char *name, double v)
@@ -1315,36 +1315,36 @@ _PUBLIC_ void ndr_print_union(struct ndr_print *ndr, const char *name, int level
 
 _PUBLIC_ void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level)
 {
-	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
+	ndr->print(ndr, "UNKNOWN LEVEL %"PRIu16, level);
 }
 
 _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 			   const uint8_t *data, uint32_t count)
 {
-	int i;
+	uint32_t i;
 #define _ONELINE_LIMIT 32
 
 	if (data == NULL) {
-		ndr->print(ndr, "%s: ARRAY(%d) : NULL", name, count);
+		ndr->print(ndr, "%s: ARRAY(%"PRIu32") : NULL", name, count);
 		return;
 	}
 
 	if (NDR_HIDE_SECRET(ndr)) {
-		ndr->print(ndr, "%s: ARRAY(%d): <REDACTED SECRET VALUES>", name, count);
+		ndr->print(ndr, "%s: ARRAY(%"PRIu32"): <REDACTED SECRET VALUES>", name, count);
 		return;
 	}
 
 	if (count <= _ONELINE_LIMIT && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
 		char s[(_ONELINE_LIMIT + 1) * 2];
 		for (i=0;i<count;i++) {
-			snprintf(&s[i*2], 3, "%02x", data[i]);
+			snprintf(&s[i*2], 3, "%02"PRIx8, data[i]);
 		}
 		s[i*2] = 0;
 		ndr->print(ndr, "%-25s: %s", name, s);
 		return;
 	}
 
-	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->print(ndr, "%s: ARRAY(%"PRIu32")", name, count);
 	if (count > _ONELINE_LIMIT && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
 		ndr_dump_data(ndr, data, count);
 		return;
@@ -1353,7 +1353,7 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (i=0;i<count;i++) {
 		char *idx=NULL;
-		if (asprintf(&idx, "[%d]", i) != -1) {
+		if (asprintf(&idx, "[%"PRIu32"]", i) != -1) {
 			ndr_print_uint8(ndr, idx, data[i]);
 			free(idx);
 		}
@@ -1385,7 +1385,7 @@ static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 
 _PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
 {
-	ndr->print(ndr, "%-25s: DATA_BLOB length=%u", name, (unsigned)r.length);
+	ndr->print(ndr, "%-25s: DATA_BLOB length=%zu", name, r.length);
 	if (r.length) {
 		ndr_dump_data(ndr, r.data, r.length);
 	}
