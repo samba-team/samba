@@ -553,17 +553,19 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 
 	ino64 = sb.st_ex_ino;
 	if (slq->cnids) {
+		bool found;
+
 		/*
 		 * Check whether the found element is in the requested
 		 * set of IDs. Note that we're faking CNIDs by using
 		 * filesystem inode numbers here
 		 */
-		ok = bsearch(&ino64,
-			     slq->cnids,
-			     slq->cnids_num,
-			     sizeof(uint64_t),
-			     cnid_comp_fn);
-		if (!ok) {
+		found = bsearch(&ino64,
+				slq->cnids,
+				slq->cnids_num,
+				sizeof(uint64_t),
+				cnid_comp_fn);
+		if (!found) {
 			return false;
 		}
 	}
