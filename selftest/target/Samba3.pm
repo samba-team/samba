@@ -238,6 +238,7 @@ sub check_env($$)
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
 	ad_member_fips      => ["ad_dc_fips"],
+	ad_member_offline_logon => ["ad_dc"],
 
 	clusteredmember => ["nt4_dc"],
 );
@@ -1209,6 +1210,29 @@ sub setup_ad_member_fips
 					  $trustvars_f,
 					  $trustvars_e,
 					  1);
+}
+
+sub setup_ad_member_offline_logon
+{
+	my ($self,
+	    $prefix,
+	    $dcvars,
+	    $trustvars_f,
+	    $trustvars_e) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
+
+	print "PROVISIONING AD MEMBER OFFLINE LOGON...";
+
+	return $self->provision_ad_member($prefix,
+					  "OFFLINEADMEM",
+					  $dcvars,
+					  $trustvars_f,
+					  $trustvars_e,
+					  undef);
 }
 
 sub setup_simpleserver

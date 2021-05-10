@@ -589,6 +589,7 @@ sub get_interface($)
 		lclnt4dc2smb1	  => 55,
 		fipsdc            => 56,
 		fipsadmember      => 57,
+		offlineadmem      => 58,
 
 		rootdnsforwarder  => 64,
 
