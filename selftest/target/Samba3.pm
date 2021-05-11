@@ -646,6 +646,7 @@ sub provision_ad_member
 {
 	my ($self,
 	    $prefix,
+	    $machine_account,
 	    $dcvars,
 	    $trustvars_f,
 	    $trustvars_e,
@@ -758,7 +759,7 @@ sub provision_ad_member
 	    prefix => $prefix,
 	    domain => $dcvars->{DOMAIN},
 	    realm => $dcvars->{REALM},
-	    server => "LOCALADMEMBER",
+	    server => $machine_account,
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
 	    resolv_conf => $dcvars->{RESOLV_CONF});
@@ -873,7 +874,11 @@ sub setup_ad_member
 
 	print "PROVISIONING AD MEMBER...";
 
-	return $self->provision_ad_member($prefix, $dcvars, $trustvars_f, $trustvars_e);
+	return $self->provision_ad_member($prefix,
+					  "LOCALADMEMBER",
+					  $dcvars,
+					  $trustvars_f,
+					  $trustvars_e);
 }
 
 sub setup_ad_member_rfc2307
@@ -1199,6 +1204,7 @@ sub setup_ad_member_fips
 	print "PROVISIONING AD FIPS MEMBER...";
 
 	return $self->provision_ad_member($prefix,
+					  "FIPSADMEMBER",
 					  $dcvars,
 					  $trustvars_f,
 					  $trustvars_e,
