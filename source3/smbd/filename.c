@@ -162,7 +162,8 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 				bool posix_pathnames,
 				const struct smb_filename *smb_fname,
 				char **pp_dirpath,
-				char **pp_start)
+				char **pp_start,
+				int *p_parent_stat_errno)
 {
 	char *parent_name = NULL;
 	struct smb_filename *parent_fname = NULL;
@@ -211,6 +212,16 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	   with the normal tree walk. */
 
 	if (ret == -1) {
+		/*
+		 * Optimization. Preserving the
+		 * errno from the STAT/LSTAT here
+		 * will allow us to save a duplicate
+		 * STAT/LSTAT system call of the parent
+		 * pathname in a hot code path in the caller.
+		 */
+		if (p_parent_stat_errno != NULL) {
+			*p_parent_stat_errno = errno;
+		}
 		goto no_optimization_out;
 	}
 
@@ -1206,7 +1217,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 						state->posix_pathnames,
 						state->smb_fname,
 						&state->dirpath,
-						&state->name);
+						&state->name,
+						NULL);
 			errno = saved_errno;
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
@@ -1287,7 +1299,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 					state->posix_pathnames,
 					state->smb_fname,
 					&state->dirpath,
-					&state->name);
+					&state->name,
+					NULL);
 		errno = saved_errno;
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
