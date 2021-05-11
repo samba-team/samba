@@ -2830,6 +2830,7 @@ static WERROR libnet_DomainOfflineJoin(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	WERROR werr;
 	struct ODJ_WIN7BLOB win7blob;
+	struct OP_JOINPROV3_PART joinprov3;
 	const char *dc_name;
 
 	if (!r->in.request_offline_join) {
@@ -2862,6 +2863,13 @@ static WERROR libnet_DomainOfflineJoin(TALLOC_CTX *mem_ctx,
 			win7blob.DnsDomainInfo.Sid);
 	W_ERROR_HAVE_NO_MEMORY(r->out.domain_sid);
 
+	werr = libnet_odj_find_joinprov3(r->in.odj_provision_data, &joinprov3);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	r->out.account_rid = joinprov3.Rid;
+
 	dc_name = strip_hostname(win7blob.DcInfo.dc_address);
 	if (dc_name == NULL) {
 		return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
@@ -2885,7 +2893,6 @@ static WERROR libnet_DomainOfflineJoin(TALLOC_CTX *mem_ctx,
 	const char * dn;
 	uint32_t set_encryption_types;
 	const char * krb5_salt;
-	uint32_t account_rid;
 #endif
 }
 
