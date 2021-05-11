@@ -3057,8 +3057,9 @@ static bool init_wcache(void)
 
 bool initialize_winbindd_cache(void)
 {
-	bool cache_bad = true;
-	uint32_t vers;
+	bool cache_bad = false;
+	uint32_t vers = 0;
+	bool ok;
 
 	if (!init_wcache()) {
 		DEBUG(0,("initialize_winbindd_cache: init_wcache failed.\n"));
@@ -3066,9 +3067,16 @@ bool initialize_winbindd_cache(void)
 	}
 
 	/* Check version number. */
-	if (tdb_fetch_uint32(wcache->tdb, WINBINDD_CACHE_VERSION_KEYSTR, &vers) &&
-			vers == WINBINDD_CACHE_VERSION) {
-		cache_bad = false;
+	ok = tdb_fetch_uint32(wcache->tdb, WINBINDD_CACHE_VERSION_KEYSTR, &vers);
+	if (!ok) {
+		DBG_DEBUG("Failed to get cache version\n");
+		cache_bad = true;
+	}
+	if (vers != WINBINDD_CACHE_VERSION) {
+		DBG_DEBUG("Invalid cache version %u != %u\n",
+			  vers,
+			  WINBINDD_CACHE_VERSION);
+		cache_bad = true;
 	}
 
 	if (cache_bad) {
