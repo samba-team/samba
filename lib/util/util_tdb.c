@@ -203,7 +203,12 @@ static bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key,
 				    uint32_t *value)
 {
 	int ret = tdb_parse_record(tdb, key, fetch_uint32_parser, value);
-	return ret;
+
+	if (ret == -1) {
+		return false;
+	}
+
+	return true;
 }
 
 /****************************************************************************

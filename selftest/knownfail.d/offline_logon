@@ -1,4 +1,0 @@
-samba.blackbox.offline_logon.wbinfo.pam_logon_alice\(ad_member_offline_logon\)
-samba.blackbox.offline_logon.wbinfo.pam_logon_bob\(ad_member_offline_logon\)
-samba.blackbox.offline_logon.wbinfo.kerberos_logon_alice\(ad_member_offline_logon\)
-samba.blackbox.offline_logon.wbinfo.kerberos_logon_bob\(ad_member_offline_logon\)
