@@ -1174,6 +1174,8 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 		  state->smb_fname->base_name, state->dirpath, state->name);
 
 	if (!state->name_has_wildcard) {
+		int parent_stat_errno = 0;
+
 		/*
 		 * stat the name - if it exists then we can add the stream back (if
 		 * there was one) and be done!
@@ -1218,7 +1220,7 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 						state->smb_fname,
 						&state->dirpath,
 						&state->name,
-						NULL);
+						&parent_stat_errno);
 			errno = saved_errno;
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
@@ -1252,28 +1254,29 @@ NTSTATUS unix_convert(TALLOC_CTX *mem_ctx,
 				/*
 				 * Was it a missing last component ?
 				 * or a missing intermediate component ?
+				 *
+				 * Optimization.
+				 *
+				 * For this code path we can guarantee that
+				 * we have gone through check_parent_exists()
+				 * and it returned NT_STATUS_OK.
+				 *
+				 * Either there was no parent component (".")
+				 * parent_stat_errno == 0 and we have a missing
+				 * last component here.
+				 *
+				 * OR check_parent_exists() called STAT/LSTAT
+				 * and if it failed parent_stat_errno has been
+				 * set telling us if the parent existed or not.
+				 *
+				 * Either way we can avoid another STAT/LSTAT
+				 * system call on the parent here.
 				 */
-				struct smb_filename *parent_fname = NULL;
-				struct smb_filename *base_fname = NULL;
-				bool ok;
-
-				ok = parent_smb_fname(state->mem_ctx,
-						      state->smb_fname,
-						      &parent_fname,
-						      &base_fname);
-				if (!ok) {
-					status = NT_STATUS_NO_MEMORY;
+				if (parent_stat_errno == ENOTDIR ||
+						parent_stat_errno == ENOENT ||
+						parent_stat_errno == ELOOP) {
+					status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					goto fail;
-				}
-				ret = vfs_stat(state->conn, parent_fname);
-				TALLOC_FREE(parent_fname);
-				if (ret == -1) {
-					if (errno == ENOTDIR ||
-							errno == ENOENT ||
-							errno == ELOOP) {
-						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-						goto fail;
-					}
 				}
 
 				/*
