@@ -578,6 +578,7 @@ sub get_interface($)
 		addcsmb1	  => 54,
 		lclnt4dc2smb1	  => 55,
 		fipsdc            => 56,
+		fipsadmember      => 57,
 
 		rootdnsforwarder  => 64,
 
