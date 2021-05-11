@@ -54,7 +54,7 @@ enum smb_cmdline_popt_options {
 /**
  * @brief Initialize the commandline interface for parsing options.
  *
- * This initialized the interface for parsing options given on the command
+ * This initializes the interface for parsing options given on the command
  * line. It sets up the loadparm and client credentials contexts.
  * The function will also setup fault handler, set logging to STDERR by
  * default, setup talloc logging and the panic handler.
@@ -63,8 +63,8 @@ enum smb_cmdline_popt_options {
  *                      This should be a long living context till the client
  *                      exits.
  *
- * @param[in]  require_smbconf  Wether the smb.conf file should to be present
- *                              or not?
+ * @param[in]  require_smbconf  Wether the smb.conf file is required to be
+ *                              present or not?
  *
  * @return true on success, false if an error occured.
  */
@@ -89,9 +89,19 @@ struct cli_credentials *samba_cmdline_get_creds(void);
 /**
  * @brief Get a pointer to the poptOption for the given option section.
  *
+ * You should not directly use this function, but the macros.
+ *
  * @param[in]  opt  The options to retrieve.
  *
  * @return A pointer to the poptOption array.
+ *
+ * @see POPT_COMMON_DEBUG_ONLY
+ * @see POPT_COMMON_OPTION_ONLY
+ * @see POPT_COMMON_CONFIG_ONLY
+ * @see POPT_COMMON_SAMBA
+ * @see POPT_COMMON_CONNECTION
+ * @see POPT_COMMON_CREDENTIALS
+ * @see POPT_COMMON_VERSION
  */
 struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
 
@@ -106,12 +116,12 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
  *
  * @param[in]  argc     The number of arguments.
  *
- * @param[in]  argv[]   The argument array we will find the array.
+ * @param[in]  argv[]   The argument array we should remove secrets from.
  */
 void samba_cmdline_burn(int argc, char *argv[]);
 
 /**
- * @brief Sanity check the commadline options.
+ * @brief Sanity check the command line options.
  *
  * This checks for duplicates in short and long options.
  *
@@ -128,13 +138,16 @@ bool samba_cmdline_sanity_check(const struct poptOption *opts);
  * If Samba is build in developer mode, this will call
  * samba_cmdline_sanity_check() before poptGetContext().
  *
- * @param name     The context name (usually argv[0] program name)
+ * @param[in] name     The context name (usually argv[0] program name or
+ *                     getprogname())
  *
- * @param argc     Number of arguments
+ * @param[in] argc     Number of arguments
  *
- * @param argv     The argument array
- * @param options  The address of popt option table
- * @param flags    The OR'd POPT_CONTEXT_* bits
+ * @param[in] argv     The argument array
+ *
+ * @param[in] options  The address of popt option table
+ *
+ * @param[in] flags    The OR'd POPT_CONTEXT_* bits
  *
  * @return The initialized popt context or NULL on error.
  */
