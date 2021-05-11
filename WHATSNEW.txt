@@ -1,4 +1,71 @@
                    ==============================
+                   Release Notes for Samba 4.13.9
+                            May 11, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.8
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14696: s3: smbd: SMB1 SMBsplwr doesn't send a reply packet on success.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14689: Add documentation for dsdb_group_audit and dsdb_group_json_audit
+     to "log level", synchronise "log level" in smb.conf with the code.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14672: Fix smbd panic when two clients open same file.
+   * BUG 14675: Fix memory leak in the RPC server. 
+   * BUG 14679: s3: smbd: Fix deferred renames.
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 14675: s3-iremotewinspool: Set the per-request memory context.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14675: rpc_server3: Fix a memleak for internal pipes.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11899: third_party: Update socket_wrapper to version 1.3.2.
+   * BUG 14640: third_party: Update socket_wrapper to version 1.3.3.
+
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14663: idmap_rfc2307 and idmap_nss return wrong mapping for uid/gid
+     conflict.
+
+o  Martin Schwenke <martin@meltin.net
+   * BUG 14288: Fix the build on OmniOS.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.13.8
                            April 29, 2021
                    ==============================
@@ -59,8 +126,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
