@@ -69,6 +69,8 @@ int lp_rpc_high_port(void);
 const char *lp_dns_hostname(void);
 bool lp_lanman_auth(void);
 enum samba_weak_crypto lp_weak_crypto(void);
+bool lp_strict_rename(int snum);
+int lp_smb3_directory_leases(void);
 
 int lp_wi_scan_global_parametrics(
 	const char *regex, size_t max_matches,

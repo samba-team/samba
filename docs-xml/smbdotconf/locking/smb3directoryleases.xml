@@ -1,0 +1,40 @@
+<samba:parameter name="smb3 directory leases"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_bool_auto"
+		 function="_smb3_directory_leases"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    This is an enumerated type that controls <command
+    moreinfo="none">smbd</command> whether SMB3 directory leases are
+    enabled. Directory Leasing is an SMB3-only feature which allows
+    clients to cache directories.
+  </para>
+  <para>
+    Possible values for <smbconfoption name="smb3 directory leases"/>
+    are <constant>yes</constant>, <constant>no</constant> and
+    <constant>auto</constant>, <constant>auto</constant> being the
+    default.
+  </para>
+  <para>
+    When set to <constant>auto</constant>, the effective value depends on the
+    option <smbconfoption name="clustering"/>. If <smbconfoption
+    name="clustering"/> is enabled, <smbconfoption name="smb3 directory
+    leases"/> are disabled and the other way around.
+  </para>
+  <para>
+    <smbconfoption name="smb3 directory leases"/> are only available
+    with <smbconfoption name="smb2 leases">yes</smbconfoption>,
+    <smbconfoption name="oplocks">yes</smbconfoption> and
+    <smbconfoption name="kernel oplocks">no</smbconfoption>.
+  </para>
+  <para>
+    Enabling <smbconfoption name="smb3 directory leases"/> implicitly enables
+    <smbconfoption name="strict rename"/>.
+  </para>
+</description>
+
+<related>smb2 leases</related>
+<value type="default">auto</value>
+</samba:parameter>

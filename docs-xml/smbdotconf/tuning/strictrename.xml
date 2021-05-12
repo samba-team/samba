@@ -1,6 +1,7 @@
 <samba:parameter name="strict rename"
                  context="S"
                  type="boolean"
+		 function="_strict_rename"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>By default a Windows SMB server prevents directory
@@ -27,6 +28,9 @@
     <para>If the client has requested UNIX extensions (POSIX
     pathnames) then renames are always allowed and this parameter
     has no effect.</para>
+
+    <para>Enabling <smbconfoption name="smb3 directory leases"/> implicitly
+    enables <smbconfoption name="strict rename"/>.</para>
 
 </description>
 
