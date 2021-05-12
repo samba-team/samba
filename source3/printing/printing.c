@@ -168,7 +168,7 @@ static TDB_DATA print_key(uint32_t jobid, uint32_t *tmp)
 static int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8_t *buf, int buflen)
 {
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
+	DATA_BLOB blob = { .data = NULL };
 	int len = 0;
 
 	if (devmode) {
@@ -181,8 +181,6 @@ static int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8_t *buf, int
 				   "error encoding spoolss_DeviceMode\n"));
 			goto done;
 		}
-	} else {
-		ZERO_STRUCT(blob);
 	}
 
 	len = tdb_pack(buf, buflen, "B", blob.length, blob.data);
