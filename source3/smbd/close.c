@@ -923,6 +923,14 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		fsp->op->global->durable = false;
 	}
 
+	if (fsp->fsp_flags.modified) {
+		notify_fname(conn,
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
+			     0,
+			     fsp->fsp_name,
+			     fsp_get_smb2_lease(fsp));
+	}
+
 	/* If this is an old DOS or FCB open and we have multiple opens on
 	   the same handle we only have one share mode. Ensure we only remove
 	   the share mode on the last close. */
