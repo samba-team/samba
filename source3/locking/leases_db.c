@@ -487,6 +487,11 @@ static void leases_db_set_fn(
 	value->lease_version = state->lease_version;
 	value->epoch = state->epoch;
 	*modified = true;
+
+	if (CHECK_DEBUGLVL(10)) {
+		DBG_DEBUG("\n");
+		NDR_PRINT_DEBUG(leases_db_value, value);
+	}
 }
 
 NTSTATUS leases_db_set(const struct GUID *client_guid,
