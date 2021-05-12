@@ -1549,8 +1549,9 @@ bool name_to_fqdn(fstring fqdn, const char *name)
 
 	s = getaddrinfo(name, NULL, &hints, &result);
 	if (s != 0) {
-		DEBUG(1, ("getaddrinfo: %s\n", gai_strerror(s)));
-		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
+		DBG_WARNING("getaddrinfo lookup for %s failed: %s\n",
+			name,
+			gai_strerror(s));
 		fstrcpy(fqdn, name);
 		return false;
 	}
