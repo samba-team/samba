@@ -587,11 +587,6 @@
 					(smb1req), (op), (old_cookie), \
 					(mem_ctx), (fsp), (new_cookie))
 
-#define SMB_VFS_READDIR_ATTR(conn, fname, mem_ctx, attr_data) \
-	smb_vfs_call_readdir_attr((conn)->vfs_handles, (fname), (mem_ctx), (attr_data))
-#define SMB_VFS_NEXT_READDIR_ATTR(conn, fname, mem_ctx, attr_data) \
-	smb_vfs_call_readdir_attr((handle)->next, (fname), (mem_ctx), (attr_data))
-
 #define SMB_VFS_FREADDIR_ATTR(fsp, mem_ctx, attr_data) \
 	smb_vfs_call_freaddir_attr((fsp)->conn->vfs_handles, (fsp), (mem_ctx), (attr_data))
 #define SMB_VFS_NEXT_FREADDIR_ATTR(handle, fsp, mem_ctx, attr_data) \

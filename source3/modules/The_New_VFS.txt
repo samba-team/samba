@@ -340,7 +340,7 @@ Table of Contents
    SMB_VFS_PWRITE_SEND()              [fsp]       -
    SMB_VFS_READ_DFS_PATHAT()          [Symlink]   Todo
    SMB_VFS_READDIR()                  [fsp]       -
-   SMB_VFS_READDIR_ATTR()             [Path]      Todo
+   SMB_VFS_READDIR_ATTR()             [Path]      -
    SMB_VFS_READLINKAT()               [Symlink]   -
    SMB_VFS_REALPATH()                 [P2px]      -
    SMB_VFS_RECVFILE()                 [fsp]       -
@@ -399,7 +399,6 @@ Table of Contents
    VFS Function                     Group       Status
   ─────────────────────────────────────────────────────
    SMB_VFS_SYS_ACL_DELETE_DEF_FD()  [xpathref]  Todo
-   SMB_VFS_READDIR_ATTRAT()         [Enum]      Todo
    SMB_VFS_FNTIMENS()               [fsp]       -
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -556,7 +555,6 @@ Table of Contents
 
   • SMB_VFS_GET_DOS_ATTRIBUTES_SEND()
   • SMB_VFS_GETXATTRAT_SEND()
-  • SMB_VFS_READDIR_ATTRAT() (NEW)
 
 
 2.2.7 Handle based VFS functions not allowed on O_PATH opened handles

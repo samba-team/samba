@@ -2978,15 +2978,6 @@ NTSTATUS smb_vfs_call_durable_reconnect(struct vfs_handle_struct *handle,
 					         new_cookie);
 }
 
-NTSTATUS smb_vfs_call_readdir_attr(struct vfs_handle_struct *handle,
-				   const struct smb_filename *fname,
-				   TALLOC_CTX *mem_ctx,
-				   struct readdir_attr_data **attr_data)
-{
-	VFS_FIND(readdir_attr);
-	return handle->fns->readdir_attr_fn(handle, fname, mem_ctx, attr_data);
-}
-
 NTSTATUS smb_vfs_call_freaddir_attr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    TALLOC_CTX *mem_ctx,

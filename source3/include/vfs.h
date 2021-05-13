@@ -351,6 +351,7 @@
  * Version 45 - Remove SMB_VFS_NTIMES
  * Version 45 - ADD SMB_VFS_FSTREAMINFO
  * Version 45 - Add SMB_VFS_FREADDIR_ATTR
+ * Version 45 - Remove SMB_VFS_READDIR_ATTR
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1270,10 +1271,6 @@ struct vfs_fn_pointers {
 					 struct files_struct **fsp,
 					 DATA_BLOB *new_cookie);
 
-	NTSTATUS (*readdir_attr_fn)(struct vfs_handle_struct *handle,
-				    const struct smb_filename *fname,
-				    TALLOC_CTX *mem_ctx,
-				    struct readdir_attr_data **attr_data);
 	NTSTATUS (*freaddir_attr_fn)(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     TALLOC_CTX *mem_ctx,
@@ -1786,10 +1783,6 @@ NTSTATUS smb_vfs_call_durable_reconnect(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					struct files_struct **fsp,
 					DATA_BLOB *new_cookie);
-NTSTATUS smb_vfs_call_readdir_attr(struct vfs_handle_struct *handle,
-				   const struct smb_filename *fname,
-				   TALLOC_CTX *mem_ctx,
-				   struct readdir_attr_data **attr_data);
 NTSTATUS smb_vfs_call_freaddir_attr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    TALLOC_CTX *mem_ctx,
@@ -2089,10 +2082,6 @@ NTSTATUS vfs_not_implemented_fsctl(struct vfs_handle_struct *handle,
 				   uint32_t in_len,
 				   uint8_t **_out_data,
 				   uint32_t max_out_len, uint32_t *out_len);
-NTSTATUS vfs_not_implemented_readdir_attr(struct vfs_handle_struct *handle,
-					  const struct smb_filename *fname,
-					  TALLOC_CTX *mem_ctx,
-					  struct readdir_attr_data **pattr_data);
 NTSTATUS vfs_not_implemented_freaddir_attr(struct vfs_handle_struct *handle,
 					   struct files_struct *dirfsp,
 					   TALLOC_CTX *mem_ctx,

@@ -631,14 +631,6 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS vfswrap_readdir_attr(struct vfs_handle_struct *handle,
-				     const struct smb_filename *fname,
-				     TALLOC_CTX *mem_ctx,
-				     struct readdir_attr_data **attr_data)
-{
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
 static NTSTATUS vfswrap_freaddir_attr(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx,
@@ -3776,7 +3768,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	.fdopendir_fn = vfswrap_fdopendir,
 	.readdir_fn = vfswrap_readdir,
-	.readdir_attr_fn = vfswrap_readdir_attr,
 	.freaddir_attr_fn = vfswrap_freaddir_attr,
 	.seekdir_fn = vfswrap_seekdir,
 	.telldir_fn = vfswrap_telldir,
