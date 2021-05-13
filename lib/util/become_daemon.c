@@ -133,7 +133,7 @@ void daemon_ready(const char *daemon)
 			   daemon);
 	}
 #endif
-	DBG_ERR("daemon '%s' finished starting up and ready to serve "
+	DBG_INFO("daemon '%s' finished starting up and ready to serve "
 		"connections\n", daemon);
 }
 
