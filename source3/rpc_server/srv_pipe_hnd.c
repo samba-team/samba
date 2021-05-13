@@ -171,7 +171,7 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct np_write_state *state;
 	NTSTATUS status;
 
-	DEBUG(6, ("np_write_send: len: %d\n", (int)len));
+	DBG_INFO("len: %zu\n", len);
 	dump_data(50, data, len);
 
 	req = tevent_req_create(mem_ctx, &state, struct np_write_state);
