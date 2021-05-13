@@ -520,7 +520,8 @@ static bool add_to_jobs_list(
  Remove a jobid from the 'jobs changed' list.
 ***************************************************************************/
 
-static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
+static bool remove_from_jobs_list(
+	const char *keystr, const char *sharename, uint32_t jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	TDB_DATA data, key;
@@ -534,7 +535,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 
 	ZERO_STRUCT(data);
 
-	key = string_tdb_data("INFO/jobs_changed");
+	key = string_tdb_data(keystr);
 
 	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
 		goto out;
@@ -569,9 +570,16 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 	SAFE_FREE(data.dptr);
 	release_print_db(pdb);
 	if (ret)
-		DEBUG(10,("remove_from_jobs_changed: removed jobid %u\n", (unsigned int)jobid ));
+		DBG_DEBUG("removed jobid %"PRIu32"\n", jobid);
 	else
-		DEBUG(10,("remove_from_jobs_changed: Failed to remove jobid %u\n", (unsigned int)jobid ));
+		DBG_DEBUG("Failed to remove jobid %"PRIu32"\n", jobid);
+	return ret;
+}
+
+static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
+{
+	bool ret = remove_from_jobs_list(
+		"INFO/jobs_changed", sharename, jobid);
 	return ret;
 }
 
@@ -1950,56 +1958,7 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 
 static bool remove_from_jobs_added(const char* sharename, uint32_t jobid)
 {
-	struct tdb_print_db *pdb = get_print_db_byname(sharename);
-	TDB_DATA data, key;
-	size_t job_count, i;
-	bool ret = False;
-	bool gotlock = False;
-
-	if (!pdb) {
-		return False;
-	}
-
-	ZERO_STRUCT(data);
-
-	key = string_tdb_data("INFO/jobs_added");
-
-	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
-		goto out;
-
-	gotlock = True;
-
-	data = tdb_fetch(pdb->tdb, key);
-
-	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
-		goto out;
-
-	job_count = data.dsize / 4;
-	for (i = 0; i < job_count; i++) {
-		uint32_t ch_jobid;
-
-		ch_jobid = IVAL(data.dptr, i*4);
-		if (ch_jobid == jobid) {
-			if (i < job_count -1 )
-				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
-			data.dsize -= 4;
-			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) != 0)
-				goto out;
-			break;
-		}
-	}
-
-	ret = True;
-  out:
-
-	if (gotlock)
-		tdb_chainunlock(pdb->tdb, key);
-	SAFE_FREE(data.dptr);
-	release_print_db(pdb);
-	if (ret)
-		DEBUG(10,("remove_from_jobs_added: removed jobid %u\n", (unsigned int)jobid ));
-	else
-		DEBUG(10,("remove_from_jobs_added: Failed to remove jobid %u\n", (unsigned int)jobid ));
+	bool ret = remove_from_jobs_list("INFO/jobs_added", sharename, jobid);
 	return ret;
 }
 
