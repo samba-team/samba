@@ -1784,7 +1784,9 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	}
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
 
-	status = SMB_VFS_READDIR_ATTR(conn, smb_fname, ctx, &readdir_attr_data);
+	status = SMB_VFS_FREADDIR_ATTR(smb_fname->fsp,
+				       ctx,
+				       &readdir_attr_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(NT_STATUS_NOT_SUPPORTED, status)) {
 			return status;
