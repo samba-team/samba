@@ -297,6 +297,13 @@ def flag_from_string(rec_type):
         raise DNSParseError('Unknown type of DNS record %s' % rec_type) from e
 
 
+def recbuf_from_string(*args, **kwargs):
+    rec = record_from_string(*args, **kwargs)
+    buf = dnsserver.DNS_RPC_RECORD_BUF()
+    buf.rec = rec
+    return buf
+
+
 def dns_name_equal(n1, n2):
     """Match dns name (of type DNS_RPC_NAME)"""
     return n1.str.rstrip('.').lower() == n2.str.rstrip('.').lower()
