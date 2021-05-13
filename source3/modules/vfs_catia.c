@@ -2000,38 +2000,6 @@ static NTSTATUS catia_set_compression(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS catia_readdir_attr(struct vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname_in,
-				   TALLOC_CTX *mem_ctx,
-				   struct readdir_attr_data **pattr_data)
-{
-	struct smb_filename *smb_fname;
-	char *fname = NULL;
-	NTSTATUS status;
-
-	status = catia_string_replace_allocate(handle->conn,
-					       smb_fname_in->base_name,
-					       &fname,
-					       vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return status;
-	}
-
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					fname,
-					NULL,
-					&smb_fname_in->st,
-					smb_fname_in->twrp,
-					0);
-
-	status = SMB_VFS_NEXT_READDIR_ATTR(handle, smb_fname, mem_ctx, pattr_data);
-
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(fname);
-	return status;
-}
-
 static NTSTATUS catia_create_dfs_pathat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -2124,7 +2092,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* Directory operations */
 	.mkdirat_fn = catia_mkdirat,
-	.readdir_attr_fn = catia_readdir_attr,
 
 	/* File operations */
 	.openat_fn = catia_openat,
