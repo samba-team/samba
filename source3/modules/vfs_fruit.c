@@ -4191,101 +4191,6 @@ fail:
 	return status;
 }
 
-static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
-				   const struct smb_filename *fname,
-				   TALLOC_CTX *mem_ctx,
-				   struct readdir_attr_data **pattr_data)
-{
-	struct fruit_config_data *config = NULL;
-	struct readdir_attr_data *attr_data;
-	uint32_t conv_flags  = 0;
-	NTSTATUS status;
-	int ret;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data,
-				return NT_STATUS_UNSUCCESSFUL);
-
-	if (!global_fruit_config.nego_aapl) {
-		return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
-	}
-
-	DEBUG(10, ("fruit_readdir_attr %s\n", fname->base_name));
-
-	if (config->wipe_intentionally_left_blank_rfork) {
-		conv_flags |= AD_CONV_WIPE_BLANK;
-	}
-	if (config->delete_empty_adfiles) {
-		conv_flags |= AD_CONV_DELETE;
-	}
-
-	ret = ad_convert(handle,
-			fname,
-			macos_string_replace_map,
-			conv_flags);
-	if (ret != 0) {
-		DBG_ERR("ad_convert() failed\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
-	if (*pattr_data == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	attr_data = *pattr_data;
-	attr_data->type = RDATTR_AAPL;
-
-	/*
-	 * Mac metadata: compressed FinderInfo, resource fork length
-	 * and creation date
-	 */
-	status = readdir_attr_macmeta(handle, fname, attr_data);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Error handling is tricky: if we return failure from
-		 * this function, the corresponding directory entry
-		 * will to be passed to the client, so we really just
-		 * want to error out on fatal errors.
-		 */
-		if  (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			goto fail;
-		}
-	}
-
-	/*
-	 * UNIX mode
-	 */
-	if (config->unix_info_enabled) {
-		attr_data->attr_data.aapl.unix_mode = fname->st.st_ex_mode;
-	}
-
-	/*
-	 * max_access
-	 */
-	if (!config->readdir_attr_max_access) {
-		attr_data->attr_data.aapl.max_access = FILE_GENERIC_ALL;
-	} else {
-		status = smbd_calculate_access_mask(
-			handle->conn,
-			handle->conn->cwd_fsp,
-			fname,
-			false,
-			SEC_FLAG_MAXIMUM_ALLOWED,
-			&attr_data->attr_data.aapl.max_access);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
-
-	return NT_STATUS_OK;
-
-fail:
-	DEBUG(1, ("fruit_readdir_attr %s, error: %s\n",
-		  fname->base_name, nt_errstr(status)));
-	TALLOC_FREE(*pattr_data);
-	return status;
-}
-
 static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    TALLOC_CTX *mem_ctx,
@@ -5313,7 +5218,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.ftruncate_fn = fruit_ftruncate,
 	.fallocate_fn = fruit_fallocate,
 	.create_file_fn = fruit_create_file,
-	.readdir_attr_fn = fruit_readdir_attr,
 	.freaddir_attr_fn = fruit_freaddir_attr,
 	.offload_read_send_fn = fruit_offload_read_send,
 	.offload_read_recv_fn = fruit_offload_read_recv,
