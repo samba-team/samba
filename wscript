@@ -380,6 +380,34 @@ def configure(conf):
                          msg="Checking compiler for full RELRO support"):
             conf.env['ENABLE_RELRO'] = True
 
+    #
+    # FreeBSD is broken. It doesn't include 'extern char **environ'
+    # in any shared library, but statically inside crt0.o.
+    #
+    # If we're running on a FreeBSD with the GNU linker ld we
+    # can get around this by explicitly telling the linker to
+    # ignore 'environ' as an unresolved symbol in a shared library.
+    #
+    # However, the clang linker ld.lld-XX is broken in that it
+    # doesn't have that option.
+    #
+    # First try to see if have '-Wl,--ignore-unresolved-symbol,environ'
+    # and just use that if so.
+    #
+    # If not, we have to use '-Wl,--allow-shlib-undefined' instead
+    # and remove all instances of '-Wl,-no-undefined'.
+
+    if sys.platform.startswith('freebsd'):
+        # Do we have Wl,--ignore-unresolved-symbol,environ ?
+        flag_added = conf.ADD_LDFLAGS('-Wl,--ignore-unresolved-symbol,environ', testflags=True)
+        if not flag_added:
+            # No, fall back to -Wl,--allow-shlib-undefined.
+            conf.ADD_LDFLAGS('-Wl,--allow-shlib-undefined', testflags=True)
+            # Remove any uses of '-Wl,-no-undefined'
+            conf.env['EXTRA_LDFLAGS'] = list(filter(('-Wl,-no-undefined').__ne__, conf.env['EXTRA_LDFLAGS']))
+            # And make sure we don't try and remove it again when 'allow_undefined_symbols=true'
+            conf.env.undefined_ldflags = []
+
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def etags(ctx):
