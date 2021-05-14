@@ -3244,13 +3244,7 @@ static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,
 static int vfswrap_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 					 files_struct *fsp)
 {
-	/* Placeholder until we have sys_acl_delete_def_fd(). */
-#ifdef ENOTSUP
-	errno = ENOTSUP;
-#else
-	errno = ENOSYS;
-#endif
-	return -1;
+	return sys_acl_delete_def_fd(handle, fsp);
 }
 
 /****************************************************************
