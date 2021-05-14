@@ -367,7 +367,10 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return posixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
+			 TALLOC_CTX *mem_ctx)
 {
 	return posixacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
@@ -402,8 +405,10 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return aixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
-			   TALLOC_CTX *mem_ctx)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
+			 TALLOC_CTX *mem_ctx)
 {
 	return aixacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
@@ -438,7 +443,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 					   mem_ctx);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
 			 TALLOC_CTX *mem_ctx)
 {
 	return solarisacl_sys_acl_get_fd(handle, fsp,
@@ -477,8 +484,10 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
-			   TALLOC_CTX *mem_ctx)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
+			 TALLOC_CTX *mem_ctx)
 {
 	return hpuxacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
@@ -517,7 +526,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return NULL;
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
+			 files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
 			 TALLOC_CTX *mem_ctx)
 {
 #ifdef ENOTSUP

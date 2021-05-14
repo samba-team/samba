@@ -62,7 +62,9 @@ SMB_ACL_T sys_acl_get_file(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			SMB_ACL_TYPE_T type,
 			TALLOC_CTX *mem_ctx);
-SMB_ACL_T sys_acl_get_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,
+SMB_ACL_T sys_acl_get_fd(struct vfs_handle_struct *handle,
+			 struct files_struct *fsp,
+			 SMB_ACL_TYPE_T type,
 			 TALLOC_CTX *mem_ctx);
 int sys_acl_set_file(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
