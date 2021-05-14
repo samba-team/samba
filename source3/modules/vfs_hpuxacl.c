@@ -397,6 +397,60 @@ int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return ret;
 }
 
+/*
+ * delete the default ACL of a directory
+ *
+ * This is achieved by fetching the access ACL and rewriting it
+ * directly, via the hpux system call: the ACL_SET call on
+ * directories writes both the access and the default ACL as provided.
+ *
+ * XXX: posix acl_delete_def_file returns an error if
+ * the file referred to by path is not a directory.
+ * this function does not complain but the actions
+ * have no effect on a file other than a directory.
+ * But sys_acl_delete_default_file is only called in
+ * smbd/posixacls.c after having checked that the file
+ * is a directory, anyways. So implementing the extra
+ * check is considered unnecessary. --- Agreed? XXX
+ */
+int hpuxacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
+				  files_struct *fsp)
+{
+	SMB_ACL_T smb_acl;
+	int ret = -1;
+	HPUX_ACL_T hpux_acl;
+	int count;
+
+	DBG_DEBUG("entering hpuxacl_sys_acl_delete_def_fd.\n");
+
+	smb_acl = hpuxacl_sys_acl_get_file(handle, fsp->fsp_name->base_name,
+					   SMB_ACL_TYPE_ACCESS);
+	if (smb_acl == NULL) {
+		DBG_DEBUG("getting file acl failed!\n");
+		goto done;
+	}
+	if (!smb_acl_to_hpux_acl(smb_acl, &hpux_acl, &count,
+				 SMB_ACL_TYPE_ACCESS))
+	{
+		DBG_DEBUG("conversion smb_acl -> hpux_acl failed.\n");
+		goto done;
+	}
+	if (!hpux_acl_sort(hpux_acl, count)) {
+		DBG_DEBUG("resulting acl is not valid!\n");
+		goto done;
+	}
+	ret = acl(discard_const_p(char, fsp->fsp_name->base_name),
+				ACL_SET, count, hpux_acl);
+	if (ret != 0) {
+		DBG_DEBUG("settinge file acl failed!\n");
+	}
+
+ done:
+	DBG_DEBUG("hpuxacl_sys_acl_delete_def_fd %s.\n",
+		  ((ret != 0) ? "failed" : "succeeded" ));
+	TALLOC_FREE(smb_acl);
+	return ret;
+}
 
 /* 
  * private functions 
@@ -1164,6 +1218,7 @@ static struct vfs_fn_pointers hpuxacl_fns = {
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = hpuxacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = hpuxacl_sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = hpuxacl_sys_acl_delete_def_fd,
 };
 
 static_decl_vfs;
