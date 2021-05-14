@@ -522,15 +522,6 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 	return 0;
 }
 
-int aixjfs2_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	/* Not available under AIXC ACL */
-	/* Don't report here any error otherwise */
-	/* upper layer will break the normal execution */
-	return 0;
-}
-
 int aixjfs2_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 				files_struct *fsp)
 {
@@ -549,7 +540,6 @@ static struct vfs_fn_pointers vfs_aixacl2_fns = {
 	.sys_acl_blob_get_file_fn = aixjfs2_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = aixjfs2_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = aixjfs2_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = aixjfs2_sys_acl_delete_def_file,
 	.sys_acl_delete_def_fd_fn = aixjfs2_sys_acl_delete_def_fd
 };
 
