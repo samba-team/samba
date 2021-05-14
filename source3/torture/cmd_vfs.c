@@ -1947,29 +1947,49 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 {
 	int ret;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: sys_acl_delete_def_file <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
 					argv[1],
-					NULL,
-					NULL,
-					0,
-					ssf_flags());
-
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(vfs->conn, smb_fname);
-	if (ret == -1) {
-		printf("sys_acl_delete_def_file failed (%s)\n", strerror(errno));
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(smb_fname);
-		return NT_STATUS_UNSUCCESSFUL;
+		return status;
+	}
+	if (!pathref_fname->fsp->fsp_flags.is_directory) {
+		printf("sys_acl_delete_def_file - %s is not a directory\n",
+			smb_fname->base_name);
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(pathref_fname);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ret = SMB_VFS_SYS_ACL_DELETE_DEF_FD(pathref_fname->fsp);
+	if (ret == -1) {
+		int err = errno;
+		printf("sys_acl_delete_def_file failed (%s)\n", strerror(err));
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(pathref_fname);
+		return map_nt_error_from_unix(err);
 	}
 	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(pathref_fname);
 	return NT_STATUS_OK;
 }
 
