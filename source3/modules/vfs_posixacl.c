@@ -178,6 +178,26 @@ int posixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return acl_delete_def_file(smb_fname->base_name);
 }
 
+int posixacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
+				files_struct *fsp)
+{
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *proc_fd_path = NULL;
+		char buf[PATH_MAX];
+
+		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (proc_fd_path == NULL) {
+			return -1;
+		}
+		return acl_delete_def_file(proc_fd_path);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return acl_delete_def_file(fsp->fsp_name->base_name);
+}
 
 /* private functions */
 
@@ -422,6 +442,7 @@ static struct vfs_fn_pointers posixacl_fns = {
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = posixacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = posixacl_sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = posixacl_sys_acl_delete_def_fd,
 };
 
 static_decl_vfs;
