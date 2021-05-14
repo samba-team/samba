@@ -3241,6 +3241,18 @@ static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return sys_acl_delete_def_file(handle, smb_fname);
 }
 
+static int vfswrap_sys_acl_delete_def_fd(vfs_handle_struct *handle,
+					 files_struct *fsp)
+{
+	/* Placeholder until we have sys_acl_delete_def_fd(). */
+#ifdef ENOTSUP
+	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
+	return -1;
+}
+
 /****************************************************************
  Extended attribute operations.
 *****************************************************************/
@@ -3852,6 +3864,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = vfswrap_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = vfswrap_sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = vfswrap_sys_acl_delete_def_fd,
 
 	/* EA operations. */
 	.getxattr_fn = vfswrap_getxattr,

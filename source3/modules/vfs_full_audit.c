@@ -202,6 +202,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,
 	SMB_VFS_OP_SYS_ACL_SET_FD,
 	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
+	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,
 
 	/* EA operations. */
 	SMB_VFS_OP_GETXATTR,
@@ -333,6 +334,7 @@ static struct {
 	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,	"sys_acl_blob_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	"sys_acl_delete_def_file" },
+	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,	"sys_acl_delete_def_fd" },
 	{ SMB_VFS_OP_GETXATTR,	"getxattr" },
 	{ SMB_VFS_OP_GETXATTRAT_SEND, "getxattrat_send" },
 	{ SMB_VFS_OP_GETXATTRAT_RECV, "getxattrat_recv" },
@@ -2626,6 +2628,22 @@ static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_sys_acl_delete_def_fd(vfs_handle_struct *handle,
+				struct files_struct *fsp)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FD(handle, fsp);
+
+	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       fsp_str_do_log(fsp));
+
+	return result;
+}
+
 static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
 			      const struct smb_filename *smb_fname,
 			      const char *name, void *value, size_t size)
@@ -3005,6 +3023,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sys_acl_blob_get_fd_fn = smb_full_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = smb_full_audit_sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = smb_full_audit_sys_acl_delete_def_fd,
 	.getxattr_fn = smb_full_audit_getxattr,
 	.getxattrat_send_fn = smb_full_audit_getxattrat_send,
 	.getxattrat_recv_fn = smb_full_audit_getxattrat_recv,

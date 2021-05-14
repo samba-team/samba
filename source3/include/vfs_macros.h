@@ -514,6 +514,11 @@
 #define SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname) \
 	smb_vfs_call_sys_acl_delete_def_file((handle)->next, (smb_fname))
 
+#define SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp) \
+	smb_vfs_call_sys_acl_delete_def_fd((fsp)->conn->vfs_handles, (fsp))
+#define SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FD(handle, fsp) \
+	smb_vfs_call_sys_acl_delete_def_fd((handle)->next, (fsp))
+
 #define SMB_VFS_GETXATTR(conn,smb_fname,name,value,size) \
 	smb_vfs_call_getxattr((conn)->vfs_handles,(smb_fname),(name),(value),(size))
 #define SMB_VFS_NEXT_GETXATTR(handle,smb_fname,name,value,size) \
