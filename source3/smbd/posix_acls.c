@@ -3845,8 +3845,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 			if (set_acl_as_root) {
 				become_root();
 			}
-			sret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn,
-			    fsp->fsp_name);
+			sret = SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp);
 			if (set_acl_as_root) {
 				unbecome_root();
 			}
@@ -3860,14 +3859,15 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 
 					become_root();
 					sret =
-					    SMB_VFS_SYS_ACL_DELETE_DEF_FILE(
-						    conn,
-						    fsp->fsp_name);
+					    SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp);
 					unbecome_root();
 				}
 
 				if (sret == -1) {
-					DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
+					DBG_NOTICE("sys_acl_delete_def_fd for "
+						"directory %s failed (%s)\n",
+						fsp_str_dbg(fsp),
+						strerror(errno));
 					free_canon_ace_list(file_ace_list);
 					free_canon_ace_list(dir_ace_list);
 					return map_nt_error_from_unix(errno);
@@ -4314,10 +4314,10 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 
 	if (!num_def_acls) {
 		/* Remove the default ACL. */
-		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name);
+		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FD(fsp);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
-			DBG_INFO("acl_delete_def_file failed on "
+			DBG_INFO("acl_delete_def_fd failed on "
 				"directory %s (%s)\n",
 				fsp_str_dbg(fsp),
 				strerror(errno));
