@@ -552,6 +552,12 @@ static int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int zfsacl_fail__sys_acl_delete_def_fd(vfs_handle_struct *handle,
+					      files_struct *fsp)
+{
+	return -1;
+}
+
 static int zfsacl_fail__sys_acl_blob_get_file(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			TALLOC_CTX *mem_ctx,
@@ -616,6 +622,7 @@ static struct vfs_fn_pointers zfsacl_fns = {
 	.sys_acl_blob_get_fd_fn = zfsacl_fail__sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = zfsacl_fail__sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = zfsacl_fail__sys_acl_delete_def_fd,
 	.fget_nt_acl_fn = zfsacl_fget_nt_acl,
 	.get_nt_acl_at_fn = zfsacl_get_nt_acl_at,
 	.fset_nt_acl_fn = zfsacl_fset_nt_acl,
