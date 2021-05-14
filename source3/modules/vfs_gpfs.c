@@ -1359,6 +1359,24 @@ static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int gpfsacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
+				files_struct *fsp)
+{
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FD(handle, fsp);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+
 /*
  * Assumed: mode bits are shiftable and standard
  * Output: the new aceMask field for an smb nfs4 ace
@@ -2564,6 +2582,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = gpfsacl_sys_acl_delete_def_file,
+	.sys_acl_delete_def_fd_fn = gpfsacl_sys_acl_delete_def_fd,
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
 	.stat_fn = vfs_gpfs_stat,
