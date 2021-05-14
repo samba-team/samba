@@ -518,3 +518,9 @@ int posixacl_xattr_acl_delete_def_file(vfs_handle_struct *handle,
 	return SMB_VFS_FREMOVEXATTR(smb_fname->fsp,
 			ACL_EA_DEFAULT);
 }
+
+int posixacl_xattr_acl_delete_def_fd(vfs_handle_struct *handle,
+				files_struct *fsp)
+{
+	return SMB_VFS_FREMOVEXATTR(fsp, ACL_EA_DEFAULT);
+}
