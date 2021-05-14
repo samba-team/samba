@@ -370,7 +370,7 @@ static void reload_interfaces(time_t t)
 
 		/* We only count IPv4, non-loopback interfaces here. */
 		while (iface_count_v4_nl() == 0) {
-			sleep(5);
+			usleep(NMBD_WAIT_INTERFACES_TIME_USEC);
 			load_interfaces();
 		}
 

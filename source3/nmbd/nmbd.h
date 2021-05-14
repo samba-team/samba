@@ -28,6 +28,8 @@
 #include "libsmb/nmblib.h"
 #include "nmbd/nmbd_proto.h"
 
+#define NMBD_WAIT_INTERFACES_TIME_USEC  (250 * 1000)
+
 /****************************************************************************
 true if two IPv4 addresses are equal
 ****************************************************************************/

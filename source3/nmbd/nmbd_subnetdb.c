@@ -264,7 +264,7 @@ bool create_subnets(void)
 
 		saved_handler = CatchSignal(SIGTERM, SIG_DFL);
 
-		sleep(5);
+		usleep(NMBD_WAIT_INTERFACES_TIME_USEC);
 		load_interfaces();
 
 		/*
@@ -325,7 +325,7 @@ bool create_subnets(void)
 
 		saved_handler = CatchSignal(SIGTERM, SIG_DFL);
 
-		sleep(5);
+		usleep(NMBD_WAIT_INTERFACES_TIME_USEC);
 		load_interfaces();
 
 		CatchSignal(SIGTERM, saved_handler);
