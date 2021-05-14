@@ -353,7 +353,8 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 
 /*
  * acl_get_file, acl_get_fd, acl_set_file, acl_set_fd and
- * sys_acl_delete_def_file are to be redirected to the default
+ * sys_acl_delete_def_file,
+ * sys_acl_delete_def_fd are to be redirected to the default
  * statically-bound acl vfs module, but they are replacable.
  */
 
@@ -392,6 +393,12 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return posixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
+int sys_acl_delete_def_fd(vfs_handle_struct *handle,
+			  files_struct *fsp)
+{
+	return posixacl_sys_acl_delete_def_fd(handle, fsp);
+}
+
 #elif defined(HAVE_AIX_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
@@ -428,6 +435,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return aixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
+int sys_acl_delete_def_fd(vfs_handle_struct *handle,
+			  files_struct *fsp)
+{
+	return aixacl_sys_acl_delete_def_fd(handle, fsp);
+}
 #elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
@@ -466,6 +478,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return solarisacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
+int sys_acl_delete_def_fd(vfs_handle_struct *handle,
+			  files_struct *fsp)
+{
+	return solarisacl_sys_acl_delete_def_fd(handle, fsp);
+}
 #elif defined(HAVE_HPUX_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
@@ -502,6 +519,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
+int sys_acl_delete_def_fd(vfs_handle_struct *handle,
+			  files_struct *fsp)
+{
+	return hpuxacl_sys_acl_delete_def_fd(handle, fsp);
+}
 #else /* No ACLs. */
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
@@ -563,6 +585,16 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
+int sys_acl_delete_def_fd(vfs_handle_struct *handle,
+			  files_struct *fsp)
+{
+#ifdef ENOTSUP
+	errno = ENOTSUP;
+#else
+	errno = ENOSYS;
+#endif
+	return -1;
+}
 #endif
 
 /************************************************************************
