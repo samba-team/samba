@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   SMB torture tester
+   Fuzzer for pidl-generated NDR pipes.
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2006
    Copyright (C) Andrew Bartlett 2019

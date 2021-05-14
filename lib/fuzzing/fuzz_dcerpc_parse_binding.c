@@ -1,5 +1,5 @@
 /*
-  Fuzz NMB parse_packet
+  Fuzz dcerpc_parse_binding
   Copyright (C) Catalyst IT 2020
 
   This program is free software; you can redistribute it and/or modify

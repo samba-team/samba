@@ -1,5 +1,5 @@
 /*
-   Fuzzing ldb_parse_control_from_string
+   Fuzzing ldb_ldif_read_string
    Copyright (C) Catalyst IT 2020
 
    This program is free software; you can redistribute it and/or modify

@@ -1,5 +1,5 @@
 /*
-  Fuzz NMB parse_packet
+  Fuzz cli_credentials_parse_string
   Copyright (C) Catalyst IT 2020
 
   This program is free software; you can redistribute it and/or modify
