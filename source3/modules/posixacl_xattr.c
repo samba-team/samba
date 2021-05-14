@@ -409,25 +409,36 @@ SMB_ACL_T posixacl_xattr_acl_get_file(vfs_handle_struct *handle,
 
 SMB_ACL_T posixacl_xattr_acl_get_fd(vfs_handle_struct *handle,
 				    files_struct *fsp,
+				    SMB_ACL_TYPE_T type,
 				    TALLOC_CTX *mem_ctx)
 {
 	int ret;
 	int size = ACL_EA_SIZE(20);
 	char *buf = alloca(size);
+	const char *name;
+
+	if (type == SMB_ACL_TYPE_ACCESS) {
+		name = ACL_EA_ACCESS;
+	} else if (type == SMB_ACL_TYPE_DEFAULT) {
+		name = ACL_EA_DEFAULT;
+	} else {
+		errno = EINVAL;
+		return NULL;
+	}
 
 	if (!buf) {
 		return NULL;
 	}
 
-	ret = SMB_VFS_FGETXATTR(fsp, ACL_EA_ACCESS, buf, size);
+	ret = SMB_VFS_FGETXATTR(fsp, name, buf, size);
 	if (ret < 0 && errno == ERANGE) {
-		size = SMB_VFS_FGETXATTR(fsp, ACL_EA_ACCESS, NULL, 0);
+		size = SMB_VFS_FGETXATTR(fsp, name, NULL, 0);
 		if (size > 0) {
 			buf = alloca(size);
 			if (!buf) {
 				return NULL;
 			}
-			ret = SMB_VFS_FGETXATTR(fsp, ACL_EA_ACCESS, buf, size);
+			ret = SMB_VFS_FGETXATTR(fsp, name, buf, size);
 		}
 	}
 

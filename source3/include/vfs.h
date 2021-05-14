@@ -1220,6 +1220,7 @@ struct vfs_fn_pointers {
 					 TALLOC_CTX *mem_ctx);
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
+				       SMB_ACL_TYPE_T type,
 				       TALLOC_CTX *mem_ctx);
 	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
@@ -1731,6 +1732,7 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx);
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
+				      SMB_ACL_TYPE_T type,
 				      TALLOC_CTX *mem_ctx);
 int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
 				       const struct smb_filename *smb_fname,
@@ -2142,7 +2144,9 @@ SMB_ACL_T vfs_not_implemented_sys_acl_get_file(vfs_handle_struct *handle,
 					       SMB_ACL_TYPE_T type,
 					       TALLOC_CTX *mem_ctx);
 SMB_ACL_T vfs_not_implemented_sys_acl_get_fd(vfs_handle_struct *handle,
-					     files_struct *fsp, TALLOC_CTX *mem_ctx);
+					     files_struct *fsp,
+					     SMB_ACL_TYPE_T type,
+					     TALLOC_CTX *mem_ctx);
 int vfs_not_implemented_sys_acl_blob_get_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				TALLOC_CTX *mem_ctx,

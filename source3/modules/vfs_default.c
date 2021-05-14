@@ -3252,9 +3252,10 @@ static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,
 
 static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
 					files_struct *fsp,
+					SMB_ACL_TYPE_T type,
 					TALLOC_CTX *mem_ctx)
 {
-	return sys_acl_get_fd(handle, fsp, SMB_ACL_TYPE_ACCESS, mem_ctx);
+	return sys_acl_get_fd(handle, fsp, type, mem_ctx);
 }
 
 static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle,

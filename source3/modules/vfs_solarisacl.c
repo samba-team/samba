@@ -105,7 +105,9 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				    files_struct *fsp, TALLOC_CTX *mem_ctx)
+				    files_struct *fsp,
+				    SMB_ACL_TYPE_T type,
+				    TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -116,13 +118,19 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	if (!solaris_acl_get_fd(fsp_get_io_fd(fsp), &solaris_acl, &count)) {
 		goto done;
 	}
+
+	if (type != SMB_ACL_TYPE_ACCESS && type != SMB_ACL_TYPE_DEFAULT) {
+		DEBUG(10, ("invalid SMB_ACL_TYPE given (%d)\n", type));
+		errno = EINVAL;
+		goto done;
+	}
 	/* 
 	 * The facl call returns both ACCESS and DEFAULT acls (as present). 
 	 * The posix acl_get_fd function returns only the
 	 * access acl. So we need to filter this out here.  
 	 */
 	result = solaris_acl_to_smb_acl(solaris_acl, count,
-					SMB_ACL_TYPE_ACCESS, mem_ctx);
+					type, mem_ctx);
 	if (result == NULL) {
 		DEBUG(10, ("conversion solaris_acl -> smb_acl failed (%s).\n",
 			   strerror(errno)));

@@ -189,6 +189,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
  */
 SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				 files_struct *fsp,
+				 SMB_ACL_TYPE_T type,
 				 TALLOC_CTX *mem_ctx)
 {
         /* 
@@ -203,7 +204,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
         return hpuxacl_sys_acl_get_file(handle,
 					fsp->fsp_name->base_name,
-					SMB_ACL_TYPE_ACCESS,
+					type,
 					mem_ctx);
 }
 

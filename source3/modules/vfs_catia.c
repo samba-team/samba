@@ -1352,6 +1352,7 @@ static int catia_fsetxattr(struct vfs_handle_struct *handle,
 
 static SMB_ACL_T catia_sys_acl_get_fd(vfs_handle_struct *handle,
 				      files_struct *fsp,
+				      SMB_ACL_TYPE_T type,
 				      TALLOC_CTX *mem_ctx)
 {
 	struct catia_cache *cc = NULL;
@@ -1363,7 +1364,7 @@ static SMB_ACL_T catia_sys_acl_get_fd(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, type, mem_ctx);
 
 	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 

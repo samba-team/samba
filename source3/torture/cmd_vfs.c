@@ -1817,7 +1817,9 @@ static NTSTATUS cmd_sys_acl_get_fd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	acl = SMB_VFS_SYS_ACL_GET_FD(vfs->files[fd], talloc_tos());
+	acl = SMB_VFS_SYS_ACL_GET_FD(vfs->files[fd],
+				     SMB_ACL_TYPE_ACCESS,
+				     talloc_tos());
 	if (!acl) {
 		printf("sys_acl_get_fd failed (%s)\n", strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;

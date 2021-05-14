@@ -812,7 +812,9 @@ SMB_ACL_T vfs_not_implemented_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T vfs_not_implemented_sys_acl_get_fd(vfs_handle_struct *handle,
-					     files_struct *fsp, TALLOC_CTX *mem_ctx)
+					     files_struct *fsp,
+					     SMB_ACL_TYPE_T type,
+					     TALLOC_CTX *mem_ctx)
 {
 	errno = ENOSYS;
 	return (SMB_ACL_T) NULL;

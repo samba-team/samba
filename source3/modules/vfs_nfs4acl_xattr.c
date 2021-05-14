@@ -634,6 +634,7 @@ static SMB_ACL_T nfs4acl_xattr_fail__sys_acl_get_file(vfs_handle_struct *handle,
 
 static SMB_ACL_T nfs4acl_xattr_fail__sys_acl_get_fd(vfs_handle_struct *handle,
 						    files_struct *fsp,
+						    SMB_ACL_TYPE_T type,
 						    TALLOC_CTX *mem_ctx)
 {
 	return (SMB_ACL_T)NULL;

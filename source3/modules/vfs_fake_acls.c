@@ -291,14 +291,32 @@ static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
 
 static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 					  files_struct *fsp,
+					  SMB_ACL_TYPE_T type,
 					  TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB blob = data_blob_null;
 	ssize_t length;
-	const char *name = FAKE_ACL_ACCESS_XATTR;
+	const char *name = NULL;
 	struct smb_acl_t *acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 		
+	switch (type) {
+	case SMB_ACL_TYPE_ACCESS:
+		name = FAKE_ACL_ACCESS_XATTR;
+		break;
+	case SMB_ACL_TYPE_DEFAULT:
+		name = FAKE_ACL_DEFAULT_XATTR;
+		break;
+	default:
+		DBG_ERR("Illegal ACL type %d\n", (int)type);
+		break;
+	}
+
+	if (name == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
 	do {
 		blob.length += 1000;
 		blob.data = talloc_realloc(frame, blob.data, uint8_t, blob.length);
@@ -598,6 +616,7 @@ static int fake_acls_fchmod(vfs_handle_struct *handle,
 
 	the_acl = fake_acls_sys_acl_get_fd(handle,
 				fsp,
+				SMB_ACL_TYPE_ACCESS,
 				talloc_tos());
 	if (the_acl == NULL) {
 		TALLOC_FREE(frame);

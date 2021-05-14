@@ -66,12 +66,27 @@ SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp, TALLOC_CTX *mem_ctx)
+				  files_struct *fsp,
+				  SMB_ACL_TYPE_T type,
+				  TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_t acl = NULL;
+	acl_type_t acl_type;
 
-	if (!fsp->fsp_flags.is_pathref) {
+	switch(type) {
+	case SMB_ACL_TYPE_ACCESS:
+		acl_type = ACL_TYPE_ACCESS;
+		break;
+	case SMB_ACL_TYPE_DEFAULT:
+		acl_type = ACL_TYPE_DEFAULT;
+		break;
+	default:
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!fsp->fsp_flags.is_pathref && (acl_type == ACL_TYPE_ACCESS)) {
+		/* POSIX API only allows ACL_TYPE_ACCESS fetched on fd. */
 		acl = acl_get_fd(fsp_get_io_fd(fsp));
 	} else if (fsp->fsp_flags.have_proc_fds) {
 		int fd = fsp_get_pathref_fd(fsp);
@@ -83,12 +98,12 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 			return NULL;
 		}
 
-		acl = acl_get_file(proc_fd_path, ACL_TYPE_ACCESS);
+		acl = acl_get_file(proc_fd_path, acl_type);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
-		acl = acl_get_file(fsp->fsp_name->base_name, ACL_TYPE_ACCESS);
+		acl = acl_get_file(fsp->fsp_name->base_name, acl_type);
 	}
 	if (acl == NULL) {
 		return NULL;

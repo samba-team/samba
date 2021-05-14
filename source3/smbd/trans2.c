@@ -4996,7 +4996,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 		goto out;
 	}
 
-	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, SMB_ACL_TYPE_ACCESS,
 					talloc_tos());
 
 	if (file_acl == NULL && no_acl_syscall_error(errno)) {

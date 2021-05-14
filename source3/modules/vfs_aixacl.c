@@ -83,6 +83,7 @@ SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
 
 SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				files_struct *fsp,
+				SMB_ACL_TYPE_T type,
 				TALLOC_CTX *mem_ctx)
 {
 
@@ -91,6 +92,11 @@ SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	
 	int rc = 0;
 	uid_t user_id;
+
+	/* AIX has no DEFAULT */
+	if  ( type == SMB_ACL_TYPE_DEFAULT ) {
+		return NULL;
+	}
 
 	/* Get the acl using fstatacl */
    

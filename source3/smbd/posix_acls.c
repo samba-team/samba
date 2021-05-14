@@ -3443,14 +3443,15 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	}
 
 	/* Get the ACL from the fd. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, frame);
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+					   SMB_ACL_TYPE_ACCESS,
+					   frame);
 
 	/* If it's a directory get the default POSIX ACL. */
 	if(fsp->fsp_flags.is_directory) {
-		def_acl = SMB_VFS_SYS_ACL_GET_FILE(fsp->conn,
-						   fsp->fsp_name,
-						   SMB_ACL_TYPE_DEFAULT,
-						   frame);
+		def_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+						 SMB_ACL_TYPE_DEFAULT,
+						 frame);
 		def_acl = free_empty_sys_acl(fsp->conn, def_acl);
 	}
 
@@ -4447,7 +4448,9 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	}
 
 	/* Get the current file ACL. */
-	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, talloc_tos());
+	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+					  SMB_ACL_TYPE_ACCESS,
+					  talloc_tos());
 
 	if (file_acl == NULL) {
 		status = map_nt_error_from_unix(errno);

@@ -323,10 +323,23 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
-				 files_struct *fsp, TALLOC_CTX *mem_ctx)
+				 files_struct *fsp,
+				 SMB_ACL_TYPE_T type,
+				 TALLOC_CTX *mem_ctx)
 {
         acl_type_t aixjfs2_type;
-        aixjfs2_type.u64 = ACL_AIXC;
+
+        switch(type) {
+        case SMB_ACL_TYPE_ACCESS:
+                aixjfs2_type.u64 = ACL_AIXC;
+                break;
+        case SMB_ACL_TYPE_DEFAULT:
+                DEBUG(0, ("Got AIX JFS2 unsupported type: %d\n", type));
+                return NULL;
+        default:
+                DEBUG(0, ("Got invalid type: %d\n", type));
+                smb_panic("exiting");
+        }
 
 	return aixjfs2_get_posix_acl(fsp->fsp_name->base_name,
 				     aixjfs2_type, mem_ctx);

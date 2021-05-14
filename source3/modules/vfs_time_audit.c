@@ -2371,6 +2371,7 @@ static SMB_ACL_T smb_time_audit_sys_acl_get_file(vfs_handle_struct *handle,
 
 static SMB_ACL_T smb_time_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 					       files_struct *fsp,
+					       SMB_ACL_TYPE_T type,
 					       TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
@@ -2378,7 +2379,7 @@ static SMB_ACL_T smb_time_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, type, mem_ctx);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
