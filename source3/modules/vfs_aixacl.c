@@ -184,12 +184,6 @@ int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	return rc;
 }
 
-int aixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return 0; /* otherwise you can't set acl at upper level */
-}
-
 int aixacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 				 files_struct *fsp)
 {
@@ -202,7 +196,6 @@ static struct vfs_fn_pointers vfs_aixacl_fns = {
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = aixacl_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = aixacl_sys_acl_delete_def_file,
 	.sys_acl_delete_def_fd_fn = aixacl_sys_acl_delete_def_fd,
 };
 
