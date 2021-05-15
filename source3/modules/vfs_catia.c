@@ -1097,48 +1097,6 @@ catia_sys_acl_get_file(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int
-catia_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	struct smb_filename *mapped_smb_fname = NULL;
-	int saved_errno = 0;
-	char *mapped_name = NULL;
-	NTSTATUS status;
-	int ret;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
-					mapped_name,
-					NULL,
-					&smb_fname->st,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (mapped_smb_fname == NULL) {
-		TALLOC_FREE(mapped_name);
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, mapped_smb_fname);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(mapped_smb_fname);
-	TALLOC_FREE(mapped_name);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static ssize_t
 catia_getxattr(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
@@ -2145,7 +2103,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.sys_acl_get_fd_fn = catia_sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = catia_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = catia_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = catia_sys_acl_delete_def_file,
 
 	/* EA operations. */
 	.getxattr_fn = catia_getxattr,
