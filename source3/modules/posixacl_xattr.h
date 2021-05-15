@@ -40,9 +40,6 @@ int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,
 			      SMB_ACL_TYPE_T type,
 			      SMB_ACL_T theacl);
 
-int posixacl_xattr_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname);
-
 int posixacl_xattr_acl_delete_def_fd(vfs_handle_struct *handle,
 				files_struct *fsp);
 #endif
