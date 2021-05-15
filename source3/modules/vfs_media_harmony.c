@@ -1946,37 +1946,6 @@ out:
 }
 
 /*
- * Success: return 0
- * Failure: set errno, return -1
- */
-static int mh_sys_acl_delete_def_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_delete_def_file\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle,
-				smb_fname);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		goto err;
-	}
-	status = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, clientFname);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
-/*
  * Success: return positive number
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
@@ -2061,7 +2030,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	/* POSIX ACL operations. */
 
 	.sys_acl_get_file_fn = mh_sys_acl_get_file,
-	.sys_acl_delete_def_file_fn = mh_sys_acl_delete_def_file,
 
 	/* EA operations. */
 	.getxattr_fn = mh_getxattr,
