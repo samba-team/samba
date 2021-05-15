@@ -1342,23 +1342,6 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
-	}
-
-	errno = ENOTSUP;
-	return -1;
-}
-
 static int gpfsacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 				files_struct *fsp)
 {
@@ -2581,7 +2564,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sys_acl_blob_get_file_fn = gpfsacl_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = gpfsacl_sys_acl_delete_def_file,
 	.sys_acl_delete_def_fd_fn = gpfsacl_sys_acl_delete_def_fd,
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
