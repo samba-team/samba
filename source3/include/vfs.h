@@ -353,6 +353,7 @@
  * Version 45 - Add SMB_VFS_FREADDIR_ATTR
  * Version 45 - Remove SMB_VFS_READDIR_ATTR
  * Version 45 - Add SMB_VFS_SYS_ACL_DELETE_DEF_FD
+ * Version 45 - Remove SMB_VFS_SYS_ACL_DELETE_DEF_FILE
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1225,8 +1226,6 @@ struct vfs_fn_pointers {
 				 struct files_struct *fsp,
 				 SMB_ACL_TYPE_T type,
 				 SMB_ACL_T theacl);
-	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname);
 	int (*sys_acl_delete_def_fd_fn)(struct vfs_handle_struct *handle,
 					struct files_struct *fsp);
 
@@ -1735,8 +1734,6 @@ int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				SMB_ACL_TYPE_T type,
 				SMB_ACL_T theacl);
-int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname);
 int smb_vfs_call_sys_acl_delete_def_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp);
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
@@ -2141,8 +2138,6 @@ int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       SMB_ACL_TYPE_T type,
 				       SMB_ACL_T theacl);
-int vfs_not_implemented_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname);
 int vfs_not_implemented_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 					files_struct *fsp);
 ssize_t vfs_not_implemented_getxattr(vfs_handle_struct *handle,

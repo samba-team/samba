@@ -3235,12 +3235,6 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle,
 				theacl);
 }
 
-static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return sys_acl_delete_def_file(handle, smb_fname);
-}
-
 static int vfswrap_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 					 files_struct *fsp)
 {
@@ -3857,7 +3851,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = vfswrap_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = vfswrap_sys_acl_delete_def_file,
 	.sys_acl_delete_def_fd_fn = vfswrap_sys_acl_delete_def_fd,
 
 	/* EA operations. */
