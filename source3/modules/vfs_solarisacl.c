@@ -300,60 +300,6 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 /*
  * delete the default ACL of a directory
  *
- * This is achieved by fetching the access ACL and rewriting it 
- * directly, via the solaris system call: the SETACL call on 
- * directories writes both the access and the default ACL as provided.
- *
- * XXX: posix acl_delete_def_file returns an error if
- * the file referred to by path is not a directory.
- * this function does not complain but the actions 
- * have no effect on a file other than a directory.
- * But sys_acl_delete_default_file is only called in
- * smbd/posixacls.c after having checked that the file
- * is a directory, anyways. So implementing the extra
- * check is considered unnecessary. --- Agreed? XXX
- */
-int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	SMB_ACL_T smb_acl;
-	int ret = -1;
-	SOLARIS_ACL_T solaris_acl = NULL;
-	int count;
-
-	DEBUG(10, ("entering solarisacl_sys_acl_delete_def_file.\n"));
-	
-	smb_acl = solarisacl_sys_acl_get_file(handle, smb_fname->base_name,
-					      SMB_ACL_TYPE_ACCESS, talloc_tos());
-	if (smb_acl == NULL) {
-		DEBUG(10, ("getting file acl failed!\n"));
-		goto done;
-	}
-	if (!smb_acl_to_solaris_acl(smb_acl, &solaris_acl, &count, 
-				    SMB_ACL_TYPE_ACCESS))
-	{
-		DEBUG(10, ("conversion smb_acl -> solaris_acl failed.\n"));
-		goto done;
-	}
-	if (!solaris_acl_sort(solaris_acl, count)) {
-		DEBUG(10, ("resulting acl is not valid!\n"));
-		goto done;
-	}
-	ret = acl(smb_fname->base_name, SETACL, count, solaris_acl);
-	if (ret != 0) {
-		DEBUG(10, ("settinge file acl failed!\n"));
-	}
-	
- done:
-	DEBUG(10, ("solarisacl_sys_acl_delete_def_file %s.\n",
-		   ((ret != 0) ? "failed" : "succeeded" )));
-	TALLOC_FREE(smb_acl);
-	return ret;
-}
-
-/*
- * delete the default ACL of a directory
- *
  * This is achieved by fetching the access ACL and rewriting it
  * directly, via the solaris system call: the SETACL call on
  * directories writes both the access and the default ACL as provided.
@@ -831,7 +777,6 @@ static struct vfs_fn_pointers solarisacl_fns = {
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = solarisacl_sys_acl_set_fd,
-	.sys_acl_delete_def_file_fn = solarisacl_sys_acl_delete_def_file,
 	.sys_acl_delete_def_fd_fn = solarisacl_sys_acl_delete_def_fd,
 };
 

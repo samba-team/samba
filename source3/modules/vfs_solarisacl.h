@@ -38,9 +38,6 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      SMB_ACL_T theacl);
 
-int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname);
-
 int solarisacl_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 				files_struct *fsp);
 
