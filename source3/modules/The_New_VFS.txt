@@ -363,7 +363,7 @@ Table of Contents
    SMB_VFS_SYMLINKAT()                [NsC]       -
    SMB_VFS_SYS_ACL_BLOB_GET_FD()      [xpathref]  -
    SMB_VFS_SYS_ACL_BLOB_GET_FILE()    [Path]      Todo
-   SMB_VFS_SYS_ACL_DELETE_DEF_FILE()  [Path]      Todo
+   SMB_VFS_SYS_ACL_DELETE_DEF_FILE()  [Path]      -
    SMB_VFS_SYS_ACL_GET_FD()           [xpathref]  -
    SMB_VFS_SYS_ACL_GET_FILE()         [Path]      Todo
    SMB_VFS_SYS_ACL_SET_FD()           [xpathref]  -
@@ -398,7 +398,7 @@ Table of Contents
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    VFS Function                     Group       Status
   ─────────────────────────────────────────────────────
-   SMB_VFS_SYS_ACL_DELETE_DEF_FD()  [xpathref]  Todo
+   SMB_VFS_SYS_ACL_DELETE_DEF_FD()  [xpathref]  -
    SMB_VFS_FNTIMENS()               [fsp]       -
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

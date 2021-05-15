@@ -295,7 +295,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SYMLINKAT()               | [[NsC][NsC]]      | -      |
 | SMB_VFS_SYS_ACL_BLOB_GET_FD()     | [[xpathref][xpathref]] | -      |
 | SMB_VFS_SYS_ACL_BLOB_GET_FILE()   | [[Path][Path]]     | Todo   |
-| SMB_VFS_SYS_ACL_DELETE_DEF_FILE() | [[Path][Path]]     | Todo   |
+| SMB_VFS_SYS_ACL_DELETE_DEF_FILE() | [[Path][Path]]     | -      |
 | SMB_VFS_SYS_ACL_GET_FD()          | [[xpathref][xpathref]] | -      |
 | SMB_VFS_SYS_ACL_GET_FILE()        | [[Path][Path]]     | Todo   |
 | SMB_VFS_SYS_ACL_SET_FD()          | [[xpathref][xpathref]] | -      |
@@ -308,7 +308,7 @@ whenever VFS access is done in a piecemeal fashion.
 #+ATTR_HTML: :border 1 :rules all :frame border
 | VFS Function                    | Group    | Status |
 |---------------------------------+----------+--------|
-| SMB_VFS_SYS_ACL_DELETE_DEF_FD() | [[xpathref][xpathref]] | Todo   |
+| SMB_VFS_SYS_ACL_DELETE_DEF_FD() | [[xpathref][xpathref]] | -     |
 | SMB_VFS_FNTIMENS()              | [[fsp][fsp]]      | -      |
 |---------------------------------+----------+--------|
 
