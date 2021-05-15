@@ -647,7 +647,6 @@ struct vfs_ops example_ops = {
 	NULL,				/* sys_acl_valid */
 	NULL,				/* sys_acl_set_file */
 	NULL,				/* sys_acl_set_fd */
-	NULL,				/* sys_acl_delete_def_file */
 	NULL,				/* sys_acl_get_perm */
 	NULL,				/* sys_acl_free_text */
 	NULL,				/* sys_acl_free_acl */

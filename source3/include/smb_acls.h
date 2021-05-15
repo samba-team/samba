@@ -70,8 +70,6 @@ int sys_acl_set_file(struct vfs_handle_struct *handle,
 			SMB_ACL_T acl_d);
 int sys_acl_set_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,
 		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname);
 int sys_acl_delete_def_fd(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp);
 int no_acl_syscall_error(int err);

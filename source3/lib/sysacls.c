@@ -353,7 +353,6 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 
 /*
  * acl_get_file, acl_get_fd, acl_set_file, acl_set_fd and
- * sys_acl_delete_def_file,
  * sys_acl_delete_def_fd are to be redirected to the default
  * statically-bound acl vfs module, but they are replacable.
  */
@@ -385,12 +384,6 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
 {
 	return posixacl_sys_acl_set_fd(handle, fsp, SMB_ACL_TYPE_ACCESS, acl_d);
-}
-
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return posixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -427,12 +420,6 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
 {
 	return aixacl_sys_acl_set_fd(handle, fsp, acl_d);
-}
-
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return aixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -472,12 +459,6 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 	return solarisacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return solarisacl_sys_acl_delete_def_file(handle, smb_fname);
-}
-
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
 			  files_struct *fsp)
 {
@@ -511,12 +492,6 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
 {
 	return hpuxacl_sys_acl_set_fd(handle, fsp, acl_d);
-}
-
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return hpuxacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -565,17 +540,6 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
-{
-#ifdef ENOTSUP
-	errno = ENOTSUP;
-#else
-	errno = ENOSYS;
-#endif
-	return -1;
-}
-
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
 {
 #ifdef ENOTSUP
 	errno = ENOTSUP;

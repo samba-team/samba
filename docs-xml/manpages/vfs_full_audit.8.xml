@@ -141,7 +141,6 @@
         <member>symlinkat</member>
         <member>sys_acl_blob_get_fd</member>
         <member>sys_acl_blob_get_file</member>
-        <member>sys_acl_delete_def_file</member>
         <member>sys_acl_get_fd</member>
         <member>sys_acl_get_file</member>
         <member>sys_acl_set_fd</member>
