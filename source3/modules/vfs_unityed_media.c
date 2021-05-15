@@ -1571,41 +1571,6 @@ err:
 	return ret;
 }
 
-static int um_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	int status;
-	int saved_errno = 0;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_sys_acl_delete_def_file\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle,
-				smb_fname);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, client_fname);
-
-err:
-	if (status == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(client_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return status;
-}
-
 static ssize_t um_getxattr(struct vfs_handle_struct *handle,
 			   const struct smb_filename *smb_fname,
 			   const char *name,
@@ -1717,7 +1682,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	/* POSIX ACL operations. */
 
 	.sys_acl_get_file_fn = um_sys_acl_get_file,
-	.sys_acl_delete_def_file_fn = um_sys_acl_delete_def_file,
 
 	/* EA operations. */
 	.getxattr_fn = um_getxattr,
