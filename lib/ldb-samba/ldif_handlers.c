@@ -369,6 +369,21 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 	struct security_descriptor *sd;
 	enum ndr_err_code ndr_err;
 
+	if (in->length >= 2 && isupper(in->data[0]) && in->data[1] == ':') {
+		/*
+		 * If it starts with an upper case character followed by ':',
+		 * we know it's not NDR, but most likely SDDL...
+		 */
+		const struct dom_sid *sid = samdb_domain_sid(ldb);
+
+		sd = sddl_decode(mem_ctx, (const char *)in->data, sid);
+		if (sd == NULL) {
+			return -1;
+		}
+
+		goto decoded;
+	}
+
 	sd = talloc(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
 		return -1;
@@ -377,16 +392,11 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 	ndr_err = ndr_pull_struct_blob(in, sd, sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		/* If this does not parse, then it is probably SDDL, and we should try it that way */
-
-		const struct dom_sid *sid = samdb_domain_sid(ldb);
 		talloc_free(sd);
-		sd = sddl_decode(mem_ctx, (const char *)in->data, sid);
-		if (sd == NULL) {
-			return -1;
-		}
+		return -1;
 	}
 
+decoded:
 	ndr_err = ndr_push_struct_blob(out, mem_ctx, sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	talloc_free(sd);
