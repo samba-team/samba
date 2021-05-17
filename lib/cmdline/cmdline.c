@@ -286,9 +286,10 @@ static bool log_to_file;
 static bool set_logfile(TALLOC_CTX *mem_ctx,
 			struct loadparm_context *lp_ctx,
 			const char *log_basename,
-			const char *process_name)
+			const char *process_name,
+			bool from_cmdline)
 {
-	bool ok;
+	bool ok = false;
 	char *new_logfile = talloc_asprintf(mem_ctx,
 					    "%s/log.%s",
 					    log_basename,
@@ -297,9 +298,15 @@ static bool set_logfile(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	ok = lpcfg_set_cmdline(lp_ctx,
-			       "log file",
-			       new_logfile);
+	if (from_cmdline) {
+		ok = lpcfg_set_cmdline(lp_ctx,
+				       "log file",
+				       new_logfile);
+	} else {
+		ok = lpcfg_do_global_parameter(lp_ctx,
+					       "log file",
+					       new_logfile);
+	}
 	if (!ok) {
 		fprintf(stderr,
 			"Failed to set log to %s\n",
@@ -336,7 +343,11 @@ static void popt_samba_callback(poptContext popt_ctx,
 				"Command line parsing not initialized!\n");
 			exit(1);
 		}
-		ok = set_logfile(mem_ctx, lp_ctx, get_dyn_LOGFILEBASE(), pname);
+		ok = set_logfile(mem_ctx,
+				 lp_ctx,
+				 get_dyn_LOGFILEBASE(),
+				 pname,
+				 false);
 		if (!ok) {
 			fprintf(stderr,
 				"Failed to set log file for %s\n",
@@ -411,7 +422,7 @@ static void popt_samba_callback(poptContext popt_ctx,
 		break;
 	case 'l':
 		if (arg != NULL) {
-			ok = set_logfile(mem_ctx, lp_ctx, arg, pname);
+			ok = set_logfile(mem_ctx, lp_ctx, arg, pname, true);
 			if (!ok) {
 				fprintf(stderr,
 					"Failed to set log file for %s\n",
