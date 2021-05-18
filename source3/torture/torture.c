@@ -14956,6 +14956,10 @@ static struct {
 		.fn    = run_posix_symlink_chmod_test,
 	},
 	{
+		.name  = "POSIX-DIR-DEFAULT-ACL",
+		.fn    = run_posix_dir_default_acl_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},

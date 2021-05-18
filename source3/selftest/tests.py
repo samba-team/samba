@@ -264,6 +264,7 @@ posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA",
                "POSIX-STAT",
                "POSIX-SYMLINK-PARENT",
                "POSIX-SYMLINK-CHMOD",
+               "POSIX-DIR-DEFAULT-ACL",
               ]
 
 for t in posix_tests:

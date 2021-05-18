@@ -23,6 +23,7 @@
 #include "libsmb/clirap.h"
 #include "libsmb/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "util_sd.h"
 
 extern struct cli_credentials *torture_creds;
 extern fstring host, workgroup, share, password, username, myname;
@@ -1041,6 +1042,265 @@ out:
 	cli_posix_unlink(cli_unix, fname_real_symlink);
 	cli_posix_unlink(cli_unix, nonexist);
 	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+/*
+  Ensure we get an ACL containing OI|IO ACE entries
+  after we add a default POSIX ACL to a directory.
+  This will only ever be an SMB1 test as it depends
+  on POSIX ACL semantics.
+ */
+bool run_posix_dir_default_acl_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	const char *dname = "dir_with_default_acl";
+	bool correct = false;
+	SMB_STRUCT_STAT sbuf;
+	size_t acl_size = 0;
+	char *aclbuf = NULL;
+	size_t num_file_acls = 0;
+	size_t num_dir_acls = 0;
+	size_t expected_buflen;
+	uint8_t def_acl[SMB_POSIX_ACL_HEADER_SIZE +
+			5*SMB_POSIX_ACL_ENTRY_SIZE] = {0};
+	uint8_t *p = NULL;
+	uint32_t i = 0;
+	struct security_descriptor *sd = NULL;
+	bool got_inherit = false;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-DIR-DEFAULT-ACL test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Start with a clean slate. */
+	cli_posix_unlink(cli_unix, dname);
+	cli_posix_rmdir(cli_unix, dname);
+
+	status = cli_posix_mkdir(cli_unix, dname, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed error %s\n",
+		       dname,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Do a posix stat to get the owner. */
+	status = cli_posix_stat(cli_unix, dname, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_stat of %s failed %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the ACL on the directory. */
+	status = cli_posix_getacl(cli_unix, dname, frame, &acl_size, &aclbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_getacl on %s failed %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (acl_size < 6 || SVAL(aclbuf,0) != SMB_POSIX_ACL_VERSION) {
+		printf("%s, unknown POSIX acl version %u.\n",
+			dname,
+			(unsigned int)CVAL(aclbuf,0) );
+		goto out;
+	}
+
+	num_file_acls = SVAL(aclbuf,2);
+	num_dir_acls = SVAL(aclbuf,4);
+
+	/*
+	 * No overflow check, num_*_acls comes from a 16-bit value,
+	 * and we expect expected_buflen (size_t) to be of at least 32
+	 * bit.
+	 */
+	expected_buflen = SMB_POSIX_ACL_HEADER_SIZE +
+			  SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls);
+
+        if (acl_size != expected_buflen) {
+		printf("%s, incorrect POSIX acl buffer size "
+			"(should be %zu, was %zu).\n",
+			dname,
+			expected_buflen,
+			acl_size);
+		goto out;
+	}
+
+	if (num_dir_acls != 0) {
+		printf("%s, POSIX default acl already exists"
+			"(should be 0, was %zu).\n",
+			dname,
+			num_dir_acls);
+		goto out;
+	}
+
+	/*
+	 * Get the Windows ACL on the directory.
+	 * Make sure there are no inheritable entries.
+	 */
+	status = cli_ntcreate(cli_unix,
+				dname,
+				0,
+				SEC_STD_READ_CONTROL,
+				0,
+				FILE_SHARE_READ|
+					FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				FILE_DIRECTORY_FILE,
+				0x0,
+				&fnum,
+				NULL);
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("Failed to open directory %s: %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+        }
+
+        status = cli_query_security_descriptor(cli_unix,
+						fnum,
+						SECINFO_DACL,
+						frame,
+						&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to get security descriptor on directory %s: %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+        }
+
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+		if (ace->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				  SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			printf("security descritor on directory %s already "
+				"contains inheritance flags\n",
+				dname);
+			sec_desc_print(NULL, stdout, sd, true);
+			goto out;
+		}
+	}
+
+	TALLOC_FREE(sd);
+
+	/* Construct a new default ACL. */
+	SSVAL(def_acl,0,SMB_POSIX_ACL_VERSION);
+	SSVAL(def_acl,2,SMB_POSIX_IGNORE_ACE_ENTRIES);
+	SSVAL(def_acl,4,5); /* num_dir_acls. */
+
+	p = def_acl + SMB_POSIX_ACL_HEADER_SIZE;
+
+	/* USER_OBJ. */
+	SCVAL(p,0,SMB_POSIX_ACL_USER_OBJ); /* tagtype. */
+	SCVAL(p,1,SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE);
+	p += SMB_POSIX_ACL_ENTRY_SIZE;
+
+	/* GROUP_OBJ. */
+	SCVAL(p,0,SMB_POSIX_ACL_GROUP_OBJ); /* tagtype. */
+	SCVAL(p,1,SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE);
+	p += SMB_POSIX_ACL_ENTRY_SIZE;
+
+	/* OTHER. */
+	SCVAL(p,0,SMB_POSIX_ACL_OTHER); /* tagtype. */
+	SCVAL(p,1,SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE);
+	p += SMB_POSIX_ACL_ENTRY_SIZE;
+
+	/* Explicit user. */
+	SCVAL(p,0,SMB_POSIX_ACL_USER); /* tagtype. */
+	SCVAL(p,1,SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE);
+	SIVAL(p,2,sbuf.st_ex_uid);
+	p += SMB_POSIX_ACL_ENTRY_SIZE;
+
+	/* MASK. */
+	SCVAL(p,0,SMB_POSIX_ACL_MASK); /* tagtype. */
+	SCVAL(p,1,SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE);
+	p += SMB_POSIX_ACL_ENTRY_SIZE;
+
+	/* Set the POSIX default ACL. */
+	status = cli_posix_setacl(cli_unix, dname, def_acl, sizeof(def_acl));
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("cli_posix_setacl on %s failed %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+        }
+
+	/*
+	 * Get the Windows ACL on the directory again.
+	 * Now there should be inheritable entries.
+	 */
+
+        status = cli_query_security_descriptor(cli_unix,
+						fnum,
+						SECINFO_DACL,
+						frame,
+						&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed (2) to get security descriptor "
+			"on directory %s: %s\n",
+			dname,
+			nt_errstr(status));
+		goto out;
+        }
+
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+		if (ace->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				  SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			got_inherit = true;
+			break;
+		}
+	}
+
+	if (!got_inherit) {
+		printf("security descritor on directory %s does not "
+			"contain inheritance flags\n",
+			dname);
+		sec_desc_print(NULL, stdout, sd, true);
+		goto out;
+	}
+
+	cli_close(cli_unix, fnum);
+	fnum = (uint16_t)-1;
+	printf("POSIX-DIR-DEFAULT-ACL test passed\n");
+	correct = true;
+
+out:
+
+	TALLOC_FREE(sd);
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli_unix, fnum);
+	}
+	cli_posix_unlink(cli_unix, dname);
+	cli_posix_rmdir(cli_unix, dname);
 
 	if (!torture_close_connection(cli_unix)) {
 		correct = false;

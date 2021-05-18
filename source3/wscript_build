@@ -1225,6 +1225,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/test_idmap_cache.c
                         torture/test_hidenewfiles.c
                         torture/test_readdir_timestamp.c
+                        lib/util_sd.c
                         ''' + TORTURE3_ADDITIONAL_SOURCE,
                  deps='''
                       talloc
@@ -1238,6 +1239,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                       NDR_OPEN_FILES
                       idmap
                       IDMAP_TDB_COMMON
+                      libcli_lsa3
                       samba-cluster-support
                       ''',
                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
