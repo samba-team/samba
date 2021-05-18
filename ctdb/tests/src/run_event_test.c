@@ -75,6 +75,7 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	char *arg_str;
 	unsigned int i;
 	int t;
+	bool wait_for_signal = false;
 
 	if (argc < 5) {
 		usage(argv[0]);
@@ -116,7 +117,28 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	for (i=0; i<script_list->num_scripts; i++) {
 		struct run_event_script *s = &script_list->script[i];
 		printf("%s result=%d\n", s->name, s->summary);
+
+		if (s->summary == -ETIMEDOUT) {
+			wait_for_signal = true;
+		}
 	}
+
+	TALLOC_FREE(script_list);
+	TALLOC_FREE(req);
+
+	if (!wait_for_signal) {
+		return;
+	}
+
+	req = tevent_wakeup_send(
+		ev, ev, tevent_timeval_current_ofs(1, 0));
+	if (req == NULL) {
+		fprintf(stderr, "Could not wait for signal\n");
+		return;
+	}
+
+	tevent_req_poll(req, ev);
+	TALLOC_FREE(req);
 }
 
 static void do_list(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
