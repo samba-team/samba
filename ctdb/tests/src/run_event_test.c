@@ -114,8 +114,8 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	printf("Event %s completed with result=%d\n",
 	       argv[4], script_list->summary);
 	for (i=0; i<script_list->num_scripts; i++) {
-		printf("%s result=%d\n", script_list->script[i].name,
-		       script_list->script[i].summary);
+		struct run_event_script *s = &script_list->script[i];
+		printf("%s result=%d\n", s->name, s->summary);
 	}
 }
 
