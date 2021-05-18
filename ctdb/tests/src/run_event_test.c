@@ -52,6 +52,19 @@ static char *compact_args(const char **argv, int argc, int from)
 	return arg_str;
 }
 
+static void run_done(struct tevent_req *req)
+{
+	struct run_event_script_list **script_list =
+		tevent_req_callback_data_void(req);
+	bool status;
+	int ret;
+
+	status = run_event_recv(req, &ret, NULL, script_list);
+	if (!status) {
+		fprintf(stderr, "run_event_recv() failed, ret=%d\n", ret);
+	}
+}
+
 static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		   struct run_event_context *run_ctx,
 		   int argc, const char **argv)
@@ -61,8 +74,7 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct run_event_script_list *script_list = NULL;
 	char *arg_str;
 	unsigned int i;
-	int ret, t;
-	bool status;
+	int t;
 
 	if (argc < 5) {
 		usage(argv[0]);
@@ -90,13 +102,9 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return;
 	}
 
-	tevent_req_poll(req, ev);
+	tevent_req_set_callback(req, run_done, &script_list);
 
-	status = run_event_recv(req, &ret, mem_ctx, &script_list);
-	if (! status) {
-		fprintf(stderr, "run_event_recv() failed, ret=%d\n", ret);
-		return;
-	}
+	tevent_req_poll(req, ev);
 
 	if (script_list == NULL || script_list->num_scripts == 0) {
 		printf("No event scripts found\n");
