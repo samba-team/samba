@@ -37,6 +37,7 @@ from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
 from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_access_ext import vgp_access_ext
+from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -47,6 +48,9 @@ import codecs
 from shutil import copyfile
 import xml.etree.ElementTree as etree
 import hashlib
+from samba.gp_parse.gp_pol import GPPolParser
+from glob import glob
+from configparser import ConfigParser
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -56,6 +60,143 @@ poldir = r'\\{0}\sysvol\{0}\Policies'.format(realm)
 base_dn = 'DC={0},DC=samba,DC=example,DC=com'.format(realm.split('.')[0])
 dspath = 'CN=Policies,CN=System,' + base_dn
 gpt_data = '[General]\nVersion=%d'
+
+gnome_test_reg_pol = \
+b"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="26" signature="PReg" version="1">
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Lock Down Enabled Extensions</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Lock Down Specific Settings</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable Printing</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable File Saving</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable Command-Line Access</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disallow Login Using a Fingerprint</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable User Logout</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable User Switching</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Disable Repartitioning</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Whitelisted Online Accounts</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Compose Key</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Dim Screen when User is Idle</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings</Key>
+        <ValueName>Enabled Extensions</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Compose Key</Key>
+        <ValueName>Key Name</ValueName>
+        <Value>Right Alt</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings\Dim Screen when User is Idle</Key>
+        <ValueName>Delay</ValueName>
+        <Value>300</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>GNOME Settings\Lock Down Settings\Dim Screen when User is Idle</Key>
+        <ValueName>Dim Idle Brightness</ValueName>
+        <Value>30</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Enabled Extensions</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Enabled Extensions</Key>
+        <ValueName>myextension1@myname.example.com</ValueName>
+        <Value>myextension1@myname.example.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Enabled Extensions</Key>
+        <ValueName>myextension2@myname.example.com</ValueName>
+        <Value>myextension2@myname.example.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Lock Down Specific Settings</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Lock Down Specific Settings</Key>
+        <ValueName>/org/gnome/desktop/background/picture-uri</ValueName>
+        <Value>/org/gnome/desktop/background/picture-uri</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Lock Down Specific Settings</Key>
+        <ValueName>/org/gnome/desktop/background/picture-options</ValueName>
+        <Value>/org/gnome/desktop/background/picture-options</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Lock Down Specific Settings</Key>
+        <ValueName>/org/gnome/desktop/background/primary-color</ValueName>
+        <Value>/org/gnome/desktop/background/primary-color</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Lock Down Specific Settings</Key>
+        <ValueName>/org/gnome/desktop/background/secondary-color</ValueName>
+        <Value>/org/gnome/desktop/background/secondary-color</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Whitelisted Online Accounts</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>GNOME Settings\Lock Down Settings\Whitelisted Online Accounts</Key>
+        <ValueName>google</ValueName>
+        <Value>google</Value>
+    </Entry>
+</PolFile>
+"""
 
 def days2rel_nttime(val):
     seconds = 60
@@ -1497,3 +1638,225 @@ class GPOTests(tests.TestCase):
         # Unstage the manifest.pol files
         unstage_file(allow)
         unstage_file(deny)
+
+    def test_gnome_settings(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_gnome_settings_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        parser = GPPolParser()
+        parser.load_xml(etree.fromstring(gnome_test_reg_pol.strip()))
+        ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+
+            local_db = os.path.join(dname, 'etc/dconf/db/local.d')
+            self.assertTrue(os.path.isdir(local_db),
+                            'Local db dir not created')
+            def db_check(name, data, count=1):
+                db = glob(os.path.join(local_db, '*-%s' % name))
+                self.assertEquals(len(db), count, '%s not created' % name)
+                file_contents = ConfigParser()
+                file_contents.read(db)
+                for key in data.keys():
+                    self.assertTrue(file_contents.has_section(key),
+                                    'Section %s not found' % key)
+                    options = data[key]
+                    for k, v in options.items():
+                        v_content = file_contents.get(key, k)
+                        self.assertEqual(v_content, v,
+                            '%s: %s != %s' % (key, v_content, v))
+
+            def del_db_check(name):
+                db = glob(os.path.join(local_db, '*-%s' % name))
+                self.assertEquals(len(db), 0, '%s not deleted' % name)
+
+            locks = os.path.join(local_db, 'locks')
+            self.assertTrue(os.path.isdir(local_db), 'Locks dir not created')
+            def lock_check(name, items, count=1):
+                lock = glob(os.path.join(locks, '*%s' % name))
+                self.assertEquals(len(lock), count,
+                                  '%s lock not created' % name)
+                file_contents = []
+                for i in range(count):
+                    file_contents.extend(open(lock[i], 'r').read().split('\n'))
+                for data in items:
+                    self.assertIn(data, file_contents,
+                                  '%s lock not created' % data)
+
+            def del_lock_check(name):
+                lock = glob(os.path.join(locks, '*%s' % name))
+                self.assertEquals(len(lock), 0, '%s lock not deleted' % name)
+
+            # Check the user profile
+            user_profile = os.path.join(dname, 'etc/dconf/profile/user')
+            self.assertTrue(os.path.exists(user_profile),
+                            'User profile not created')
+
+            # Enable the compose key
+            data = { 'org/gnome/desktop/input-sources':
+                { 'xkb-options': '[\'compose:ralt\']' }
+            }
+            db_check('input-sources', data)
+            items = ['/org/gnome/desktop/input-sources/xkb-options']
+            lock_check('input-sources', items)
+
+            # Dim screen when user is idle
+            data = { 'org/gnome/settings-daemon/plugins/power':
+                { 'idle-dim': 'true',
+                  'idle-brightness': '30'
+                }
+            }
+            db_check('power', data)
+            data = { 'org/gnome/desktop/session':
+                { 'idle-delay': 'uint32 300' }
+            }
+            db_check('session', data)
+            items = ['/org/gnome/settings-daemon/plugins/power/idle-dim',
+                     '/org/gnome/settings-daemon/plugins/power/idle-brightness',
+                     '/org/gnome/desktop/session/idle-delay']
+            lock_check('power-saving', items)
+
+            # Lock down specific settings
+            bg_locks = ['/org/gnome/desktop/background/picture-uri',
+                        '/org/gnome/desktop/background/picture-options',
+                        '/org/gnome/desktop/background/primary-color',
+                        '/org/gnome/desktop/background/secondary-color']
+            lock_check('group-policy', bg_locks)
+
+            # Lock down enabled extensions
+            data = { 'org/gnome/shell':
+                { 'enabled-extensions':
+                '[\'myextension1@myname.example.com\', \'myextension2@myname.example.com\']',
+                  'development-tools': 'false' }
+            }
+            db_check('extensions', data)
+            items = [ '/org/gnome/shell/enabled-extensions',
+                      '/org/gnome/shell/development-tools' ]
+            lock_check('extensions', items)
+
+            # Disallow login using a fingerprint
+            data = { 'org/gnome/login-screen':
+                { 'enable-fingerprint-authentication': 'false' }
+            }
+            db_check('fingerprintreader', data)
+            items = ['/org/gnome/login-screen/enable-fingerprint-authentication']
+            lock_check('fingerprintreader', items)
+
+            # Disable user logout and user switching
+            data = { 'org/gnome/desktop/lockdown':
+                { 'disable-log-out': 'true',
+                  'disable-user-switching': 'true' }
+            }
+            db_check('logout', data, 2)
+            items = ['/org/gnome/desktop/lockdown/disable-log-out',
+                     '/org/gnome/desktop/lockdown/disable-user-switching']
+            lock_check('logout', items, 2)
+
+            # Disable repartitioning
+            actions = os.path.join(dname, 'etc/share/polkit-1/actions')
+            udisk2 = glob(os.path.join(actions,
+                          'org.freedesktop.[u|U][d|D]isks2.policy'))
+            self.assertEquals(len(udisk2), 1, 'udisk2 policy not created')
+            udisk2_tree = etree.fromstring(open(udisk2[0], 'r').read())
+            actions = udisk2_tree.findall('action')
+            md = 'org.freedesktop.udisks2.modify-device'
+            action = [a for a in actions if a.attrib['id'] == md]
+            self.assertEquals(len(action), 1, 'modify-device not found')
+            defaults = action[0].find('defaults')
+            self.assertTrue(defaults is not None,
+                            'modify-device defaults not found')
+            allow_any = defaults.find('allow_any').text
+            self.assertEquals(allow_any, 'no',
+                              'modify-device allow_any not set to no')
+            allow_inactive = defaults.find('allow_inactive').text
+            self.assertEquals(allow_inactive, 'no',
+                              'modify-device allow_inactive not set to no')
+            allow_active = defaults.find('allow_active').text
+            self.assertEquals(allow_active, 'yes',
+                              'modify-device allow_active not set to yes')
+
+            # Disable printing
+            data = { 'org/gnome/desktop/lockdown':
+                { 'disable-printing': 'true' }
+            }
+            db_check('printing', data)
+            items = ['/org/gnome/desktop/lockdown/disable-printing']
+            lock_check('printing', items)
+
+            # Disable file saving
+            data = { 'org/gnome/desktop/lockdown':
+                { 'disable-save-to-disk': 'true' }
+            }
+            db_check('filesaving', data)
+            items = ['/org/gnome/desktop/lockdown/disable-save-to-disk']
+            lock_check('filesaving', items)
+
+            # Disable command-line access
+            data = { 'org/gnome/desktop/lockdown':
+                { 'disable-command-line': 'true' }
+            }
+            db_check('cmdline', data)
+            items = ['/org/gnome/desktop/lockdown/disable-command-line']
+            lock_check('cmdline', items)
+
+            # Allow or disallow online accounts
+            data = { 'org/gnome/online-accounts':
+                { 'whitelisted-providers': '[\'google\']' }
+            }
+            db_check('goa', data)
+            items = ['/org/gnome/online-accounts/whitelisted-providers']
+            lock_check('goa', items)
+
+            # Verify RSOP does not fail
+            ext.rsop([g for g in gpos if g.name == guid][0])
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            del_db_check('input-sources')
+            del_lock_check('input-sources')
+            del_db_check('power')
+            del_db_check('session')
+            del_lock_check('power-saving')
+            del_lock_check('group-policy')
+            del_db_check('extensions')
+            del_lock_check('extensions')
+            del_db_check('fingerprintreader')
+            del_lock_check('fingerprintreader')
+            del_db_check('logout')
+            del_lock_check('logout')
+            actions = os.path.join(dname, 'etc/share/polkit-1/actions')
+            udisk2 = glob(os.path.join(actions,
+                          'org.freedesktop.[u|U][d|D]isks2.policy'))
+            self.assertEquals(len(udisk2), 0, 'udisk2 policy not deleted')
+            del_db_check('printing')
+            del_lock_check('printing')
+            del_db_check('filesaving')
+            del_lock_check('filesaving')
+            del_db_check('cmdline')
+            del_lock_check('cmdline')
+            del_db_check('goa')
+            del_lock_check('goa')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
