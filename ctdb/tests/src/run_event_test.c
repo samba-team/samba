@@ -131,7 +131,7 @@ static void do_run(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	req = tevent_wakeup_send(
-		ev, ev, tevent_timeval_current_ofs(1, 0));
+		ev, ev, tevent_timeval_current_ofs(10, 0));
 	if (req == NULL) {
 		fprintf(stderr, "Could not wait for signal\n");
 		return;
