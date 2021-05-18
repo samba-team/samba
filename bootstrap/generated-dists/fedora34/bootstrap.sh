@@ -105,6 +105,7 @@ dnf install -y \
     sudo \
     systemd-devel \
     tar \
+    tracker-devel \
     tree \
     wget \
     which \

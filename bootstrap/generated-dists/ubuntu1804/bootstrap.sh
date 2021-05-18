@@ -69,6 +69,7 @@ apt-get -y install \
     libsystemd-dev \
     libtasn1-bin \
     libtasn1-dev \
+    libtracker-sparql-2.0-dev \
     libunwind-dev \
     lmdb-utils \
     locales \

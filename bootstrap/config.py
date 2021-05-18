@@ -163,6 +163,9 @@ PKGS = [
     ('glusterfs-common', 'glusterfs-devel'),
     ('libcephfs-dev', 'libcephfs-devel'),
 
+    # spotlight
+    ('libtracker-sparql-2.0-dev', 'tracker-devel'),
+
     # misc
     # @ means group for rpm, use fedora as rpm default
     ('build-essential', '@development-tools'),
@@ -401,6 +404,7 @@ DEB_DISTS = {
             'glusterfs-common': '',
             'libcephfs-dev': '',
             'liburing-dev': '',   # not available
+            'libtracker-sparql-2.0-dev': '', # not available
         }
     },
     'ubuntu1804': {
@@ -454,6 +458,7 @@ RPM_DISTS = {
             'gnutls-devel': 'compat-gnutls34-devel',
             'liburing-devel': '',   # not available
             'python3-setproctitle': 'python36-setproctitle',
+            'tracker-devel': '', # do not install
         }
     },
     'centos8': {
@@ -491,6 +496,7 @@ RPM_DISTS = {
             'libsemanage-python': 'python3-libsemanage',
             'policycoreutils-python': 'python3-policycoreutils',
             'perl-FindBin': '',
+            'libtracker-sparql-2.0-dev': '', # only tracker 3.x is available
         }
     },
     'opensuse151': {

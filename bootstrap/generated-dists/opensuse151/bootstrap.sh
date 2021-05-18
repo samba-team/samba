@@ -97,6 +97,7 @@ zypper --non-interactive install \
     sudo \
     systemd-devel \
     tar \
+    tracker-devel \
     tree \
     wget \
     which \
