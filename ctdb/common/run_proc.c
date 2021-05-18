@@ -426,7 +426,7 @@ static void run_proc_done(struct tevent_req *req)
 
 	state->result = state->proc->result;
 	if (state->proc->output != NULL) {
-		state->output = talloc_steal(state, state->proc->output);
+		state->output = talloc_move(state, &state->proc->output);
 	}
 	talloc_steal(state, state->proc);
 
@@ -464,7 +464,7 @@ static void run_proc_timedout(struct tevent_req *subreq)
 
 	state->result.err = ETIMEDOUT;
 	if (state->proc->output != NULL) {
-		state->output = talloc_steal(state, state->proc->output);
+		state->output = talloc_move(state, &state->proc->output);
 	}
 	state->pid = state->proc->pid;
 
@@ -495,7 +495,7 @@ bool run_proc_recv(struct tevent_req *req, int *perr,
 	}
 
 	if (output != NULL) {
-		*output = talloc_steal(mem_ctx, state->output);
+		*output = talloc_move(mem_ctx, &state->output);
 	}
 
 	return true;
