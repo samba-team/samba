@@ -113,7 +113,9 @@ unit_test run_event_test "$scriptdir" run 10 monitor
 cat > "$scriptdir/22.bar.script" <<EOF
 #!/bin/sh
 
+echo before sleep
 sleep 10
+echo after sleep
 EOF
 
 # Timed out script
@@ -124,6 +126,7 @@ unit_test run_event_test "$scriptdir" enable 22.bar
 
 ok <<EOF
 11.foo: hello
+22.bar: before sleep
 Event monitor completed with result=-$(errcode ETIMEDOUT)
 11.foo result=0
 22.bar result=-$(errcode ETIMEDOUT)
