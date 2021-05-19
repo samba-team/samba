@@ -650,11 +650,12 @@ int vfs_set_filelen(files_struct *fsp, off_t len)
 		  fsp_str_dbg(fsp), (double)len));
 	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
 		notify_fname(fsp->conn,
-			     NOTIFY_ACTION_MODIFIED,
+			     NOTIFY_ACTION_MODIFIED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_SIZE |
 				     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
