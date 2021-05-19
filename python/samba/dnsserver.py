@@ -241,6 +241,8 @@ class TXTRecord(dnsserver.DNS_RPC_RECORD):
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
+        if isinstance(slist, str):
+            slist = [slist]
         names = []
         for s in slist:
             name = dnsserver.DNS_RPC_NAME()
