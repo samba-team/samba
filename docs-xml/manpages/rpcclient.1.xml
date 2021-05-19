@@ -167,75 +167,76 @@
 
 	<refsect2>
 	<title>LSARPC</title>
-
 	<variablelist>
 		<varlistentry><term>lsaquery</term><listitem><para>Query info policy</para></listitem></varlistentry>
-		
-		<varlistentry><term>lookupsids</term><listitem><para>Resolve a list 
-		of SIDs to usernames.
-		</para></listitem></varlistentry>
-		
-		<varlistentry><term>lookupnames</term><listitem><para>Resolve a list 
-		of usernames to SIDs.
-		</para></listitem></varlistentry>
-		
+		<varlistentry><term>lookupsids</term><listitem><para>Convert SIDs to names</para></listitem></varlistentry>
+		<varlistentry><term>lookupsids3</term><listitem><para>Convert SIDs to names</para></listitem></varlistentry>
+		<varlistentry><term>lookupsids_level</term><listitem><para>Convert SIDs to names</para></listitem></varlistentry>
+		<varlistentry><term>lookupnames</term><listitem><para>Convert names to SIDs</para></listitem></varlistentry>
+		<varlistentry><term>lookupnames4</term><listitem><para>Convert names to SIDs</para></listitem></varlistentry>
+		<varlistentry><term>lookupnames_level</term><listitem><para>Convert names to SIDs</para></listitem></varlistentry>
 		<varlistentry><term>enumtrust</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
-
 		<varlistentry><term>enumprivs</term><listitem><para>Enumerate privileges</para></listitem></varlistentry>
-
 		<varlistentry><term>getdispname</term><listitem><para>Get the privilege name</para></listitem></varlistentry>
-
 		<varlistentry><term>lsaenumsid</term><listitem><para>Enumerate the LSA SIDS</para></listitem></varlistentry>
-
+		<varlistentry><term>lsacreateaccount</term><listitem><para>Create a new lsa account</para></listitem></varlistentry>
 		<varlistentry><term>lsaenumprivsaccount</term><listitem><para>Enumerate the privileges of an SID</para></listitem></varlistentry>
-
 		<varlistentry><term>lsaenumacctrights</term><listitem><para>Enumerate the rights of an SID</para></listitem></varlistentry>
-
-		<varlistentry><term>lsaenumacctwithright</term><listitem><para>Enumerate accounts with a right</para></listitem></varlistentry>
-
+		<varlistentry><term>lsaaddpriv</term><listitem><para>Assign a privilege to a SID</para></listitem></varlistentry>
+		<varlistentry><term>lsadelpriv</term><listitem><para>Revoke a privilege from a SID</para></listitem></varlistentry>
 		<varlistentry><term>lsaaddacctrights</term><listitem><para>Add rights to an account</para></listitem></varlistentry>
-
 		<varlistentry><term>lsaremoveacctrights</term><listitem><para>Remove rights from an account</para></listitem></varlistentry>
-
 		<varlistentry><term>lsalookupprivvalue</term><listitem><para>Get a privilege value given its name</para></listitem></varlistentry>
-
 		<varlistentry><term>lsaquerysecobj</term><listitem><para>Query LSA security object</para></listitem></varlistentry>
-
-	</variablelist>	
+		<varlistentry><term>lsaquerytrustdominfo</term><listitem><para>Query LSA trusted domains info (given a SID)</para></listitem></varlistentry>
+		<varlistentry><term>lsaquerytrustdominfobyname</term><listitem><para>Query LSA trusted domains info (given a name), only works for Windows > 2k</para></listitem></varlistentry>
+		<varlistentry><term>lsaquerytrustdominfobysid</term><listitem><para>Query LSA trusted domains info (given a SID)</para></listitem></varlistentry>
+		<varlistentry><term>lsasettrustdominfo</term><listitem><para>Set LSA trusted domain info</para></listitem></varlistentry>
+		<varlistentry><term>getusername</term><listitem><para>Get username</para></listitem></varlistentry>
+		<varlistentry><term>createsecret</term><listitem><para>Create Secret</para></listitem></varlistentry>
+		<varlistentry><term>deletesecret</term><listitem><para>Delete Secret</para></listitem></varlistentry>
+		<varlistentry><term>querysecret</term><listitem><para>Query Secret</para></listitem></varlistentry>
+		<varlistentry><term>setsecret</term><listitem><para>Set Secret</para></listitem></varlistentry>
+		<varlistentry><term>retrieveprivatedata</term><listitem><para>Retrieve Private Data</para></listitem></varlistentry>
+		<varlistentry><term>storeprivatedata</term><listitem><para>Store Private Data</para></listitem></varlistentry>
+		<varlistentry><term>createtrustdom</term><listitem><para>Create Trusted Domain</para></listitem></varlistentry>
+		<varlistentry><term>deletetrustdom</term><listitem><para>Delete Trusted Domain</para></listitem></varlistentry>
+	</variablelist>
 	</refsect2>
-	
+
+
 	<refsect2>
 	<title>LSARPC-DS</title>
-	
 	<variablelist>
 		<varlistentry><term>dsroledominfo</term><listitem><para>Get Primary Domain Information</para></listitem></varlistentry>
 	</variablelist>
+	</refsect2>
 
-	<para> </para>
 
-	<para><emphasis>DFS</emphasis></para>
+	<refsect2>
+	<title>DFS</title>
 	<variablelist>
-		<varlistentry><term>dfsexist</term><listitem><para>Query DFS support</para></listitem></varlistentry>
+		<varlistentry><term>dfsversion</term><listitem><para>Query DFS support</para></listitem></varlistentry>
 		<varlistentry><term>dfsadd</term><listitem><para>Add a DFS share</para></listitem></varlistentry>
 		<varlistentry><term>dfsremove</term><listitem><para>Remove a DFS share</para></listitem></varlistentry>
 		<varlistentry><term>dfsgetinfo</term><listitem><para>Query DFS share info</para></listitem></varlistentry>
 		<varlistentry><term>dfsenum</term><listitem><para>Enumerate dfs shares</para></listitem></varlistentry>
+		<varlistentry><term>dfsenumex</term><listitem><para>Enumerate dfs shares</para></listitem></varlistentry>
 	</variablelist>
-
 	</refsect2>
+
 
 	<refsect2>
-	<title>REG</title>
+	<title>SHUTDOWN</title>
 	<variablelist>
-		<varlistentry><term>shutdown</term><listitem><para>Remote Shutdown</para></listitem></varlistentry>
-		<varlistentry><term>abortshutdown</term><listitem><para>Abort Shutdown</para></listitem></varlistentry>
+		<varlistentry><term>shutdowninit</term><listitem><para>syntax: shutdown [-m message] </para></listitem></varlistentry>
+		<varlistentry><term>shutdownabort</term><listitem><para>syntax: shutdownabort</para></listitem></varlistentry>
 	</variablelist>
-
 	</refsect2>
+
 
 	<refsect2>
 	<title>SRVSVC</title>
-
 	<variablelist>
 		<varlistentry><term>srvinfo</term><listitem><para>Server query info</para></listitem></varlistentry>
 		<varlistentry><term>netshareenum</term><listitem><para>Enumerate shares</para></listitem></varlistentry>
@@ -254,33 +255,48 @@
 		<varlistentry><term>netshareadd</term><listitem><para>Add share</para></listitem></varlistentry>
 		<varlistentry><term>netsharedel</term><listitem><para>Delete share</para></listitem></varlistentry>
 	</variablelist>
-
 	</refsect2>
+
 
 	<refsect2>
 	<title>SAMR</title>
-
 	<variablelist>
 		<varlistentry><term>queryuser</term><listitem><para>Query user info</para></listitem></varlistentry>
 		<varlistentry><term>querygroup</term><listitem><para>Query group info</para></listitem></varlistentry>
 		<varlistentry><term>queryusergroups</term><listitem><para>Query user groups</para></listitem></varlistentry>
+		<varlistentry><term>queryuseraliases</term><listitem><para>Query user aliases</para></listitem></varlistentry>
 		<varlistentry><term>querygroupmem</term><listitem><para>Query group membership</para></listitem></varlistentry>
 		<varlistentry><term>queryaliasmem</term><listitem><para>Query alias membership</para></listitem></varlistentry>
+		<varlistentry><term>queryaliasinfo</term><listitem><para>Query alias info</para></listitem></varlistentry>
+		<varlistentry><term>deletealias</term><listitem><para>Delete an alias</para></listitem></varlistentry>
 		<varlistentry><term>querydispinfo</term><listitem><para>Query display info</para></listitem></varlistentry>
+		<varlistentry><term>querydispinfo2</term><listitem><para>Query display info</para></listitem></varlistentry>
+		<varlistentry><term>querydispinfo3</term><listitem><para>Query display info</para></listitem></varlistentry>
 		<varlistentry><term>querydominfo</term><listitem><para>Query domain info</para></listitem></varlistentry>
 		<varlistentry><term>enumdomusers</term><listitem><para>Enumerate domain users</para></listitem></varlistentry>
 		<varlistentry><term>enumdomgroups</term><listitem><para>Enumerate domain groups</para></listitem></varlistentry>
 		<varlistentry><term>enumalsgroups</term><listitem><para>Enumerate alias groups</para></listitem></varlistentry>
+		<varlistentry><term>enumdomains</term><listitem><para>Enumerate domains</para></listitem></varlistentry>
 		<varlistentry><term>createdomuser</term><listitem><para>Create domain user</para></listitem></varlistentry>
+		<varlistentry><term>createdomgroup</term><listitem><para>Create domain group</para></listitem></varlistentry>
+		<varlistentry><term>createdomalias</term><listitem><para>Create domain alias</para></listitem></varlistentry>
 		<varlistentry><term>samlookupnames</term><listitem><para>Look up names</para></listitem></varlistentry>
 		<varlistentry><term>samlookuprids</term><listitem><para>Look up names</para></listitem></varlistentry>
+		<varlistentry><term>deletedomgroup</term><listitem><para>Delete domain group</para></listitem></varlistentry>
 		<varlistentry><term>deletedomuser</term><listitem><para>Delete domain user</para></listitem></varlistentry>
 		<varlistentry><term>samquerysecobj</term><listitem><para>Query SAMR security object</para></listitem></varlistentry>
 		<varlistentry><term>getdompwinfo</term><listitem><para>Retrieve domain password info</para></listitem></varlistentry>
-		<varlistentry><term>lookupdomain</term><listitem><para>Look up domain</para></listitem></varlistentry>
+		<varlistentry><term>getusrdompwinfo</term><listitem><para>Retrieve user domain password info</para></listitem></varlistentry>
+		<varlistentry><term>lookupdomain</term><listitem><para>Lookup Domain Name</para></listitem></varlistentry>
+		<varlistentry><term>chgpasswd</term><listitem><para>Change user password</para></listitem></varlistentry>
+		<varlistentry><term>chgpasswd2</term><listitem><para>Change user password</para></listitem></varlistentry>
+		<varlistentry><term>chgpasswd3</term><listitem><para>Change user password</para></listitem></varlistentry>
+		<varlistentry><term>getdispinfoidx</term><listitem><para>Get Display Information Index</para></listitem></varlistentry>
+		<varlistentry><term>setuserinfo</term><listitem><para>Set user info</para></listitem></varlistentry>
+		<varlistentry><term>setuserinfo2</term><listitem><para>Set user info2</para></listitem></varlistentry>
 	</variablelist>
-
 	</refsect2>
+
 
 	<refsect2>
 	<title>SPOOLSS</title>
@@ -322,7 +338,7 @@ Comma Separated list of Files
 		default driver version for the specified architecture will
 		be used.  This option can be used to upload Windows 2000
 		(version 3) printer drivers.</para></listitem></varlistentry>
-	
+
 		<varlistentry><term>addprinter &lt;printername&gt; 
 		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</term>
 		<listitem><para>
@@ -332,7 +348,6 @@ Comma Separated list of Files
 		and the <parameter>port</parameter>must be a valid port name (see
 		<command>enumports</command>.</para>
 		</listitem></varlistentry>
-
 
 		<varlistentry><term>deldriver &lt;driver&gt;</term><listitem><para>Delete the
 		specified printer driver for all architectures.  This
@@ -358,21 +373,22 @@ Comma Separated list of Files
 
 		<varlistentry><term>enumdataex</term><listitem><para>Enumerate printer data for a key</para></listitem></varlistentry>
 
+		<varlistentry><term>enumkey</term><listitem><para>Enumerate printer keys</para></listitem></varlistentry>
+
 		<varlistentry><term>enumjobs &lt;printer&gt;</term>
 		<listitem><para>List the jobs and status of a given printer. 
 		This command corresponds to the MS Platform SDK EnumJobs() 
 		function</para></listitem></varlistentry>
 
-		<varlistentry><term>enumkey</term><listitem><para>Enumerate
-		printer keys</para></listitem></varlistentry>
-		
+		<varlistentry><term>getjob</term><listitem><para>Get print job</para></listitem></varlistentry>
+		<varlistentry><term>setjob</term><listitem><para>Set print job</para></listitem></varlistentry>
+
+
 		<varlistentry><term>enumports [level]</term>
 		<listitem><para>
 		Executes an EnumPorts() call using the specified 
 		info level. Currently only info levels 1 and 2 are supported. 
 		</para></listitem></varlistentry>
-
-
 
 		<varlistentry><term>enumdrivers [level]</term> 
 		<listitem><para>
@@ -381,16 +397,11 @@ Comma Separated list of Files
 		documentation for more details of the various flags and calling 
 		options. Currently supported info levels are 1, 2, and 3.</para></listitem></varlistentry>
 
-
-
 		<varlistentry><term>enumprinters [level]</term>
 		<listitem><para>Execute an EnumPrinters() call.  This lists the various installed 
 		and share printers.  Refer to the MS Platform SDK documentation for 
 		more details of the various flags and calling options. Currently
 		supported info levels are 1, 2 and 5.</para></listitem></varlistentry>
-
-
-
 
 		<varlistentry><term>getdata &lt;printername&gt; &lt;valuename;&gt;</term> 
 		<listitem><para>Retrieve the data for a given printer setting.  See 
@@ -410,7 +421,6 @@ Comma Separated list of Files
 		the given printer. This command corresponds to the GetPrinterDriver()
 		MS Platform  SDK function. Currently info level 1, 2, and 3 are supported.
 		</para></listitem></varlistentry>
-	
 
 		<varlistentry><term>getdriverdir &lt;arch&gt;</term>
 		<listitem><para>
@@ -421,20 +431,21 @@ Comma Separated list of Files
 		(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
 		Alpha_AXP", and "Windows NT R4000". </para></listitem></varlistentry>
 
-
+		<varlistentry><term>getdriverpackagepath</term>
+		<listitem><para>Get print driver package download directory</para></listitem></varlistentry>
 
 		<varlistentry><term>getprinter &lt;printername&gt;</term> 
 		<listitem><para>Retrieve the current printer information.  This command 
 		corresponds to the GetPrinter() MS Platform SDK function. 
 		</para></listitem></varlistentry>
 
-		<varlistentry><term>getprintprocdir</term><listitem><para>Get
-		print processor
-		directory</para></listitem></varlistentry>
-		
+
 		<varlistentry><term>openprinter &lt;printername&gt;</term> 
 		<listitem><para>Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </para></listitem></varlistentry>
+
+		<varlistentry><term>openprinter_ex &lt;printername&gt;</term>
+		<listitem><para>Open printer handle</para></listitem></varlistentry>
 
 		<varlistentry><term>setdriver &lt;printername&gt;
 		&lt;drivername&gt;</term>
@@ -446,6 +457,9 @@ Comma Separated list of Files
 		<command>enumdrivers</command> commands for obtaining a list of
 		of installed printers and drivers.</para></listitem></varlistentry>
 
+		<varlistentry><term>getprintprocdir</term><listitem>
+		<para>Get print processor directory</para></listitem></varlistentry>
+
 		<varlistentry><term>addform</term><listitem><para>Add form</para></listitem></varlistentry>
 		<varlistentry><term>setform</term><listitem><para>Set form</para></listitem></varlistentry>
 		<varlistentry><term>getform</term><listitem><para>Get form</para></listitem></varlistentry>
@@ -454,110 +468,215 @@ Comma Separated list of Files
 		<varlistentry><term>setprinter</term><listitem><para>Set printer comment</para></listitem></varlistentry>
 		<varlistentry><term>setprinterdata</term><listitem><para>Set REG_SZ printer data</para></listitem></varlistentry>
 
-		<varlistentry><term>setprintername &lt;printername&gt;
-		&lt;newprintername&gt;</term>
+		<varlistentry><term>setprintername &lt;printername&gt; &lt;newprintername&gt;</term>
 		<listitem><para>Set printer name</para></listitem></varlistentry>
 
 		<varlistentry><term>rffpcnex</term><listitem><para>Rffpcnex test</para></listitem></varlistentry>
-		
-
+		<varlistentry><term>printercmp</term><listitem><para>Printer comparison test</para></listitem></varlistentry>
+		<varlistentry><term>enumprocs</term><listitem><para>Enumerate Print Processors</para></listitem></varlistentry>
+		<varlistentry><term>enumprocdatatypes</term><listitem><para>Enumerate Print Processor Data Types</para></listitem></varlistentry>
+		<varlistentry><term>enummonitors</term><listitem><para>Enumerate Print Monitors</para></listitem></varlistentry>
+		<varlistentry><term>createprinteric</term><listitem><para>Create Printer IC</para></listitem></varlistentry>
+		<varlistentry><term>playgdiscriptonprinteric</term><listitem><para>Create Printer IC</para></listitem></varlistentry>
+		<varlistentry><term>getcoreprinterdrivers</term><listitem><para>Get CorePrinterDriver</para></listitem></varlistentry>
+		<varlistentry><term>enumpermachineconnections</term><listitem><para>Enumerate Per Machine Connections</para></listitem></varlistentry>
+		<varlistentry><term>addpermachineconnection</term><listitem><para>Add Per Machine Connection</para></listitem></varlistentry>
+		<varlistentry><term>delpermachineconnection</term><listitem><para>Delete Per Machine Connection</para></listitem></varlistentry>
 	</variablelist>
-
 	</refsect2>
+
 
 	<refsect2>
 	<title>NETLOGON</title>
-
 	<variablelist>
-
-	<varlistentry><term>logonctrl2</term>
-	<listitem><para>Logon Control 2</para></listitem>
-	</varlistentry>
-
-	<varlistentry><term>logonctrl</term>
-	<listitem><para>Logon Control</para></listitem>
-	</varlistentry>
-
-	<varlistentry><term>samsync</term>
-	<listitem><para>Sam Synchronisation</para></listitem>
-	</varlistentry>
-
-	<varlistentry><term>samdeltas</term>
-	<listitem><para>Query Sam Deltas</para></listitem>
-	</varlistentry>
-
-	<varlistentry><term>samlogon</term>
-	<listitem><para>Sam Logon</para></listitem>
-	</varlistentry>
-
+		<varlistentry><term>logonctrl2</term><listitem><para>Logon Control 2</para></listitem></varlistentry>
+		<varlistentry><term>getanydcname</term><listitem><para>Get trusted DC name</para></listitem></varlistentry>
+		<varlistentry><term>getdcname</term><listitem><para>Get trusted PDC name</para></listitem></varlistentry>
+		<varlistentry><term>dsr_getdcname</term><listitem><para>Get trusted DC name</para></listitem></varlistentry>
+		<varlistentry><term>dsr_getdcnameex</term><listitem><para>Get trusted DC name</para></listitem></varlistentry>
+		<varlistentry><term>dsr_getdcnameex2</term><listitem><para>Get trusted DC name</para></listitem></varlistentry>
+		<varlistentry><term>dsr_getsitename</term><listitem><para>Get sitename</para></listitem></varlistentry>
+		<varlistentry><term>dsr_getforesttrustinfo</term><listitem><para>Get Forest Trust Info</para></listitem></varlistentry>
+		<varlistentry><term>logonctrl</term><listitem><para>Logon Control</para></listitem></varlistentry>
+		<varlistentry><term>samlogon</term><listitem><para>Sam Logon</para></listitem></varlistentry>
+		<varlistentry><term>change_trust_pw</term><listitem><para>Change Trust Account Password</para></listitem></varlistentry>
+		<varlistentry><term>gettrustrid</term><listitem><para>Get trust rid</para></listitem></varlistentry>
+		<varlistentry><term>dsr_enumtrustdom</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
+		<varlistentry><term>dsenumdomtrusts</term><listitem><para>Enumerate all trusted domains in an AD forest</para></listitem></varlistentry>
+		<varlistentry><term>deregisterdnsrecords</term><listitem><para>Deregister DNS records</para></listitem></varlistentry>
+		<varlistentry><term>netrenumtrusteddomains</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
+		<varlistentry><term>netrenumtrusteddomainsex</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
+		<varlistentry><term>getdcsitecoverage</term><listitem><para>Get the Site-Coverage from a DC</para></listitem></varlistentry>
+		<varlistentry><term>capabilities</term><listitem><para>Return Capabilities</para></listitem></varlistentry>
+		<varlistentry><term>logongetdomaininfo</term><listitem><para>Return LogonGetDomainInfo</para></listitem></varlistentry>
 	</variablelist>
 	</refsect2>
+
 
 	<refsect2>
 	<title>FSRVP</title>
 	<variablelist>
-
-	<varlistentry><term>fss_is_path_sup &lt;share&gt;</term>
-		<listitem>
-			<para>Check whether a share supports shadow-copy
-			requests</para>
-		</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_get_sup_version</term>
-		<listitem>
-			<para>Get supported FSRVP version from server</para>
-		</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_create_expose &lt;context&gt; &lt;[ro|rw]&gt;
-					      &lt;share1&gt;
-					      [share2] ... [shareN]</term>
-		<listitem>
-			<para>Request shadow-copy creation and exposure as a
-			new share</para>
-		</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_delete &lt;base_share&gt;
-				       &lt;shadow_copy_set_id&gt;
-				       &lt;shadow_copy_id&gt;</term>
-		<listitem>
-			<para>Request shadow-copy share deletion</para>
-	</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_has_shadow_copy &lt;base_share&gt;</term>
-		<listitem>
-			<para>Check for an associated share shadow-copy</para>
-		</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_get_mapping &lt;base_share&gt;
-					    &lt;shadow_copy_set_id&gt;
-					    &lt;shadow_copy_id&gt;</term>
-		<listitem>
-			<para>Get shadow-copy share mapping information</para>
-		</listitem>
-	</varlistentry>
-	<varlistentry><term>fss_recovery_complete &lt;shadow_copy_set_id&gt;</term>
-		<listitem>
-			<para>Flag read-write shadow-copy as recovery complete,
-			allowing further shadow-copy requests</para>
-		</listitem>
-	</varlistentry>
-
+		<varlistentry><term>fss_is_path_sup</term><listitem><para>Check whether a share supports shadow-copy </para></listitem></varlistentry>
+		<varlistentry><term>fss_get_sup_version</term><listitem><para>Get supported FSRVP version from server</para></listitem></varlistentry>
+		<varlistentry><term>fss_create_expose</term><listitem><para>Request shadow-copy creation and exposure</para></listitem></varlistentry>
+		<varlistentry><term>fss_delete</term><listitem><para>Request shadow-copy share deletion</para></listitem></varlistentry>
+		<varlistentry><term>fss_has_shadow_copy</term><listitem><para>Check for an associated share shadow-copy</para></listitem></varlistentry>
+		<varlistentry><term>fss_get_mapping</term><listitem><para>Get shadow-copy share mapping information</para></listitem></varlistentry>
+		<varlistentry><term>fss_recovery_complete</term><listitem><para>Flag read-write snapshot as recovery complete, </para></listitem></varlistentry>
 	</variablelist>
 	</refsect2>
 
+
 	<refsect2>
-	<title>GENERAL COMMANDS</title>
-
+	<title>CLUSAPI</title>
 	<variablelist>
-		<varlistentry><term>debuglevel</term><listitem><para>Set the current
-		debug level used to log information.</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_open_cluster</term><listitem><para>Open cluster</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_get_cluster_name</term><listitem><para>Get cluster name</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_get_cluster_version</term><listitem><para>Get cluster version</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_get_quorum_resource</term><listitem><para>Get quorum resource</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_create_enum</term><listitem><para>Create enum query</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_create_enumex</term><listitem><para>Create enumex query</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_open_resource</term><listitem><para>Open cluster resource</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_online_resource</term><listitem><para>Set cluster resource online</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_offline_resource</term><listitem><para>Set cluster resource offline</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_get_resource_state</term><listitem><para>Get cluster resource state</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_get_cluster_version2</term><listitem><para>Get cluster version2</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_pause_node</term><listitem><para>Pause cluster node</para></listitem></varlistentry>
+		<varlistentry><term>clusapi_resume_node</term><listitem><para>Resume cluster node</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
 
-		<varlistentry><term>help (?)</term><listitem><para>Print a listing of all 
-		known commands or extended help  on a particular command. 
-		</para></listitem></varlistentry>
-		
-		<varlistentry><term>quit (exit)</term><listitem><para>Exit <command>rpcclient
-		</command>.</para></listitem></varlistentry>
+
+	<refsect2>
+	<title>DRSUAPI</title>
+	<variablelist>
+		<varlistentry><term>dscracknames</term><listitem><para>Crack Name</para></listitem></varlistentry>
+		<varlistentry><term>dsgetdcinfo</term><listitem><para>Get Domain Controller Info</para></listitem></varlistentry>
+		<varlistentry><term>dsgetncchanges</term><listitem><para>Get NC Changes</para></listitem></varlistentry>
+		<varlistentry><term>dswriteaccountspn</term><listitem><para>Write Account SPN</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>ECHO</title>
+	<variablelist>
+		<varlistentry><term>echoaddone</term><listitem><para>Add one to a number</para></listitem></varlistentry>
+		<varlistentry><term>echodata</term><listitem><para>Echo data</para></listitem></varlistentry>
+		<varlistentry><term>sinkdata</term><listitem><para>Sink data</para></listitem></varlistentry>
+		<varlistentry><term>sourcedata</term><listitem><para>Source data</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>EPMAPPER</title>
+	<variablelist>
+		<varlistentry><term>epmmap</term><listitem><para>Map a binding</para></listitem></varlistentry>
+		<varlistentry><term>epmlookup</term><listitem><para>Lookup bindings</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>EVENTLOG</title>
+	<variablelist>
+		<varlistentry><term>eventlog_readlog</term><listitem><para>Read Eventlog</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_numrecord</term><listitem><para>Get number of records</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_oldestrecord</term><listitem><para>Get oldest record</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_reportevent</term><listitem><para>Report event</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_reporteventsource</term><listitem><para>Report event and source</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_registerevsource</term><listitem><para>Register event source</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_backuplog</term><listitem><para>Backup Eventlog File</para></listitem></varlistentry>
+		<varlistentry><term>eventlog_loginfo</term><listitem><para>Get Eventlog Information</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>IRemoteWinspool</title>
+	<variablelist>
+		<varlistentry><term>winspool_AsyncOpenPrinter</term><listitem><para>Open printer handle</para></listitem></varlistentry>
+		<varlistentry><term>winspool_AsyncCorePrinterDriverInstalled</term><listitem><para>Query Core Printer Driver Installed</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>NTSVCS</title>
+	<variablelist>
+		<varlistentry><term>ntsvcs_getversion</term><listitem><para>Query NTSVCS version</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_validatedevinst</term><listitem><para>Query NTSVCS device instance</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_hwprofflags</term><listitem><para>Query NTSVCS HW prof flags</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_hwprofinfo</term><listitem><para>Query NTSVCS HW prof info</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_getdevregprop</term><listitem><para>Query NTSVCS device registry property</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_getdevlistsize</term><listitem><para>Query NTSVCS device list size</para></listitem></varlistentry>
+		<varlistentry><term>ntsvcs_getdevlist</term><listitem><para>Query NTSVCS device list</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>MDSSVC</title>
+	<variablelist>
+		<varlistentry><term>fetch_properties</term><listitem><para>Fetch connection properties</para></listitem></varlistentry>
+		<varlistentry><term>fetch_attributes</term><listitem><para>Fetch attributes for a CNID</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>WINREG</title>
+	<variablelist>
+		<varlistentry><term>winreg_enumkey</term><listitem><para>Enumerate Keys</para></listitem></varlistentry>
+		<varlistentry><term>querymultiplevalues</term><listitem><para>Query multiple values</para></listitem></varlistentry>
+		<varlistentry><term>querymultiplevalues2</term><listitem><para>Query multiple values</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>WITNESS</title>
+	<variablelist>
+		<varlistentry><term>GetInterfaceList</term><listitem><para>List the interfaces to which witness client connections can be made</para></listitem></varlistentry>
+		<varlistentry><term>Register</term><listitem><para>Register for resource state change notifications of a NetName and IPAddress</para></listitem></varlistentry>
+		<varlistentry><term>UnRegister</term><listitem><para>Unregister for notifications from the server</para></listitem></varlistentry>
+		<varlistentry><term>AsyncNotify</term><listitem><para>Request notification of registered resource changes from the server</para></listitem></varlistentry>
+		<varlistentry><term>RegisterEx</term><listitem><para>Register for resource state change notifications of a NetName, ShareName and multiple IPAddresses</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>WKSSVC</title>
+	<variablelist>
+		<varlistentry><term>wkssvc_wkstagetinfo</term><listitem><para>Query WKSSVC Workstation Information</para></listitem></varlistentry>
+		<varlistentry><term>wkssvc_getjoininformation</term><listitem><para>Query WKSSVC Join Information</para></listitem></varlistentry>
+		<varlistentry><term>wkssvc_messagebuffersend</term><listitem><para>Send WKSSVC message</para></listitem></varlistentry>
+		<varlistentry><term>wkssvc_enumeratecomputernames</term><listitem><para>Enumerate WKSSVC computer names</para></listitem></varlistentry>
+		<varlistentry><term>wkssvc_enumerateusers</term><listitem><para>Enumerate WKSSVC users</para></listitem></varlistentry>
+	</variablelist>
+	</refsect2>
+
+
+	<refsect2>
+	<title>GENERAL OPTIONS</title>
+	<variablelist>
+		<varlistentry><term>help</term><listitem><para>Get help on commands</para></listitem></varlistentry>
+		<varlistentry><term>?</term><listitem><para>Get help on commands</para></listitem></varlistentry>
+		<varlistentry><term>debuglevel</term><listitem><para>Set debug level</para></listitem></varlistentry>
+		<varlistentry><term>debug</term><listitem><para>Set debug level</para></listitem></varlistentry>
+		<varlistentry><term>list</term><listitem><para>List available commands on pipe</para></listitem></varlistentry>
+		<varlistentry><term>exit</term><listitem><para>Exit program</para></listitem></varlistentry>
+		<varlistentry><term>quit</term><listitem><para>Exit program</para></listitem></varlistentry>
+		<varlistentry><term>sign</term><listitem><para>Force RPC pipe connections to be signed</para></listitem></varlistentry>
+		<varlistentry><term>seal</term><listitem><para>Force RPC pipe connections to be sealed</para></listitem></varlistentry>
+		<varlistentry><term>packet</term><listitem><para>Force RPC pipe connections with packet authentication level</para></listitem></varlistentry>
+		<varlistentry><term>schannel</term><listitem><para>Force RPC pipe connections to be sealed with 'schannel'. Force RPC pipe connections to be sealed with 'schannel'. Assumes valid machine account to this domain controller.</para></listitem></varlistentry>
+		<varlistentry><term>schannelsign</term><listitem><para>Force RPC pipe connections to be signed (not sealed) with 'schannel'. Assumes valid machine account to this domain controller.</para></listitem></varlistentry>
+		<varlistentry><term>timeout</term><listitem><para>Set timeout (in milliseconds) for RPC operations</para></listitem></varlistentry>
+		<varlistentry><term>transport</term><listitem><para>Choose ncacn transport for RPC operations</para></listitem></varlistentry>
+		<varlistentry><term>none</term><listitem><para>Force RPC pipe connections to have no special properties</para></listitem></varlistentry>
 	</variablelist>
 	</refsect2>
 
