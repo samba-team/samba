@@ -1355,7 +1355,7 @@ for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_membe
 
 # Offline logon (ad_member)
 plantestsuite("samba.blackbox.offline_logon",
-              "ad_member_offline_logon",
+              "ad_member_offlogon",
               [os.path.join(bbdir, "test_offline_logon.sh"),
                '$DOMAIN',
                'alice', 'Secret007',

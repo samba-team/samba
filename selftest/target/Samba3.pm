@@ -238,7 +238,7 @@ sub check_env($$)
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
 	ad_member_fips      => ["ad_dc_fips"],
-	ad_member_offline_logon => ["ad_dc"],
+	ad_member_offlogon  => ["ad_dc"],
 
 	clusteredmember => ["nt4_dc"],
 );
@@ -1329,7 +1329,7 @@ sub setup_ad_member_fips
 					  1);
 }
 
-sub setup_ad_member_offline_logon
+sub setup_ad_member_offlogon
 {
 	my ($self,
 	    $prefix,
