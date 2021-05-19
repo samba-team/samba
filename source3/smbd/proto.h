@@ -719,6 +719,7 @@ void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 bool fsp_lease_update(struct files_struct *fsp);
+const struct smb2_lease *fsp_get_smb2_lease(const struct files_struct *fsp);
 NTSTATUS downgrade_lease(struct smbXsrv_client *client,
 			uint32_t num_file_ids,
 			const struct file_id *ids,

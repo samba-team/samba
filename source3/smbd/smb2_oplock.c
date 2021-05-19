@@ -1893,3 +1893,14 @@ NTSTATUS delay_for_handle_lease_break_recv(struct tevent_req *req,
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
+
+const struct smb2_lease *fsp_get_smb2_lease(const struct files_struct *fsp)
+{
+	if (fsp == NULL) {
+		return NULL;
+	}
+	if (fsp->lease == NULL) {
+		return NULL;
+	}
+	return &fsp->lease->lease;
+}
