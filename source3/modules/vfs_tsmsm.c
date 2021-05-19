@@ -358,10 +358,11 @@ static ssize_t tsmsm_pread_recv(struct tevent_req *req,
 	if (state->ret >= 0 && state->was_offline) {
 		struct files_struct *fsp = state->fsp;
 		notify_fname(fsp->conn,
-			     NOTIFY_ACTION_MODIFIED,
+			     NOTIFY_ACTION_MODIFIED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
@@ -425,10 +426,11 @@ static ssize_t tsmsm_pwrite_recv(struct tevent_req *req,
 	if (state->ret >= 0 && state->was_offline) {
 		struct files_struct *fsp = state->fsp;
 		notify_fname(fsp->conn,
-			     NOTIFY_ACTION_MODIFIED,
+			     NOTIFY_ACTION_MODIFIED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
@@ -461,10 +463,10 @@ static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct
 	       what we can do is to send notification that file became online
 	    */
 	    notify_fname(handle->conn,
-			 NOTIFY_ACTION_MODIFIED,
+			 NOTIFY_ACTION_MODIFIED | NOTIFY_ACTION_DIRLEASE_BREAK,
 			 FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			 fsp->fsp_name,
-			 NULL);
+			 fsp_get_smb2_lease(fsp));
 	}
 
 	return result;
@@ -481,10 +483,10 @@ static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struc
 	       what we can do is to send notification that file became online
 	    */
 	    notify_fname(handle->conn,
-			 NOTIFY_ACTION_MODIFIED,
+			 NOTIFY_ACTION_MODIFIED | NOTIFY_ACTION_DIRLEASE_BREAK,
 			 FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			 fsp->fsp_name,
-			 NULL);
+			 fsp_get_smb2_lease(fsp));
 	}
 
 	return result;
