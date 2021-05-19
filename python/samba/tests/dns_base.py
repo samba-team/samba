@@ -165,11 +165,11 @@ class DNSTest(TestCaseInTempDir):
         self.assertEqual(my_packet, recv_packet[2:])
         return (response, recv_packet[2:])
 
-    def make_txt_update(self, prefix, txt_array, domain=None):
+    def make_txt_update(self, prefix, txt_array, zone=None, ttl=900):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
-        name = domain or self.get_dns_domain()
+        name = zone or self.get_dns_domain()
         u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
         updates.append(u)
         self.finish_name_packet(p, updates)
@@ -179,7 +179,7 @@ class DNSTest(TestCaseInTempDir):
         r.name = "%s.%s" % (prefix, name)
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_IN
-        r.ttl = 900
+        r.ttl = ttl
         r.length = 0xffff
         rdata = self.make_txt_record(txt_array)
         r.rdata = rdata
