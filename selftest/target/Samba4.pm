@@ -599,7 +599,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{logdir} = "$prefix_abs/logs";
 	$ctx->{statedir} = "$prefix_abs/statedir";
 	$ctx->{cachedir} = "$prefix_abs/cachedir";
-	$ctx->{winbindd_socket_dir} = "$prefix_abs/winbindd_socket";
+	$ctx->{winbindd_socket_dir} = "$prefix_abs/wbsock";
 	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
