@@ -401,6 +401,7 @@ struct interface {
 #define NOTIFY_ACTION_ADDED_STREAM 6
 #define NOTIFY_ACTION_REMOVED_STREAM 7
 #define NOTIFY_ACTION_MODIFIED_STREAM 8
+#define NOTIFY_ACTION_DIRLEASE_BREAK 256 /* Flag ORed to the above actions */
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((const char *)(buf))+4)
