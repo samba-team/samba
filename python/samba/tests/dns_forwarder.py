@@ -23,10 +23,9 @@ import samba
 import time
 import errno
 import samba.ndr as ndr
-from samba import credentials, param
+from samba import credentials
 from samba.tests import TestCase
-from samba.dcerpc import dns, dnsp, dnsserver
-from samba.dnsserver import TXTRecord
+from samba.dcerpc import dns, dnsp
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
 import optparse
@@ -63,15 +62,6 @@ server_ip = args[1]
 dns_servers = args[2:]
 
 creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
-
-
-def make_txt_record(records):
-    rdata_txt = dns.txt_record()
-    s_list = dnsp.string_list()
-    s_list.count = len(records)
-    s_list.str = records
-    rdata_txt.txt = s_list
-    return rdata_txt
 
 
 class DNSTest(TestCase):
