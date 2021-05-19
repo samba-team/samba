@@ -185,10 +185,28 @@ class SegfaultTests(samba.tests.TestCase):
         """Inline arrays were incorrectly handled."""
         dnsserver.DNS_RPC_SERVER_INFO_DOTNET().pExtensions
 
-    @no_gdb_backtrace
     @segfault_detector
     def test_dcerpc_idl_set_inline_arrays(self):
         """Setting an inline array was incorrectly handled."""
         a = dnsserver.DNS_EXTENSION();
         x = dnsserver.DNS_RPC_DP_INFO();
         x.pwszReserved = [a, a, a]
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_dnsp_string_list(self):
+        from samba.dcerpc import dnsp
+        # We segfault if s.count is greater than the length of s.str
+        s = dnsp.string_list()
+        s.count = 3
+        s.str
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_dns_record(self):
+        from samba.dnsserver import TXTRecord
+        from samba.dcerpc import dnsp, dnsserver
+        # there are many others here
+        rec = TXTRecord(["a", "b", "c"])
+        rec.wType = dnsp.DNS_TYPE_A
+        rec.data
