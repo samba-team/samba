@@ -228,6 +228,27 @@ GROUP:&lt;sid or name&gt;
 ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 </programlisting></para>
   
+	<para>Control bits related to automatic inheritance</para>
+
+
+	<itemizedlist>
+		<listitem><para><emphasis>OD</emphasis> - "Owner Defaulted" - Indicates that the SID of the owner of the security descriptor was provided by a default mechanism.</para></listitem>
+		<listitem><para><emphasis>GD</emphasis> - "Group Defaulted" - Indicates that the SID of the security descriptor group was provided by a default mechanism.</para></listitem>
+		<listitem><para><emphasis>DP</emphasis> - "DACL Present" - Indicates a security descriptor that has a discretionary access control list (DACL).</para></listitem>
+		<listitem><para><emphasis>DD</emphasis> - "DACL Defaulted" - Indicates a security descriptor with a default DACL.</para></listitem>
+		<listitem><para><emphasis>SP</emphasis> - "SACL Present" - Indicates a security descriptor that has a system access control list (SACL).</para></listitem>
+		<listitem><para><emphasis>SD</emphasis> - "SACL Defaulted" - A default mechanism, rather than the original provider of the security descriptor, provided the SACL.</para></listitem>
+		<listitem><para><emphasis>DT</emphasis> - "DACL Trusted"</para></listitem>
+		<listitem><para><emphasis>SS</emphasis> - "Server Security"</para></listitem>
+		<listitem><para><emphasis>DR</emphasis> - "DACL Inheritance Required" - Indicates a required security descriptor in which the DACL is set up to support automatic propagation of inheritable access control entries (ACEs) to existing child objects.</para></listitem>
+		<listitem><para><emphasis>SR</emphasis> - "SACL Inheritance Required" - Indicates a required security descriptor in which the SACL is set up to support automatic propagation of inheritable ACEs to existing child objects.</para></listitem>
+		<listitem><para><emphasis>DI</emphasis> - "DACL Auto Inherited" - Indicates a security descriptor in which the DACL is set up to support automatic propagation of inheritable access control entries (ACEs) to existing child objects.</para></listitem>
+		<listitem><para><emphasis>SI</emphasis> - "SACL Auto Inherited" - Indicates a security descriptor in which the SACL is set up to support automatic propagation of inheritable ACEs to existing child objects.</para></listitem>
+		<listitem><para><emphasis>PD</emphasis> - "DACL Protected" - Prevents the DACL of the security descriptor from being modified by inheritable ACEs.</para></listitem>
+		<listitem><para><emphasis>PS</emphasis> - "SACL Protected" - Prevents the SACL of the security descriptor from being modified by inheritable ACEs.</para></listitem>
+		<listitem><para><emphasis>RM</emphasis> - "RM Control Valid" - Indicates that the resource manager control is valid.</para></listitem>
+		<listitem><para><emphasis>SR</emphasis> - "Self Relative" - Indicates a self-relative security descriptor.</para></listitem>
+	</itemizedlist>
 
 	<para>The revision of the ACL specifies the internal Windows 
 	NT ACL revision for the security descriptor.  
@@ -260,6 +281,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 		<listitem><para><emphasis>(CI)</emphasis> Container Inherit  	0x2</para></listitem>
 		<listitem><para><emphasis>(NP)</emphasis> No Propagate Inherit	0x4</para></listitem>
 		<listitem><para><emphasis>(IO)</emphasis> Inherit Only       	0x8</para></listitem>
+		<listitem><para><emphasis>(I)</emphasis> ACE was inherited     0x10</para></listitem>
  	</itemizedlist>
   
  
