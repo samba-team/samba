@@ -561,7 +561,7 @@ struct cmd_set witness_commands[] = {
 		.wfn                = &cmd_witness_GetInterfaceList,
 		.table              = &ndr_table_witness,
 		.rpc_pipe           = NULL,
-		.description        = "",
+		.description        = "List the interfaces to which witness client connections can be made",
 		.usage              = "",
 	},
 	{
@@ -571,7 +571,7 @@ struct cmd_set witness_commands[] = {
 		.wfn                = &cmd_witness_Register,
 		.table              = &ndr_table_witness,
 		.rpc_pipe           = NULL,
-		.description        = "",
+		.description        = "Register for resource state change notifications of a NetName and IPAddress",
 		.usage              = "",
 	},
 	{
@@ -581,7 +581,7 @@ struct cmd_set witness_commands[] = {
 		.wfn                = &cmd_witness_UnRegister,
 		.table              = &ndr_table_witness,
 		.rpc_pipe           = NULL,
-		.description        = "",
+		.description        = "Unregister for notifications from the server</para></listitem></varlistentry>",
 		.usage              = "",
 	},
 	{
@@ -591,7 +591,7 @@ struct cmd_set witness_commands[] = {
 		.wfn                = &cmd_witness_AsyncNotify,
 		.table              = &ndr_table_witness,
 		.rpc_pipe           = NULL,
-		.description        = "",
+		.description        = "Request notification of registered resource changes from the server",
 		.usage              = "",
 	},
 	{
@@ -601,7 +601,7 @@ struct cmd_set witness_commands[] = {
 		.wfn                = &cmd_witness_RegisterEx,
 		.table              = &ndr_table_witness,
 		.rpc_pipe           = NULL,
-		.description        = "",
+		.description        = "Register for resource state change notifications of a NetName, ShareName and multiple IPAddresses",
 		.usage              = "",
 	},
 	{
