@@ -4182,7 +4182,8 @@ class cmd_domain_schema_upgrade(Command):
                                              stderr=subprocess.PIPE, cwd=temp_folder)
                     except (OSError, IOError):
                         shutil.rmtree(temp_folder)
-                        raise CommandError("Failed to upgrade schema. Check if 'patch' is installed.")
+                        raise CommandError("Failed to upgrade schema. "
+                                           "Is '/usr/bin/patch' missing?")
 
                     stdout, stderr = p.communicate()
 
