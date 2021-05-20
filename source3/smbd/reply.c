@@ -7560,6 +7560,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename *parent_dir_fname_dst = NULL;
+	struct smb_filename *parent_dir_fname_dst_atname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
@@ -7784,12 +7786,24 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		/* We're moving a directory. */
 		access_mask = SEC_DIR_ADD_SUBDIR;
 	}
-	status = check_parent_access(conn,
+
+	/*
+	 * Get a pathref on the parent directory, so
+	 * we can call check_parent_access_fsp().
+	 */
+	status = parent_pathref(ctx,
 				conn->cwd_fsp,
 				smb_fname_dst,
+				&parent_dir_fname_dst,
+				&parent_dir_fname_dst_atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = check_parent_access_fsp(parent_dir_fname_dst->fsp,
 				access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("check_parent_access on "
+		DBG_INFO("check_parent_access_fsp on "
 			"dst %s returned %s\n",
 			smb_fname_str_dbg(smb_fname_dst),
 			nt_errstr(status));
