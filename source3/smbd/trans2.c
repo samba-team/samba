@@ -59,36 +59,19 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf);
 
 /****************************************************************************
- Check if an open file handle or smb_fname is a symlink.
+ Check if an open file handle is a symlink.
 ****************************************************************************/
 
-static NTSTATUS refuse_symlink(connection_struct *conn,
-			const files_struct *fsp,
-			const struct smb_filename *smb_fname)
+static NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
 {
-	SMB_STRUCT_STAT sbuf;
-	const SMB_STRUCT_STAT *pst = NULL;
 
-	if (fsp) {
-		pst = &fsp->fsp_name->st;
-	} else {
-		pst = &smb_fname->st;
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	if (!VALID_STAT(*pst)) {
-		int ret = vfs_stat_smb_basename(conn,
-				smb_fname,
-				&sbuf);
-		if (ret == -1 && errno != ENOENT) {
-			return map_nt_error_from_unix(errno);
-		} else if (ret == -1) {
-			/* it's not a symlink.. */
-			return NT_STATUS_OK;
-		}
-		pst = &sbuf;
+	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	if (S_ISLNK(pst->st_ex_mode)) {
+	if (fsp_get_pathref_fd(fsp) == -1) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
@@ -762,7 +745,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
-	status = refuse_symlink(conn, fsp, fsp->fsp_name);
+	status = refuse_symlink_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5008,9 +4991,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 
 	SMB_ASSERT(fsp != NULL);
 
-	status = refuse_symlink(conn,
-				fsp,
-				fsp->fsp_name);
+	status = refuse_symlink_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -7662,7 +7643,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	/* Here we know fsp != NULL */
 	SMB_ASSERT(fsp != NULL);
 
-	status = refuse_symlink(conn, fsp, fsp->fsp_name);
+	status = refuse_symlink_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
