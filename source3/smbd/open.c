@@ -4440,16 +4440,13 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 				 parent_dir_fname);
 	}
 
-	status = check_parent_access(conn,
-				     conn->cwd_fsp,
-				     smb_dname,
-				     access_mask);
+	status = check_parent_access_fsp(parent_dir_fname->fsp, access_mask);
 	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("mkdir_internal: check_parent_access "
+		DBG_INFO("check_parent_access_fsp "
 			"on directory %s for path %s returned %s\n",
 			smb_fname_str_dbg(parent_dir_fname),
 			smb_dname->base_name,
-			nt_errstr(status) ));
+			nt_errstr(status));
 		TALLOC_FREE(parent_dir_fname);
 		return status;
 	}
