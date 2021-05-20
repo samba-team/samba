@@ -62,7 +62,7 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
  Check if an open file handle is a symlink.
 ****************************************************************************/
 
-static NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
+NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
 {
 
 	if (!VALID_STAT(fsp->fsp_name->st)) {
