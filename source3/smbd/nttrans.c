@@ -999,10 +999,11 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		return NT_STATUS_OK;
 	}
 
-	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-		DEBUG(10, ("ACL set on symlink %s denied.\n",
-			fsp_str_dbg(fsp)));
-		return NT_STATUS_ACCESS_DENIED;
+	status = refuse_symlink_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("ACL set on symlink %s denied.\n",
+			fsp_str_dbg(fsp));
+		return status;
 	}
 
 	if (psd->owner_sid == NULL) {
@@ -2159,11 +2160,12 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-		DEBUG(10, ("ACL get on symlink %s denied.\n",
-			fsp_str_dbg(fsp)));
+	status = refuse_symlink_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("ACL get on symlink %s denied.\n",
+			fsp_str_dbg(fsp));
 		TALLOC_FREE(frame);
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 
 	if (security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|
