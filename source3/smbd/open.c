@@ -463,6 +463,111 @@ out:
 	return status;
 }
 
+/*
+ * Given an fsp that represents a parent directory,
+ * check if the requested access can be granted.
+ */
+NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
+				 uint32_t access_mask)
+{
+	NTSTATUS status;
+	struct security_descriptor *parent_sd = NULL;
+	uint32_t access_granted = 0;
+	struct share_mode_lock *lck = NULL;
+	uint32_t name_hash;
+	bool delete_on_close_set;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (get_current_uid(fsp->conn) == (uid_t)0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		DBG_DEBUG("root override on %s. Granting 0x%x\n",
+			fsp_str_dbg(fsp),
+			(unsigned int)access_mask);
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+				SECINFO_DACL,
+				frame,
+				&parent_sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("SMB_VFS_FGET_NT_ACL failed for "
+			"%s with error %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check() also takes care of
+	 * owner WRITE_DAC and READ_CONTROL.
+	 */
+	status = se_file_access_check(parent_sd,
+				get_current_nttok(fsp->conn),
+				false,
+				(access_mask & ~FILE_READ_ATTRIBUTES),
+				&access_granted);
+	if(!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("access check "
+			"on directory %s for mask 0x%x returned (0x%x) %s\n",
+			fsp_str_dbg(fsp),
+			access_mask,
+			access_granted,
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (!(access_mask & (SEC_DIR_ADD_FILE | SEC_DIR_ADD_SUBDIR))) {
+		status = NT_STATUS_OK;
+		goto out;
+	}
+	if (!lp_check_parent_directory_delete_on_close(SNUM(fsp->conn))) {
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	/* Check if the directory has delete-on-close set */
+	status = file_name_hash(fsp->conn,
+				fsp->fsp_name->base_name,
+				&name_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/*
+	 * Don't take a lock here. We just need a snapshot
+	 * of the current state of delete on close and this is
+	 * called in a codepath where we may already have a lock
+	 * (and we explicitly can't hold 2 locks at the same time
+	 * as that may deadlock).
+	 */
+	lck = fetch_share_mode_unlocked(frame, fsp->file_id);
+	if (lck == NULL) {
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	delete_on_close_set = is_delete_on_close_set(lck, name_hash);
+	if (delete_on_close_set) {
+		status = NT_STATUS_DELETE_PENDING;
+		goto out;
+	}
+
+	status = NT_STATUS_OK;
+
+out:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  Ensure when opening a base file for a stream open that we have permissions
  to do so given the access mask on the base file.
