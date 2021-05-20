@@ -1302,51 +1302,27 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
  Set a create time EA.
 ******************************************************************/
 
-NTSTATUS set_create_timespec_ea(connection_struct *conn,
-				const struct smb_filename *psmb_fname,
+NTSTATUS set_create_timespec_ea(struct files_struct *fsp,
 				struct timespec create_time)
 {
-	struct smb_filename *smb_fname;
 	uint32_t dosmode;
 	int ret;
-	NTSTATUS status;
 
-	if (!lp_store_dos_attributes(SNUM(conn))) {
+	if (!lp_store_dos_attributes(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
-	status = synthetic_pathref(talloc_tos(),
-					conn->cwd_fsp,
-					psmb_fname->base_name,
-					NULL,
-					NULL,
-					psmb_fname->twrp,
-					psmb_fname->flags,
-					&smb_fname);
+	dosmode = fdos_mode(fsp);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	dosmode = fdos_mode(psmb_fname->fsp);
-
-	smb_fname->st.st_ex_btime = create_time;
-	/*
-	 * ensure if we pass fsp around we can get the create time
-	 * from fsp->fsp_name
-	 */
-	smb_fname->fsp->fsp_name->st.st_ex_btime = create_time;
-
-	ret = file_set_dosmode(conn, smb_fname, dosmode, NULL, false);
+	fsp->fsp_name->st.st_ex_btime = create_time;
+	ret = file_set_dosmode(fsp->conn, fsp->fsp_name, dosmode, NULL, false);
 	if (ret == -1) {
-		TALLOC_FREE(smb_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
-	DEBUG(10,("set_create_timespec_ea: wrote create time EA for file %s\n",
-		smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("wrote create time EA for file %s\n",
+		smb_fname_str_dbg(fsp->fsp_name));
 
-	TALLOC_FREE(smb_fname);
 	return NT_STATUS_OK;
 }
 

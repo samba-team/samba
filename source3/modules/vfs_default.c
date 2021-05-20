@@ -2541,8 +2541,7 @@ static int vfswrap_fntimes(vfs_handle_struct *handle,
 		}
 
 		if (!is_omit_timespec(&ft->create_time)) {
-			set_create_timespec_ea(handle->conn,
-					       fsp->fsp_name,
+			set_create_timespec_ea(fsp,
 					       ft->create_time);
 		}
 

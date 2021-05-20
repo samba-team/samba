@@ -297,8 +297,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			      const struct smb_filename *smb_fname,
 			      uint32_t dosmode);
 
-NTSTATUS set_create_timespec_ea(connection_struct *conn,
-				const struct smb_filename *smb_fname,
+NTSTATUS set_create_timespec_ea(struct files_struct *fsp,
 				struct timespec create_time);
 
 struct timespec get_create_timespec(connection_struct *conn,
