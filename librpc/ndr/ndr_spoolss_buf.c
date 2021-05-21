@@ -1084,7 +1084,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo101(struct ndr_pull *ndr, 
 #else
 			NDR_CHECK(ndr_token_store(ndr, &ndr->array_size_list, &r->file_info, r->file_count));
 #endif
-			NDR_PULL_ALLOC_N(ndr, r->file_info, ndr_get_array_size(ndr, &r->file_info));
+			NDR_PULL_ALLOC_N(ndr, r->file_info, r->file_count);
 			_mem_save_file_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->file_info, 0);
 			for (cntr_file_info_1 = 0; cntr_file_info_1 < r->file_count; cntr_file_info_1++) {
