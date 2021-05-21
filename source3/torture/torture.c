@@ -14956,6 +14956,10 @@ static struct {
 		.fn    = run_posix_symlink_chmod_test,
 	},
 	{
+		.name  = "POSIX-SYMLINK-RENAME",
+		.fn    = run_posix_symlink_rename_test,
+	},
+	{
 		.name  = "POSIX-DIR-DEFAULT-ACL",
 		.fn    = run_posix_dir_default_acl_test,
 	},
