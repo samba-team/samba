@@ -7829,33 +7829,25 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		    (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))))
 		{
-			struct smb_filename *pathref = NULL;
-			status = synthetic_pathref(ctx,
-						conn->cwd_fsp,
-						smb_fname_dst->base_name,
-						smb_fname_dst->stream_name,
-						NULL,
-						smb_fname_dst->twrp,
-						smb_fname_dst->flags,
-						&pathref);
-			if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * We must set the archive bit on the newly renamed
+			 * file.
+			 */
+			ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+			if (ret == 0) {
+				uint32_t old_dosmode;
+				old_dosmode = fdos_mode(fsp);
 				/*
-				 * We must set the archive bit on the newly renamed
-				 * file.
+				 * We can use fsp->fsp_name here as it has
+				 * already been changed to the new name.
 				 */
-				ret = SMB_VFS_FSTAT(fsp, &pathref->st);
-				if (ret == 0) {
-					uint32_t old_dosmode;
-					fsp->fsp_name->st = pathref->st;
-					old_dosmode = fdos_mode(fsp);
-					file_set_dosmode(conn,
-							pathref,
-							old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
-							NULL,
-							true);
-				}
+				SMB_ASSERT(fsp->fsp_name->fsp == fsp);
+				file_set_dosmode(conn,
+						fsp->fsp_name,
+						old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
+						NULL,
+						true);
 			}
-			TALLOC_FREE(pathref);
 		}
 
 		/*
