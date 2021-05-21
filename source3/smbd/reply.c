@@ -8044,7 +8044,19 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
 		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
+			if (!NT_STATUS_EQUAL(status,
+					NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				goto out;
+			}
+			/*
+			 * Possible symlink src.
+			 */
+			if (!(smb_fname_src->flags & SMB_FILENAME_POSIX_PATH)) {
+				goto out;
+			}
+			if (!S_ISLNK(smb_fname_src->st.st_ex_mode)) {
+				goto out;
+			}
 		}
 
 		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
