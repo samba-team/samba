@@ -7587,7 +7587,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	if (smb_fname_dst_in)
 
 	/*
 	 * Check for special case with case preserving and not
