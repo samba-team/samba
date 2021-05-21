@@ -1100,7 +1100,7 @@ _PUBLIC_ enum ndr_err_code ndr_get_array_size(struct ndr_pull *ndr, const void *
 /*
   check the stored array size field
 */
-_PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
+_PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, const void *p, uint32_t size)
 {
 	uint32_t stored;
 	NDR_CHECK(ndr_token_peek(&ndr->array_size_list, p, &stored));
@@ -1145,7 +1145,7 @@ _PUBLIC_ enum ndr_err_code ndr_get_array_length(struct ndr_pull *ndr, const void
 /*
   check the stored array length field
 */
-_PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
+_PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, const void *p, uint32_t length)
 {
 	uint32_t stored;
 	NDR_CHECK(ndr_token_peek(&ndr->array_length_list, p, &stored));
