@@ -659,7 +659,9 @@ enum ndr_err_code ndr_get_array_size(struct ndr_pull *ndr, const void *p, uint32
 enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, const void *p, uint32_t size);
 enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_get_array_length(struct ndr_pull *ndr, const void *p, uint32_t *length);
+enum ndr_err_code ndr_steal_array_length(struct ndr_pull *ndr, const void *p, uint32_t *length);
 enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, const void *p, uint32_t length);
+enum ndr_err_code ndr_check_steal_array_length(struct ndr_pull *ndr, const void *p, uint32_t length);
 enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, int ndr_flags, uint32_t count);
 enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_flags, uint32_t count);
 enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val);

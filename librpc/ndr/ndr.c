@@ -1143,12 +1143,21 @@ _PUBLIC_ enum ndr_err_code ndr_get_array_length(struct ndr_pull *ndr, const void
 }
 
 /*
-  check the stored array length field
+ * check the stored array length field and remove from the stored list
+ * (the array_size NDR token list).  We try to remove when possible to
+ * avoid the list growing towards the bounds check
+ */
+_PUBLIC_ enum ndr_err_code ndr_steal_array_length(struct ndr_pull *ndr, const void *p, uint32_t *length)
+{
+	return ndr_token_retrieve(&ndr->array_length_list, p, length);
+}
+/*
+  check the stored array length field, removing it from the list
 */
-_PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, const void *p, uint32_t length)
+_PUBLIC_ enum ndr_err_code ndr_check_steal_array_length(struct ndr_pull *ndr, const void *p, uint32_t length)
 {
 	uint32_t stored;
-	NDR_CHECK(ndr_token_peek(&ndr->array_length_list, p, &stored));
+	NDR_CHECK(ndr_steal_array_length(ndr, p, &stored));
 	if (stored != length) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array length - got %u expected %u\n",

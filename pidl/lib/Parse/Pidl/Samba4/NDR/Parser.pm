@@ -387,8 +387,12 @@ sub ParseArrayPullGetLength($$$$$$;$)
 	}
 
 	my $array_length = "length_$e->{NAME}_$l->{LEVEL_INDEX}";
-
-	$self->pidl("NDR_CHECK(ndr_get_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", &$array_length));");
+	if ($l->{IS_VARYING} and (defined($l->{LENGTH_IS}) or not $l->{IS_ZERO_TERMINATED})) {
+		$self->pidl("NDR_CHECK(ndr_get_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", &$array_length));");
+	} else {
+		# This will be the last use of the array_length token
+		$self->pidl("NDR_CHECK(ndr_steal_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", &$array_length));");
+	}
 
 	if (my $range = has_property($e, "range")) {
 		my ($low, $high) = parse_range($range);
@@ -451,7 +455,8 @@ sub ParseArrayPullHeader($$$$$$)
 			check_null_pointer($e, $env, sub { $self->defer(shift); },
 					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for length_is()\");"),
 			check_fully_dereferenced($e, $env));
-		$self->defer("NDR_CHECK(ndr_check_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", $length));");
+		# This will be deferred until after the last ndr_get_array_length()
+		$self->defer("NDR_CHECK(ndr_check_steal_array_length($ndr, (void*)" . get_pointer_to($var_name) . ", $length));");
 		$self->defer_deindent;
 		$self->defer("}");
 	}
