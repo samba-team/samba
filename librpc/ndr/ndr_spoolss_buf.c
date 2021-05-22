@@ -1227,7 +1227,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo101(struct ndr_pull *ndr, 
 			ndr->flags = _flags_save_string;
 		}
 		if (r->file_info) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->file_info, r->file_count));
+			NDR_CHECK(ndr_check_steal_array_size(ndr, (void*)&r->file_info, r->file_count));
 		}
 	}
 	return NDR_ERR_SUCCESS;

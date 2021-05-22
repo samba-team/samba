@@ -99,7 +99,7 @@ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flag
 		}
 #if 0
 		if (r->blob.data) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->blob.data, r->blob.length));
+			NDR_CHECK(ndr_check_steal_array_size(ndr, (void*)&r->blob.data, r->blob.length));
 		}
 #endif
 	}
@@ -179,7 +179,7 @@ enum ndr_err_code ndr_pull_negoex_AUTH_SCHEME_VECTOR(struct ndr_pull *ndr, int n
 		}
 #if 0
 		if (r->array) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->array, r->count));
+			NDR_CHECK(ndr_check_steal_array_size(ndr, (void*)&r->array, r->count));
 		}
 #endif
 	}
@@ -265,7 +265,7 @@ enum ndr_err_code ndr_pull_negoex_EXTENSION_VECTOR(struct ndr_pull *ndr, int ndr
 		}
 #if 0
 		if (r->array) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->array, r->count));
+			NDR_CHECK(ndr_check_steal_array_size(ndr, (void*)&r->array, r->count));
 		}
 #endif
 	}
@@ -351,7 +351,7 @@ enum ndr_err_code ndr_pull_negoex_ALERT_VECTOR(struct ndr_pull *ndr, int ndr_fla
 		}
 #if 0
 		if (r->array) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->array, r->count));
+			NDR_CHECK(ndr_check_steal_array_size(ndr, (void*)&r->array, r->count));
 		}
 #endif
 	}
