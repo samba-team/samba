@@ -1103,7 +1103,7 @@ _PUBLIC_ enum ndr_err_code ndr_get_array_size(struct ndr_pull *ndr, const void *
 _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, const void *p, uint32_t size)
 {
 	uint32_t stored;
-	NDR_CHECK(ndr_token_peek(&ndr->array_size_list, p, &stored));
+	NDR_CHECK(ndr_get_array_size(ndr, p, &stored));
 	if (stored != size) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array size - got %u expected %u\n",
