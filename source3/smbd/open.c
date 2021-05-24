@@ -4400,7 +4400,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 }
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
-			       struct smb_filename *smb_dname,
+			       struct smb_filename *parent_dir_fname_in, /* parent. */
+			       struct smb_filename *smb_fname_atname_in, /* atname relative to parent. */
+			       struct smb_filename *smb_dname, /* full pathname from root of share. */
 			       uint32_t file_attributes,
 			       struct files_struct *fsp)
 {
@@ -4656,6 +4658,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 			}
 
 			status = mkdir_internal(conn,
+						parent_dir_fname,
+						smb_fname_atname,
 						smb_dname,
 						file_attributes,
 						fsp);
@@ -4682,6 +4686,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 				info = FILE_WAS_OPENED;
 			} else {
 				status = mkdir_internal(conn,
+							parent_dir_fname,
+							smb_fname_atname,
 							smb_dname,
 							file_attributes,
 							fsp);
