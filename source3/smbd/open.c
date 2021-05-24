@@ -3622,7 +3622,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
-	struct smb_filename *parent_dir_fname = NULL;
+	struct smb_filename *parent_dir_fname = parent_dir_fname_in;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	bool setup_poll = false;
@@ -3649,15 +3649,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		return print_spool_open(fsp, smb_fname->base_name,
 					req->vuid);
-	}
-
-	status = SMB_VFS_PARENT_PATHNAME(conn,
-					 talloc_tos(),
-					 smb_fname,
-					 &parent_dir_fname,
-					 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
