@@ -4409,8 +4409,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	mode_t mode;
-	struct smb_filename *parent_dir_fname = NULL;
-	struct smb_filename *base_name = NULL;
+	struct smb_filename *parent_dir_fname = parent_dir_fname_in;
+	struct smb_filename *base_name = smb_fname_atname_in;
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
@@ -4421,15 +4421,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		DEBUG(5,("mkdir_internal: failing share access "
 			 "%s\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				smb_dname,
-				&parent_dir_fname,
-				&base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
@@ -4449,7 +4440,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			smb_fname_str_dbg(parent_dir_fname),
 			smb_dname->base_name,
 			nt_errstr(status));
-		TALLOC_FREE(parent_dir_fname);
 		return status;
 	}
 
@@ -4466,7 +4456,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			      base_name,
 			      mode);
 	if (ret != 0) {
-		TALLOC_FREE(parent_dir_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -4478,7 +4467,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	status = fd_openat(conn->cwd_fsp, smb_dname, fsp, O_RDONLY | O_DIRECTORY, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(parent_dir_fname);
 		return status;
 	}
 
@@ -4488,14 +4476,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (SMB_VFS_FSTAT(fsp, &smb_dname->st) == -1) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), strerror(errno)));
-		TALLOC_FREE(parent_dir_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
 		DEBUG(0, ("Directory '%s' just created is not a directory !\n",
 			  smb_fname_str_dbg(smb_dname)));
-		TALLOC_FREE(parent_dir_fname);
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
@@ -4546,8 +4532,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 					   &smb_dname->st);
 		need_re_stat = true;
 	}
-
-	TALLOC_FREE(parent_dir_fname);
 
 	if (need_re_stat) {
 		if (SMB_VFS_FSTAT(fsp, &smb_dname->st) == -1) {
