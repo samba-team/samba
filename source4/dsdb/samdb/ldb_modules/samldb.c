@@ -4327,7 +4327,7 @@ static int samldb_extended_create_own_rid_set(struct ldb_module *module, struct 
 
 	if (req->op.extended.data != NULL) {
 		ldb_set_errstring(ldb,
-				  "samldb_extended_allocate_rid_pool_for_us: invalid extended data (should be NULL)");
+				  "samldb_extended_create_own_rid_set: invalid extended data (should be NULL)");
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
