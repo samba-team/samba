@@ -5722,6 +5722,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	int ret;
+	struct smb_filename *parent_dir_fname = NULL;
+	struct smb_filename *smb_fname_atname = NULL;
 
 	DBG_DEBUG("create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -6026,6 +6028,20 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	/*
+	 * Get a pathref on the parent. We can re-use this
+	 * for multiple calls to check parent ACLs etc. to
+	 * avoid pathname calls.
+	 */
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_dir_fname,
+				&smb_fname_atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
@@ -6219,6 +6235,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	smb_fname->st = fsp->fsp_name->st;
 
+	TALLOC_FREE(parent_dir_fname);
+
 	return NT_STATUS_OK;
 
  fail:
@@ -6237,6 +6255,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		close_file(req, base_fsp, ERROR_CLOSE);
 		base_fsp = NULL;
 	}
+
+	TALLOC_FREE(parent_dir_fname);
+
 	return status;
 }
 
