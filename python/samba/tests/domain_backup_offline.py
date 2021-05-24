@@ -19,9 +19,12 @@ import tarfile
 import os
 import shutil
 import tempfile
-from samba.tests import BlackboxTestCase
+from samba.tests import BlackboxTestCase, BlackboxProcessError
 from samba.netcmd import CommandError
 from samba.param import LoadParm
+from samba.join import join_DC
+from samba.credentials import Credentials
+from samba.logger import get_samba_logger
 
 # The backup tests require that a completely clean LoadParm object gets used
 # for the restore. Otherwise the same global LP gets re-used, and the LP
@@ -61,6 +64,23 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
         tf = tarfile.open(backup_file)
         names = tf.getnames()
         self.assertEqual(len(names), len(set(names)))
+
+    def test_domain_backup_offline_join_restore_tdb(self):
+        self.join_restore_testcase('tdb')
+
+    def test_domain_backup_offline_join_restore_mdb(self):
+        self.join_restore_testcase('mdb')
+
+    def join_restore_testcase(self, backend):
+        self.prov_dir = self.join(backend)
+        self.extract_dir = None
+
+        try:
+            backup_file = self.backup(self.prov_dir)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.extract_dir = self.restore(backup_file)
 
     def test_domain_backup_offline_hard_link_tdb(self):
         self.hard_link_testcase('tdb')
@@ -107,12 +127,7 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
         self.extract_dir = None
         backup_file = self.backup(self.prov_dir)
 
-        self.extract_dir = tempfile.mkdtemp(dir=self.tempdir)
-        cmd = ("samba-tool domain backup restore --backup-file={f}"
-               " --targetdir={d} "
-               "--newservername=NEWSERVER").format(f=backup_file,
-                                                   d=self.extract_dir)
-        self.check_output(cmd)
+        self.extract_dir = self.restore(backup_file)
 
         # attrs that are altered by the restore process
         ignore_attrs = ["servicePrincipalName", "lastLogonTimestamp",
@@ -167,6 +182,27 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
 
         return target
 
+    def join(self, backend):
+        target = tempfile.mkdtemp(dir=self.tempdir)
+
+        join_cmd = "samba-tool domain join {domain} DC " +\
+                   "--server {server} " +\
+                   "--realm {realm} " +\
+                   "--username {username}%{password} " +\
+                   "--targetdir {target} " +\
+                   "--backend-store {backend} " +\
+                   "--option=\"vfs objects=dfs_samba4 acl_xattr fake_acls xattr_tdb\""
+        join_cmd = join_cmd.format(server=os.environ["DC_SERVER"],
+                                   domain=os.environ["DOMAIN"],
+                                   realm=os.environ["REALM"],
+                                   username=os.environ["USERNAME"],
+                                   password=os.environ["PASSWORD"],
+                                   target=target,
+                                   backend=backend)
+        self.check_output(join_cmd)
+
+        return target
+
     def backup(self, prov_dir):
         # Run the backup and check we got one backup tar file
         cmd = ("samba-tool domain backup offline --targetdir={prov_dir} "
@@ -182,6 +218,17 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
 
         backup_file = os.path.join(prov_dir, tar_files[0])
         return backup_file
+
+    def restore(self, backup_file):
+        # Restore from a backup file
+        extract_dir = tempfile.mkdtemp(dir=self.tempdir)
+        cmd = ("samba-tool domain backup restore --backup-file={f}"
+               " --targetdir={d} "
+               "--newservername=NEWSERVER").format(f=backup_file,
+                                                   d=extract_dir)
+        self.check_output(cmd)
+
+        return extract_dir
 
     def tearDown(self):
         # Remove temporary directories
