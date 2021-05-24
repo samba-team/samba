@@ -225,10 +225,10 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	uint16_t flags = 0;
 	bool posix_open = false;
 
-	ZERO_STRUCTP(out_creation_ts);
-	ZERO_STRUCTP(out_last_access_ts);
-	ZERO_STRUCTP(out_last_write_ts);
-	ZERO_STRUCTP(out_change_ts);
+	*out_creation_ts = (struct timespec){0, SAMBA_UTIME_OMIT};
+	*out_last_access_ts = (struct timespec){0, SAMBA_UTIME_OMIT};
+	*out_last_write_ts = (struct timespec){0, SAMBA_UTIME_OMIT};
+	*out_change_ts = (struct timespec){0, SAMBA_UTIME_OMIT};
 
 	*out_flags = 0;
 	*out_allocation_size = 0;
