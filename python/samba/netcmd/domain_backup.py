@@ -602,11 +602,12 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
                                        controls=["show_deleted:0",
                                                  "show_recycled:0"])
             except LdbError as dup_e:
-                if enum != ldb.ERR_NO_SUCH_OBJECT:
-                    raise e
+                (dup_enum, _) = dup_e.args
+                if dup_enum != ldb.ERR_NO_SUCH_OBJECT:
+                    raise
 
             if (len(dup_res) != 1):
-                raise e
+                raise
 
             objectguid = samdb.schema_format_value("objectGUID",
                                                        dup_res[0]["objectGUID"][0])
