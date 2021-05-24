@@ -300,17 +300,28 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
-	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
+	int ret;
+	struct smb_filename *smb_fname =  NULL;
+
+	smb_fname = synthetic_smb_fname_split(frame,
 					fname,
-					NULL,
-					NULL,
-					0,
-					lp_posix_pathnames() ?
-						SMB_FILENAME_POSIX_PATH : 0);
+					lp_posix_pathnames());
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = vfs_stat(conn, smb_fname);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	status = SMB_VFS_GET_NT_ACL_AT(conn,
