@@ -1571,16 +1571,16 @@ static NTSTATUS open_file(files_struct *fsp,
 					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 				}
 
-				status = check_parent_access(conn,
-							conn->cwd_fsp,
-							smb_fname,
+				status = check_parent_access_fsp(
+							parent_dir->fsp,
 							SEC_DIR_ADD_FILE);
 				if (!NT_STATUS_IS_OK(status)) {
-					DEBUG(10, ("open_file: "
-						   "check_parent_access on "
-						   "file %s returned %s\n",
-						   smb_fname_str_dbg(smb_fname),
-						   nt_errstr(status) ));
+					DBG_DEBUG("check_parent_access_fsp on "
+						  "directory %s for file %s "
+						  "returned %s\n",
+						  smb_fname_str_dbg(parent_dir),
+						  smb_fname_str_dbg(smb_fname),
+						  nt_errstr(status));
 					return status;
 				}
 			}
