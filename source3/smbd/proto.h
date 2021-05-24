@@ -340,6 +340,7 @@ bool can_write_to_file(connection_struct *conn,
 bool directory_has_default_acl(connection_struct *conn,
 			struct files_struct *dirfsp,
 			struct smb_filename *smb_fname);
+bool directory_has_default_acl_fsp(struct files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode);
 
 /* The following definitions come from smbd/fileio.c  */

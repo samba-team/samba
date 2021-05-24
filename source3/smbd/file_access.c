@@ -191,6 +191,43 @@ bool directory_has_default_acl(connection_struct *conn,
 }
 
 /****************************************************************************
+ Check for an existing default Windows ACL on a directory fsp.
+****************************************************************************/
+
+bool directory_has_default_acl_fsp(struct files_struct *fsp)
+{
+	struct security_descriptor *secdesc = NULL;
+	unsigned int i;
+	NTSTATUS status;
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+				SECINFO_DACL,
+				talloc_tos(),
+				&secdesc);
+
+	if (!NT_STATUS_IS_OK(status) ||
+	    secdesc == NULL ||
+	    secdesc->dacl == NULL)
+	{
+		TALLOC_FREE(secdesc);
+		return false;
+	}
+
+	for (i = 0; i < secdesc->dacl->num_aces; i++) {
+		struct security_ace *psa = &secdesc->dacl->aces[i];
+
+		if (psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				SEC_ACE_FLAG_CONTAINER_INHERIT))
+		{
+			TALLOC_FREE(secdesc);
+			return true;
+		}
+	}
+	TALLOC_FREE(secdesc);
+	return false;
+}
+
+/****************************************************************************
  Check if setting delete on close is allowed on this fsp.
 ****************************************************************************/
 
