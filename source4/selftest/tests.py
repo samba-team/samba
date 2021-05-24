@@ -931,7 +931,7 @@ for env in ["ad_dc_backup", smbv1_disabled_testenv]:
     planoldpythontestsuite(env + ":local", "samba.tests.domain_backup",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("none",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.domain_backup_offline")
 # Encrypted secrets
 # ensure default provision (ad_dc) and join (vampire_dc)
