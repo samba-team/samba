@@ -972,6 +972,8 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	connection_struct *conn;
 	char *service = NULL;
 	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siO|z",
 					 discard_const_p(char *, kwnames),
@@ -1012,7 +1014,20 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 		TALLOC_FREE(frame);
 		return NULL;
 	}
-	acl = SMB_VFS_SYS_ACL_GET_FILE( conn, smb_fname, acl_type, frame);
+	ret = vfs_stat(conn, smb_fname);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return PyErr_SetFromErrno(PyExc_OSError);
+	}
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp, acl_type, frame);
 	if (!acl) {
 		TALLOC_FREE(frame);
 		return PyErr_SetFromErrno(PyExc_OSError);
