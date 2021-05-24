@@ -4401,7 +4401,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *parent_dir_fname_in, /* parent. */
-			       struct smb_filename *smb_fname_atname_in, /* atname relative to parent. */
+			       struct smb_filename *smb_fname_atname, /* atname relative to parent. */
 			       struct smb_filename *smb_dname, /* full pathname from root of share. */
 			       uint32_t file_attributes,
 			       struct files_struct *fsp)
@@ -4410,7 +4410,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		loadparm_s3_global_substitution();
 	mode_t mode;
 	struct smb_filename *parent_dir_fname = parent_dir_fname_in;
-	struct smb_filename *base_name = smb_fname_atname_in;
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
@@ -4453,7 +4452,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	ret = SMB_VFS_MKDIRAT(conn,
 			      parent_dir_fname->fsp,
-			      base_name,
+			      smb_fname_atname,
 			      mode);
 	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
