@@ -5018,8 +5018,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 			status = NT_STATUS_INVALID_HANDLE;
 			goto out;
 		}
-		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn,
-					fsp->fsp_name,
+		def_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
 					SMB_ACL_TYPE_DEFAULT,
 					talloc_tos());
 		def_acl = free_empty_sys_acl(conn, def_acl);
