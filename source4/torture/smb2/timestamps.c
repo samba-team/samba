@@ -29,6 +29,70 @@
 #define BASEDIR "smb2-timestamps"
 #define FNAME "testfile.dat"
 
+static bool test_close_no_attrib(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	const char *filename = BASEDIR "/" FNAME;
+	struct smb2_create cr;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle testdirh = {{0}};
+	struct smb2_close c;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree, testdirh);
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = filename,
+	};
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = cr.out.file.handle;
+
+	c = (struct smb2_close) {
+		.in.file.handle = handle,
+	};
+
+	status = smb2_close(tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	ZERO_STRUCT(handle);
+
+	torture_assert_u64_equal_goto(tctx, c.out.create_time, NTTIME_OMIT,
+				      ret, done, "Unexpected create time\n");
+	torture_assert_u64_equal_goto(tctx, c.out.access_time, NTTIME_OMIT,
+				      ret, done, "Unexpected access time\n");
+	torture_assert_u64_equal_goto(tctx, c.out.write_time, NTTIME_OMIT,
+				      ret, done, "Unexpected write time\n");
+	torture_assert_u64_equal_goto(tctx, c.out.change_time, NTTIME_OMIT,
+				      ret, done, "Unexpected change time\n");
+	torture_assert_u64_equal_goto(tctx, c.out.alloc_size, 0,
+				      ret, done, "Unexpected allocation size\n");
+	torture_assert_u64_equal_goto(tctx, c.out.size, 0,
+				      ret, done, "Unexpected size\n");
+	torture_assert_u64_equal_goto(tctx, c.out.file_attr, 0,
+				      ret, done, "Unexpected attributes\n");
+
+done:
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 static bool test_time_t(struct torture_context *tctx,
 			struct smb2_tree *tree,
 			const char *fname,
@@ -907,6 +971,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "timestamps");
 
+	torture_suite_add_1smb2_test(suite, "test_close_not_attrib", test_close_no_attrib);
 	torture_suite_add_1smb2_test(suite, "time_t_15032385535", test_time_t_15032385535);
 	torture_suite_add_1smb2_test(suite, "time_t_10000000000", test_time_t_10000000000);
 	torture_suite_add_1smb2_test(suite, "time_t_4294967295", test_time_t_4294967295);
