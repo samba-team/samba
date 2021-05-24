@@ -3601,6 +3601,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    const struct smb2_lease *lease,
 				 			/* Information (FILE_EXISTS etc.) */
 			    uint32_t private_flags,     /* Samba specific flags. */
+			    struct smb_filename *parent_dir_fname_in, /* parent. */
+			    struct smb_filename *smb_fname_atname_in, /* atname relative to parent. */
 			    int *pinfo,
 			    files_struct *fsp)
 {
@@ -6088,6 +6090,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					    oplock_request,
 					    lease,
 					    private_flags,
+					    parent_dir_fname,
+					    smb_fname_atname,
 					    &info,
 					    fsp);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
