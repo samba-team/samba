@@ -3601,8 +3601,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    const struct smb2_lease *lease,
 				 			/* Information (FILE_EXISTS etc.) */
 			    uint32_t private_flags,     /* Samba specific flags. */
-			    struct smb_filename *parent_dir_fname_in, /* parent. */
-			    struct smb_filename *smb_fname_atname_in, /* atname relative to parent. */
+			    struct smb_filename *parent_dir_fname, /* parent. */
+			    struct smb_filename *smb_fname_atname, /* atname relative to parent. */
 			    int *pinfo,
 			    files_struct *fsp)
 {
@@ -3622,7 +3622,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
-	struct smb_filename *parent_dir_fname = parent_dir_fname_in;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	bool setup_poll = false;
