@@ -1,0 +1,30 @@
+<samba:parameter name="acl flag inherited canonicalization"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls the way Samba handles client requests setting
+	the Security Descriptor of files and directories and the effect the
+	operation has on the Security Descriptor flag &quot;DACL
+	auto-inherited&quot; (DI). Generally, this flag is set on a file (or
+	directory) upon creation if the parent directory has DI set and also has
+	inheritable ACEs.
+	</para>
+
+	<para>On the other hand when a Security Descriptor is explicitly set on
+	a file, the DI flag is cleared, unless the flag &quot;DACL Inheritance
+	Required&quot; (DR) is also set in the new Security Descriptor (fwiw, DR is
+	never stored on disk).</para>
+
+	<para>This is the default behaviour when this option is enabled (the
+	default). When setting this option to <command>no</command>, the
+	resulting value of the DI flag on-disk is directly taken from the DI
+	value of the to-be-set Security Descriptor. This can be used so dump
+	tools like rsync that copy data blobs from xattrs that represent ACLs
+	created by the acl_xattr VFS module will result in copies of the ACL
+	that are identical to the source. Without this option, the copied ACLs
+	would all loose the DI flag if set on the source.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

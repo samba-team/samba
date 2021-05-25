@@ -965,6 +965,11 @@ static void canonicalize_inheritance_bits(struct files_struct *fsp,
 	 * for details.
 	 */
 
+	if (!lp_acl_flag_inherited_canonicalization(SNUM(fsp->conn))) {
+		psd->type &= ~SEC_DESC_DACL_AUTO_INHERIT_REQ;
+		return;
+	}
+
 	if ((psd->type & (SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ))
 			== (SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_AUTO_INHERIT_REQ)) {
 		set_auto_inherited = true;

@@ -3070,6 +3070,7 @@ sub provision($$)
 
 [acls_non_canonical]
 	copy = tmp
+	acl flag inherited canonicalization = no
 	";
 
 	close(CONF);
