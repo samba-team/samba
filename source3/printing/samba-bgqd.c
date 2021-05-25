@@ -21,7 +21,7 @@
 #include "source3/locking/share_mode_lock.h"
 #include "source3/param/loadparm.h"
 #include "source3/param/param_proto.h"
-#include "source3/include/popt_common.h"
+#include "lib/cmdline/cmdline.h"
 #include "lib/util/talloc_stack.h"
 #include "lib/util/debug.h"
 #include "lib/util/signal.h"
@@ -236,13 +236,6 @@ int main(int argc, const char *argv[])
 			.arg        = &no_process_group,
 			.descrip    = "Don't create a new process group" ,
 		},
-		{
-			.longName   = "log-stdout",
-			.shortName  = 'S',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = &log_stdout,
-			.descrip    = "Log to stdout" ,
-		},
 
 		/*
 		 * File descriptor to write the PID of the helper
@@ -268,13 +261,27 @@ int main(int argc, const char *argv[])
 		POPT_TABLEEND
 	};
 
-	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
 	umask(0);
-	setup_logging(progname, DEBUG_DEFAULT_STDERR);
 
-	pc = poptGetContext(progname, argc, argv, long_options, 0);
+	ok = samba_cmdline_init(frame,
+				SAMBA_CMDLINE_CONFIG_SERVER,
+				true /* require_smbconf */);
+	if (!ok) {
+		DBG_ERR("Failed to setup cmdline parser!\n");
+		exit(ENOMEM);
+	}
+
+	pc = samba_popt_get_context(progname,
+				    argc,
+				    argv,
+				    long_options,
+				    0);
+	if (pc == NULL) {
+		DBG_ERR("Failed to get popt context!\n");
+		exit(ENOMEM);
+	}
 
 	ret = poptGetNextOpt(pc);
 	if (ret < -1) {
@@ -283,6 +290,8 @@ int main(int argc, const char *argv[])
 	}
 
 	poptFreeContext(pc);
+
+	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 
 	{
 		int keep[] = { 0, 1, 2, ready_signal_fd, watch_fd };
@@ -307,12 +316,9 @@ int main(int argc, const char *argv[])
 		setup_logging(progname, DEBUG_FILE);
 	}
 
-	lp_load_initial_only(get_dyn_CONFIGFILE());
-
 	BlockSignals(true, SIGPIPE);
 
 	smb_init_locale();
-	fault_setup();
 	dump_core_setup(progname, lp_logfile(frame, lp_sub));
 
 	msg_ctx = global_messaging_context();

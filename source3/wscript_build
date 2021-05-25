@@ -843,7 +843,7 @@ bld.SAMBA_BINARY('samba-bgqd',
                  source='printing/samba-bgqd.c',
                  deps='''
                  samba3core
-                 popt_samba3
+                 CMDLINE_S3
                  AUTH_COMMON
                  smbd_base
                  ''',
