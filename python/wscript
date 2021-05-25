@@ -99,6 +99,7 @@ def build(bld):
                               %s
                               samba-util
                               netif
+                              ndr
                               %s
                               ''' % (pyparam_util, pytalloc_util),
                      realname='samba/_glue.so')

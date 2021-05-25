@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/ndr/ndr_private.h"
 #include "../lib/util/dlinklist.h"
 
 #undef DBGC_CLASS
@@ -46,6 +47,10 @@
  * linked lists, but this is a backstop for now.
  */
 #define NDR_TOKEN_MAX_LIST_SIZE 65535
+
+size_t ndr_token_max_list_size(void) {
+	return NDR_TOKEN_MAX_LIST_SIZE;
+};
 
 /* this guid indicates NDR encoding in a protocol tower */
 const struct ndr_syntax_id ndr_transfer_syntax_ndr = {

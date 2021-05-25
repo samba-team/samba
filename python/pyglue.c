@@ -24,6 +24,7 @@
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
 #include "lib/util/debug.h"
+#include "librpc/ndr/ndr_private.h"
 
 void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
@@ -266,6 +267,12 @@ static PyObject *py_is_selftest_enabled(PyObject *self,
 #endif
 }
 
+static PyObject *py_ndr_token_max_list_size(PyObject *self,
+                PyObject *Py_UNUSED(ignored))
+{
+	return PyLong_FromLong(ndr_token_max_list_size());
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -460,6 +467,8 @@ static PyMethodDef py_misc_methods[] = {
 		"is Samba built with AD DC?" },
 	{ "is_selftest_enabled", (PyCFunction)py_is_selftest_enabled,
 		METH_NOARGS, "is Samba built with selftest enabled?" },
+	{ "ndr_token_max_list_size", (PyCFunction)py_ndr_token_max_list_size,
+		METH_NOARGS, "How many NDR internal tokens is too many for this build?" },
 	{0}
 };
 

@@ -218,6 +218,7 @@ planpythontestsuite("none", "samba.tests.glue")
 planpythontestsuite("none", "samba.tests.tdb_util")
 planpythontestsuite("none", "samba.tests.samdb")
 planpythontestsuite("none", "samba.tests.samdb_api")
+planpythontestsuite("none", "samba.tests.ndr")
 
 if with_pam:
     env = "ad_member"
