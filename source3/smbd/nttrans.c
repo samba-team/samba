@@ -947,7 +947,8 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
  same.
 *********************************************************************/
 
-static void canonicalize_inheritance_bits(struct security_descriptor *psd)
+static void canonicalize_inheritance_bits(struct files_struct *fsp,
+					  struct security_descriptor *psd)
 {
 	bool set_auto_inherited = false;
 
@@ -1052,7 +1053,7 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		}
 	}
 
-	canonicalize_inheritance_bits(psd);
+	canonicalize_inheritance_bits(fsp, psd);
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
