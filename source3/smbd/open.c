@@ -5064,22 +5064,9 @@ static NTSTATUS inherit_new_acl(struct smb_filename *parent_dir_fname,
 	const struct dom_sid *SY_U_sid = NULL;
 	const struct dom_sid *SY_G_sid = NULL;
 	size_t size = 0;
-	struct smb_filename *parent_dir = NULL;
 	bool ok;
 
-	status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
-					 frame,
-					 fsp->fsp_name,
-					 &parent_dir,
-					 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	status = SMB_VFS_GET_NT_ACL_AT(fsp->conn,
-				fsp->conn->cwd_fsp,
-				parent_dir,
+	status = SMB_VFS_FGET_NT_ACL(parent_dir_fname->fsp,
 				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
 				frame,
 				&parent_desc);
