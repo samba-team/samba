@@ -1359,12 +1359,19 @@ static int py_groupmap_set_nt_name(PyObject *obj, PyObject *value, void *closure
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (value == Py_None) {
-		fstrcpy(group_map->nt_name, NULL);
-	} else {
-		fstrcpy(group_map->nt_name, PyUnicode_AsUTF8(value));
+	if (group_map->nt_name != NULL) {
+		TALLOC_FREE(group_map->nt_name);
 	}
-	talloc_free(frame);
+	if (value == Py_None) {
+		group_map->nt_name = talloc_strdup(group_map, "");
+	} else {
+		group_map->nt_name = talloc_strdup(group_map,
+						   PyUnicode_AsUTF8(value));
+	}
+	TALLOC_FREE(frame);
+	if (group_map->nt_name == NULL) {
+		return -1;
+	}
 	return 0;
 }
 
@@ -1389,12 +1396,19 @@ static int py_groupmap_set_comment(PyObject *obj, PyObject *value, void *closure
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (value == Py_None) {
-		fstrcpy(group_map->comment, NULL);
-	} else {
-		fstrcpy(group_map->comment, PyUnicode_AsUTF8(value));
+	if (group_map->comment != NULL) {
+		TALLOC_FREE(group_map->comment);
 	}
-	talloc_free(frame);
+	if (value == Py_None) {
+		group_map->comment = talloc_strdup(group_map, "");
+	} else {
+		group_map->comment = talloc_strdup(group_map,
+						   PyUnicode_AsUTF8(value));
+	}
+	TALLOC_FREE(frame);
+	if (group_map->comment == NULL) {
+		return -1;
+	}
 	return 0;
 }
 
