@@ -1319,13 +1319,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	bool allow_symlinks = true;
 	const char *conn_rootdir;
 	size_t rootdir_len;
-	bool ok;
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
 	resolved_fname = SMB_VFS_REALPATH(conn, ctx, smb_fname);
 
 	if (resolved_fname == NULL) {
+		NTSTATUS status;
 		struct smb_filename *dir_fname = NULL;
 		struct smb_filename *last_component = NULL;
 
@@ -1336,7 +1336,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 		if (errno != ENOENT) {
-			NTSTATUS status = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
 			DBG_NOTICE("couldn't get realpath for %s: %s\n",
 				   fname,
 				   strerror(errno));
@@ -1350,17 +1350,18 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		 * canonicalise the directory name.
 		 */
 
-		ok = parent_smb_fname(ctx,
-				      smb_fname,
-				      &dir_fname,
-				      &last_component);
-		if (!ok) {
-			return NT_STATUS_NO_MEMORY;
+		status = SMB_VFS_PARENT_PATHNAME(conn,
+						 ctx,
+						 smb_fname,
+						 &dir_fname,
+						 &last_component);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		resolved_fname = SMB_VFS_REALPATH(conn, ctx, dir_fname);
 		if (resolved_fname == NULL) {
-			NTSTATUS status = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
 
 			if (errno == ENOENT || errno == ENOTDIR) {
 				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
