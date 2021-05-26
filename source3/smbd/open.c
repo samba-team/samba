@@ -712,7 +712,6 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
 	int ret;
-	bool ok;
 
 #ifdef O_PATH
 	have_opath = true;
@@ -737,12 +736,12 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 				goto out;
 			}
 		} else {
-			ok = parent_smb_fname(talloc_tos(),
-					      smb_fname,
-					      &parent_dir_fname,
-					      &smb_fname_rel);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
+			status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
+							 talloc_tos(),
+							 smb_fname,
+							 &parent_dir_fname,
+							 &smb_fname_rel);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
 		}
