@@ -116,7 +116,7 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
 
         # attrs that are altered by the restore process
         ignore_attrs = ["servicePrincipalName", "lastLogonTimestamp",
-                        "rIDAllocationPool", "rIDAvailablePool",
+                        "rIDAllocationPool", "rIDAvailablePool", "rIDUsedPool",
                         "localPolicyFlags", "operatingSystem", "displayName",
                         "dnsRecord", "dNSTombstoned",
                         "msDS-NC-Replica-Locations", "msDS-HasInstantiatedNCs",
