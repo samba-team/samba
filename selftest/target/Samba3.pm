@@ -3067,6 +3067,9 @@ sub provision($$)
 [notify_priv]
 	copy = tmp
 	honor change notify privilege = yes
+
+[acls_non_canonical]
+	copy = tmp
 	";
 
 	close(CONF);

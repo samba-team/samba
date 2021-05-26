@@ -3056,3 +3056,176 @@ struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static bool test_acls_non_canonical_flags(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	const char *fname = BASEDIR "\\test_acls_non_canonical_flags.txt";
+	struct smb2_create cr;
+	struct smb2_handle testdirh = {{0}};
+	struct smb2_handle handle = {{0}};
+	union smb_fileinfo gi;
+	union smb_setfileinfo si;
+	struct security_descriptor *sd_orig = NULL;
+	struct security_descriptor *sd = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	sd = security_descriptor_dacl_create(tctx,
+					     SEC_DESC_DACL_AUTO_INHERITED
+					     | SEC_DESC_DACL_AUTO_INHERIT_REQ,
+					     NULL,
+					     NULL,
+					     SID_WORLD,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_RIGHTS_DIR_ALL,
+					     SEC_ACE_FLAG_OBJECT_INHERIT
+					     | SEC_ACE_FLAG_CONTAINER_INHERIT,
+					     NULL);
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+					"SD create failed\n");
+
+	si = (union smb_setfileinfo) {
+		.set_secdesc.level = RAW_SFILEINFO_SEC_DESC,
+		.set_secdesc.in.file.handle = testdirh,
+		.set_secdesc.in.secinfo_flags = SECINFO_DACL,
+		.set_secdesc.in.sd = sd,
+	};
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	gi = (union smb_fileinfo) {
+		.query_secdesc.level = RAW_FILEINFO_SEC_DESC,
+		.query_secdesc.in.file.handle = testdirh,
+		.query_secdesc.in.secinfo_flags = SECINFO_DACL,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+				"smb2_getinfo_file failed\n");
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_STD_READ_CONTROL |
+			SEC_STD_WRITE_DAC,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = cr.out.file.handle;
+
+	torture_comment(tctx, "get the original sd\n");
+
+	gi = (union smb_fileinfo) {
+		.query_secdesc.level = RAW_FILEINFO_SEC_DESC,
+		.query_secdesc.in.file.handle = handle,
+		.query_secdesc.in.secinfo_flags = SECINFO_DACL,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+				"smb2_getinfo_file failed\n");
+
+	sd_orig = gi.query_secdesc.out.sd;
+
+	torture_assert_goto(tctx, sd_orig->type & SEC_DESC_DACL_AUTO_INHERITED,
+			    ret, done, "Missing SEC_DESC_DACL_AUTO_INHERITED\n");
+
+	/*
+	 * SD with SEC_DESC_DACL_AUTO_INHERITED but without
+	 * SEC_DESC_DACL_AUTO_INHERITED_REQ, so the resulting SD should not have
+	 * SEC_DESC_DACL_AUTO_INHERITED on a Windows box.
+	 *
+	 * But as we're testing against a share with
+	 *
+	 *    "acl flag inherited canonicalization = no"
+	 *
+	 * the resulting SD should have acl flag inherited canonicalization set.
+	 */
+	sd = security_descriptor_dacl_create(tctx,
+					     SEC_DESC_DACL_AUTO_INHERITED,
+					     NULL,
+					     NULL,
+					     SID_WORLD,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_FILE_ALL,
+					     0,
+					     NULL);
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+					"SD create failed\n");
+
+	si = (union smb_setfileinfo) {
+		.set_secdesc.level = RAW_SFILEINFO_SEC_DESC,
+		.set_secdesc.in.file.handle = handle,
+		.set_secdesc.in.secinfo_flags = SECINFO_DACL,
+		.set_secdesc.in.sd = sd,
+	};
+
+	status = smb2_setinfo_file(tree, &si);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	status = smb2_util_close(tree, handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(handle);
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle = cr.out.file.handle;
+
+	gi = (union smb_fileinfo) {
+		.query_secdesc.level = RAW_FILEINFO_SEC_DESC,
+		.query_secdesc.in.file.handle = handle,
+		.query_secdesc.in.secinfo_flags = SECINFO_DACL,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &gi);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+				"smb2_getinfo_file failed\n");
+
+	sd_orig = gi.query_secdesc.out.sd;
+	torture_assert_goto(tctx, sd_orig->type & SEC_DESC_DACL_AUTO_INHERITED,
+			    ret, done, "Missing SEC_DESC_DACL_AUTO_INHERITED\n");
+
+done:
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, testdirh);
+	}
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
+struct torture_suite *torture_smb2_acls_non_canonical_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "acls_non_canonical");
+
+	torture_suite_add_1smb2_test(suite, "flags", test_acls_non_canonical_flags);
+	return suite;
+}
