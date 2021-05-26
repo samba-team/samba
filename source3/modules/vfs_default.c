@@ -474,10 +474,17 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 			status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 		} else {
 			status = map_nt_error_from_unix(errno);
-			DBG_ERR("Error reading "
-				"msdfs link %s: %s\n",
-				smb_fname->base_name,
-				strerror(errno));
+			if (errno == ENOENT) {
+				DBG_NOTICE("Error reading "
+					 "msdfs link %s: %s\n",
+					 smb_fname->base_name,
+					 strerror(errno));
+			} else {
+				DBG_ERR("Error reading "
+					"msdfs link %s: %s\n",
+					smb_fname->base_name,
+					strerror(errno));
+			}
 		}
                 goto err;
         }
