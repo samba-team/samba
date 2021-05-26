@@ -1200,7 +1200,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	struct smb_filename *parent_dir_fname = NULL;
 	int saved_errno = 0;
 	struct smb_filename *saved_dir_fname = NULL;
-	bool ok;
+	NTSTATUS status;
 
 	saved_dir_fname = vfs_GetWd(talloc_tos(),conn);
 	if (saved_dir_fname == NULL) {
@@ -1215,12 +1215,13 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	ok = parent_smb_fname(talloc_tos(),
-			      full_fname,
-			      &parent_dir_fname,
-			      &local_fname);
-	if (!ok) {
-		saved_errno = ENOMEM;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 full_fname,
+					 &parent_dir_fname,
+					 &local_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		saved_errno = map_errno_from_nt_status(status);
 		goto out;
 	}
 
