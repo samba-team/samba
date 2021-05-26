@@ -39,7 +39,7 @@ class DowngradeTestBase(BlackboxTestCase):
                    "--targetdir {self.tempdir} " +\
                    "--backend-store {self.backend} " +\
                    "--host-name downgradetest " +\
-                   "--option=\"vfs objects=fake_acls xattr_tdb\""
+                   "--option=\"vfs objects=dfs_samba4 acl_xattr fake_acls xattr_tdb\""
         prov_cmd = prov_cmd.format(self=self)
         self.check_run(prov_cmd, "Provisioning for downgrade")
 

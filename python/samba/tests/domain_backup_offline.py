@@ -161,7 +161,7 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
                    "--targetdir {target} " +\
                    "--backend-store {backend} " +\
                    "--host-name OLDSERVER "+\
-                   "--option=\"vfs objects=fake_acls xattr_tdb\""
+                   "--option=\"vfs objects=dfs_samba4 acl_xattr fake_acls xattr_tdb\""
         prov_cmd = prov_cmd.format(target=target, backend=backend)
         self.check_output(prov_cmd)
 
