@@ -325,7 +325,6 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	bool delete_on_close_set;
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
-	bool ok;
 
 	/*
 	 * NB. When dirfsp != conn->cwd_fsp, we must
@@ -334,9 +333,12 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 
 	SMB_ASSERT(dirfsp == conn->cwd_fsp);
 
-	ok = parent_smb_fname(frame, smb_fname, &parent_dir, NULL);
-	if (!ok) {
-		status = NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 frame,
+					 smb_fname,
+					 &parent_dir,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
