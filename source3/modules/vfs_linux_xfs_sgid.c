@@ -31,7 +31,7 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 	struct smb_filename *fname = NULL;
 	int mkdir_res;
 	int res;
-	bool ok;
+	NTSTATUS status;
 
 	DEBUG(10, ("Calling linux_xfs_sgid_mkdirat(%s)\n",
 		smb_fname->base_name));
@@ -53,9 +53,14 @@ static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = parent_smb_fname(talloc_tos(), fname, &dname, NULL);
-	if (!ok) {
-		DBG_WARNING("parent_smb_fname() failed\n");
+	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
+					 talloc_tos(),
+					 fname,
+					 &dname,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("SMB_VFS_PARENT_PATHNAME() failed with %s\n",
+			nt_errstr(status));
 		/* return success, we did the mkdir */
 		return mkdir_res;
 	}
