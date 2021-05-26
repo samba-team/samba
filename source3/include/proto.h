@@ -376,10 +376,6 @@ char *myhostname_upper(void);
 #include "lib/util_path.h"
 bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name);
-bool parent_smb_fname(TALLOC_CTX *mem_ctx,
-		      const struct smb_filename *path,
-		      struct smb_filename **_parent,
-		      struct smb_filename  **_name);
 bool ms_has_wild(const char *s);
 bool ms_has_wild_w(const smb_ucs2_t *s);
 bool mask_match(const char *string, const char *pattern, bool is_case_sensitive);
