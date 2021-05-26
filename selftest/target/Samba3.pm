@@ -892,7 +892,6 @@ sub provision_ad_member
 		}
 
 		# Validate the offline cache
-		my $smbcontrol = Samba::bindir_path($self, "smbcontrol");
 		$cmd = "NSS_WRAPPER_PASSWD='$ret->{NSS_WRAPPER_PASSWD}' ";
 		$cmd .= "NSS_WRAPPER_GROUP='$ret->{NSS_WRAPPER_GROUP}' ";
 		$cmd .= "UID_WRAPPER_ROOT='1' ";
