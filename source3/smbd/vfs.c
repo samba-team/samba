@@ -1144,19 +1144,17 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	int ret;
 	struct smb_filename *parent_name = NULL;
 	struct smb_filename *file_name = NULL;
-	bool ok;
 
 	DEBUG(3,("check_reduced_name_with_privilege [%s] [%s]\n",
 			smb_fname->base_name,
 			conn->connectpath));
 
-
-	ok = parent_smb_fname(ctx,
-			      smb_fname,
-			      &parent_name,
-			      &file_name);
-	if (!ok) {
-		status = NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 ctx,
+					 smb_fname,
+					 &parent_name,
+					 &file_name);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto err;
 	}
 
