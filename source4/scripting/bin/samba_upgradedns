@@ -492,6 +492,10 @@ if __name__ == '__main__':
         else:
             logger.info("dns-%s account already exists" % hostname)
 
+        if not os.path.exists(paths.binddns_dir):
+            # This directory won't exist if we're restoring from an offline backup.
+            os.mkdir(paths.binddns_dir, 0o770)
+
         private_dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
         bind_dns_keytab_path = os.path.join(paths.binddns_dir, paths.dns_keytab)
 
