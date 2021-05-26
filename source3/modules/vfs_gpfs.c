@@ -1721,18 +1721,19 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 {
 #if defined(HAVE_FSTATAT)
 	int fd = -1;
-	bool ok;
+	NTSTATUS status;
 	struct smb_filename *dir_name = NULL;
 	struct smb_filename *rel_name = NULL;
 	struct stat st;
 	int ret = -1;
 
-	ok = parent_smb_fname(talloc_tos(),
-			      smb_fname,
-			      &dir_name,
-			      &rel_name);
-	if (!ok) {
-		errno = ENOMEM;
+	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
+					 talloc_tos(),
+					 smb_fname,
+					 &dir_name,
+					 &rel_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
