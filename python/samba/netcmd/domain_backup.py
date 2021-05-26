@@ -1077,7 +1077,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
     # Find where a path should go in the fixed backup archive structure.
     def get_arc_path(self, path, conf_paths):
         backup_dirs = {"private": conf_paths.private_dir,
-                       "statedir": conf_paths.state_dir,
+                       "state": conf_paths.state_dir,
                        "etc": os.path.dirname(conf_paths.smbconf)}
         matching_dirs = [(_, p) for (_, p) in backup_dirs.items() if
                          path.startswith(p)]
