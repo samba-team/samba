@@ -698,7 +698,7 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, binddns_dir, realm,
 
 
 def create_dns_dir(logger, paths):
-    """Write out a DNS zone file, from the info in the current database.
+    """(Re)create the DNS directory and chown it to bind.
 
     :param logger: Logger object
     :param paths: paths object
