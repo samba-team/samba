@@ -30,7 +30,6 @@ samba.tests.dns_aging.+test_dns_add_sibling_12_7_days_no_aging_touch
 samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_aging
 samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_aging_touch
 samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_no_aging_touch
-samba.tests.dns_aging.+test_add_update_dwFlags
 samba.tests.dns_aging.+test_add_update_dwSerial
 samba.tests.dns_aging.+test_add_update_dwSerial_2
 samba.tests.dns_aging.+test_add_update_many

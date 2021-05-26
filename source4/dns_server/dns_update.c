@@ -572,7 +572,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 			recs[i].wType = recs[rcount].wType;
 			recs[i].dwTtlSeconds = recs[rcount].dwTtlSeconds;
 			recs[i].rank = recs[rcount].rank;
-
+			recs[i].dwReserved = 0;
+			recs[i].flags = 0;
 			werror = dns_replace_records(dns, mem_ctx, dn,
 						     needs_add, recs, rcount);
 			W_ERROR_NOT_OK_RETURN(werror);
