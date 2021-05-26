@@ -1570,7 +1570,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_filename *parent = NULL;
 	struct smb_filename *pathref = NULL;
-	bool ok;
 
 	if (!CAN_WRITE(conn)) {
 		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -1678,12 +1677,12 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 
-	ok = parent_smb_fname(talloc_tos(),
-			      smb_fname_dst,
-			      &parent,
-			      NULL);
-	if (!ok) {
-		status = NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 smb_fname_dst,
+					 &parent,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 	if (smb_fname_dst->fsp == NULL) {
