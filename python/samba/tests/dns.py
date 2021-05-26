@@ -29,8 +29,7 @@ import samba.ndr as ndr
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.dnsserver import TXTRecord
-from samba.dnsserver import record_from_string
-from samba.netcmd.dns import dns_record_match
+from samba.dnsserver import record_from_string, dns_record_match
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
