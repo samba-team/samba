@@ -5106,13 +5106,14 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	struct smb_filename *parent_dir = NULL;
 	bool ok;
 
-	ok = parent_smb_fname(frame,
-			      fsp->fsp_name,
-			      &parent_dir,
-			      NULL);
-	if (!ok) {
+	status = SMB_VFS_PARENT_PATHNAME(fsp->conn,
+					 frame,
+					 fsp->fsp_name,
+					 &parent_dir,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	status = SMB_VFS_GET_NT_ACL_AT(fsp->conn,
