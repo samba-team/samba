@@ -23,8 +23,12 @@ from socket import inet_ntop
 from socket import AF_INET
 from socket import AF_INET6
 import struct
+import time
+import ldb
+from samba.ndr import ndr_unpack, ndr_pack
+import re
 
-from samba import remove_dc
+from samba import remove_dc, dsdb_dns
 from samba.samdb import SamDB
 from samba.auth import system_session
 
@@ -452,6 +456,14 @@ class cmd_zoneoptions(Command):
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
                choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
+        Option('--mark-old-records-static',
+               help="Make records older than this (YYYY-MM-DD) static"),
+        Option('--mark-records-static-regex', metavar="REGEXP",
+               help="Make records matching this regular expression static"),
+        Option('--mark-records-dynamic-regex', metavar="REGEXP",
+               help="Make records matching this regular expression dynamic"),
+        Option('-n', '--dry-run', action='store_true',
+               help="Don't change anything, say what would happen"),
     ]
 
     integer_properties = []
@@ -476,7 +488,11 @@ class cmd_zoneoptions(Command):
                          integer_properties)
 
     def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
-            versionopts=None, **kwargs):
+            versionopts=None, dry_run=False,
+            mark_old_records_static=None,
+            mark_records_static_regex=None,
+            mark_records_dynamic_regex=None,
+            **kwargs):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
         dns_conn = dns_connect(server, self.lp, self.creds)
@@ -496,6 +512,9 @@ class cmd_zoneoptions(Command):
             name_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
             name_param.dwParam = v
             name_param.pszNodeName = k
+            if dry_run:
+                print(f"would set {k} to {v} for {zone}", file=self.outf)
+                continue
             try:
                 dns_conn.DnssrvOperation2(client_version,
                                           0,
@@ -509,6 +528,187 @@ class cmd_zoneoptions(Command):
                 raise CommandError(f"Could not set {k} to {v}") from None
 
             print(f"Set {k} to {v}", file=self.outf)
+
+        # We don't want to allow more than one of these --mark-*
+        # options at a time, as they are sensitive to ordering and
+        # the order is not documented.
+        n_mark_options = 0
+        for x in (mark_old_records_static,
+                  mark_records_static_regex,
+                  mark_records_dynamic_regex):
+            if x is not None:
+                n_mark_options += 1
+
+        if n_mark_options > 1:
+            raise CommandError("Multiple --mark-* options will not work\n")
+
+        if mark_old_records_static is not None:
+            self.mark_old_records_static(server, zone,
+                                         mark_old_records_static,
+                                         dry_run)
+
+        if mark_records_static_regex is not None:
+            self.mark_records_static_regex(server,
+                                           zone,
+                                           mark_records_static_regex,
+                                           dry_run)
+
+        if mark_records_dynamic_regex is not None:
+            self.mark_records_dynamic_regex(server,
+                                            zone,
+                                            mark_records_dynamic_regex,
+                                            dry_run)
+
+
+    def _get_dns_nodes(self, server, zone_name):
+        samdb = SamDB(url="ldap://%s" % server,
+                      session_info=system_session(),
+                      credentials=self.creds, lp=self.lp)
+
+        zone_dn = (f"DC={zone_name},CN=MicrosoftDNS,DC=DomainDNSZones,"
+                   f"{samdb.get_default_basedn()}")
+
+        nodes = samdb.search(base=zone_dn,
+                             scope=ldb.SCOPE_SUBTREE,
+                             expression=("(&(objectClass=dnsNode)"
+                                         "(!(dNSTombstoned=TRUE)))"),
+                             attrs=["dnsRecord", "name"])
+        return samdb, nodes
+
+    def mark_old_records_static(self, server, zone_name, date_string, dry_run):
+        try:
+            ts = time.strptime(date_string, "%Y-%m-%d")
+            t = time.mktime(ts)
+        except ValueError as e:
+            raise CommandError(f"Invalid date {date_string}: should be YYY-MM-DD")
+        threshold = dsdb_dns.unix_to_dns_timestamp(int(t))
+
+        samdb, nodes = self._get_dns_nodes(server, zone_name)
+
+        for node in nodes:
+            if "dnsRecord" not in node:
+                continue
+
+            values = list(node["dnsRecord"])
+            changes = 0
+            for i, v in enumerate(values):
+                rec = ndr_unpack(dnsp.DnssrvRpcRecord, v)
+                if rec.dwTimeStamp < threshold and rec.dwTimeStamp != 0:
+                    rec.dwTimeStamp = 0
+                    values[i] = ndr_pack(rec)
+                    changes += 1
+
+            if changes == 0:
+                continue
+
+            name = node["name"][0].decode()
+
+            if dry_run:
+                print(f"would make {changes}/{len(values)} records static "
+                      f"on {name}.{zone_name}.", file=self.outf)
+                continue
+
+            msg = ldb.Message.from_dict(samdb,
+                                        {'dn': node.dn,
+                                         'dnsRecord': values
+                                        },
+                                        ldb.FLAG_MOD_REPLACE)
+            samdb.modify(msg)
+            print(f"made {changes}/{len(values)} records static on "
+                  f"{name}.{zone_name}.", file=self.outf)
+
+    def mark_records_static_regex(self, server, zone_name, regex, dry_run):
+        """Make the records of nodes with matching names static.
+        """
+        r = re.compile(regex)
+        samdb, nodes = self._get_dns_nodes(server, zone_name)
+
+        for node in nodes:
+            name = node["name"][0].decode()
+            if not r.search(name):
+                continue
+            if "dnsRecord" not in node:
+                continue
+
+            values = list(node["dnsRecord"])
+            if len(values) == 0:
+                continue
+
+            changes = 0
+            for i, v in enumerate(values):
+                rec = ndr_unpack(dnsp.DnssrvRpcRecord, v)
+                if rec.dwTimeStamp != 0:
+                    rec.dwTimeStamp = 0
+                    values[i] = ndr_pack(rec)
+                    changes += 1
+
+            if changes == 0:
+                continue
+
+            if dry_run:
+                print(f"would make {changes}/{len(values)} records static "
+                      f"on {name}.{zone_name}.", file=self.outf)
+                continue
+
+            msg = ldb.Message.from_dict(samdb,
+                                        {'dn': node.dn,
+                                         'dnsRecord': values
+                                        },
+                                        ldb.FLAG_MOD_REPLACE)
+            samdb.modify(msg)
+            print(f"made {changes}/{len(values)} records static on "
+                  f"{name}.{zone_name}.", file=self.outf)
+
+    def mark_records_dynamic_regex(self, server, zone_name, regex, dry_run):
+        """Make the records of nodes with matching names dynamic, with a
+        current timestamp. In this case we only adjust the A, AAAA,
+        and TXT records.
+        """
+        r = re.compile(regex)
+        samdb, nodes = self._get_dns_nodes(server, zone_name)
+        now = time.time()
+        dns_timestamp = dsdb_dns.unix_to_dns_timestamp(int(now))
+        safe_wtypes = {
+            dnsp.DNS_TYPE_A,
+            dnsp.DNS_TYPE_AAAA,
+            dnsp.DNS_TYPE_TXT
+        }
+
+        for node in nodes:
+            name = node["name"][0].decode()
+            if not r.search(name):
+                continue
+            if "dnsRecord" not in node:
+                continue
+
+            values = list(node["dnsRecord"])
+            if len(values) == 0:
+                continue
+
+            changes = 0
+            for i, v in enumerate(values):
+                rec = ndr_unpack(dnsp.DnssrvRpcRecord, v)
+                if rec.wType in safe_wtypes and rec.dwTimeStamp == 0:
+                    rec.dwTimeStamp = dns_timestamp
+                    values[i] = ndr_pack(rec)
+                    changes += 1
+
+            if changes == 0:
+                continue
+
+            if dry_run:
+                print(f"would make {changes}/{len(values)} records dynamic "
+                      f"on {name}.{zone_name}.", file=self.outf)
+                continue
+
+            msg = ldb.Message.from_dict(samdb,
+                                        {'dn': node.dn,
+                                         'dnsRecord': values
+                                        },
+                                        ldb.FLAG_MOD_REPLACE)
+            samdb.modify(msg)
+            print(f"made {changes}/{len(values)} records dynamic on "
+                  f"{name}.{zone_name}.", file=self.outf)
 
 
 class cmd_zoneinfo(Command):

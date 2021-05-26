@@ -24,6 +24,8 @@ from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import dnsp
 from samba.tests.samba_tool.base import SambaToolCmdTest
+import time
+from samba import dsdb_dns
 
 
 class DnsCmdTestCase(SambaToolCmdTest):
@@ -136,6 +138,23 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone,
                                           self.creds_string)
         self.assertCmdSuccess(result, out, err)
+
+    def get_all_records(self, zone_name):
+        zone_dn = (f"DC={zone_name},CN=MicrosoftDNS,DC=DomainDNSZones,"
+                   f"{self.samdb.get_default_basedn()}")
+
+        expression = "(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))"
+
+        nodes = self.samdb.search(base=zone_dn, scope=ldb.SCOPE_SUBTREE,
+                                  expression=expression,
+                                  attrs=["dnsRecord", "name"])
+
+        record_map = {}
+        for node in nodes:
+            name = node["name"][0].decode()
+            record_map[name] = list(node["dnsRecord"])
+
+        return record_map
 
     def get_record_from_db(self, zone_name, record_name):
         zones = self.samdb.search(base="DC=DomainDnsZones,%s"
@@ -909,7 +928,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
                               "Failed to print zoneinfo")
         self.assertTrue(out != '')
 
-    def test_zoneoptions(self):
+    def test_zoneoptions_aging(self):
         for options, vals, error in (
                 (['--aging=1'], {'fAging': 'TRUE'}, False),
                 (['--aging=0'], {'fAging': 'FALSE'}, False),
@@ -961,3 +980,430 @@ class DnsCmdTestCase(SambaToolCmdTest):
             for k, v in vals.items():
                 self.assertIn(k, info)
                 self.assertEqual(v, info[k])
+
+
+    def ldap_add_node_with_records(self, name, records):
+        dn = (f"DC={name},DC={self.zone},CN=MicrosoftDNS,DC=DomainDNSZones,"
+              f"{self.samdb.get_default_basedn()}")
+
+        dns_records = []
+        for r in records:
+            rec = dnsp.DnssrvRpcRecord()
+            rec.wType = r.get('wType', dnsp.DNS_TYPE_A)
+            rec.rank = dnsp.DNS_RANK_ZONE
+            rec.dwTtlSeconds = 900
+            rec.dwTimeStamp = r.get('dwTimeStamp', 0)
+            rec.data = r.get('data', '10.10.10.10')
+            dns_records.append(ndr_pack(rec))
+
+        msg = ldb.Message.from_dict(self.samdb,
+                                    {'dn': dn,
+                                     "objectClass": ["top", "dnsNode"],
+                                     'dnsRecord': dns_records
+                                    })
+        self.samdb.add(msg)
+
+    def get_timestamp_map(self):
+        re_wtypes = (dnsp.DNS_TYPE_A,
+                     dnsp.DNS_TYPE_AAAA,
+                     dnsp.DNS_TYPE_TXT)
+
+        t = time.time()
+        now = dsdb_dns.unix_to_dns_timestamp(int(t))
+
+        records = self.get_all_records(self.zone)
+        tsmap = {}
+        for k, recs in records.items():
+            m = []
+            tsmap[k] = m
+            for rec in recs:
+                r = ndr_unpack(dnsp.DnssrvRpcRecord, rec)
+                timestamp = r.dwTimeStamp
+                if abs(timestamp - now) < 3:
+                    timestamp = 'nowish'
+
+                if r.wType in re_wtypes:
+                    m.append(('R', timestamp))
+                else:
+                    m.append(('-', timestamp))
+
+        return tsmap
+
+
+    def test_zoneoptions_mark_records(self):
+        self.maxDiff = 10000
+        # We need a number of records to work with, so we'll use part
+        # of our known good records list, using three different names
+        # to test the regex. All these records will be static.
+        for dnstype in self.good_records:
+            for record in self.good_records[dnstype][:2]:
+                self.runsubcmd("dns", "add",
+                               os.environ["SERVER"],
+                               self.zone, "frobitz",
+                               dnstype, record,
+                               self.creds_string)
+                self.runsubcmd("dns", "add",
+                               os.environ["SERVER"],
+                               self.zone, "weergly",
+                               dnstype, record,
+                               self.creds_string)
+                self.runsubcmd("dns", "add",
+                               os.environ["SERVER"],
+                               self.zone, "snizle",
+                               dnstype, record,
+                               self.creds_string)
+
+        # and we also want some that aren't static, and some mixed
+        # static/dynamic records.
+        # timestamps are in hours since 1601; now ~= 3.7 million
+        for ts in (0, 100, 10 ** 6, 10 ** 7):
+            name = f"ts-{ts}"
+            self.ldap_add_node_with_records(name, [{"dwTimeStamp": ts}])
+
+        recs = []
+        for ts in (0, 100, 10 ** 6, 10 ** 7):
+            addr = f'10.{(ts >> 16) & 255}.{(ts >> 8) & 255}.{ts & 255}'
+            recs.append({"dwTimeStamp": ts, "data": addr})
+
+        self.ldap_add_node_with_records("ts-multi", recs)
+
+        # get the state of ALL records.
+        # then we make assertions about the diffs, keeping track of
+        # the current state.
+
+        tsmap = self.get_timestamp_map()
+
+
+
+        for options, diff, output_substrings, error in (
+                # --mark-old-records-static
+                # --mark-records-static-regex
+                # --mark-records-dynamic-regex
+                (
+                    ['--mark-old-records-static=1971-13-04'],
+                    {},
+                    [],
+                    "bad date"
+                ),
+                (
+                    # using --dry-run, should be no change, but output.
+                    ['--mark-old-records-static=1971-03-04', '--dry-run'],
+                    {},
+                    [
+                        "would make 1/1 records static on ts-1000000.zone.",
+                        "would make 1/1 records static on ts-100.zone.",
+                        "would make 2/4 records static on ts-multi.zone.",
+                    ],
+                    False
+                ),
+                (
+                    # timestamps < ~ 3.25 million are now static
+                    ['--mark-old-records-static=1971-03-04'],
+                    {
+                        'ts-100': [('R', 0)],
+                        'ts-1000000': [('R', 0)],
+                        'ts-multi': [('R', 0), ('R', 0), ('R', 0), ('R', 10000000)]
+                    },
+                    [
+                        "made 1/1 records static on ts-1000000.zone.",
+                        "made 1/1 records static on ts-100.zone.",
+                        "made 2/4 records static on ts-multi.zone.",
+                    ],
+                    False
+                ),
+                (
+                    # no change, old records already static
+                    ['--mark-old-records-static=1972-03-04'],
+                    {},
+                    [],
+                    False
+                ),
+                (
+                    # no change, samba-tool added records already static
+                    ['--mark-records-static-regex=sniz'],
+                    {},
+                    [],
+                    False
+                ),
+                (
+                    # snizle has 2 A, 2 AAAA, 10 fancy, and 2 TXT records, in
+                    # that order.
+                    # the A, AAAA, and TXT recrods should be dynamic
+                    ['--mark-records-dynamic-regex=sniz'],
+                    {'snizle': [('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('R', 'nowish'),
+                                ('R', 'nowish')]
+                    },
+                    ['made 6/16 records dynamic on snizle.zone.'],
+                    False
+                ),
+                (
+                    # This regex should catch snizle, weergly, and ts-*
+                    # but we're doing dry-run so no change
+                    ['--mark-records-dynamic-regex=[sw]', '-n'],
+                    {},
+                    ['would make 3/4 records dynamic on ts-multi.zone.',
+                     'would make 1/1 records dynamic on ts-0.zone.',
+                     'would make 1/1 records dynamic on ts-1000000.zone.',
+                     'would make 6/16 records dynamic on weergly.zone.',
+                     'would make 1/1 records dynamic on ts-100.zone.'
+                    ],
+                    False
+                ),
+                (
+                    # This regex should catch snizle and frobitz
+                    # but snizle has already been changed.
+                    ['--mark-records-dynamic-regex=z'],
+                    {'frobitz': [('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish')]
+                    },
+                    ['made 6/16 records dynamic on frobitz.zone.'],
+                    False
+                ),
+                (
+                    # This regex should catch snizle, frobitz, and
+                    # ts-multi. Note that the 1e7 ts-multi record is
+                    # alreay dynamic and doesn't change.
+                    ['--mark-records-dynamic-regex=[i]'],
+                    {'ts-multi': [('R', 'nowish'),
+                                  ('R', 'nowish'),
+                                  ('R', 'nowish'),
+                                  ('R', 10000000)]
+                    },
+                    ['made 3/4 records dynamic on ts-multi.zone.'],
+                    False
+                ),
+                (
+                    # matches no records
+                    ['--mark-records-dynamic-regex=^aloooooo[qw]+'],
+                    {},
+                    [],
+                    False
+                ),
+                (
+                    # This should be an error, as only one --mark-*
+                    # argument is allowed at a time
+                    ['--mark-records-dynamic-regex=.',
+                     '--mark-records-static-regex=.',
+                    ],
+                    {},
+                    [],
+                    True
+                ),
+                (
+                    # This should also be an error
+                    ['--mark-old-records-static=1997-07-07',
+                     '--mark-records-static-regex=.',
+                    ],
+                    {},
+                    [],
+                    True
+                ),
+                (
+                    # This should not be an error. --aging and refresh
+                    # options can be mixed with --mark ones.
+                    ['--mark-old-records-static=1997-07-07',
+                     '--aging=0',
+                    ],
+                    {},
+                    ['Set Aging to 0'],
+                    False
+                ),
+                (
+                    # This regex should catch weergly, but all the
+                    # records are already static,
+                    ['--mark-records-static-regex=wee'],
+                    {},
+                    [],
+                    False
+                ),
+                (
+                    # Make frobitz static again.
+                    ['--mark-records-static-regex=obi'],
+                    {'frobitz': [('R', 0),
+                                 ('R', 0),
+                                 ('R', 0),
+                                 ('R', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('R', 0),
+                                 ('R', 0)]
+                    },
+                    ['made 6/16 records static on frobitz.zone.'],
+                    False
+                ),
+                (
+                    # would make almost everything static, but --dry-run
+                    ['--mark-old-records-static=2222-03-04', '--dry-run'],
+                    {},
+                    [
+                        'would make 6/16 records static on snizle.zone.',
+                        'would make 3/4 records static on ts-multi.zone.'
+                    ],
+                    False
+                ),
+                (
+                    # make everything static
+                    ['--mark-records-static-regex=.'],
+                     {'snizle': [('R', 0),
+                                 ('R', 0),
+                                 ('R', 0),
+                                 ('R', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('R', 0),
+                                 ('R', 0)],
+                      'ts-10000000': [('R', 0)],
+                      'ts-multi': [('R', 0), ('R', 0), ('R', 0), ('R', 0)]
+                     },
+                    [
+                        'made 4/4 records static on ts-multi.zone.',
+                        'made 1/1 records static on ts-10000000.zone.',
+                        'made 6/16 records static on snizle.zone.',
+                    ],
+                    False
+                ),
+                (
+                    # make everything dynamic that can be
+                    ['--mark-records-dynamic-regex=.'],
+                    {'frobitz': [('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish')],
+                     'snizle': [('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('R', 'nowish'),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('-', 0),
+                                ('R', 'nowish'),
+                                ('R', 'nowish')],
+                     'ts-0': [('R', 'nowish')],
+                     'ts-100': [('R', 'nowish')],
+                     'ts-1000000': [('R', 'nowish')],
+                     'ts-10000000': [('R', 'nowish')],
+                     'ts-multi': [('R', 'nowish'),
+                                  ('R', 'nowish'),
+                                  ('R', 'nowish'),
+                                  ('R', 'nowish')],
+                     'weergly': [('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish'),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('-', 0),
+                                 ('R', 'nowish'),
+                                 ('R', 'nowish')]
+                    },
+                    [
+                        'made 4/4 records dynamic on ts-multi.zone.',
+                        'made 6/16 records dynamic on snizle.zone.',
+                        'made 1/1 records dynamic on ts-0.zone.',
+                        'made 1/1 records dynamic on ts-1000000.zone.',
+                        'made 1/1 records dynamic on ts-10000000.zone.',
+                        'made 1/1 records dynamic on ts-100.zone.',
+                        'made 6/16 records dynamic on frobitz.zone.',
+                        'made 6/16 records dynamic on weergly.zone.',
+                    ],
+                    False
+                ),
+            ):
+            result, out, err = self.runsubcmd("dns",
+                                              "zoneoptions",
+                                              os.environ["SERVER"],
+                                              self.zone,
+                                              self.creds_string,
+                                              *options)
+            if error:
+                self.assertCmdFail(result, f"zoneoptions should fail ({error})")
+            else:
+                self.assertCmdSuccess(result,
+                                      out,
+                                      err,
+                                      "zoneoptions shouldn't fail")
+
+            new_tsmap = self.get_timestamp_map()
+
+            # same keys, always
+            self.assertEqual(sorted(new_tsmap), sorted(tsmap))
+            changes = {}
+            for k in tsmap:
+                if tsmap[k] != new_tsmap[k]:
+                    changes[k] = new_tsmap[k]
+
+            self.assertEqual(diff, changes)
+
+            for s in output_substrings:
+                self.assertIn(s, out)
+            tsmap = new_tsmap
