@@ -133,7 +133,7 @@ static int vfs_error_inject_unlinkat(struct vfs_handle_struct *handle,
 	struct smb_filename *parent_fname = NULL;
 	int error = inject_unix_error("unlinkat", handle);
 	int ret;
-	bool ok;
+	NTSTATUS status;
 
 	if (error == 0) {
 		return SMB_VFS_NEXT_UNLINKAT(handle, dirfsp, smb_fname, flags);
@@ -146,9 +146,14 @@ static int vfs_error_inject_unlinkat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = parent_smb_fname(full_fname, full_fname, &parent_fname, NULL);
-	if (!ok) {
+	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
+					 full_fname, /* TALLOC_CTX. */
+					 full_fname,
+					 &parent_fname,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(full_fname);
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
