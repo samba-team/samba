@@ -3527,12 +3527,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					req->vuid);
 	}
 
-	ok = parent_smb_fname(talloc_tos(),
-			      smb_fname,
-			      &parent_dir_fname,
-			      NULL);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 smb_fname,
+					 &parent_dir_fname,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (new_dos_attributes & FILE_FLAG_POSIX_SEMANTICS) {
