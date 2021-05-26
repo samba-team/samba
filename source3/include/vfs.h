@@ -354,6 +354,7 @@
  * Version 45 - Remove SMB_VFS_READDIR_ATTR
  * Version 45 - Add SMB_VFS_SYS_ACL_DELETE_DEF_FD
  * Version 45 - Remove SMB_VFS_SYS_ACL_DELETE_DEF_FILE
+ * Version 45 - Add SMB_VFS_PARENT_PATHNAME
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1150,6 +1151,12 @@ struct vfs_fn_pointers {
 				      TALLOC_CTX *mem_ctx,
 				      char **mapped_name);
 
+	NTSTATUS (*parent_pathname_fn)(struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       const struct smb_filename *smb_fname_in,
+				       struct smb_filename **parent_dir_out,
+				       struct smb_filename **atname_out);
+
 	NTSTATUS (*fsctl_fn)(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp,
 			     TALLOC_CTX *ctx,
@@ -1616,6 +1623,11 @@ NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 				     enum vfs_translate_direction direction,
 				     TALLOC_CTX *mem_ctx,
 				     char **mapped_name);
+NTSTATUS smb_vfs_call_parent_pathname(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      const struct smb_filename *smb_fname_in,
+				      struct smb_filename **parent_dir_out,
+				      struct smb_filename **atname_out);
 NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
 			    TALLOC_CTX *ctx,
@@ -2075,6 +2087,11 @@ NTSTATUS vfs_not_implemented_translate_name(struct vfs_handle_struct *handle,
 					    const char *mapped_name,
 					    enum vfs_translate_direction direction,
 					    TALLOC_CTX *mem_ctx, char **pmapped_name);
+NTSTATUS vfs_not_implemented_parent_pathname(struct vfs_handle_struct *handle,
+					     TALLOC_CTX *mem_ctx,
+					     const struct smb_filename *smb_fname_in,
+					     struct smb_filename **parent_dir_out,
+					     struct smb_filename **atname_out);
 NTSTATUS vfs_not_implemented_fsctl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   TALLOC_CTX *ctx,

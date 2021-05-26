@@ -170,6 +170,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	SMB_VFS_OP_STRICT_LOCK_CHECK,
 	SMB_VFS_OP_TRANSLATE_NAME,
+	SMB_VFS_OP_PARENT_PATHNAME,
 	SMB_VFS_OP_FSCTL,
 	SMB_VFS_OP_OFFLOAD_READ_SEND,
 	SMB_VFS_OP_OFFLOAD_READ_RECV,
@@ -309,6 +310,7 @@ static struct {
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
 	{ SMB_VFS_OP_STRICT_LOCK_CHECK, "strict_lock_check" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
+	{ SMB_VFS_OP_PARENT_PATHNAME,	"parent_pathname" },
 	{ SMB_VFS_OP_FSCTL,		"fsctl" },
 	{ SMB_VFS_OP_OFFLOAD_READ_SEND,	"offload_read_send" },
 	{ SMB_VFS_OP_OFFLOAD_READ_RECV,	"offload_read_recv" },
@@ -2128,6 +2130,28 @@ static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_full_audit_parent_pathname(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       const struct smb_filename *smb_fname_in,
+					       struct smb_filename **parent_dir_out,
+					       struct smb_filename **atname_out)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_PARENT_PATHNAME(handle,
+					      mem_ctx,
+					      smb_fname_in,
+					      parent_dir_out,
+					      atname_out);
+	do_log(SMB_VFS_OP_CONNECTPATH,
+	       NT_STATUS_IS_OK(result),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname_in));
+
+	return result;
+}
+
 static NTSTATUS smb_full_audit_fsctl(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				TALLOC_CTX *ctx,
@@ -2990,6 +3014,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.brl_unlock_windows_fn = smb_full_audit_brl_unlock_windows,
 	.strict_lock_check_fn = smb_full_audit_strict_lock_check,
 	.translate_name_fn = smb_full_audit_translate_name,
+	.parent_pathname_fn = smb_full_audit_parent_pathname,
 	.fsctl_fn = smb_full_audit_fsctl,
 	.get_dos_attributes_send_fn = smb_full_audit_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = smb_full_audit_get_dos_attributes_recv,

@@ -684,6 +684,15 @@ static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS skel_parent_pathname(struct vfs_handle_struct *handle,
+				     TALLOC_CTX *mem_ctx,
+				     const struct smb_filename *smb_fname_in,
+				     struct smb_filename **parent_dir_out,
+				     struct smb_filename **atname_out)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS skel_fsctl(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
 			   TALLOC_CTX *ctx,
@@ -1063,6 +1072,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.brl_unlock_windows_fn = skel_brl_unlock_windows,
 	.strict_lock_check_fn = skel_strict_lock_check,
 	.translate_name_fn = skel_translate_name,
+	.parent_pathname_fn = skel_parent_pathname,
 	.fsctl_fn = skel_fsctl,
 	.freaddir_attr_fn = skel_freaddir_attr,
 	.audit_file_fn = skel_audit_file,

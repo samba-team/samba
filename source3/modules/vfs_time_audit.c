@@ -1797,6 +1797,34 @@ static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_audit_parent_pathname(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       const struct smb_filename *smb_fname_in,
+					       struct smb_filename **parent_dir_out,
+					       struct smb_filename **atname_out)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_PARENT_PATHNAME(handle,
+					      mem_ctx,
+					      smb_fname_in,
+					      parent_dir_out,
+					      atname_out);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fname("parent_pathname",
+					 timediff,
+					 smb_fname_in->base_name);
+	}
+
+	return result;
+}
+
 static NTSTATUS smb_time_audit_fsctl(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				TALLOC_CTX *ctx,
@@ -2821,6 +2849,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.brl_unlock_windows_fn = smb_time_audit_brl_unlock_windows,
 	.strict_lock_check_fn = smb_time_audit_strict_lock_check,
 	.translate_name_fn = smb_time_audit_translate_name,
+	.parent_pathname_fn = smb_time_audit_parent_pathname,
 	.fsctl_fn = smb_time_audit_fsctl,
 	.get_dos_attributes_send_fn = smb_time_audit_get_dos_attributes_send,
 	.get_dos_attributes_recv_fn = smb_time_audit_get_dos_attributes_recv,

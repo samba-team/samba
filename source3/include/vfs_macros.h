@@ -388,6 +388,11 @@
 #define SMB_VFS_NEXT_TRANSLATE_NAME(handle, name, direction, mem_ctx, mapped_name) \
 	smb_vfs_call_translate_name((handle)->next, (name), (direction), (mem_ctx), (mapped_name))
 
+#define SMB_VFS_PARENT_PATHNAME(conn, mem_ctx, smb_fname_in, parent_dir_out, atname_out) \
+	smb_vfs_call_parent_pathname((conn)->vfs_handles, (mem_ctx), (smb_fname_in), (parent_dir_out), (atname_out))
+#define SMB_VFS_NEXT_PARENT_PATHNAME(handle, mem_ctx, smb_fname_in, parent_dir_out, atname_out) \
+	smb_vfs_call_parent_pathname((handle)->next, (mem_ctx), (smb_fname_in), (parent_dir_out), (atname_out))
+
 #define SMB_VFS_FSCTL(fsp, ctx, function, req_flags, in_data, in_len, out_data, max_out_len, out_len) \
 	smb_vfs_call_fsctl((fsp)->conn->vfs_handles, (fsp), (ctx), (function), (req_flags), (in_data), (in_len), (out_data), (max_out_len), (out_len))
 

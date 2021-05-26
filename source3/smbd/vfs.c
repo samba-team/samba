@@ -2449,6 +2449,20 @@ NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 					      mapped_name);
 }
 
+NTSTATUS smb_vfs_call_parent_pathname(struct vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      const struct smb_filename *smb_fname_in,
+				      struct smb_filename **parent_dir_out,
+				      struct smb_filename **atname_out)
+{
+	VFS_FIND(parent_pathname);
+	return handle->fns->parent_pathname_fn(handle,
+					       mem_ctx,
+					       smb_fname_in,
+					       parent_dir_out,
+					       atname_out);
+}
+
 NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
 			    TALLOC_CTX *ctx,

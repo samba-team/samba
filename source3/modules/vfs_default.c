@@ -1325,6 +1325,70 @@ static NTSTATUS vfswrap_translate_name(struct vfs_handle_struct *handle,
 	return NT_STATUS_NONE_MAPPED;
 }
 
+/**
+ * Return allocated parent directory and basename of path
+ *
+ * Note: if requesting name, it is returned as talloc child of the
+ * parent. Freeing the parent is thus sufficient to free both.
+ */
+static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					const struct smb_filename *smb_fname_in,
+					struct smb_filename **parent_dir_out,
+					struct smb_filename **atname_out)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smb_filename *parent = NULL;
+	struct smb_filename *name = NULL;
+	char *p = NULL;
+
+	parent = cp_smb_filename(frame, smb_fname_in);
+	if (parent == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	TALLOC_FREE(parent->stream_name);
+	SET_STAT_INVALID(parent->st);
+
+	p = strrchr_m(parent->base_name, '/'); /* Find final '/', if any */
+	if (p == NULL) {
+		TALLOC_FREE(parent->base_name);
+		parent->base_name = talloc_strdup(parent, ".");
+		if (parent->base_name == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		p = smb_fname_in->base_name;
+	} else {
+		*p = '\0';
+		p++;
+	}
+
+	if (atname_out == NULL) {
+		*parent_dir_out = talloc_move(mem_ctx, &parent);
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	name = cp_smb_filename(frame, smb_fname_in);
+	if (name == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	TALLOC_FREE(name->base_name);
+
+	name->base_name = talloc_strdup(name, p);
+	if (name->base_name == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*parent_dir_out = talloc_move(mem_ctx, &parent);
+	*atname_out = talloc_move(*parent_dir_out, &name);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /*
  * Implement the default fsctl operation.
  */
@@ -3824,6 +3888,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,
 	.strict_lock_check_fn = vfswrap_strict_lock_check,
 	.translate_name_fn = vfswrap_translate_name,
+	.parent_pathname_fn = vfswrap_parent_pathname,
 	.fsctl_fn = vfswrap_fsctl,
 	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
 	.get_dos_attributes_send_fn = vfswrap_get_dos_attributes_send,
