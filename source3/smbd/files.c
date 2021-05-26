@@ -693,14 +693,14 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 	struct smb_filename *atname = NULL;
 	NTSTATUS status;
 	int ret;
-	bool ok;
 
-	ok = parent_smb_fname(mem_ctx,
-			      smb_fname,
-			      &parent,
-			      &atname);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(dirfsp->conn,
+					 mem_ctx,
+					 smb_fname,
+					 &parent,
+					 &atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
