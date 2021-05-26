@@ -60,13 +60,6 @@ import subprocess
 
 import etcd
 
-# Globals ---------------------------------------------------------------------
-#
-log_levels = {0: logging.ERROR,
-              1: logging.WARNING,
-              2: logging.DEBUG,
-              }
-
 # Helper Functions ------------------------------------------------------------
 #
 
@@ -100,6 +93,14 @@ def process_args():
     return args
 
 
+def setup_logging(verbose):
+    '''Setup logging based on specified verbosity.
+    '''
+
+    log_levels = [logging.ERROR, logging.WARNING, logging.DEBUG]
+    logging.basicConfig(level=log_levels[min(verbose, len(log_levels)-1)])
+
+
 def sigterm_handler(signum, frame):
     """Handler for SIGTERM signals.
     """
@@ -128,8 +129,7 @@ def int_or_not(s):
 def main():
     args = process_args()
 
-    verbose = args.verbose if args.verbose <= 2 else 2
-    logging.basicConfig(level=log_levels[verbose])
+    setup_logging(args.verbose)
 
     # etcd config defaults
     etcd_config = {
