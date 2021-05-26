@@ -7517,14 +7517,15 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 	struct file_id id;
 	files_struct *fsp = NULL;
 	int ret;
-	bool ok;
+	NTSTATUS status;
 
-	ok = parent_smb_fname(talloc_tos(),
-			      smb_fname_dst_in,
-			      &smb_fname_parent,
-			      NULL);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 smb_fname_dst_in,
+					 &smb_fname_parent,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	ret = SMB_VFS_LSTAT(conn, smb_fname_parent);
