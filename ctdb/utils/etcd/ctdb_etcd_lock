@@ -80,11 +80,30 @@ log_levels = {0: logging.ERROR,
               2: logging.DEBUG,
               }
 
-config_file = defaults['config']
-verbose = defaults['verbose']
-
 # Helper Functions ------------------------------------------------------------
 #
+
+
+def process_args():
+    '''Process command-line arguments and return them.
+    '''
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog='',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-v', '--verbose',
+                        action='count',
+                        help=helpmsg['verbose'],
+                        default=defaults['verbose'],
+                        )
+    parser.add_argument('-c', '--config',
+                        action='store',
+                        help=helpmsg['config'],
+                        default=defaults['config'],
+                        )
+    args = parser.parse_args()
+
+    return args
 
 
 def sigterm_handler(signum, frame):
@@ -113,9 +132,9 @@ def int_or_not(s):
 
 
 def main():
-    global config_file
-    global verbose
+    args = process_args()
 
+    verbose = args.verbose if args.verbose <= 2 else 2
     logging.basicConfig(level=log_levels[verbose])
 
     # etcd config defaults
@@ -143,8 +162,8 @@ def main():
         'expected_cluster_id',
         'per_host_pool_size',
     )
-    if os.path.isfile(config_file):
-        f = open(config_file, 'r')
+    if os.path.isfile(args.config):
+        f = open(args.config, 'r')
         for line in f:
             (key, value) = line.split("=", 1)
             etcd_config[key.strip()] = int_or_not(value.strip())
@@ -194,24 +213,5 @@ def main():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, sigterm_handler)
-
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        epilog='',
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-v', '--verbose',
-                        action='count',
-                        help=helpmsg['verbose'],
-                        default=defaults['verbose'],
-                        )
-    parser.add_argument('-c', '--config',
-                        action='store',
-                        help=helpmsg['config'],
-                        default=defaults['config'],
-                        )
-    args = parser.parse_args()
-
-    config_file = args.config
-    verbose = args.verbose if args.verbose <= 2 else 2
 
     main()
