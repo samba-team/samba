@@ -1757,7 +1757,7 @@ static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 	req = cli_query_security_descriptor_send(
 		NULL, self->ev, self->cli, fnum, sinfo);
 	if (!py_tevent_req_wait_exc(self, req)) {
-		return false;
+		return NULL;
 	}
 	status = cli_query_security_descriptor_recv(req, NULL, &sd);
 	PyErr_NTSTATUS_NOT_OK_RAISE(status);
@@ -1790,7 +1790,7 @@ static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
 	req = cli_set_security_descriptor_send(
 		NULL, self->ev, self->cli, fnum, sinfo, sd);
 	if (!py_tevent_req_wait_exc(self, req)) {
-		return false;
+		return NULL;
 	}
 
 	status = cli_set_security_descriptor_recv(req);
