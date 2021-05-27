@@ -532,7 +532,7 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 {
 	struct connection_struct *conn = dirfsp->conn;
 	const char *conn_rootdir = NULL;
-	struct smb_filename conn_rootdir_fname;
+	struct smb_filename conn_rootdir_fname = { 0 };
 	char *link_target = NULL;
 	int link_len = -1;
 	struct smb_filename *oldwd_fname = NULL;
@@ -547,9 +547,15 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 	if (conn_rootdir == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	conn_rootdir_fname = (struct smb_filename) {
-		.base_name = discard_const_p(char, conn_rootdir),
-	};
+	/*
+	 * With shadow_copy2 conn_rootdir can be talloc_freed
+	 * whilst we use it in this function. We must take a copy.
+	 */
+	conn_rootdir_fname.base_name = talloc_strdup(talloc_tos(),
+						     conn_rootdir);
+	if (conn_rootdir_fname.base_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * Ensure we don't get stuck in a symlink loop.
@@ -669,6 +675,7 @@ static NTSTATUS process_symlink_open(const struct files_struct *dirfsp,
 
 	TALLOC_FREE(resolved_fname);
 	TALLOC_FREE(link_target);
+	TALLOC_FREE(conn_rootdir_fname.base_name);
 	if (oldwd_fname != NULL) {
 		int ret = vfs_ChDir(conn, oldwd_fname);
 		if (ret == -1) {
