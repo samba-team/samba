@@ -61,50 +61,21 @@ from samba.ndr import ndr_pack
 # This ensures that the restored DC's SID won't clash with any other RIDs
 # already in use in the domain
 def get_sid_for_restore(samdb, logger):
-    # Find the DN of the RID set of the server
-    res = samdb.search(base=ldb.Dn(samdb, samdb.get_serverName()),
-                       scope=ldb.SCOPE_BASE, attrs=["serverReference"])
-    server_ref_dn = ldb.Dn(samdb, str(res[0]['serverReference'][0]))
-    res = samdb.search(base=server_ref_dn,
-                       scope=ldb.SCOPE_BASE,
-                       attrs=['rIDSetReferences'])
-    rid_set_dn = ldb.Dn(samdb, str(res[0]['rIDSetReferences'][0]))
-
-    # Get the alloc pools and next RID of the RID set
-    res = samdb.search(base=rid_set_dn,
-                       scope=ldb.SCOPE_SUBTREE,
-                       expression="(rIDNextRID=*)",
-                       attrs=['rIDAllocationPool',
-                              'rIDPreviousAllocationPool',
-                              'rIDNextRID'])
-
-    # Decode the bounds of the RID allocation pools
+    # Allocate a new RID without modifying the database. This should be safe,
+    # because we acquire the RID master role after creating an account using
+    # this RID during the restore process. Acquiring the RID master role
+    # creates a new RID pool which we will fetch RIDs from, so we shouldn't get
+    # duplicates.
     try:
-        rid = int(res[0].get('rIDNextRID')[0])
-    except IndexError:
-        logger.info("The RID pool for this DC is not initalized "
-                    "(e.g. it may be a fairly new DC).")
-        logger.info("To initialize it, create a temporary user on this DC "
-                    "(you can delete it later).")
-        raise CommandError("Cannot create backup - "
-                           "please initialize this DC's RID pool first.")
-
-    def split_val(num):
-        high = (0xFFFFFFFF00000000 & int(num)) >> 32
-        low = 0x00000000FFFFFFFF & int(num)
-        return low, high
-    pool_l, pool_h = split_val(res[0].get('rIDPreviousAllocationPool')[0])
-    npool_l, npool_h = split_val(res[0].get('rIDAllocationPool')[0])
-
-    # Calculate next RID based on pool bounds
-    if rid == npool_h:
-        raise CommandError('Out of RIDs, finished AllocPool')
-    if rid == pool_h:
-        if pool_h == npool_h:
-            raise CommandError('Out of RIDs, finished PrevAllocPool.')
-        rid = npool_l
-    else:
-        rid += 1
+        rid = samdb.next_free_rid()
+    except LdbError as err:
+        logger.info("A SID could not be allocated for restoring the domain. "
+                    "Either no RID Set was found on this DC, "
+                    "or the RID Set was not usable.")
+        logger.info("To initialise this DC's RID pools, obtain a RID Set from "
+                    "this domain's RID master, or run samba-tool dbcheck "
+                    "to fix the existing RID Set.")
+        raise CommandError("Cannot create backup", err)
 
     # Construct full SID
     sid = dom_sid(samdb.get_domain_sid())
