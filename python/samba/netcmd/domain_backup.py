@@ -660,18 +660,11 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         # Seize DNS roles
         domain_dn = samdb.domain_dn()
         forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
-        domaindns_dn = ("CN=Infrastructure,DC=DomainDnsZones,", domain_dn)
-        forestdns_dn = ("CN=Infrastructure,DC=ForestDnsZones,", forest_dn)
-        for dn_prefix, dns_dn in [forestdns_dn, domaindns_dn]:
-            if dns_dn not in ncs:
-                continue
-            full_dn = dn_prefix + dns_dn
-            m = ldb.Message()
-            m.dn = ldb.Dn(samdb, full_dn)
-            m["fSMORoleOwner"] = ldb.MessageElement(samdb.get_dsServiceName(),
-                                                    ldb.FLAG_MOD_REPLACE,
-                                                    "fSMORoleOwner")
-            samdb.modify(m)
+        dns_roles = [("domaindns", domain_dn),
+                     ("forestdns", forest_dn)]
+        for role, dn in dns_roles:
+            if dn in ncs:
+                self.seize_dns_role(role, samdb, None, None, None, force=True)
 
         # Seize other roles
         for role in ['rid', 'pdc', 'naming', 'infrastructure', 'schema']:
