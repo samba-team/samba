@@ -18,7 +18,6 @@ fi
 # we want everything on stderr, so the program is not disturbed
 exec 1>&2
 
-BASENAME=`basename $0`
 UNAME=`uname`
 
 PID=$1
