@@ -1330,12 +1330,15 @@ static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
 				       "name", changes[i].name,
 				       "action", changes[i].action);
 		if (change == NULL) {
+			Py_XDECREF(result);
 			TALLOC_FREE(req);
 			return NULL;
 		}
 
 		ret = PyList_Append(result, change);
+		Py_DECREF(change);
 		if (ret == -1) {
+			Py_XDECREF(result);
 			TALLOC_FREE(req);
 			return NULL;
 		}
