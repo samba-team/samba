@@ -657,6 +657,8 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		arec->dwSerial = serial;
 	}
 
+	/* Set the correct rank for the record. */
+	set_record_rank(z, name, arec);
 	/*
 	 * Successful RPC updates *always* zero timestamp and flags and set
 	 * version.
