@@ -3509,13 +3509,13 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self,
 		PyObject *value = NULL;
 		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
 		int res = 0;
-		Py_CLEAR(py_el);
 		value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
+		Py_CLEAR(py_el);
 		if (value == NULL ) {
 			Py_CLEAR(l);
 			return NULL;
 		}
-		res = PyList_SetItem(l, 0, value);
+		res = PyList_SetItem(l, j, value);
 		if (res == -1) {
 			Py_CLEAR(l);
 			return NULL;
