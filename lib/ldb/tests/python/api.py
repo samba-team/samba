@@ -3043,6 +3043,27 @@ class LdbMsgTests(TestCase):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=foo28")
         self.assertEqual(1, len(self.msg.items()))
 
+    def test_items(self):
+        self.msg["foo"] = ["foo"]
+        self.msg["bar"] = ["bar"]
+        try:
+            items = self.msg.items()
+        except:
+            self.fail()
+        self.assertEqual([("foo", ldb.MessageElement(["foo"])),
+                          ("bar", ldb.MessageElement(["bar"]))],
+                         items)
+
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=test")
+        try:
+            items = self.msg.items()
+        except:
+            self.fail()
+        self.assertEqual([("dn", ldb.Dn(ldb.Ldb(), "dc=test")),
+                          ("foo", ldb.MessageElement(["foo"])),
+                          ("bar", ldb.MessageElement(["bar"]))],
+                         items)
+
     def test_repr(self):
         self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=foo29")
         self.msg["dc"] = b"foo"
