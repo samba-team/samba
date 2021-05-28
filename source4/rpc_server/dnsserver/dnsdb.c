@@ -641,6 +641,11 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		}
 
 		if (dns_record_match(drec, &rec2)) {
+			/*
+			 * we are replacing this one with arec, which is done
+			 * by pushing arec into el->values[i] below, after the
+			 * various manipulations.
+			 */
 			break;
 		}
 	}
@@ -648,13 +653,35 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		return WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST;
 	}
 
-	/* If updating SOA record, use specified serial, otherwise increment */
+	/*
+	 * If we're updating a SOA record, use the specified serial.
+	 *
+	 * Otherwise, if we are updating ttl in place (i.e., not changing
+	 * .wType and .data on a record), we should increment the existing
+	 * serial, and save to the SOA.
+	 *
+	 * Outside of those two cases, we look for the zone's SOA record and
+	 * use its serial.
+	 */
 	if (arec->wType != DNS_TYPE_SOA) {
-		serial = dnsserver_update_soa(mem_ctx, samdb, z, &werr);
-		if (serial < 0) {
-			return werr;
+		if (updating_ttl) {
+			/*
+			 * In this case, we keep some of the old values.
+			 */
+			arec->dwSerial = rec2.dwSerial;
+			arec->dwReserved = rec2.dwReserved;
+			/*
+			 * TODO: if the old TTL and the new TTL are
+			 * different, the serial number is incremented.
+			 */
+		} else {
+			arec->dwReserved = 0;
+			serial = dnsserver_update_soa(mem_ctx, samdb, z, &werr);
+			if (serial < 0) {
+				return werr;
+			}
+			arec->dwSerial = serial;
 		}
-		arec->dwSerial = serial;
 	}
 
 	/* Set the correct rank for the record. */
