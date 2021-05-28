@@ -15,17 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import logging
-
 import samba.getopt as options
 from samba import WERRORError
 from samba import werror
 from struct import pack
-from socket import inet_ntoa
 from socket import inet_ntop
 from socket import AF_INET
 from socket import AF_INET6
-import shlex
 import struct
 
 from samba import remove_dc
