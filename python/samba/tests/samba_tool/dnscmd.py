@@ -40,6 +40,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         self.testip = "192.168.0.193"
         self.testip2 = "192.168.0.194"
 
+        self.addCleanup(self.deleteZone)
         self.addZone()
 
         # Note: SOA types don't work (and shouldn't), as we only have one zone per DNS record.
@@ -114,10 +115,6 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 "MX": bad_mx,
                 "SRV": bad_srv
         }
-
-    def tearDown(self):
-        self.deleteZone()
-        super(DnsCmdTestCase, self).tearDown()
 
     def resetZone(self):
         self.deleteZone()
