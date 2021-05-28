@@ -578,6 +578,14 @@ NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			char **pp_name_out);
 struct connection_struct;
 struct smb_filename;
+
+NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct messaging_context *msg,
+				const struct auth_session_info *session_info,
+				int snum,
+				const char *path,
+				struct connection_struct **c);
 struct conn_struct_tos {
 	struct connection_struct *conn;
 	struct smb_filename *oldcwd_fname;
