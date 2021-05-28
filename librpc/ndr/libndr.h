@@ -653,12 +653,12 @@ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list, const void *key, uint32_t *v,
 					    int(*_cmp_fn)(const void*,const void*), bool erase);
 enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list, const void *key, uint32_t *v);
-uint32_t ndr_token_peek(struct ndr_token_list *list, const void *key);
+enum ndr_err_code ndr_token_peek(struct ndr_token_list *list, const void *key, uint32_t *v);
 enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p);
-uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p);
+enum ndr_err_code ndr_get_array_size(struct ndr_pull *ndr, const void *p, uint32_t *size);
 enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size);
 enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p);
-uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p);
+enum ndr_err_code ndr_get_array_length(struct ndr_pull *ndr, const void *p, uint32_t *length);
 enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length);
 enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, int ndr_flags, uint32_t count);
 enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_flags, uint32_t count);

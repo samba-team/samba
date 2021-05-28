@@ -148,6 +148,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
 {
 	uint32_t skip = 0;
 	uint32_t append = 0;
+	enum ndr_err_code ndr_err;
 
 	if (ndr->relative_base_offset != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
@@ -179,8 +180,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
 	ndr->offset -= skip;
 	ndr->data_size -= skip;
 
-	append = ndr_token_peek(&ndr->array_size_list, ndr);
-	if (append != UINT32_MAX) {
+	ndr_err = ndr_token_peek(&ndr->array_size_list, ndr, &append);
+	if (ndr_err == NDR_ERR_TOKEN) {
 		/*
 		 * here we assume, that ndr->data is not a
 		 * talloc child of ndr.
@@ -1065,18 +1066,10 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 /*
   peek at but don't removed a token from a ndr context
 */
-_PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list *list, const void *key)
+_PUBLIC_ enum ndr_err_code ndr_token_peek(struct ndr_token_list *list,
+					  const void *key, uint32_t *v)
 {
-	unsigned i;
-	struct ndr_token *tokens = list->tokens;
-
-	for (i = list->count - 1; i < list->count; i--) {
-		if (tokens[i].key == key) {
-			return tokens[i].value;
-		}
-	}
-
-	return 0;
+	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, false);
 }
 
 /*
@@ -1099,9 +1092,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void 
 /*
   get the stored array size field
 */
-_PUBLIC_ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_get_array_size(struct ndr_pull *ndr, const void *p, uint32_t *size)
 {
-	return ndr_token_peek(&ndr->array_size_list, p);
+	return ndr_token_peek(&ndr->array_size_list, p, size);
 }
 
 /*
@@ -1110,7 +1103,7 @@ _PUBLIC_ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
 _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
 {
 	uint32_t stored;
-	stored = ndr_token_peek(&ndr->array_size_list, p);
+	NDR_CHECK(ndr_token_peek(&ndr->array_size_list, p, &stored));
 	if (stored != size) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array size - got %u expected %u\n",
@@ -1144,9 +1137,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const voi
 /*
   get the stored array length field
 */
-_PUBLIC_ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_get_array_length(struct ndr_pull *ndr, const void *p, uint32_t *length)
 {
-	return ndr_token_peek(&ndr->array_length_list, p);
+	return ndr_token_peek(&ndr->array_length_list, p, length);
 }
 
 /*
@@ -1155,7 +1148,7 @@ _PUBLIC_ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
 _PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 {
 	uint32_t stored;
-	stored = ndr_token_peek(&ndr->array_length_list, p);
+	NDR_CHECK(ndr_token_peek(&ndr->array_length_list, p, &stored));
 	if (stored != length) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array length - got %u expected %u\n",
