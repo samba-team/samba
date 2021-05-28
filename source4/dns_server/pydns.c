@@ -63,6 +63,7 @@ static PyObject *py_dnsp_DnssrvRpcRecord_get_list(struct dnsp_DnssrvRpcRecord *r
 	return py_dns_list;
 }
 
+
 static int py_dnsp_DnssrvRpcRecord_get_array(PyObject *value,
 					     TALLOC_CTX *mem_ctx,
 					     struct dnsp_DnssrvRpcRecord **records,
@@ -325,6 +326,39 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
+static PyObject *py_dsdb_dns_records_match(PyObject *self, PyObject *args)
+{
+	PyObject *py_recs[2];
+	struct dnsp_DnssrvRpcRecord *rec1;
+	struct dnsp_DnssrvRpcRecord *rec2;
+	size_t i;
+	bool type_correct;
+	bool match;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_recs[0], &py_recs[1])) {
+		return NULL;
+	}
+
+	for (i = 0; i < 2; i++) {
+		type_correct = py_check_dcerpc_type(py_recs[i],
+						    "samba.dcerpc.dnsp",
+						    "DnssrvRpcRecord");
+		if (! type_correct) {
+			PyErr_SetString(PyExc_ValueError,
+					"DnssrvRpcRecord expected");
+			return NULL;
+		}
+	}
+
+	rec1 = (struct dnsp_DnssrvRpcRecord *)pytalloc_get_ptr(py_recs[0]);
+	rec2 = (struct dnsp_DnssrvRpcRecord *)pytalloc_get_ptr(py_recs[1]);
+
+	match = dns_record_match(rec1, rec2);
+	return PyBool_FromLong(match);
+}
+
+
 static PyObject *py_dsdb_dns_unix_to_dns_timestamp(PyObject *self, PyObject *args)
 {
 	uint32_t timestamp;
@@ -376,6 +410,9 @@ static PyMethodDef py_dsdb_dns_methods[] = {
 		METH_VARARGS, "Replace the DNS database entries for a DNS name"},
 	{ "replace_by_dn", (PyCFunction)py_dsdb_dns_replace_by_dn,
 		METH_VARARGS, "Replace the DNS database entries for a LDB DN"},
+	{ "records_match", (PyCFunction)py_dsdb_dns_records_match,
+	  METH_VARARGS|METH_KEYWORDS,
+	  "Decide whether two records match, according to dns update rules"},
 	{ "extract", (PyCFunction)py_dsdb_dns_extract,
 		METH_VARARGS, "Return the DNS database entry as a python structure from an Ldb.MessageElement of type dnsRecord"},
 	{ "unix_to_dns_timestamp", (PyCFunction)py_dsdb_dns_unix_to_dns_timestamp,
