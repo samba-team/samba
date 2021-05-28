@@ -590,8 +590,6 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		return werr;
 	}
 
-	arec->dwTimeStamp = 0;
-
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
 			"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))",
 			 encoded_name);
@@ -658,6 +656,14 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		}
 		arec->dwSerial = serial;
 	}
+
+	/*
+	 * Successful RPC updates *always* zero timestamp and flags and set
+	 * version.
+	 */
+	arec->dwTimeStamp = 0;
+	arec->version = 5;
+	arec->flags = 0;
 
 	ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, arec,
 					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
