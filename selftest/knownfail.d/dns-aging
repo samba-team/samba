@@ -35,8 +35,6 @@ samba.tests.dns_aging.+test_add_update_dwReserved
 samba.tests.dns_aging.+test_add_update_dwSerial
 samba.tests.dns_aging.+test_add_update_dwSerial_2
 samba.tests.dns_aging.+test_add_update_many
-samba.tests.dns_aging.+test_add_update_timestamp
-samba.tests.dns_aging.+test_add_update_ttl
 samba.tests.dns_aging.+test_add_update_ttl_serial
 samba.tests.dns_aging.+test_dns_delete_simple_0_0_days_no_aging_touch
 samba.tests.dns_aging.+test_dns_delete_simple_0_113_days_no_aging_touch
@@ -53,7 +51,6 @@ samba.tests.dns_aging.+test_dns_delete_simple_2_13_days_no_aging_touch
 samba.tests.dns_aging.+test_dns_delete_simple_2_3_days_no_aging_touch
 samba.tests.dns_aging.+test_dynamic_record_static_update
 samba.tests.dns_aging.+test_multi_records_delete_aging
-samba.tests.dns_aging.+test_rpc_update_timestamps
 samba.tests.dns_aging.+test_static_record_dynamic_update
 samba.tests.dns_aging.+test_update_aging_disabled\b
 samba.tests.dns_aging.+test_update_aging_disabled_beyond_refresh_window

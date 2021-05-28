@@ -1,2 +1,1 @@
-samba.tests.samba_tool.dnscmd.+test_update_valid_type
 samba.tests.samba_tool.dnscmd.+test_update_invalid_type

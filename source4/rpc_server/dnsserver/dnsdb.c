@@ -570,12 +570,14 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 {
 	const char * const attrs[] = { "dnsRecord", NULL };
 	struct ldb_result *res;
+	struct dnsp_DnssrvRpcRecord rec2;
 	struct dnsp_DnssrvRpcRecord *arec = NULL, *drec = NULL;
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
 	int ret, i;
 	int serial;
 	WERROR werr;
+	bool updating_ttl = false;
 	char *encoded_name = ldb_binary_encode_string(mem_ctx, name);
 
 	werr = dns_to_dnsp_convert(mem_ctx, add_record, &arec, true);
@@ -607,8 +609,6 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec2;
-
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -620,13 +620,22 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		}
 	}
 	if (i < el->num_values) {
-		return WERR_DNS_ERROR_RECORD_ALREADY_EXISTS;
+		/*
+		 * The record already exists, which is an error UNLESS we are
+		 * doing an in-place update.
+		 *
+		 * Therefore we need to see if drec also matches, in which
+		 * case it's OK, though we can only update dwTtlSeconds and
+		 * reset the timestamp to zero.
+		 */
+		updating_ttl = dns_record_match(drec, &rec2);
+		if (! updating_ttl) {
+			return WERR_DNS_ERROR_RECORD_ALREADY_EXISTS;
+		}
+		/* In this case the next loop is redundant */
 	}
 
-
 	for (i=0; i<el->num_values; i++) {
-		struct dnsp_DnssrvRpcRecord rec2;
-
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
