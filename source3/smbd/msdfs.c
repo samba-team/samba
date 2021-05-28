@@ -495,6 +495,44 @@ NTSTATUS create_conn_struct_tos_cwd(struct messaging_context *msg,
 	return NT_STATUS_OK;
 }
 
+/********************************************************
+ Fake up a connection struct for the VFS layer.
+ This takes an TALLOC_CTX and tevent_context from the
+ caller and the resulting connection_struct is stable
+ across the lifetime of mem_ctx and ev.
+
+ Note: this performs a vfs connect and changes cwd.
+
+ See also the comment for create_conn_struct_tos() above!
+*********************************************************/
+
+NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct messaging_context *msg,
+				const struct auth_session_info *session_info,
+				int snum,
+				const char *path,
+				struct connection_struct **c)
+{
+	NTSTATUS status;
+
+	become_root();
+	status = create_conn_struct_as_root(mem_ctx,
+					    ev,
+					    msg,
+					    c,
+					    snum,
+					    path,
+					    session_info);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(c);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void shuffle_strlist(char **list, int count)
 {
 	int i;
