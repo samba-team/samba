@@ -1755,7 +1755,7 @@ static bool b9_record_match(struct dnsp_DnssrvRpcRecord *rec1,
 		return true;
 	}
 
-	return dns_records_match(rec1, rec2);
+	return dns_record_match(rec1, rec2);
 }
 
 /*

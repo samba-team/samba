@@ -186,7 +186,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	for (i = 0; i < acount; i++) {
-		if (dns_records_match(rec, &ans[i])) {
+		if (dns_record_match(rec, &ans[i])) {
 			found = true;
 			break;
 		}
@@ -545,7 +545,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		for (i = first; i < rcount; i++) {
-			if (!dns_records_match(&recs[i], &recs[rcount])) {
+			if (!dns_record_match(&recs[i], &recs[rcount])) {
 				continue;
 			}
 
@@ -632,7 +632,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			for (i = first; i < rcount; i++) {
-				if (dns_records_match(ns_rec, &recs[i])) {
+				if (dns_record_match(ns_rec, &recs[i])) {
 					found = true;
 					break;
 				}
@@ -650,7 +650,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		for (i = first; i < rcount; i++) {
-			if (dns_records_match(del_rec, &recs[i])) {
+			if (dns_record_match(del_rec, &recs[i])) {
 				recs[i] = (struct dnsp_DnssrvRpcRecord) {
 					.wType = DNS_TYPE_TOMBSTONE,
 				};

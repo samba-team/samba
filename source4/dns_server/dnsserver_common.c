@@ -1273,8 +1273,8 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
  */
 
 
-bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
-		       struct dnsp_DnssrvRpcRecord *rec2)
+bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1,
+		      struct dnsp_DnssrvRpcRecord *rec2)
 {
 	int i;
 	struct in6_addr rec1_in_addr6;

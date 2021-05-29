@@ -78,8 +78,8 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 			  struct ldb_dn **_dn);
 bool dns_name_equal(const char *name1, const char *name2);
 
-bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
-		       struct dnsp_DnssrvRpcRecord *rec2);
+bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1,
+		      struct dnsp_DnssrvRpcRecord *rec2);
 
 /*
  * For this routine, base_dn is generally NULL.  The exception comes
