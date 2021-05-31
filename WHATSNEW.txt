@@ -1,4 +1,69 @@
                    ==============================
+                   Release Notes for Samba 4.14.5
+                            June 01, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.14 release series.
+
+
+Changes since 4.14.4
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14696: s3: smbd: SMB1 SMBsplwr doesn't send a reply packet on success.
+   * BUG 14708: s3: smbd: Ensure POSIX default ACL is mapped into returned
+     Windows ACL for directory handles.
+   * BUG 14721: s3: smbd: Fix uninitialized memory read in
+     process_symlink_open() when used with vfs_shadow_copy2().
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14689: docs: Expand the "log level" docs on audit logging.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14714: smbd: Correctly initialize close timestamp fields.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14699: Fix gcc11 compiler issues.
+
+o  Pavel Filipenský <pfilipen@redhat.com>
+   * BUG 14718: docs-xml: Update smbcacls manpage.
+   * BUG 14719: docs: Update list of available commands in rpcclient.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14475: ctdb: Fix a crash in run_proc_signal_handler().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14695: s3:winbind: For 'security = ADS' require realm/workgroup to be
+     set.
+   * BUG 14699: lib:replace: Do not build strndup test with gcc 11 or newer.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.14.4
                            April 29, 2021
                    ==============================
@@ -59,8 +124,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
