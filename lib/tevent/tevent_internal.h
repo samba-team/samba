@@ -204,6 +204,8 @@ struct tevent_fd {
 	/* this is private for the events_ops implementation */
 	uint64_t additional_flags;
 	void *additional_data;
+	/* custom tag that can be set by caller */
+	uint64_t tag;
 };
 
 struct tevent_timer {
@@ -221,6 +223,8 @@ struct tevent_timer {
 	const char *location;
 	/* this is private for the events_ops implementation */
 	void *additional_data;
+	/* custom tag that can be set by caller */
+	uint64_t tag;
 };
 
 struct tevent_immediate {
@@ -239,6 +243,8 @@ struct tevent_immediate {
 	/* this is private for the events_ops implementation */
 	void (*cancel_fn)(struct tevent_immediate *im);
 	void *additional_data;
+	/* custom tag that can be set by caller */
+	uint64_t tag;
 };
 
 struct tevent_signal {
@@ -257,6 +263,8 @@ struct tevent_signal {
 	const char *location;
 	/* this is private for the events_ops implementation */
 	void *additional_data;
+	/* custom tag that can be set by caller */
+	uint64_t tag;
 };
 
 struct tevent_threaded_context {

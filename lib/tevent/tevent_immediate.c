@@ -101,6 +101,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 {
 	const char *create_location = im->create_location;
 	bool busy = im->busy;
+	uint64_t tag = im->tag;
 	struct tevent_wrapper_glue *glue = im->wrapper;
 
 	tevent_common_immediate_cancel(im);
@@ -118,6 +119,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 		.create_location	= create_location,
 		.schedule_location	= location,
 		.busy			= busy,
+		.tag			= tag,
 	};
 
 	DLIST_ADD_END(ev->immediate_events, im);
@@ -208,3 +210,21 @@ bool tevent_common_loop_immediate(struct tevent_context *ev)
 	return true;
 }
 
+
+void tevent_immediate_set_tag(struct tevent_immediate *im, uint64_t tag)
+{
+	if (im == NULL) {
+		return;
+	}
+
+	im->tag = tag;
+}
+
+uint64_t tevent_immediate_get_tag(const struct tevent_immediate *im)
+{
+	if (im == NULL) {
+		return 0;
+	}
+
+	return im->tag;
+}

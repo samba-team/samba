@@ -516,3 +516,21 @@ void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se)
 	talloc_set_destructor(se, NULL);
 	return;
 }
+
+void tevent_signal_set_tag(struct tevent_signal *se, uint64_t tag)
+{
+	if (se == NULL) {
+		return;
+	}
+
+	se->tag = tag;
+}
+
+uint64_t tevent_signal_get_tag(const struct tevent_signal *se)
+{
+	if (se == NULL) {
+		return 0;
+	}
+
+	return se->tag;
+}

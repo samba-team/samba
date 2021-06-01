@@ -210,6 +210,22 @@ struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 		       #handler, __location__)
 #endif
 
+/**
+ * @brief Associate a custom tag with the event.
+ *
+ * This tag can be then retrieved with tevent_fd_get_tag()
+ *
+ * @param[in]  fde  The file descriptor event.
+ *
+ * @param[in]  tag  Custom tag.
+ */
+void tevent_fd_set_tag(struct tevent_fd *fde, uint64_t tag);
+
+/**
+ * @brief Get custom event tag.
+ */
+uint64_t tevent_fd_get_tag(const struct tevent_fd *fde);
+
 #ifdef DOXYGEN
 /**
  * @brief Add a timed event
@@ -268,6 +284,22 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
  */
 void tevent_update_timer(struct tevent_timer *te, struct timeval next_event);
 
+/**
+ * @brief Associate a custom tag with the event.
+ *
+ * This tag can be then retrieved with tevent_timer_get_tag()
+ *
+ * @param[in]  te   The timer event.
+ *
+ * @param[in]  tag  Custom tag.
+ */
+void tevent_timer_set_tag(struct tevent_timer *te, uint64_t tag);
+
+/**
+ * @brief Get custom event tag.
+ */
+uint64_t tevent_timer_get_tag(const struct tevent_timer *te);
+
 #ifdef DOXYGEN
 /**
  * Initialize an immediate event object
@@ -318,6 +350,22 @@ void _tevent_schedule_immediate(struct tevent_immediate *im,
 				   #handler, __location__);
 #endif
 
+/**
+ * @brief Associate a custom tag with the event.
+ *
+ * This tag can be then retrieved with tevent_immediate_get_tag()
+ *
+ * @param[in]  im   The immediate event.
+ *
+ * @param[in]  tag  Custom tag.
+ */
+void tevent_immediate_set_tag(struct tevent_immediate *im, uint64_t tag);
+
+/**
+ * @brief Get custom event tag.
+ */
+uint64_t tevent_immediate_get_tag(const struct tevent_immediate *fde);
+
 #ifdef DOXYGEN
 /**
  * @brief Add a tevent signal handler
@@ -364,6 +412,22 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
 			   #handler, __location__)
 #endif
+
+/**
+ * @brief Associate a custom tag with the event.
+ *
+ * This tag can be then retrieved with tevent_signal_get_tag()
+ *
+ * @param[in]  fde  The signal event.
+ *
+ * @param[in]  tag  Custom tag.
+ */
+void tevent_signal_set_tag(struct tevent_signal *se, uint64_t tag);
+
+/**
+ * @brief Get custom event tag.
+ */
+uint64_t tevent_signal_get_tag(const struct tevent_signal *se);
 
 /**
  * @brief the number of supported signals

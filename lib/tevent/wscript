@@ -135,6 +135,10 @@ def build(bld):
                          pattern='tevent.py',
                          installdir='python')
 
+    bld.SAMBA_BINARY('test_tevent_tag',
+                     source='tests/test_tevent_tag.c',
+                     deps='cmocka tevent',
+                     install=False)
 
 def test(ctx):
     '''test tevent'''
@@ -147,7 +151,7 @@ def test(ctx):
 
     unit_test_ret = 0
     unit_tests = [
-
+        'test_tevent_tag',
     ]
 
     for unit_test in unit_tests:

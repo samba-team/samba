@@ -159,3 +159,21 @@ int tevent_common_invoke_fd_handler(struct tevent_fd *fde, uint16_t flags,
 
 	return 0;
 }
+
+void tevent_fd_set_tag(struct tevent_fd *fde, uint64_t tag)
+{
+	if (fde == NULL) {
+		return;
+	}
+
+	fde->tag = tag;
+}
+
+uint64_t tevent_fd_get_tag(const struct tevent_fd *fde)
+{
+	if (fde == NULL) {
+		return 0;
+	}
+
+	return fde->tag;
+}

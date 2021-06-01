@@ -447,3 +447,20 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	return tevent_timeval_zero();
 }
 
+void tevent_timer_set_tag(struct tevent_timer *te, uint64_t tag)
+{
+	if (te == NULL) {
+		return;
+	}
+
+	te->tag = tag;
+}
+
+uint64_t tevent_timer_get_tag(const struct tevent_timer *te)
+{
+	if (te == NULL) {
+		return 0;
+	}
+
+	return te->tag;
+}
