@@ -594,12 +594,13 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 	    nridset.next_rid == UINT32_MAX) {
 		nridset.prev_pool = nridset.alloc_pool;
 		nridset.next_rid = nridset.prev_pool & 0xFFFFFFFF;
+	} else {
+		nridset.next_rid += 1;
 	}
 
 	/*
 	 * Now check if our current pool is still usable
 	 */
-	nridset.next_rid += 1;
 	prev_pool_lo = nridset.prev_pool & 0xFFFFFFFF;
 	prev_pool_hi = nridset.prev_pool >> 32;
 	if (nridset.next_rid > prev_pool_hi) {

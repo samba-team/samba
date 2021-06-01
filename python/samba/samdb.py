@@ -1469,8 +1469,8 @@ schemaUpdateNow: 1
         if prev_pool == uint64_max or next_rid == uint32_max:
             prev_pool = alloc_pool
             next_rid = prev_pool & uint32_max
-
-        next_rid += 1
+        else:
+            next_rid += 1
 
         # Now check if our current pool is still usable
         prev_pool_lo = prev_pool & uint32_max

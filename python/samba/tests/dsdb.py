@@ -136,10 +136,9 @@ class DsdbTests(TestCase):
                                    "rIDAllocationPool"))
             self.samdb.modify(msg)
 
-            # Ensure that next_free_rid() returns the start of the next pool
-            # plus one.
+            # Ensure that next_free_rid() returns the start of the next pool.
             next_free_rid3 = self.samdb.next_free_rid()
-            self.assertEqual(next_lo + 1, next_free_rid3)
+            self.assertEqual(next_lo, next_free_rid3)
 
             # Check the result of allocate_rid() matches.
             rid = self.samdb.allocate_rid()
