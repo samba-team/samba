@@ -320,7 +320,7 @@ bool parent_smb_fname(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(name->base_name);
 
-	name->base_name = talloc_strdup(mem_ctx, p);
+	name->base_name = talloc_strdup(name, p);
 	if (name == NULL) {
 		TALLOC_FREE(frame);
 		return false;
