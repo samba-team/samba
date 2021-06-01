@@ -377,6 +377,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	for (fd = ev->fd_events; fd; fd = fn) {
 		fn = fd->next;
+		tevent_trace_fd_callback(fd->event_ctx, fd, TEVENT_EVENT_TRACE_DETACH);
 		fd->wrapper = NULL;
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(ev->fd_events, fd);
@@ -385,6 +386,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	ev->last_zero_timer = NULL;
 	for (te = ev->timer_events; te; te = tn) {
 		tn = te->next;
+		tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_DETACH);
 		te->wrapper = NULL;
 		te->event_ctx = NULL;
 		DLIST_REMOVE(ev->timer_events, te);
@@ -392,6 +394,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	for (ie = ev->immediate_events; ie; ie = in) {
 		in = ie->next;
+		tevent_trace_immediate_callback(ie->event_ctx, ie, TEVENT_EVENT_TRACE_DETACH);
 		ie->wrapper = NULL;
 		ie->event_ctx = NULL;
 		ie->cancel_fn = NULL;
@@ -400,6 +403,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 	for (se = ev->signal_events; se; se = sn) {
 		sn = se->next;
+		tevent_trace_signal_callback(se->event_ctx, se, TEVENT_EVENT_TRACE_DETACH);
 		se->wrapper = NULL;
 		se->event_ctx = NULL;
 		DLIST_REMOVE(ev->signal_events, se);

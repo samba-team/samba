@@ -114,22 +114,149 @@ void tevent_set_trace_callback(struct tevent_context *ev,
 		return;
 	}
 
-	ev->tracing.callback = cb;
-	ev->tracing.private_data = private_data;
+	ev->tracing.point.callback = cb;
+	ev->tracing.point.private_data = private_data;
 }
 
 void tevent_get_trace_callback(struct tevent_context *ev,
 			       tevent_trace_callback_t *cb,
 			       void *private_data)
 {
-	*cb = ev->tracing.callback;
-	*(void**)private_data = ev->tracing.private_data;
+	*cb = ev->tracing.point.callback;
+	*(void**)private_data = ev->tracing.point.private_data;
 }
 
 void tevent_trace_point_callback(struct tevent_context *ev,
 				 enum tevent_trace_point tp)
 {
-	if (ev->tracing.callback != NULL) {
-		ev->tracing.callback(tp, ev->tracing.private_data);
+	if (ev->tracing.point.callback != NULL) {
+		ev->tracing.point.callback(tp, ev->tracing.point.private_data);
+	}
+}
+
+void tevent_set_trace_fd_callback(struct tevent_context *ev,
+				  tevent_trace_fd_callback_t cb,
+				  void *private_data)
+{
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_trace_fd_callback() on wrapper");
+		return;
+	}
+
+	ev->tracing.fde.callback = cb;
+	ev->tracing.fde.private_data = private_data;
+}
+
+void tevent_get_trace_fd_callback(struct tevent_context *ev,
+				  tevent_trace_fd_callback_t *cb,
+				  void *p_private_data)
+{
+	*cb = ev->tracing.fde.callback;
+	*(void**)p_private_data = ev->tracing.fde.private_data;
+}
+
+void tevent_trace_fd_callback(struct tevent_context *ev,
+			      struct tevent_fd *fde,
+			      enum tevent_event_trace_point tp)
+{
+	if (ev->tracing.fde.callback != NULL) {
+		ev->tracing.fde.callback(fde, tp, ev->tracing.fde.private_data);
+	}
+}
+
+void tevent_set_trace_signal_callback(struct tevent_context *ev,
+				      tevent_trace_signal_callback_t cb,
+				      void *private_data)
+{
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_trace_signal_callback() "
+			     "on wrapper");
+		return;
+	}
+
+	ev->tracing.se.callback = cb;
+	ev->tracing.se.private_data = private_data;
+}
+
+void tevent_get_trace_signal_callback(struct tevent_context *ev,
+				      tevent_trace_signal_callback_t *cb,
+				      void *p_private_data)
+{
+	*cb = ev->tracing.se.callback;
+	*(void**)p_private_data = ev->tracing.se.private_data;
+}
+
+void tevent_trace_signal_callback(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  enum tevent_event_trace_point tp)
+{
+	if (ev->tracing.se.callback != NULL) {
+		ev->tracing.se.callback(se, tp, ev->tracing.se.private_data);
+	}
+}
+
+void tevent_set_trace_timer_callback(struct tevent_context *ev,
+				     tevent_trace_timer_callback_t cb,
+				     void *private_data)
+{
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_trace_timer_callback() "
+			     "on wrapper");
+		return;
+	}
+
+	ev->tracing.te.callback = cb;
+	ev->tracing.te.private_data = private_data;
+}
+
+void tevent_get_trace_timer_callback(struct tevent_context *ev,
+				     tevent_trace_timer_callback_t *cb,
+				     void *p_private_data)
+{
+	*cb = ev->tracing.te.callback;
+	*(void**)p_private_data = ev->tracing.te.private_data;
+}
+
+void tevent_trace_timer_callback(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 enum tevent_event_trace_point tp)
+{
+	if (ev->tracing.te.callback != NULL) {
+		ev->tracing.te.callback(te, tp, ev->tracing.te.private_data);
+	}
+}
+
+void tevent_set_trace_immediate_callback(struct tevent_context *ev,
+					 tevent_trace_immediate_callback_t cb,
+					 void *private_data)
+{
+	if (ev->wrapper.glue != NULL) {
+		ev = tevent_wrapper_main_ev(ev);
+		tevent_abort(ev, "tevent_set_trace_immediate_callback() "
+		             "on wrapper");
+		return;
+	}
+
+	ev->tracing.im.callback = cb;
+	ev->tracing.im.private_data = private_data;
+}
+
+void tevent_get_trace_immediate_callback(struct tevent_context *ev,
+					 tevent_trace_immediate_callback_t *cb,
+					 void *p_private_data)
+{
+	*cb = ev->tracing.im.callback;
+	*(void**)p_private_data = ev->tracing.im.private_data;
+}
+
+void tevent_trace_immediate_callback(struct tevent_context *ev,
+				     struct tevent_immediate *im,
+				     enum tevent_event_trace_point tp)
+{
+	if (ev->tracing.im.callback != NULL) {
+		ev->tracing.im.callback(im, tp, ev->tracing.im.private_data);
 	}
 }

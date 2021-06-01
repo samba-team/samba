@@ -33,9 +33,20 @@ static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 {
 	const char *create_location = im->create_location;
 	bool busy = im->busy;
+	uint64_t tag = im->tag;
+	struct tevent_context *detach_ev_ctx = NULL;
 
 	if (im->destroyed) {
 		tevent_abort(im->event_ctx, "tevent_immediate use after free");
+		return;
+	}
+
+	if (im->detach_ev_ctx != NULL) {
+		detach_ev_ctx = im->detach_ev_ctx;
+		im->detach_ev_ctx = NULL;
+		tevent_trace_immediate_callback(detach_ev_ctx,
+						im,
+						TEVENT_EVENT_TRACE_DETACH);
 		return;
 	}
 
@@ -54,11 +65,20 @@ static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 		im->cancel_fn(im);
 	}
 
+	if (busy && im->handler_name == NULL) {
+		detach_ev_ctx = im->event_ctx;
+	} else {
+		tevent_trace_immediate_callback(im->event_ctx,
+						im,
+						TEVENT_EVENT_TRACE_DETACH);
+	}
 	DLIST_REMOVE(im->event_ctx->immediate_events, im);
 
 	*im = (struct tevent_immediate) {
 		.create_location	= create_location,
 		.busy			= busy,
+		.tag			= tag,
+		.detach_ev_ctx		= detach_ev_ctx,
 	};
 
 	if (!busy) {
@@ -122,6 +142,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 		.tag			= tag,
 	};
 
+	tevent_trace_immediate_callback(im->event_ctx, im, TEVENT_EVENT_TRACE_ATTACH);
 	DLIST_ADD_END(ev->immediate_events, im);
 	talloc_set_destructor(im, tevent_common_immediate_destructor);
 
@@ -165,6 +186,7 @@ int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 					cur.handler_name,
 					cur.schedule_location);
 	}
+	tevent_trace_immediate_callback(cur.event_ctx, im, TEVENT_EVENT_TRACE_BEFORE_HANDLER);
 	cur.handler(handler_ev, im, cur.private_data);
 	if (cur.wrapper != NULL) {
 		cur.wrapper->ops->after_immediate_handler(
@@ -177,6 +199,15 @@ int tevent_common_invoke_immediate_handler(struct tevent_immediate *im,
 		tevent_wrapper_pop_use_internal(handler_ev, cur.wrapper);
 	}
 	im->busy = false;
+
+	/* The event was removed in tevent_common_immediate_cancel(). */
+	if (im->detach_ev_ctx != NULL) {
+		struct tevent_context *detach_ev_ctx = im->detach_ev_ctx;
+		im->detach_ev_ctx = NULL;
+		tevent_trace_immediate_callback(detach_ev_ctx,
+						im,
+						TEVENT_EVENT_TRACE_DETACH);
+	}
 
 	if (im->destroyed) {
 		talloc_set_destructor(im, NULL);

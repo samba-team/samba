@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    common events code for timed events
@@ -32,7 +32,7 @@
 #include "tevent_util.h"
 
 /**
-  compare two timeval structures. 
+  compare two timeval structures.
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2
   Return 1 if tv1 > tv2
@@ -151,6 +151,8 @@ static int tevent_common_timed_destructor(struct tevent_timer *te)
 	if (te->event_ctx->last_zero_timer == te) {
 		te->event_ctx->last_zero_timer = DLIST_PREV(te);
 	}
+
+	tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_DETACH);
 	DLIST_REMOVE(te->event_ctx->timer_events, te);
 
 	te->event_ctx = NULL;
@@ -216,6 +218,7 @@ static void tevent_common_insert_timer(struct tevent_context *ev,
 		prev_te = cur_te;
 	}
 
+	tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_ATTACH);
 	DLIST_ADD_AFTER(ev->timer_events, te, prev_te);
 }
 
@@ -254,6 +257,7 @@ static struct tevent_timer *tevent_common_add_timer_internal(
 	tevent_common_insert_timer(ev, te, optimize_zero);
 
 	talloc_set_destructor(te, tevent_common_timed_destructor);
+
 
 	tevent_debug(ev, TEVENT_DEBUG_TRACE,
 		     "Added timed event \"%s\": %p\n",
@@ -306,6 +310,7 @@ void tevent_update_timer(struct tevent_timer *te, struct timeval next_event)
 	if (ev->last_zero_timer == te) {
 		te->event_ctx->last_zero_timer = DLIST_PREV(te);
 	}
+	tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_DETACH);
 	DLIST_REMOVE(ev->timer_events, te);
 
 	te->next_event = next_event;
@@ -367,6 +372,7 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 					te->handler_name,
 					te->location);
 	}
+	tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_BEFORE_HANDLER);
 	te->handler(handler_ev, te, current_time, te->private_data);
 	if (te->wrapper != NULL) {
 		te->wrapper->ops->after_timer_handler(
@@ -385,6 +391,11 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Ending timer event %p \"%s\"\n",
 		     te, te->handler_name);
+
+	/* The callback was already called when freed from the handler. */
+	if (!te->destroyed) {
+		tevent_trace_timer_callback(te->event_ctx, te, TEVENT_EVENT_TRACE_DETACH);
+	}
 
 	te->wrapper = NULL;
 	te->event_ctx = NULL;

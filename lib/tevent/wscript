@@ -140,6 +140,11 @@ def build(bld):
                      deps='cmocka tevent',
                      install=False)
 
+    bld.SAMBA_BINARY('test_tevent_trace',
+                     source='tests/test_tevent_trace.c',
+                     deps='cmocka tevent',
+                     install=False)
+
 def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
@@ -152,6 +157,7 @@ def test(ctx):
     unit_test_ret = 0
     unit_tests = [
         'test_tevent_tag',
+        'test_tevent_trace',
     ]
 
     for unit_test in unit_tests:

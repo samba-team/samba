@@ -233,6 +233,7 @@ struct tevent_immediate {
 	struct tevent_wrapper_glue *wrapper;
 	bool busy;
 	bool destroyed;
+	struct tevent_context *detach_ev_ctx;
 	tevent_immediate_handler_t handler;
 	/* this is private for the specific handler */
 	void *private_data;
@@ -341,8 +342,30 @@ struct tevent_context {
 	} nesting;
 
 	struct {
-		tevent_trace_callback_t callback;
-		void *private_data;
+		struct {
+			tevent_trace_callback_t callback;
+			void *private_data;
+		} point;
+
+		struct {
+			tevent_trace_fd_callback_t callback;
+			void *private_data;
+		} fde;
+
+		struct {
+			tevent_trace_signal_callback_t callback;
+			void *private_data;
+		} se;
+
+		struct {
+			tevent_trace_timer_callback_t callback;
+			void *private_data;
+		} te;
+
+		struct {
+			tevent_trace_immediate_callback_t callback;
+			void *private_data;
+		} im;
 	} tracing;
 
 	struct {
@@ -477,3 +500,19 @@ bool tevent_port_init(void);
 
 void tevent_trace_point_callback(struct tevent_context *ev,
 				 enum tevent_trace_point);
+
+void tevent_trace_fd_callback(struct tevent_context *ev,
+			      struct tevent_fd *fde,
+			      enum tevent_event_trace_point);
+
+void tevent_trace_signal_callback(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  enum tevent_event_trace_point);
+
+void tevent_trace_timer_callback(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 enum tevent_event_trace_point);
+
+void tevent_trace_immediate_callback(struct tevent_context *ev,
+				     struct tevent_immediate *im,
+				     enum tevent_event_trace_point);
