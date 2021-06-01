@@ -456,7 +456,7 @@ class cmd_zoneoptions(Command):
         Option('--client-version', help='Client Version',
                default='longhorn', metavar='w2k|dotnet|longhorn',
                choices=['w2k', 'dotnet', 'longhorn'], dest='cli_ver'),
-        Option('--mark-old-records-static',
+        Option('--mark-old-records-static', metavar="YYYY-MM-DD",
                help="Make records older than this (YYYY-MM-DD) static"),
         Option('--mark-records-static-regex', metavar="REGEXP",
                help="Make records matching this regular expression static"),
