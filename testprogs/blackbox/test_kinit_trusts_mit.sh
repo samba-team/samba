@@ -110,7 +110,7 @@ testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER.$REA
 $samba_kdestroy
 
 lowerrealm=$(echo $TRUST_REALM | tr '[A-Z]' '[a-z]')
-test_smbclient "Test login with user kerberos lowercase realm" 'ls' -k yes -d5 -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos lowercase realm" 'ls' -k yes -U$TRUST_USERNAME@$lowerrealm%$TRUST_PASSWORD || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' -k yes -U$TRUST_USERNAME@$TRUST_REALM%$TRUST_PASSWORD --realm=$lowerrealm || failed=`expr $failed + 1`
 
 ###########################################################
