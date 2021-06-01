@@ -2629,6 +2629,103 @@ done:
 	return result;
 }
 
+static NTSTATUS shadow_copy2_parent_pathname(vfs_handle_struct *handle,
+					     TALLOC_CTX *ctx,
+					     const struct smb_filename *smb_fname_in,
+					     struct smb_filename **parent_dir_out,
+					     struct smb_filename **atname_out)
+{
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *converted_name = NULL;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *parent = NULL;
+	struct smb_filename *atname = NULL;
+	struct shadow_copy2_private *priv = NULL;
+	bool ok = false;
+	bool is_converted = false;
+	NTSTATUS status = NT_STATUS_OK;
+	TALLOC_CTX *frame = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				priv,
+				struct shadow_copy2_private,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	frame = talloc_stackframe();
+
+	smb_fname = cp_smb_filename(frame, smb_fname_in);
+	if (smb_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	/* First, call the default PARENT_PATHNAME. */
+	status = SMB_VFS_NEXT_PARENT_PATHNAME(handle,
+					      frame,
+					      smb_fname,
+					      &parent,
+					      &atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (parent->twrp == 0) {
+		/*
+		 * Parent is not a snapshot path, return
+		 * the regular result.
+		 */
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	/* See if we can find a snapshot for the parent. */
+	ok = shadow_copy2_strip_snapshot_converted(frame,
+						   handle,
+						   parent,
+						   &timestamp,
+						   &stripped,
+						   &is_converted);
+	if (!ok) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	if (is_converted) {
+		/*
+		 * Already found snapshot for parent so wipe
+		 * out the twrp.
+		 */
+		parent->twrp = 0;
+		goto out;
+	}
+
+	converted_name = shadow_copy2_convert(frame,
+					      handle,
+					      stripped,
+					      timestamp);
+
+	if (converted_name == NULL) {
+		/*
+		 * Can't find snapshot for parent so wipe
+		 * out the twrp.
+		 */
+		parent->twrp = 0;
+	}
+
+  out:
+
+	*parent_dir_out = talloc_move(ctx, &parent);
+	if (atname_out != NULL) {
+		*atname_out = talloc_move(*parent_dir_out, &atname);
+	}
+
+  fail:
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				uint64_t *bsize,
@@ -3193,6 +3290,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.pwrite_send_fn = shadow_copy2_pwrite_send,
 	.pwrite_recv_fn = shadow_copy2_pwrite_recv,
 	.connectpath_fn = shadow_copy2_connectpath,
+	.parent_pathname_fn = shadow_copy2_parent_pathname,
 };
 
 static_decl_vfs;
