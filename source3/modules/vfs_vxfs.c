@@ -398,24 +398,20 @@ static bool vxfs_compare_acls(char *e_buf, char *n_buf, int n_count,
  * 6. Else need to set New ACL
  */
 
-static bool vxfs_compare(connection_struct *conn,
-			 const struct smb_filename *smb_fname,
+static bool vxfs_compare(struct files_struct *fsp,
 			 SMB_ACL_T the_acl,
 			 SMB_ACL_TYPE_T the_acl_type)
 {
-	char *name = smb_fname->base_name;
 	SMB_ACL_T existing_acl = NULL;
 	bool ret = false;
 	int i, count = 0;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *existing_buf = NULL, *new_buf = NULL, *compact_buf = NULL;
-	struct smb_filename *smb_fname = NULL;
 	int status;
 
-	DEBUG(10, ("vfs_vxfs: Getting existing ACL for %s\n", name));
+	DEBUG(10, ("vfs_vxfs: Getting existing ACL for %s\n", fsp_str_dbg(fsp)));
 
-	existing_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname, the_acl_type,
-						mem_ctx);
+	existing_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, the_acl_type, mem_ctx);
 	if (existing_acl == NULL) {
 		DEBUG(10, ("vfs_vxfs: Failed to get ACL\n"));
 		goto out;
@@ -429,7 +425,7 @@ static bool vxfs_compare(connection_struct *conn,
 		goto out;
 	}
 
-	status = SMB_VFS_STAT(conn, smb_fname);
+	status = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
 	if (status == -1) {
 		DEBUG(10, ("vfs_vxfs: stat failed!\n"));
 		goto out;
@@ -437,14 +433,14 @@ static bool vxfs_compare(connection_struct *conn,
 
 	DEBUG(10, ("vfs_vxfs: Sorting existing ACL\n"));
 	existing_buf = vxfs_sort_acl(existing_acl, mem_ctx,
-				     smb_fname->st.st_ex_uid,
-				     smb_fname->st.st_ex_gid);
+				     fsp->fsp_name->st.st_ex_uid,
+				     fsp->fsp_name->st.st_ex_gid);
 	if (!existing_buf)
 		goto out;
 
 	DEBUG(10, ("vfs_vxfs: Sorting new ACL\n"));
-	new_buf = vxfs_sort_acl(the_acl, mem_ctx, smb_fname->st.st_ex_uid,
-				smb_fname->st.st_ex_gid);
+	new_buf = vxfs_sort_acl(the_acl, mem_ctx, fsp->fsp_name->st.st_ex_uid,
+				fsp->fsp_name->st.st_ex_gid);
 	if (!new_buf) {
 		goto out;
 	}
@@ -491,8 +487,7 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 			       SMB_ACL_T theacl)
 {
 
-	if (vxfs_compare(fsp->conn, fsp->fsp_name, theacl,
-			 type)) {
+	if (vxfs_compare(fsp, theacl, type)) {
 		return 0;
 	}
 
