@@ -515,6 +515,7 @@ bld.SAMBA3_LIBRARY('ads',
                           libads/ldap_schema.c
                           libads/util.c
                           libads/net_ads_setspn.c
+                          libads/trusts_util.c
                           ''',
                    deps='''
                         cli-ldap-common
@@ -528,7 +529,9 @@ bld.SAMBA3_LIBRARY('ads',
                         libsmb
                         DCUTIL
                         smbldap
-                        trusts_util
+                        libcli_netlogon3
+                        msrpc3
+                        samba-passdb
                         NDR_ADS
                         ''',
                    private_library=True)
@@ -979,15 +982,6 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
                          msrpc3
                          libcli_lsa3
                          ''')
-
-bld.SAMBA3_LIBRARY('trusts_util',
-                   source='libsmb/trusts_util.c',
-                   deps='''
-                        libcli_netlogon3
-                        msrpc3
-                        samba-passdb
-                        ''',
-                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',

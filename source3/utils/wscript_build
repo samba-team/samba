@@ -271,7 +271,6 @@ bld.SAMBA3_BINARY('net',
                  RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN
                  printing_migrate
-                 trusts_util
                  IDMAP_AUTORID_TDB
                  CONN_TDB
                  jansson

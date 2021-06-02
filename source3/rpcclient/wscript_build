@@ -34,7 +34,7 @@ bld.SAMBA3_BINARY('rpcclient',
                  ndr-standard
                  msrpc3
                  SMBREADLINE
-                 trusts_util
+                 ads
                  RPC_NDR_WINREG
                  RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
