@@ -206,12 +206,13 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 			result |= FILE_ATTRIBUTE_READONLY;
 		}
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
+		/* smb_fname->fsp can be NULL for an MS-DFS link. */
 		/* Check actual permissions for read-only. */
-		if (!can_write_to_file(conn,
-				conn->cwd_fsp,
-				smb_fname))
-		{
-			result |= FILE_ATTRIBUTE_READONLY;
+		if (smb_fname->fsp != NULL) {
+			if (!can_write_to_fsp(smb_fname->fsp))
+			{
+				result |= FILE_ATTRIBUTE_READONLY;
+			}
 		}
 	} /* Else never set the readonly bit. */
 
