@@ -503,9 +503,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		status = smbd_check_access_rights(conn,
-					conn->cwd_fsp,
-					smb_fname,
+		status = smbd_check_access_rights_fsp(smb_fname->fsp,
 					false,
 					FILE_WRITE_ATTRIBUTES);
 		if (NT_STATUS_IS_OK(status)) {
