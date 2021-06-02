@@ -1074,7 +1074,6 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
                       flags=ldb.FLG_RDONLY)
-        sid = get_sid_for_restore(samdb, logger)
 
         # Iterating over the directories in this specific order ensures that
         # when the private directory contains hardlinks that are also contained
@@ -1125,6 +1124,8 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # Get the domain SID so we can later place it in the backup
         dom_sid_str = samdb.get_domain_sid()
         dom_sid = security.dom_sid(dom_sid_str)
+
+        sid = get_sid_for_restore(samdb, logger)
 
         # Close the original samdb
         samdb = None
