@@ -512,9 +512,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		}
 
 		if (!set_dosmode_ok && lp_dos_filemode(SNUM(conn))) {
-			set_dosmode_ok = can_write_to_file(conn,
-						conn->cwd_fsp,
-						smb_fname);
+			set_dosmode_ok = can_write_to_fsp(smb_fname->fsp);
 		}
 
 		if (!set_dosmode_ok) {
