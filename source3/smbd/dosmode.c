@@ -1249,10 +1249,7 @@ int file_ntimes(connection_struct *conn,
 	 */
 
 	/* Check if we have write access. */
-	if (can_write_to_file(conn,
-			      conn->cwd_fsp,
-			      fsp->fsp_name))
-	{
+	if (can_write_to_fsp(fsp)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
 		ret = SMB_VFS_FNTIMES(fsp, ft);
