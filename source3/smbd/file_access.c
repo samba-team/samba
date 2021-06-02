@@ -153,6 +153,17 @@ bool can_write_to_file(connection_struct *conn,
 }
 
 /****************************************************************************
+ Userspace check for write access to fsp.
+****************************************************************************/
+
+bool can_write_to_fsp(struct files_struct *fsp)
+{
+	return NT_STATUS_IS_OK(smbd_check_access_rights_fsp(fsp,
+							false,
+							FILE_WRITE_DATA));
+}
+
+/****************************************************************************
  Check for an existing default Windows ACL on a directory fsp.
 ****************************************************************************/
 
