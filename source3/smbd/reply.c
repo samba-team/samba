@@ -1492,6 +1492,12 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
+	if (smb_fname->fsp == NULL) {
+		/* Can't set access rights on a symlink. */
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		goto out;
+	}
+
 	mode = SVAL(req->vwv+0, 0);
 	mtime = srv_make_unix_date3(req->vwv+1);
 
@@ -1501,9 +1507,7 @@ void reply_setatr(struct smb_request *req)
 		else
 			mode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
-		status = smbd_check_access_rights(conn,
-					conn->cwd_fsp,
-					smb_fname,
+		status = smbd_check_access_rights_fsp(smb_fname->fsp,
 					false,
 					FILE_WRITE_ATTRIBUTES);
 		if (!NT_STATUS_IS_OK(status)) {
