@@ -1502,9 +1502,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		p += 25;
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
-		    can_write_to_file(conn,
-				conn->cwd_fsp,
-				smb_fname))
+		    can_write_to_fsp(fsp))
 		{
 			perms = FILE_GENERIC_ALL;
 		} else {
