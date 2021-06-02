@@ -2817,25 +2817,20 @@ bool current_user_in_group(connection_struct *conn, gid_t gid)
  Should we override a deny ? Check 'acl group control' and 'dos filemode'.
 ****************************************************************************/
 
-static bool acl_group_override(connection_struct *conn,
-			       const struct smb_filename *smb_fname)
+static bool acl_group_override_fsp(files_struct *fsp)
 {
 	if ((errno != EPERM) && (errno != EACCES)) {
 		return false;
 	}
 
 	/* file primary group == user primary or supplementary group */
-	if (lp_acl_group_control(SNUM(conn)) &&
-	    current_user_in_group(conn, smb_fname->st.st_ex_gid)) {
+	if (lp_acl_group_control(SNUM(fsp->conn)) &&
+	    current_user_in_group(fsp->conn, fsp->fsp_name->st.st_ex_gid)) {
 		return true;
 	}
 
 	/* user has writeable permission */
-	if (lp_dos_filemode(SNUM(conn)) &&
-	    can_write_to_file(conn,
-				conn->cwd_fsp,
-				smb_fname))
-	{
+	if (lp_dos_filemode(SNUM(fsp->conn)) && can_write_to_fsp(fsp)) {
 		return true;
 	}
 
@@ -2852,7 +2847,6 @@ static bool set_canon_ace_list(files_struct *fsp,
 				const SMB_STRUCT_STAT *psbuf,
 				bool *pacl_set_support)
 {
-	connection_struct *conn = fsp->conn;
 	bool ret = False;
 	SMB_ACL_T the_acl = sys_acl_init(talloc_tos());
 	canon_ace *p_ace;
@@ -3025,7 +3019,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 			*pacl_set_support = false;
 		}
 
-		if (acl_group_override(conn, fsp->fsp_name)) {
+		if (acl_group_override_fsp(fsp)) {
 			DBG_DEBUG("acl group control on and current user in "
 				  "file [%s] primary group.\n",
 				  fsp_str_dbg(fsp));
@@ -3861,7 +3855,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 				unbecome_root();
 			}
 			if (sret == -1) {
-				if (acl_group_override(conn, fsp->fsp_name)) {
+				if (acl_group_override_fsp(fsp)) {
 					DEBUG(5,("set_nt_acl: acl group "
 						 "control on and current user "
 						 "in file %s primary group. "
@@ -3930,7 +3924,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 				unbecome_root();
 			}
 			if(sret == -1) {
-				if (acl_group_override(conn, fsp->fsp_name)) {
+				if (acl_group_override_fsp(fsp)) {
 					DEBUG(5,("set_nt_acl: acl group "
 						 "control on and current user "
 						 "in file %s primary group. "
