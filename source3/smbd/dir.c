@@ -1272,6 +1272,87 @@ static bool user_can_read_file(connection_struct *conn,
 }
 
 /*******************************************************************
+ Check to see if a user can read an fsp . This is only approximate,
+ it is used as part of the "hide unreadable" option. Don't
+ use it for anything security sensitive.
+********************************************************************/
+
+static bool user_can_read_fsp(struct files_struct *fsp)
+{
+	NTSTATUS status;
+	uint32_t rejected_share_access = 0;
+	uint32_t rejected_mask = 0;
+	struct security_descriptor *sd = NULL;
+	uint32_t access_mask = FILE_READ_DATA|
+				FILE_READ_EA|
+				FILE_READ_ATTRIBUTES|
+				SEC_STD_READ_CONTROL;
+
+	/*
+	 * Never hide files from the root user.
+	 * We use (uid_t)0 here not sec_initial_uid()
+	 * as make test uses a single user context.
+	 */
+
+	if (get_current_uid(fsp->conn) == (uid_t)0) {
+		return true;
+	}
+
+	/*
+	 * We can't directly use smbd_check_access_rights_fsp()
+	 * here, as this implicitly grants FILE_READ_ATTRIBUTES
+	 * which the Windows access-based-enumeration code
+	 * explicitly checks for on the file security descriptor.
+	 * See bug:
+	 *
+	 * https://bugzilla.samba.org/show_bug.cgi?id=10252
+	 *
+	 * and the smb2.acl2.ACCESSBASED test for details.
+	 */
+
+	rejected_share_access = access_mask & ~(fsp->conn->share_access);
+	if (rejected_share_access) {
+		DBG_DEBUG("rejected share access 0x%x "
+			"on %s (0x%x)\n",
+			(unsigned int)access_mask,
+			fsp_str_dbg(fsp),
+			(unsigned int)rejected_share_access);
+		return false;
+        }
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+			(SECINFO_OWNER |
+			 SECINFO_GROUP |
+			 SECINFO_DACL),
+			talloc_tos(),
+			&sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Could not get acl "
+			"on %s: %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return false;
+	}
+
+	status = se_file_access_check(sd,
+				get_current_nttok(fsp->conn),
+				false,
+				access_mask,
+				&rejected_mask);
+
+	TALLOC_FREE(sd);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		DBG_DEBUG("rejected bits 0x%x read access for %s\n",
+			(unsigned int)rejected_mask,
+			fsp_str_dbg(fsp));
+		return false;
+        }
+	return true;
+}
+
+/*******************************************************************
  Check to see if a user can write a file (and only files, we do not
  check dirs on this one). This is only approximate,
  it is used as part of the "hide unwriteable" option. Don't
@@ -1505,9 +1586,7 @@ bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
 	{
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable &&
-		    !user_can_read_file(fsp->conn,
-				fsp->conn->cwd_fsp,
-				fsp->fsp_name))
+		    !user_can_read_fsp(fsp))
 		{
 			DBG_DEBUG("file %s is unreadable.\n",
 				 fsp_str_dbg(fsp));
