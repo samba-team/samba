@@ -811,9 +811,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		p += 25;
 		if (fsp->fsp_flags.is_directory ||
 		    fsp->fsp_flags.can_write ||
-		    can_write_to_file(conn,
-				conn->cwd_fsp,
-				smb_fname))
+		    can_write_to_fsp(fsp))
 		{
 			perms = FILE_GENERIC_ALL;
 		} else {
