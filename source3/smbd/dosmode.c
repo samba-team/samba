@@ -1074,9 +1074,7 @@ int file_set_dosmode(connection_struct *conn,
 		bits on a file. Just like file_ntimes below.
 	*/
 
-	if (!can_write_to_file(conn,
-			conn->cwd_fsp,
-			smb_fname))
+	if (!can_write_to_fsp(smb_fname->fsp))
 	{
 		errno = EACCES;
 		return -1;
