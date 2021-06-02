@@ -1600,6 +1600,7 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct security_descriptor *sd;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
 
 	if (argc != 2) {
 		printf("Usage: get_nt_acl <path>\n");
@@ -1617,18 +1618,32 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = SMB_VFS_GET_NT_ACL_AT(vfs->conn,
+	status = synthetic_pathref(mem_ctx,
 				vfs->conn->cwd_fsp,
-				smb_fname,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		return status;
+	}
+	status = SMB_VFS_FGET_NT_ACL(pathref_fname->fsp,
 				SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
 				talloc_tos(),
 				&sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("get_nt_acl returned (%s)\n", nt_errstr(status));
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(pathref_fname);
 		return status;
 	}
 	printf("%s\n", sddl_encode(talloc_tos(), sd, get_global_sam_sid()));
 	TALLOC_FREE(sd);
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(pathref_fname);
 	return NT_STATUS_OK;
 }
 
