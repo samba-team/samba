@@ -1387,6 +1387,33 @@ static bool user_can_write_file(connection_struct *conn,
 }
 
 /*******************************************************************
+ Check to see if a user can write to an fsp.
+ Always return true for directories.
+ This is only approximate,
+ it is used as part of the "hide unwriteable" option. Don't
+ use it for anything security sensitive.
+********************************************************************/
+
+static bool user_can_write_fsp(struct files_struct *fsp)
+{
+	/*
+	 * Never hide files from the root user.
+	 * We use (uid_t)0 here not sec_initial_uid()
+	 * as make test uses a single user context.
+	 */
+
+	if (get_current_uid(fsp->conn) == (uid_t)0) {
+		return true;
+	}
+
+	if (fsp->fsp_flags.is_directory) {
+		return true;
+	}
+
+	return can_write_to_fsp(fsp);
+}
+
+/*******************************************************************
   Is a file a "special" type ?
 ********************************************************************/
 
@@ -1594,9 +1621,7 @@ bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
 		}
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable &&
-		    !user_can_write_file(fsp->conn,
-				fsp->conn->cwd_fsp,
-				fsp->fsp_name))
+		    !user_can_write_fsp(fsp))
 		{
 			DBG_DEBUG("file %s is unwritable.\n",
 				 fsp_str_dbg(fsp));
