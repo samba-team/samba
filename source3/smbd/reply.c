@@ -8972,15 +8972,6 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 
-			if (!is_visible_file(conn,
-					dir_hnd,
-					dname,
-					&smb_fname_src->st,
-					false)) {
-				TALLOC_FREE(talloced);
-				continue;
-			}
-
 			if(!mask_match(dname, fname_src_mask,
 				       conn->case_sensitive)) {
 				TALLOC_FREE(talloced);
@@ -9024,6 +9015,23 @@ void reply_copy(struct smb_request *req)
 
 			TALLOC_FREE(smb_fname_dst->base_name);
 			smb_fname_dst->base_name = destname;
+
+			ZERO_STRUCT(smb_fname_src->st);
+			vfs_stat(conn, smb_fname_src);
+
+			status = openat_pathref_fsp(conn->cwd_fsp,
+						    smb_fname_src);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_INFO("openat_pathref_fsp [%s] failed: %s\n",
+					smb_fname_str_dbg(smb_fname_src),
+					nt_errstr(status));
+				break;
+			}
+
+			if (!is_visible_fsp(smb_fname_src->fsp, false)) {
+				TALLOC_FREE(talloced);
+				continue;
+			}
 
 			status = check_name(conn, smb_fname_src);
 			if (!NT_STATUS_IS_OK(status)) {
