@@ -69,6 +69,14 @@ from configparser import ConfigParser
 from io import StringIO, BytesIO
 from samba.gp.vgp_files_ext import calc_mode, stat_from_mode
 import hashlib
+import json
+from samba.registry import str_regtype
+from samba.ntstatus import (
+    NT_STATUS_OBJECT_NAME_INVALID,
+    NT_STATUS_OBJECT_NAME_NOT_FOUND,
+    NT_STATUS_OBJECT_PATH_NOT_FOUND,
+    NT_STATUS_ACCESS_DENIED
+)
 
 
 def gpo_flags_string(value):
@@ -621,7 +629,13 @@ class cmd_show(GPOCommand):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        self.url = dc_url(self.lp, self.creds, H)
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
         self.samdb_connect()
 
@@ -644,6 +658,43 @@ class cmd_show(GPOCommand):
         self.outf.write("version      : %s\n" % attr_default(msg, 'versionNumber', '0'))
         self.outf.write("flags        : %s\n" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
         self.outf.write("ACL          : %s\n" % secdesc_sddl)
+
+        # SMB connect to DC
+        conn = smb_connection(dc_hostname,
+                              'sysvol',
+                              lp=self.lp,
+                              creds=self.creds)
+
+        realm = self.lp.get('realm')
+        pol_file = '\\'.join([realm.lower(), 'Policies', gpo,
+                                '%s\\Registry.pol'])
+        policy_defs = []
+        for policy_class in ['MACHINE', 'USER']:
+            try:
+                pol_data = ndr_unpack(preg.file,
+                                      conn.loadfile(pol_file % policy_class))
+            except NTSTATUSError as e:
+                if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
+                                 NT_STATUS_OBJECT_NAME_NOT_FOUND,
+                                 NT_STATUS_OBJECT_PATH_NOT_FOUND]:
+                    continue # The file doesn't exist, so there is nothing to list
+                if e.args[0] == NT_STATUS_ACCESS_DENIED:
+                    raise CommandError("The authenticated user does "
+                                       "not have sufficient privileges")
+                raise
+
+            for entry in pol_data.entries:
+                if entry.valuename == "**delvals.":
+                    continue
+                defs = {}
+                defs['keyname'] = entry.keyname
+                defs['valuename'] = entry.valuename
+                defs['class'] = policy_class
+                defs['type'] = str_regtype(entry.type)
+                defs['data'] = entry.data
+                policy_defs.append(defs)
+        self.outf.write("Policies     :\n")
+        json.dump(policy_defs, self.outf, indent=4)
         self.outf.write("\n")
 
 
