@@ -1051,9 +1051,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced)) != NULL) {
-		if ((strcmp(dname, ".") == 0) ||
-		    (strcmp(dname, "..") == 0))
-		{
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
