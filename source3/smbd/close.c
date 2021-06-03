@@ -1125,25 +1125,44 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			goto err_break;
 		}
 
-		status = synthetic_pathref(talloc_tos(),
-					   dirfsp,
-					   dname,
-					   NULL,
-					   &smb_dname_full->st,
-					   smb_dname->twrp,
-					   smb_dname->flags,
-					   &direntry_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			goto err_break;
-		}
+		/*
+		 * We are only dealing with VETO'ed objects
+		 * here. If it's a symlink, just delete the
+		 * link without caring what it is pointing
+		 * to.
+		 */
+		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
+			direntry_fname = synthetic_smb_fname(talloc_tos(),
+							dname,
+							NULL,
+							&smb_dname_full->st,
+							smb_dname->twrp,
+							smb_dname->flags);
+			if (direntry_fname == NULL) {
+				errno = ENOMEM;
+				goto err_break;
+			}
+		} else {
+			status = synthetic_pathref(talloc_tos(),
+						   dirfsp,
+						   dname,
+						   NULL,
+						   &smb_dname_full->st,
+						   smb_dname->twrp,
+						   smb_dname->flags,
+						   &direntry_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				errno = map_errno_from_nt_status(status);
+				goto err_break;
+			}
 
-		if (!is_visible_fsp(direntry_fname->fsp, false)) {
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(direntry_fname);
-			continue;
+			if (!is_visible_fsp(direntry_fname->fsp, false)) {
+				TALLOC_FREE(fullname);
+				TALLOC_FREE(smb_dname_full);
+				TALLOC_FREE(talloced);
+				TALLOC_FREE(direntry_fname);
+				continue;
+			}
 		}
 
 		unlink_flags = 0;
