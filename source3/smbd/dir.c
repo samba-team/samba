@@ -1449,6 +1449,100 @@ bool is_visible_file(connection_struct *conn,
 	return ret;
 }
 
+/*******************************************************************
+ Should the file be seen by the client?
+********************************************************************/
+
+bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
+{
+	bool hide_unreadable = false;
+	bool hide_unwriteable = false;
+	bool hide_special = false;
+	int hide_new_files_timeout = 0;
+	const char *last_component = NULL;
+
+	/*
+	 * If the file does not exist, there's no point checking
+	 * the configuration options. We succeed, on the basis that the
+	 * checks *might* have passed if the file was present.
+	 */
+	if (fsp == NULL) {
+		return true;
+	}
+
+	hide_unreadable = lp_hide_unreadable(SNUM(fsp->conn));
+	hide_unwriteable = lp_hide_unwriteable_files(SNUM(fsp->conn));
+	hide_special = lp_hide_special_files(SNUM(fsp->conn));
+	hide_new_files_timeout = lp_hide_new_files_timeout(SNUM(fsp->conn));
+
+	if (fsp->base_fsp != NULL) {
+		/* Only operate on non-stream files. */
+		fsp = fsp->base_fsp;
+	}
+
+	/* Get the last component of the base name. */
+	last_component = strrchr_m(fsp->fsp_name->base_name, '/');
+	if (!last_component) {
+		last_component = fsp->fsp_name->base_name;
+	} else {
+		last_component++; /* Go past '/' */
+	}
+
+	if (ISDOT(last_component) || ISDOTDOT(last_component)) {
+		return true; /* . and .. are always visible. */
+	}
+
+	/* If it's a vetoed file, pretend it doesn't even exist */
+	if (use_veto && IS_VETO_PATH(fsp->conn, last_component)) {
+		DBG_ERR("file %s is vetoed.\n", fsp_str_dbg(fsp));
+		return false;
+	}
+
+	if (hide_unreadable ||
+	    hide_unwriteable ||
+	    hide_special ||
+	    (hide_new_files_timeout != 0))
+	{
+		/* Honour _hide unreadable_ option */
+		if (hide_unreadable &&
+		    !user_can_read_file(fsp->conn,
+				fsp->conn->cwd_fsp,
+				fsp->fsp_name))
+		{
+			DBG_DEBUG("file %s is unreadable.\n",
+				 fsp_str_dbg(fsp));
+			return false;
+		}
+		/* Honour _hide unwriteable_ option */
+		if (hide_unwriteable &&
+		    !user_can_write_file(fsp->conn,
+				fsp->conn->cwd_fsp,
+				fsp->fsp_name))
+		{
+			DBG_DEBUG("file %s is unwritable.\n",
+				 fsp_str_dbg(fsp));
+			return false;
+		}
+		/* Honour _hide_special_ option */
+		if (hide_special && file_is_special(fsp->conn, fsp->fsp_name)) {
+			DBG_DEBUG("file %s is special.\n",
+				 fsp_str_dbg(fsp));
+			return false;
+		}
+
+		if (hide_new_files_timeout != 0) {
+			double age = timespec_elapsed(
+				&fsp->fsp_name->st.st_ex_mtime);
+
+			if (age < (double)hide_new_files_timeout) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 {
 	files_struct *fsp = dir_hnd->fsp;

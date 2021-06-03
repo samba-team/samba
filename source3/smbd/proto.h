@@ -233,6 +233,7 @@ bool is_visible_file(connection_struct *conn,
 		const char *name,
 		SMB_STRUCT_STAT *pst,
 		bool use_veto);
+bool is_visible_fsp(files_struct *fsp, bool use_veto);
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			const struct smb_filename *smb_fname,
