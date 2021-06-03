@@ -877,15 +877,6 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (!is_visible_file(conn,
-					dir_hnd,
-					dname,
-					&st,
-					false)) {
-			TALLOC_FREE(talloced);
-			continue;
-		}
-
 		/* Construct the full name. */
 		fullname = talloc_asprintf(ctx,
 				"%s/%s",
@@ -929,6 +920,14 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
 			goto err_break;
+		}
+
+		if (!is_visible_fsp(atname->fsp, false)) {
+			TALLOC_FREE(smb_dname_full);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(atname);
+			continue;
 		}
 
 		retval = SMB_VFS_UNLINKAT(conn,
