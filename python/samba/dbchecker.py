@@ -2740,45 +2740,41 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         #         locally when the DC is the RID Manager)
 
         if dn == self.rid_set_dn:
+            pool_attrs = ["rIDAllocationPool", "rIDPreviousAllocationPool"]
+
             res = self.samdb.search(base=self.rid_set_dn, scope=ldb.SCOPE_BASE,
-                                    attrs=["rIDAllocationPool",
-                                           "rIDPreviousAllocationPool",
-                                           "rIDUsedPool",
-                                           "rIDNextRID"])
-            pool_attr = "rIDPreviousAllocationPool"
-            if (pool_attr not in res[0]
-                or int(res[0][pool_attr][0]) == 0):
-                # We have not used it yet, check the next pool instead
-                pool_attr = "rIDAllocationPool"
+                                    attrs=pool_attrs)
+
+            for pool_attr in pool_attrs:
+                if pool_attr not in res[0]:
+                    continue
+
+                pool = int(res[0][pool_attr][0])
+
+                high = pool >> 32
+                low = 0xFFFFFFFF & pool
+
+                if pool != 0 and low >= high:
+                    self.report("Invalid RID pool %d-%d, %d >= %d!" % (low, high, low, high))
+                    error_count += 1
 
             if "rIDAllocationPool" not in res[0]:
                 self.report("No rIDAllocationPool found in %s" % dn)
                 error_count += 1
+
+            try:
+                next_free_rid, high = self.samdb.free_rid_bounds()
+            except ldb.LdbError as err:
+                enum, estr = err.args
+                self.report("Couldn't get available RIDs: %s" % estr)
+                error_count += 1
             else:
-                current_pool = int(res[0][pool_attr][0])
-
-                high = (0xFFFFFFFF00000000 & current_pool) >> 32
-                low = 0x00000000FFFFFFFF & current_pool
-
-                if high <= low:
-                    self.report("Invalid RID set %d-%s, %d >= %d!" % (low, high, low, high))
-                    error_count += 1
-
-                if "rIDNextRID" in res[0]:
-                    last_used_rid = int(res[0]["rIDNextRID"][0])
-                else:
-                    last_used_rid = 0
-
-                if last_used_rid == 0:
-                    next_free_rid = low
-                else:
-                    next_free_rid = last_used_rid + 1
-
                 # Check the remainder of this pool for conflicts.  If
                 # ridalloc_allocate_rid() moves to a new pool, this
                 # will be above high, so we will stop.
+                domain_sid = self.samdb.get_domain_sid()
                 while next_free_rid <= high:
-                    sid = "%s-%d" % (self.samdb.get_domain_sid(), next_free_rid)
+                    sid = "%s-%d" % (domain_sid, next_free_rid)
                     try:
                         res = self.samdb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
                                                 attrs=[])
