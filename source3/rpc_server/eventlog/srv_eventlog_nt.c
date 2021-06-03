@@ -105,17 +105,7 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct conn_struct_tos *c = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
-						fname,
-						NULL,
-						NULL,
-						0,
-						0);
-
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
+	struct smb_filename *pathref_fname = NULL;
 
 	if (!posix_locking_init(false)) {
 		TALLOC_FREE(frame);
@@ -128,21 +118,33 @@ static NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 					session_info,
 					&c);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("create_conn_struct returned %s.\n",
-			nt_errstr(status)));
+		DBG_ERR("create_conn_struct_tos() returned %s.\n",
+			nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = SMB_VFS_GET_NT_ACL_AT(c->conn,
+	status = synthetic_pathref(talloc_tos(),
 				c->conn->cwd_fsp,
-				smb_fname,
+				fname,
+				NULL,
+				NULL,
+				0,
+				0,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("synthetic_pathref for file %s returned %s.\n",
+			  fname, nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	status = SMB_VFS_FGET_NT_ACL(pathref_fname->fsp,
 				security_info_wanted,
 				ctx,
 				sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL_AT returned %s.\n",
-			  nt_errstr(status)));
+		DBG_ERR("SMB_VFS_FGET_NT_ACL for file %s returned %s.\n",
+			  fname, nt_errstr(status));
 	}
 
 	TALLOC_FREE(frame);
