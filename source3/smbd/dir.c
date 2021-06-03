@@ -80,6 +80,12 @@ struct dptr_struct {
 	struct memcache *dptr_cache;
 };
 
+static bool is_visible_file(connection_struct *conn,
+		struct smb_Dir *dir_hnd,
+		const char *name,
+		SMB_STRUCT_STAT *pst,
+		bool use_veto);
+
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			files_struct *fsp,
 			const char *mask,
@@ -1445,7 +1451,7 @@ static bool file_is_special(connection_struct *conn,
  NOTE: A successful return is no guarantee of the file's existence.
 ********************************************************************/
 
-bool is_visible_file(connection_struct *conn,
+static bool is_visible_file(connection_struct *conn,
 		struct smb_Dir *dir_hnd,
 		const char *name,
 		SMB_STRUCT_STAT *pst,
