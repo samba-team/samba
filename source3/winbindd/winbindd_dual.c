@@ -829,10 +829,9 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
-	if (domain == NULL) {
-		child->binding_handle = wbint_binding_handle(NULL, NULL, child);
-		SMB_ASSERT(child->binding_handle != NULL);
-	}
+
+	child->binding_handle = wbint_binding_handle(NULL, NULL, child);
+	SMB_ASSERT(child->binding_handle != NULL);
 }
 
 struct winbind_child_died_state {
