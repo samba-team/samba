@@ -1094,15 +1094,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		if (!is_visible_file(conn,
-				     dir_hnd,
-				     dname,
-				     &st,
-				     false))
-		{
-			TALLOC_FREE(talloced);
-			continue;
-		}
 
 		fullname = talloc_asprintf(ctx,
 					   "%s/%s",
@@ -1134,17 +1125,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			goto err_break;
 		}
 
-		unlink_flags = 0;
-
-		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			if (!recursive_rmdir(ctx, conn,
-					     smb_dname_full))
-			{
-				goto err_break;
-			}
-			unlink_flags = AT_REMOVEDIR;
-		}
-
 		status = synthetic_pathref(talloc_tos(),
 					   dirfsp,
 					   dname,
@@ -1156,6 +1136,25 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
 			goto err_break;
+		}
+
+		if (!is_visible_fsp(direntry_fname->fsp, false)) {
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(direntry_fname);
+			continue;
+		}
+
+		unlink_flags = 0;
+
+		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
+			if (!recursive_rmdir(ctx, conn,
+					     smb_dname_full))
+			{
+				goto err_break;
+			}
+			unlink_flags = AT_REMOVEDIR;
 		}
 
 		retval = SMB_VFS_UNLINKAT(conn,
