@@ -4657,44 +4657,18 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *frame;
 	struct smb_acl_wrapper acl_wrapper = { 0 };
-	int fd = fsp_get_pathref_fd(fsp);
-	char buf[PATH_MAX] = {0};
-	struct smb_filename fname;
 	int ret;
-
-	if (fsp->fsp_flags.have_proc_fds) {
-		const char *proc_fd_path = NULL;
-
-		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
-		if (proc_fd_path == NULL) {
-			return -1;
-		}
-
-		fname = (struct smb_filename) {
-			.base_name = discard_const_p(char, proc_fd_path),
-		};
-	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-
-		fname = (struct smb_filename) {
-			.base_name = fsp->fsp_name->base_name,
-		};
-	}
 
 	frame = talloc_stackframe();
 
-	acl_wrapper.access_acl = smb_vfs_call_sys_acl_get_file(
-					handle,
-					&fname,
+	acl_wrapper.access_acl = smb_vfs_call_sys_acl_get_fd(handle,
+					fsp,
 					SMB_ACL_TYPE_ACCESS,
 					frame);
 
 	if (fsp->fsp_flags.is_directory) {
-		acl_wrapper.default_acl = smb_vfs_call_sys_acl_get_file(
-						handle,
-						&fname,
+		acl_wrapper.default_acl = smb_vfs_call_sys_acl_get_fd(handle,
+						fsp,
 						SMB_ACL_TYPE_DEFAULT,
 						frame);
 	}
