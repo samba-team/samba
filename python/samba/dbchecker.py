@@ -2697,7 +2697,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                     if self.is_rid_master:
                         # Allocate a RID Set
-                        if self.confirm_all('Allocate the missing RID set for RID master?',
+                        if self.confirm_all('Allocate the missing RID set for '
+                                            'RID master?',
                                             'fix_missing_rid_set_master'):
 
                             # We don't have auto-transaction logic on
@@ -2716,28 +2717,32 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                             self.samdb.transaction_commit()
 
                     elif not self.samdb.am_rodc():
-                        self.report("No RID Set found for this server: %s, and we are not the RID Master (so can not self-allocate)" % dn)
+                        self.report("No RID Set found for this server: %s, "
+                                    "and we are not the RID Master (so can "
+                                    "not self-allocate)" % dn)
 
         # Check some details of our own RID Set
         #
         # Note that the attributes have very bad names.  From ridalloc.c:
         #
-        #   Note: the RID allocation attributes in AD are very badly named. Here
-        #     is what we think they really do:
+        #   Note: the RID allocation attributes in AD are very badly named.
+        #     Here is what we think they really do:
         #
         #     in RID Set object:
         #       - rIDPreviousAllocationPool: the pool which a DC is currently
         #         pulling RIDs from. Managed by client DC
         #
         #       - rIDAllocationPool: the pool that the DC will switch to next,
-        #         when rIDPreviousAllocationPool is exhausted. Managed by RID Manager.
+        #         when rIDPreviousAllocationPool is exhausted. Managed by RID
+        #         Manager.
         #
-        #       - rIDNextRID: the last RID allocated by this DC. Managed by client DC
+        #       - rIDNextRID: the last RID allocated by this DC. Managed by
+        #         client DC
         #
         #     in RID Manager object:
         #       - rIDAvailablePool: the pool where the RID Manager gets new rID
-        #         pools from when it gets a EXOP_RID_ALLOC getncchanges call (or
-        #         locally when the DC is the RID Manager)
+        #         pools from when it gets a EXOP_RID_ALLOC getncchanges call
+        #         (or locally when the DC is the RID Manager)
 
         if dn == self.rid_set_dn:
             pool_attrs = ["rIDAllocationPool", "rIDPreviousAllocationPool"]
@@ -2755,7 +2760,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 low = 0xFFFFFFFF & pool
 
                 if pool != 0 and low >= high:
-                    self.report("Invalid RID pool %d-%d, %d >= %d!" % (low, high, low, high))
+                    self.report("Invalid RID pool %d-%d, %d >= %d!" %
+                                (low, high, low, high))
                     error_count += 1
 
             if "rIDAllocationPool" not in res[0]:
@@ -2776,7 +2782,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 while next_free_rid <= high:
                     sid = "%s-%d" % (domain_sid, next_free_rid)
                     try:
-                        res = self.samdb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
+                        res = self.samdb.search(base="<SID=%s>" % sid,
+                                                scope=ldb.SCOPE_BASE,
                                                 attrs=[])
                     except ldb.LdbError as e:
                         (enum, estr) = e.args
@@ -2784,10 +2791,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                             raise
                         res = None
                     if res is not None:
-                        self.report("SID %s for %s conflicts with our current RID set in %s" % (sid, res[0].dn, dn))
+                        self.report("SID %s for %s conflicts with our current "
+                                    "RID set in %s" % (sid, res[0].dn, dn))
                         error_count += 1
 
-                        if self.confirm_all('Fix conflict between SID %s and RID pool in %s by allocating a new RID?'
+                        if self.confirm_all('Fix conflict between SID %s and '
+                                            'RID pool in %s by allocating a '
+                                            'new RID?'
                                             % (sid, dn),
                                             'fix_sid_rid_set_conflict'):
                             self.samdb.transaction_start()
