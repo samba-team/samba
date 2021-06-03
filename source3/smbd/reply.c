@@ -8185,15 +8185,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		if (!is_visible_file(conn,
-				dir_hnd,
-				dname,
-				&smb_fname_src->st,
-				false)) {
-			TALLOC_FREE(talloced);
-			continue;
-		}
-
 		if(!mask_match(dname, fname_src_mask, conn->case_sensitive)) {
 			TALLOC_FREE(talloced);
 			continue;
@@ -8246,6 +8237,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				 smb_fname_str_dbg(smb_fname_src),
 				 nt_errstr(status));
 			break;
+		}
+
+		if (!is_visible_fsp(smb_fname_src->fsp, false)) {
+			TALLOC_FREE(talloced);
+			continue;
 		}
 
 		create_options = 0;
