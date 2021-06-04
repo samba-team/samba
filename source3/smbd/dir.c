@@ -2114,6 +2114,11 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced))) {
+		struct smb_filename *smb_dname_full = NULL;
+		struct smb_filename *direntry_fname = NULL;
+		char *fullname = NULL;
+		int ret;
+
 		if (ISDOT(dname) || (ISDOTDOT(dname))) {
 			TALLOC_FREE(talloced);
 			continue;
@@ -2122,17 +2127,83 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		if (!is_visible_file(conn,
-				dir_hnd,
-				dname,
-				&st,
-				True)) {
+
+		fullname = talloc_asprintf(talloc_tos(),
+					   "%s/%s",
+					   fsp->fsp_name->base_name,
+					   dname);
+		if (fullname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+                        break;
+		}
+
+		smb_dname_full = synthetic_smb_fname(talloc_tos(),
+						     fullname,
+						     NULL,
+						     NULL,
+						     fsp->fsp_name->twrp,
+						     fsp->fsp_name->flags);
+		if (smb_dname_full == NULL) {
 			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			status = NT_STATUS_NO_MEMORY;
+			break;
+		}
+
+		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			break;
+		}
+
+		/*
+		 * is_visible_fsp() always returns true
+		 * for the symlink/MSDFS case.
+		 */
+
+		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			DBG_DEBUG("got name %s - can't delete\n", dname);
+			status = NT_STATUS_DIRECTORY_NOT_EMPTY;
+			break;
+		}
+
+		/* Not a symlink, get a pathref. */
+		status = synthetic_pathref(talloc_tos(),
+					   fsp,
+					   dname,
+					   NULL,
+					   &smb_dname_full->st,
+					   fsp->fsp_name->twrp,
+					   fsp->fsp_name->flags,
+					   &direntry_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			break;
+		}
+
+		if (!is_visible_fsp(direntry_fname->fsp, false)) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			TALLOC_FREE(direntry_fname);
 			continue;
 		}
 
-		DEBUG(10,("got name %s - can't delete\n",
-			 dname ));
+		TALLOC_FREE(talloced);
+		TALLOC_FREE(fullname);
+		TALLOC_FREE(smb_dname_full);
+		TALLOC_FREE(direntry_fname);
+
+		DBG_DEBUG("got name %s - can't delete\n", dname);
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
