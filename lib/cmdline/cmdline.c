@@ -47,7 +47,7 @@ TALLOC_CTX *samba_cmdline_get_talloc_ctx(void)
 
 static void _samba_cmdline_talloc_log(const char *message)
 {
-	DBG_ERR("%s", message);
+	D_ERR("%s", message);
 }
 
 bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx)
