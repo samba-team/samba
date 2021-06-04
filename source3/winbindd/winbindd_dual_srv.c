@@ -1927,33 +1927,45 @@ reconnect:
 	return status;
 }
 
-enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
-							struct winbindd_cli_state *state)
+NTSTATUS _wbint_ListTrustedDomains(struct pipes_struct *p,
+				   struct wbint_ListTrustedDomains *r)
 {
-	uint32_t i;
-	int extra_data_len = 0;
-	char *extra_data;
+	struct winbindd_domain *domain = wb_child_domain();
+	uint32_t i, n;
 	NTSTATUS result;
-	bool have_own_domain = False;
 	struct netr_DomainTrustList trusts;
+	struct netr_DomainTrustList *out = NULL;
+	pid_t client_pid;
 
-	DBG_NOTICE("[%s %u]: list trusted domains\n",
-		   state->client_name,
-		   (unsigned int)state->pid);
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
 
-	result = wb_cache_trusted_domains(domain, state->mem_ctx, &trusts);
+	/* Cut client_pid to 32bit */
+	client_pid = r->in.client_pid;
+	if ((uint64_t)client_pid != r->in.client_pid) {
+		DBG_DEBUG("pid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
+	DBG_NOTICE("[%s %"PRIu32"]: list trusted domains\n",
+		   r->in.client_name, client_pid);
+
+	result = wb_cache_trusted_domains(domain, p->mem_ctx, &trusts);
 	if (!NT_STATUS_IS_OK(result)) {
 		DBG_NOTICE("wb_cache_trusted_domains returned %s\n",
 			   nt_errstr(result));
-		return WINBINDD_ERROR;
+		return result;
 	}
 
-	extra_data = talloc_strdup(state->mem_ctx, "");
+	out = talloc_zero(p->mem_ctx, struct netr_DomainTrustList);
+	if (out == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.domains = out;
 
 	for (i=0; i<trusts.count; i++) {
-		struct dom_sid_buf buf;
-
 		if (trusts.array[i].sid == NULL) {
 			continue;
 		}
@@ -1961,35 +1973,39 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 			continue;
 		}
 
-		extra_data = talloc_asprintf_append_buffer(
-		    extra_data, "%s\\%s\\%s\\%u\\%u\\%u\n",
-		    trusts.array[i].netbios_name, trusts.array[i].dns_name,
-		    dom_sid_str_buf(trusts.array[i].sid, &buf),
-		    trusts.array[i].trust_flags,
-		    (uint32_t)trusts.array[i].trust_type,
-		    trusts.array[i].trust_attributes);
-	}
-
-	/* add our primary domain */
-
-	for (i=0; i<trusts.count; i++) {
-		if (strequal(trusts.array[i].netbios_name, domain->name)) {
-			have_own_domain = True;
-			break;
+		n = out->count;
+		out->array = talloc_realloc(out, out->array,
+					    struct netr_DomainTrust,
+					    n + 1);
+		if (out->array == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
+		out->count = n + 1;
+
+		out->array[n].netbios_name = talloc_steal(
+				out->array, trusts.array[i].netbios_name);
+		if (out->array[n].netbios_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		out->array[n].dns_name = talloc_steal(
+				out->array, trusts.array[i].dns_name);
+		if (out->array[n].dns_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		out->array[n].sid = dom_sid_dup(out->array,
+				trusts.array[i].sid);
+		if (out->array[n].sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		out->array[n].trust_flags = trusts.array[i].trust_flags;
+		out->array[n].trust_type = trusts.array[i].trust_type;
+		out->array[n].trust_attributes = trusts.array[i].trust_attributes;
 	}
 
-	extra_data_len = strlen(extra_data);
-	if (extra_data_len > 0) {
-
-		/* Strip the last \n */
-		extra_data[extra_data_len-1] = '\0';
-
-		state->response->extra_data.data = extra_data;
-		state->response->length += extra_data_len;
-	}
-
-	return WINBINDD_OK;
+	return NT_STATUS_OK;
 }
 
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"

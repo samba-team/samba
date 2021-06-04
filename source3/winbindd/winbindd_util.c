@@ -376,7 +376,7 @@ bool domain_is_forest_root(const struct winbindd_domain *domain)
 
 struct trustdom_state {
 	struct winbindd_domain *domain;
-	struct winbindd_request request;
+	struct netr_DomainTrustList trusts;
 };
 
 static void trustdom_list_done(struct tevent_req *req);
@@ -385,8 +385,11 @@ static void rescan_forest_trusts( void );
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
+	struct tevent_context *ev = global_event_context();
 	struct trustdom_state *state;
 	struct tevent_req *req;
+	const char *client_name = NULL;
+	pid_t client_pid;
 
 	state = talloc_zero(NULL, struct trustdom_state);
 	if (state == NULL) {
@@ -395,13 +398,18 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	}
 	state->domain = domain;
 
-	state->request.length = sizeof(state->request);
-	state->request.cmd = WINBINDD_LIST_TRUSTDOM;
+	/* Called from timer, not from a real client */
+	client_name = getprogname();
+	client_pid = getpid();
 
-	req = wb_domain_request_send(state, global_event_context(),
-				     domain, &state->request);
+	req = dcerpc_wbint_ListTrustedDomains_send(state,
+						   ev,
+						   dom_child_handle(domain),
+						   client_name,
+						   client_pid,
+						   &state->trusts);
 	if (req == NULL) {
-		DEBUG(1, ("wb_domain_request_send failed\n"));
+		DBG_ERR("dcerpc_wbint_ListTrustedDomains_send failed\n");
 		TALLOC_FREE(state);
 		return;
 	}
@@ -412,12 +420,9 @@ static void trustdom_list_done(struct tevent_req *req)
 {
 	struct trustdom_state *state = tevent_req_callback_data(
 		req, struct trustdom_state);
-	struct winbindd_response *response;
-	int res, err;
-	char *p;
-	ptrdiff_t extra_len;
 	bool within_forest = false;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	uint32_t i;
 
 	/*
 	 * Only when we enumerate our primary domain
@@ -432,125 +437,25 @@ static void trustdom_list_done(struct tevent_req *req)
 		within_forest = true;
 	}
 
-	res = wb_domain_request_recv(req, state, &response, &err);
-	if ((res == -1) || (response->result != WINBINDD_OK)) {
-		DBG_WARNING("Could not receive trusts for domain %s\n",
-			    state->domain->name);
+	status = dcerpc_wbint_ListTrustedDomains_recv(req, state, &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_WARNING("Could not receive trusts for domain %s: %s-%s\n",
+			    state->domain->name, nt_errstr(status),
+			    nt_errstr(result));
 		TALLOC_FREE(state);
 		return;
 	}
 
-	if (response->length < sizeof(struct winbindd_response)) {
-		DBG_ERR("ill-formed trustdom response - short length\n");
-		TALLOC_FREE(state);
-		return;
-	}
-
-	extra_len = response->length - sizeof(struct winbindd_response);
-
-	p = (char *)response->extra_data.data;
-
-	while ((p - (char *)response->extra_data.data) < extra_len) {
+	for (i=0; i<state->trusts.count; i++) {
+		struct netr_DomainTrust *trust = &state->trusts.array[i];
 		struct winbindd_domain *domain = NULL;
-		char *name, *q, *sidstr, *alt_name;
-		struct dom_sid sid;
-		uint32_t trust_type;
-		uint32_t trust_attribs;
-		uint32_t trust_flags;
-		int error = 0;
-
-		DBG_DEBUG("parsing response line '%s'\n", p);
-
-		name = p;
-
-		alt_name = strchr(p, '\\');
-		if (alt_name == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		*alt_name = '\0';
-		alt_name += 1;
-
-		sidstr = strchr(alt_name, '\\');
-		if (sidstr == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		*sidstr = '\0';
-		sidstr += 1;
-
-		/* use the real alt_name if we have one, else pass in NULL */
-		if (strequal(alt_name, "(null)")) {
-			alt_name = NULL;
-		}
-
-		q = strtok(sidstr, "\\");
-		if (q == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		if (!string_to_sid(&sid, sidstr)) {
-			DEBUG(0, ("Got invalid trustdom response\n"));
-			break;
-		}
-
-		q = strtok(NULL, "\\");
-		if (q == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		trust_flags = (uint32_t)smb_strtoul(q,
-						    NULL,
-						    10,
-						    &error,
-						    SMB_STR_STANDARD);
-		if (error != 0) {
-			DBG_ERR("Failed to convert trust_flags\n");
-			break;
-		}
-
-		q = strtok(NULL, "\\");
-		if (q == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		trust_type = (uint32_t)smb_strtoul(q,
-						   NULL,
-						   10,
-						   &error,
-						   SMB_STR_STANDARD);
-		if (error != 0) {
-			DBG_ERR("Failed to convert trust_type\n");
-			break;
-		}
-
-		q = strtok(NULL, "\n");
-		if (q == NULL) {
-			DBG_ERR("Got invalid trustdom response\n");
-			break;
-		}
-
-		trust_attribs = (uint32_t)smb_strtoul(q,
-						      NULL,
-						      10,
-						      &error,
-						      SMB_STR_STANDARD);
-		if (error != 0) {
-			DBG_ERR("Failed to convert trust_attribs\n");
-			break;
-		}
 
 		if (!within_forest) {
-			trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
+			trust->trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
 		}
 
 		if (!state->domain->primary) {
-			trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
+			trust->trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
 		}
 
 		/*
@@ -559,12 +464,12 @@ static void trustdom_list_done(struct tevent_req *req)
 		 * This is important because we need the SID for sibling
 		 * domains.
 		 */
-		status = add_trusted_domain(name,
-					    alt_name,
-					    &sid,
-					    trust_type,
-					    trust_flags,
-					    trust_attribs,
+		status = add_trusted_domain(trust->netbios_name,
+					    trust->dns_name,
+					    trust->sid,
+					    trust->trust_type,
+					    trust->trust_flags,
+					    trust->trust_attributes,
 					    SEC_CHAN_NULL,
 					    find_default_route_domain(),
 					    &domain);
@@ -575,8 +480,6 @@ static void trustdom_list_done(struct tevent_req *req)
 				   nt_errstr(status));
 			return;
 		}
-
-		p = q + strlen(q) + 1;
 	}
 
 	/*

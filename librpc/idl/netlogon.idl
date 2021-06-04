@@ -1598,7 +1598,7 @@ interface netlogon
 	/****************/
 	/* Function 0x24 */
 
-	typedef struct {
+	typedef [public] struct {
 		[string,charset(UTF16)] uint16			*netbios_name;
 		[string,charset(UTF16)] uint16			*dns_name;
 		netr_TrustFlags		trust_flags;
@@ -1609,7 +1609,7 @@ interface netlogon
 		GUID			guid;
 	} netr_DomainTrust;
 
-        typedef struct {
+        typedef [public] struct {
                 uint32 count;
                 [size_is(count)] netr_DomainTrust *array;
         } netr_DomainTrustList;

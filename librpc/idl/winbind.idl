@@ -168,6 +168,12 @@ interface winbind
 	[out,string,charset(UTF8)] char **dcname
 	);
 
+    NTSTATUS wbint_ListTrustedDomains(
+        [in,string,charset(UTF8)] char *client_name,
+        [in] hyper client_pid,
+        [out,ref] netr_DomainTrustList *domains
+        );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

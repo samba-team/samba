@@ -396,8 +396,6 @@ struct dcerpc_binding_handle *locator_child_handle(void);
 /* The following definitions come from winbindd/winbindd_misc.c  */
 
 bool winbindd_list_trusted_domains(struct winbindd_cli_state *state);
-enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
-							struct winbindd_cli_state *state);
 bool winbindd_dc_info(struct winbindd_cli_state *state);
 bool winbindd_ping(struct winbindd_cli_state *state);
 bool winbindd_info(struct winbindd_cli_state *state);
