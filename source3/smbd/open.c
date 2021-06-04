@@ -293,9 +293,6 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 				      SECINFO_DACL),
 				     talloc_tos(),
 				     &sd);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		status = NT_STATUS_OK;
-	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("Could not get acl on %s: %s\n",
 			  fsp_str_dbg(fsp),
