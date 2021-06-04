@@ -1612,6 +1612,24 @@ bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
 		return false;
 	}
 
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		/*
+		 * Symlink in POSIX mode or MS-DFS.
+		 * We've checked veto files so the
+		 * only thing we can check is the
+		 * hide_new_files_timeout.
+		 */
+		if (hide_new_files_timeout != 0) {
+			double age = timespec_elapsed(
+				&fsp->fsp_name->st.st_ex_mtime);
+
+			if (age < (double)hide_new_files_timeout) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	if (hide_unreadable ||
 	    hide_unwriteable ||
 	    hide_special ||
