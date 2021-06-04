@@ -287,6 +287,14 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 	struct security_descriptor *sd = NULL;
 	NTSTATUS status;
 
+	/* Cope with fake/printer fsp's. */
+	if (fsp->fake_file_handle != NULL || fsp->print_file != NULL) {
+		if ((fsp->access_mask & access_mask) != access_mask) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_FGET_NT_ACL(fsp,
 				     (SECINFO_OWNER |
 				      SECINFO_GROUP |
