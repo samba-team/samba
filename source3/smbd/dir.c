@@ -559,7 +559,7 @@ ret:
 }
 
 /****************************************************************************
- Search for a file by name, skipping veto'ed and not visible files.
+ Search for a file by name.
 ****************************************************************************/
 
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
