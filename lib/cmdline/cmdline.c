@@ -331,12 +331,7 @@ static void popt_samba_callback(poptContext popt_ctx,
 	bool ok;
 
 	/* Find out basename of current program */
-	pname = strrchr_m(poptGetInvocationName(popt_ctx), '/');
-	if (pname == NULL) {
-		pname = poptGetInvocationName(popt_ctx);
-	} else {
-		pname++;
-	}
+	pname = getprogname();
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		if (lp_ctx == NULL) {
