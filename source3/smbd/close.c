@@ -922,7 +922,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			goto err_break;
 		}
 
-		if (!is_visible_fsp(atname->fsp, false)) {
+		if (!is_visible_fsp(atname->fsp)) {
 			TALLOC_FREE(smb_dname_full);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(talloced);
@@ -1125,7 +1125,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			goto err;
 		}
 
-		if (!is_visible_fsp(direntry_fname->fsp, false)) {
+		if (!is_visible_fsp(direntry_fname->fsp)) {
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);
@@ -1224,7 +1224,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 				goto err_break;
 			}
 
-			if (!is_visible_fsp(direntry_fname->fsp, false)) {
+			if (!is_visible_fsp(direntry_fname->fsp)) {
 				TALLOC_FREE(fullname);
 				TALLOC_FREE(smb_dname_full);
 				TALLOC_FREE(talloced);

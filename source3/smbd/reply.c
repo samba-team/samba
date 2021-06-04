@@ -3481,7 +3481,7 @@ NTSTATUS unlink_internals(connection_struct *conn,
 				goto out;
 			}
 
-			if (!is_visible_fsp(f->fsp, false)) {
+			if (!is_visible_fsp(f->fsp)) {
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				continue;
@@ -8239,7 +8239,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			break;
 		}
 
-		if (!is_visible_fsp(smb_fname_src->fsp, false)) {
+		if (!is_visible_fsp(smb_fname_src->fsp)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
@@ -9033,7 +9033,7 @@ void reply_copy(struct smb_request *req)
 				break;
 			}
 
-			if (!is_visible_fsp(smb_fname_src->fsp, false)) {
+			if (!is_visible_fsp(smb_fname_src->fsp)) {
 				TALLOC_FREE(talloced);
 				continue;
 			}

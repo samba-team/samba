@@ -969,7 +969,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (!is_visible_fsp(smb_fname->fsp, false)) {
+		if (!is_visible_fsp(smb_fname->fsp)) {
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
@@ -1566,7 +1566,7 @@ static bool is_visible_file(connection_struct *conn,
  Should the file be seen by the client?
 ********************************************************************/
 
-bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
+bool is_visible_fsp(struct files_struct *fsp)
 {
 	bool hide_unreadable = false;
 	bool hide_unwriteable = false;
@@ -1603,12 +1603,6 @@ bool is_visible_fsp(struct files_struct *fsp, bool use_veto)
 
 	if (ISDOT(last_component) || ISDOTDOT(last_component)) {
 		return true; /* . and .. are always visible. */
-	}
-
-	/* If it's a vetoed file, pretend it doesn't even exist */
-	if (use_veto && IS_VETO_PATH(fsp->conn, last_component)) {
-		DBG_ERR("file %s is vetoed.\n", fsp_str_dbg(fsp));
-		return false;
 	}
 
 	if (fsp_get_pathref_fd(fsp) == -1) {
@@ -2189,7 +2183,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			break;
 		}
 
-		if (!is_visible_fsp(direntry_fname->fsp, false)) {
+		if (!is_visible_fsp(direntry_fname->fsp)) {
 			TALLOC_FREE(talloced);
 			TALLOC_FREE(fullname);
 			TALLOC_FREE(smb_dname_full);

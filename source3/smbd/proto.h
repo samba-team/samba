@@ -228,7 +228,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		bool check_descend,
 		bool ask_sharemode);
 struct smb_Dir;
-bool is_visible_fsp(files_struct *fsp, bool use_veto);
+bool is_visible_fsp(files_struct *fsp);
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			const struct smb_filename *smb_fname,
