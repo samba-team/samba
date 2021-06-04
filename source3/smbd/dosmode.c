@@ -27,6 +27,7 @@
 #include "smbd/smbd.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "fake_file.h"
 
 static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 				const struct smb_filename *smb_fname,
@@ -754,11 +755,30 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 {
 	uint32_t result = 0;
 	NTSTATUS status = NT_STATUS_OK;
+	enum FAKE_FILE_TYPE fake_file_type;
 
 	DEBUG(8,("dos_mode: %s\n", smb_fname_str_dbg(smb_fname)));
 
 	if (!VALID_STAT(smb_fname->st)) {
 		return 0;
+	}
+
+	fake_file_type = is_fake_file(smb_fname);
+
+	switch (fake_file_type) {
+	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY:
+	case FAKE_FILE_TYPE_NAMED_PIPE:
+		return FILE_ATTRIBUTE_NORMAL;
+
+	case FAKE_FILE_TYPE_QUOTA:
+		/* From Windows 2016 */
+		return FILE_ATTRIBUTE_HIDDEN
+			| FILE_ATTRIBUTE_SYSTEM
+			| FILE_ATTRIBUTE_DIRECTORY
+			| FILE_ATTRIBUTE_ARCHIVE;
+
+	case FAKE_FILE_TYPE_NONE:
+		break;
 	}
 
 	/* Get the DOS attributes via the VFS if we can */
