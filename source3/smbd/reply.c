@@ -8972,6 +8972,11 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 
+			if (IS_VETO_PATH(conn, dname)) {
+				TALLOC_FREE(talloced);
+				continue;
+			}
+
 			if(!mask_match(dname, fname_src_mask,
 				       conn->case_sensitive)) {
 				TALLOC_FREE(talloced);
