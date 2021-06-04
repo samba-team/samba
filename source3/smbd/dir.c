@@ -80,11 +80,13 @@ struct dptr_struct {
 	struct memcache *dptr_cache;
 };
 
+#if 0
 static bool is_visible_file(connection_struct *conn,
 		struct smb_Dir *dir_hnd,
 		const char *name,
 		SMB_STRUCT_STAT *pst,
 		bool use_veto);
+#endif
 
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			files_struct *fsp,
@@ -402,6 +404,7 @@ void dptr_set_priv(struct dptr_struct *dptr)
 	dptr->priv = true;
 }
 
+#if 0
 /****************************************************************************
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
@@ -428,6 +431,7 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
 	}
 	return NULL;
 }
+#endif
 
 /****************************************************************************
  Return the next visible file name, skipping veto'd and invisible files.
@@ -449,7 +453,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild || dptr->did_stat) {
-		name_temp = dptr_normal_ReadDirName(dptr, poffset, pst,
+		name_temp = ReadDirName(dptr->dir_hnd, poffset, pst,
 						    &talloced);
 		if (name_temp == NULL) {
 			return NULL;
@@ -534,7 +538,7 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(pathreal);
 
-	name_temp = dptr_normal_ReadDirName(dptr, poffset, pst, &talloced);
+	name_temp = ReadDirName(dptr->dir_hnd, poffset, pst, &talloced);
 	if (name_temp == NULL) {
 		return NULL;
 	}
@@ -1189,6 +1193,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 	return true;
 }
 
+#if 0
 /*******************************************************************
  Check to see if a user can read a file. This is only approximate,
  it is used as part of the "hide unreadable" option. Don't
@@ -1275,6 +1280,7 @@ static bool user_can_read_file(connection_struct *conn,
         }
 	return true;
 }
+#endif
 
 /*******************************************************************
  Check to see if a user can read an fsp . This is only approximate,
@@ -1357,6 +1363,7 @@ static bool user_can_read_fsp(struct files_struct *fsp)
 	return true;
 }
 
+#if 0
 /*******************************************************************
  Check to see if a user can write a file (and only files, we do not
  check dirs on this one). This is only approximate,
@@ -1390,6 +1397,7 @@ static bool user_can_write_file(connection_struct *conn,
 
 	return can_write_to_file(conn, dirfsp, smb_fname);
 }
+#endif
 
 /*******************************************************************
  Check to see if a user can write to an fsp.
@@ -1445,6 +1453,7 @@ static bool file_is_special(connection_struct *conn,
 	return True;
 }
 
+#if 0
 /*******************************************************************
  Should the file be seen by the client?
  NOTE: A successful return is no guarantee of the file's existence.
@@ -1561,6 +1570,7 @@ static bool is_visible_file(connection_struct *conn,
 	TALLOC_FREE(entry);
 	return ret;
 }
+#endif
 
 /*******************************************************************
  Should the file be seen by the client?
