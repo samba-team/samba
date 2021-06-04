@@ -1237,42 +1237,6 @@ static bool user_can_read_fsp(struct files_struct *fsp)
 	return true;
 }
 
-#if 0
-/*******************************************************************
- Check to see if a user can write a file (and only files, we do not
- check dirs on this one). This is only approximate,
- it is used as part of the "hide unwriteable" option. Don't
- use it for anything security sensitive.
-********************************************************************/
-
-static bool user_can_write_file(connection_struct *conn,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname)
-{
-	SMB_ASSERT(dirfsp == conn->cwd_fsp);
-
-	/*
-	 * Never hide files from the root user.
-	 * We use (uid_t)0 here not sec_initial_uid()
-	 * as make test uses a single user context.
-	 */
-
-	if (get_current_uid(conn) == (uid_t)0) {
-		return True;
-	}
-
-	SMB_ASSERT(VALID_STAT(smb_fname->st));
-
-	/* Pseudo-open the file */
-
-	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
-		return True;
-	}
-
-	return can_write_to_file(conn, dirfsp, smb_fname);
-}
-#endif
-
 /*******************************************************************
  Check to see if a user can write to an fsp.
  Always return true for directories.
