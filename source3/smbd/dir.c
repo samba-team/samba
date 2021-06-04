@@ -2118,7 +2118,10 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			TALLOC_FREE(talloced);
 			continue;
 		}
-
+		if (IS_VETO_PATH(conn, dname)) {
+			TALLOC_FREE(talloced);
+			continue;
+		}
 		if (!is_visible_file(conn,
 				dir_hnd,
 				dname,
