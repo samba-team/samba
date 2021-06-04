@@ -404,35 +404,6 @@ void dptr_set_priv(struct dptr_struct *dptr)
 	dptr->priv = true;
 }
 
-#if 0
-/****************************************************************************
- Return the next visible file name, skipping veto'd and invisible files.
-****************************************************************************/
-
-static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
-					   long *poffset, SMB_STRUCT_STAT *pst,
-					   char **ptalloced)
-{
-	/* Normal search for the next file. */
-	const char *name;
-	char *talloced = NULL;
-
-	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst, &talloced))
-	       != NULL) {
-		if (is_visible_file(dptr->conn,
-				dptr->dir_hnd,
-				name,
-				pst,
-				true)) {
-			*ptalloced = talloced;
-			return name;
-		}
-		TALLOC_FREE(talloced);
-	}
-	return NULL;
-}
-#endif
-
 /****************************************************************************
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
