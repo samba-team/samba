@@ -846,6 +846,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
+		if (IS_VETO_PATH(conn, dname)) {
+			TALLOC_FREE(dname);
+			continue;
+		}
+
 		/*
 		 * fname may get mangled, dname is never mangled.
 		 * Whenever we're accessing the filesystem we use
