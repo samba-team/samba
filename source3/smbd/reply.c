@@ -3410,18 +3410,14 @@ NTSTATUS unlink_internals(connection_struct *conn,
 			char *p = NULL;
 			struct smb_filename *f = NULL;
 
-			if (!is_visible_file(conn,
-					dir_hnd,
-					dname,
-					&smb_fname->st,
-					true)) {
+			/* Quick check for "." and ".." */
+			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				continue;
 			}
 
-			/* Quick check for "." and ".." */
-			if (ISDOT(dname) || ISDOTDOT(dname)) {
+			if (IS_VETO_PATH(conn, dname)) {
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				continue;
@@ -3483,6 +3479,12 @@ NTSTATUS unlink_internals(connection_struct *conn,
 				TALLOC_FREE(frame);
 				TALLOC_FREE(talloced);
 				goto out;
+			}
+
+			if (!is_visible_fsp(f->fsp, false)) {
+				TALLOC_FREE(frame);
+				TALLOC_FREE(talloced);
+				continue;
 			}
 
 			status = check_name(conn, f);
