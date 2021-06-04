@@ -115,6 +115,21 @@ enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname)
 	return ret;
 }
 
+uint32_t dosmode_from_fake_filehandle(const struct fake_file_handle *ffh)
+{
+	if (ffh->type != FAKE_FILE_TYPE_QUOTA) {
+		DBG_ERR("Unexpected fake_file_handle: %d\n", ffh->type);
+		log_stack_trace();
+		return FILE_ATTRIBUTE_NORMAL;
+	}
+
+	/* This is what Windows 2016 returns */
+	return FILE_ATTRIBUTE_HIDDEN
+		| FILE_ATTRIBUTE_SYSTEM
+		| FILE_ATTRIBUTE_DIRECTORY
+		| FILE_ATTRIBUTE_ARCHIVE;
+}
+
 /****************************************************************************
  Open a fake quota file with a share mode.
 ****************************************************************************/
