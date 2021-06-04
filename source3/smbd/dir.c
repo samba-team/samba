@@ -89,6 +89,8 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
+static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset);
+
 #define INVALID_DPTR_KEY (-3)
 
 /****************************************************************************
@@ -1709,7 +1711,7 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset)
  Don't check for veto or invisible files.
 ********************************************************************/
 
-bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
+static bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 {
 	int i;
 	const char *entry = NULL;

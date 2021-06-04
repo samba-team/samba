@@ -243,7 +243,6 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 void RewindDir(struct smb_Dir *dir_hnd, long *poffset);
 void SeekDir(struct smb_Dir *dirp, long offset);
 long TellDir(struct smb_Dir *dirp);
-bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
 bool have_file_open_below(connection_struct *conn,
