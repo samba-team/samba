@@ -47,5 +47,6 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint32_t access_mask,
 				files_struct **result);
 NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
+uint32_t dosmode_from_fake_filehandle(const struct fake_file_handle *ffh);
 
 #endif /* _FAKE_FILE_H */
