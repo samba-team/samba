@@ -982,6 +982,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
+		if (!is_visible_fsp(smb_fname->fsp, false)) {
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(dname);
+			TALLOC_FREE(fname);
+			continue;
+		}
+
 		ok = mode_fn(ctx, private_data, smb_fname, get_dosmode, &mode);
 		if (!ok) {
 			TALLOC_FREE(smb_fname);
