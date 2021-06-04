@@ -1050,25 +1050,93 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &dirpos, &st, &talloced)) != NULL) {
+		struct smb_filename *smb_dname_full = NULL;
+		struct smb_filename *direntry_fname = NULL;
+		char *fullname = NULL;
+
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		if (!is_visible_file(conn,
-				     dir_hnd,
-				     dname,
-				     &st,
-				     false))
-		{
+		if (IS_VETO_PATH(conn, dname)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		if (!IS_VETO_PATH(conn, dname)) {
+
+		fullname = talloc_asprintf(talloc_tos(),
+					   "%s/%s",
+					   smb_dname->base_name,
+					   dname);
+
+		if (fullname == NULL) {
 			TALLOC_FREE(talloced);
-			errno = ENOTEMPTY;
+			errno = ENOMEM;
 			goto err;
 		}
+
+		smb_dname_full = synthetic_smb_fname(talloc_tos(),
+						     fullname,
+						     NULL,
+						     NULL,
+						     smb_dname->twrp,
+						     smb_dname->flags);
+		if (smb_dname_full == NULL) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			errno = ENOMEM;
+			goto err;
+		}
+
+		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
+		if (ret != 0) {
+			int saved_errno = errno;
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			errno = saved_errno;
+			goto err;
+		}
+
+		/*
+		 * is_visible_fsp() always returns true
+		 * for the symlink/MSDFS case.
+		 */
+		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			continue;
+		}
+
+		/* Not a symlink, get a pathref. */
+		status = synthetic_pathref(talloc_tos(),
+					   dirfsp,
+					   dname,
+					   NULL,
+					   &smb_dname_full->st,
+					   smb_dname->twrp,
+					   smb_dname->flags,
+					   &direntry_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			errno = map_errno_from_nt_status(status);
+			goto err;
+		}
+
+		if (!is_visible_fsp(direntry_fname->fsp, false)) {
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			TALLOC_FREE(direntry_fname);
+			continue;
+		}
+
 		TALLOC_FREE(talloced);
+		TALLOC_FREE(fullname);
+		TALLOC_FREE(smb_dname_full);
+		TALLOC_FREE(direntry_fname);
 	}
 
 	/* We only have veto files/directories.
