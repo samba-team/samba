@@ -473,19 +473,6 @@ static char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	dptr->did_stat = true;
 
-	/* First check if it should be visible. */
-	if (!is_visible_file(dptr->conn,
-			dptr->dir_hnd,
-			dptr->wcard,
-			pst,
-			true)) {
-		/* This only returns false if the file was found, but
-		   is explicitly not visible. Set us to end of
-		   directory, but return NULL as we know we can't ever
-		   find it. */
-		goto ret;
-	}
-
 	if (VALID_STAT(*pst)) {
 		name = talloc_strdup(ctx, dptr->wcard);
 		goto ret;
