@@ -372,7 +372,9 @@ NTSTATUS dns_tombstone_records(TALLOC_CTX *mem_ctx,
 
 /*
  * Delete all DNS tombstones that have been around for longer than the server
- * property 'DsTombstoneInterval' which we store in smb.conf
+ * property 'dns_tombstone_interval' which we store in smb.conf, which
+ * corresponds to DsTombstoneInterval in [MS-DNSP] 3.1.1.1.1 "DNS Server
+ * Integer Properties".
  */
 NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *samdb,
@@ -381,10 +383,13 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 	struct dns_server_zone *zones = NULL;
 	struct dns_server_zone *z = NULL;
 	int ret, i;
+	NTSTATUS status;
 	uint32_t current_time;
+	uint32_t tombstone_interval;
+	uint32_t tombstone_hours;
+	NTTIME tombstone_nttime;
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res = NULL;
-	int tombstone_time;
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	struct ldb_message_element *el = NULL;
@@ -395,10 +400,19 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 	current_time = unix_to_dns_timestamp(time(NULL));
 
 	lp_ctx = (struct loadparm_context *)ldb_get_opaque(samdb, "loadparm");
-	tombstone_time =
-	    current_time -
-	    lpcfg_parm_int(
-		lp_ctx, NULL, "dnsserver", "dns_tombstone_interval", 24 * 14);
+	tombstone_interval = lpcfg_parm_ulong(lp_ctx, NULL,
+					      "dnsserver",
+					      "dns_tombstone_interval",
+					      24 * 14);
+
+	tombstone_hours = current_time - tombstone_interval;
+	status = dns_timestamp_to_nt_time(&tombstone_nttime,
+					  tombstone_hours);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("DNS timestamp exceeds NTTIME epoch.\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	dns_common_zones(samdb, mem_ctx, NULL, &zones);
 	for (z = zones; z; z = z->next) {
@@ -453,7 +467,27 @@ NTSTATUS dns_delete_tombstones(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			if (rec->data.EntombedTime > tombstone_time) {
+			if (rec->data.EntombedTime > tombstone_nttime) {
+				continue;
+			}
+			/*
+			 * Between 4.9 and 4.14 in some places we saved the
+			 * tombstone time as hours since the start of 1601,
+			 * not in NTTIME ten-millionths of a second units.
+			 *
+			 * We can accomodate these bad values by noting that
+			 * all the realistic timestamps in that measurement
+			 * fall within the first *second* of NTTIME, that is,
+			 * before 1601-01-01 00:00:01; and that these
+			 * timestamps are not realistic for NTTIME timestamps.
+			 *
+			 * Calculation: there are roughly 365.25 * 24 = 8766
+			 * hours per year, and < 500 years since 1601, so
+			 * 4383000 would be a fine threshold. We round up to
+			 * the crore-second (c. 2741CE) in honour of NTTIME.
+			 */
+			if ((rec->data.EntombedTime < 10000000) &&
+			    (rec->data.EntombedTime > tombstone_hours)) {
 				continue;
 			}
 
