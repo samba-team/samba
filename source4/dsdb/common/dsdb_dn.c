@@ -47,18 +47,32 @@ static struct dsdb_dn *dsdb_dn_construct_internal(TALLOC_CTX *mem_ctx,
 						  enum dsdb_dn_format dn_format, 
 						  const char *oid) 
 {
-	struct dsdb_dn *dsdb_dn = talloc(mem_ctx, struct dsdb_dn);
+	struct dsdb_dn *dsdb_dn = NULL;
+
+	switch (dn_format) {
+	case DSDB_BINARY_DN:
+	case DSDB_STRING_DN:
+		break;
+	case DSDB_NORMAL_DN:
+		if (extra_part.length != 0) {
+			errno = EINVAL;
+			return NULL;
+		}
+		break;
+	case DSDB_INVALID_DN:
+	default:
+		errno = EINVAL;
+		return NULL;
+	}
+
+	dsdb_dn = talloc(mem_ctx, struct dsdb_dn);
 	if (!dsdb_dn) {
+		errno = ENOMEM;
 		return NULL;
 	}
 	dsdb_dn->dn = talloc_steal(dsdb_dn, dn);
 	dsdb_dn->extra_part = extra_part;
 	dsdb_dn->dn_format = dn_format;
-	/* Look to see if this attributeSyntax is a DN */
-	if (dsdb_dn->dn_format == DSDB_INVALID_DN) {
-		talloc_free(dsdb_dn);
-		return NULL;
-	}
 
 	dsdb_dn->oid = oid;
 	talloc_steal(dsdb_dn, extra_part.data);
