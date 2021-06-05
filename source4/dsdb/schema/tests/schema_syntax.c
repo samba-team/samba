@@ -119,6 +119,8 @@ static bool torture_test_syntax(struct torture_context *torture,
 
 	torture_assert_data_blob_equal(torture, el.values[0], ldb_blob, "Incorrect conversion from DRS to ldb format");
 
+	torture_assert_werr_ok(torture, syntax->validate_ldb(&syntax_ctx, attr, &el), "Failed to validate ldb format");
+
 	torture_assert_werr_ok(torture, syntax->ldb_to_drsuapi(&syntax_ctx, attr, &el, tmp_ctx, &drs2), "Failed to convert from ldb to DRS format");
 	
 	torture_assert(torture, drs2.value_ctr.values[0].blob, "No blob returned from conversion");
