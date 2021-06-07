@@ -922,7 +922,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 					   dirfsp,
 					   dname,
 					   NULL,
-					   NULL,
+					   &smb_dname_full->st,
 					   smb_dname_full->twrp,
 					   smb_dname_full->flags,
 					   &atname);
