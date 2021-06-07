@@ -1587,11 +1587,9 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		status = smbd_check_access_rights(conn,
-				conn->cwd_fsp,
-				smb_fname,
-				false,
-				access_mask);
+		status = smbd_check_access_rights_fsp(fsp,
+						      false,
+						      access_mask);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
 				(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
