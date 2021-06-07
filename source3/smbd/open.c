@@ -1310,6 +1310,14 @@ static NTSTATUS open_file(files_struct *fsp,
 	bool truncating = (flags & O_TRUNC);
 	bool open_fd = false;
 
+	/*
+	 * Catch early an attempt to open an existing
+	 * directory as a file.
+	 */
+	if (file_existed && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
 	/* Check permissions */
 
 	/*
