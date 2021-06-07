@@ -3638,7 +3638,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 "requested for file %s and file "
 					 "doesn't exist.\n",
 					 smb_fname_str_dbg(smb_fname)));
-				errno = ENOENT;
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			break;
@@ -3651,7 +3650,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 "requested for file %s and file "
 					 "doesn't exist.\n",
 					 smb_fname_str_dbg(smb_fname) ));
-				errno = ENOENT;
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			break;
@@ -3665,11 +3663,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 "already exists.\n",
 					 smb_fname_str_dbg(smb_fname)));
 				if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-					errno = EISDIR;
+					return NT_STATUS_FILE_IS_A_DIRECTORY;
 				} else {
-					errno = EEXIST;
+					return NT_STATUS_OBJECT_NAME_COLLISION;
 				}
-				return map_nt_error_from_unix(errno);
 			}
 			break;
 
@@ -3699,7 +3696,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				 new_dos_attributes,
 				 (unsigned int)smb_fname->st.st_ex_mode,
 				 (unsigned int)unx_mode ));
-			errno = EACCES;
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -3798,7 +3794,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 "file %s on read only %s\n",
 			 smb_fname_str_dbg(smb_fname),
 			 !CAN_WRITE(conn) ? "share" : "file" ));
-		errno = EACCES;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
