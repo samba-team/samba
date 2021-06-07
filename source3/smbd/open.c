@@ -1599,11 +1599,10 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("open_file: "
-				"smbd_check_access_rights on file "
+			DBG_DEBUG("smbd_check_access_rights_fsp on file "
 				"%s returned %s\n",
-				smb_fname_str_dbg(smb_fname),
-				nt_errstr(status) ));
+				fsp_str_dbg(fsp),
+				nt_errstr(status));
 			return status;
 		}
 	}
