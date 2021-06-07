@@ -295,6 +295,21 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
+	if (fsp_get_pathref_fd(fsp) == -1) {
+		/*
+		 * This is a POSIX open on a symlink. For the pathname
+		 * verison of this function we used to return the st_mode
+		 * bits turned into an NT ACL. For a symlink the mode bits
+		 * are always rwxrwxrwx which means the pathname version always
+		 * returned NT_STATUS_OK for a symlink. For the handle reference
+		 * to a symlink use the handle access bits.
+		 */
+		if ((fsp->access_mask & access_mask) != access_mask) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_FGET_NT_ACL(fsp,
 				     (SECINFO_OWNER |
 				      SECINFO_GROUP |
