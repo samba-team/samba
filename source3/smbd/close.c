@@ -1150,7 +1150,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 					   dirfsp,
 					   dname,
 					   NULL,
-					   NULL,
+					   &smb_dname_full->st,
 					   smb_dname->twrp,
 					   smb_dname->flags,
 					   &direntry_fname);
