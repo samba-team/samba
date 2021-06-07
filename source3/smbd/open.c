@@ -4652,9 +4652,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights(conn,
-						conn->cwd_fsp,
-						smb_dname,
+		status = smbd_check_access_rights_fsp(fsp,
 						false,
 						access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
