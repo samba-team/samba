@@ -471,9 +471,7 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 		}
 	}
 
-	return smbd_check_access_rights(conn,
-					conn->cwd_fsp,
-					smb_fname,
+	return smbd_check_access_rights_fsp(smb_fname->fsp,
 					false,
 					access_mask);
 }
