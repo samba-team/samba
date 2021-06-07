@@ -2708,6 +2708,68 @@ done:
 }
 
 /*
+  test opening quota fakefile handle and returned attributes
+*/
+static bool test_smb2_open_quota_fake_file(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	const char *fname = "$Extend\\$Quota:$Q:$INDEX_ALLOCATION";
+	struct smb2_create create;
+	struct smb2_handle h = {{0}};
+	NTSTATUS status;
+	bool ret = true;
+
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_READ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree, tree, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h = create.out.file.handle;
+
+	torture_assert_u64_equal_goto(tctx,
+				      create.out.file_attr,
+				      FILE_ATTRIBUTE_HIDDEN
+				      | FILE_ATTRIBUTE_SYSTEM
+				      | FILE_ATTRIBUTE_DIRECTORY
+				      | FILE_ATTRIBUTE_ARCHIVE,
+				      ret,
+				      done,
+				      "Wrong attributes\n");
+
+	torture_assert_u64_equal_goto(tctx,
+				      create.out.create_time, 0,
+				      ret,
+				      done,
+				      "create_time is not 0\n");
+	torture_assert_u64_equal_goto(tctx,
+				      create.out.access_time, 0,
+				      ret,
+				      done,
+				      "access_time is not 0\n");
+	torture_assert_u64_equal_goto(tctx,
+				      create.out.write_time, 0,
+				      ret,
+				      done,
+				      "write_time is not 0\n");
+	torture_assert_u64_equal_goto(tctx,
+				      create.out.change_time, 0,
+				      ret,
+				      done,
+				      "change_time is not 0\n");
+
+done:
+	smb2_util_close(tree, h);
+	return ret;
+}
+
+/*
    basic testing of SMB2 read
 */
 struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
@@ -2727,6 +2789,7 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
 	torture_suite_add_1smb2_test(suite, "mkdir-dup", test_mkdir_dup);
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
+	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
