@@ -183,25 +183,13 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_Dir *dir_hnd = NULL;
+	struct files_struct *dirfsp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	long offset = 0;
 	NTSTATUS status;
 	int ret;
 	uint32_t slots;
-
-	status = smbd_check_access_rights(handle->conn,
-					handle->conn->cwd_fsp,
-					snaps_dname,
-					false,
-					SEC_DIR_LIST);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("user does not have list permission "
-			"on snapdir %s\n",
-			snaps_dname->base_name));
-		ret = -map_errno_from_nt_status(status);
-		goto err_out;
-	}
 
 	DBG_DEBUG("enumerating shadow copy dir at %s\n",
 		  snaps_dname->base_name);
@@ -216,6 +204,19 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	dir_hnd = OpenDir(frame, handle->conn, snaps_dname, NULL, 0);
 	if (dir_hnd == NULL) {
 		ret = -errno;
+		goto err_out;
+	}
+
+	/* Check we have SEC_DIR_LIST access on this fsp. */
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+	status = smbd_check_access_rights_fsp(dirfsp,
+					      false,
+					      SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("user does not have list permission "
+			"on snapdir %s\n",
+			fsp_str_dbg(dirfsp));
+		ret = -map_errno_from_nt_status(status);
 		goto err_out;
 	}
 
