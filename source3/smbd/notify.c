@@ -602,7 +602,7 @@ void notify_fname(connection_struct *conn, uint32_t action, uint32_t filter,
 static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 {
 	uint32_t rights;
-	struct smb_filename fname;
+	struct smb_filename *fname = NULL;
 	char *filepath = NULL;
 	NTSTATUS status;
 	char *p = NULL;
@@ -641,8 +641,6 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 		return false;
 	}
 
-	fname = (struct smb_filename) { .base_name = filepath };
-
 	rights = SEC_DIR_LIST|SEC_DIR_TRAVERSE;
 	p = strrchr_m(filepath, '/');
 	/*
@@ -654,9 +652,24 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 	 */
 	while (p != NULL) {
 		*p = '\0';
-		status = smbd_check_access_rights(fsp->conn,
-						  fsp->conn->cwd_fsp,
-						  &fname,
+		status = synthetic_pathref(talloc_tos(),
+					   fsp->conn->cwd_fsp,
+					   filepath,
+					   NULL,
+					   NULL,
+					   0,
+					   0,
+					   &fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("synthetic_pathref failed for %s, error %s\n",
+				filepath,
+				nt_errstr(status));
+			TALLOC_FREE(fname);
+			TALLOC_FREE(filepath);
+			return false;
+		}
+
+		status = smbd_check_access_rights_fsp(fname->fsp,
 						  false,
 						  rights);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -664,10 +677,12 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 				  fsp->conn->connectpath,
 				  filepath,
 				  nt_errstr(status));
+			TALLOC_FREE(fname);
 			TALLOC_FREE(filepath);
 			return false;
 		}
 
+		TALLOC_FREE(fname);
 		rights = SEC_DIR_TRAVERSE;
 		p = strrchr_m(filepath, '/');
 	}
@@ -680,19 +695,34 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 		DBG_ERR("Memory allocation failed\n");
 		return false;
 	}
-	fname = (struct smb_filename) { .base_name = filepath };
-	status = smbd_check_access_rights(fsp->conn,
-					  fsp->conn->cwd_fsp,
-					  &fname,
-					  false,
-					  rights);
+	status = synthetic_pathref(talloc_tos(),
+				   fsp->conn->cwd_fsp,
+				   filepath,
+				   NULL,
+				   NULL,
+				   0,
+				   0,
+				   &fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("Access rights for %s/.: %s\n",
-			  fsp->conn->connectpath,
-			  nt_errstr(status));
+		DBG_ERR("synthetic_pathref failed for %s, error %s\n",
+			filepath,
+			nt_errstr(status));
+		TALLOC_FREE(fname);
 		TALLOC_FREE(filepath);
 		return false;
 	}
+	status = smbd_check_access_rights_fsp(fname->fsp,
+					  false,
+					  rights);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("TRAVERSE access rights for %s failed with %s\n",
+			  fsp->conn->connectpath,
+			  nt_errstr(status));
+		TALLOC_FREE(fname);
+		TALLOC_FREE(filepath);
+		return false;
+	}
+	TALLOC_FREE(fname);
 	TALLOC_FREE(filepath);
 	return true;
 }
