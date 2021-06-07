@@ -1929,6 +1929,11 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		smb_fname->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
+		smb_fname->st.st_ex_btime = (struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_atime = (struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_mtime = (struct timespec){0, SAMBA_UTIME_OMIT};
+		smb_fname->st.st_ex_ctime = (struct timespec){0, SAMBA_UTIME_OMIT};
+
 		*_smb_fname = smb_fname;
 		return NT_STATUS_OK;
 	}
