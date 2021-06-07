@@ -1065,7 +1065,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			continue;
 		}
 		if (!IS_VETO_PATH(conn, dname)) {
-			TALLOC_FREE(dir_hnd);
 			TALLOC_FREE(talloced);
 			errno = ENOTEMPTY;
 			goto err;
@@ -1077,7 +1076,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	 * Are we allowed to delete them ? */
 
 	if (!lp_delete_veto_files(SNUM(conn))) {
-		TALLOC_FREE(dir_hnd);
 		errno = ENOTEMPTY;
 		goto err;
 	}
@@ -1188,9 +1186,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			       at_fname,
 			       AT_REMOVEDIR);
 
-	TALLOC_FREE(dir_hnd);
 
   err:
+
+	TALLOC_FREE(dir_hnd);
 	TALLOC_FREE(parent_fname);
 
 	if (ret != 0) {
