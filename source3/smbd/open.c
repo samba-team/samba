@@ -3275,6 +3275,98 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	return NT_STATUS_OK;
 }
 
+#if 0
+/****************************************************************************
+ Work out what access_mask to use from what the client sent us.
+****************************************************************************/
+
+static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
+			struct files_struct *fsp,
+			bool use_privs,
+			uint32_t *p_access_mask)
+{
+	struct security_descriptor *sd = NULL;
+	uint32_t access_granted = 0;
+	NTSTATUS status;
+
+	/* Cope with symlinks */
+	if (fsp == NULL || fsp_get_pathref_fd(fsp) == -1) {
+		*p_access_mask = FILE_GENERIC_ALL;
+		return NT_STATUS_OK;
+	}
+
+	/* Cope with fake/printer fsp's. */
+	if (fsp->fake_file_handle != NULL || fsp->print_file != NULL) {
+		*p_access_mask = FILE_GENERIC_ALL;
+		return NT_STATUS_OK;
+	}
+
+	if (!use_privs && (get_current_uid(fsp->conn) == (uid_t)0)) {
+		*p_access_mask |= FILE_GENERIC_ALL;
+		return NT_STATUS_OK;
+	}
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+				     (SECINFO_OWNER |
+					SECINFO_GROUP |
+					SECINFO_DACL),
+				     talloc_tos(),
+				     &sd);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * File did not exist
+		 */
+		*p_access_mask = FILE_GENERIC_ALL;
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Could not get acl on file %s: %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return status;
+	}
+
+	/*
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check()
+	 * also takes care of owner WRITE_DAC and READ_CONTROL.
+	 */
+	status = se_file_access_check(sd,
+				get_current_nttok(fsp->conn),
+				use_privs,
+				(*p_access_mask & ~FILE_READ_ATTRIBUTES),
+				&access_granted);
+
+	TALLOC_FREE(sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Status %s on file %s: "
+			"when calculating maximum access\n",
+			nt_errstr(status),
+			fsp_str_dbg(fsp));
+		return status;
+	}
+
+	*p_access_mask = (access_granted | FILE_READ_ATTRIBUTES);
+
+	if (!(access_granted & DELETE_ACCESS)) {
+		if (can_delete_file_in_directory(fsp->conn,
+				fsp->conn->cwd_fsp,
+				fsp->fsp_name)) {
+			*p_access_mask |= DELETE_ACCESS;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+#endif
+
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
