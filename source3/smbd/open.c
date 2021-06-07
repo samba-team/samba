@@ -1310,8 +1310,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	bool truncating = (flags & O_TRUNC);
 	bool open_fd = false;
 
-	errno = EPERM;
-
 	/* Check permissions */
 
 	/*
@@ -1620,7 +1618,6 @@ static NTSTATUS open_file(files_struct *fsp,
 
 	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
 		fd_close(fsp);
-		errno = EISDIR;
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
@@ -1649,7 +1646,6 @@ static NTSTATUS open_file(files_struct *fsp,
 		 BOOLSTR(fsp->fsp_flags.can_write),
 		 conn->num_files_open));
 
-	errno = 0;
 	return NT_STATUS_OK;
 }
 
