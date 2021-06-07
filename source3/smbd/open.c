@@ -1397,9 +1397,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (!fsp->base_fsp) {
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
-				status = smbd_check_access_rights(conn,
-						conn->cwd_fsp,
-						smb_fname,
+				status = smbd_check_access_rights_fsp(fsp,
 						false,
 						access_mask);
 
