@@ -4652,10 +4652,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 						false,
 						access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("open_directory: smbd_check_access_rights on "
-				"file %s failed with %s\n",
-				smb_fname_str_dbg(smb_dname),
-				nt_errstr(status)));
+			DBG_DEBUG("smbd_check_access_rights_fsp on "
+				  "file %s failed with %s\n",
+				  fsp_str_dbg(fsp),
+				  nt_errstr(status));
 			fd_close(fsp);
 			return status;
 		}
