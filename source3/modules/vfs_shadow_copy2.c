@@ -1738,6 +1738,7 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
+#if 0
 static bool check_access_snapdir(struct vfs_handle_struct *handle,
 				const char *path)
 {
@@ -1774,6 +1775,7 @@ static bool check_access_snapdir(struct vfs_handle_struct *handle,
 	TALLOC_FREE(smb_fname.base_name);
 	return true;
 }
+#endif
 
 /**
  * Find the snapshot directory (if any) for the given
@@ -1972,7 +1974,6 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_snapentry *tmpentry = NULL;
 	bool get_snaplist = false;
-	bool access_granted = false;
 	int open_flags = O_RDONLY;
 	int fd;
 	int ret = -1;
@@ -1984,13 +1985,6 @@ static int shadow_copy2_get_shadow_copy_data(
 		DEBUG(0,("shadow:snapdir not found for %s in get_shadow_copy_data\n",
 			 handle->conn->connectpath));
 		errno = EINVAL;
-		goto done;
-	}
-
-	access_granted = check_access_snapdir(handle, snapdir);
-	if (!access_granted) {
-		DEBUG(0,("access denied on listing snapdir %s\n", snapdir));
-		errno = EACCES;
 		goto done;
 	}
 
@@ -2038,6 +2032,18 @@ static int shadow_copy2_get_shadow_copy_data(
 		goto done;
 	}
 	fsp_set_fd(dirfsp, fd);
+
+	/* Now we have the handle, check access here. */
+	status = smbd_check_access_rights_fsp(dirfsp,
+					false,
+					SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("user does not have list permission "
+			"on snapdir %s\n",
+			fsp_str_dbg(dirfsp));
+		errno = EACCES;
+		goto done;
+	}
 
 	p = SMB_VFS_NEXT_FDOPENDIR(handle, dirfsp, NULL, 0);
 	if (!p) {
