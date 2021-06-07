@@ -1977,6 +1977,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	int fd;
 	int ret = -1;
 	NTSTATUS status;
+	int saved_errno = 0;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);
 	if (snapdir == NULL) {
@@ -2136,6 +2137,9 @@ static int shadow_copy2_get_shadow_copy_data(
 	ret = 0;
 
 done:
+	if (ret != 0) {
+		saved_errno = errno;
+	}
 	TALLOC_FREE(fspcwd );
 	if (p != NULL) {
 		SMB_VFS_NEXT_CLOSEDIR(handle, p);
@@ -2153,6 +2157,9 @@ done:
 		file_free(NULL, dirfsp);
 	}
 	TALLOC_FREE(tmp_ctx);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 
