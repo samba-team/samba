@@ -137,22 +137,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 }
 
 /****************************************************************************
- Userspace check for write access.
-****************************************************************************/
-
-bool can_write_to_file(connection_struct *conn,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname)
-{
-	SMB_ASSERT(dirfsp == conn->cwd_fsp);
-	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
-				dirfsp,
-				smb_fname,
-				false,
-				FILE_WRITE_DATA));
-}
-
-/****************************************************************************
  Userspace check for write access to fsp.
 ****************************************************************************/
 
