@@ -218,6 +218,11 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 			uint32_t access_mask,
 			uint32_t *access_mask_out);
 
+NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
+			bool use_privs,
+			uint32_t access_mask,
+			uint32_t *access_mask_out);
+
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
 void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,

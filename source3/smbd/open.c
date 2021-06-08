@@ -3275,7 +3275,6 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	return NT_STATUS_OK;
 }
 
-#if 0
 /****************************************************************************
  Work out what access_mask to use from what the client sent us.
 ****************************************************************************/
@@ -3365,7 +3364,6 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 
 	return NT_STATUS_OK;
 }
-#endif
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 			struct files_struct *dirfsp,
@@ -3418,6 +3416,58 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 			conn->share_access,
 			orig_access_mask, access_mask,
 			rejected_share_access));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*access_mask_out = access_mask;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
+			bool use_privs,
+			uint32_t access_mask,
+			uint32_t *access_mask_out)
+{
+	NTSTATUS status;
+	uint32_t orig_access_mask = access_mask;
+	uint32_t rejected_share_access;
+
+	if (access_mask & SEC_MASK_INVALID) {
+		DBG_DEBUG("access_mask [%8x] contains invalid bits\n",
+			  access_mask);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Convert GENERIC bits to specific bits.
+	 */
+
+	se_map_generic(&access_mask, &file_generic_mapping);
+
+	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
+	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
+
+		status = smbd_calculate_maximum_allowed_access_fsp(fsp,
+						   use_privs,
+						   &access_mask);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		access_mask &= fsp->conn->share_access;
+	}
+
+	rejected_share_access = access_mask & ~(fsp->conn->share_access);
+
+	if (rejected_share_access) {
+		DBG_ERR("Access denied on file %s: "
+			"rejected by share access mask[0x%08X] "
+			"orig[0x%08X] mapped[0x%08X] reject[0x%08X]\n",
+			fsp_str_dbg(fsp),
+			fsp->conn->share_access,
+			orig_access_mask, access_mask,
+			rejected_share_access);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
