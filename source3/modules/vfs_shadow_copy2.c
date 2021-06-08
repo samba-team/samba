@@ -2131,60 +2131,6 @@ done:
 	return ret;
 }
 
-static NTSTATUS shadow_copy2_get_nt_acl_at(vfs_handle_struct *handle,
-					struct files_struct *dirfsp,
-					const struct smb_filename *smb_fname,
-					uint32_t security_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	NTSTATUS status;
-	char *conv;
-	struct smb_filename *conv_smb_fname = NULL;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(),
-					handle,
-					smb_fname,
-					&timestamp,
-					&stripped)) {
-		return map_nt_error_from_unix(errno);
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					dirfsp,
-					smb_fname,
-					security_info,
-					mem_ctx,
-					ppdesc);
-	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return map_nt_error_from_unix(errno);
-	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					0,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					dirfsp,
-					conv_smb_fname,
-					security_info,
-					mem_ctx,
-					ppdesc);
-	TALLOC_FREE(conv);
-	TALLOC_FREE(conv_smb_fname);
-	return status;
-}
-
 static int shadow_copy2_mkdirat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -3252,7 +3198,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.readlinkat_fn = shadow_copy2_readlinkat,
 	.mknodat_fn = shadow_copy2_mknodat,
 	.realpath_fn = shadow_copy2_realpath,
-	.get_nt_acl_at_fn = shadow_copy2_get_nt_acl_at,
 	.get_shadow_copy_data_fn = shadow_copy2_get_shadow_copy_data,
 	.mkdirat_fn = shadow_copy2_mkdirat,
 	.getxattr_fn = shadow_copy2_getxattr,
