@@ -314,6 +314,7 @@ static bool set_logfile(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(new_logfile);
 		return false;
 	}
+	debug_set_logfile(new_logfile);
 	TALLOC_FREE(new_logfile);
 
 	return true;
