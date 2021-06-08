@@ -356,6 +356,7 @@
  * Version 45 - Remove SMB_VFS_SYS_ACL_DELETE_DEF_FILE
  * Version 45 - Add SMB_VFS_PARENT_PATHNAME
  * Version 45 - Remove SMB_VFS_GET_NT_ACL_AT
+ * Version 45 - Remove SYS_ACL_GET_FILE
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1209,10 +1210,6 @@ struct vfs_fn_pointers {
 
 	/* POSIX ACL operations. */
 
-	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle,
-					 const struct smb_filename *smb_fname,
-					 SMB_ACL_TYPE_T type,
-					 TALLOC_CTX *mem_ctx);
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       SMB_ACL_TYPE_T type,
@@ -1721,10 +1718,6 @@ NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle,
 				const struct smb_filename *file,
 				mode_t mode);
-SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					SMB_ACL_TYPE_T type,
-					TALLOC_CTX *mem_ctx);
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      SMB_ACL_TYPE_T type,
@@ -2134,10 +2127,6 @@ NTSTATUS vfs_not_implemented_get_nt_acl_at(vfs_handle_struct *handle,
 NTSTATUS vfs_not_implemented_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 					 uint32_t security_info_sent,
 					 const struct security_descriptor *psd);
-SMB_ACL_T vfs_not_implemented_sys_acl_get_file(vfs_handle_struct *handle,
-					       const struct smb_filename *smb_fname,
-					       SMB_ACL_TYPE_T type,
-					       TALLOC_CTX *mem_ctx);
 SMB_ACL_T vfs_not_implemented_sys_acl_get_fd(vfs_handle_struct *handle,
 					     files_struct *fsp,
 					     SMB_ACL_TYPE_T type,

@@ -4537,24 +4537,10 @@ int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	acl_wrapper.access_acl
-		= smb_vfs_call_sys_acl_get_file(handle,
-						smb_fname,
-						SMB_ACL_TYPE_ACCESS,
-						frame);
-
 	ret = smb_vfs_call_stat(handle, smb_fname);
 	if (ret == -1) {
 		TALLOC_FREE(frame);
 		return -1;
-	}
-
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		acl_wrapper.default_acl
-			= smb_vfs_call_sys_acl_get_file(handle,
-							smb_fname,
-							SMB_ACL_TYPE_DEFAULT,
-							frame);
 	}
 
 	acl_wrapper.owner = smb_fname->st.st_ex_uid;

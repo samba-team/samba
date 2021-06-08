@@ -788,15 +788,6 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,
-				       const struct smb_filename *smb_fname,
-				       SMB_ACL_TYPE_T type,
-				       TALLOC_CTX *mem_ctx)
-{
-	errno = ENOSYS;
-	return (SMB_ACL_T) NULL;
-}
-
 static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     SMB_ACL_TYPE_T type,
@@ -1082,7 +1073,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 
 	/* POSIX ACL operations. */
 
-	.sys_acl_get_file_fn = skel_sys_acl_get_file,
 	.sys_acl_get_fd_fn = skel_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = skel_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = skel_sys_acl_blob_get_fd,
