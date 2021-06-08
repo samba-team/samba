@@ -670,6 +670,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 	return paiv;
 }
 
+#if 0
 /************************************************************************
  Load the user.SAMBA_PAI attribute.
 ************************************************************************/
@@ -737,6 +738,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 	TALLOC_FREE(pai_buf);
 	return paiv;
 }
+#endif
 
 /****************************************************************************
  Functions to manipulate the internal ACE format.
@@ -3454,71 +3456,6 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	status = posix_get_nt_acl_common(fsp->conn, fsp->fsp_name->base_name,
 					 &sbuf, pal, posix_acl, def_acl,
 					 security_info, mem_ctx, ppdesc);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-NTSTATUS posix_get_nt_acl(struct connection_struct *conn,
-			const struct smb_filename *smb_fname_in,
-			uint32_t security_info,
-			TALLOC_CTX *mem_ctx,
-			struct security_descriptor **ppdesc)
-{
-	SMB_ACL_T posix_acl = NULL;
-	SMB_ACL_T def_acl = NULL;
-	struct pai_val *pal;
-	struct smb_filename *smb_fname = NULL;
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
-
-	*ppdesc = NULL;
-
-	DEBUG(10,("posix_get_nt_acl: called for file %s\n",
-		smb_fname_in->base_name ));
-
-	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Get the stat struct for the owner info. */
-	/*
-	 * We can directly use SMB_VFS_STAT here, as if this was a
-	 * POSIX call on a symlink, we've already refused it.
-	 * For a Windows acl mapped call on a symlink, we want to follow
-	 * it.
-	 */
-	ret = SMB_VFS_STAT(conn, smb_fname);
-
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return map_nt_error_from_unix(errno);
-	}
-
-	/* Get the ACL from the path. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname,
-					     SMB_ACL_TYPE_ACCESS, frame);
-
-	/* If it's a directory get the default POSIX ACL. */
-	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
-		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname,
-						   SMB_ACL_TYPE_DEFAULT, frame);
-		def_acl = free_empty_sys_acl(conn, def_acl);
-	}
-
-	pal = load_inherited_info(conn, smb_fname);
-
-	status = posix_get_nt_acl_common(conn,
-					smb_fname->base_name,
-					&smb_fname->st,
-					pal,
-					posix_acl,
-					def_acl,
-					security_info,
-					mem_ctx,
-					ppdesc);
 	TALLOC_FREE(frame);
 	return status;
 }
