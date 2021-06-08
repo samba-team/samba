@@ -26,6 +26,11 @@
 #include "lib/util/smb_strtox.h"
 #include "lib/global_contexts.h"
 
+static int vfs_preopen_debug_level = DBGC_VFS;
+
+#undef DBGC_CLASS
+#define DBGC_CLASS vfs_preopen_debug_level
+
 struct preopen_state;
 
 struct preopen_helper {
@@ -469,6 +474,23 @@ static struct vfs_fn_pointers vfs_preopen_fns = {
 static_decl_vfs;
 NTSTATUS vfs_preopen_init(TALLOC_CTX *ctx)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-				"preopen", &vfs_preopen_fns);
+	NTSTATUS status;
+
+	status = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
+				  "preopen",
+				  &vfs_preopen_fns);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	vfs_preopen_debug_level = debug_add_class("preopen");
+	if (vfs_preopen_debug_level == -1) {
+		vfs_preopen_debug_level = DBGC_VFS;
+		DBG_ERR("Couldn't register custom debugging class!\n");
+	} else {
+		DBG_DEBUG("Debug class number of 'preopen': %d\n",
+			  vfs_preopen_debug_level);
+	}
+
+	return NT_STATUS_OK;
 }

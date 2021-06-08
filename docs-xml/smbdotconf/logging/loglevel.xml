@@ -68,6 +68,7 @@
 	<listitem><para><parameter moreinfo="none">fruit</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">full_audit</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">media_harmony</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">preopen</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">recycle</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">shadow_copy</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">shadow_copy</parameter></para></listitem>
