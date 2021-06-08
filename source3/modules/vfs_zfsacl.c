@@ -451,14 +451,6 @@ static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
    Function declarations taken from vfs_solarisacl
 */
 
-static SMB_ACL_T zfsacl_fail__sys_acl_get_file(vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					SMB_ACL_TYPE_T type,
-					TALLOC_CTX *mem_ctx)
-{
-	return (SMB_ACL_T)NULL;
-}
-
 static SMB_ACL_T zfsacl_fail__sys_acl_get_fd(vfs_handle_struct *handle,
 					     files_struct *fsp,
 					     SMB_ACL_TYPE_T type,
@@ -539,7 +531,6 @@ static int zfsacl_connect(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers zfsacl_fns = {
 	.connect_fn = zfsacl_connect,
-	.sys_acl_get_file_fn = zfsacl_fail__sys_acl_get_file,
 	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = zfsacl_fail__sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = zfsacl_fail__sys_acl_blob_get_fd,
