@@ -48,8 +48,8 @@ extern const asn1_static_node mscat_asn1_tab[];
 
 struct mscat_ctl {
 	int version;
-	ASN1_TYPE asn1_desc;
-	ASN1_TYPE tree_ctl;
+	asn1_node asn1_desc;
+	asn1_node tree_ctl;
 	gnutls_datum_t raw_ctl;
 };
 
@@ -149,7 +149,7 @@ static int mscat_asn1_read_value(TALLOC_CTX *mem_ctx,
 
 static int mscat_ctl_cleanup(struct mscat_ctl *ctl)
 {
-	if (ctl->asn1_desc != ASN1_TYPE_EMPTY) {
+	if (ctl->asn1_desc != NULL) {
 		asn1_delete_structure(&ctl->asn1_desc);
 	}
 
@@ -168,8 +168,8 @@ struct mscat_ctl *mscat_ctl_init(TALLOC_CTX *mem_ctx)
 	}
 	talloc_set_destructor(cat_ctl, mscat_ctl_cleanup);
 
-	cat_ctl->asn1_desc = ASN1_TYPE_EMPTY;
-	cat_ctl->tree_ctl = ASN1_TYPE_EMPTY;
+	cat_ctl->asn1_desc = NULL;
+	cat_ctl->tree_ctl = NULL;
 
 	rc = asn1_array2tree(mscat_asn1_tab,
 			     &cat_ctl->asn1_desc,
@@ -380,7 +380,7 @@ static int ctl_parse_name_value(struct mscat_ctl *ctl,
 				char **pvalue)
 {
 	char error_string[ASN1_MAX_ERROR_DESCRIPTION_SIZE] = {0};
-	ASN1_TYPE name_value = ASN1_TYPE_EMPTY;
+	asn1_node name_value = NULL;
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB name_blob = data_blob_null;
 	DATA_BLOB flags_blob = data_blob_null;
@@ -484,7 +484,7 @@ static int ctl_parse_member_info(struct mscat_ctl *ctl,
 				 uint32_t *pid)
 {
 	char error_string[ASN1_MAX_ERROR_DESCRIPTION_SIZE] = {0};
-	ASN1_TYPE member_info = ASN1_TYPE_EMPTY;
+	asn1_node member_info = NULL;
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB name_blob = data_blob_null;
 	DATA_BLOB id_blob = data_blob_null;
@@ -565,7 +565,7 @@ static int ctl_spc_pe_image_data(struct mscat_ctl *ctl,
 				 char **pfile)
 {
 	char error_string[ASN1_MAX_ERROR_DESCRIPTION_SIZE] = {0};
-	ASN1_TYPE spc_pe_image_data = ASN1_TYPE_EMPTY;
+	asn1_node spc_pe_image_data = NULL;
 	DATA_BLOB flags_blob = data_blob_null;
 	DATA_BLOB choice_blob = data_blob_null;
 	char *file = NULL;
@@ -717,7 +717,7 @@ static int ctl_spc_indirect_data(struct mscat_ctl *ctl,
 				 size_t *pdigest_size)
 {
 	char error_string[ASN1_MAX_ERROR_DESCRIPTION_SIZE] = {0};
-	ASN1_TYPE spc_indirect_data = ASN1_TYPE_EMPTY;
+	asn1_node spc_indirect_data = NULL;
 	TALLOC_CTX *tmp_ctx;
 	enum mscat_mac_algorithm mac_algorithm = MSCAT_MAC_UNKNOWN;
 	const char *oid = NULL;
