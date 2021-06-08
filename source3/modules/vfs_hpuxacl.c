@@ -138,7 +138,7 @@ static bool hpux_aclsort_call_present(void);
 
 /* public functions - the api */
 
-SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
+static SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
 				TALLOC_CTX *mem_ctx)
@@ -1157,7 +1157,6 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 /* VFS operations structure */
 
 static struct vfs_fn_pointers hpuxacl_fns = {
-	.sys_acl_get_file_fn = hpuxacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = hpuxacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
