@@ -62,7 +62,7 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
 
 /* public functions - the api */
 
-SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
+static SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
 				TALLOC_CTX *mem_ctx)
@@ -780,7 +780,6 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count)
 #endif
 
 static struct vfs_fn_pointers solarisacl_fns = {
-	.sys_acl_get_file_fn = solarisacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = solarisacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
