@@ -4093,7 +4093,7 @@ static int copy_access_posix_acl(connection_struct *conn,
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname_from,
+	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname_from->fsp,
 						  SMB_ACL_TYPE_ACCESS,
 						  talloc_tos())) == NULL)
 		return -1;
