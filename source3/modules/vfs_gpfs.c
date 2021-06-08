@@ -665,61 +665,6 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	return map_nt_error_from_unix(errno);
 }
 
-static NTSTATUS gpfsacl_get_nt_acl_at(vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc)
-{
-	struct SMB4ACL_T *pacl = NULL;
-	int	result;
-	struct gpfs_config_data *config;
-	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
-
-	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
-
-	*ppdesc = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	if (!config->acl) {
-		status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-						dirfsp,
-						smb_fname,
-						security_info,
-						mem_ctx, ppdesc);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	result = gpfs_get_nfs4_acl(frame, smb_fname->base_name, &pacl);
-
-	if (result == 0) {
-		status = smb_get_nt_acl_nfs4(handle->conn, smb_fname,
-					     &config->nfs4_params,
-					     security_info, mem_ctx, ppdesc,
-					     pacl);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	if (result > 0) {
-		DEBUG(10, ("retrying with posix acl...\n"));
-		status = posix_get_nt_acl(handle->conn, smb_fname,
-					  security_info, mem_ctx, ppdesc);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
-	TALLOC_FREE(frame);
-	return map_nt_error_from_unix(errno);
-}
-
 static bool vfs_gpfs_nfs4_ace_to_gpfs_ace(SMB_ACE4PROP_T *nfs4_ace,
 					  struct gpfs_ace_v4 *gace,
 					  uid_t owner_uid)
@@ -2571,7 +2516,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,
 	.fset_dos_attributes_fn = vfs_gpfs_fset_dos_attributes,
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
-	.get_nt_acl_at_fn = gpfsacl_get_nt_acl_at,
 	.fset_nt_acl_fn = gpfsacl_fset_nt_acl,
 	.sys_acl_get_file_fn = gpfsacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = gpfsacl_sys_acl_get_fd,
