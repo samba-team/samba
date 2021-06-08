@@ -310,7 +310,7 @@ Table of Contents
    SMB_VFS_GET_DOS_ATTRIBUTES_RECV()  [Enum]      -
    SMB_VFS_GET_DOS_ATTRIBUTES_SEND()  [Enum]      -
    SMB_VFS_GETLOCK()                  [fsp]       -
-   SMB_VFS_GET_NT_ACL_AT()            [Path]      Todo
+   SMB_VFS_GET_NT_ACL_AT()            [Path]      -
    SMB_VFS_GET_QUOTA()                [Special]   -
    SMB_VFS_GET_REAL_FILENAME()        [P2px]      -
    SMB_VFS_GET_SHADOW_COPY_DATA()     [fsp]       -
