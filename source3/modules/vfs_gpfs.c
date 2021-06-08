@@ -983,38 +983,6 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
 	return result;
 }
 
-static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
-					  const struct smb_filename *smb_fname,
-					  SMB_ACL_TYPE_T type,
-					  TALLOC_CTX *mem_ctx)
-{
-	gpfs_aclType_t gpfs_type;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return NULL);
-
-	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
-						     type, mem_ctx);
-	}
-
-	switch(type) {
-	case SMB_ACL_TYPE_ACCESS:
-		gpfs_type = GPFS_ACL_TYPE_ACCESS;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		gpfs_type = GPFS_ACL_TYPE_DEFAULT;
-		break;
-	default:
-		DEBUG(0, ("Got invalid type: %d\n", type));
-		smb_panic("exiting");
-	}
-
-	return gpfsacl_get_posix_acl(smb_fname->base_name, gpfs_type, mem_ctx);
-}
-
 static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 					files_struct *fsp,
 					SMB_ACL_TYPE_T type,
@@ -2517,7 +2485,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fset_dos_attributes_fn = vfs_gpfs_fset_dos_attributes,
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
 	.fset_nt_acl_fn = gpfsacl_fset_nt_acl,
-	.sys_acl_get_file_fn = gpfsacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = gpfsacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = gpfsacl_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
