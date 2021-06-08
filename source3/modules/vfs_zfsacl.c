@@ -412,78 +412,6 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS zfsacl_get_nt_acl_at(struct vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc)
-{
-	struct SMB4ACL_T *pacl = NULL;
-	NTSTATUS status;
-	struct zfsacl_config_data *config = NULL;
-	TALLOC_CTX *frame = NULL;
-	int naces;
-	ace_t *acebuf = NULL;
-
-	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
-
-	SMB_VFS_HANDLE_GET_DATA(handle,
-				config,
-				struct zfsacl_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	frame = talloc_stackframe();
-
-	naces = get_zfsacl(frame, smb_fname, &acebuf);
-	if (naces == -1) {
-		status = map_nt_error_from_unix(errno);
-		TALLOC_FREE(frame);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			return status;
-		}
-
-		if (!VALID_STAT(smb_fname->st)) {
-			DBG_ERR("No stat info for [%s]\n",
-				smb_fname_str_dbg(smb_fname));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		status = make_default_filesystem_acl(mem_ctx,
-						     DEFAULT_ACL_POSIX,
-						     smb_fname->base_name,
-						     &smb_fname->st,
-						     ppdesc);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		(*ppdesc)->type |= SEC_DESC_DACL_PROTECTED;
-		return NT_STATUS_OK;
-	}
-
-	status = zfs_get_nt_acl_common(handle->conn,
-				       frame,
-				       smb_fname,
-				       acebuf,
-				       naces,
-				       &pacl,
-				       config);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	status = smb_get_nt_acl_nfs4(handle->conn,
-					smb_fname,
-					NULL,
-					security_info,
-					mem_ctx,
-					ppdesc,
-					pacl);
-	TALLOC_FREE(frame);
-	return status;
-}
-
 static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32_t security_info_sent,
@@ -618,7 +546,6 @@ static struct vfs_fn_pointers zfsacl_fns = {
 	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = zfsacl_fail__sys_acl_delete_def_fd,
 	.fget_nt_acl_fn = zfsacl_fget_nt_acl,
-	.get_nt_acl_at_fn = zfsacl_get_nt_acl_at,
 	.fset_nt_acl_fn = zfsacl_fset_nt_acl,
 };
 
