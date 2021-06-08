@@ -355,6 +355,7 @@
  * Version 45 - Add SMB_VFS_SYS_ACL_DELETE_DEF_FD
  * Version 45 - Remove SMB_VFS_SYS_ACL_DELETE_DEF_FILE
  * Version 45 - Add SMB_VFS_PARENT_PATHNAME
+ * Version 45 - Remove SMB_VFS_GET_NT_ACL_AT
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1195,12 +1196,6 @@ struct vfs_fn_pointers {
 				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
-	NTSTATUS (*get_nt_acl_at_fn)(struct vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc);
 	NTSTATUS (*fset_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   uint32_t security_info_sent,

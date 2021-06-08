@@ -785,16 +785,6 @@ NTSTATUS vfs_not_implemented_fget_nt_acl(vfs_handle_struct *handle, files_struct
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS vfs_not_implemented_get_nt_acl_at(vfs_handle_struct *handle,
-					struct files_struct *dirfsp,
-					const struct smb_filename *smb_fname,
-					uint32_t security_info,
-					TALLOC_CTX *mem_ctx,
-					struct security_descriptor **ppdesc)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS vfs_not_implemented_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 					 uint32_t security_info_sent,
 					 const struct security_descriptor *psd)
@@ -1092,7 +1082,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	/* NT ACL operations. */
 
 	.fget_nt_acl_fn = vfs_not_implemented_fget_nt_acl,
-	.get_nt_acl_at_fn = vfs_not_implemented_get_nt_acl_at,
 	.fset_nt_acl_fn = vfs_not_implemented_fset_nt_acl,
 
 	/* POSIX ACL operations. */

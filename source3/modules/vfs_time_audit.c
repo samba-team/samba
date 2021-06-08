@@ -2266,36 +2266,6 @@ static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS smb_time_audit_get_nt_acl_at(vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc)
-{
-	NTSTATUS result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					dirfsp,
-					smb_fname,
-					security_info,
-					mem_ctx,
-					ppdesc);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("get_nt_acl",
-			timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static NTSTATUS smb_time_audit_fset_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32_t security_info_sent,
@@ -2857,7 +2827,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.fget_dos_attributes_fn = smb_time_fget_dos_attributes,
 	.fset_dos_attributes_fn = smb_time_fset_dos_attributes,
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
-	.get_nt_acl_at_fn = smb_time_audit_get_nt_acl_at,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,
 	.audit_file_fn = smb_time_audit_audit_file,
 	.sys_acl_get_file_fn = smb_time_audit_sys_acl_get_file,
