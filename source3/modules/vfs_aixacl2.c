@@ -185,28 +185,6 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	return status;
 }
 
-static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			TALLOC_CTX *mem_ctx,
-			char **blob_description,
-			DATA_BLOB *blob)
-{
-	struct SMB4ACL_T *pacl = NULL;
-	const char *path_p = smb_fname->base_name;
-	bool	result;
-	bool	retryPosix = False;
-
-	result = aixjfs2_get_nfs4_acl(mem_ctx, path_p, &pacl, &retryPosix);
-	if (retryPosix)
-	{
-		return posix_sys_acl_blob_get_file(handle, smb_fname, mem_ctx,
-						   blob_description, blob);
-	}
-	/* Now way to linarlise NFS4 ACLs at the moment, but the NT ACL is pretty close in this case */
-	errno = ENOSYS;
-	return -1;
-}
-
 static int aixjfs2_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
 	struct SMB4ACL_T *pacl = NULL;
@@ -485,7 +463,6 @@ static struct vfs_fn_pointers vfs_aixacl2_fns = {
 	.fget_nt_acl_fn = aixjfs2_fget_nt_acl,
 	.fset_nt_acl_fn = aixjfs2_fset_nt_acl,
 	.sys_acl_get_fd_fn = aixjfs2_sys_acl_get_fd,
-	.sys_acl_blob_get_file_fn = aixjfs2_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = aixjfs2_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = aixjfs2_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = aixjfs2_sys_acl_delete_def_fd
