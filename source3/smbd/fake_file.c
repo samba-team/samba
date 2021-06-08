@@ -131,21 +131,6 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	status = smbd_calculate_access_mask(conn,
-					conn->cwd_fsp,
-					smb_fname,
-					false,
-					access_mask,
-					&access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_fake_file: smbd_calculate_access_mask "
-			"on service[%s] file[%s] returned %s\n",
-			lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
-			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status)));
-		return status;
-	}
-
 	/* access check */
 	if (geteuid() != sec_initial_uid()) {
 		DEBUG(3, ("open_fake_file_shared: access_denied to "
@@ -183,6 +168,22 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	if (fsp->fake_file_handle==NULL) {
 		file_free(req, fsp);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = smbd_calculate_access_mask(conn,
+					conn->cwd_fsp,
+					smb_fname,
+					false,
+					access_mask,
+					&access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("open_fake_file: smbd_calculate_access_mask "
+			"on service[%s] file[%s] returned %s\n",
+			lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status)));
+		file_free(req, fsp);
+		return status;
 	}
 
 	*result = fsp;
