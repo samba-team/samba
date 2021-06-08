@@ -357,6 +357,7 @@
  * Version 45 - Add SMB_VFS_PARENT_PATHNAME
  * Version 45 - Remove SMB_VFS_GET_NT_ACL_AT
  * Version 45 - Remove SYS_ACL_GET_FILE
+ * Version 45 - Remove SYS_ACL_BLOB_GET_FILE
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1214,11 +1215,6 @@ struct vfs_fn_pointers {
 				       struct files_struct *fsp,
 				       SMB_ACL_TYPE_T type,
 				       TALLOC_CTX *mem_ctx);
-	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					TALLOC_CTX *mem_ctx,
-					char **blob_description,
-					DATA_BLOB *blob);
 	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx, char **blob_description,
 				      DATA_BLOB *blob);
@@ -1722,11 +1718,6 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      SMB_ACL_TYPE_T type,
 				      TALLOC_CTX *mem_ctx);
-int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
-				       const struct smb_filename *smb_fname,
-				       TALLOC_CTX *mem_ctx,
-				       char **blob_description,
-				       DATA_BLOB *blob);
 int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp, 	
 				     TALLOC_CTX *mem_ctx,
@@ -2131,11 +2122,6 @@ SMB_ACL_T vfs_not_implemented_sys_acl_get_fd(vfs_handle_struct *handle,
 					     files_struct *fsp,
 					     SMB_ACL_TYPE_T type,
 					     TALLOC_CTX *mem_ctx);
-int vfs_not_implemented_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				TALLOC_CTX *mem_ctx,
-				char **blob_description,
-				DATA_BLOB *blob);
 int vfs_not_implemented_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 				files_struct *fsp, TALLOC_CTX *mem_ctx,
 				char **blob_description, DATA_BLOB *blob);

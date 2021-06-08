@@ -197,7 +197,6 @@ typedef enum _vfs_op_type {
 	/* POSIX ACL operations. */
 
 	SMB_VFS_OP_SYS_ACL_GET_FD,
-	SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,
 	SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,
 	SMB_VFS_OP_SYS_ACL_SET_FD,
 	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,
@@ -327,7 +326,6 @@ static struct {
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
 	{ SMB_VFS_OP_AUDIT_FILE,	"audit_file" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FD,	"sys_acl_get_fd" },
-	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,	"sys_acl_blob_get_file" },
 	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,	"sys_acl_blob_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,	"sys_acl_delete_def_fd" },
@@ -2540,26 +2538,6 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				TALLOC_CTX *mem_ctx,
-				char **blob_description,
-				DATA_BLOB *blob)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname,
-			mem_ctx, blob_description, blob);
-
-	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,
-	       (result >= 0),
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
-
 static int smb_full_audit_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 					      files_struct *fsp,
 					      TALLOC_CTX *mem_ctx,
@@ -2981,7 +2959,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
 	.audit_file_fn = smb_full_audit_audit_file,
 	.sys_acl_get_fd_fn = smb_full_audit_sys_acl_get_fd,
-	.sys_acl_blob_get_file_fn = smb_full_audit_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = smb_full_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = smb_full_audit_sys_acl_delete_def_fd,
