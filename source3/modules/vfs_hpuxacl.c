@@ -325,6 +325,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
  */
 int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
+			      SMB_ACL_TYPE_T type,
 			      SMB_ACL_T theacl)
 {
         /*
@@ -339,7 +340,7 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 
         return hpuxacl_sys_acl_set_file(handle,
 					fsp->fsp_name->base_name,
-					SMB_ACL_TYPE_ACCESS, theacl);
+					type, theacl);
 }
 
 /*
@@ -1159,7 +1160,7 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 static struct vfs_fn_pointers hpuxacl_fns = {
 	.sys_acl_get_fd_fn = hpuxacl_sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
-	.sys_acl_set_fd_fn = hpuxacl_sys_acl_set_fd,
+	sys_acl_set_fd_fn = hpuxacl_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = hpuxacl_sys_acl_delete_def_fd,
 };
 
