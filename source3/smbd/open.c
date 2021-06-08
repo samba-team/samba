@@ -243,43 +243,6 @@ access_denied:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				bool use_privs,
-				uint32_t access_mask)
-{
-	/* Check if we have rights to open. */
-	NTSTATUS status;
-	struct security_descriptor *sd = NULL;
-
-	status = SMB_VFS_GET_NT_ACL_AT(conn,
-			dirfsp,
-			smb_fname,
-			(SECINFO_OWNER |
-				SECINFO_GROUP |
-				SECINFO_DACL),
-			talloc_tos(),
-			&sd);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		status = NT_STATUS_OK;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
-			"on %s: %s\n",
-			smb_fname_str_dbg(smb_fname),
-			nt_errstr(status)));
-		return status;
-	}
-
-	return smbd_check_access_rights_sd(conn,
-					   smb_fname,
-					   sd,
-					   use_privs,
-					   access_mask);
-}
-
 NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 				      bool use_privs,
 				      uint32_t access_mask)

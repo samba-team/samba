@@ -725,11 +725,6 @@ void reply_nttranss(struct smb_request *req);
 
 /* The following definitions come from smbd/open.c  */
 
-NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				bool use_privs,
-				uint32_t access_mask);
 NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 				      bool use_privs,
 				      uint32_t access_mask);
