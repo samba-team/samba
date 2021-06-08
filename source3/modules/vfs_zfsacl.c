@@ -473,15 +473,6 @@ static int zfsacl_fail__sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int zfsacl_fail__sys_acl_blob_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			TALLOC_CTX *mem_ctx,
-			char **blob_description,
-			DATA_BLOB *blob)
-{
-	return -1;
-}
-
 static int zfsacl_fail__sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
 	return -1;
@@ -532,7 +523,6 @@ static int zfsacl_connect(struct vfs_handle_struct *handle,
 static struct vfs_fn_pointers zfsacl_fns = {
 	.connect_fn = zfsacl_connect,
 	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
-	.sys_acl_blob_get_file_fn = zfsacl_fail__sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = zfsacl_fail__sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = zfsacl_fail__sys_acl_delete_def_fd,
