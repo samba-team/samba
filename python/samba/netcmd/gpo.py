@@ -1654,7 +1654,7 @@ class cmd_admxload(Command):
                 sub_dir = '\\'.join([smb_dir, path_in_admx]).replace('/', '\\')
                 smb_path = '\\'.join([sub_dir, fname])
                 try:
-                    conn.mkdir(sub_dir)
+                    create_directory_hier(conn, sub_dir)
                 except NTSTATUSError as e:
                     if e.args[0] == 0xC0000022: # STATUS_ACCESS_DENIED
                         raise CommandError("The authenticated user does "
