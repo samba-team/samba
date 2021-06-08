@@ -1893,23 +1893,43 @@ static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
 	int ret;
 	size_t i;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 2) {
-		printf("Usage: sys_acl_get_file <path>\n");
+		printf("Usage: sys_acl_blob_get_file <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(talloc_tos(),
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
 					argv[1],
 					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_SYS_ACL_BLOB_GET_FILE(vfs->conn, smb_fname, talloc_tos(),
-					    &description, &blob);
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		return status;
+	}
+
+	ret = SMB_VFS_SYS_ACL_BLOB_GET_FD(pathref_fname->fsp,
+					  talloc_tos(),
+					  &description,
+					  &blob);
 	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
 		printf("sys_acl_blob_get_file failed (%s)\n", strerror(errno));
-		return map_nt_error_from_unix(errno);
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(pathref_fname);
+		return status;
 	}
 	printf("Description: %s\n", description);
 	for (i = 0; i < blob.length; i++) {
@@ -1917,6 +1937,8 @@ static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
 	}
 	printf("\n");
 
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(pathref_fname);
 	return NT_STATUS_OK;
 }
 
