@@ -4622,7 +4622,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+		status = smbd_check_access_rights_fsp(parent_dir_fname->fsp,
 						fsp,
 						false,
 						access_mask);
