@@ -440,38 +440,35 @@ out:
  to do so given the access mask on the base file.
 ****************************************************************************/
 
-static NTSTATUS check_base_file_access(struct connection_struct *conn,
-				struct smb_filename *smb_fname,
+static NTSTATUS check_base_file_access(struct files_struct *fsp,
 				uint32_t access_mask)
 {
 	NTSTATUS status;
 
-	status = smbd_calculate_access_mask(conn,
-					conn->cwd_fsp,
-					smb_fname,
+	status = smbd_calculate_access_mask_fsp(fsp,
 					false,
 					access_mask,
 					&access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("smbd_calculate_access_mask "
 			"on file %s returned %s\n",
-			smb_fname_str_dbg(smb_fname),
+			fsp_str_dbg(fsp),
 			nt_errstr(status)));
 		return status;
 	}
 
 	if (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) {
 		uint32_t dosattrs;
-		if (!CAN_WRITE(conn)) {
+		if (!CAN_WRITE(fsp->conn)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		dosattrs = fdos_mode(smb_fname->fsp);
+		dosattrs = fdos_mode(fsp);
 		if (IS_DOS_READONLY(dosattrs)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	return smbd_check_access_rights_fsp(smb_fname->fsp,
+	return smbd_check_access_rights_fsp(fsp,
 					false,
 					access_mask);
 }
@@ -5867,8 +5864,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			 * it existed), as we're passing in zero for the
 			 * access mask to the base filename.
 			 */
-			status = check_base_file_access(conn,
-							smb_fname_base,
+			status = check_base_file_access(smb_fname_base->fsp,
 							access_mask);
 
 			if (!NT_STATUS_IS_OK(status)) {
