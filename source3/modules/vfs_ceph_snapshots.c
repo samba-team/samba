@@ -1162,60 +1162,6 @@ static struct smb_filename *ceph_snap_gmt_realpath(vfs_handle_struct *handle,
 	return result_fname;
 }
 
-static NTSTATUS ceph_snap_gmt_get_nt_acl_at(vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *csmb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
-	int ret;
-	NTSTATUS status;
-	struct smb_filename *new_fname;
-	int saved_errno;
-
-	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname,
-					&timestamp, stripped, sizeof(stripped));
-	if (ret < 0) {
-		return map_nt_error_from_unix(-ret);
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					dirfsp,
-					csmb_fname,
-					security_info,
-					mem_ctx,
-					ppdesc);
-	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		return map_nt_error_from_unix(-ret);
-	}
-	new_fname = cp_smb_filename(talloc_tos(), csmb_fname);
-	if (new_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	new_fname->base_name = conv;
-
-	status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-					dirfsp,
-					new_fname,
-					security_info,
-					mem_ctx,
-					ppdesc);
-	saved_errno = errno;
-	TALLOC_FREE(new_fname);
-	errno = saved_errno;
-	return status;
-}
-
 static int ceph_snap_gmt_mkdirat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *csmb_fname,
@@ -1474,7 +1420,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.readlinkat_fn = ceph_snap_gmt_readlinkat,
 	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
-	.get_nt_acl_at_fn = ceph_snap_gmt_get_nt_acl_at,
 	.mkdirat_fn = ceph_snap_gmt_mkdirat,
 	.getxattr_fn = ceph_snap_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
