@@ -1014,78 +1014,6 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				     gpfs_type, mem_ctx);
 }
 
-static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				      const struct smb_filename *smb_fname,
-				      TALLOC_CTX *mem_ctx,
-				      char **blob_description,
-				      DATA_BLOB *blob)
-{
-	struct gpfs_config_data *config;
-	struct gpfs_opaque_acl *acl = NULL;
-	DATA_BLOB aclblob;
-	int result;
-	const char *path_p = smb_fname->base_name;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname,
-							  mem_ctx,
-							  blob_description,
-							  blob);
-	}
-
-	errno = 0;
-	acl = (struct gpfs_opaque_acl *)
-			vfs_gpfs_getacl(mem_ctx,
-					path_p,
-					true,
-					GPFS_ACL_TYPE_NFS4);
-
-	if (errno) {
-		DEBUG(5, ("vfs_gpfs_getacl finished with errno %d: %s\n",
-					errno, strerror(errno)));
-
-		/* EINVAL means POSIX ACL, bail out on other cases */
-		if (errno != EINVAL) {
-			return -1;
-		}
-	}
-
-	if (acl != NULL) {
-		/*
-		 * file has NFSv4 ACL
-		 *
-		 * we only need the actual ACL blob here
-		 * acl_version will always be NFS4 because we asked
-		 * for NFS4
-		 * acl_type is only used for POSIX ACLs
-		 */
-		aclblob.data = (uint8_t*) acl->acl_var_data;
-		aclblob.length = acl->acl_buffer_len;
-
-		*blob_description = talloc_strdup(mem_ctx, "gpfs_nfs4_acl");
-		if (!*blob_description) {
-			talloc_free(acl);
-			errno = ENOMEM;
-			return -1;
-		}
-
-		result = non_posix_sys_acl_blob_get_file_helper(handle, smb_fname,
-								aclblob,
-								mem_ctx, blob);
-
-		talloc_free(acl);
-		return result;
-	}
-
-	/* fall back to POSIX ACL */
-	return posix_sys_acl_blob_get_file(handle, smb_fname, mem_ctx,
-					   blob_description, blob);
-}
-
 static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      TALLOC_CTX *mem_ctx,
@@ -2486,7 +2414,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
 	.fset_nt_acl_fn = gpfsacl_fset_nt_acl,
 	.sys_acl_get_fd_fn = gpfsacl_sys_acl_get_fd,
-	.sys_acl_blob_get_file_fn = gpfsacl_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = gpfsacl_sys_acl_delete_def_fd,
