@@ -359,14 +359,6 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 
 #if defined(HAVE_POSIX_ACLS)
 
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	return posixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
-}
-
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 SMB_ACL_TYPE_T type,
@@ -397,14 +389,6 @@ int sys_acl_delete_def_fd(vfs_handle_struct *handle,
 
 #elif defined(HAVE_AIX_ACLS)
 
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	return aixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
-}
-
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 SMB_ACL_TYPE_T type,
@@ -433,15 +417,6 @@ int sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return aixacl_sys_acl_delete_def_fd(handle, fsp);
 }
 #elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)
-
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	return solarisacl_sys_acl_get_file(handle, smb_fname, type,
-					   mem_ctx);
-}
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 			 files_struct *fsp,
@@ -476,14 +451,6 @@ int sys_acl_delete_def_fd(vfs_handle_struct *handle,
 }
 #elif defined(HAVE_HPUX_ACLS)
 
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	return hpuxacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
-}
-
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 SMB_ACL_TYPE_T type,
@@ -512,19 +479,6 @@ int sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_delete_def_fd(handle, fsp);
 }
 #else /* No ACLs. */
-
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-#ifdef ENOTSUP
-	errno = ENOTSUP;
-#else
-	errno = ENOSYS;
-#endif
-	return NULL;
-}
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 			 files_struct *fsp,
