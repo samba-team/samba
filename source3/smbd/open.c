@@ -98,6 +98,7 @@ static bool parent_override_delete(connection_struct *conn,
 
 static NTSTATUS smbd_check_access_rights_sd(
 				struct connection_struct *conn,
+				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				struct security_descriptor *sd,
 				bool use_privs,
@@ -220,7 +221,7 @@ access_denied:
 	}
 
 	if (parent_override_delete(conn,
-				   conn->cwd_fsp,
+				   dirfsp,
 				   smb_fname,
 				   access_mask,
 				   rejected_mask))
@@ -289,6 +290,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 	}
 
 	return smbd_check_access_rights_sd(fsp->conn,
+					   fsp->conn->cwd_fsp,
 					   fsp->fsp_name,
 					   sd,
 					   use_privs,
