@@ -1036,34 +1036,6 @@ static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
-static NTSTATUS afsacl_get_nt_acl_at(struct vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **ppdesc)
-{
-	struct afs_acl acl;
-	size_t sd_size;
-
-	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
-
-	DEBUG(5, ("afsacl_get_nt_acl: %s\n", smb_fname->base_name));
-
-	sidpts = lp_parm_bool(SNUM(handle->conn), "afsacl", "sidpts", false);
-
-	if (!afs_get_afs_acl(smb_fname->base_name, &acl)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	sd_size = afs_to_nt_acl(&acl, handle->conn, smb_fname, security_info,
-				mem_ctx, ppdesc);
-
-	free_afs_acl(&acl);
-
-	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
-}
-
 static NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32_t security_info_sent,
@@ -1112,7 +1084,6 @@ static int afsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *f
 static struct vfs_fn_pointers vfs_afsacl_fns = {
 	.connect_fn = afsacl_connect,
 	.fget_nt_acl_fn = afsacl_fget_nt_acl,
-	.get_nt_acl_at_fn = afsacl_get_nt_acl_at,
 	.fset_nt_acl_fn = afsacl_fset_nt_acl,
 	.sys_acl_blob_get_file_fn = afsacl_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = afsacl_sys_acl_blob_get_fd
