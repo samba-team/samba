@@ -1846,42 +1846,6 @@ out:
  */
 
 /*
- * Success: return acl pointer
- * Failure: set errno, return NULL
- */
-static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				TALLOC_CTX *mem_ctx)
-{
-	SMB_ACL_T ret;
-	int status;
-	struct smb_filename *clientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_get_file\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
-				type, mem_ctx);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		ret = (SMB_ACL_T)NULL;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, clientFname, type, mem_ctx);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return ret;
-}
-
-/*
  * Success: return positive number
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
@@ -1958,10 +1922,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.mknodat_fn = mh_mknodat,
 	.realpath_fn = mh_realpath,
 	.chflags_fn = mh_chflags,
-
-	/* POSIX ACL operations. */
-
-	.sys_acl_get_file_fn = mh_sys_acl_get_file,
 
 	/* EA operations. */
 	.getxattr_fn = mh_getxattr,
