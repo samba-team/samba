@@ -5835,13 +5835,39 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	 * request to create a file that doesn't exist.
 	 */
 	if (smb_fname->fsp != NULL) {
-		fsp = smb_fname->fsp;
+		bool need_fsp_unlink = true;
 
 		/*
-		 * Unlink the fsp from the smb_fname so the fsp is not
-		 * autoclosed by the smb_fname pathref fsp talloc destructor.
+		 * This is really subtle. If someone passes in an smb_fname
+		 * where smb_fname actually is taken from fsp->fsp_name, then
+		 * the lifetime of these objects is meant to be the same.
+		 *
+		 * This is commonly the case from an SMB1 path-based call,
+		 * (call_trans2qfilepathinfo) where we use the pathref fsp
+		 * (smb_fname->fsp) as the handle. In this case we must not
+		 * unlink smb_fname->fsp from it's owner.
+		 *
+		 * The asserts below:
+		 *
+		 * SMB_ASSERT(fsp->fsp_name->fsp != NULL);
+		 * SMB_ASSERT(fsp->fsp_name->fsp == fsp);
+		 *
+		 * ensure the required invarients are met.
 		 */
-		smb_fname_fsp_unlink(smb_fname);
+		if (smb_fname->fsp->fsp_name == smb_fname) {
+			need_fsp_unlink = false;
+		}
+
+		fsp = smb_fname->fsp;
+
+		if (need_fsp_unlink) {
+			/*
+			 * Unlink the fsp from the smb_fname so the fsp is not
+			 * autoclosed by the smb_fname pathref fsp talloc
+			 * destructor.
+			 */
+			smb_fname_fsp_unlink(smb_fname);
+		}
 
 		status = fsp_bind_smb(fsp, req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5870,6 +5896,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 	}
+
+	SMB_ASSERT(fsp->fsp_name->fsp != NULL);
+	SMB_ASSERT(fsp->fsp_name->fsp == fsp);
 
 	if (base_fsp) {
 		/*
