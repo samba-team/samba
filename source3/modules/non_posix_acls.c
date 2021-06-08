@@ -21,47 +21,6 @@
 #include "../librpc/gen_ndr/ndr_xattr.h"
 #include "modules/non_posix_acls.h"
 
-int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname_in,
-				   DATA_BLOB acl_as_blob,
-				   TALLOC_CTX *mem_ctx,
-				   DATA_BLOB *blob)
-{
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct xattr_sys_acl_hash_wrapper acl_wrapper = {};
-	struct smb_filename *smb_fname = cp_smb_filename_nostream(frame,
-						smb_fname_in);
-
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	acl_wrapper.acl_as_blob = acl_as_blob;
-
-	ret = smb_vfs_call_stat(handle, smb_fname);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	acl_wrapper.owner = smb_fname->st.st_ex_uid;
-	acl_wrapper.group = smb_fname->st.st_ex_gid;
-	acl_wrapper.mode = smb_fname->st.st_ex_mode;
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(blob, mem_ctx,
-							  &acl_wrapper,
-							  (ndr_push_flags_fn_t)ndr_push_xattr_sys_acl_hash_wrapper))) {
-		errno = EINVAL;
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	TALLOC_FREE(frame);
-	return 0;
-}
-
 int non_posix_sys_acl_blob_get_fd_helper(vfs_handle_struct *handle,
 					 files_struct *fsp,
 					 DATA_BLOB acl_as_blob,

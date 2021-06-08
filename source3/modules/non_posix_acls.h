@@ -17,11 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
-					   const struct smb_filename *smb_fname,
-					   DATA_BLOB acl_as_blob,
-					   TALLOC_CTX *mem_ctx,
-					   DATA_BLOB *blob);
 int non_posix_sys_acl_blob_get_fd_helper(vfs_handle_struct *handle,
 					 files_struct *fsp,
 					 DATA_BLOB acl_as_blob,
