@@ -3813,16 +3813,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask(conn,
-					conn->cwd_fsp,
-					smb_fname,
-					false,
-					access_mask,
-					&access_mask);
+	status = smbd_calculate_access_mask_fsp(smb_fname->fsp,
+						false,
+						access_mask,
+						&access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_file_ntcreate: smbd_calculate_access_mask "
+		DBG_DEBUG("smbd_calculate_access_mask_fsp "
 			"on file %s returned %s\n",
-			smb_fname_str_dbg(smb_fname), nt_errstr(status)));
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
 		return status;
 	}
 
