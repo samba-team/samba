@@ -1469,46 +1469,6 @@ err:
 	return status;
 }
 
-static SMB_ACL_T um_sys_acl_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				TALLOC_CTX *mem_ctx)
-{
-	SMB_ACL_T ret;
-	int saved_errno = 0;
-	struct smb_filename *client_fname = NULL;
-	int status;
-
-	DEBUG(10, ("Entering um_sys_acl_get_file\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
-						     type, mem_ctx);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		ret = (SMB_ACL_T)NULL;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, client_fname,
-				type, mem_ctx);
-
-err:
-	if (ret == (SMB_ACL_T)NULL) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(client_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static ssize_t um_getxattr(struct vfs_handle_struct *handle,
 			   const struct smb_filename *smb_fname,
 			   const char *name,
@@ -1612,10 +1572,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.mknodat_fn = um_mknodat,
 	.realpath_fn = um_realpath,
 	.chflags_fn = um_chflags,
-
-	/* POSIX ACL operations. */
-
-	.sys_acl_get_file_fn = um_sys_acl_get_file,
 
 	/* EA operations. */
 	.getxattr_fn = um_getxattr,
