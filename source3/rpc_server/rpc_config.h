@@ -23,54 +23,6 @@
 #ifndef _RPC_CONFIG_H
 #define _RPC_CONFIG_H
 
-#if 0
-enum rpc_service_mode_e {
-	RPC_SERVICE_MODE_DISABLED = 0,
-	RPC_SERVICE_MODE_EMBEDDED,
-	RPC_SERVICE_MODE_EXTERNAL
-};
-
-/**
- * @brief Get the mode in which service pipes are configured.
- *
- * @param name		Name of the service
- *
- * @return The actual configured mode.
- */
-enum rpc_service_mode_e rpc_service_mode(const char *name);
-
-#define rpc_epmapper_mode() rpc_service_mode("epmapper")
-#define rpc_spoolss_mode() rpc_service_mode("spoolss")
-#define rpc_lsarpc_mode() rpc_service_mode("lsarpc")
-#define rpc_samr_mode() rpc_service_mode("samr")
-#define rpc_netlogon_mode() rpc_service_mode("netlogon")
-#define rpc_fssagentrpc_mode() rpc_service_mode("fssagentrpc")
-#define rpc_mdssvc_mode() rpc_service_mode("mdssvc")
-
-
-
-enum rpc_daemon_type_e {
-	RPC_DAEMON_DISABLED = 0,
-	RPC_DAEMON_EMBEDDED,
-	RPC_DAEMON_FORK
-};
-
-/**
- * @brief Get the mode in which a server is started.
- *
- * @param name		Name of the rpc server
- *
- * @return The actual configured type.
- */
-enum rpc_daemon_type_e rpc_daemon_type(const char *name);
-
-#define rpc_epmapper_daemon() rpc_daemon_type("epmd")
-#define rpc_spoolss_daemon() rpc_daemon_type("spoolssd")
-#define rpc_lsasd_daemon() rpc_daemon_type("lsasd")
-#define rpc_fss_daemon() rpc_daemon_type("fssd")
-#define rpc_mdssd_daemon() rpc_daemon_type("mdssd")
-#endif
-
 struct dcesrv_context;
 struct dcesrv_context *global_dcesrv_context(void);
 void global_dcesrv_context_free(void);

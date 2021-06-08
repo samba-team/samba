@@ -72,13 +72,6 @@ struct dcesrv_epm_endpoint {
 	struct dcesrv_iface_list *iface_list;
 };
 
-struct dcesrv_ep_entry_list {
-	struct dcesrv_ep_entry_list *next, *prev;
-
-	uint32_t num_ents;
-	struct epm_entry_t *entries;
-};
-
 struct rpc_eps {
 	struct dcesrv_ep_iface *e;
 	uint32_t count;

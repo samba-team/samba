@@ -1335,15 +1335,6 @@ winbindd:use external pipes = true
 server signing = enabled
 raw NTLMv2 auth = yes
 
-rpc_server:default = external
-rpc_server:svcctl = embedded
-rpc_server:srvsvc = embedded
-rpc_server:eventlog = embedded
-rpc_server:ntsvcs = embedded
-rpc_server:winreg = embedded
-rpc_server:spoolss = embedded
-rpc_daemon:spoolssd = embedded
-rpc_server:tcpip = no
 # override the new SMB2 only default
 client min protocol = CORE
 server min protocol = LANMAN1

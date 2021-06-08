@@ -25,7 +25,6 @@
 #include "../lib/tsocket/tsocket.h"
 #include "librpc/rpc/dcesrv_core.h"
 #include "rpc_server/rpc_sock_helper.h"
-#include "lib/server_prefork.h"
 #include "librpc/ndr/ndr_table.h"
 
 #undef DBGC_CLASS

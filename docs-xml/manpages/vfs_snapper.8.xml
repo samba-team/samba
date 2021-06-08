@@ -70,7 +70,6 @@
 
 	<programlisting>
 		<smbconfsection name="[global]"/>
-		<smbconfoption name="rpc_daemon:fssd">fork</smbconfoption>
 		<smbconfoption name="registry shares">yes</smbconfoption>
 		<smbconfoption name="include">registry</smbconfoption>
 	</programlisting>

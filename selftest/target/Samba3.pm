@@ -1697,7 +1697,6 @@ sub setup_fileserver
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
-	rpc_server:mdssvc = embedded
 	spotlight backend = elasticsearch
 	elasticsearch:address = $ip4
 	elasticsearch:port = 8080

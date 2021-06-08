@@ -18,11 +18,6 @@
 	    Samba must be configured and built with Spotlight support.
 	  </para></listitem>
 
-	  <listitem><para>
-	    The <emphasis>mdssvc</emphasis> RPC service must be
-	    enabled, see below.
-	  </para></listitem>
-
 	  <listitem><para> Tracker integration must be setup and the
 	  share must be indexed by Tracker.</para></listitem>
 	</itemizedlist>
@@ -30,26 +25,6 @@
 	<para>For a detailed set of instructions please see <ulink
 	url="https://wiki.samba.org/index.php/Spotlight">https://wiki.samba.org/index.php/Spotlight</ulink>.
 	</para>
-
-	<para>
-	  The Spotlight RPC service can either be enabled as embedded
-	  RPC service:
-	</para>
-
-<programlisting>
-<smbconfsection name="[Global]"/>
-<smbconfoption name="rpc_server:mdsvc">embedded</smbconfoption>
-</programlisting>
-
-	<para>
-	  Or it can be run in a separate RPC service daemon:
-	</para>
-
-<programlisting>
-<smbconfsection name="[Global]"/>
-<smbconfoption name="rpc_server:mdssd">fork</smbconfoption>
-<smbconfoption name="rpc_server:mdsvc">external</smbconfoption>
-</programlisting>
 
 </description>
 <value type="default">no</value>

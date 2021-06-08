@@ -26,7 +26,6 @@
 
 #include "source3/librpc/rpc/dcerpc.h"
 
-struct dcesrv_ep_entry_list;
 struct tsocket_address;
 struct pipes_struct;
 struct dcesrv_context;
@@ -45,8 +44,6 @@ struct pipes_struct {
 
 	struct auth_session_info *session_info;
 	struct messaging_context *msg_ctx;
-
-	struct dcesrv_ep_entry_list *ep_entries;
 
 	struct pipe_auth_data auth;
 
