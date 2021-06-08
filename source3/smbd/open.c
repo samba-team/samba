@@ -4616,21 +4616,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights(conn,
-						conn->cwd_fsp,
-						smb_dname,
-						false,
-						access_mask);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("open_directory: smbd_check_access_rights on "
-				"file %s failed with %s\n",
-				smb_fname_str_dbg(smb_dname),
-				nt_errstr(status)));
-			return status;
-		}
-	}
-
 	/*
 	 * Setup the files_struct for it.
 	 */
@@ -4701,6 +4686,22 @@ static NTSTATUS open_directory(connection_struct *conn,
 			smb_fname_str_dbg(smb_dname)));
 		fd_close(fsp);
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (info == FILE_WAS_OPENED) {
+		status = smbd_check_access_rights(conn,
+						conn->cwd_fsp,
+						smb_dname,
+						false,
+						access_mask);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("open_directory: smbd_check_access_rights on "
+				"file %s failed with %s\n",
+				smb_fname_str_dbg(smb_dname),
+				nt_errstr(status)));
+			fd_close(fsp);
+			return status;
+		}
 	}
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
