@@ -36,7 +36,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
 {
-	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_parent = NULL;
 	bool ret;
 	NTSTATUS status;
@@ -58,12 +57,15 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	if (dirfsp != conn->cwd_fsp) {
 		smb_fname_parent = dirfsp->fsp_name;
 	} else {
-		/* Get the parent directory permission mask and owners. */
-		status = SMB_VFS_PARENT_PATHNAME(conn,
-						 ctx,
-						 smb_fname,
-						 &smb_fname_parent,
-						 NULL);
+		struct smb_filename *atname = NULL;
+		/*
+		 * Get a pathref on the parent.
+		 */
+		status = parent_pathref(talloc_tos(),
+					conn->cwd_fsp,
+					smb_fname,
+					&smb_fname_parent,
+					&atname);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
