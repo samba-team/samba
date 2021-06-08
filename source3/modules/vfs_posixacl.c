@@ -460,7 +460,6 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
 /* VFS operations structure */
 
 static struct vfs_fn_pointers posixacl_fns = {
-	.sys_acl_get_file_fn = posixacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = posixacl_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
