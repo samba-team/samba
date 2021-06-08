@@ -259,29 +259,6 @@ static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type, TALLOC
         return result;
 }
 
-SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				TALLOC_CTX *mem_ctx)
-{
-        acl_type_t aixjfs2_type;
-
-        switch(type) {
-        case SMB_ACL_TYPE_ACCESS:
-                aixjfs2_type.u64 = ACL_AIXC;
-                break;
-        case SMB_ACL_TYPE_DEFAULT:
-                DEBUG(0, ("Got AIX JFS2 unsupported type: %d\n", type));
-                return NULL;
-        default:
-                DEBUG(0, ("Got invalid type: %d\n", type));
-                smb_panic("exiting");
-        }
-
-        return aixjfs2_get_posix_acl(smb_fname->base_name,
-			aixjfs2_type, mem_ctx);
-}
-
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
 				 files_struct *fsp,
 				 SMB_ACL_TYPE_T type,
@@ -507,7 +484,6 @@ int aixjfs2_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_aixacl2_fns = {
 	.fget_nt_acl_fn = aixjfs2_fget_nt_acl,
 	.fset_nt_acl_fn = aixjfs2_fset_nt_acl,
-	.sys_acl_get_file_fn = aixjfs2_sys_acl_get_file,
 	.sys_acl_get_fd_fn = aixjfs2_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = aixjfs2_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = aixjfs2_sys_acl_blob_get_fd,
