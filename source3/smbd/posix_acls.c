@@ -4117,7 +4117,7 @@ static int copy_access_posix_acl(connection_struct *conn,
 static bool directory_has_default_posix_acl(connection_struct *conn,
 			const struct smb_filename *smb_fname)
 {
-	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname,
+	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp,
 						     SMB_ACL_TYPE_DEFAULT,
 						     talloc_tos());
 	bool has_acl = False;
