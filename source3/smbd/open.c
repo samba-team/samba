@@ -408,7 +408,8 @@ static NTSTATUS check_base_file_access(struct files_struct *fsp,
 {
 	NTSTATUS status;
 
-	status = smbd_calculate_access_mask_fsp(fsp,
+	status = smbd_calculate_access_mask_fsp(fsp->conn->cwd_fsp,
+					fsp,
 					false,
 					access_mask,
 					&access_mask);
@@ -3243,7 +3244,8 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
+NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *dirfsp,
+			struct files_struct *fsp,
 			bool use_privs,
 			uint32_t access_mask,
 			uint32_t *access_mask_out)
@@ -3268,7 +3270,7 @@ NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 
 		status = smbd_calculate_maximum_allowed_access_fsp(
-						   fsp->conn->cwd_fsp,
+						   dirfsp,
 						   fsp,
 						   use_privs,
 						   &access_mask);
@@ -3638,7 +3640,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask_fsp(smb_fname->fsp,
+	status = smbd_calculate_access_mask_fsp(conn->cwd_fsp,
+						smb_fname->fsp,
 						false,
 						access_mask,
 						&access_mask);
@@ -4402,7 +4405,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 create_disposition,
 		 file_attributes);
 
-	status = smbd_calculate_access_mask_fsp(smb_dname->fsp,
+	status = smbd_calculate_access_mask_fsp(conn->cwd_fsp,
+					smb_dname->fsp,
 					false,
 					access_mask,
 					&access_mask);

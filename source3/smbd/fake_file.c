@@ -170,7 +170,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = smbd_calculate_access_mask_fsp(fsp,
+	status = smbd_calculate_access_mask_fsp(conn->cwd_fsp,
+					fsp,
 					false,
 					access_mask,
 					&access_mask);

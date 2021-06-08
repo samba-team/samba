@@ -4269,7 +4269,8 @@ static NTSTATUS fruit_freaddir_attr(struct vfs_handle_struct *handle,
 	if (!config->readdir_attr_max_access) {
 		attr_data->attr_data.aapl.max_access = FILE_GENERIC_ALL;
 	} else {
-		status = smbd_calculate_access_mask_fsp(fsp,
+		status = smbd_calculate_access_mask_fsp(fsp->conn->cwd_fsp,
+			fsp,
 			false,
 			SEC_FLAG_MAXIMUM_ALLOWED,
 			&attr_data->attr_data.aapl.max_access);

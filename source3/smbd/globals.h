@@ -211,7 +211,8 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       struct ea_list *name_list,
 			       struct file_id *file_id);
 
-NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
+NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *dirsfp,
+			struct files_struct *fsp,
 			bool use_privs,
 			uint32_t access_mask,
 			uint32_t *access_mask_out);
