@@ -124,6 +124,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	 */
 
 	ret = NT_STATUS_IS_OK(smbd_check_access_rights_fsp(
+				conn->cwd_fsp,
 				smb_fname_parent->fsp,
 				false,
 				FILE_DELETE_CHILD));
@@ -140,7 +141,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 
 bool can_write_to_fsp(struct files_struct *fsp)
 {
-	return NT_STATUS_IS_OK(smbd_check_access_rights_fsp(fsp,
+	return NT_STATUS_IS_OK(smbd_check_access_rights_fsp(
+							fsp->conn->cwd_fsp,
+							fsp,
 							false,
 							FILE_WRITE_DATA));
 }

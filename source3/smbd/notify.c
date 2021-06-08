@@ -669,7 +669,8 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 			return false;
 		}
 
-		status = smbd_check_access_rights_fsp(fname->fsp,
+		status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+						  fname->fsp,
 						  false,
 						  rights);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -711,7 +712,8 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 		TALLOC_FREE(filepath);
 		return false;
 	}
-	status = smbd_check_access_rights_fsp(fname->fsp,
+	status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+					  fname->fsp,
 					  false,
 					  rights);
 	if (!NT_STATUS_IS_OK(status)) {

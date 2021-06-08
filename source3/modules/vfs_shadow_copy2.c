@@ -1995,7 +1995,8 @@ static int shadow_copy2_get_shadow_copy_data(
 	fsp_set_fd(dirfsp, fd);
 
 	/* Now we have the handle, check access here. */
-	status = smbd_check_access_rights_fsp(dirfsp,
+	status = smbd_check_access_rights_fsp(fspcwd,
+					dirfsp,
 					false,
 					SEC_DIR_LIST);
 	if (!NT_STATUS_IS_OK(status)) {

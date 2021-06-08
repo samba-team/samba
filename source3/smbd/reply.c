@@ -1507,7 +1507,8 @@ void reply_setatr(struct smb_request *req)
 		else
 			mode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
-		status = smbd_check_access_rights_fsp(smb_fname->fsp,
+		status = smbd_check_access_rights_fsp(conn->cwd_fsp,
+					smb_fname->fsp,
 					false,
 					FILE_WRITE_ATTRIBUTES);
 		if (!NT_STATUS_IS_OK(status)) {

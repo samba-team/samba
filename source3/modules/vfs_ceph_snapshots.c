@@ -209,7 +209,8 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 
 	/* Check we have SEC_DIR_LIST access on this fsp. */
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
-	status = smbd_check_access_rights_fsp(dirfsp,
+	status = smbd_check_access_rights_fsp(dirfsp->conn->cwd_fsp,
+					      dirfsp,
 					      false,
 					      SEC_DIR_LIST);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -529,7 +530,8 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 
 	/* Check we have SEC_DIR_LIST access on this fsp. */
 	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
-	status = smbd_check_access_rights_fsp(dirfsp,
+	status = smbd_check_access_rights_fsp(dirfsp->conn->cwd_fsp,
+					      dirfsp,
 					      false,
 					      SEC_DIR_LIST);
 	if (!NT_STATUS_IS_OK(status)) {

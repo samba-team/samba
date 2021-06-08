@@ -246,7 +246,8 @@ access_denied:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
+NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
+				      struct files_struct *fsp,
 				      bool use_privs,
 				      uint32_t access_mask)
 {
@@ -290,7 +291,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *fsp,
 	}
 
 	return smbd_check_access_rights_sd(fsp->conn,
-					   fsp->conn->cwd_fsp,
+					   dirfsp,
 					   fsp->fsp_name,
 					   sd,
 					   use_privs,
@@ -436,7 +437,8 @@ static NTSTATUS check_base_file_access(struct files_struct *fsp,
 		}
 	}
 
-	return smbd_check_access_rights_fsp(fsp,
+	return smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+					fsp,
 					false,
 					access_mask);
 }
@@ -1362,7 +1364,9 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (!fsp->base_fsp) {
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
-				status = smbd_check_access_rights_fsp(fsp,
+				status = smbd_check_access_rights_fsp(
+						fsp->conn->cwd_fsp,
+						fsp,
 						false,
 						access_mask);
 
@@ -1547,7 +1551,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		status = smbd_check_access_rights_fsp(fsp,
+		status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+						      fsp,
 						      false,
 						      access_mask);
 
@@ -4617,7 +4622,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights_fsp(fsp,
+		status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+						fsp,
 						false,
 						access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
