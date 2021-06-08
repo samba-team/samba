@@ -488,22 +488,12 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 	case 4:
 	{
 		int ret;
-		if (fsp) {
-			/* Get the full underlying sd, then hash. */
-			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle,
-							       fsp,
-							       mem_ctx,
-							       &sys_acl_blob_description,
-							       &sys_acl_blob);
-		} else {
-			/* Get the full underlying sd, then hash. */
-			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle,
-						 smb_fname,
-						 mem_ctx,
-						 &sys_acl_blob_description,
-						 &sys_acl_blob);
-		}
-
+		/* Get the full underlying sd, then hash. */
+		ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle,
+						       fsp,
+						       mem_ctx,
+						       &sys_acl_blob_description,
+						       &sys_acl_blob);
 		/* If we fail to get the ACL blob (for some reason) then this
 		 * is not fatal, we just work based on the NT ACL only */
 		if (ret == 0) {
@@ -531,21 +521,11 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 	case 3:
 		/* Get the full underlying sd for the hash
 		   or to return as backup. */
-		if (fsp) {
-			status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-							  fsp,
-							  HASH_SECURITY_INFO,
-							  mem_ctx,
-							  &psd_fs);
-		} else {
-			status = SMB_VFS_NEXT_GET_NT_ACL_AT(handle,
-							dirfsp,
-							smb_fname,
-							HASH_SECURITY_INFO,
-							mem_ctx,
-							&psd_fs);
-		}
-
+		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+						  fsp,
+						  HASH_SECURITY_INFO,
+						  mem_ctx,
+						  &psd_fs);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("get_next_acl for file %s returned %s\n",
 				  smb_fname->base_name, nt_errstr(status));
