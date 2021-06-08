@@ -3640,7 +3640,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = smbd_calculate_access_mask_fsp(conn->cwd_fsp,
+	status = smbd_calculate_access_mask_fsp(parent_dir_fname->fsp,
 						smb_fname->fsp,
 						false,
 						access_mask,
