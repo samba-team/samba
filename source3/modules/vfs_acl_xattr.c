@@ -122,67 +122,6 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	return map_nt_error_from_unix(errno);
 }
 
-#if 0
-static NTSTATUS get_acl_blob_at(TALLOC_CTX *ctx,
-			vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname,
-			DATA_BLOB *pblob)
-{
-	size_t size = 4096;
-	uint8_t *val = NULL;
-	uint8_t *tmp;
-	ssize_t sizeret;
-
-	ZERO_STRUCTP(pblob);
-
-  again:
-
-	tmp = talloc_realloc(ctx, val, uint8_t, size);
-	if (tmp == NULL) {
-		TALLOC_FREE(val);
-		return NT_STATUS_NO_MEMORY;
-	}
-	val = tmp;
-
-	sizeret =
-	    getxattr_do(handle, NULL, smb_fname, XATTR_NTACL_NAME, val, size);
-
-	if (sizeret >= 0) {
-		pblob->data = val;
-		pblob->length = sizeret;
-		return NT_STATUS_OK;
-	}
-
-	if (errno != ERANGE) {
-		goto err;
-	}
-
-	/* Too small, try again. */
-	sizeret =
-	    getxattr_do(handle, NULL, smb_fname, XATTR_NTACL_NAME, NULL, 0);
-	if (sizeret < 0) {
-		goto err;
-	}
-
-	if (size < sizeret) {
-		size = sizeret;
-	}
-
-	if (size > 65536) {
-		/* Max ACL size is 65536 bytes. */
-		errno = ERANGE;
-		goto err;
-	}
-
-	goto again;
-  err:
-	/* Real error - exit here. */
-	TALLOC_FREE(val);
-	return map_nt_error_from_unix(errno);
-}
-#endif
-
 /*******************************************************************
  Store a DATA_BLOB into an xattr given an fsp pointer.
 *******************************************************************/
