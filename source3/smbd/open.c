@@ -3157,6 +3157,7 @@ static void schedule_async_open(struct smb_request *req)
 ****************************************************************************/
 
 static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
+			struct files_struct *dirfsp,
 			struct files_struct *fsp,
 			bool use_privs,
 			uint32_t *p_access_mask)
@@ -3233,7 +3234,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access_fsp(
 
 	if (!(access_granted & DELETE_ACCESS)) {
 		if (can_delete_file_in_directory(fsp->conn,
-				fsp->conn->cwd_fsp,
+				dirfsp,
 				fsp->fsp_name)) {
 			*p_access_mask |= DELETE_ACCESS;
 		}
@@ -3266,7 +3267,9 @@ NTSTATUS smbd_calculate_access_mask_fsp(struct files_struct *fsp,
 	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 
-		status = smbd_calculate_maximum_allowed_access_fsp(fsp,
+		status = smbd_calculate_maximum_allowed_access_fsp(
+						   fsp->conn->cwd_fsp,
+						   fsp,
 						   use_privs,
 						   &access_mask);
 
