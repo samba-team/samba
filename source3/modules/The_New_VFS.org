@@ -297,7 +297,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_SYS_ACL_BLOB_GET_FILE()   | [[Path][Path]]     | Todo   |
 | SMB_VFS_SYS_ACL_DELETE_DEF_FILE() | [[Path][Path]]     | -      |
 | SMB_VFS_SYS_ACL_GET_FD()          | [[xpathref][xpathref]] | -      |
-| SMB_VFS_SYS_ACL_GET_FILE()        | [[Path][Path]]     | Todo   |
+| SMB_VFS_SYS_ACL_GET_FILE()        | [[Path][Path]]     | -      |
 | SMB_VFS_SYS_ACL_SET_FD()          | [[xpathref][xpathref]] | -      |
 | SMB_VFS_TELLDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_TRANSLATE_NAME()          | [[P2px][P2px]]     | -      |

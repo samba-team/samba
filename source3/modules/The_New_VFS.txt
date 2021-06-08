@@ -365,7 +365,7 @@ Table of Contents
    SMB_VFS_SYS_ACL_BLOB_GET_FILE()    [Path]      Todo
    SMB_VFS_SYS_ACL_DELETE_DEF_FILE()  [Path]      -
    SMB_VFS_SYS_ACL_GET_FD()           [xpathref]  -
-   SMB_VFS_SYS_ACL_GET_FILE()         [Path]      Todo
+   SMB_VFS_SYS_ACL_GET_FILE()         [Path]      -
    SMB_VFS_SYS_ACL_SET_FD()           [xpathref]  -
    SMB_VFS_TELLDIR()                  [fsp]       -
    SMB_VFS_TRANSLATE_NAME()           [P2px]      -
