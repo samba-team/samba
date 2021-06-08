@@ -33,38 +33,6 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl);
 
 /* public functions - the api */
 
-SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				TALLOC_CTX *mem_ctx)
-{
-	struct smb_acl_t *result;
-	acl_type_t acl_type;
-	acl_t acl;
-
-	switch(type) {
-	case SMB_ACL_TYPE_ACCESS:
-		acl_type = ACL_TYPE_ACCESS;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		acl_type = ACL_TYPE_DEFAULT;
-		break;
-	default:
-		errno = EINVAL;
-		return NULL;
-	}
-
-	acl = acl_get_file(smb_fname->base_name, acl_type);
-
-	if (acl == NULL) {
-		return NULL;
-	}
-
-	result = smb_acl_to_internal(acl, mem_ctx);
-	acl_free(acl);
-	return result;
-}
-
 SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  SMB_ACL_TYPE_T type,
