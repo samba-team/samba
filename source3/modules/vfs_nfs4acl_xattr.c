@@ -236,101 +236,6 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS nfs4acl_xattr_get_nt_acl_at(struct vfs_handle_struct *handle,
-				struct files_struct *dirfsp,
-				const struct smb_filename *smb_fname,
-				uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
-				struct security_descriptor **sd)
-{
-	struct SMB4ACL_T *smb4acl = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
-	DATA_BLOB blob;
-	struct smb_filename *pathref = NULL;
-	NTSTATUS status;
-
-	SMB_ASSERT(dirfsp == handle->conn->cwd_fsp);
-
-	/*
-	 * FIXME. One place where this (smb_fname->fsp == NULL)
-	 * can happen is from open when checking parent
-	 * directory ACL - check_parent_access() currently
-	 * isn't always passed a smb_fname with a valid
-	 * fsp and check_parent_access() currently doesn't
-	 * open a pathref smb_fname->fsp itself (eventually
-	 * it should be passed in a pathref from the caller).
-	 *
-	 * There are also a few other places inside smbd
-	 * that call smbd_check_access_rights() also without
-	 * a pathref fsp.
-	 *
-	 * This check should be moved into the
-	 * callers inside smbd to ensure that smb_fname->fsp
-	 * is always valid here, and in a later patchset
-	 * I will do just that. -- jra.
-	 *
-	 * Ultimately it may be possible to remove
-	 * pathname based SMB_VFS_GET_NT_ACL_AT(), this
-	 * requires further investigation.
-	 */
-	if (smb_fname->fsp == NULL) {
-		DBG_DEBUG("FIXME: file %s doesn't have a pathref fsp\n",
-			smb_fname_str_dbg(smb_fname));
-		status = synthetic_pathref(frame,
-					dirfsp,
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags,
-					&pathref);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(frame);
-			return status;
-		}
-                smb_fname = pathref;
-        }
-
-	if (fsp_get_pathref_fd(smb_fname->fsp) == -1) {
-		/*
-		 * This is a POSIX open on a symlink.
-		 * Return not found to catch the
-		 * special casing in open_file().
-		 */
-		DBG_DEBUG("file %s pathref fd == -1\n",
-			smb_fname_str_dbg(smb_fname));
-		TALLOC_FREE(frame);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	status = nfs4acl_get_blob(handle,
-				smb_fname->fsp,
-				frame,
-				&blob);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = nfs4acl_xattr_default_sd(
-			handle,	smb_fname, mem_ctx, sd);
-		TALLOC_FREE(frame);
-		return status;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	status = nfs4acl_blob_to_smb4(handle, &blob, frame, &smb4acl);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	status = smb_get_nt_acl_nfs4(handle->conn, smb_fname, NULL,
-				     security_info, mem_ctx, sd,
-				     smb4acl);
-	TALLOC_FREE(frame);
-	return status;
-}
-
 static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 				   files_struct *fsp,
 				   struct SMB4ACL_T *smb4acl)
@@ -673,7 +578,6 @@ static int nfs4acl_xattr_fail__sys_acl_blob_get_fd(vfs_handle_struct *handle, fi
 static struct vfs_fn_pointers nfs4acl_xattr_fns = {
 	.connect_fn = nfs4acl_connect,
 	.fget_nt_acl_fn = nfs4acl_xattr_fget_nt_acl,
-	.get_nt_acl_at_fn = nfs4acl_xattr_get_nt_acl_at,
 	.fset_nt_acl_fn = nfs4acl_xattr_fset_nt_acl,
 
 	.sys_acl_get_file_fn = nfs4acl_xattr_fail__sys_acl_get_file,
