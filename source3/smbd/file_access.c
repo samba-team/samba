@@ -41,8 +41,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	bool ret;
 	NTSTATUS status;
 
-	SMB_ASSERT(dirfsp == conn->cwd_fsp);
-
 	if (!CAN_WRITE(conn)) {
 		return False;
 	}
@@ -57,14 +55,18 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		return true;
 	}
 
-	/* Get the parent directory permission mask and owners. */
-	status = SMB_VFS_PARENT_PATHNAME(conn,
-					 ctx,
-					 smb_fname,
-					 &smb_fname_parent,
-					 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+	if (dirfsp != conn->cwd_fsp) {
+		smb_fname_parent = dirfsp->fsp_name;
+	} else {
+		/* Get the parent directory permission mask and owners. */
+		status = SMB_VFS_PARENT_PATHNAME(conn,
+						 ctx,
+						 smb_fname,
+						 &smb_fname_parent,
+						 NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 	}
 
 	if(SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
@@ -132,7 +134,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 				false,
 				FILE_DELETE_CHILD));
  out:
-	TALLOC_FREE(smb_fname_parent);
+	if (smb_fname_parent != dirfsp->fsp_name) {
+		TALLOC_FREE(smb_fname_parent);
+	}
 	return ret;
 }
 
