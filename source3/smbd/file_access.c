@@ -52,6 +52,11 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		return true;
 	}
 
+	if (get_current_uid(conn) == (uid_t)0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		return true;
+	}
+
 	/* Get the parent directory permission mask and owners. */
 	status = SMB_VFS_PARENT_PATHNAME(conn,
 					 ctx,
@@ -71,11 +76,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 
 	if (!S_ISDIR(smb_fname_parent->st.st_ex_mode)) {
 		ret = false;
-		goto out;
-	}
-	if (get_current_uid(conn) == (uid_t)0) {
-		/* I'm sorry sir, I didn't know you were root... */
-		ret = true;
 		goto out;
 	}
 
