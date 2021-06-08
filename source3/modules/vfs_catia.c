@@ -1008,52 +1008,6 @@ catia_fstreaminfo(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static SMB_ACL_T
-catia_sys_acl_get_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			TALLOC_CTX *mem_ctx)
-{
-	char *mapped_name = NULL;
-	struct smb_filename *mapped_smb_fname = NULL;
-	NTSTATUS status;
-	SMB_ACL_T ret;
-	int saved_errno = 0;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return (SMB_ACL_T)NULL;
-	}
-
-	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
-					mapped_name,
-					NULL,
-					&smb_fname->st,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (mapped_smb_fname == NULL) {
-		TALLOC_FREE(mapped_name);
-		errno = ENOMEM;
-		return (SMB_ACL_T)NULL;
-	}
-
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, mapped_smb_fname,
-			type, mem_ctx);
-	if (ret == (SMB_ACL_T)NULL) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(mapped_smb_fname);
-	TALLOC_FREE(mapped_name);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static ssize_t
 catia_getxattr(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
@@ -2056,7 +2010,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fset_nt_acl_fn = catia_fset_nt_acl,
 
 	/* POSIX ACL operations. */
-	.sys_acl_get_file_fn = catia_sys_acl_get_file,
 	.sys_acl_get_fd_fn = catia_sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = catia_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = catia_sys_acl_set_fd,
