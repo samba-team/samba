@@ -76,6 +76,7 @@ struct deferred_open_record {
 ****************************************************************************/
 
 static bool parent_override_delete(connection_struct *conn,
+					struct files_struct *dirfsp,
 					const struct smb_filename *smb_fname,
 					uint32_t access_mask,
 					uint32_t rejected_mask)
@@ -83,7 +84,7 @@ static bool parent_override_delete(connection_struct *conn,
 	if ((access_mask & DELETE_ACCESS) &&
 		    (rejected_mask & DELETE_ACCESS) &&
 		    can_delete_file_in_directory(conn,
-				conn->cwd_fsp,
+				dirfsp,
 				smb_fname))
 	{
 		return true;
@@ -219,6 +220,7 @@ access_denied:
 	}
 
 	if (parent_override_delete(conn,
+				   conn->cwd_fsp,
 				   smb_fname,
 				   access_mask,
 				   rejected_mask))
