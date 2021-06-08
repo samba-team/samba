@@ -3,6 +3,7 @@
 from waflib import Options
 
 def configure(conf):
+    conf.CHECK_FUNCS('strsignal')
     conf.CHECK_FUNCS('longjmp siglongjmp')
 
     if conf.CHECK_CMOCKA():
@@ -19,6 +20,7 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('cmocka',
                       source='cmocka.c',
+                      cflags='-DHAVE_CONFIG_H=1',
                       deps=extra_libs,
                       allow_warnings=True,
                       private_library=True)
