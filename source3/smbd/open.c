@@ -1623,17 +1623,6 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 	}
 
-	/*
-	 * POSIX allows read-only opens of directories. We don't
-	 * want to do this (we use a different code path for this)
-	 * so catch a directory open and return an EISDIR. JRA.
-	 */
-
-	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
-		fd_close(fsp);
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
