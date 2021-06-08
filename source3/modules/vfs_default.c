@@ -3236,7 +3236,7 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle,
 	if (!fsp->fsp_flags.is_pathref &&
 	    type == SMB_ACL_TYPE_ACCESS)
 	{
-		return sys_acl_set_fd(handle, fsp, theacl);
+		return sys_acl_set_fd(handle, fsp, type, theacl);
 	}
 
 	if (fsp->fsp_flags.have_proc_fds) {

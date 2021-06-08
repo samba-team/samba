@@ -375,10 +375,12 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 	return posixacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
 }
 
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int sys_acl_set_fd(vfs_handle_struct *handle,
+		   files_struct *fsp,
+		   SMB_ACL_TYPE_T type,
 		   SMB_ACL_T acl_d)
 {
-	return posixacl_sys_acl_set_fd(handle, fsp, SMB_ACL_TYPE_ACCESS, acl_d);
+	return posixacl_sys_acl_set_fd(handle, fsp, type, acl_d);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -405,10 +407,12 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 	return aixacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
 }
 
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int sys_acl_set_fd(vfs_handle_struct *handle,
+		   files_struct *fsp,
+		   SMB_ACL_TYPE_T type,
 		   SMB_ACL_T acl_d)
 {
-	return aixacl_sys_acl_set_fd(handle, fsp, acl_d);
+	return aixacl_sys_acl_set_fd(handle, fsp, type, acl_d);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -435,12 +439,14 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 	return solarisacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
 }
 
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int sys_acl_set_fd(vfs_handle_struct *handle,
+		   files_struct *fsp,
+		   SMB_ACL_TYPE_T type,
 		   SMB_ACL_T acl_d)
 {
 	return solarisacl_sys_acl_set_fd(handle,
 					fsp,
-					SMB_ACL_TYPE_ACCESS,
+					type,
 					acl_d);
 }
 
@@ -467,10 +473,12 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
 }
 
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int sys_acl_set_fd(vfs_handle_struct *handle,
+		   files_struct *fsp,
+		   SMB_ACL_TYPE_T type,
 		   SMB_ACL_T acl_d)
 {
-	return hpuxacl_sys_acl_set_fd(handle, fsp, acl_d);
+	return hpuxacl_sys_acl_set_file(handle, fsp->fsp_name, type, acl_d);
 }
 
 int sys_acl_delete_def_fd(vfs_handle_struct *handle,
@@ -506,7 +514,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 	return -1;
 }
 
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+int sys_acl_set_fd(vfs_handle_struct *handle,
+		   files_struct *fsp,
+		   SMB_ACL_TYPE_T type,
 		   SMB_ACL_T acl_d)
 {
 #ifdef ENOTSUP
