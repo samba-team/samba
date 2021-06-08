@@ -71,10 +71,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		}
 	}
 
-	if(SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
-		ret = false;
-		goto out;
-	}
+	SMB_ASSERT(VALID_STAT(smb_fname_parent->st));
 
 	/* fast paths first */
 
