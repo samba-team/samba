@@ -247,48 +247,6 @@ static DATA_BLOB fake_acls_acl2blob(TALLOC_CTX *mem_ctx, SMB_ACL_T acl)
 	return blob;
 }
 
-static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				TALLOC_CTX *mem_ctx)
-{
-	DATA_BLOB blob = data_blob_null;
-	ssize_t length;
-	const char *name = NULL;
-	struct smb_acl_t *acl = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
-	switch (type) {
-	case SMB_ACL_TYPE_ACCESS:
-		name = FAKE_ACL_ACCESS_XATTR;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		name = FAKE_ACL_DEFAULT_XATTR;
-		break;
-	}
-
-	do {
-		blob.length += 1000;
-		blob.data = talloc_realloc(frame, blob.data, uint8_t, blob.length);
-		if (!blob.data) {
-			errno = ENOMEM;
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-		length = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-				name, blob.data, blob.length);
-		blob.length = length;
-	} while (length == -1 && errno == ERANGE);
-	if (length == -1 && errno == ENOATTR) {
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-	if (length != -1) {
-		acl = fake_acls_blob2acl(&blob, mem_ctx);
-	}
-	TALLOC_FREE(frame);
-	return acl;
-}
-
 static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 					  files_struct *fsp,
 					  SMB_ACL_TYPE_T type,
@@ -646,7 +604,6 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
 	.fchmod_fn = fake_acls_fchmod,
-	.sys_acl_get_file_fn = fake_acls_sys_acl_get_file,
 	.sys_acl_get_fd_fn = fake_acls_sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
 	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
