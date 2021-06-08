@@ -4405,7 +4405,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 create_disposition,
 		 file_attributes);
 
-	status = smbd_calculate_access_mask_fsp(conn->cwd_fsp,
+	status = smbd_calculate_access_mask_fsp(parent_dir_fname->fsp,
 					smb_dname->fsp,
 					false,
 					access_mask,
