@@ -1365,7 +1365,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
 				status = smbd_check_access_rights_fsp(
-						fsp->conn->cwd_fsp,
+						parent_dir->fsp,
 						fsp,
 						false,
 						access_mask);
@@ -1551,7 +1551,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 		}
 
-		status = smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
+		status = smbd_check_access_rights_fsp(parent_dir->fsp,
 						      fsp,
 						      false,
 						      access_mask);
