@@ -29,11 +29,6 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				    files_struct *fsp, 
 				    TALLOC_CTX *mem_ctx);
 
-int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				SMB_ACL_T theacl);
-
 int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      SMB_ACL_TYPE_T type,
