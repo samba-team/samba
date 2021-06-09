@@ -34,7 +34,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 
 testit "kinit" kerberos_kinit ${samba_kinit} ${USERNAME} ${PASSWORD}
 
-test_smbclient "smbclient (krb5)" "ls" "//$SERVER/tmp" -k || failed=`expr $failed + 1`
+test_smbclient "smbclient (krb5)" "ls" "//$SERVER/tmp" --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 
 rm -rf $KRB5CCNAME_PATH
 
