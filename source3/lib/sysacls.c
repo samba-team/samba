@@ -48,7 +48,6 @@
  * reorder the entries in the ACL.
  *
  *	sys_acl_valid()
- *	sys_acl_set_file()
  *	sys_acl_set_fd()
  */
 
@@ -367,14 +366,6 @@ SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 	return posixacl_sys_acl_get_fd(handle, fsp, type, mem_ctx);
 }
 
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-	return posixacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
-}
-
 int sys_acl_set_fd(vfs_handle_struct *handle,
 		   files_struct *fsp,
 		   SMB_ACL_TYPE_T type,
@@ -399,14 +390,6 @@ SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 	return aixacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-	return aixacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
-}
-
 int sys_acl_set_fd(vfs_handle_struct *handle,
 		   files_struct *fsp,
 		   SMB_ACL_TYPE_T type,
@@ -429,14 +412,6 @@ SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 {
 	return solarisacl_sys_acl_get_fd(handle, fsp,
 					 mem_ctx);
-}
-
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-	return solarisacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle,
@@ -465,14 +440,6 @@ SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-	return hpuxacl_sys_acl_set_file(handle, smb_fname, type, acl_d);
-}
-
 int sys_acl_set_fd(vfs_handle_struct *handle,
 		   files_struct *fsp,
 		   SMB_ACL_TYPE_T type,
@@ -499,19 +466,6 @@ SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle,
 	errno = ENOSYS;
 #endif
 	return NULL;
-}
-
-int sys_acl_set_file(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			SMB_ACL_TYPE_T type,
-			SMB_ACL_T acl_d)
-{
-#ifdef ENOTSUP
-	errno = ENOTSUP;
-#else
-	errno = ENOSYS;
-#endif
-	return -1;
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle,
