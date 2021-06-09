@@ -981,53 +981,52 @@ void change_file_owner_to_parent(connection_struct *conn,
 	}
 }
 
-static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
-					struct smb_filename *smb_fname_parent,
-					struct smb_filename *smb_dname,
-					SMB_STRUCT_STAT *psbuf)
+static NTSTATUS change_dir_owner_to_parent_fsp(struct files_struct *parent_fsp,
+					       struct files_struct *fsp)
 {
+	NTSTATUS status;
 	int ret;
 
-	ret = SMB_VFS_STAT(conn, smb_fname_parent);
+	ret = SMB_VFS_FSTAT(parent_fsp, &parent_fsp->fsp_name->st);
 	if (ret == -1) {
-		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
-			 "directory %s. Error was %s\n",
-			 smb_fname_str_dbg(smb_fname_parent),
-			 strerror(errno)));
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		DBG_ERR("failed to stat parent directory %s. Error was %s\n",
+			 fsp_str_dbg(parent_fsp),
+			 nt_errstr(status));
+		return status;
 	}
 
-	if (smb_fname_parent->st.st_ex_uid == smb_dname->st.st_ex_uid) {
+	if (parent_fsp->fsp_name->st.st_ex_uid == fsp->fsp_name->st.st_ex_uid) {
 		/* Already this uid - no need to change. */
-		DEBUG(10,("change_dir_owner_to_parent: directory %s "
-			"is already owned by uid %d\n",
-			smb_dname->base_name,
-			(int)smb_dname->st.st_ex_uid ));
+		DBG_DEBUG("directory %s is already owned by uid %u\n",
+			fsp_str_dbg(fsp),
+			(unsigned int)fsp->fsp_name->st.st_ex_uid);
 		return NT_STATUS_OK;
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(smb_dname->fsp,
-			     smb_fname_parent->st.st_ex_uid,
+	ret = SMB_VFS_FCHOWN(fsp,
+			     parent_fsp->fsp_name->st.st_ex_uid,
 			     (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
-		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
+		status = map_nt_error_from_unix(errno);
+		DBG_ERR("failed to chown "
 			  "directory %s to parent directory uid %u. "
 			  "Error was %s\n",
-			  smb_dname->base_name,
-			  (unsigned int)smb_fname_parent->st.st_ex_uid,
-			  strerror(errno) ));
-		return map_nt_error_from_unix(errno);
+			  fsp_str_dbg(fsp),
+			  (unsigned int)parent_fsp->fsp_name->st.st_ex_uid,
+			  nt_errstr(status));
+		return status;
 	}
 
 	DBG_DEBUG("changed ownership of new "
 		  "directory %s to parent directory uid %u.\n",
-		  smb_dname->base_name,
-		  (unsigned int)smb_fname_parent->st.st_ex_uid);
+		  fsp_str_dbg(fsp),
+		  (unsigned int)parent_fsp->fsp_name->st.st_ex_uid);
 
 	/* Ensure the uid entry is updated. */
-	psbuf->st_ex_uid = smb_fname_parent->st.st_ex_uid;
+	fsp->fsp_name->st.st_ex_uid = parent_fsp->fsp_name->st.st_ex_uid;
 
 	return NT_STATUS_OK;
 }
@@ -4344,9 +4343,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
-		change_dir_owner_to_parent(conn, parent_dir_fname,
-					   smb_dname,
-					   &smb_dname->st);
+		change_dir_owner_to_parent_fsp(parent_dir_fname->fsp,
+					       fsp);
 		need_re_stat = true;
 	}
 
