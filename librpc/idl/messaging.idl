@@ -160,6 +160,10 @@ interface messaging
 		/* MSG_DBWRAP_G_LOCK_RETRY		= 4002, */
 		MSG_DBWRAP_MODIFIED		= 4003,
 
+		MSG_RPC_HOST_NEW_CLIENT         = 4004,
+		MSG_RPC_WORKER_STATUS           = 4005,
+		MSG_RPC_DUMP_STATUS             = 4006,
+
 		/*
 		 * source4 allows new messages to be registered at
 		 * runtime (currently used in python bindings and in

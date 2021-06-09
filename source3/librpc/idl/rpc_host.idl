@@ -1,0 +1,76 @@
+/**
+ * @file rpc_host.idl
+ *
+ * Definitions for communication between samba-dcerpcd and rpc helper
+ * daemons
+ */
+#include "idl_types.h"
+
+import "named_pipe_auth.idl";
+import "dcerpc.idl";
+
+[
+	pointer_default(unique)
+]
+
+interface rpc_host_msg
+{
+	/**
+	 * @brief MSG_RPC_HOST_NEW_CLIENT: samba-dcerpcd->rpcd
+	 *
+	 * samba-dcerpcd to rpcd msg announcing a new client. This
+	 * will carry a file descriptor representing the new
+	 * connection
+	 */
+	typedef [public] struct {
+		/**
+		 * @brief The binding the client wants to connect to
+		 */
+		[string,charset(UTF8)] char *binding;
+
+		/**
+		 * @brief Auth info inherited from SMB
+		 */
+		named_pipe_auth_req_info5 *npa_info5;
+
+		/**
+		 * @brief Raw bind PDU
+		 *
+		 * Already read from the socket by samba-dcerpcd
+		 */
+		DATA_BLOB bind_packet;
+	} rpc_host_client;
+
+	/**
+	 * @brief MSG_RPC_WORKER_STATUS: rpcd->samba-dcerpcd
+	 *
+	 * Once a client has been handed over from samba-dcerpcd to an
+	 * rpcd, samba-dcerpc has no control over this socket
+	 * anymore. So it can't know when the client exits and the
+	 * rpcd helper process has a slot free. Thus whenever a client
+	 * exits, rpcd sends this message up to samba-dcerpc for a
+	 * status update.
+	 */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		/**
+		 * @brief Which rpc service is this message from
+		 *
+		 * samba-dcerpcd will only have the source pid of this
+		 * message. To avoid a walk through all arrays with
+		 * all rpcd helpers, give samba-dcerpcd a hint where
+		 * in its arrays to find the rpcd that sent this
+		 * message.
+		 */
+		uint8 server_index;
+
+		/**
+		 * @brief Which of the processes of a helper prog is this from
+		 */
+		uint8 worker_index;
+
+		/**
+		 * @brief How many clients this process serves right now
+		 */
+		uint32 num_clients;
+	} rpc_worker_status;
+}

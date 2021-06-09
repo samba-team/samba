@@ -14,7 +14,10 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''libnetapi.idl libnet_join.idl
+                    '''
+                    libnetapi.idl
+                    libnet_join.idl
+                    rpc_host.idl
                     ''',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
                     output_dir='../gen_ndr',
