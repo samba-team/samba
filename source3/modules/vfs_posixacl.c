@@ -82,42 +82,6 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-int posixacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl)
-{
-	int res;
-	acl_type_t acl_type;
-	acl_t acl;
-
-	DEBUG(10, ("Calling acl_set_file: %s, %d\n",
-			smb_fname->base_name,
-			type));
-
-	switch(type) {
-	case SMB_ACL_TYPE_ACCESS:
-		acl_type = ACL_TYPE_ACCESS;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		acl_type = ACL_TYPE_DEFAULT;
-		break;
-	default:
-		errno = EINVAL;
-		return -1;
-	}
-
-	if ((acl = smb_acl_to_posix(theacl)) == NULL) {
-		return -1;
-	}
-	res = acl_set_file(smb_fname->base_name, acl_type, acl);
-	if (res != 0) {
-		DEBUG(10, ("acl_set_file failed: %s\n", strerror(errno)));
-	}
-	acl_free(acl);
-	return res;
-}
-
 int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    SMB_ACL_TYPE_T type,

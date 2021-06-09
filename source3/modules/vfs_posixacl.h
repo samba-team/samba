@@ -26,11 +26,6 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  SMB_ACL_TYPE_T type,
 				  TALLOC_CTX *mem_ctx);
 
-int posixacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl);
-
 int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    SMB_ACL_TYPE_T type,
