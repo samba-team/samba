@@ -20,6 +20,7 @@ interface named_pipe_auth
 		[charset(DOS),string] uint8 *local_server_addr;
 		uint16 local_server_port;
 		auth_session_info_transport *session_info;
+		boolean8 need_idle_server;
 	} named_pipe_auth_req_info5;
 
 	typedef [switch_type(uint32)] union {
