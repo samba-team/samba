@@ -744,9 +744,6 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   files_struct *fsp,
 		   int flags, mode_t mode);
 NTSTATUS fd_close(files_struct *fsp);
-void change_file_owner_to_parent(connection_struct *conn,
-				 struct smb_filename *inherit_from_dir,
-				 files_struct *fsp);
 bool is_oplock_stat_open(uint32_t access_mask);
 bool is_lease_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,

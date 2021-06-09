@@ -939,7 +939,7 @@ NTSTATUS fd_close(files_struct *fsp)
  Do this by fd if possible.
 ****************************************************************************/
 
-void change_file_owner_to_parent(connection_struct *conn,
+static void change_file_owner_to_parent(connection_struct *conn,
 				 struct smb_filename *smb_fname_parent,
 				 files_struct *fsp)
 {
