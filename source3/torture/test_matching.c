@@ -18,13 +18,16 @@
 */
 
 #include "includes.h"
+#include "lib/util_matching.h"
 #include "proto.h"
 
 bool run_str_match_mswild(int dummy)
 {
 	const char *namelist = "/abc*.txt/xyz*.dat/a0123456789Z/";
 	name_compare_entry *name_entries = NULL;
-	const struct test_name {
+	struct samba_path_matching *pmcs = NULL;
+	struct samba_path_matching *pmci = NULL;
+	const struct str_match_mswild_name {
 		const char *name;
 		ssize_t case_sensitive_idx;
 		ssize_t case_insensitive_idx;
@@ -57,6 +60,7 @@ bool run_str_match_mswild(int dummy)
 		.case_sensitive_idx = -1,
 		.case_insensitive_idx = 2,
 	}};
+	NTSTATUS status;
 	size_t i;
 	bool ret = true;
 
@@ -65,10 +69,26 @@ bool run_str_match_mswild(int dummy)
 	set_namearray(&name_entries, namelist);
 	SMB_ASSERT(name_entries != NULL);
 
+	status = samba_path_matching_mswild_create(talloc_tos(),
+						   true, /* case_sensitive */
+						   namelist,
+						   &pmcs);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+	status = samba_path_matching_mswild_create(talloc_tos(),
+						   false, /* case_sensitive */
+						   namelist,
+						   &pmci);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+
 	for (i = 0; i < ARRAY_SIZE(names); i++) {
-		const struct test_name *n = &names[i];
+		const struct str_match_mswild_name *n = &names[i];
 		bool case_sensitive_match;
 		bool case_insensitive_match;
+		ssize_t cs_match_idx = -1;
+		ssize_t ci_match_idx = -1;
+		ssize_t replace_start = -1;
+		ssize_t replace_end = -1;
 		bool ok = true;
 
 		case_sensitive_match = is_in_path(n->name,
@@ -79,6 +99,17 @@ bool run_str_match_mswild(int dummy)
 		} else {
 			ok &= !case_sensitive_match;
 		}
+		status = samba_path_matching_check_last_component(pmcs,
+								  n->name,
+								  &cs_match_idx,
+								  &replace_start,
+								  &replace_end);
+		SMB_ASSERT(NT_STATUS_IS_OK(status));
+		SMB_ASSERT(replace_start == -1);
+		SMB_ASSERT(replace_end == -1);
+		if (n->case_sensitive_idx != cs_match_idx) {
+			ok = false;
+		}
 		case_insensitive_match = is_in_path(n->name,
 						    name_entries,
 						    false);
@@ -87,16 +118,29 @@ bool run_str_match_mswild(int dummy)
 		} else {
 			ok &= !case_insensitive_match;
 		}
+		status = samba_path_matching_check_last_component(pmci,
+								  n->name,
+								  &ci_match_idx,
+								  &replace_start,
+								  &replace_end);
+		SMB_ASSERT(NT_STATUS_IS_OK(status));
+		SMB_ASSERT(replace_start == -1);
+		SMB_ASSERT(replace_end == -1);
+		if (n->case_insensitive_idx != ci_match_idx) {
+			ok = false;
+		}
 
 		d_fprintf(stderr, "name[%s] "
-			  "case_sensitive[TIDX=%zd;MATCH=%u] "
-			  "case_insensitive[TIDX=%zd;MATCH=%u] "
+			  "case_sensitive[TIDX=%zd;MATCH=%u;MIDX=%zd] "
+			  "case_insensitive[TIDX=%zd;MATCH=%u;MIDX=%zd] "
 			  "%s\n",
 			  n->name,
 			  n->case_sensitive_idx,
 			  case_sensitive_match,
+			  cs_match_idx,
 			  n->case_insensitive_idx,
 			  case_insensitive_match,
+			  ci_match_idx,
 			  ok ? "OK" : "FAIL");
 
 		ret &= ok;
