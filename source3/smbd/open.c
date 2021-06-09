@@ -944,15 +944,6 @@ static void change_file_owner_to_parent_fsp(struct files_struct *parent_fsp,
 {
 	int ret;
 
-	ret = SMB_VFS_FSTAT(parent_fsp, &parent_fsp->fsp_name->st);
-	if (ret == -1) {
-		DBG_ERR("failed to stat parent "
-			"directory %s. Error was %s\n",
-			fsp_str_dbg(parent_fsp),
-			strerror(errno));
-                return;
-	}
-
 	if (parent_fsp->fsp_name->st.st_ex_uid == fsp->fsp_name->st.st_ex_uid) {
 		/* Already this uid - no need to change. */
 		DBG_DEBUG("file %s is already owned by uid %u\n",
