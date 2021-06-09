@@ -24,6 +24,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util_matching.h"
 #include "lib/global_contexts.h"
 
 static int vfs_preopen_debug_level = DBGC_VFS;
@@ -58,7 +59,7 @@ struct preopen_state {
 				 * last open call + preopen:queuelen
 				 */
 
-	name_compare_entry *preopen_names;
+	struct samba_path_matching *preopen_names;
 };
 
 static void preopen_helper_destroy(struct preopen_helper *c)
@@ -333,9 +334,11 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		return NULL;
 	}
 
-	set_namearray(&state->preopen_names, namelist);
-
-	if (state->preopen_names == NULL) {
+	status = samba_path_matching_mswild_create(state,
+						   true, /* case_sensitive */
+						   namelist,
+						   &state->preopen_names);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state);
 		return NULL;
 	}
@@ -400,6 +403,8 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	struct preopen_state *state;
 	int res;
 	unsigned long num;
+	NTSTATUS status;
+	ssize_t match_idx = -1;
 
 	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
 
@@ -443,7 +448,15 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		return res;
 	}
 
-	if (!is_in_path(smb_fname->base_name, state->preopen_names, true)) {
+	status = samba_path_matching_check_last_component(state->preopen_names,
+							  smb_fname->base_name,
+							  &match_idx,
+							  NULL, /* replace_start */
+							  NULL);/* replace_end */
+	if (!NT_STATUS_IS_OK(status)) {
+		match_idx = -1;
+	}
+	if (match_idx < 0) {
 		DEBUG(10, ("%s does not match the preopen:names list\n",
 			   smb_fname_str_dbg(smb_fname)));
 		return res;
