@@ -1535,6 +1535,14 @@ planpythontestsuite(
     })
 planpythontestsuite(
     "ad_dc",
+    "samba.tests.krb5.fast_tests",
+    environ={
+        'ADMIN_USERNAME': '$USERNAME',
+        'ADMIN_PASSWORD': '$PASSWORD',
+        'SERVICE_USERNAME': '$SERVER'
+    })
+planpythontestsuite(
+    "ad_dc",
     "samba.tests.krb5.ms_kile_client_principal_lookup_tests",
     environ={
         'ADMIN_USERNAME': '$USERNAME',
