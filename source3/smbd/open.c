@@ -947,7 +947,6 @@ void change_file_owner_to_parent(connection_struct *conn,
 			 "directory %s. Error was %s\n",
 			 smb_fname_str_dbg(smb_fname_parent),
 			 strerror(errno)));
-		TALLOC_FREE(smb_fname_parent);
 		return;
 	}
 
@@ -957,7 +956,6 @@ void change_file_owner_to_parent(connection_struct *conn,
 			"is already owned by uid %d\n",
 			fsp_str_dbg(fsp),
 			(int)fsp->fsp_name->st.st_ex_uid ));
-		TALLOC_FREE(smb_fname_parent);
 		return;
 	}
 
