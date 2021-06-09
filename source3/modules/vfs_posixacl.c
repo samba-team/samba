@@ -142,9 +142,23 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 {
 	int res;
 	acl_t acl = smb_acl_to_posix(theacl);
+	acl_type_t acl_type;
 	int fd = fsp_get_pathref_fd(fsp);
 
 	if (acl == NULL) {
+		return -1;
+	}
+
+	switch(type) {
+	case SMB_ACL_TYPE_ACCESS:
+		acl_type = ACL_TYPE_ACCESS;
+		break;
+	case SMB_ACL_TYPE_DEFAULT:
+		acl_type = ACL_TYPE_DEFAULT;
+		break;
+	default:
+		acl_free(acl);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -159,13 +173,13 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			acl_free(acl);
 			return -1;
 		}
-		res = acl_set_file(proc_fd_path, type, acl);
+		res = acl_set_file(proc_fd_path, acl_type, acl);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
 		res = acl_set_file(fsp->fsp_name->base_name,
-				   type,
+				   acl_type,
 				   acl);
 	}
 
