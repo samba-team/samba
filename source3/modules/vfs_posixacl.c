@@ -156,6 +156,7 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 
 		proc_fd_path = sys_proc_fd_path(fd, buf, sizeof(buf));
 		if (proc_fd_path == NULL) {
+			acl_free(acl);
 			return -1;
 		}
 		res = acl_set_file(proc_fd_path, type, acl);
