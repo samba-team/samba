@@ -27,6 +27,7 @@ manpages='''
          manpages/pdbedit.8
          manpages/profiles.1
          manpages/rpcclient.1
+         manpages/samba-dcerpcd.8
          manpages/samba-regedit.8
          manpages/samba-tool.8
          manpages/samba.7

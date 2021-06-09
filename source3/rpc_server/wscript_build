@@ -5,6 +5,20 @@ bld.SAMBA3_SUBSYSTEM('rpc',
                     source='',
                     deps='dcerpc-server-core')
 
+bld.SAMBA_BINARY('samba-dcerpcd',
+                 source='rpc_host.c',
+                 deps='''
+                 samba3core
+                 CMDLINE_S3
+                 dcerpc-binding
+                 npa_tstream
+                 AUTH_COMMON
+                 RPC_SOCK_HELPER
+                 NDR_RPC_HOST
+                 RPC_SERVER
+                 ''',
+                 install_path='${SAMBA_LIBEXECDIR}')
+
 bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
                     source='rpc_config.c',
                     deps='talloc')
