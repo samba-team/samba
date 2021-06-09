@@ -500,8 +500,53 @@ class TestDNSAging(DNSTest):
         we allow one more hour in case it happens during a daylight
         savings transition or something.
         """
-        self.assertGreaterEqual(timestamp, reference)
-        self.assertLess(timestamp, reference + 3)
+        if hasattr(timestamp, 'dwTimeStamp'):
+            timestamp = timestamp.dwTimeStamp
+        if hasattr(reference, 'dwTimeStamp'):
+            reference = reference.dwTimeStamp
+
+        diff = timestamp - reference
+        days = abs(diff / 24.0)
+
+        if diff < 0:
+            msg = f"timestamp is {days} days ({abs(diff)} hours) before reference"
+        elif diff > 2:
+            msg = f"timestamp is {days} days ({diff} hours) after reference"
+        else:
+            return
+        raise AssertionError(msg)
+
+    def assert_timestamps_equal(self, ts1, ts2):
+        """Just like assertEqual(), but tells us the difference, not the
+        absolute values. e.g:
+
+        self.assertEqual(a, b)
+        AssertionError: 3685491 != 3685371
+
+        self.assert_timestamps_equal(a, b)
+        AssertionError: -120 (first is 5.0 days earlier than second)
+
+        Also, we turn a record into a timestamp if we need
+        """
+        if hasattr(ts1, 'dwTimeStamp'):
+            ts1 = ts1.dwTimeStamp
+        if hasattr(ts2, 'dwTimeStamp'):
+            ts2 = ts2.dwTimeStamp
+
+        if ts1 == ts2:
+            return
+
+        diff = ts1 - ts2
+        days = abs(diff / 24.0)
+        if ts1 == 0 or ts2 == 0:
+            # when comparing to zero we don't want the number of days.
+            msg = f"timestamp {ts1} != {ts2}"
+        elif diff > 0:
+            msg = f"{ts1} is {days} days ({diff} hours) after {ts2}"
+        else:
+            msg = f"{ts1} is {days} days ({abs(diff)} hours) before {ts2}"
+
+        raise AssertionError(msg)
 
     def test_update_timestamps_aging_off_then_on(self):
         # we will add a record with aging off
