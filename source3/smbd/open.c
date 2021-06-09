@@ -987,15 +987,6 @@ static NTSTATUS change_dir_owner_to_parent_fsp(struct files_struct *parent_fsp,
 	NTSTATUS status;
 	int ret;
 
-	ret = SMB_VFS_FSTAT(parent_fsp, &parent_fsp->fsp_name->st);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		DBG_ERR("failed to stat parent directory %s. Error was %s\n",
-			 fsp_str_dbg(parent_fsp),
-			 nt_errstr(status));
-		return status;
-	}
-
 	if (parent_fsp->fsp_name->st.st_ex_uid == fsp->fsp_name->st.st_ex_uid) {
 		/* Already this uid - no need to change. */
 		DBG_DEBUG("directory %s is already owned by uid %u\n",
