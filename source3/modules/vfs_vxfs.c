@@ -338,9 +338,8 @@ static char * vxfs_compact_buf(char *e_buf, int *new_count, int count,
 static bool vxfs_compare_acls(char *e_buf, char *n_buf, int n_count,
 			      int e_count) {
 
-	uint16_t e_type, n_type, e_perm, n_perm;
-	uint32_t e_id, n_id;
-	int i, offset = 0;
+	uint16_t e_type, n_type;
+	int offset = 0;
 
 	if (!e_buf && !n_buf) {
 		DEBUG(10, ("vfs_vxfs: Empty buffers!\n"));
@@ -404,7 +403,7 @@ static bool vxfs_compare(struct files_struct *fsp,
 {
 	SMB_ACL_T existing_acl = NULL;
 	bool ret = false;
-	int i, count = 0;
+	int count = 0;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *existing_buf = NULL, *new_buf = NULL, *compact_buf = NULL;
 	int status;
