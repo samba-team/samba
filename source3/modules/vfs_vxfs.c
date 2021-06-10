@@ -481,6 +481,7 @@ out:
 	return ret;
 }
 
+#ifdef VXFS_ACL_SHARE
 static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       SMB_ACL_TYPE_T type,
@@ -493,6 +494,7 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle,
 
 	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, type, theacl);
 }
+#endif
 
 static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
