@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+# dnsserver_common is enabled without the ad-dc to prevent imports from failing
+# when samba-tool is called where the ad-dc was not built. The server-side dns
+# code is used in the client when we do direct LDAP modification of DNS records.
 bld.SAMBA_LIBRARY('dnsserver_common',
         source='dnsserver_common.c',
         deps='samba-util samba-errors ldbsamba clidns',
-        private_library=True,
-        install=bld.AD_DC_BUILD_IS_ENABLED()
+        private_library=True
         )
 
 bld.SAMBA_MODULE('service_dns',
