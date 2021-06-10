@@ -31,3 +31,17 @@ samba.tests.dns_aging.+test_update_aging_enabled_on_no_refresh_boundary
 samba.tests.dns_aging.+test_update_static_stickiness
 samba.tests.dns_aging.+test_update_timestamp_weirdness_no_refresh_no_aging
 samba.tests.dns_aging.+test_update_timestamp_weirdness_refresh_no_aging
+samba.tests.dns_aging.+test_AAAA_5_days_AAAA_6_days_aging
+samba.tests.dns_aging.+test_AAAA_5_days_AAAA_6_days_no_aging
+samba.tests.dns_aging.+test_A_10_days_AAAA_5_days_aging
+samba.tests.dns_aging.+test_A_10_days_AAAA_5_days_no_aging
+samba.tests.dns_aging.+test_A_10_days_AAAA_9_days_aging
+samba.tests.dns_aging.+test_A_20_days_AAAA_2_days_aging
+samba.tests.dns_aging.+test_A_5_days_AAAA_10_days_aging
+samba.tests.dns_aging.+test_A_5_days_AAAA_10_days_no_aging
+samba.tests.dns_aging.+test_A_5_days_AAAA_5_days_aging
+samba.tests.dns_aging.+test_A_5_days_AAAA_5_days_no_aging
+samba.tests.dns_aging.+test_A_5_days_A_10_days_no_aging
+samba.tests.dns_aging.+test_A_5_days_A_5_days_aging
+samba.tests.dns_aging.+test_A_6_days_AAAA_40_days_no_aging
+samba.tests.dns_aging.+test_A_9_days_AAAA_10_days_no_aging
