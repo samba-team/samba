@@ -817,6 +817,20 @@ struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (smb_fname->fsp == NULL) {
+		/*
+		 * The pathological case where a caller does
+		 * dos_mode_at_send() and smb_fname points at a
+		 * symlink in POSIX context. smb_fname->fsp is NULL.
+		 *
+		 * FIXME ? Should we move to returning
+		 * FILE_ATTRIBUTE_REPARSE_POINT here ?
+		 */
+		state->dosmode = FILE_ATTRIBUTE_NORMAL;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = SMB_VFS_GET_DOS_ATTRIBUTES_SEND(state,
 						 ev,
 						 dir_fsp,
