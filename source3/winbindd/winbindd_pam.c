@@ -1140,8 +1140,10 @@ out:
 
 static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state,
+					      TALLOC_CTX *mem_ctx,
 					      struct netr_SamInfo3 **info3)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	uint16_t max_allowed_bad_attempts;
 	fstring name_namespace, name_domain, name_user;
@@ -1164,6 +1166,11 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	DEBUG(10,("winbindd_dual_pam_auth_cached\n"));
 
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Parse domain and username */
 
 	ok = parse_domain_user(state->request->data.auth.user,
@@ -1172,7 +1179,8 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			       name_user);
 	if (!ok) {
 		DBG_DEBUG("parse_domain_user failed\n");
-		return NT_STATUS_NO_SUCH_USER;
+		result = NT_STATUS_NO_SUCH_USER;
+		goto out;
 	}
 
 	if (!lookup_cached_name(name_namespace,
@@ -1181,26 +1189,28 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				&sid,
 				&type)) {
 		DEBUG(10,("winbindd_dual_pam_auth_cached: no such user in the cache\n"));
-		return NT_STATUS_NO_SUCH_USER;
+		result = NT_STATUS_NO_SUCH_USER;
+		goto out;
 	}
 
 	if (type != SID_NAME_USER) {
 		DEBUG(10,("winbindd_dual_pam_auth_cached: not a user (%s)\n", sid_type_lookup(type)));
-		return NT_STATUS_LOGON_FAILURE;
+		result = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
 	result = winbindd_get_creds(domain,
-				    state->mem_ctx,
+				    tmp_ctx,
 				    &sid,
 				    &my_info3,
 				    &cached_nt_pass,
 				    &cached_salt);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get creds: %s\n", nt_errstr(result)));
-		return result;
+		goto out;
 	}
 
-	*info3 = my_info3;
+	*info3 = talloc_steal(mem_ctx, my_info3);
 
 	E_md4hash(state->request->data.auth.pass, new_nt_pass);
 
@@ -1219,18 +1229,24 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 		if (rc < 0) {
-			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			result = gnutls_error_to_ntstatus(
+					rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			goto out;
 		}
 
 		rc = gnutls_hash(hash_hnd, cached_salt, 16);
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			result = gnutls_error_to_ntstatus(
+					rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			goto out;
 		}
 		rc = gnutls_hash(hash_hnd, new_nt_pass, 16);
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			result = gnutls_error_to_ntstatus(
+					rc, NT_STATUS_HASH_NOT_SUPPORTED);
+			goto out;
 		}
 		gnutls_hash_deinit(hash_hnd, salted_hash);
 
@@ -1250,34 +1266,41 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		my_info3->base.user_flags |= NETLOGON_CACHED_ACCOUNT;
 
 		if (my_info3->base.acct_flags & ACB_AUTOLOCK) {
-			return NT_STATUS_ACCOUNT_LOCKED_OUT;
+			result = NT_STATUS_ACCOUNT_LOCKED_OUT;
+			goto out;
 		}
 
 		if (my_info3->base.acct_flags & ACB_DISABLED) {
-			return NT_STATUS_ACCOUNT_DISABLED;
+			result = NT_STATUS_ACCOUNT_DISABLED;
+			goto out;
 		}
 
 		if (my_info3->base.acct_flags & ACB_WSTRUST) {
-			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+			result = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+			goto out;
 		}
 
 		if (my_info3->base.acct_flags & ACB_SVRTRUST) {
-			return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+			result = NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+			goto out;
 		}
 
 		if (my_info3->base.acct_flags & ACB_DOMTRUST) {
-			return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+			result = NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+			goto out;
 		}
 
 		if (!(my_info3->base.acct_flags & ACB_NORMAL)) {
 			DEBUG(0,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n",
 				my_info3->base.acct_flags));
-			return NT_STATUS_LOGON_FAILURE;
+			result = NT_STATUS_LOGON_FAILURE;
+			goto out;
 		}
 
 		kickoff_time = nt_time_to_unix(my_info3->base.kickoff_time);
 		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
-			return NT_STATUS_ACCOUNT_EXPIRED;
+			result = NT_STATUS_ACCOUNT_EXPIRED;
+			goto out;
 		}
 
 		must_change_time = nt_time_to_unix(my_info3->base.force_password_change);
@@ -1290,7 +1313,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 #ifdef HAVE_KRB5
 		if ((state->request->flags & WBFLAG_PAM_KRB5) &&
-		    ((tdc_domain = wcache_tdc_fetch_domain(state->mem_ctx, name_domain)) != NULL) &&
+		    ((tdc_domain = wcache_tdc_fetch_domain(tmp_ctx, name_domain)) != NULL) &&
 		    ((tdc_domain->trust_type & LSA_TRUST_TYPE_UPLEVEL) ||
 		    /* used to cope with the case winbindd starting without network. */
 		    !strequal(tdc_domain->domain_name, tdc_domain->dns_name))) {
@@ -1303,40 +1326,47 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			const char *user_ccache_file;
 
 			if (domain->alt_name == NULL) {
-				return NT_STATUS_INVALID_PARAMETER;
+				result = NT_STATUS_INVALID_PARAMETER;
+				goto out;
 			}
 
 			uid = get_uid_from_request(state->request);
 			if (uid == -1) {
 				DEBUG(0,("winbindd_dual_pam_auth_cached: invalid uid\n"));
-				return NT_STATUS_INVALID_PARAMETER;
+				result = NT_STATUS_INVALID_PARAMETER;
+				goto out;
 			}
 
-			cc = generate_krb5_ccache(state->mem_ctx,
+			cc = generate_krb5_ccache(tmp_ctx,
 						state->request->data.auth.krb5_cc_type,
 						state->request->data.auth.uid,
 						&user_ccache_file);
 			if (cc == NULL) {
-				return NT_STATUS_NO_MEMORY;
+				result = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 
-			realm = talloc_strdup(state->mem_ctx, domain->alt_name);
+			realm = talloc_strdup(tmp_ctx, domain->alt_name);
 			if (realm == NULL) {
-				return NT_STATUS_NO_MEMORY;
+				result = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 
 			if (!strupper_m(realm)) {
-				return NT_STATUS_INVALID_PARAMETER;
+				result = NT_STATUS_INVALID_PARAMETER;
+				goto out;
 			}
 
-			principal_s = talloc_asprintf(state->mem_ctx, "%s@%s", name_user, realm);
+			principal_s = talloc_asprintf(tmp_ctx, "%s@%s", name_user, realm);
 			if (principal_s == NULL) {
-				return NT_STATUS_NO_MEMORY;
+				result = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 
-			service = talloc_asprintf(state->mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
+			service = talloc_asprintf(tmp_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
 			if (service == NULL) {
-				return NT_STATUS_NO_MEMORY;
+				result = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 
 			if (user_ccache_file != NULL) {
@@ -1380,11 +1410,11 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(1,("winbindd_dual_pam_auth_cached: failed to update creds: %s\n",
 				nt_errstr(result)));
-			return result;
+			goto out;
 		}
 
-		return NT_STATUS_OK;
-
+		result = NT_STATUS_OK;
+		goto out;
 	}
 
 	/* User does *NOT* know the correct password, modify info3 accordingly, but only if online */
@@ -1393,7 +1423,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	}
 
 	/* failure of this is not critical */
-	result = get_max_bad_attempts_from_lockout_policy(domain, state->mem_ctx, &max_allowed_bad_attempts);
+	result = get_max_bad_attempts_from_lockout_policy(domain, tmp_ctx, &max_allowed_bad_attempts);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get max_allowed_bad_attempts. "
 			  "Won't be able to honour account lockout policies\n"));
@@ -1411,7 +1441,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 		uint32_t password_properties;
 
-		result = get_pwd_properties(domain, state->mem_ctx, &password_properties);
+		result = get_pwd_properties(domain, tmp_ctx, &password_properties);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get password properties.\n"));
 		}
@@ -1433,7 +1463,12 @@ failed:
 			nt_errstr(result)));
 	}
 
-	return NT_STATUS_LOGON_FAILURE;
+	result = NT_STATUS_LOGON_FAILURE;
+
+out:
+	TALLOC_FREE(tmp_ctx);
+
+	return result;
 }
 
 static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
@@ -2436,7 +2471,10 @@ cached_logon:
 	    lp_winbind_offline_logon()) {
 		struct netr_SamInfo3 *info3 = NULL;
 
-		result = winbindd_dual_pam_auth_cached(domain, state, &info3);
+		result = winbindd_dual_pam_auth_cached(domain,
+						       state,
+						       state->mem_ctx,
+						       &info3);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached failed: %s\n", nt_errstr(result)));
