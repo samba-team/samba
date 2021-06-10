@@ -689,6 +689,7 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	if (fsp != NULL) {
 		smb_fname = fsp->fsp_name;
 	}
+	SMB_ASSERT(smb_fname != NULL);
 
 	/*
 	 * According to MS-FSA a stream name does not have
