@@ -762,7 +762,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 					    const char *krb5_cc_type,
 					    uid_t uid,
 					    struct netr_SamInfo6 **info6,
-					    fstring krb5ccname)
+					    const char **_krb5ccname)
 {
 #ifdef HAVE_KRB5
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -792,6 +792,10 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	if (domain->alt_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (_krb5ccname != NULL) {
+		*_krb5ccname = NULL;
 	}
 
 	/* 1st step:
@@ -943,7 +947,9 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	if (user_ccache_file != NULL) {
 
-		fstrcpy(krb5ccname, user_ccache_file);
+		if (_krb5ccname != NULL) {
+			*_krb5ccname = talloc_steal(mem_ctx, user_ccache_file);
+		}
 
 		result = add_ccache_to_list(principal_s,
 					    cc,
@@ -1431,8 +1437,13 @@ failed:
 }
 
 static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
-						struct winbindd_cli_state *state,
-						struct netr_SamInfo6 **info6)
+						const char *user,
+						const char *pass,
+						const char *krb5_cc_type,
+						uid_t uid,
+						TALLOC_CTX *mem_ctx,
+						struct netr_SamInfo6 **info6,
+						const char **_krb5ccname)
 {
 	struct winbindd_domain *contact_domain;
 	fstring name_namespace, name_domain, name_user;
@@ -1443,7 +1454,7 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	ok = parse_domain_user(state->request->data.auth.user,
+	ok = parse_domain_user(user,
 			       name_namespace,
 			       name_domain,
 			       name_user);
@@ -1461,7 +1472,7 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 	}
 	if (contact_domain == NULL) {
 		DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
-			  state->request->data.auth.user, name_domain, name_user, name_namespace));
+			  user, name_domain, name_user, name_namespace));
 		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
@@ -1482,12 +1493,14 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 	}
 try_login:
 	result = winbindd_raw_kerberos_login(
-		state->mem_ctx, contact_domain,
-		state->request->data.auth.user,
-		state->request->data.auth.pass,
-		state->request->data.auth.krb5_cc_type,
-		get_uid_from_request(state->request),
-		info6, state->response->data.auth.krb5ccname);
+		mem_ctx,
+		contact_domain,
+		user,
+		pass,
+		krb5_cc_type,
+		uid,
+		info6,
+		_krb5ccname);
 done:
 	return result;
 }
@@ -2280,13 +2293,26 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	/* Check for Kerberos authentication */
 	if (domain->online && (state->request->flags & WBFLAG_PAM_KRB5)) {
 		struct netr_SamInfo6 *info6 = NULL;
+		const char *krb5ccname = NULL;
 
-		result = winbindd_dual_pam_auth_kerberos(domain, state, &info6);
+		result = winbindd_dual_pam_auth_kerberos(
+				domain,
+				state->request->data.auth.user,
+				state->request->data.auth.pass,
+				state->request->data.auth.krb5_cc_type,
+				get_uid_from_request(state->request),
+				state->mem_ctx,
+				&info6,
+				&krb5ccname);
+
 		/* save for later */
 		krb5_result = result;
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
+
+			fstrcpy(state->response->data.auth.krb5ccname,
+				krb5ccname);
 
 			result = map_info6_to_validation(state->mem_ctx,
 							 info6,
