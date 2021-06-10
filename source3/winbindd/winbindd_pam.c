@@ -27,6 +27,7 @@
 #include "libsmb/namequery.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
 #include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
@@ -297,8 +298,83 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS extra_data_to_sid_array(const char *group_sid,
+					TALLOC_CTX *mem_ctx,
+					struct wbint_SidArray **_sid_array)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct wbint_SidArray *sid_array = NULL;
+	struct dom_sid *require_membership_of_sid = NULL;
+	uint32_t num_require_membership_of_sid = 0;
+	char *req_sid = NULL;
+	const char *p = NULL;
+	NTSTATUS status;
+
+	if (_sid_array == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*_sid_array = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sid_array = talloc_zero(tmp_ctx, struct wbint_SidArray);
+	if (sid_array == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!group_sid || !group_sid[0]) {
+		/* NO sid supplied, all users may access */
+		status = NT_STATUS_OK;
+		/*
+		 * Always return an allocated wbint_SidArray,
+		 * even if the array is empty.
+		 */
+		goto out;
+	}
+
+	num_require_membership_of_sid = 0;
+	require_membership_of_sid = NULL;
+	p = group_sid;
+
+	while (next_token_talloc(tmp_ctx, &p, &req_sid, ",")) {
+		struct dom_sid sid;
+
+		if (!string_to_sid(&sid, req_sid)) {
+			DBG_ERR("check_info3_in_group: could not parse %s "
+				"as a SID!\n", req_sid);
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+
+		status = add_sid_to_array(tmp_ctx, &sid,
+					  &require_membership_of_sid,
+					  &num_require_membership_of_sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("add_sid_to_array failed\n");
+			goto fail;
+		}
+	}
+
+	sid_array->num_sids = num_require_membership_of_sid;
+	sid_array->sids = talloc_move(sid_array, &require_membership_of_sid);
+
+	status = NT_STATUS_OK;
+out:
+	*_sid_array = talloc_move(mem_ctx, &sid_array);
+
+fail:
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
+}
+
 static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
-				     const char *group_sid)
+				     struct wbint_SidArray *sid_array)
 /**
  * Check whether a user belongs to a group or list of groups.
  *
@@ -311,52 +387,21 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
  *    or other NT_STATUS_IS_ERR(status) for other kinds of failure.
  */
 {
-	struct dom_sid *require_membership_of_sid;
-	uint32_t num_require_membership_of_sid;
-	char *req_sid;
-	const char *p;
-	struct dom_sid sid;
 	size_t i;
 	struct security_token *token;
-	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
 	/* Parse the 'required group' SID */
 
-	if (!group_sid || !group_sid[0]) {
+	if (sid_array == NULL || sid_array->num_sids == 0) {
 		/* NO sid supplied, all users may access */
-		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
 	token = talloc_zero(talloc_tos(), struct security_token);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	num_require_membership_of_sid = 0;
-	require_membership_of_sid = NULL;
-
-	p = group_sid;
-
-	while (next_token_talloc(talloc_tos(), &p, &req_sid, ",")) {
-		if (!string_to_sid(&sid, req_sid)) {
-			DEBUG(0, ("check_info3_in_group: could not parse %s "
-				  "as a SID!", req_sid));
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		status = add_sid_to_array(talloc_tos(), &sid,
-					  &require_membership_of_sid,
-					  &num_require_membership_of_sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("add_sid_to_array failed\n"));
-			TALLOC_FREE(frame);
-			return status;
-		}
 	}
 
 	status = sid_array_from_info3(talloc_tos(), info3,
@@ -364,7 +409,6 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 				      &token->num_sids,
 				      true);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -374,28 +418,25 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 						     token))) {
 		DEBUG(3, ("could not add aliases: %s\n",
 			  nt_errstr(status)));
-		TALLOC_FREE(frame);
 		return status;
 	}
 
 	security_token_debug(DBGC_CLASS, 10, token);
 
-	for (i=0; i<num_require_membership_of_sid; i++) {
+	for (i=0; i<sid_array->num_sids; i++) {
 		struct dom_sid_buf buf;
 		DEBUG(10, ("Checking SID %s\n",
-			   dom_sid_str_buf(&require_membership_of_sid[i],
+			   dom_sid_str_buf(&sid_array->sids[i],
 					   &buf)));
-		if (nt_token_check_sid(&require_membership_of_sid[i],
+		if (nt_token_check_sid(&sid_array->sids[i],
 				       token)) {
 			DEBUG(10, ("Access ok\n"));
-			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		}
 	}
 
 	/* Do not distinguish this error from a wrong username/pw */
 
-	TALLOC_FREE(frame);
 	return NT_STATUS_LOGON_FAILURE;
 }
 
@@ -2318,6 +2359,7 @@ process_result:
 		TALLOC_CTX *base_ctx = NULL;
 		struct netr_SamBaseInfo *base_info = NULL;
 		struct netr_SamInfo3 *info3 = NULL;
+		struct wbint_SidArray *sid_array = NULL;
 
 		switch (validation_level) {
 		case 3:
@@ -2382,15 +2424,31 @@ process_result:
 
 		/* Check if the user is in the right group */
 
-		result = check_info3_in_group(
-			info3,
-			state->request->data.auth.require_membership_of_sid);
+		result = extra_data_to_sid_array(
+			state->request->data.auth.require_membership_of_sid,
+			state->mem_ctx,
+			&sid_array);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
-				  state->request->data.auth.user,
-				  state->request->data.auth.require_membership_of_sid));
+			DBG_ERR("Failed to parse '%s' into a sid array: %s\n",
+				state->request->data.auth.require_membership_of_sid,
+				nt_errstr(result));
 			goto done;
 		}
+
+		result = check_info3_in_group(info3, sid_array);
+		if (!NT_STATUS_IS_OK(result)) {
+			char *s = NDR_PRINT_STRUCT_STRING(state->mem_ctx,
+							  wbint_SidArray,
+							  sid_array);
+			DBG_NOTICE("User %s is not in the required groups:\n",
+				   state->request->data.auth.user);
+			DEBUGADD(DBGLVL_NOTICE, ("%s", s));
+			DEBUGADD(DBGLVL_NOTICE,
+				 ("Plaintext authentication is rejected\n"));
+			TALLOC_FREE(sid_array);
+			goto done;
+		}
+		TALLOC_FREE(sid_array);
 
 		if (!is_allowed_domain(info3->base.logon_domain.string)) {
 			DBG_NOTICE("Authentication failed for user [%s] "
@@ -2739,6 +2797,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(result)) {
 		struct netr_SamInfo3 *info3 = NULL;
+		struct wbint_SidArray *sid_array = NULL;
 
 		result = map_validation_to_info3(state->mem_ctx,
 						 validation_level,
@@ -2748,17 +2807,32 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		/* Check if the user is in the right group */
-		result = check_info3_in_group(
-			info3,
-			state->request->data.auth_crap.require_membership_of_sid);
+		result = extra_data_to_sid_array(
+			state->request->data.auth_crap.require_membership_of_sid,
+			state->mem_ctx,
+			&sid_array);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3, ("User %s is not in the required group (%s), so "
-				  "crap authentication is rejected\n",
-				  state->request->data.auth_crap.user,
-				  state->request->data.auth_crap.require_membership_of_sid));
+			DBG_ERR("Failed to parse '%s' into a sid array: %s\n",
+				state->request->data.auth_crap.require_membership_of_sid,
+				nt_errstr(result));
 			goto done;
 		}
+
+		/* Check if the user is in the right group */
+		result = check_info3_in_group(info3, sid_array);
+		if (!NT_STATUS_IS_OK(result)) {
+			char *s = NDR_PRINT_STRUCT_STRING(state->mem_ctx,
+							  wbint_SidArray,
+							  sid_array);
+			DBG_NOTICE("User %s is not in the required groups:\n",
+				   state->request->data.auth_crap.user);
+			DEBUGADD(DBGLVL_NOTICE, ("%s", s));
+			DEBUGADD(DBGLVL_NOTICE,
+				 ("CRAP authentication is rejected\n"));
+			TALLOC_FREE(sid_array);
+			goto done;
+		}
+		TALLOC_FREE(sid_array);
 
 		if (!is_allowed_domain(info3->base.logon_domain.string)) {
 			DBG_NOTICE("Authentication failed for user [%s] "
