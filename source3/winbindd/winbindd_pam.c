@@ -258,48 +258,72 @@ out:
 	return status;
 }
 
-static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
-				 struct winbindd_response *resp,
-				 const struct netr_SamInfo3 *info3,
+static NTSTATUS append_afs_token(uint16_t validation_level,
+				 union netr_Validation  *validation,
 				 const char *name_domain,
-				 const char *name_user)
+				 const char *name_user,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *_blob)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	char *afsname = NULL;
 	char *cell;
 	char *token;
+	struct netr_SamBaseInfo *base_info = NULL;
+	NTSTATUS status;
 
-	afsname = talloc_strdup(mem_ctx, lp_afs_username_map());
-	if (afsname == NULL) {
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	afsname = talloc_string_sub(mem_ctx,
+	switch (validation_level) {
+	case 3:
+		base_info = &validation->sam3->base;
+		break;
+	case 6:
+		base_info = &validation->sam6->base;
+		break;
+	default:
+		DBG_ERR("Invalid validation level %d\n", validation_level);
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+
+	afsname = talloc_strdup(tmp_ctx, lp_afs_username_map());
+	if (afsname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	afsname = talloc_string_sub(tmp_ctx,
 				    lp_afs_username_map(),
 				    "%D", name_domain);
-	afsname = talloc_string_sub(mem_ctx, afsname,
+	afsname = talloc_string_sub(tmp_ctx, afsname,
 				    "%u", name_user);
-	afsname = talloc_string_sub(mem_ctx, afsname,
+	afsname = talloc_string_sub(tmp_ctx, afsname,
 				    "%U", name_user);
 
 	{
 		struct dom_sid user_sid;
 		struct dom_sid_buf sidstr;
 
-		sid_compose(&user_sid, info3->base.domain_sid,
-			    info3->base.rid);
+		sid_compose(&user_sid, base_info->domain_sid, base_info->rid);
 		afsname = talloc_string_sub(
-			mem_ctx,
+			tmp_ctx,
 			afsname,
 			"%s",
 			dom_sid_str_buf(&user_sid, &sidstr));
 	}
 
 	if (afsname == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	if (!strlower_m(afsname)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	DEBUG(10, ("Generating token for user %s\n", afsname));
@@ -307,7 +331,8 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	cell = strchr(afsname, '@');
 
 	if (cell == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	*cell = '\0';
@@ -315,15 +340,18 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 
 	token = afs_createtoken_str(afsname, cell);
 	if (token == NULL) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
-	resp->extra_data.data = talloc_strdup(mem_ctx, token);
-	if (resp->extra_data.data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	resp->length += strlen((const char *)resp->extra_data.data)+1;
 
-	return NT_STATUS_OK;
+	talloc_steal(mem_ctx, token);
+	*_blob = data_blob_string_const_null(token);
+
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
 }
 
 static NTSTATUS extra_data_to_sid_array(const char *group_sid,
@@ -1082,13 +1110,20 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (request_flags & WBFLAG_PAM_AFS_TOKEN) {
-		result = append_afs_token(mem_ctx, resp,
-					  info3, name_domain, name_user);
+		DATA_BLOB blob = data_blob_null;
+		result = append_afs_token(validation_level,
+					  validation,
+					  name_domain,
+					  name_user,
+					  mem_ctx,
+					  &blob);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append AFS token: %s\n",
 				nt_errstr(result)));
 			goto out;
 		}
+		resp->extra_data.data = blob.data;
+		resp->length += blob.length;
 	}
 
 	result = NT_STATUS_OK;
