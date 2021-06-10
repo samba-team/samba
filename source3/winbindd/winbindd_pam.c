@@ -1145,7 +1145,8 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 					      const char *krb5_cc_type,
 					      uid_t uid,
 					      TALLOC_CTX *mem_ctx,
-					      struct netr_SamInfo3 **info3,
+					      uint16_t *_validation_level,
+					      union netr_Validation **_validation,
 					      const char **_krb5ccname)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -1165,9 +1166,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	struct winbindd_tdc_domain *tdc_domain = NULL;
 #endif
 
-	*info3 = NULL;
-
-	ZERO_STRUCTP(info3);
+	if (_validation == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*_validation = NULL;
 
 	if (_krb5ccname != NULL) {
 		*_krb5ccname = NULL;
@@ -1416,7 +1418,15 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			goto out;
 		}
 
-		*info3 = talloc_move(mem_ctx, &my_info3);
+		result = map_info3_to_validation(mem_ctx,
+						 my_info3,
+						 _validation_level,
+						 _validation);
+		if (!NT_STATUS_IS_OK(result)) {
+			DBG_ERR("map_info3_to_validation failed: %s\n",
+				nt_errstr(result));
+			goto out;
+		}
 
 		result = NT_STATUS_OK;
 		goto out;
@@ -2469,8 +2479,6 @@ cached_logon:
 	/* Check for Cached logons */
 	if (!domain->online && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) &&
 	    lp_winbind_offline_logon()) {
-		struct netr_SamInfo3 *info3 = NULL;
-
 		result = winbindd_dual_pam_auth_cached(domain,
 				(state->request->flags & WBFLAG_PAM_KRB5),
 				state->request->data.auth.user,
@@ -2478,7 +2486,8 @@ cached_logon:
 				state->request->data.auth.krb5_cc_type,
 				get_uid_from_request(state->request),
 				state->mem_ctx,
-				&info3,
+				&validation_level,
+				&validation,
 				&krb5ccname);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -2489,16 +2498,6 @@ cached_logon:
 
 		fstrcpy(state->response->data.auth.krb5ccname,
 			krb5ccname);
-
-		result = map_info3_to_validation(state->mem_ctx,
-						 info3,
-						 &validation_level,
-						 &validation);
-		TALLOC_FREE(info3);
-		if (!NT_STATUS_IS_OK(result)) {
-			DBG_ERR("map_info3_to_validation failed\n");
-			goto done;
-		}
 	}
 
 process_result:
