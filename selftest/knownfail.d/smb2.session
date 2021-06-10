@@ -1,0 +1,11 @@
+^samba3.smb2.session.*bind_negative_smb3encGtoC
+^samba3.smb2.session.*ntlm.bind_negative_smb202.ad_dc
+^samba3.smb2.session.*ntlm.bind_negative_smb210.ad_dc
+^samba3.smb2.session.*ntlm.bind_negative_smb2to3.ad_dc
+^samba3.smb2.session.*ntlm.bind_negative_smb3to2.ad_dc
+^samba3.smb2.session.*ntlm.bind_negative_smb3to3.ad_dc
+^samba3.smb2.session.*krb5.bind_negative_smb202.ad_dc
+^samba3.smb2.session.*krb5.bind_negative_smb210.ad_dc
+^samba3.smb2.session.*krb5.bind_negative_smb2to3.ad_dc
+^samba3.smb2.session.*krb5.bind_negative_smb3to2.ad_dc
+^samba3.smb2.session.*krb5.bind_negative_smb3to3.ad_dc

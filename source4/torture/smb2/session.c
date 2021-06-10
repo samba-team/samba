@@ -2514,6 +2514,8 @@ static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
 	struct smb2_tree *tree2_0 = NULL;
 	struct smb2_transport *transport2 = NULL;
 	struct smb2_session *session1_2 = NULL;
+	uint64_t session1_id = 0;
+	uint16_t session1_flags = 0;
 
 	status = smb2_connect(tctx,
 			      host,
@@ -2530,6 +2532,8 @@ static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_connect options1 failed");
 	session1_1 = tree1->session;
+	session1_id = smb2cli_session_current_id(session1_1->smbXcli);
+	session1_flags = smb2cli_session_get_flags(session1_1->smbXcli);
 
 	/* Add some random component to the file name. */
 	snprintf(fname, sizeof(fname), "%s_%s.dat",
@@ -2603,6 +2607,25 @@ static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
 					  session1_1);
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 	session1_2->needs_bind = false;
+
+	status = smb2_session_setup_spnego(session1_2,
+					   credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_USER_SESSION_DELETED, ret, done,
+					   "smb2_session_setup_spnego failed");
+	TALLOC_FREE(session1_2);
+
+	/*
+	 * ... and we should also check the status without any existing
+	 * session keys.
+	 */
+	session1_2 = smb2_session_init(transport2,
+				       lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				       tree2_0);
+	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
+	talloc_steal(tree2_0->session, transport2);
+	smb2cli_session_set_id_and_flags(session1_2->smbXcli,
+					 session1_id, session1_flags);
 
 	status = smb2_session_setup_spnego(session1_2,
 					   credentials,
