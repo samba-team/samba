@@ -838,7 +838,6 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct dos_mode_at_state);
 	char *path = NULL;
-	struct smb_filename *smb_path = NULL;
 	struct vfs_aio_state aio_state;
 	NTSTATUS status;
 	bool ok;
@@ -895,16 +894,6 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 			       state->dir_fsp->fsp_name->base_name,
 			       state->smb_fname->base_name);
 	if (tevent_req_nomem(path, req)) {
-		return;
-	}
-
-	smb_path = synthetic_smb_fname(state,
-				       path,
-				       NULL,
-				       &state->smb_fname->st,
-				       state->smb_fname->twrp,
-				       0);
-	if (tevent_req_nomem(smb_path, req)) {
 		return;
 	}
 
