@@ -612,9 +612,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 /*
  * check whether a file or directory is flagged as compressed.
  */
-static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
-					  struct files_struct *fsp,
-					  struct smb_filename *smb_fname,
+static NTSTATUS dos_mode_check_compressed(struct files_struct *fsp,
 					  bool *is_compressed)
 {
 	NTSTATUS status;
@@ -625,7 +623,7 @@ static NTSTATUS dos_mode_check_compressed(connection_struct *conn,
 		goto err_out;
 	}
 
-	status = SMB_VFS_FGET_COMPRESSION(conn, tmp_ctx, fsp,
+	status = SMB_VFS_FGET_COMPRESSION(fsp->conn, tmp_ctx, fsp,
 					 &compression_fmt);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_ctx_free;
@@ -710,8 +708,7 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	if (fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) {
 		bool compressed = false;
 
-		status = dos_mode_check_compressed(fsp->conn, fsp, smb_fname,
-						   &compressed);
+		status = dos_mode_check_compressed(fsp, &compressed);
 		if (NT_STATUS_IS_OK(status) && compressed) {
 			dosmode |= FILE_ATTRIBUTE_COMPRESSED;
 		}
