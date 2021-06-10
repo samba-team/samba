@@ -189,45 +189,73 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
-				     struct winbindd_response *resp,
-				     const struct netr_SamInfo3 *info3,
+static NTSTATUS append_unix_username(uint16_t validation_level,
+				     union netr_Validation  *validation,
 				     const char *name_domain,
-				     const char *name_user)
+				     const char *name_user,
+				     TALLOC_CTX *mem_ctx,
+				     char **_unix_username)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char *nt_username = NULL;
+	const char *nt_domain = NULL;
+	char *unix_username = NULL;
+	struct netr_SamBaseInfo *base_info = NULL;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* We've been asked to return the unix username, per
 	   'winbind use default domain' settings and the like */
 
-	const char *nt_username, *nt_domain, *unix_username;
+	switch (validation_level) {
+	case 3:
+		base_info = &validation->sam3->base;
+		break;
+	case 6:
+		base_info = &validation->sam6->base;
+		break;
+	default:
+		DBG_ERR("Invalid validation level %d\n", validation_level);
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
 
-	nt_domain = talloc_strdup(mem_ctx, info3->base.logon_domain.string);
+	nt_domain = talloc_strdup(tmp_ctx, base_info->logon_domain.string);
 	if (!nt_domain) {
 		/* If the server didn't give us one, just use the one
 		 * we sent them */
 		nt_domain = name_domain;
 	}
 
-	nt_username = talloc_strdup(mem_ctx, info3->base.account_name.string);
+	nt_username = talloc_strdup(tmp_ctx, base_info->account_name.string);
 	if (!nt_username) {
 		/* If the server didn't give us one, just use the one
 		 * we sent them */
 		nt_username = name_user;
 	}
 
-	unix_username = fill_domain_username_talloc(mem_ctx,
+	unix_username = fill_domain_username_talloc(tmp_ctx,
 						    nt_domain,
 						    nt_username,
 						    true);
 	if (unix_username == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
-	fstrcpy(resp->data.auth.unix_username, unix_username);
+	DBG_INFO("Setting unix username to [%s]\n", unix_username);
 
-	DEBUG(5, ("Setting unix username to [%s]\n",
-		  resp->data.auth.unix_username));
+	*_unix_username = talloc_move(mem_ctx, &unix_username);
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
 }
 
 static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
@@ -1015,13 +1043,20 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (request_flags & WBFLAG_PAM_UNIX_NAME) {
-		result = append_unix_username(mem_ctx, resp,
-					      info3, name_domain, name_user);
+		char *unix_username = NULL;
+		result = append_unix_username(validation_level,
+					      validation,
+					      name_domain,
+					      name_user,
+					      mem_ctx,
+					      &unix_username);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append Unix Username: %s\n",
 				nt_errstr(result)));
 			goto out;
 		}
+		fstrcpy(resp->data.auth.unix_username, unix_username);
+		TALLOC_FREE(unix_username);
 	}
 
 	/* currently, anything from here on potentially overwrites extra_data. */
