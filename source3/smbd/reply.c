@@ -3572,7 +3572,7 @@ void reply_unlink(struct smb_request *req)
 		goto out;
 	}
 
-	if (req != NULL && !req->posix_pathnames) {
+	if (!req->posix_pathnames) {
 		char *lcomp = get_original_lcomp(ctx,
 					conn,
 					name,
