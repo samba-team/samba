@@ -2329,6 +2329,7 @@ NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
 		return NT_STATUS_NO_MEMORY;
 	}
 	session->global->signing_key->blob = session->global->signing_key_blob;
+	session->global->signing_flags = 0;
 
 	status = smb2_signing_key_cipher_create(session->global,
 						session->global->encryption_cipher,
@@ -2340,6 +2341,7 @@ NTSTATUS smb2srv_session_lookup_global(struct smbXsrv_client *client,
 		return NT_STATUS_NO_MEMORY;
 	}
 	session->global->decryption_key->blob = session->global->decryption_key_blob;
+	session->global->encryption_flags = 0;
 
 	*_session = talloc_move(mem_ctx, &session);
 	TALLOC_FREE(frame);
