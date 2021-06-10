@@ -1139,7 +1139,11 @@ out:
 }
 
 static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
-					      struct winbindd_cli_state *state,
+					      bool krb5_auth,
+					      const char *user,
+					      const char *pass,
+					      const char *krb5_cc_type,
+					      uid_t uid,
 					      TALLOC_CTX *mem_ctx,
 					      struct netr_SamInfo3 **info3,
 					      const char **_krb5ccname)
@@ -1178,10 +1182,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	ok = parse_domain_user(state->request->data.auth.user,
-			       name_namespace,
-			       name_domain,
-			       name_user);
+	ok = parse_domain_user(user, name_namespace, name_domain, name_user);
 	if (!ok) {
 		DBG_DEBUG("parse_domain_user failed\n");
 		result = NT_STATUS_NO_SUCH_USER;
@@ -1215,7 +1216,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		goto out;
 	}
 
-	E_md4hash(state->request->data.auth.pass, new_nt_pass);
+	E_md4hash(pass, new_nt_pass);
 
 	dump_data_pw("new_nt_pass", new_nt_pass, NT_HASH_LEN);
 	dump_data_pw("cached_nt_pass", cached_nt_pass, NT_HASH_LEN);
@@ -1315,13 +1316,11 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 
 #ifdef HAVE_KRB5
-		if ((state->request->flags & WBFLAG_PAM_KRB5) &&
+		if ((krb5_auth) &&
 		    ((tdc_domain = wcache_tdc_fetch_domain(tmp_ctx, name_domain)) != NULL) &&
 		    ((tdc_domain->trust_type & LSA_TRUST_TYPE_UPLEVEL) ||
 		    /* used to cope with the case winbindd starting without network. */
 		    !strequal(tdc_domain->domain_name, tdc_domain->dns_name))) {
-
-			uid_t uid = -1;
 			const char *cc = NULL;
 			char *realm = NULL;
 			const char *principal_s = NULL;
@@ -1333,7 +1332,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				goto out;
 			}
 
-			uid = get_uid_from_request(state->request);
 			if (uid == -1) {
 				DEBUG(0,("winbindd_dual_pam_auth_cached: invalid uid\n"));
 				result = NT_STATUS_INVALID_PARAMETER;
@@ -1341,9 +1339,9 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			}
 
 			cc = generate_krb5_ccache(tmp_ctx,
-						state->request->data.auth.krb5_cc_type,
-						state->request->data.auth.uid,
-						&user_ccache_file);
+						  krb5_cc_type,
+						  uid,
+						  &user_ccache_file);
 			if (cc == NULL) {
 				result = NT_STATUS_NO_MEMORY;
 				goto out;
@@ -1382,8 +1380,8 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				result = add_ccache_to_list(principal_s,
 							    cc,
 							    service,
-							    state->request->data.auth.user,
-							    state->request->data.auth.pass,
+							    user,
+							    pass,
 							    realm,
 							    uid,
 							    time(NULL),
@@ -1409,8 +1407,8 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		my_info3->base.bad_password_count = 0;
 
 		result = winbindd_update_creds_by_info3(domain,
-							state->request->data.auth.user,
-							state->request->data.auth.pass,
+							user,
+							pass,
 							my_info3);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(1,("winbindd_dual_pam_auth_cached: failed to update creds: %s\n",
@@ -1460,11 +1458,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	}
 
 failed:
-	result = winbindd_update_creds_by_info3(domain,
-						state->request->data.auth.user,
-						NULL,
-						my_info3);
-
+	result = winbindd_update_creds_by_info3(domain, user, NULL, my_info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("winbindd_dual_pam_auth_cached: failed to update creds %s\n",
 			nt_errstr(result)));
@@ -2478,10 +2472,14 @@ cached_logon:
 		struct netr_SamInfo3 *info3 = NULL;
 
 		result = winbindd_dual_pam_auth_cached(domain,
-						       state,
-						       state->mem_ctx,
-						       &info3,
-						       &krb5ccname);
+				(state->request->flags & WBFLAG_PAM_KRB5),
+				state->request->data.auth.user,
+				state->request->data.auth.pass,
+				state->request->data.auth.krb5_cc_type,
+				get_uid_from_request(state->request),
+				state->mem_ctx,
+				&info3,
+				&krb5ccname);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached failed: %s\n", nt_errstr(result)));
