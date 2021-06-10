@@ -494,7 +494,7 @@ class TestDNSAging(DNSTest):
                 match = r
         self.assertEqual(match.rank, rec.rank & 255)
         self.assertEqual(match.dwTtlSeconds, rec.dwTtlSeconds)
-        self.assertEqual(match.dwTimeStamp, rec.dwTimeStamp)
+        self.assert_timestamps_equal(match.dwTimeStamp, rec.dwTimeStamp)
         return match
 
     def ldap_delete_record(self, name, data, wtype=dnsp.DNS_TYPE_TXT):
@@ -530,7 +530,7 @@ class TestDNSAging(DNSTest):
                 match = r
         self.assertEqual(match.rank, rec.rank & 255)
         self.assertEqual(match.dwTtlSeconds, rec.dwTtlSeconds)
-        self.assertEqual(match.dwTimeStamp, rec.dwTimeStamp)
+        self.assert_timestamps_equal(match.dwTimeStamp, rec.dwTimeStamp)
         return match
 
     def ldap_modify_timestamps(self, name, delta):
@@ -680,11 +680,11 @@ class TestDNSAging(DNSTest):
         rec = self.ldap_update_record(name2, [name2],
                                       dwTimeStamp=eight_days_ago)
 
-        self.assertEqual(rec.dwTimeStamp, eight_days_ago)
+        self.assert_timestamps_equal(rec.dwTimeStamp, eight_days_ago)
 
         # if aging was on, this would change
         rec = self.dns_update_record(name2, [name2])
-        self.assertEqual(rec.dwTimeStamp, eight_days_ago)
+        self.assert_timestamps_equal(rec.dwTimeStamp, eight_days_ago)
 
         self.set_aging(True)
         rec = self.dns_update_record(name2, [name2])
@@ -762,7 +762,7 @@ class TestDNSAging(DNSTest):
 
             # no change here
             update_timestamp = self.dns_update_record(name, txt1).dwTimeStamp
-            self.assertEqual(update_timestamp, timestamp)
+            self.assert_timestamps_equal(update_timestamp, timestamp)
 
         # adding a fresh record
         for timestamp in (current_time,
@@ -778,7 +778,7 @@ class TestDNSAging(DNSTest):
                 name,
                 txt1,
                 dwTimeStamp=timestamp).dwTimeStamp
-            self.assertEqual(timestamp1, timestamp)
+            self.assert_timestamps_equal(timestamp1, timestamp)
 
             self.dns_update_record(name, txt2)
             timestamps = self.get_txt_timestamps(name, txt1, txt2)
@@ -803,7 +803,7 @@ class TestDNSAging(DNSTest):
             # wind back
             self.ldap_update_record(name, txt1, dwTimeStamp=timestamp)
             timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-            self.assertEqual(timestamp1, timestamp)
+            self.assert_timestamps_equal(timestamp1, timestamp)
 
             timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
             # txt1 timestamp is now current time
@@ -824,7 +824,7 @@ class TestDNSAging(DNSTest):
             self.ldap_update_record(name, txt2, dwTimeStamp=timestamp)
             self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp + 30))
             timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assertEqual(timestamp3, timestamp + 30)
+            self.assert_timestamps_equal(timestamp3, timestamp + 30)
 
             self.dns_update_record(name, txt2).dwTimeStamp
             timestamps = self.get_txt_timestamps(name, txt1, txt2, txt3)
@@ -847,7 +847,7 @@ class TestDNSAging(DNSTest):
             self.ldap_update_record(name, txt1, dwTimeStamp=0)
             self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp - 9))
             timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assertEqual(timestamp3, timestamp - 9)
+            self.assert_timestamps_equal(timestamp3, timestamp - 9)
 
             self.dns_update_record(name, txt2)
             timestamps = self.get_txt_timestamps(name, txt1, txt2, txt3)
@@ -870,7 +870,7 @@ class TestDNSAging(DNSTest):
             self.ldap_update_record(name, txt2, dwTimeStamp=0)
             self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp + 30))
             timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assertEqual(timestamp3, timestamp + 30)
+            self.assert_timestamps_equal(timestamp3, timestamp + 30)
 
             self.dns_update_record(name, txt2).dwTimeStamp
             timestamps = self.get_txt_timestamps(name, txt1, txt2, txt3)
@@ -893,7 +893,7 @@ class TestDNSAging(DNSTest):
             # wind back
             self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp))
             timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assertEqual(timestamp3, timestamp)
+            self.assert_timestamps_equal(timestamp3, timestamp)
 
             self.dns_update_record(name, txt2)
             timestamps = self.get_txt_timestamps(name, txt1, txt2, txt3)
@@ -934,7 +934,7 @@ class TestDNSAging(DNSTest):
             self.ldap_update_record(name, txt2, dwTimeStamp=888888)
             self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp))
             timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assertEqual(timestamp3, timestamp)
+            self.assert_timestamps_equal(timestamp3, timestamp)
 
             self.rpc_update_record(name, txt2)
             time.sleep(2)
@@ -958,7 +958,7 @@ class TestDNSAging(DNSTest):
 
         # no change when updating this record
         update_timestamp = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(update_timestamp, n_days_ago)
+        self.assert_timestamps_equal(update_timestamp, n_days_ago)
 
         # add another record, which should have the current timestamp
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
@@ -966,13 +966,13 @@ class TestDNSAging(DNSTest):
 
         # get the original record timestamp. NOW it matches current_time
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp2)
+        self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # let's repeat that, this time with txt2 existing
         self.ldap_update_record(name, txt1, dwTimeStamp=n_days_ago)
 
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
 
         # this update is not an add
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
@@ -980,14 +980,14 @@ class TestDNSAging(DNSTest):
 
         # now timestamp1 is not changed
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
 
         # delete record2, try again
         self.ldap_delete_record(name, txt2)
         self.ldap_update_record(name, txt1, dwTimeStamp=n_days_ago)
 
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
 
         # here we are re-adding the deleted record
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
@@ -1000,23 +1000,23 @@ class TestDNSAging(DNSTest):
         # from the sibling of freshly added record, depending on the
         # time difference.
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
-            self.assertEqual(timestamp1, timestamp2)
+            self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # re-timestamp record2, try again
         self.ldap_update_record(name, txt2, dwTimeStamp=n_days_ago)
         self.ldap_update_record(name, txt1, dwTimeStamp=n_days_ago)
 
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
 
         # no change
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
         # also no change
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp2)
+        self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # let's introduce another record
         txt3 = ['3']
@@ -1030,11 +1030,11 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
 
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
-            self.assertEqual(timestamp1, timestamp3)
+            self.assert_timestamps_equal(timestamp1, timestamp3)
 
-        self.assertEqual(timestamp2, timestamp3)
+        self.assert_timestamps_equal(timestamp2, timestamp3)
 
         self.ldap_delete_record(name, txt3)
         timestamp2 = self.dns_update_record(name, txt3).dwTimeStamp
@@ -1043,11 +1043,11 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
 
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
-            self.assertEqual(timestamp1, timestamp3)
+            self.assert_timestamps_equal(timestamp1, timestamp3)
 
-        self.assertEqual(timestamp2, timestamp3)
+        self.assert_timestamps_equal(timestamp2, timestamp3)
 
         # and here we'll make txt3 static
         txt4 = ['4']
@@ -1062,8 +1062,8 @@ class TestDNSAging(DNSTest):
         timestamp4 = self.dns_update_record(name, txt4).dwTimeStamp
 
         self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp2, n_days_ago)
-        self.assertEqual(timestamp3, n_days_ago)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp3, n_days_ago)
         self.assert_soon_after(timestamp4, current_time)
 
     def test_update_aging_disabled_in_no_refresh_window(self):
@@ -1126,7 +1126,7 @@ class TestDNSAging(DNSTest):
         self.ldap_update_record(name, txt1, dwTimeStamp=0)
         # no change when updating this record
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp2, 1)
+        self.assert_timestamps_equal(timestamp2, 1)
 
     def test_update_aging_disabled(self):
         # With aging disabled, Windows updates the timestamps of all
@@ -1146,11 +1146,11 @@ class TestDNSAging(DNSTest):
         self.ldap_modify_timestamps(name, minus_6)
         after_mod = self.get_unique_txt_record(name, txt1)
         six_days_ago = after_mod.dwTimeStamp
-        self.assertEqual(six_days_ago, current_time + minus_6)
+        self.assert_timestamps_equal(six_days_ago, current_time + minus_6)
 
         # no change
         update_timestamp = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(update_timestamp, six_days_ago)
+        self.assert_timestamps_equal(update_timestamp, six_days_ago)
 
         self.check_query_txt(name, txt1, zone=self.zone)
 
@@ -1160,20 +1160,20 @@ class TestDNSAging(DNSTest):
 
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         # without aging, timestamp1 is changed!!
-        self.assertEqual(timestamp1, timestamp2)
+        self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # Set both records back to 8 days ago.
         self.ldap_modify_timestamps(name, minus_8)
 
         eight_days_ago = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(eight_days_ago, current_time + minus_8)
+        self.assert_timestamps_equal(eight_days_ago, current_time + minus_8)
 
         update2 = self.dns_update_record(name, txt2)
 
         # Without aging on, an update should not change the timestamps.
-        self.assertEqual(update2.dwTimeStamp, eight_days_ago)
+        self.assert_timestamps_equal(update2.dwTimeStamp, eight_days_ago)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, eight_days_ago)
+        self.assert_timestamps_equal(timestamp1, eight_days_ago)
 
         # Add another txt record. The new record should have the now
         # timestamp, and drag the others up with it.
@@ -1181,25 +1181,25 @@ class TestDNSAging(DNSTest):
         self.assert_soon_after(timestamp3, current_time)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp3)
-        self.assertEqual(timestamp2, timestamp3)
+        self.assert_timestamps_equal(timestamp1, timestamp3)
+        self.assert_timestamps_equal(timestamp2, timestamp3)
 
         hundred_days_ago = current_time - 100 * 24
         thousand_days_ago = current_time - 1000 * 24
         record = self.ldap_update_record(name, txt1,
                                          dwTimeStamp=hundred_days_ago)
-        self.assertEqual(record.dwTimeStamp, hundred_days_ago)
+        self.assert_timestamps_equal(record.dwTimeStamp, hundred_days_ago)
         record = self.ldap_update_record(name, txt2,
                                          dwTimeStamp=thousand_days_ago)
-        self.assertEqual(record.dwTimeStamp, thousand_days_ago)
+        self.assert_timestamps_equal(record.dwTimeStamp, thousand_days_ago)
 
         # update 3, will others change (because beyond RefreshInterval)? yes.
         timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         self.assert_soon_after(timestamp3, current_time)
-        self.assertEqual(timestamp1, hundred_days_ago)
-        self.assertEqual(timestamp2, thousand_days_ago)
+        self.assert_timestamps_equal(timestamp1, hundred_days_ago)
+        self.assert_timestamps_equal(timestamp2, thousand_days_ago)
 
         fifteen_days_ago = current_time - 15 * 24
         self.ldap_update_record(name, txt3, dwTimeStamp=fifteen_days_ago)
@@ -1208,9 +1208,9 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         # DNS update has no effect because all records are old
-        self.assertEqual(timestamp2, thousand_days_ago)
-        self.assertEqual(timestamp1, hundred_days_ago)
-        self.assertEqual(timestamp3, fifteen_days_ago)
+        self.assert_timestamps_equal(timestamp2, thousand_days_ago)
+        self.assert_timestamps_equal(timestamp1, hundred_days_ago)
+        self.assert_timestamps_equal(timestamp3, fifteen_days_ago)
 
         # Does update of old record affect timestamp of refreshable record? No.
         self.ldap_update_record(name, txt3, dwTimeStamp=eight_days_ago)
@@ -1218,9 +1218,9 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         # DNS update has no effect because all records are old
-        self.assertEqual(timestamp2, thousand_days_ago)
-        self.assertEqual(timestamp1, hundred_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp2, thousand_days_ago)
+        self.assert_timestamps_equal(timestamp1, hundred_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # RPC zeros timestamp, after which updates won't change it.
         # BUT it refreshes all others!
@@ -1231,7 +1231,7 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         self.assertEqual(timestamp2, 0)
         self.assert_soon_after(timestamp1, current_time)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
     def test_update_aging_enabled(self):
         name = 'test'
@@ -1256,20 +1256,20 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
 
-        self.assertEqual(timestamp1, six_days_ago)
+        self.assert_timestamps_equal(timestamp1, six_days_ago)
         self.assert_soon_after(timestamp2, current_time)
 
         self.ldap_update_record(name, txt3, dwTimeStamp=eight_days_ago)
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # update 1, what happens to 2 and 3? Nothing?
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-        self.assertEqual(timestamp1, six_days_ago)
+        self.assert_timestamps_equal(timestamp1, six_days_ago)
         self.assert_soon_after(timestamp2, current_time)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # now set 1 to 8 days, and we should see changes
         self.ldap_update_record(name, txt1, dwTimeStamp=eight_days_ago)
@@ -1280,7 +1280,7 @@ class TestDNSAging(DNSTest):
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         self.assert_soon_after(timestamp1, current_time)
         self.assert_soon_after(timestamp2, current_time)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # next few ones use these numbers
         self.ldap_update_record(name, txt1, dwTimeStamp=fifteen_days_ago)
@@ -1292,8 +1292,8 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         self.assert_soon_after(timestamp1, current_time)
-        self.assertEqual(timestamp2, six_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # reset 1
         self.ldap_update_record(name, txt1, dwTimeStamp=fifteen_days_ago)
@@ -1302,16 +1302,16 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-        self.assertEqual(timestamp1, fifteen_days_ago)
-        self.assertEqual(timestamp2, six_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp1, fifteen_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # 3 changes, others do not
         timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp1, fifteen_days_ago)
-        self.assertEqual(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp1, fifteen_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
         self.assert_soon_after(timestamp3, current_time)
 
         # reset 3 to 100 days
@@ -1321,8 +1321,8 @@ class TestDNSAging(DNSTest):
         timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp1, fifteen_days_ago)
-        self.assertEqual(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp1, fifteen_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
         self.assert_soon_after(timestamp3, current_time)
 
         # reset 1 and 3 to 8 days. does update of 1 affect 3?
@@ -1334,16 +1334,16 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         self.assert_soon_after(timestamp1, current_time)
-        self.assertEqual(timestamp2, six_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # Try an RPC update, zeroing 1 --> what happens to 3?
         timestamp1 = self.rpc_update_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp2, six_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         # with 2 and 3 at 8 days, does static record change things?
         self.ldap_update_record(name, txt2, dwTimeStamp=eight_days_ago)
@@ -1351,14 +1351,14 @@ class TestDNSAging(DNSTest):
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-        self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp2, 0)
-        self.assertEqual(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp1, 0)
+        self.assert_timestamps_equal(timestamp2, 0)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
 
         self.ldap_update_record(name, txt2, dwTimeStamp=six_days_ago)
         self.ldap_update_record(name, txt1, dwTimeStamp=3000000)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, 3000000)
+        self.assert_timestamps_equal(timestamp1, 3000000)
 
         # dns update remembers that node is static, even with no
         # static records.
@@ -1372,10 +1372,10 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-        self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp2, six_days_ago)
-        self.assertEqual(timestamp3, eight_days_ago)
-        self.assertEqual(timestamp4, 0)
+        self.assert_timestamps_equal(timestamp1, 0)
+        self.assert_timestamps_equal(timestamp2, six_days_ago)
+        self.assert_timestamps_equal(timestamp3, eight_days_ago)
+        self.assert_timestamps_equal(timestamp4, 0)
 
     def _test_update_aging_enabled_n_days_ago(self, n_days):
         name = 'test'
@@ -1394,7 +1394,7 @@ class TestDNSAging(DNSTest):
         # update changes timestamp depending on time.
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
             self.assert_soon_after(timestamp1, current_time)
 
@@ -1404,13 +1404,13 @@ class TestDNSAging(DNSTest):
 
         # first record should not have changed
         timestamp1_b = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp1_b)
+        self.assert_timestamps_equal(timestamp1, timestamp1_b)
 
         # let's repeat that, this time with txt2 existing
         self.ldap_update_record(name, txt1, dwTimeStamp=n_days_ago)
 
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp1_b)
+        self.assert_timestamps_equal(timestamp1, timestamp1_b)
 
         # this update is not an add. record 2 is already up-to-date
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
@@ -1418,7 +1418,7 @@ class TestDNSAging(DNSTest):
 
         # now timestamp1 is not changed
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp1_b)
+        self.assert_timestamps_equal(timestamp1, timestamp1_b)
 
         # delete record2, try again
         self.ldap_delete_record(name, txt2)
@@ -1426,7 +1426,7 @@ class TestDNSAging(DNSTest):
 
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
             self.assert_soon_after(timestamp1, current_time)
 
@@ -1441,9 +1441,9 @@ class TestDNSAging(DNSTest):
         # from the sibling of freshly added record, depending on the
         # time difference.
         if n_days <= 7:
-            self.assertEqual(timestamp1, n_days_ago)
+            self.assert_timestamps_equal(timestamp1, n_days_ago)
         else:
-            self.assertEqual(timestamp1, timestamp2)
+            self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # re-timestamp record2, try again
         self.ldap_update_record(name, txt2, dwTimeStamp=n_days_ago)
@@ -1451,14 +1451,14 @@ class TestDNSAging(DNSTest):
 
         # this should make no difference
         timestamp1_b = self.dns_update_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp1_b)
+        self.assert_timestamps_equal(timestamp1, timestamp1_b)
 
         # no change
         timestamp2 = self.dns_update_record(name, txt2).dwTimeStamp
-        self.assertEqual(timestamp2, timestamp1)
+        self.assert_timestamps_equal(timestamp2, timestamp1)
         # also no change
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, timestamp2)
+        self.assert_timestamps_equal(timestamp1, timestamp2)
 
         # let's introduce another record
         txt3 = ['3']
@@ -1471,8 +1471,8 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
 
-        self.assertEqual(timestamp1, n_days_ago)
-        self.assertEqual(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
 
         self.ldap_delete_record(name, txt3)
         timestamp2 = self.dns_update_record(name, txt3).dwTimeStamp
@@ -1480,8 +1480,8 @@ class TestDNSAging(DNSTest):
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
 
-        self.assertEqual(timestamp1, n_days_ago)
-        self.assertEqual(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp1, n_days_ago)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
 
         txt4 = ['4']
 
@@ -1494,10 +1494,10 @@ class TestDNSAging(DNSTest):
         timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
         timestamp4 = self.dns_update_record(name, txt4).dwTimeStamp
 
-        self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp2, n_days_ago)
-        self.assertEqual(timestamp3, n_days_ago)
-        self.assertEqual(timestamp4, 0)
+        self.assert_timestamps_equal(timestamp1, 0)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp3, n_days_ago)
+        self.assert_timestamps_equal(timestamp4, 0)
 
         longer_ago = n_days_ago // 2
 
@@ -1507,7 +1507,7 @@ class TestDNSAging(DNSTest):
         self.ldap_update_record(name, txt2, dwTimeStamp=n_days_ago)
         self.ldap_update_record(name, txt3, dwTimeStamp=n_days_ago)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
-        self.assertEqual(timestamp1, longer_ago)
+        self.assert_timestamps_equal(timestamp1, longer_ago)
 
         timestamp4 = self.dns_update_record(name, txt4).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
@@ -1516,19 +1516,19 @@ class TestDNSAging(DNSTest):
 
         # Here, although there is no record frm which to get the zero
         # timestamp, record 4 does it anyway.
-        self.assertEqual(timestamp1, longer_ago)
-        self.assertEqual(timestamp2, n_days_ago)
-        self.assertEqual(timestamp3, n_days_ago)
-        self.assertEqual(timestamp4, 0)
+        self.assert_timestamps_equal(timestamp1, longer_ago)
+        self.assert_timestamps_equal(timestamp2, n_days_ago)
+        self.assert_timestamps_equal(timestamp3, n_days_ago)
+        self.assert_timestamps_equal(timestamp4, 0)
 
         # and now record 1 wants to be static.
         self.ldap_update_record(name, txt4, dwTimeStamp=longer_ago)
         timestamp4 = self.get_unique_txt_record(name, txt4).dwTimeStamp
-        self.assertEqual(timestamp4, longer_ago)
+        self.assert_timestamps_equal(timestamp4, longer_ago)
         timestamp1 = self.dns_update_record(name, txt1).dwTimeStamp
         timestamp4 = self.get_unique_txt_record(name, txt4).dwTimeStamp
-        self.assertEqual(timestamp1, 0)
-        self.assertEqual(timestamp4, longer_ago)
+        self.assert_timestamps_equal(timestamp1, 0)
+        self.assert_timestamps_equal(timestamp4, longer_ago)
 
     def test_update_aging_enabled_in_no_refresh_window(self):
         self._test_update_aging_enabled_n_days_ago(4)
@@ -1587,7 +1587,7 @@ class TestDNSAging(DNSTest):
         if n_days > 7 and aging:
             self.assert_soon_after(time_A, current_time)
         else:
-            self.assertEqual(time_A, n_days_ago)
+            self.assert_timestamps_equal(time_A, n_days_ago)
 
         # add another record, which should have the current timestamp
         time_B = self.dns_update_record(name, B).dwTimeStamp
@@ -1595,7 +1595,7 @@ class TestDNSAging(DNSTest):
 
         time_A = self.get_unique_txt_record(name, A).dwTimeStamp
         if aging and n_days <= 7:
-            self.assertEqual(time_A, n_days_ago)
+            self.assert_timestamps_equal(time_A, n_days_ago)
         else:
             self.assert_soon_after(time_A, current_time)
 
@@ -1617,24 +1617,24 @@ class TestDNSAging(DNSTest):
             self._test_update_timestamp_weirdness(5, False)
         # the timestamp of the SIBLING of the deleted, re-added record
         # differs from the sibling of freshly added record.
-        self.assertEqual(time_A, n_days_ago)
+        self.assert_timestamps_equal(time_A, n_days_ago)
 
     def test_update_timestamp_weirdness_no_refresh_aging(self):
         n_days_ago, time_A, time_B = \
             self._test_update_timestamp_weirdness(5, True)
         # the timestamp of the SIBLING of the deleted, re-added record
         # differs from the sibling of freshly added record.
-        self.assertEqual(time_A, n_days_ago)
+        self.assert_timestamps_equal(time_A, n_days_ago)
 
     def test_update_timestamp_weirdness_refresh_no_aging(self):
         n_days_ago, time_A, time_B = \
             self._test_update_timestamp_weirdness(9, False)
-        self.assertEqual(time_A, time_B)
+        self.assert_timestamps_equal(time_A, time_B)
 
     def test_update_timestamp_weirdness_refresh_aging(self):
         n_days_ago, time_A, time_B = \
             self._test_update_timestamp_weirdness(9, True)
-        self.assertEqual(time_A, time_B)
+        self.assert_timestamps_equal(time_A, time_B)
 
     def test_aging_refresh(self):
         name, txt = 'agingtest', ['test txt']
@@ -1650,8 +1650,8 @@ class TestDNSAging(DNSTest):
         # wouldn't be if we had stuck to the default of 84).
         self.ldap_modify_timestamps(name, -86)
         rec = self.dns_update_record(name, txt)
-        self.assertEqual(rec.dwTimeStamp,
-                         start_time - 86)
+        self.assert_timestamps_equal(rec.dwTimeStamp,
+                                     start_time - 86)
 
         # back to -102 hours, into the refresh zone
         # the update should reset the timestamp to now.
