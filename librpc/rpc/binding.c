@@ -1430,7 +1430,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 					     struct epm_tower *tower)
 {
 	const enum epm_protocol *protseq = NULL;
-	size_t i, num_protocols;
+	size_t i, num_protocols = 0;
 	struct ndr_syntax_id abstract_syntax;
 	NTSTATUS status;
 
