@@ -679,11 +679,10 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 }
 
 static uint32_t dos_mode_post(uint32_t dosmode,
-			      connection_struct *conn,
 			      struct files_struct *fsp,
-			      struct smb_filename *smb_fname,
 			      const char *func)
 {
+	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
 	if (fsp != NULL) {
@@ -708,17 +707,17 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 		dosmode &= ~(FILE_ATTRIBUTE_DIRECTORY);
 	}
 
-	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
+	if (fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) {
 		bool compressed = false;
 
-		status = dos_mode_check_compressed(conn, fsp, smb_fname,
+		status = dos_mode_check_compressed(fsp->conn, fsp, smb_fname,
 						   &compressed);
 		if (NT_STATUS_IS_OK(status) && compressed) {
 			dosmode |= FILE_ATTRIBUTE_COMPRESSED;
 		}
 	}
 
-	dosmode |= dos_mode_from_name(conn, smb_fname, dosmode);
+	dosmode |= dos_mode_from_name(fsp->conn, smb_fname, dosmode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
@@ -778,7 +777,7 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		}
 	}
 
-	result = dos_mode_post(result, fsp->conn, fsp, NULL, __func__);
+	result = dos_mode_post(result, fsp, __func__);
 	return result;
 }
 
@@ -890,9 +889,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	}
 	if (NT_STATUS_IS_OK(status)) {
 		state->dosmode = dos_mode_post(state->dosmode,
-					       state->smb_fname->fsp->conn,
 					       state->smb_fname->fsp,
-					       NULL,
 					       __func__);
 		tevent_req_done(req);
 		return;
