@@ -890,9 +890,9 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	}
 	if (NT_STATUS_IS_OK(status)) {
 		state->dosmode = dos_mode_post(state->dosmode,
-					       state->dir_fsp->conn,
+					       state->smb_fname->fsp->conn,
+					       state->smb_fname->fsp,
 					       NULL,
-					       state->smb_fname,
 					       __func__);
 		tevent_req_done(req);
 		return;
