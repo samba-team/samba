@@ -1141,7 +1141,8 @@ out:
 static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state,
 					      TALLOC_CTX *mem_ctx,
-					      struct netr_SamInfo3 **info3)
+					      struct netr_SamInfo3 **info3,
+					      const char **_krb5ccname)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
@@ -1163,6 +1164,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	*info3 = NULL;
 
 	ZERO_STRUCTP(info3);
+
+	if (_krb5ccname != NULL) {
+		*_krb5ccname = NULL;
+	}
 
 	DEBUG(10,("winbindd_dual_pam_auth_cached\n"));
 
@@ -1369,8 +1374,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 			if (user_ccache_file != NULL) {
 
-				fstrcpy(state->response->data.auth.krb5ccname,
-					user_ccache_file);
+				if (_krb5ccname != NULL) {
+					*_krb5ccname = talloc_move(mem_ctx,
+							&user_ccache_file);
+				}
 
 				result = add_ccache_to_list(principal_s,
 							    cc,
@@ -2276,6 +2283,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	const struct timeval start_time = timeval_current();
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
+	const char *krb5ccname = NULL;
 
 	/* Ensure null termination */
 	state->request->data.auth.user[sizeof(state->request->data.auth.user)-1]='\0';
@@ -2343,8 +2351,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Check for Kerberos authentication */
 	if (domain->online && (state->request->flags & WBFLAG_PAM_KRB5)) {
-		const char *krb5ccname = NULL;
-
 		result = winbindd_dual_pam_auth_kerberos(
 				domain,
 				state->request->data.auth.user,
@@ -2474,13 +2480,17 @@ cached_logon:
 		result = winbindd_dual_pam_auth_cached(domain,
 						       state,
 						       state->mem_ctx,
-						       &info3);
+						       &info3,
+						       &krb5ccname);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached failed: %s\n", nt_errstr(result)));
 			goto done;
 		}
 		DEBUG(10,("winbindd_dual_pam_auth_cached succeeded\n"));
+
+		fstrcpy(state->response->data.auth.krb5ccname,
+			krb5ccname);
 
 		result = map_info3_to_validation(state->mem_ctx,
 						 info3,
