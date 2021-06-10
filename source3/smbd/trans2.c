@@ -7919,7 +7919,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp != NULL && fsp->fsp_flags.modified) {
+	if (fsp->fsp_flags.modified) {
 		trigger_write_time_update_immediate(fsp);
 	}
 	return NT_STATUS_OK;
@@ -7964,7 +7964,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp != NULL && fsp->fsp_flags.modified) {
+	if (fsp->fsp_flags.modified) {
 		trigger_write_time_update_immediate(fsp);
 	}
 	return NT_STATUS_OK;
