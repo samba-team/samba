@@ -3077,6 +3077,39 @@ static int vfswrap_chflags(vfs_handle_struct *handle,
 #endif
 }
 
+static int vfswrap_fchflags(vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			unsigned int flags)
+{
+#ifdef HAVE_FCHFLAGS
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return fchflags(fd, flags);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return chflags(p, flags);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return chflags(fsp->fsp_name->base_name, flags);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
 static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
 					     const SMB_STRUCT_STAT *sbuf)
 {
@@ -3848,6 +3881,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.mknodat_fn = vfswrap_mknodat,
 	.realpath_fn = vfswrap_realpath,
 	.chflags_fn = vfswrap_chflags,
+	.fchflags_fn = vfswrap_fchflags,
 	.file_id_create_fn = vfswrap_file_id_create,
 	.fs_file_id_fn = vfswrap_fs_file_id,
 	.fstreaminfo_fn = vfswrap_fstreaminfo,

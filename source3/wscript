@@ -124,7 +124,7 @@ def configure(conf):
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknodat')
-    conf.CHECK_FUNCS('strtol strchr strupr chflags')
+    conf.CHECK_FUNCS('strtol strchr strupr chflags fchflags')
     conf.CHECK_FUNCS('getrlimit fsync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
     conf.CHECK_FUNCS('innetgr')
@@ -384,6 +384,7 @@ int main(int argc, char **argv) {
 DNSServiceRegister
 atexit
 chflags
+fchflags
 chmod
 crypt16
 devnm

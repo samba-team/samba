@@ -2386,6 +2386,14 @@ int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
 	return handle->fns->chflags_fn(handle, smb_fname, flags);
 }
 
+int smb_vfs_call_fchflags(struct vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			unsigned int flags)
+{
+	VFS_FIND(fchflags);
+	return handle->fns->fchflags_fn(handle, fsp, flags);
+}
+
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 					   const SMB_STRUCT_STAT *sbuf)
 {

@@ -161,6 +161,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_MKNODAT,
 	SMB_VFS_OP_REALPATH,
 	SMB_VFS_OP_CHFLAGS,
+	SMB_VFS_OP_FCHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_FS_FILE_ID,
 	SMB_VFS_OP_FSTREAMINFO,
@@ -298,6 +299,7 @@ static struct {
 	{ SMB_VFS_OP_MKNODAT,	"mknodat" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
+	{ SMB_VFS_OP_FCHFLAGS,	"fchflags" },
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_FS_FILE_ID,	"fs_file_id" },
 	{ SMB_VFS_OP_FSTREAMINFO,	"fstreaminfo" },
@@ -1998,6 +2000,23 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_fchflags(vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			unsigned int flags)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_FCHFLAGS(handle, fsp, flags);
+
+	do_log(SMB_VFS_OP_FCHFLAGS,
+	       (result != 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, fsp->fsp_name));
+
+	return result;
+}
+
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
 						    const SMB_STRUCT_STAT *sbuf)
 {
@@ -2959,6 +2978,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.mknodat_fn = smb_full_audit_mknodat,
 	.realpath_fn = smb_full_audit_realpath,
 	.chflags_fn = smb_full_audit_chflags,
+	.fchflags_fn = smb_full_audit_fchflags,
 	.file_id_create_fn = smb_full_audit_file_id_create,
 	.fs_file_id_fn = smb_full_audit_fs_file_id,
 	.offload_read_send_fn = smb_full_audit_offload_read_send,
