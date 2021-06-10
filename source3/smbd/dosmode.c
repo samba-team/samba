@@ -837,7 +837,6 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	struct dos_mode_at_state *state =
 		tevent_req_data(req,
 		struct dos_mode_at_state);
-	char *path = NULL;
 	struct vfs_aio_state aio_state;
 	NTSTATUS status;
 	bool ok;
@@ -888,14 +887,6 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	/*
 	 * Fall back to sync dos_mode() if we got NOT_IMPLEMENTED.
 	 */
-
-	path = talloc_asprintf(state,
-			       "%s/%s",
-			       state->dir_fsp->fsp_name->base_name,
-			       state->smb_fname->base_name);
-	if (tevent_req_nomem(path, req)) {
-		return;
-	}
 
 	state->dosmode = fdos_mode(state->smb_fname->fsp);
 	tevent_req_done(req);
