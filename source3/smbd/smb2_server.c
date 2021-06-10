@@ -2748,6 +2748,18 @@ static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
 	bool update_session = false;
 	bool update_tcon = false;
 
+	if (session->table == NULL) {
+		/*
+		 * sessions from smb2srv_session_lookup_global()
+		 * have NT_STATUS_BAD_LOGON_SESSION_STATE
+		 * and session->table == NULL.
+		 *
+		 * They only used to give the correct error
+		 * status, we should not update any state.
+		 */
+		goto out;
+	}
+
 	if (req->was_encrypted && req->do_encryption) {
 		encrypt_flag = SMBXSRV_PROCESSED_ENCRYPTED_PACKET;
 		sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
@@ -2773,6 +2785,7 @@ static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
 			&tcon->global->signing_flags, sign_flag);
 	}
 
+out:
 	*update_session_globalp = update_session;
 	*update_tcon_globalp = update_tcon;
 	return;
