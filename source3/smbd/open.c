@@ -3613,9 +3613,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 smb_fname_str_dbg(smb_fname)));
 				if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 					return NT_STATUS_FILE_IS_A_DIRECTORY;
-				} else {
-					return NT_STATUS_OBJECT_NAME_COLLISION;
 				}
+				return NT_STATUS_OBJECT_NAME_COLLISION;
 			}
 			break;
 
