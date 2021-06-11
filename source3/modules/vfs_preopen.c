@@ -359,6 +359,8 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 	const char *p;
 	char *q = NULL;
 	unsigned long num;
+	size_t start_idx = 0;
+	int num_digits = -1;
 	int error = 0;
 
 	p = strrchr_m(fname, '/');
@@ -378,6 +380,8 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 		return false;
 	}
 
+	start_idx = (p - fname);
+
 	num = smb_strtoul(p, (char **)&q, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return false;
@@ -388,9 +392,11 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 		return false;
 	}
 
+	num_digits = (q - p);
+
 	*pnum = num;
-	*pstart_idx = (p - fname);
-	*pnum_digits = (q - p);
+	*pstart_idx = start_idx;
+	*pnum_digits = num_digits;
 	return true;
 }
 
