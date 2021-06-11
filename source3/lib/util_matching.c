@@ -24,6 +24,7 @@
 struct samba_path_matching_entry {
 	const char *name;
 	bool is_wild;
+	regex_t re;
 };
 
 struct samba_path_matching_result {
@@ -209,6 +210,114 @@ NTSTATUS samba_path_matching_mswild_create(TALLOC_CTX *mem_ctx,
 	*ppm = talloc_move(mem_ctx, &pm);
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
+};
+
+static int samba_path_matching_regex_sub1_destructor(struct samba_path_matching *pm)
+{
+	ssize_t i;
+
+	for (i = 0; i < pm->num_entries; i++) {
+		struct samba_path_matching_entry *e = &pm->entries[i];
+
+		regfree(&e->re);
+	}
+
+	pm->num_entries = 0;
+
+	return 0;
+}
+
+static NTSTATUS samba_path_create_regex_sub1_fn(const struct samba_path_matching *pm,
+						const struct samba_path_matching_entry *e,
+						const char *namecomponent,
+						struct samba_path_matching_result *result)
+{
+	if (e->re.re_nsub == 1) {
+		regmatch_t matches[2] = { };
+		int ret;
+
+		ret = regexec(&e->re, namecomponent, 2, matches, 0);
+		if (ret == 0) {
+			*result = (struct samba_path_matching_result) {
+				.match = true,
+				.replace_start = matches[1].rm_so,
+				.replace_end = matches[1].rm_eo,
+			};
+
+			return NT_STATUS_OK;
+		}
+	}
+
+	*result = (struct samba_path_matching_result) {
+		.match = false,
+		.replace_start = -1,
+		.replace_end = -1,
+	};
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_path_matching_regex_sub1_create(TALLOC_CTX *mem_ctx,
+					       const char *namelist_in,
+					       struct samba_path_matching **ppm)
+{
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct samba_path_matching *pm = NULL;
+	ssize_t i;
+
+	*ppm = NULL;
+
+	status = samba_path_matching_split(mem_ctx, namelist_in, &pm);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+	talloc_reparent(mem_ctx, frame, pm);
+
+	for (i = 0; i < pm->num_entries; i++) {
+		struct samba_path_matching_entry *e = &pm->entries[i];
+		int ret;
+
+		ret = regcomp(&e->re, e->name, 0);
+		if (ret != 0) {
+			fstring buf = { 0,};
+
+			regerror(ret, &e->re, buf, sizeof(buf));
+
+			DBG_ERR("idx[%zu] regcomp: /%s/ - %d - %s\n",
+				i, e->name, ret, buf);
+
+			status = NT_STATUS_INVALID_PARAMETER;
+			i--;
+			goto cleanup;
+		}
+
+		if (e->re.re_nsub != 1) {
+			DBG_ERR("idx[%zu] regcomp: /%s/ - re_nsub[%zu] != 1\n",
+				i, e->name, e->re.re_nsub);
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto cleanup;
+		}
+	}
+
+	talloc_set_destructor(pm, samba_path_matching_regex_sub1_destructor);
+
+	pm->case_sensitive = true;
+	pm->matching_fn = samba_path_create_regex_sub1_fn;
+	*ppm = talloc_move(mem_ctx, &pm);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+
+cleanup:
+	for (; i >= 0; i--) {
+		struct samba_path_matching_entry *e = &pm->entries[i];
+
+		regfree(&e->re);
+	}
+
+	TALLOC_FREE(frame);
+	return status;
 };
 
 NTSTATUS samba_path_matching_check_last_component(struct samba_path_matching *pm,

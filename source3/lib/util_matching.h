@@ -27,6 +27,10 @@ NTSTATUS samba_path_matching_mswild_create(TALLOC_CTX *mem_ctx,
 					   const char *namelist_in,
 					   struct samba_path_matching **ppm);
 
+NTSTATUS samba_path_matching_regex_sub1_create(TALLOC_CTX *mem_ctx,
+					       const char *namelist_in,
+					       struct samba_path_matching **ppm);
+
 NTSTATUS samba_path_matching_check_last_component(struct samba_path_matching *pm,
 						  const char *name,
 						  ssize_t *p_match_idx,

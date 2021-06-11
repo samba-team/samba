@@ -102,6 +102,7 @@ bool run_async_echo(int dummy);
 bool run_smb_any_connect(int dummy);
 bool run_addrchange(int dummy);
 bool run_str_match_mswild(int dummy);
+bool run_str_match_regex_sub1(int dummy);
 bool run_notify_online(int dummy);
 bool run_nttrans_create(int dummy);
 bool run_nttrans_fsctl(int dummy);

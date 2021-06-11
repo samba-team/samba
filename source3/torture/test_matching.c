@@ -148,3 +148,129 @@ bool run_str_match_mswild(int dummy)
 
 	return ret;
 }
+
+bool run_str_match_regex_sub1(int dummy)
+{
+	const char *invalidlist1 = "/Re7599Ex[0-9].*\\.txt/";
+	const char *invalidlist2 = "/Re7599Ex\\([0-9]\\).*\\.\\(txt\\)/";
+	const char *invalidlist3 = "/Re7599Ex\\([0-9]).*\\.txt/";
+	const char *invalidlist4 = "/Re7599Ex[0-9.*\\.txt/";
+	const char *namelist = "/Re7599Ex\\([0-9]\\).*\\.txt/test\\(.*\\).txt/^test\\([0-9]*\\).dat/";
+	struct samba_path_matching *pm = NULL;
+	const struct str_match_regex_sub1 {
+		const char *name;
+		ssize_t match_idx;
+		ssize_t sub_start;
+		ssize_t sub_end;
+	} names[] = {{
+		.name = "/dir/Re7599Ex567.txt",
+		.match_idx = 0,
+		.sub_start = 13,
+		.sub_end = 14,
+	},{
+		.name = "/dir/rE7599eX567.txt",
+		.match_idx = -1,
+		.sub_start = -1,
+		.sub_end = -1,
+	},{
+		.name = "/dir/Re7599Ex.txt",
+		.match_idx = -1,
+		.sub_start = -1,
+		.sub_end = -1,
+	},{
+		.name = "/dir/testabc123.txt",
+		.match_idx = 1,
+		.sub_start = 9,
+		.sub_end = 15,
+	},{
+		.name = "/dir/testabc123.tXt",
+		.match_idx = -1,
+		.sub_start = -1,
+		.sub_end = -1,
+	},{
+		.name = "/dir/test123.dat",
+		.match_idx = 2,
+		.sub_start = 9,
+		.sub_end = 12,
+	},{
+		.name = "/dir/tEst123.dat",
+		.match_idx = -1,
+		.sub_start = -1,
+		.sub_end = -1,
+	}};
+	NTSTATUS status;
+	size_t i;
+	bool ret = true;
+
+	d_fprintf(stderr, "invalidlist1: %s\n", invalidlist1);
+	status = samba_path_matching_regex_sub1_create(talloc_tos(),
+						       invalidlist1,
+						       &pm);
+	SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER));
+	d_fprintf(stderr, "invalidlist2: %s\n", invalidlist2);
+	status = samba_path_matching_regex_sub1_create(talloc_tos(),
+						       invalidlist2,
+						       &pm);
+	SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER));
+	d_fprintf(stderr, "invalidlist3: %s\n", invalidlist3);
+	status = samba_path_matching_regex_sub1_create(talloc_tos(),
+						       invalidlist3,
+						       &pm);
+	SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER));
+	d_fprintf(stderr, "invalidlist4: %s\n", invalidlist4);
+	status = samba_path_matching_regex_sub1_create(talloc_tos(),
+						       invalidlist4,
+						       &pm);
+	SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER));
+
+	d_fprintf(stderr, "namelist: %s\n", namelist);
+	status = samba_path_matching_regex_sub1_create(talloc_tos(),
+						       namelist,
+						       &pm);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+	for (i = 0; i < ARRAY_SIZE(names); i++) {
+		const struct str_match_regex_sub1 *n = &names[i];
+		ssize_t match_idx = -1;
+		ssize_t replace_start = -1;
+		ssize_t replace_end = -1;
+		bool ok = true;
+
+		status = samba_path_matching_check_last_component(pm,
+								  n->name,
+								  &match_idx,
+								  &replace_start,
+								  &replace_end);
+		SMB_ASSERT(NT_STATUS_IS_OK(status));
+		if (match_idx == -1) {
+			SMB_ASSERT(replace_start == -1);
+			SMB_ASSERT(replace_end == -1);
+		}
+		if (n->match_idx != match_idx) {
+			ok = false;
+		}
+		if (n->sub_start != replace_start) {
+			ok = false;
+		}
+		if (n->sub_end != replace_end) {
+			ok = false;
+		}
+
+		d_fprintf(stderr, "name[%s] "
+			  "T[IDX=%zd;START=%zd;END=%zd] "
+			  "M[[IDX=%zd;START=%zd;END=%zd] "
+			  "%s\n",
+			  n->name,
+			  n->match_idx,
+			  n->sub_start,
+			  n->sub_end,
+			  match_idx,
+			  replace_start,
+			  replace_end,
+			  ok ? "OK" : "FAIL");
+
+		ret &= ok;
+	}
+
+	return ret;
+}

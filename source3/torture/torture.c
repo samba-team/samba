@@ -15350,6 +15350,10 @@ static struct {
 		.fn    = run_str_match_mswild,
 	},
 	{
+		.name  = "LOCAL-STR-MATCH-REGEX-SUB1",
+		.fn    = run_str_match_regex_sub1,
+	},
+	{
 		.name  = "WBCLIENT-MULTI-PING",
 		.fn    = run_wbclient_multi_ping,
 	},

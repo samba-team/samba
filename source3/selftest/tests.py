@@ -282,6 +282,7 @@ local_tests = [
     "LOCAL-MEMCACHE",
     "LOCAL-STREAM-NAME",
     "LOCAL-STR-MATCH-MSWILD",
+    "LOCAL-STR-MATCH-REGEX-SUB1",
     "LOCAL-string_to_sid",
     "LOCAL-sid_to_string",
     "LOCAL-binary_to_sid",
