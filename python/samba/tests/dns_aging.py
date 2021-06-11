@@ -337,6 +337,12 @@ class TestDNSAging(DNSTest):
             txt = [txt]
         p = self.make_txt_update(name, txt, self.zone, ttl=ttl)
         (code, response) = self.dns_transaction_udp(p, host=SERVER_IP)
+        if code.operation & dns.DNS_RCODE == dns.DNS_RCODE_REFUSED:
+            # sometimes you might forget this
+            print("\n\ngot DNS_RCODE_REFUSED\n")
+            print("Are you running this in the fl2003 environment?\n")
+            print("try `SELFTEST_TESTENV='fl2003dc:local' make testenv`\n\n")
+
         self.assert_dns_rcode_equals(code, dns.DNS_RCODE_OK)
         return self.get_unique_txt_record(name, txt)
 
