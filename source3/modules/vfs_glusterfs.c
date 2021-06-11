@@ -2002,6 +2002,14 @@ static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int vfs_gluster_fchflags(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				unsigned int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 					 const struct smb_filename *path,
 					 const char *name,
@@ -2373,6 +2381,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.mknodat_fn = vfs_gluster_mknodat,
 	.realpath_fn = vfs_gluster_realpath,
 	.chflags_fn = vfs_gluster_chflags,
+	.fchflags_fn = vfs_gluster_fchflags,
 	.file_id_create_fn = NULL,
 	.fstreaminfo_fn = NULL,
 	.get_real_filename_fn = vfs_gluster_get_real_filename,
