@@ -2272,6 +2272,11 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	SIVAL(hdr, SMB2_HDR_STATUS, NT_STATUS_V(NT_STATUS_PENDING));
 	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(outhdr, SMB2_HDR_OPCODE));
 
+	/*
+	 * The STATUS_PENDING response has SMB2_HDR_FLAG_SIGNED
+	 * clearedm, but echoes the signature field.
+	 */
+	flags &= ~SMB2_HDR_FLAG_SIGNED;
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags);
 	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND, 0);
 	SBVAL(hdr, SMB2_HDR_MESSAGE_ID, message_id);
@@ -2325,6 +2330,10 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 			SMBD_SMB2_IN_HDR_IOV(req),
 			&state->vector[1+SMBD_SMB2_HDR_IOV_OFS]);
 
+	/*
+	 * We add SMB2_HDR_FLAG_ASYNC after smb2_set_operation_credit()
+	 * as it reacts on it
+	 */
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 
 	if (DEBUGLVL(10)) {
@@ -2345,19 +2354,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		status = smb2_signing_encrypt_pdu(encryption_key,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
-		if (!NT_STATUS_IS_OK(status)) {
-			smbd_server_connection_terminate(xconn,
-						nt_errstr(status));
-			return;
-		}
-	} else if (req->do_signing) {
-		struct smbXsrv_session *x = req->session;
-		struct smb2_signing_key *signing_key =
-			smbd_smb2_signing_key(x, xconn, NULL);
-
-		status = smb2_signing_sign_pdu(signing_key,
-					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
-					SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
 			smbd_server_connection_terminate(xconn,
 						nt_errstr(status));
