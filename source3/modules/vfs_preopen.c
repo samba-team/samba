@@ -396,6 +396,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 			  int flags,
 			  mode_t mode)
 {
+	const char *dirname = dirfsp->fsp_name->base_name;
 	struct preopen_state *state;
 	int res;
 	unsigned long num;
@@ -421,6 +422,27 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		return res;
 	}
 
+	/*
+	 * Make sure we can later contruct an absolute pathname
+	 */
+	if (dirname[0] != '/') {
+		return res;
+	}
+	/*
+	 * There's no point in preopen the directory itself.
+	 */
+	if (ISDOT(smb_fname->base_name)) {
+		return res;
+	}
+	/*
+	 * If we got an absolute path in
+	 * smb_fname it's most likely the
+	 * reopen via /proc/self/fd/$fd
+	 */
+	if (smb_fname->base_name[0] == '/') {
+		return res;
+	}
+
 	if (!is_in_path(smb_fname->base_name, state->preopen_names, true)) {
 		DEBUG(10, ("%s does not match the preopen:names list\n",
 			   smb_fname_str_dbg(smb_fname)));
@@ -430,8 +452,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(state->template_fname);
 	state->template_fname = talloc_asprintf(
 		state, "%s/%s",
-		dirfsp->fsp_name->base_name, smb_fname->base_name);
-
+		dirname, smb_fname->base_name);
 	if (state->template_fname == NULL) {
 		return res;
 	}
