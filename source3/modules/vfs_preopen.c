@@ -404,6 +404,9 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	int res;
 	unsigned long num;
 	NTSTATUS status;
+	char *new_template = NULL;
+	size_t new_start = 0;
+	int new_digits = -1;
 	ssize_t match_idx = -1;
 
 	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
@@ -462,19 +465,23 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		return res;
 	}
 
-	TALLOC_FREE(state->template_fname);
-	state->template_fname = talloc_asprintf(
+	new_template = talloc_asprintf(
 		state, "%s/%s",
 		dirname, smb_fname->base_name);
-	if (state->template_fname == NULL) {
+	if (new_template == NULL) {
 		return res;
 	}
 
-	if (!preopen_parse_fname(state->template_fname, &num,
-				 &state->number_start, &state->num_digits)) {
-		TALLOC_FREE(state->template_fname);
+	if (!preopen_parse_fname(new_template, &num,
+				 &new_start, &new_digits)) {
+		TALLOC_FREE(new_template);
 		return res;
 	}
+
+	TALLOC_FREE(state->template_fname);
+	state->template_fname = new_template;
+	state->number_start = new_start;
+	state->num_digits = new_digits;
 
 	if (num > state->fnum_sent) {
 		/*
