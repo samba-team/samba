@@ -1595,26 +1595,6 @@ static struct smb_filename *smb_time_audit_realpath(vfs_handle_struct *handle,
 	return result_fname;
 }
 
-static int smb_time_audit_chflags(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				unsigned int flags)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("chflags", timediff, smb_fname);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_fchflags(vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				unsigned int flags)
@@ -2787,7 +2767,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.linkat_fn = smb_time_audit_linkat,
 	.mknodat_fn = smb_time_audit_mknodat,
 	.realpath_fn = smb_time_audit_realpath,
-	.chflags_fn = smb_time_audit_chflags,
 	.fchflags_fn = smb_time_audit_fchflags,
 	.file_id_create_fn = smb_time_audit_file_id_create,
 	.fs_file_id_fn = smb_time_audit_fs_file_id,

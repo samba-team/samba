@@ -642,13 +642,6 @@ static struct smb_filename *skel_realpath(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 }
 
-static int skel_chflags(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uint flags)
-{
-	return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
-}
-
 static int skel_fchflags(vfs_handle_struct *handle,
 			struct files_struct *fsp,
 			uint flags)
@@ -1340,7 +1333,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.linkat_fn = skel_linkat,
 	.mknodat_fn = skel_mknodat,
 	.realpath_fn = skel_realpath,
-	.chflags_fn = skel_chflags,
 	.fchflags_fn = skel_fchflags,
 	.file_id_create_fn = skel_file_id_create,
 	.fs_file_id_fn = skel_fs_file_id,

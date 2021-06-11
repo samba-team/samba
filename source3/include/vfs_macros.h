@@ -328,11 +328,6 @@
 #define SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname) \
 	smb_vfs_call_realpath((handle)->next, (ctx), (smb_fname))
 
-#define SMB_VFS_CHFLAGS(conn, smb_fname, flags) \
-	smb_vfs_call_chflags((conn)->vfs_handles, (smb_fname), (flags))
-#define SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags) \
-	smb_vfs_call_chflags((handle)->next, (smb_fname), (flags))
-
 #define SMB_VFS_FCHFLAGS(fsp, flags) \
 	smb_vfs_call_fchflags((fsp)->conn->vfs_handles, (fsp), (flags))
 #define SMB_VFS_NEXT_FCHFLAGS(handle, fsp, flags) \

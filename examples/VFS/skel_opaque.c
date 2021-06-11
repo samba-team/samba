@@ -506,14 +506,6 @@ static struct smb_filename *skel_realpath(vfs_handle_struct *handle,
 	return NULL;
 }
 
-static int skel_chflags(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uint flags)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_fchflags(vfs_handle_struct *handle,
 			struct files_struct *fsp,
 			uint flags)
@@ -1036,7 +1028,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.linkat_fn = skel_linkat,
 	.mknodat_fn = skel_mknodat,
 	.realpath_fn = skel_realpath,
-	.chflags_fn = skel_chflags,
 	.fchflags_fn = skel_fchflags,
 	.file_id_create_fn = skel_file_id_create,
 	.fs_file_id_fn = skel_fs_file_id,

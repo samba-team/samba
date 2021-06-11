@@ -504,14 +504,6 @@ struct smb_filename *vfs_not_implemented_realpath(vfs_handle_struct *handle,
 	return NULL;
 }
 
-int vfs_not_implemented_chflags(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				uint flags)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_fchflags(vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				uint flags)
@@ -1040,7 +1032,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.linkat_fn = vfs_not_implemented_linkat,
 	.mknodat_fn = vfs_not_implemented_mknodat,
 	.realpath_fn = vfs_not_implemented_realpath,
-	.chflags_fn = vfs_not_implemented_chflags,
 	.fchflags_fn = vfs_not_implemented_fchflags,
 	.file_id_create_fn = vfs_not_implemented_file_id_create,
 	.fs_file_id_fn = vfs_not_implemented_fs_file_id,

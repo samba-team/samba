@@ -2378,14 +2378,6 @@ struct smb_filename *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
 	return handle->fns->realpath_fn(handle, ctx, smb_fname);
 }
 
-int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			unsigned int flags)
-{
-	VFS_FIND(chflags);
-	return handle->fns->chflags_fn(handle, smb_fname, flags);
-}
-
 int smb_vfs_call_fchflags(struct vfs_handle_struct *handle,
 			struct files_struct *fsp,
 			unsigned int flags)

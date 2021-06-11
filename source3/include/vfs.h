@@ -1067,9 +1067,6 @@ struct vfs_fn_pointers {
 	struct smb_filename *(*realpath_fn)(struct vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
 				const struct smb_filename *smb_fname);
-	int (*chflags_fn)(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				unsigned int flags);
 	int (*fchflags_fn)(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				unsigned int flags);

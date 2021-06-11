@@ -3065,18 +3065,6 @@ static struct smb_filename *vfswrap_realpath(vfs_handle_struct *handle,
 	return result_fname;
 }
 
-static int vfswrap_chflags(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			unsigned int flags)
-{
-#ifdef HAVE_CHFLAGS
-	return chflags(smb_fname->base_name, flags);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 static int vfswrap_fchflags(vfs_handle_struct *handle,
 			struct files_struct *fsp,
 			unsigned int flags)
@@ -3880,7 +3868,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.linkat_fn = vfswrap_linkat,
 	.mknodat_fn = vfswrap_mknodat,
 	.realpath_fn = vfswrap_realpath,
-	.chflags_fn = vfswrap_chflags,
 	.fchflags_fn = vfswrap_fchflags,
 	.file_id_create_fn = vfswrap_file_id_create,
 	.fs_file_id_fn = vfswrap_fs_file_id,
