@@ -1466,31 +1466,6 @@ err:
 	return result_fname;
 }
 
-static int um_chflags(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			unsigned int flags)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_mknod\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname, &client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_CHFLAGS(handle, client_fname, flags);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static ssize_t um_getxattr(struct vfs_handle_struct *handle,
 			   const struct smb_filename *smb_fname,
 			   const char *name,
@@ -1593,7 +1568,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.linkat_fn = um_linkat,
 	.mknodat_fn = um_mknodat,
 	.realpath_fn = um_realpath,
-	.chflags_fn = um_chflags,
 
 	/* EA operations. */
 	.getxattr_fn = um_getxattr,
