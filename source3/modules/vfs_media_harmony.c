@@ -1823,39 +1823,6 @@ err:
 	return result_fname;
 }
 
-/*
- * Success: return 0
- * Failure: set errno, return -1
- */
-static int mh_chflags(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		unsigned int flags)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_chflags\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
-		goto out;
-	}
-
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname,
-				&clientFname))) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_CHFLAGS(handle, clientFname, flags);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
 /* Ignoring get_real_filename function because the default
  * doesn't do anything.
  */
@@ -1936,7 +1903,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.linkat_fn = mh_linkat,
 	.mknodat_fn = mh_mknodat,
 	.realpath_fn = mh_realpath,
-	.chflags_fn = mh_chflags,
 
 	/* EA operations. */
 	.getxattr_fn = mh_getxattr,
