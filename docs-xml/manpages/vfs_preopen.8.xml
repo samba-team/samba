@@ -49,6 +49,17 @@
 	<variablelist>
 
 		<varlistentry>
+		<term>preopen:posix-basic-regex = BOOL (default: no)</term>
+		<listitem>
+		<para>
+		<command>preopen:posix-basic-regex = yes</command> changes
+		the meaning of the <command>preopen:names</command> option.
+		Further details are described there.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>preopen:names = /pattern1/pattern2/</term>
 		<listitem>
 		<para>
@@ -57,9 +68,23 @@
 		the files are numbered incrementally. So if your file names
 		are numbered FRAME00000.frm FRAME00001.frm and so on you would
 		list them as <command>preopen:names=/FRAME*.frm/</command>.
-		The current algorithm uses the first (at least 3) digits it finds
+		The default algorithm uses the first (at least 3) digits it finds
 		in order to calculate the name of the next frames.
 		</para>
+
+		<para><command>preopen:posix-basic-regex = yes</command> changes
+		the meaning of the <command>preopen:names</command> option.
+		It means 'POSIX Basic Regular Expression' strings are used
+		as patterns. The key is each pattern requires exactly one
+		'subexpression' starting with '\(' and ending with '\)' in
+		order to specify the position of the digits representing
+		the incrementing frame numbers. Given a file names like
+		Movie7599Frame0v1234.txt, Movie7599Frame1v1234.txt, Movie7599Frame2v1234.txt
+		up to Movie7599Frame9v1234.txt you can use <command>preopen:names = /.*Frame\([0-9]\).*\.txt/</command>
+		in order to match just a single digits, this might not be a real world example,
+		but it shows the flexiblity that is possible here.
+		</para>
+
 		</listitem>
 		</varlistentry>
 

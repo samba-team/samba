@@ -338,10 +338,16 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		return NULL;
 	}
 
-	status = samba_path_matching_mswild_create(state,
-						   true, /* case_sensitive */
-						   namelist,
-						   &state->preopen_names);
+	if (lp_parm_bool(SNUM(handle->conn), "preopen", "posix-basic-regex", false)) {
+		status = samba_path_matching_regex_sub1_create(state,
+							       namelist,
+							       &state->preopen_names);
+	} else {
+		status = samba_path_matching_mswild_create(state,
+							   true, /* case_sensitive */
+							   namelist,
+							   &state->preopen_names);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(state);
 		return NULL;
