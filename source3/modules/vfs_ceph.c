@@ -1265,6 +1265,14 @@ static int cephwrap_chflags(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int cephwrap_fchflags(struct vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			unsigned int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static int cephwrap_get_real_filename(struct vfs_handle_struct *handle,
 				     const struct smb_filename *path,
 				     const char *name,
@@ -1636,6 +1644,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.mknodat_fn = cephwrap_mknodat,
 	.realpath_fn = cephwrap_realpath,
 	.chflags_fn = cephwrap_chflags,
+	.fchflags_fn = cephwrap_fchflags,
 	.get_real_filename_fn = cephwrap_get_real_filename,
 	.connectpath_fn = cephwrap_connectpath,
 
