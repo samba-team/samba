@@ -8501,17 +8501,13 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (fsp &&
-		    !fsp->fsp_flags.is_pathref &&
-		    fsp_get_io_fd(fsp) != -1)
-		{
-			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
-			return NT_STATUS_NOT_SUPPORTED;
-		} else {
-			if (SMB_VFS_CHFLAGS(conn, smb_fname,
-					    stat_fflags) != 0) {
-				return map_nt_error_from_unix(errno);
-			}
+		if (fsp == NULL || S_ISLNK(smb_fname->st.st_ex_mode)) {
+			DBG_WARNING("Can't change flags on symlink %s\n",
+				smb_fname_str_dbg(smb_fname));
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		if (SMB_VFS_FCHFLAGS(fsp, stat_fflags) != 0) {
+			return map_nt_error_from_unix(errno);
 		}
 	}
 
