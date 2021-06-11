@@ -359,12 +359,47 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 static bool preopen_parse_fname(const char *fname, uint64_t *pnum,
 				size_t *pstart_idx, int *pnum_digits)
 {
+	char digits[PREOPEN_MAX_DIGITS+1] = { 0, };
 	const char *p;
 	char *q = NULL;
 	unsigned long long num;
 	size_t start_idx = 0;
 	int num_digits = -1;
 	int error = 0;
+
+	if (*pstart_idx > 0 && *pnum_digits > 0) {
+		/*
+		 * If the caller knowns
+		 * how many digits are expected
+		 * and on what position,
+		 * we should copy the exact
+		 * subset before we start
+		 * parsing the string into a number
+		 */
+
+		if (*pnum_digits < 1) {
+			/*
+			 * We need at least one digit
+			 */
+			return false;
+		}
+		if (*pnum_digits > PREOPEN_MAX_DIGITS) {
+			/*
+			 * a string with as much digits as
+			 * PREOPEN_MAX_DIGITS is the longest
+			 * string that would make any sense for us.
+			 *
+			 * The rest will be checked via
+			 * smb_strtoull().
+			 */
+			return false;
+		}
+		p = fname + *pstart_idx;
+		memcpy(digits, p, *pnum_digits);
+		p = digits;
+		start_idx = *pstart_idx;
+		goto parse;
+	}
 
 	p = strrchr_m(fname, '/');
 	if (p == NULL) {
@@ -385,6 +420,7 @@ static bool preopen_parse_fname(const char *fname, uint64_t *pnum,
 
 	start_idx = (p - fname);
 
+parse:
 	num = smb_strtoull(p, (char **)&q, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return false;
@@ -396,6 +432,15 @@ static bool preopen_parse_fname(const char *fname, uint64_t *pnum,
 	}
 
 	num_digits = (q - p);
+
+	if (*pnum_digits != -1 && *pnum_digits != num_digits) {
+		/*
+		 * If the caller knowns how many digits
+		 * it expects we should fail if we got something
+		 * different.
+		 */
+		return false;
+	}
 
 	*pnum = num;
 	*pstart_idx = start_idx;
@@ -446,6 +491,8 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	int new_digits = -1;
 	size_t new_end = 0;
 	ssize_t match_idx = -1;
+	ssize_t replace_start = -1;
+	ssize_t replace_end = -1;
 	bool need_reset = false;
 
 	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
@@ -493,8 +540,8 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	status = samba_path_matching_check_last_component(state->preopen_names,
 							  smb_fname->base_name,
 							  &match_idx,
-							  NULL, /* replace_start */
-							  NULL);/* replace_end */
+							  &replace_start,
+							  &replace_end);
 	if (!NT_STATUS_IS_OK(status)) {
 		match_idx = -1;
 	}
@@ -509,6 +556,12 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		dirname, smb_fname->base_name);
 	if (new_template == NULL) {
 		return res;
+	}
+
+	if (replace_start != -1 && replace_end != -1) {
+		size_t dirofs = strlen(dirname) + 1;
+		new_start = dirofs + replace_start;
+		new_digits = replace_end - replace_start;
 	}
 
 	if (!preopen_parse_fname(new_template, &num,
