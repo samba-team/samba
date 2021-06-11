@@ -871,42 +871,6 @@ catia_realpath(vfs_handle_struct *handle,
 	return return_fname;
 }
 
-static int catia_chflags(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			unsigned int flags)
-{
-	char *name = NULL;
-	struct smb_filename *catia_smb_fname = NULL;
-	NTSTATUS status;
-	int ret;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
-					name,
-					NULL,
-					&smb_fname->st,
-					smb_fname->twrp,
-					smb_fname->flags);
-	if (catia_smb_fname == NULL) {
-		TALLOC_FREE(name);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_CHFLAGS(handle, catia_smb_fname, flags);
-	TALLOC_FREE(name);
-	TALLOC_FREE(catia_smb_fname);
-
-	return ret;
-}
-
 static NTSTATUS
 catia_fstreaminfo(struct vfs_handle_struct *handle,
 		 struct files_struct *fsp,
@@ -1991,7 +1955,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.linux_setlease_fn = catia_linux_setlease,
 	.getlock_fn = catia_getlock,
 	.realpath_fn = catia_realpath,
-	.chflags_fn = catia_chflags,
 	.fstreaminfo_fn = catia_fstreaminfo,
 	.strict_lock_check_fn = catia_strict_lock_check,
 	.translate_name_fn = catia_translate_name,
