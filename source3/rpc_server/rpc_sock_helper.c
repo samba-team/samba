@@ -117,12 +117,18 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(
 	int fd = -1;
 
 	if (*port == 0) {
+		static uint16_t low = 0;
 		uint16_t i;
 
-		for (i = lp_rpc_low_port(); i <= lp_rpc_high_port(); i++) {
+		if (low == 0) {
+			low = lp_rpc_low_port();
+		}
+
+		for (i = low; i <= lp_rpc_high_port(); i++) {
 			fd = open_socket_in(SOCK_STREAM, ifss, i, false);
 			if (fd >= 0) {
 				*port = i;
+				low = i+1;
 				break;
 			}
 		}
