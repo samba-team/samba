@@ -160,7 +160,7 @@ static int dom_user_cmp(const struct dom_usr *usr1, const struct dom_usr *usr2)
  in this list.
  ********************************************************************/
 
-static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
+static int get_domain_userlist(TALLOC_CTX *mem_ctx, struct dom_usr **pusers)
 {
 	struct sessionid *session_list = NULL;
 	char *machine_name, *p, *nm;
@@ -175,14 +175,14 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 
 	num_sessions = list_sessions(mem_ctx, &session_list);
 	if (num_sessions == 0) {
-		errno = 0;
-		return NULL;
+		*pusers = NULL;
+		return 0;
 	}
 
 	users = talloc_array(mem_ctx, struct dom_usr, num_sessions);
 	if (users == NULL) {
 		TALLOC_FREE(session_list);
-		return NULL;
+		return ENOMEM;
 	}
 
 	for (i=num_users=0; i<num_sessions; i++) {
@@ -232,17 +232,24 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 	}
 	TALLOC_FREE(session_list);
 
+	if (num_users == 0) {
+		TALLOC_FREE(users);
+		*pusers = NULL;
+		return 0;
+	}
+
 	tmp = talloc_realloc(mem_ctx, users, struct dom_usr, num_users);
 	if (tmp == NULL) {
-		return NULL;
+		TALLOC_FREE(users);
+		return ENOMEM;
 	}
 	users = tmp;
 
 	/* Sort the user list by time, oldest first */
 	TYPESAFE_QSORT(users, num_users, dom_user_cmp);
 
-	errno = 0;
-	return users;
+	*pusers = users;
+	return 0;
 }
 
 /*******************************************************************
@@ -505,10 +512,11 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 	}
 	num_users = talloc_array_length(users);
 
-	dom_users = get_domain_userlist(talloc_tos());
-	if (dom_users == NULL && errno != 0) {
+	ret = get_domain_userlist(talloc_tos(), &dom_users);
+	if (ret != 0) {
 		TALLOC_FREE(ctr1);
 		TALLOC_FREE(users);
+		errno = ret;
 		return NULL;
 	}
 	num_dom_users = talloc_array_length(dom_users);
@@ -519,6 +527,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		TALLOC_FREE(ctr1);
 		TALLOC_FREE(users);
 		TALLOC_FREE(dom_users);
+		errno = ENOMEM;
 		return NULL;
 	}
 
