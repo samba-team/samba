@@ -3,7 +3,7 @@
                  type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This option specifies the list IPs authorized to ask for dns zone
+	<para>This option specifies the list of IPs authorized to ask for dns zone
 	    transfer from bind DLZ module.
 	</para>
 

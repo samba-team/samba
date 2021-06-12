@@ -3,7 +3,7 @@
                  type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This option specifies the list IPs denied to ask for dns zone
+	<para>This option specifies the list of IPs denied to ask for dns zone
 	    transfer from bind DLZ module.
 	</para>
 
@@ -17,7 +17,7 @@
 
 	<para>If a client identified in this list sends a zone transfer request, it will always
               be denied, even if they are in <smbconfoption name="dns zone transfer clients allow"/>.
-	      This allows the definition of sepcific denied clients within an authorized subnet.
+	      This allows the definition of specific denied clients within an authorized subnet.
 	</para>
 </description>
 
