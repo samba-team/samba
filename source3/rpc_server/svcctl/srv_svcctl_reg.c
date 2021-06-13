@@ -572,19 +572,6 @@ bool svcctl_init_winreg(struct messaging_context *msg_ctx)
 		goto done;
 	}
 
-	result = regdb_open();
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(10, ("regdb_open failed: %s\n",
-			   win_errstr(result)));
-		goto done;
-	}
-	result = regdb_transaction_start();
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(10, ("regdb_transaction_start failed: %s\n",
-			   win_errstr(result)));
-		goto done;
-	}
-
 	status = dcerpc_winreg_int_hklm_openkey(tmp_ctx,
 						get_session_info_system(),
 						msg_ctx,
@@ -684,20 +671,6 @@ done:
 		dcerpc_winreg_CloseKey(h, tmp_ctx, &key_hnd, &result);
 	}
 
-	if (ok) {
-		result = regdb_transaction_commit();
-		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(10, ("regdb_transaction_commit failed: %s\n",
-				   win_errstr(result)));
-		}
-	} else {
-		result = regdb_transaction_cancel();
-		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(10, ("regdb_transaction_cancel failed: %s\n",
-				   win_errstr(result)));
-		}
-	}
-	regdb_close();
 	talloc_free(tmp_ctx);
 	return ok;
 }
