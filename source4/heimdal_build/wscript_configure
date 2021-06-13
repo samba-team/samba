@@ -76,18 +76,22 @@ heimdal_no_error_flags = ['-Wno-error=discarded-qualifiers',
                           '-Wno-error=unused-variable',
                           '-Wno-error=unused-result']
 for flag in heimdal_no_error_flags:
-    conf.ADD_NAMED_CFLAGS('HEIMDAL_PICKY_CFLAGS',
+    conf.ADD_NAMED_CFLAGS('HEIMDAL_NO_ERROR_CFLAGS',
                           flag,
                           testflags=True)
 
-if len(bld.env.HEIMDAL_PICKY_CFLAGS) == len(heimdal_no_error_flags):
-    conf.env.enable_heimdal_warnings = True
+if len(bld.env.HEIMDAL_NO_ERROR_CFLAGS) == len(heimdal_no_error_flags):
+    Logs.info("Most warnings in Heimdal code will "
+              "error due to -Werror (good)")
 else:
+    conf.env.allow_heimdal_warnings = True
     # Needed on CentOS 7 and Ubuntu 16.04 only for Bison generated
     # files when we are not doing strict warnings -> errors
     conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS',
                           '-Wno-strict-overflow',
                           testflags=True)
+    Logs.info("Allowing warnings in Heimdal code as this compiler does "
+              "not support enough -Wno-error flags (bad)")
 
 conf.DEFINE('SAMBA4_USES_HEIMDAL', 1)
 

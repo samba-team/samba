@@ -212,7 +212,7 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         name=name)
 
 
-def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
+def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes='', cflags=[]):
     '''define a Heimdal library'''
 
     obj_target = libname + '.objlist'
@@ -224,6 +224,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
                         source         = source,
                         deps           = deps,
                         includes       = includes,
+                        cflags         = cflags,
                         group          = 'main')
 
     if not SET_TARGET_TYPE(bld, libname, "LIBRARY"):
@@ -262,6 +263,20 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
         version_script  = heimdal_path(version_script, absolute=True),
         )
 
+def HEIMDAL_CFLAGS(use_hostcc=False, extra_cflags=[]):
+    cflags_unpicky=[]
+
+    if not bld.env.enable_heimdal_warnings:
+        cflags_unpicky += bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS
+        # old compilers on centos7 or ubuntu1604 need this
+
+    allow_warnings = bld.env.allow_heimdal_warnings
+    cflags_picky = bld.env.HEIMDAL_NO_ERROR_CFLAGS
+    extra_cflags=TO_LIST(extra_cflags)
+
+    cflags = ''
+    cflags_end = cflags_picky + cflags_unpicky + extra_cflags
+    return (cflags, cflags_end, allow_warnings)
 
 def HEIMDAL_SUBSYSTEM(modname, source,
                     deps='',
@@ -272,37 +287,20 @@ def HEIMDAL_SUBSYSTEM(modname, source,
                     use_global_deps=True):
     '''define a Heimdal subsystem'''
 
-    if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
-        return
-
+    cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=use_hostcc,
+                                                        extra_cflags=cflags)
     source = heimdal_paths(source)
 
-    bld.set_group(group)
-
-    # If we found the -Wno-error options we need then build without
-    # allowing warnings, otherwise permit them
-    if bld.env.enable_heimdal_warnings:
-        samba_cflags = CURRENT_CFLAGS(bld, modname, cflags) + \
-                       bld.env.HEIMDAL_PICKY_CFLAGS
-    else:
-        samba_cflags = CURRENT_CFLAGS(bld, modname, cflags,
-                                      allow_warnings=True) + \
-                       bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS
-
-    return bld(
-        features       = 'c',
-        source         = source,
-        target         = modname,
-        samba_cflags   = samba_cflags,
-        depends_on     = '',
-        samba_deps     = TO_LIST(deps),
-        samba_includes = includes,
-        local_include  = True,
-        local_include_first  = True,
-        samba_use_hostcc = use_hostcc,
-        samba_use_global_deps = use_global_deps
-        )
-
+    bld.SAMBA_SUBSYSTEM(modname,
+                        source         = source,
+                        deps           = deps,
+                        includes       = includes,
+                        cflags         = cflags,
+                        cflags_end     = cflags_end,
+                        allow_warnings = allow_warnings,
+                        group          = group,
+                        use_hostcc     = use_hostcc,
+                        use_global_deps= use_global_deps)
 
 def HEIMDAL_BINARY(binname, source,
                  deps='',
@@ -316,6 +314,7 @@ def HEIMDAL_BINARY(binname, source,
                  install_path=None):
     '''define a Samba binary'''
 
+    cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=use_hostcc)
     source = heimdal_paths(source)
 
     obj_target = binname + '.heimdal.objlist'
@@ -334,6 +333,8 @@ def HEIMDAL_BINARY(binname, source,
                      deps           = obj_target,
                      includes       = includes,
                      cflags         = cflags,
+                     cflags_end     = cflags_end,
+                     allow_warnings = allow_warnings,
                      group          = group,
                      use_hostcc     = use_hostcc,
                      use_global_deps= use_global_deps,
