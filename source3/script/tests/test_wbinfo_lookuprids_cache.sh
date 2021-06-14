@@ -1,8 +1,18 @@
 #!/bin/sh
 
 WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
-TDBTOOL="${TDBTOOL:-$BINDIR/tdbtool}"
-TDBDUMP="${TDBDUMP:-$BINDIR/tdbdump}"
+samba_tdbtool=tdbtool
+if test -x $BINDIR/tdbtool; then
+    samba_tdbtool=$BINDIR/tdbtool
+fi
+TDBTOOL="${TDBTOOL:-$samba_tdbtool}"
+
+samba_tdbdump=tdbdump
+if test -x $BINDIR/tdbdump; then
+    samba_tdbdump=$BINDIR/tdbdump
+fi
+TDBDUMP="${TDBDUMP:-$samba_tdbdump}"
+
 NET="$VALGRIND ${NET:-$BINDIR/net}"
 
 cache="$LOCK_DIR"/winbindd_cache.tdb
