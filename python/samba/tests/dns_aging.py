@@ -1970,6 +1970,22 @@ class TestDNSAging(DNSTest):
             elif d == txt3:
                 self.assertNotEqual(r.dwTimeStamp, 0)
 
+    def test_dns_query_for_tombstoned_results(self):
+        # This one fails on Windows, because the dns cache holds B
+        # after it has been tombstoned behind its back.
+        A = 'a'
+        B = 'b'
+        self.dns_tombstone(A)
+        self.assert_tombstoned(A)
+        r = self.dns_query(A, qtype=dns.DNS_QTYPE_TXT)
+        self.assertEqual(r.ancount, 0)
+
+        self.dns_update_record(B, B)
+        self.dns_tombstone(B)
+        self.assert_tombstoned(B)
+        r = self.dns_query(B, qtype=dns.DNS_QTYPE_TXT)
+        self.assertEqual(r.ancount, 0)
+
     def test_basic_scavenging(self):
         # NOTE: This one fails on Windows, because the RPC call to
         # prompt scavenging is not immediate. On Samba, in the
