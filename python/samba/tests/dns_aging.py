@@ -332,6 +332,12 @@ class TestDNSAging(DNSTest):
         self.assert_dns_rcode_equals(code, dns.DNS_RCODE_OK)
         return response
 
+    def dns_delete(self, name, data, wtype=None):
+        return self.dns_update_non_text(name,
+                                        data,
+                                        wtype,
+                                        qclass=dns.DNS_QCLASS_NONE)
+
     def dns_update_record(self, name, txt, ttl=900):
         if isinstance(txt, str):
             txt = [txt]
