@@ -196,7 +196,7 @@ static NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		status = copy_current_records(mem_ctx, old_el, el, dns_timestamp);
+		status = copy_current_records(new_msg, old_el, el, dns_timestamp);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(new_msg);
