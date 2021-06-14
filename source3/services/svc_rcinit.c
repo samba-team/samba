@@ -25,8 +25,15 @@
 
 static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 {
+	int ret = -1;
+
+	/*
+	 * Disabled due to security concerns and unknown use in the
+	 * field -- vl@samba.org
+	 */
+#if 0
 	char *command = NULL;
-	int ret, fd;
+	int fd;
 
 	if (asprintf(&command, "%s/%s/%s stop",
 				get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR, service) < 0) {
@@ -50,7 +57,7 @@ static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 	status->state			= (ret == 0 ) ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 	status->controls_accepted	= SVCCTL_ACCEPT_STOP |
 					  SVCCTL_ACCEPT_SHUTDOWN;
-
+#endif
 	return ( ret == 0 ) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
@@ -59,8 +66,14 @@ static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 
 static WERROR rcinit_start( const char *service )
 {
+	int ret = -1;
+	/*
+	 * Disabled due to security concerns and unknown use in the
+	 * field -- vl@samba.org
+	 */
+#if 0
 	char *command = NULL;
-	int ret, fd;
+	int fd;
 
 	if (asprintf(&command, "%s/%s/%s start",
 				get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR, service) < 0) {
@@ -77,7 +90,7 @@ static WERROR rcinit_start( const char *service )
 	close(fd);
 
 	SAFE_FREE(command);
-
+#endif
 	return ( ret == 0 ) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
@@ -86,6 +99,11 @@ static WERROR rcinit_start( const char *service )
 
 static WERROR rcinit_status( const char *service, struct SERVICE_STATUS *status )
 {
+	/*
+	 * Disabled due to security concerns and unknown use in the
+	 * field -- vl@samba.org
+	 */
+#if 0
 	char *command = NULL;
 	int ret, fd;
 
@@ -115,6 +133,9 @@ static WERROR rcinit_status( const char *service, struct SERVICE_STATUS *status 
 					  SVCCTL_ACCEPT_SHUTDOWN;
 
 	return WERR_OK;
+#else
+	return WERR_ACCESS_DENIED;
+#endif
 }
 
 /*********************************************************************
