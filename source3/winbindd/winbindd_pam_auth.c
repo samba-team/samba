@@ -22,10 +22,57 @@
 #include "libcli/security/dom_sid.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
+
+static NTSTATUS fake_password_policy(struct winbindd_response *r,
+				     uint16_t validation_level,
+				     union netr_Validation  *validation)
+{
+	const struct netr_SamBaseInfo *bi = NULL;
+	NTTIME min_password_age;
+	NTTIME max_password_age;
+
+	switch (validation_level) {
+	case 3:
+		bi = &validation->sam3->base;
+		break;
+	case 6:
+		bi = &validation->sam6->base;
+		break;
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (bi->allow_password_change > bi->last_password_change) {
+		min_password_age = bi->allow_password_change -
+				   bi->last_password_change;
+	} else {
+		min_password_age = 0;
+	}
+
+	if (bi->force_password_change > bi->last_password_change) {
+		max_password_age = bi->force_password_change -
+				   bi->last_password_change;
+	} else {
+		max_password_age = 0;
+	}
+
+	r->data.auth.policy.min_length_password = 0;
+	r->data.auth.policy.password_history = 0;
+	r->data.auth.policy.password_properties = 0;
+	r->data.auth.policy.expire =
+		nt_time_to_unix_abs(&max_password_age);
+	r->data.auth.policy.min_passwordage =
+		nt_time_to_unix_abs(&min_password_age);
+
+	return NT_STATUS_OK;
+}
 
 struct winbindd_pam_auth_state {
-	struct winbindd_request *request;
-	struct winbindd_response *response;
+	struct wbint_PamAuth *r;
+	fstring name_namespace;
+	fstring name_domain;
+	fstring name_user;
 };
 
 static void winbindd_pam_auth_done(struct tevent_req *subreq);
@@ -38,7 +85,6 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_auth_state *state;
 	struct winbindd_domain *domain;
-	fstring name_namespace, name_domain, name_user;
 	char *mapped = NULL;
 	NTSTATUS status;
 	bool ok;
@@ -48,11 +94,6 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->request = request;
-
-	/* Ensure null termination */
-	request->data.auth.user[sizeof(request->data.auth.user)-1] = '\0';
-	request->data.auth.pass[sizeof(request->data.auth.pass)-1] = '\0';
 
 	DBG_NOTICE("[%s (%u)]: pam auth %s\n",
 		   cli->client_name,
@@ -77,22 +118,71 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	ok = canonicalize_username(request->data.auth.user,
-				   name_namespace,
-				   name_domain,
-				   name_user);
+				   state->name_namespace,
+				   state->name_domain,
+				   state->name_user);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
 
-	domain = find_auth_domain(request->flags, name_namespace);
+	domain = find_auth_domain(request->flags, state->name_namespace);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_domain_request_send(state, global_event_context(), domain,
-					request);
+	state->r = talloc_zero(state, struct wbint_PamAuth);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.client_name = talloc_strdup(
+			state->r, request->client_name);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.client_pid = request->pid;
+	state->r->in.flags = request->flags;
+
+	state->r->in.info = talloc_zero(state->r, struct wbint_AuthUserInfo);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.info->krb5_cc_type = talloc_strdup(
+			state->r, request->data.auth.krb5_cc_type);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.info->password = talloc_strdup(
+			state->r, request->data.auth.pass);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.info->username = talloc_strdup(
+			state->r, request->data.auth.user);
+	if (tevent_req_nomem(state->r, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r->in.info->uid = request->data.auth.uid;
+
+	status = extra_data_to_sid_array(
+				request->data.auth.require_membership_of_sid,
+				state->r,
+				&state->r->in.require_membership_of_sid);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dcerpc_wbint_PamAuth_r_send(state,
+					     global_event_context(),
+					     dom_child_handle(domain),
+					     state->r);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -106,14 +196,18 @@ static void winbindd_pam_auth_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct winbindd_pam_auth_state *state = tevent_req_data(
 		req, struct winbindd_pam_auth_state);
-	int res, err;
+	NTSTATUS status;
 
-	res = wb_domain_request_recv(subreq, state, &state->response, &err);
+	status = dcerpc_wbint_PamAuth_r_recv(subreq, state);
 	TALLOC_FREE(subreq);
-	if (res == -1) {
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	if (tevent_req_nterror(req, state->r->out.result)) {
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
@@ -128,22 +222,26 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 		set_auth_errors(response, status);
 		return status;
 	}
-	*response = *state->response;
+
 	response->result = WINBINDD_PENDING;
-	state->response = talloc_move(response, &state->response);
 
-	status = NT_STATUS(response->data.auth.nt_status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	status = append_auth_data(response,
+				  response,
+				  state->r->in.flags,
+				  state->r->out.validation->level,
+				  state->r->out.validation->validation,
+				  state->name_domain,
+				  state->name_user);
+	fstrcpy(response->data.auth.krb5ccname,
+		state->r->out.validation->krb5ccname);
 
-	if (state->request->flags & WBFLAG_PAM_INFO3_TEXT) {
+	if (state->r->in.flags & WBFLAG_PAM_INFO3_TEXT) {
 		bool ok;
 
 		ok = add_trusted_domain_from_auth(
-			state->response->data.auth.validation_level,
-			&state->response->data.auth.info3,
-			&state->response->data.auth.info6);
+			state->r->out.validation->level,
+			&response->data.auth.info3,
+			&response->data.auth.info6);
 		if (!ok) {
 			DBG_ERR("add_trusted_domain_from_auth failed\n");
 			set_auth_errors(response, NT_STATUS_LOGON_FAILURE);
@@ -151,17 +249,36 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 		}
 	}
 
-	if (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) {
+	if (state->r->in.flags & WBFLAG_PAM_CACHED_LOGIN) {
 
 		/* Store in-memory creds for single-signon using ntlm_auth. */
 
 		status = winbindd_add_memory_creds(
-			state->request->data.auth.user,
-			get_uid_from_request(state->request),
-			state->request->data.auth.pass);
+			state->r->in.info->username,
+			state->r->in.info->uid,
+			state->r->in.info->password);
 		DEBUG(10, ("winbindd_add_memory_creds returned: %s\n",
 			   nt_errstr(status)));
 	}
 
-	return status;
+	if (state->r->in.flags & WBFLAG_PAM_GET_PWD_POLICY) {
+		/*
+		 * WBFLAG_PAM_GET_PWD_POLICY is not used within
+		 * any Samba caller anymore.
+		 *
+		 * We just fake this based on the effective values
+		 * for the user, for legacy callers.
+		 */
+		status = fake_password_policy(response,
+				state->r->out.validation->level,
+				state->r->out.validation->validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to fake password policy: %s\n",
+				nt_errstr(status));
+			set_auth_errors(response, status);
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
 }

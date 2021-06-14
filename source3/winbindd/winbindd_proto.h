@@ -437,8 +437,10 @@ NTSTATUS extra_data_to_sid_array(const char *group_sid,
 uid_t get_uid_from_request(struct winbindd_request *request);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
-enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
-					    struct winbindd_cli_state *state) ;
+struct pipes_struct;
+struct wbint_PamAuth;
+NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
+			struct wbint_PamAuth *r);
 enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state) ;
 enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
