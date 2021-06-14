@@ -243,14 +243,6 @@ class TestDNSAging(DNSTest):
         except WERRORError as e:
             self.fail(f"could not replace record ({e})")
 
-    def rpc_add(self, name, data, wtype):
-        rec_buf = recbuf_from_string(wtype, data)
-        self.rpc_replace(name, None, rec_buf)
-
-    def rpc_delete(self, name, data, wtype):
-        rec_buf = recbuf_from_string(wtype, data)
-        self.rpc_replace(name, rec_buf, None)
-
     def get_unique_txt_record(self, name, txt):
         """Get the TXT record on Name with value txt, asserting that there is
         only one."""
@@ -375,6 +367,12 @@ class TestDNSAging(DNSTest):
             self.rpc_replace(name, None, rec)
 
         return self.get_unique_txt_record(name, txt)
+
+    def rpc_delete_txt(self, name, txt):
+        if isinstance(txt, str):
+            txt = [txt]
+        old = TXTRecord(txt)
+        self.rpc_replace(name, old, None)
 
     def get_one_node(self, name):
         expr = f"(&(objectClass=dnsNode)(name={name}))"
