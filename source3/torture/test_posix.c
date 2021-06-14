@@ -24,6 +24,7 @@
 #include "libsmb/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "util_sd.h"
+#include "trans2.h"
 
 extern struct cli_credentials *torture_creds;
 extern fstring host, workgroup, share, password, username, myname;
@@ -1435,6 +1436,256 @@ out:
 	cli_posix_unlink(cli_unix, nonexist);
 	cli_posix_unlink(cli_unix, nonexist_symlink);
 	cli_posix_unlink(cli_unix, nonexist_symlink_newname);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+/* List of info levels to try with a POSIX symlink path. */
+
+static struct {
+	uint32_t level;
+	const char *name;
+} posix_smb1_qpath_array[] = {
+  { SMB_INFO_STANDARD,			"SMB_INFO_STANDARD"},
+  { SMB_INFO_QUERY_EA_SIZE,		"SMB_INFO_QUERY_EA_SIZE"},
+  { SMB_INFO_IS_NAME_VALID,		"SMB_INFO_IS_NAME_VALID"},
+  { SMB_INFO_QUERY_EAS_FROM_LIST,	"SMB_INFO_QUERY_EAS_FROM_LIST"},
+  { SMB_INFO_QUERY_ALL_EAS,		"SMB_INFO_QUERY_ALL_EAS"},
+  { SMB_FILE_BASIC_INFORMATION,		"SMB_FILE_BASIC_INFORMATION"},
+  { SMB_FILE_STANDARD_INFORMATION,	"SMB_FILE_STANDARD_INFORMATION"},
+  { SMB_FILE_EA_INFORMATION,		"SMB_FILE_EA_INFORMATION"},
+  { SMB_FILE_ALTERNATE_NAME_INFORMATION,"SMB_FILE_ALTERNATE_NAME_INFORMATION"},
+  { SMB_QUERY_FILE_NAME_INFO,		"SMB_QUERY_FILE_NAME_INFO"},
+  { SMB_FILE_NORMALIZED_NAME_INFORMATION,"SMB_FILE_NORMALIZED_NAME_INFORMATION"},
+  { SMB_FILE_ALLOCATION_INFORMATION,	"SMB_FILE_ALLOCATION_INFORMATION"},
+  { SMB_FILE_END_OF_FILE_INFORMATION,	"SMB_FILE_END_OF_FILE_INFORMATION"},
+  { SMB_FILE_ALL_INFORMATION,		"SMB_FILE_ALL_INFORMATION"},
+  { SMB_FILE_INTERNAL_INFORMATION,	"SMB_FILE_INTERNAL_INFORMATION"},
+  { SMB_FILE_ACCESS_INFORMATION,	"SMB_FILE_ACCESS_INFORMATION"},
+  { SMB_FILE_NAME_INFORMATION,		"SMB_FILE_NAME_INFORMATION"},
+  { SMB_FILE_DISPOSITION_INFORMATION,	"SMB_FILE_DISPOSITION_INFORMATION"},
+  { SMB_FILE_POSITION_INFORMATION,	"SMB_FILE_POSITION_INFORMATION"},
+  { SMB_FILE_MODE_INFORMATION,		"SMB_FILE_MODE_INFORMATION"},
+  { SMB_FILE_ALIGNMENT_INFORMATION,	"SMB_FILE_ALIGNMENT_INFORMATION"},
+  { SMB_FILE_STREAM_INFORMATION,	"SMB_FILE_STREAM_INFORMATION"},
+  { SMB_FILE_COMPRESSION_INFORMATION,	"SMB_FILE_COMPRESSION_INFORMATION"},
+  { SMB_FILE_NETWORK_OPEN_INFORMATION,	"SMB_FILE_NETWORK_OPEN_INFORMATION"},
+  { SMB_FILE_ATTRIBUTE_TAG_INFORMATION, "SMB_FILE_ATTRIBUTE_TAG_INFORMATION"},
+  { SMB_QUERY_FILE_UNIX_BASIC,		"SMB_QUERY_FILE_UNIX_BASIC"},
+  { SMB_QUERY_FILE_UNIX_INFO2,		"SMB_QUERY_FILE_UNIX_INFO2"},
+  { SMB_QUERY_FILE_UNIX_LINK,		"SMB_QUERY_FILE_UNIX_LINK"},
+  { SMB_QUERY_POSIX_ACL,		"SMB_QUERY_POSIX_ACL"},
+  { SMB_QUERY_POSIX_LOCK,		"SMB_QUERY_POSIX_LOCK"},
+};
+
+static NTSTATUS do_qpath(TALLOC_CTX *ctx,
+			 struct cli_state *cli_unix,
+			 const char *fname,
+			 size_t i)
+{
+	NTSTATUS status;
+
+	if (posix_smb1_qpath_array[i].level ==
+			SMB_INFO_QUERY_EAS_FROM_LIST) {
+		uint16_t setup;
+		uint8_t *param;
+		uint8_t data[8];
+		uint8_t *rparam = NULL;
+		uint8_t *rdata = NULL;
+		uint32_t rbytes = 0;
+
+		/* Set up an EA list with 'a' as the single name. */
+		SIVAL(data,0, 8);
+		SCVAL(data,4, 2); /* namelen. */
+		SCVAL(data,5, 'a');
+		SCVAL(data,6, '\0'); /* name. */
+		SCVAL(data,7, '\0'); /* padding. */
+
+		SSVAL(&setup, 0, TRANSACT2_QPATHINFO);
+
+		param = talloc_zero_array(ctx, uint8_t, 6);
+		if (param == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SSVAL(param, 0, SMB_INFO_QUERY_EAS_FROM_LIST);
+		param = trans2_bytes_push_str(param,
+				smbXcli_conn_use_unicode(cli_unix->conn),
+				fname,
+				strlen(fname)+1,
+				NULL);
+		if (param == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = cli_trans(ctx,
+				cli_unix,
+				SMBtrans2,
+				NULL,
+				-1,
+				0,
+				0,
+				&setup, 1, 0,
+				param, talloc_get_size(param), talloc_get_size(param),
+				data, 8, 0,
+				NULL,
+				NULL, 0, NULL,
+				&rparam, 0, &rbytes,
+				&rdata, 0, &rbytes);
+		TALLOC_FREE(rparam);
+		TALLOC_FREE(rdata);
+	} else {
+		uint8_t *rdata = NULL;
+		uint32_t num_rdata = 0;
+
+		status = cli_qpathinfo(ctx,
+				cli_unix,
+				fname,
+				posix_smb1_qpath_array[i].level,
+				0, /* min_rdata */
+				65534, /* max_rdata */
+				&rdata,
+				&num_rdata);
+		TALLOC_FREE(rdata);
+	}
+	/*
+	 * We don't care what came back, so long as the
+	 * server didn't crash.
+	 */
+	if (NT_STATUS_EQUAL(status,
+			NT_STATUS_CONNECTION_DISCONNECTED)) {
+		printf("cli_qpathinfo of %s failed error "
+			"NT_STATUS_CONNECTION_DISCONNECTED\n",
+			fname);
+		return status;
+	}
+
+	printf("cli_qpathinfo info %x (%s) of %s got %s "
+		"(this is not an error)\n",
+		(unsigned int)posix_smb1_qpath_array[i].level,
+		posix_smb1_qpath_array[i].name,
+		fname,
+		nt_errstr(status));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  Ensure we can call SMB1 getpathinfo in a symlink,
+  pointing to a real object or dangling. We mostly
+  expect errors, but the server must not crash.
+ */
+bool run_posix_symlink_getpathinfo_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	const char *fname_real = "file_getpath_real";
+	const char *fname_real_symlink = "file_real_getpath_symlink";
+	const char *nonexist = "nonexist_getpath";
+	const char *nonexist_symlink = "dangling_getpath_symlink";
+	bool correct = false;
+	size_t i;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-SYMLINK-GETPATHINFO test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Start with a clean slate. */
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	/* Create a real file. */
+	status = cli_posix_open(cli_unix,
+				fname_real,
+				O_RDWR|O_CREAT,
+				0644,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_unix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Create symlink to real target. */
+	status = cli_posix_symlink(cli_unix,
+				   fname_real,
+				   fname_real_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       fname_real_symlink,
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Now create symlink to non-existing target. */
+	status = cli_posix_symlink(cli_unix,
+				   nonexist,
+				   nonexist_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       nonexist_symlink,
+		       nonexist,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(posix_smb1_qpath_array); i++) {
+		status = do_qpath(frame,
+				  cli_unix,
+				  fname_real_symlink,
+				  i);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		status = do_qpath(frame,
+				  cli_unix,
+				  nonexist_symlink,
+				  i);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	printf("POSIX-SYMLINK-GETPATHINFO test passed\n");
+	correct = true;
+
+out:
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli_unix, fnum);
+	}
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
 
 	if (!torture_close_connection(cli_unix)) {
 		correct = false;

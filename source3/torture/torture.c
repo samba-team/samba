@@ -14964,6 +14964,10 @@ static struct {
 		.fn    = run_posix_dir_default_acl_test,
 	},
 	{
+		.name  = "POSIX-SYMLINK-GETPATHINFO",
+		.fn    = run_posix_symlink_getpathinfo_test,
+	},
+	{
 		.name  = "WINDOWS-BAD-SYMLINK",
 		.fn    = run_symlink_open_test,
 	},
