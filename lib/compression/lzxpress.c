@@ -223,7 +223,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 	if ((indic_bit % 32) > 0) {
 		for (; (indic_bit % 32) != 0; indic_bit++)
-			indic |= 0 << (32 - ((indic_bit % 32) + 1));
+			indic |= 1U << (32 - ((indic_bit % 32) + 1));
 
 		SIVAL(compressed, compressed_pos, 0);
 		SIVAL(indic_pos, 0, indic);
