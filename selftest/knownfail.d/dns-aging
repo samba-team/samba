@@ -45,3 +45,4 @@ samba.tests.dns_aging.+test_A_5_days_A_10_days_no_aging
 samba.tests.dns_aging.+test_A_5_days_A_5_days_aging
 samba.tests.dns_aging.+test_A_6_days_AAAA_40_days_no_aging
 samba.tests.dns_aging.+test_A_9_days_AAAA_10_days_no_aging
+samba.tests.dns_aging.+test_samba_scavenging
