@@ -1442,9 +1442,11 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 						const char *krb5_cc_type,
 						uid_t uid,
 						TALLOC_CTX *mem_ctx,
-						struct netr_SamInfo6 **info6,
+						uint16_t *_validation_level,
+						union netr_Validation **_validation,
 						const char **_krb5ccname)
 {
+	struct netr_SamInfo6 *info6 = NULL;
 	struct winbindd_domain *contact_domain;
 	fstring name_namespace, name_domain, name_user;
 	NTSTATUS result;
@@ -1499,8 +1501,22 @@ try_login:
 		pass,
 		krb5_cc_type,
 		uid,
-		info6,
+		&info6,
 		_krb5ccname);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = map_info6_to_validation(mem_ctx,
+					 info6,
+					 _validation_level,
+					 _validation);
+	TALLOC_FREE(info6);
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_ERR("map_info6_to_validation failed: %s\n",
+			nt_errstr(result));
+	}
+
 done:
 	return result;
 }
@@ -2292,7 +2308,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Check for Kerberos authentication */
 	if (domain->online && (state->request->flags & WBFLAG_PAM_KRB5)) {
-		struct netr_SamInfo6 *info6 = NULL;
 		const char *krb5ccname = NULL;
 
 		result = winbindd_dual_pam_auth_kerberos(
@@ -2302,7 +2317,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 				state->request->data.auth.krb5_cc_type,
 				get_uid_from_request(state->request),
 				state->mem_ctx,
-				&info6,
+				&validation_level,
+				&validation,
 				&krb5ccname);
 
 		/* save for later */
@@ -2314,15 +2330,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			fstrcpy(state->response->data.auth.krb5ccname,
 				krb5ccname);
 
-			result = map_info6_to_validation(state->mem_ctx,
-							 info6,
-							 &validation_level,
-							 &validation);
-			TALLOC_FREE(info6);
-			if (!NT_STATUS_IS_OK(result)) {
-				DBG_ERR("map_info6_to_validation failed\n");
-				goto done;
-			}
 			goto process_result;
 		}
 
