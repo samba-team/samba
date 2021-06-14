@@ -243,6 +243,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	uint32_t length;
 	uint32_t offset;
 	uint32_t nibble_index;
+	uint32_t i;
 
 	output_index = 0;
 	input_index = 0;
@@ -291,7 +292,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			CHECK_INPUT_BYTES(2);
 			length = PULL_LE_UINT16(input, input_index);
 			input_index += sizeof(uint16_t);
-			offset = length / 8;
+			offset = (length / 8) + 1;
 			length = length % 8;
 
 			if (length == 7) {
@@ -313,29 +314,35 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 						CHECK_INPUT_BYTES(2);
 						length = PULL_LE_UINT16(input, input_index);
 						input_index += sizeof(uint16_t);
+						if (length == 0) {
+							CHECK_INPUT_BYTES(4);
+							length = PULL_LE_UINT32(input, input_index);
+							input_index += sizeof(uint32_t);
+						}
+
+						if (length < (15 + 7)) {
+							return -1;
+						}
 						length -= (15 + 7);
 					}
 					length += 15;
 				}
 				length += 7;
 			}
-
 			length += 3;
+
 			if (length == 0) {
 				return -1;
 			}
 
-			if (offset >= output_index) {
-				return -1;
-			}
-			CHECK_OUTPUT_BYTES(length);
-
-			do {
-				output[output_index] = output[output_index - offset - 1];
-
+			for (i = 0; i < length; i++) {
+				if (offset > output_index) {
+					return -1;
+				}
+				CHECK_OUTPUT_BYTES(1);
+				output[output_index] = output[output_index - offset];
 				output_index += sizeof(uint8_t);
-				length -= sizeof(uint8_t);
-			} while (length != 0);
+			}
 		}
 	} while ((output_index < max_output_size) && (input_index < (input_size)));
 
