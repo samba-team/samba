@@ -399,6 +399,14 @@ class TestDNSAging(DNSTest):
         records = node.get('dnsRecord')
         return [ndr_unpack(dnsp.DnssrvRpcRecord, r) for r in records]
 
+    def ldap_get_non_tombstoned_records(self, name):
+        all_records = self.ldap_get_records(name)
+        records = []
+        for r in all_records:
+            if r.wType != dnsp.DNS_TYPE_TOMBSTONE:
+                records.append(r)
+        return records
+
     def assert_tombstoned(self, name, tombstoned=True, timestamp=None):
         # If run with tombstoned=False, assert it isn't tombstoned
         # (and has no traces of tombstone). Otherwise assert it has
