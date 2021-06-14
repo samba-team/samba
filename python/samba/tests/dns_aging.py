@@ -1043,7 +1043,7 @@ class TestDNSAging(DNSTest):
         self.assert_timestamps_equal(timestamp2, timestamp3)
 
         self.ldap_delete_record(name, txt3)
-        timestamp2 = self.dns_update_record(name, txt3).dwTimeStamp
+        timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
         self.assert_soon_after(timestamp3, current_time)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
@@ -1481,7 +1481,7 @@ class TestDNSAging(DNSTest):
         self.assert_timestamps_equal(timestamp2, n_days_ago)
 
         self.ldap_delete_record(name, txt3)
-        timestamp2 = self.dns_update_record(name, txt3).dwTimeStamp
+        timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
         self.assert_soon_after(timestamp3, current_time)
         timestamp1 = self.get_unique_txt_record(name, txt1).dwTimeStamp
         timestamp2 = self.get_unique_txt_record(name, txt2).dwTimeStamp
