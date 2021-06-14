@@ -354,9 +354,9 @@ out:
 	return status;
 }
 
-static NTSTATUS extra_data_to_sid_array(const char *group_sid,
-					TALLOC_CTX *mem_ctx,
-					struct wbint_SidArray **_sid_array)
+NTSTATUS extra_data_to_sid_array(const char *group_sid,
+				TALLOC_CTX *mem_ctx,
+				struct wbint_SidArray **_sid_array)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct wbint_SidArray *sid_array = NULL;

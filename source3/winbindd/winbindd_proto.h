@@ -431,6 +431,9 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 			  union netr_Validation *validation,
 			  const char *name_domain,
 			  const char *name_user);
+NTSTATUS extra_data_to_sid_array(const char *group_sid,
+				TALLOC_CTX *mem_ctx,
+				struct wbint_SidArray **_sid_array);
 uid_t get_uid_from_request(struct winbindd_request *request);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
