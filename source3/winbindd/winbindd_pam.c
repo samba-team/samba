@@ -545,11 +545,24 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 	return find_our_domain();
 }
 
-static void fake_password_policy(struct winbindd_response *r,
-				 const struct netr_SamBaseInfo *bi)
+static NTSTATUS fake_password_policy(struct winbindd_response *r,
+				     uint16_t validation_level,
+				     union netr_Validation  *validation)
 {
+	const struct netr_SamBaseInfo *bi = NULL;
 	NTTIME min_password_age;
 	NTTIME max_password_age;
+
+	switch (validation_level) {
+	case 3:
+		bi = &validation->sam3->base;
+		break;
+	case 6:
+		bi = &validation->sam6->base;
+		break;
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (bi->allow_password_change > bi->last_password_change) {
 		min_password_age = bi->allow_password_change -
@@ -572,6 +585,8 @@ static void fake_password_policy(struct winbindd_response *r,
 		nt_time_to_unix_abs(&max_password_age);
 	r->data.auth.policy.min_passwordage =
 		nt_time_to_unix_abs(&min_password_age);
+
+	return NT_STATUS_OK;
 }
 
 static void fill_in_password_policy(struct winbindd_response *r,
@@ -2633,7 +2648,9 @@ process_result:
 			 * We just fake this based on the effective values
 			 * for the user, for legacy callers.
 			 */
-			fake_password_policy(state->response, &info3->base);
+			fake_password_policy(state->response,
+					     validation_level,
+					     validation);
 		}
 
 		result = NT_STATUS_OK;
