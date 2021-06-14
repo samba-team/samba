@@ -2183,5 +2183,100 @@ class TestDNSAging(DNSTest):
     def test_AAAA_5_days_AAAA_6_days_no_aging(self):
         self._test_A_and_AAAA_records(IPv6_ADDR, IPv6_ADDR_2, 5, 6, aging=False)
 
+    def _test_dns_delete_times(self, n_days, aging=True):
+        # In these tests, Windows replaces the records with
+        # tombstones, while Samba just removes them. Both are
+        # reasonable approaches (there is no reanimation pathway for
+        # tombstones), but this means self.ldap_get_records() gets
+        # different numbers for each. So we use
+        # self.ldap_get_non_tombstoned_record().
+        name = 'test'
+        A = ['A']
+        B = ['B']
+        C = ['C']
+        D = ['D']
+        self.set_aging(aging)
+        now = dsdb_dns.unix_to_dns_timestamp(int(time.time()))
+        n_days_ago = max(now - n_days * 24, 0)
+
+        self.dns_update_record(name, A)
+        self.ldap_update_record(name, A, dwTimeStamp=n_days_ago)
+        self.ldap_update_record(name, B, dwTimeStamp=n_days_ago)
+        self.ldap_update_record(name, C, dwTimeStamp=n_days_ago)
+        self.dns_update_record(name, D)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, set('ABCD'))
+
+        atime = self.get_unique_txt_record(name, A).dwTimeStamp
+        btime = self.get_unique_txt_record(name, B).dwTimeStamp
+        ctime = self.get_unique_txt_record(name, C).dwTimeStamp
+        dtime = self.get_unique_txt_record(name, D).dwTimeStamp
+        recs = self.ldap_get_records(name)
+        self.assertEqual(len(recs), 4)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, set('ABCD'))
+
+        self.dns_delete(name, D)
+        self.assert_timestamps_equal(atime, self.get_unique_txt_record(name, A))
+        self.assert_timestamps_equal(btime, self.get_unique_txt_record(name, B))
+        self.assert_timestamps_equal(ctime, self.get_unique_txt_record(name, C))
+        recs = self.ldap_get_non_tombstoned_records(name)
+        self.assertEqual(len(recs), 3)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, set('ABC'))
+
+        self.rpc_delete_txt(name, C)
+        self.assert_timestamps_equal(atime, self.get_unique_txt_record(name, A))
+        self.assert_timestamps_equal(btime, self.get_unique_txt_record(name, B))
+        recs = self.ldap_get_non_tombstoned_records(name)
+        self.assertEqual(len(recs), 2)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, set('AB'))
+
+        self.dns_delete(name, A)
+        self.assert_timestamps_equal(btime, self.get_unique_txt_record(name, B))
+        recs = self.ldap_get_records(name)
+        self.assertEqual(len(recs), 1)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, {'B'})
+
+        self.dns_delete(name, B)
+        recs = self.ldap_get_non_tombstoned_records(name)
+        # Windows leaves the node with zero records. Samba ends up
+        # with a tombstone.
+        self.assertEqual(len(recs), 0)
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(len(rset), 0)
+
+    def test_dns_delete_times_5_days_aging(self):
+        self._test_dns_delete_times(5, True)
+
+    def test_dns_delete_times_11_days_aging(self):
+        self._test_dns_delete_times(11, True)
+
+    def test_dns_delete_times_366_days_aging(self):
+        self._test_dns_delete_times(366, True)
+
+    def test_dns_delete_times_static_aging(self):
+        self._test_dns_delete_times(1e10, True)
+
+    def test_dns_delete_times_5_days_no_aging(self):
+        self._test_dns_delete_times(5, False)
+
+    def test_dns_delete_times_11_days_no_aging(self):
+        self._test_dns_delete_times(11, False)
+
+    def test_dns_delete_times_366_days_no_aging(self):
+        self._test_dns_delete_times(366, False)
+
+    def test_dns_delete_times_static_no_aging(self):
+        self._test_dns_delete_times(1e10, False)
+
 
 TestProgram(module=__name__, opts=subunitopts)
