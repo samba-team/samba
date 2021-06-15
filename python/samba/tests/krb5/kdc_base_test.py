@@ -75,6 +75,7 @@ class KDCBaseTest(RawKerberosTest):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls._lp = None
         cls.host = os.environ["SERVER"]
 
