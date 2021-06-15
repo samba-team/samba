@@ -29,8 +29,13 @@ from ldb import SCOPE_BASE
 from samba import generate_random_password
 from samba.auth import system_session
 from samba.credentials import Credentials, SPECIFIED, MUST_USE_KERBEROS
-from samba.dcerpc import krb5pac, krb5ccache
-from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_NORMAL_ACCOUNT
+from samba.dcerpc import krb5pac, krb5ccache, security
+from samba.dsdb import (
+    DS_DOMAIN_FUNCTION_2000,
+    DS_DOMAIN_FUNCTION_2008,
+    UF_WORKSTATION_TRUST_ACCOUNT,
+    UF_NORMAL_ACCOUNT
+)
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samdb import SamDB
 
@@ -71,6 +76,8 @@ class KDCBaseTest(RawKerberosTest):
 
         cls._ldb = None
 
+        cls._functional_level = None
+
         # A set containing DNs of accounts created as part of testing.
         cls.accounts = set()
 
@@ -107,6 +114,33 @@ class KDCBaseTest(RawKerberosTest):
                             lp=lp)
 
         return self._ldb
+
+    def get_domain_functional_level(self, ldb):
+        if self._functional_level is None:
+            res = ldb.search(base='',
+                             scope=SCOPE_BASE,
+                             attrs=['domainFunctionality'])
+            try:
+                functional_level = int(res[0]['domainFunctionality'][0])
+            except KeyError:
+                functional_level = DS_DOMAIN_FUNCTION_2000
+
+            type(self)._functional_level = functional_level
+
+        return self._functional_level
+
+    def get_default_enctypes(self):
+        samdb = self.get_samdb()
+        functional_level = self.get_domain_functional_level(samdb)
+
+        # RC4 should always be supported
+        default_enctypes = security.KERB_ENCTYPE_RC4_HMAC_MD5
+        if functional_level >= DS_DOMAIN_FUNCTION_2008:
+            # AES is only supported at functional level 2008 or higher
+            default_enctypes |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+            default_enctypes |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+
+        return default_enctypes
 
     def create_account(self, ldb, name, machine_account=False,
                        spn=None, upn=None):
