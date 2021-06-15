@@ -71,8 +71,10 @@ class CcacheTests(KDCBaseTest):
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
 
+        lp = self.get_lp()
+
         settings = {}
-        settings["lp_ctx"] = self.lp
+        settings["lp_ctx"] = lp
         settings["target_hostname"] = mach_name
 
         gensec_client = gensec.Security.start_client(settings)
@@ -80,7 +82,7 @@ class CcacheTests(KDCBaseTest):
         gensec_client.want_feature(gensec.FEATURE_SEAL)
         gensec_client.start_mech_by_sasl_name("GSSAPI")
 
-        auth_context = AuthContext(lp_ctx=self.lp, ldb=samdb, methods=[])
+        auth_context = AuthContext(lp_ctx=lp, ldb=samdb, methods=[])
 
         gensec_server = gensec.Security.start_server(settings, auth_context)
         gensec_server.set_credentials(mach_credentials)
