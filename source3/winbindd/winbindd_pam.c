@@ -2973,9 +2973,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				  validation_level,
 				  validation,
 				  name_domain, name_user);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
 done:
 
