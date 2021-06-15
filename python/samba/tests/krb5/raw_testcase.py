@@ -393,6 +393,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
         self.s = None
 
+        self.unspecified_kvno = object()
+
     def tearDown(self):
         self._disconnect("tearDown")
         super().tearDown()
@@ -861,10 +863,11 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNotNone(v)
             # The value on the wire should never be 0
             self.assertNotEqual(v, 0)
-            # value == 0 means we don't know the kvno
-            # but enforce at any value != 0 is present
-            value = int(value)
-            if value != 0:
+            # unspecified_kvno means we don't know the kvno,
+            # but want to enforce its presense
+            if value is not self.unspecified_kvno:
+                value = int(value)
+                self.assertNotEqual(value, 0)
                 self.assertEqual(v, value)
         else:
             self.assertIsNone(v)
@@ -1584,8 +1587,8 @@ class RawKerberosTest(TestCaseInTempDir):
             ticket_encpart = self.getElementValue(ticket, 'enc-part')
             if ticket_encpart is not None: # Never None, but gives indentation
                 self.assertElementPresent(ticket_encpart, 'etype')
-                # 0 means present, with any value != 0
-                self.assertElementKVNO(ticket_encpart, 'kvno', 0)
+                # 'unspecified' means present, with any value != 0
+                self.assertElementKVNO(ticket_encpart, 'kvno', self.unspecified_kvno)
                 self.assertElementPresent(ticket_encpart, 'cipher')
                 ticket_cipher = self.getElementValue(ticket_encpart, 'cipher')
         self.assertElementPresent(rep, 'enc-part')
