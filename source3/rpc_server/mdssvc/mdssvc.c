@@ -1674,11 +1674,15 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 		  struct mdssvc_blob *response_blob)
 {
 	bool ok;
+	int ret;
 	ssize_t len;
 	DALLOC_CTX *query = NULL;
 	DALLOC_CTX *reply = NULL;
 	char *rpccmd;
 	const struct slrpc_cmd *slcmd;
+	const struct smb_filename conn_basedir = {
+		.base_name = mds_ctx->conn->connectpath,
+	};
 
 	if (CHECK_DEBUGLVL(10)) {
 		const struct sl_query *slq;
@@ -1726,6 +1730,14 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 	if (slcmd == NULL) {
 		DEBUG(1, ("unsupported primary Spotlight RPC command %s\n",
 			  rpccmd));
+		ok = false;
+		goto cleanup;
+	}
+
+	ret = vfs_ChDir(mds_ctx->conn, &conn_basedir);
+	if (ret != 0) {
+		DBG_ERR("vfs_ChDir [%s] failed: %s\n",
+			conn_basedir.base_name, strerror(errno));
 		ok = false;
 		goto cleanup;
 	}
