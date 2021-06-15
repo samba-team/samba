@@ -66,7 +66,7 @@ class KDCBaseTest(RawKerberosTest):
 
     @classmethod
     def setUpClass(cls):
-        cls.lp = cls.get_loadparm(cls)
+        cls._lp = None
         cls.host = os.environ["SERVER"]
 
         cls._ldb = None
@@ -89,15 +89,22 @@ class KDCBaseTest(RawKerberosTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
+    def get_lp(self):
+        if self._lp is None:
+            type(self)._lp = self.get_loadparm()
+
+        return self._lp
+
     def get_samdb(self):
         if self._ldb is None:
             creds = self.get_user_creds()
+            lp = self.get_lp()
 
             session = system_session()
             type(self)._ldb = SamDB(url="ldap://%s" % self.host,
                             session_info=session,
                             credentials=creds,
-                            lp=self.lp)
+                            lp=lp)
 
         return self._ldb
 
@@ -137,7 +144,7 @@ class KDCBaseTest(RawKerberosTest):
         ldb.add(details)
 
         creds = Credentials()
-        creds.guess(self.lp)
+        creds.guess(self.get_lp())
         creds.set_realm(ldb.domain_dns_name().upper())
         creds.set_domain(ldb.domain_netbios_name().upper())
         creds.set_password(password)
@@ -607,7 +614,7 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_kerberos_state(MUST_USE_KERBEROS)
         creds.set_username(user_name, SPECIFIED)
         creds.set_realm(realm)
-        creds.set_named_ccache(cachefile.name, SPECIFIED, self.lp)
+        creds.set_named_ccache(cachefile.name, SPECIFIED, self.get_lp())
 
         # Return the credentials along with the cache file.
         return (creds, cachefile)

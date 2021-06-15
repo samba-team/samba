@@ -82,7 +82,7 @@ class SmbTests(KDCBaseTest):
 
         # Connect to a share and retrieve the user SID.
         s3_lp = s3param.get_context()
-        s3_lp.load(self.lp.configfile)
+        s3_lp.load(self.get_lp().configfile)
 
         min_protocol = s3_lp.get("client min protocol")
         self.addCleanup(s3_lp.set, "client min protocol", min_protocol)

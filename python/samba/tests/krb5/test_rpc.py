@@ -62,7 +62,7 @@ class RpcTests(KDCBaseTest):
         # cached credentials.
 
         binding_str = "ncacn_np:%s[\\pipe\\lsarpc]" % mach_name
-        conn = lsa.lsarpc(binding_str, self.lp, creds)
+        conn = lsa.lsarpc(binding_str, self.get_lp(), creds)
 
         (account_name, _) = conn.GetUserName(None, None, None)
 
