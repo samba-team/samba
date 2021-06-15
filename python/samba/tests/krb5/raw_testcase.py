@@ -528,20 +528,47 @@ class RawKerberosTest(TestCaseInTempDir):
                         default_username=None,
                         allow_missing_password=False,
                         allow_missing_keys=True,
-                        require_strongest_key=False):
-        if prefix not in self.creds_dict:
-            # We don't have the credentials already
+                        require_strongest_key=False,
+                        fallback_creds_fn=None):
+        if prefix in self.creds_dict:
+            return self.creds_dict[prefix]
+
+        # We don't have the credentials already
+        creds = None
+        env_err = None
+        try:
+            # Try to obtain them from the environment
             creds = self._get_krb5_creds_from_env(prefix,
                                                   default_username=default_username,
                                                   allow_missing_password=allow_missing_password,
                                                   allow_missing_keys=allow_missing_keys,
                                                   require_strongest_key=require_strongest_key)
+        except Exception as err:
+            # An error occurred, so save it for later
+            env_err = err
+        else:
             self.assertIsNotNone(creds)
-
             # Save the obtained credentials
             self.creds_dict[prefix] = creds
+            return creds
 
-        return self.creds_dict[prefix]
+        if fallback_creds_fn is not None:
+            try:
+                # Try to use the fallback method
+                creds = fallback_creds_fn()
+            except Exception as err:
+                print("ERROR FROM ENV: %r" % (env_err))
+                print("FALLBACK-FN: %s" % (fallback_creds_fn))
+                print("FALLBACK-ERROR: %r" % (err))
+            else:
+                self.assertIsNotNone(creds)
+                # Save the obtained credentials
+                self.creds_dict[prefix] = creds
+                return creds
+
+        # Both methods failed, so raise the exception from the
+        # environment method
+        raise env_err
 
     def get_user_creds(self,
                        allow_missing_password=False,
