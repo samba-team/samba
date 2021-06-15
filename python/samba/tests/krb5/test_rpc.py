@@ -41,12 +41,14 @@ class RpcTests(KDCBaseTest):
         # credentials cache file where the service ticket authenticating the
         # user are stored.
 
+        samdb = self.get_samdb()
+
         user_name = "rpcusr"
-        mach_name = self.dns_host_name
+        mach_name = samdb.host_dns_name()
         service = "cifs"
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(user_name)
+        (user_credentials, _) = self.create_account(samdb, user_name)
 
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the

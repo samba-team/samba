@@ -49,11 +49,14 @@ class CcacheTests(KDCBaseTest):
         mach_name = "ccachemac"
         service = "host"
 
+        samdb = self.get_samdb()
+
         # Create the user account.
-        (user_credentials, _) = self.create_account(user_name)
+        (user_credentials, _) = self.create_account(samdb, user_name)
 
         # Create the machine account.
-        (mach_credentials, _) = self.create_account(mach_name,
+        (mach_credentials, _) = self.create_account(samdb,
+                                                    mach_name,
                                                     machine_account=True,
                                                     spn="%s/%s" % (service,
                                                                    mach_name))
@@ -77,7 +80,7 @@ class CcacheTests(KDCBaseTest):
         gensec_client.want_feature(gensec.FEATURE_SEAL)
         gensec_client.start_mech_by_sasl_name("GSSAPI")
 
-        auth_context = AuthContext(lp_ctx=self.lp, ldb=self.ldb, methods=[])
+        auth_context = AuthContext(lp_ctx=self.lp, ldb=samdb, methods=[])
 
         gensec_server = gensec.Security.start_server(settings, auth_context)
         gensec_server.set_credentials(mach_credentials)
@@ -104,9 +107,9 @@ class CcacheTests(KDCBaseTest):
         # token is the SID of the user we created.
 
         # Retrieve the user account's SID.
-        ldb_res = self.ldb.search(scope=SCOPE_SUBTREE,
-                                  expression="(sAMAccountName=%s)" % user_name,
-                                  attrs=["objectSid"])
+        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
+                               expression="(sAMAccountName=%s)" % user_name,
+                               attrs=["objectSid"])
         self.assertEqual(1, len(ldb_res))
         sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 
