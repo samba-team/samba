@@ -211,7 +211,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         samdb = self.get_samdb()
         user_name = "mskileusr"
         upn_name = "mskileupn"
-        upn = upn_name + "@" + self.credentials.get_realm().lower()
+        upn = upn_name + "@" + self.get_user_creds().get_realm().lower()
         (uc, dn) = self.create_account(samdb, user_name, upn=upn)
         realm = uc.get_realm().lower()
 
@@ -455,7 +455,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         samdb = self.get_samdb()
         user_name = "mskileusr"
         upn_name = "mskileupn"
-        upn = upn_name + "@" + self.credentials.get_realm().lower()
+        upn = upn_name + "@" + self.get_user_creds().get_realm().lower()
         (uc, dn) = self.create_account(samdb, user_name, upn=upn)
         realm = uc.get_realm().lower()
 
