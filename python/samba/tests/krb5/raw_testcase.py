@@ -371,6 +371,14 @@ class RawKerberosTest(TestCaseInTempDir):
         e = self.etype_test_permutations[idx]
         return (e['name'], e['etypes'])
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        # A dictionary containing credentials that have already been
+        # obtained.
+        cls.creds_dict = {}
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = False
@@ -441,11 +449,11 @@ class RawKerberosTest(TestCaseInTempDir):
                                                 allow_missing=allow_missing)
         return val
 
-    def _get_krb5_creds(self, prefix,
-                        default_username=None,
-                        allow_missing_password=False,
-                        allow_missing_keys=True,
-                        require_strongest_key=False):
+    def _get_krb5_creds_from_env(self, prefix,
+                                 default_username=None,
+                                 allow_missing_password=False,
+                                 allow_missing_keys=True,
+                                 require_strongest_key=False):
         c = KerberosCredentials()
         c.guess()
 
@@ -514,6 +522,26 @@ class RawKerberosTest(TestCaseInTempDir):
                             'in environment' % prefix)
 
         return c
+
+    def _get_krb5_creds(self,
+                        prefix,
+                        default_username=None,
+                        allow_missing_password=False,
+                        allow_missing_keys=True,
+                        require_strongest_key=False):
+        if prefix not in self.creds_dict:
+            # We don't have the credentials already
+            creds = self._get_krb5_creds_from_env(prefix,
+                                                  default_username=default_username,
+                                                  allow_missing_password=allow_missing_password,
+                                                  allow_missing_keys=allow_missing_keys,
+                                                  require_strongest_key=require_strongest_key)
+            self.assertIsNotNone(creds)
+
+            # Save the obtained credentials
+            self.creds_dict[prefix] = creds
+
+        return self.creds_dict[prefix]
 
     def get_user_creds(self,
                        allow_missing_password=False,
