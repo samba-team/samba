@@ -67,27 +67,7 @@ class KDCBaseTest(RawKerberosTest):
     @classmethod
     def setUpClass(cls):
         cls.lp = cls.get_loadparm(cls)
-        cls.username = os.environ["USERNAME"]
-        cls.password = os.environ["PASSWORD"]
         cls.host = os.environ["SERVER"]
-
-        c = Credentials()
-        c.set_username(cls.username)
-        c.set_password(cls.password)
-        try:
-            realm = os.environ["REALM"]
-            c.set_realm(realm)
-        except KeyError:
-            pass
-        try:
-            domain = os.environ["DOMAIN"]
-            c.set_domain(domain)
-        except KeyError:
-            pass
-
-        c.guess()
-
-        cls.credentials = c
 
         cls._ldb = None
 
@@ -111,10 +91,12 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_samdb(self):
         if self._ldb is None:
+            creds = self.get_user_creds()
+
             session = system_session()
             type(self)._ldb = SamDB(url="ldap://%s" % self.host,
                             session_info=session,
-                            credentials=self.credentials,
+                            credentials=creds,
                             lp=self.lp)
 
         return self._ldb
