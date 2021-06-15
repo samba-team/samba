@@ -14,7 +14,7 @@
 	</para>
 
 	<para>With <smbconfoption name="winbind scan trusted domains">no</smbconfoption>
-	winbindd don't even get an incomplete picture of the topology.
+	winbindd doesn't even get a complete picture of the topology.
 	</para>
 
 	<para>It is not really required to know about the trust topology.
