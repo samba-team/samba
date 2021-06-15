@@ -2964,6 +2964,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "acl flag inherited canonicalization",
 				  "yes");
 
+	lpcfg_do_global_parameter(lp_ctx,
+				  "winbind use krb5 enterprise principals",
+				  "yes");
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;

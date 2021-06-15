@@ -963,6 +963,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.client_protection = CRED_CLIENT_PROTECTION_DEFAULT;
 
+	Globals.winbind_use_krb5_enterprise_principals = true;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
