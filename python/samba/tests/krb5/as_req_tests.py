@@ -118,6 +118,7 @@ class AsReqKerberosTests(KDCBaseTest):
         client_creds = self.get_client_creds()
         client_account = client_creds.get_username()
         client_as_etypes = client_creds.get_as_krb5_etypes()
+        client_kvno = client_creds.get_kvno()
         krbtgt_creds = self.get_krbtgt_creds(require_strongest_key=True)
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
@@ -157,7 +158,9 @@ class AsReqKerberosTests(KDCBaseTest):
                                              initial_kdc_options)
         self.assertIsNotNone(etype_info2)
 
-        preauth_key = self.PasswordKey_from_etype_info2(client_creds, etype_info2[0], kvno=0)
+        preauth_key = self.PasswordKey_from_etype_info2(client_creds,
+                                                        etype_info2[0],
+                                                        kvno=client_kvno)
 
         (patime, pausec) = self.get_KerberosTimeWithUsec()
         pa_ts = self.PA_ENC_TS_ENC_create(patime, pausec)
