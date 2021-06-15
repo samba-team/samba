@@ -44,7 +44,7 @@ class SimpleKerberosTests(RawKerberosTest):
     def test_simple(self):
         user_creds = self.get_user_creds()
         user = user_creds.get_username()
-        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_creds = self.get_krbtgt_creds(require_keys=False)
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
 
