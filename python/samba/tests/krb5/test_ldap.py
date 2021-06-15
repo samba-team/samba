@@ -74,7 +74,7 @@ class LdapTests(KDCBaseTest):
         # Connect to the machine account and retrieve the user SID.
         ldb_as_user = SamDB(url="ldap://%s" % mach_name,
                             credentials=creds,
-                            lp=self.lp)
+                            lp=self.get_lp())
         ldb_res = ldb_as_user.search('',
                                      scope=SCOPE_BASE,
                                      attrs=["tokenGroups"])
