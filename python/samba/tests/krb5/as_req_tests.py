@@ -58,7 +58,7 @@ class AsReqKerberosTests(RawKerberosTest):
         client_creds = self.get_client_creds()
         client_account = client_creds.get_username()
         client_as_etypes = client_creds.get_as_krb5_etypes()
-        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_creds = self.get_krbtgt_creds(require_keys=False)
         krbtgt_account = krbtgt_creds.get_username()
         realm = krbtgt_creds.get_realm()
 

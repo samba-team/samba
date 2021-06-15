@@ -444,6 +444,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def _get_krb5_creds(self, prefix,
                         default_username=None,
                         allow_missing_password=False,
+                        allow_missing_keys=True,
                         require_strongest_key=False):
         c = KerberosCredentials()
         c.guess()
@@ -486,8 +487,8 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 aes256_allow_missing = True
         else:
-            kvno_allow_missing = True
-            aes256_allow_missing = True
+            kvno_allow_missing = allow_missing_keys
+            aes256_allow_missing = allow_missing_keys
         kvno = self.env_get_var('KVNO', prefix,
                                 fallback_default=False,
                                 allow_missing=kvno_allow_missing)
@@ -506,37 +507,63 @@ class RawKerberosTest(TestCaseInTempDir):
                                    fallback_default=False, allow_missing=True)
         if rc4_key is not None:
             c.set_forced_key(kcrypto.Enctype.RC4, rc4_key)
+
+        if not allow_missing_keys:
+            self.assertTrue(c.forced_keys,
+                            'Please supply %s encryption keys '
+                            'in environment' % prefix)
+
         return c
 
-    def get_user_creds(self, allow_missing_password=False):
+    def get_user_creds(self,
+                       allow_missing_password=False,
+                       allow_missing_keys=True):
         c = self._get_krb5_creds(prefix=None,
-                                 allow_missing_password=allow_missing_password)
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys)
         return c
 
-    def get_service_creds(self, allow_missing_password=False):
+    def get_service_creds(self,
+                          allow_missing_password=False,
+                          allow_missing_keys=True):
         c = self._get_krb5_creds(prefix='SERVICE',
-                                 allow_missing_password=allow_missing_password)
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys)
         return c
 
-    def get_client_creds(self, allow_missing_password=False):
+    def get_client_creds(self,
+                         allow_missing_password=False,
+                         allow_missing_keys=True):
         c = self._get_krb5_creds(prefix='CLIENT',
-                                 allow_missing_password=allow_missing_password)
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys)
         return c
 
-    def get_server_creds(self, allow_missing_password=False):
+    def get_server_creds(self,
+                         allow_missing_password=False,
+                         allow_missing_keys=True):
         c = self._get_krb5_creds(prefix='SERVER',
-                                 allow_missing_password=allow_missing_password)
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys)
         return c
 
-    def get_admin_creds(self, allow_missing_password=False):
+    def get_admin_creds(self,
+                        allow_missing_password=False,
+                        allow_missing_keys=True):
         c = self._get_krb5_creds(prefix='ADMIN',
-                                 allow_missing_password=allow_missing_password)
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys)
         return c
 
-    def get_krbtgt_creds(self, require_strongest_key=False):
+    def get_krbtgt_creds(self,
+                         require_keys=True,
+                         require_strongest_key=False):
+        if require_strongest_key:
+            self.assertTrue(require_keys)
         c = self._get_krb5_creds(prefix='KRBTGT',
                                  default_username='krbtgt',
                                  allow_missing_password=True,
+                                 allow_missing_keys=not require_keys,
                                  require_strongest_key=require_strongest_key)
         return c
 
