@@ -424,6 +424,23 @@ class RawKerberosTest(TestCaseInTempDir):
             sys.stderr.write("connected[%s]\n" % self.host)
         return
 
+    def env_get_var(self, varname, prefix,
+                    fallback_default=True,
+                    allow_missing=False):
+        val = None
+        if prefix is not None:
+            allow_missing_prefix = allow_missing
+            if fallback_default:
+                allow_missing_prefix = True
+            val = samba.tests.env_get_var_value('%s_%s' % (prefix, varname),
+                                    allow_missing=allow_missing_prefix)
+        else:
+            fallback_default = True
+        if val is None and fallback_default:
+            val = samba.tests.env_get_var_value(varname,
+                                                allow_missing=allow_missing)
+        return val
+
     def _get_krb5_creds(self, prefix,
                         default_username=None,
                         allow_missing_password=False,
@@ -431,49 +448,34 @@ class RawKerberosTest(TestCaseInTempDir):
         c = KerberosCredentials()
         c.guess()
 
-        def env_get_var(varname, prefix, fallback_default=True, allow_missing=False):
-            val = None
-            if prefix is not None:
-                allow_missing_prefix = allow_missing
-                if fallback_default:
-                    allow_missing_prefix = True
-                val = samba.tests.env_get_var_value('%s_%s' % (prefix, varname),
-                                        allow_missing=allow_missing_prefix)
-            else:
-                fallback_default = True
-            if val is None and fallback_default:
-                val = samba.tests.env_get_var_value(varname,
-                                                    allow_missing=allow_missing)
-            return val
-
-        domain = env_get_var('DOMAIN', prefix)
-        realm = env_get_var('REALM', prefix)
+        domain = self.env_get_var('DOMAIN', prefix)
+        realm = self.env_get_var('REALM', prefix)
         allow_missing_username = False
         if default_username is not None:
             allow_missing_username = True
-        username = env_get_var('USERNAME', prefix,
-                               fallback_default=False,
-                               allow_missing=allow_missing_username)
+        username = self.env_get_var('USERNAME', prefix,
+                                    fallback_default=False,
+                                    allow_missing=allow_missing_username)
         if username is None:
             username = default_username
-        password = env_get_var('PASSWORD', prefix,
-                               fallback_default=False,
-                               allow_missing=allow_missing_password)
+        password = self.env_get_var('PASSWORD', prefix,
+                                    fallback_default=False,
+                                    allow_missing=allow_missing_password)
         c.set_domain(domain)
         c.set_realm(realm)
         c.set_username(username)
         if password is not None:
             c.set_password(password)
-        as_supported_enctypes = env_get_var('AS_SUPPORTED_ENCTYPES',
-                                            prefix, allow_missing=True)
+        as_supported_enctypes = self.env_get_var('AS_SUPPORTED_ENCTYPES',
+                                                 prefix, allow_missing=True)
         if as_supported_enctypes is not None:
             c.set_as_supported_enctypes(as_supported_enctypes)
-        tgs_supported_enctypes = env_get_var('TGS_SUPPORTED_ENCTYPES',
-                                             prefix, allow_missing=True)
+        tgs_supported_enctypes = self.env_get_var('TGS_SUPPORTED_ENCTYPES',
+                                                  prefix, allow_missing=True)
         if tgs_supported_enctypes is not None:
             c.set_tgs_supported_enctypes(tgs_supported_enctypes)
-        ap_supported_enctypes = env_get_var('AP_SUPPORTED_ENCTYPES',
-                                            prefix, allow_missing=True)
+        ap_supported_enctypes = self.env_get_var('AP_SUPPORTED_ENCTYPES',
+                                                 prefix, allow_missing=True)
         if ap_supported_enctypes is not None:
             c.set_ap_supported_enctypes(ap_supported_enctypes)
 
@@ -486,22 +488,22 @@ class RawKerberosTest(TestCaseInTempDir):
         else:
             kvno_allow_missing = True
             aes256_allow_missing = True
-        kvno = env_get_var('KVNO', prefix,
-                           fallback_default=False,
-                           allow_missing=kvno_allow_missing)
+        kvno = self.env_get_var('KVNO', prefix,
+                                fallback_default=False,
+                                allow_missing=kvno_allow_missing)
         if kvno is not None:
             c.set_kvno(kvno)
-        aes256_key = env_get_var('AES256_KEY_HEX', prefix,
-                                 fallback_default=False,
-                                 allow_missing=aes256_allow_missing)
+        aes256_key = self.env_get_var('AES256_KEY_HEX', prefix,
+                                      fallback_default=False,
+                                      allow_missing=aes256_allow_missing)
         if aes256_key is not None:
             c.set_forced_key(kcrypto.Enctype.AES256, aes256_key)
-        aes128_key = env_get_var('AES128_KEY_HEX', prefix,
-                                 fallback_default=False, allow_missing=True)
+        aes128_key = self.env_get_var('AES128_KEY_HEX', prefix,
+                                      fallback_default=False, allow_missing=True)
         if aes128_key is not None:
             c.set_forced_key(kcrypto.Enctype.AES128, aes128_key)
-        rc4_key = env_get_var('RC4_KEY_HEX', prefix,
-                              fallback_default=False, allow_missing=True)
+        rc4_key = self.env_get_var('RC4_KEY_HEX', prefix,
+                                   fallback_default=False, allow_missing=True)
         if rc4_key is not None:
             c.set_forced_key(kcrypto.Enctype.RC4, rc4_key)
         return c
