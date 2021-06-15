@@ -644,7 +644,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	const char *domain,
 	const char *workstation,
 	const uint64_t logon_id,
-	const uint8_t chal[8],
+	DATA_BLOB chal,
 	DATA_BLOB lm_response,
 	DATA_BLOB nt_response,
 	enum netr_LogonInfoClass logon_type,
@@ -715,7 +715,12 @@ NTSTATUS rpccli_netlogon_network_logon(
 	network_info->identity_info.account_name.string		= username;
 	network_info->identity_info.workstation.string		= workstation_name_slash;
 
-	memcpy(network_info->challenge, chal, 8);
+	if (chal.length != 8) {
+		DBG_WARNING("Invalid challenge length %zd\n", chal.length);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	memcpy(network_info->challenge, chal.data, chal.length);
 	network_info->nt = nt;
 	network_info->lm = lm;
 

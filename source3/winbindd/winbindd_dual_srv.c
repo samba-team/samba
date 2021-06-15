@@ -941,9 +941,8 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct netr_IdentityInfo *identity_info = NULL;
-	const uint8_t chal_zero[8] = {0, };
-	const uint8_t *challenge = chal_zero;
 	DATA_BLOB lm_response, nt_response;
+	DATA_BLOB challenge = data_blob_null;
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
@@ -981,7 +980,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 		interactive = true;
 		identity_info = &r->in.logon.password->identity_info;
 
-		challenge = chal_zero;
+		challenge = data_blob_null;
 		lm_response = data_blob_talloc(p->mem_ctx,
 					r->in.logon.password->lmpassword.hash,
 					sizeof(r->in.logon.password->lmpassword.hash));
@@ -999,7 +998,9 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 		interactive = false;
 		identity_info = &r->in.logon.network->identity_info;
 
-		challenge = r->in.logon.network->challenge;
+		challenge = data_blob_talloc(p->mem_ctx,
+					r->in.logon.network->challenge,
+					8);
 		lm_response = data_blob_talloc(p->mem_ctx,
 					r->in.logon.network->lm.data,
 					r->in.logon.network->lm.length);

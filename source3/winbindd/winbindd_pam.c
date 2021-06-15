@@ -1653,7 +1653,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    const char *workstation,
 					    const uint64_t logon_id,
 					    bool plaintext_given,
-					    const uint8_t chal[8],
+					    DATA_BLOB chal,
 					    DATA_BLOB lm_response,
 					    DATA_BLOB nt_response,
 					    bool interactive,
@@ -2093,7 +2093,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 					     lp_netbios_name(),
 					     logon_id,
 					     true, /* plaintext_given */
-					     NULL,
+					     data_blob_null,
 					     data_blob_null, data_blob_null,
 					     true, /* interactive */
 					     &authoritative,
@@ -2672,7 +2672,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       const uint64_t logon_id,
 			       const char* client_name,
 			       const int client_pid,
-			       const uint8_t chal[8],
+			       DATA_BLOB chal_blob,
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
 			       const struct tsocket_address *remote,
@@ -2697,8 +2697,6 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 	 * we need to check against domain->name.
 	 */
 	if (!skip_sam && strequal(domain->name, get_global_sam_name())) {
-		DATA_BLOB chal_blob = data_blob_const(
-			chal, 8);
 		struct netr_SamInfo3 *info3 = NULL;
 
 		result = winbindd_dual_auth_passdb(
@@ -2745,7 +2743,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     workstation, /* We carefully set this above so use it... */
 					     logon_id,
 					     false, /* plaintext_given */
-					     chal,
+					     chal_blob,
 					     lm_response,
 					     nt_response,
 					     interactive,
@@ -2851,6 +2849,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 	DATA_BLOB lm_resp = { 0 }, nt_resp = { 0 };
+	DATA_BLOB chal = data_blob_null;
 	const struct timeval start_time = timeval_current();
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
@@ -2896,6 +2895,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 					   state->request->data.auth_crap.nt_resp,
 					   state->request->data.auth_crap.nt_resp_len);
 	}
+	chal = data_blob_const(state->request->data.auth_crap.chal, 8);
 
 	result = winbind_dual_SamLogon(domain,
 				       state->mem_ctx,
@@ -2908,7 +2908,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       logon_id,
 				       state->request->client_name,
 				       state->request->pid,
-				       state->request->data.auth_crap.chal,
+				       chal,
 				       lm_resp,
 				       nt_resp,
 				       remote,

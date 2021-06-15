@@ -83,7 +83,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	const char *domain,
 	const char *workstation,
 	const uint64_t logon_id,
-	const uint8_t chal[8],
+	DATA_BLOB chal,
 	DATA_BLOB lm_response,
 	DATA_BLOB nt_response,
 	enum netr_LogonInfoClass logon_type,
