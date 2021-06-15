@@ -44,7 +44,8 @@ from samba import net
 from samba.samdb import SamDB
 
 from samba.tests import delete_force
-from samba.tests.krb5.raw_testcase import RawKerberosTest
+import samba.tests.krb5.kcrypto as kcrypto
+from samba.tests.krb5.raw_testcase import KerberosCredentials, RawKerberosTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     AD_IF_RELEVANT,
@@ -182,7 +183,7 @@ class KDCBaseTest(RawKerberosTest):
             details["userPrincipalName"] = upn
         ldb.add(details)
 
-        creds = Credentials()
+        creds = KerberosCredentials()
         creds.guess(self.get_lp())
         creds.set_realm(ldb.domain_dns_name().upper())
         creds.set_domain(ldb.domain_netbios_name().upper())
@@ -289,6 +290,87 @@ class KDCBaseTest(RawKerberosTest):
             self.assertIn(kcrypto.Enctype.AES128, keys)
 
         return keys
+
+    def creds_set_keys(self, creds, keys):
+        if keys is not None:
+            for enctype, key in keys.items():
+                creds.set_forced_key(enctype, key)
+
+        supported_enctypes = 0
+        if kcrypto.Enctype.AES256 in keys:
+            supported_enctypes |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+        if kcrypto.Enctype.AES128 in keys:
+            supported_enctypes |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+        if kcrypto.Enctype.RC4 in keys:
+            supported_enctypes |= security.KERB_ENCTYPE_RC4_HMAC_MD5
+
+        creds.set_as_supported_enctypes(supported_enctypes)
+        creds.set_tgs_supported_enctypes(supported_enctypes)
+        creds.set_ap_supported_enctypes(supported_enctypes)
+
+    def get_client_creds(self,
+                         allow_missing_password=False,
+                         allow_missing_keys=True):
+        def create_client_account():
+            samdb = self.get_samdb()
+
+            creds, dn = self.create_account(samdb, 'kdctestclient')
+
+            res = samdb.search(base=dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['msDS-KeyVersionNumber'])
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            creds.set_kvno(kvno)
+
+            keys = self.get_keys(samdb, dn)
+            self.creds_set_keys(creds, keys)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='CLIENT',
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys,
+                                 fallback_creds_fn=create_client_account)
+        return c
+
+    def get_krbtgt_creds(self,
+                         require_keys=True,
+                         require_strongest_key=False):
+        if require_strongest_key:
+            self.assertTrue(require_keys)
+        def download_krbtgt_creds():
+            samdb = self.get_samdb()
+
+            krbtgt_rid = 502
+            krbtgt_sid = '%s-%d' % (samdb.get_domain_sid(), krbtgt_rid)
+
+            res = samdb.search(base='<SID=%s>' % krbtgt_sid,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['sAMAccountName',
+                                      'msDS-KeyVersionNumber'])
+            dn = res[0].dn
+            username = str(res[0]['sAMAccountName'])
+
+            creds = KerberosCredentials()
+            creds.set_domain(self.env_get_var('DOMAIN', 'KRBTGT'))
+            creds.set_realm(self.env_get_var('REALM', 'KRBTGT'))
+            creds.set_username(username)
+
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            creds.set_kvno(kvno)
+
+            keys = self.get_keys(samdb, dn)
+            self.creds_set_keys(creds, keys)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='KRBTGT',
+                                 default_username='krbtgt',
+                                 allow_missing_password=True,
+                                 allow_missing_keys=not require_keys,
+                                 require_strongest_key=require_strongest_key,
+                                 fallback_creds_fn=download_krbtgt_creds)
+        return c
 
     def as_req(self, cname, sname, realm, etypes, padata=None):
         '''Send a Kerberos AS_REQ, returns the undecoded response
