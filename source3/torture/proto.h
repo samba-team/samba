@@ -95,6 +95,7 @@ bool run_posix_dir_default_acl_test(int dummy);
 bool run_case_insensitive_create(int dummy);
 bool run_posix_symlink_rename_test(int dummy);
 bool run_posix_symlink_getpathinfo_test(int dummy);
+bool run_posix_symlink_setpathinfo_test(int dummy);
 
 bool run_nbench2(int dummy);
 bool run_async_echo(int dummy);

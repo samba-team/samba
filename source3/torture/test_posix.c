@@ -1694,3 +1694,197 @@ out:
 	TALLOC_FREE(frame);
 	return correct;
 }
+
+/* List of info levels to try with a POSIX symlink path. */
+
+static struct {
+	uint32_t level;
+	const char *name;
+	uint32_t data_len;
+} posix_smb1_setpath_array[] = {
+  { SMB_SET_FILE_UNIX_BASIC,	"SMB_SET_FILE_UNIX_BASIC",	100},
+  { SMB_SET_FILE_UNIX_INFO2,	"SMB_SET_FILE_UNIX_INFO2",	116},
+  { SMB_SET_FILE_UNIX_LINK,	"SMB_SET_FILE_UNIX_LINK",	8},
+  { SMB_SET_FILE_UNIX_HLINK,	"SMB_SET_FILE_UNIX_HLINK",	8},
+  { SMB_SET_POSIX_ACL,		"SMB_SET_POSIX_ACL",		6},
+  { SMB_SET_POSIX_LOCK,		"SMB_SET_POSIX_LOCK",		24},
+  { SMB_INFO_STANDARD,		"SMB_INFO_STANDARD",		12},
+  { SMB_INFO_SET_EA,		"SMB_INFO_SET_EA",		10},
+  { SMB_FILE_BASIC_INFORMATION, "SMB_FILE_BASIC_INFORMATION",	36},
+  { SMB_SET_FILE_ALLOCATION_INFO, "SMB_SET_FILE_ALLOCATION_INFO", 8},
+  { SMB_SET_FILE_END_OF_FILE_INFO,"SMB_SET_FILE_END_OF_FILE_INFO",8},
+  { SMB_SET_FILE_DISPOSITION_INFO,"SMB_SET_FILE_DISPOSITION_INFO",1},
+  { SMB_FILE_POSITION_INFORMATION,"SMB_FILE_POSITION_INFORMATION",8},
+  { SMB_FILE_FULL_EA_INFORMATION, "SMB_FILE_FULL_EA_INFORMATION",10},
+  { SMB_FILE_MODE_INFORMATION,	"SMB_FILE_MODE_INFORMATION",	4},
+  { SMB_FILE_SHORT_NAME_INFORMATION,"SMB_FILE_SHORT_NAME_INFORMATION",12},
+  { SMB_FILE_RENAME_INFORMATION,"SMB_FILE_RENAME_INFORMATION",	20},
+  { SMB_FILE_LINK_INFORMATION,	"SMB_FILE_LINK_INFORMATION",	20},
+};
+
+static NTSTATUS do_setpath(TALLOC_CTX *ctx,
+			   struct cli_state *cli_unix,
+			   const char *fname,
+			   size_t i)
+{
+	NTSTATUS status;
+	uint8_t *data = NULL;
+
+	data = talloc_zero_array(ctx,
+				 uint8_t,
+				 posix_smb1_setpath_array[i].data_len);
+	if (data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_setpathinfo(cli_unix,
+			posix_smb1_setpath_array[i].level,
+			fname,
+			data,
+			posix_smb1_setpath_array[i].data_len);
+	TALLOC_FREE(data);
+
+	/*
+	 * We don't care what came back, so long as the
+	 * server didn't crash.
+	 */
+	if (NT_STATUS_EQUAL(status,
+			NT_STATUS_CONNECTION_DISCONNECTED)) {
+		printf("cli_setpathinfo info %x (%s) of %s failed"
+			"error NT_STATUS_CONNECTION_DISCONNECTED\n",
+			(unsigned int)posix_smb1_setpath_array[i].level,
+			posix_smb1_setpath_array[i].name,
+			fname);
+		return status;
+	}
+
+	printf("cli_setpathinfo info %x (%s) of %s got %s "
+		"(this is not an error)\n",
+		(unsigned int)posix_smb1_setpath_array[i].level,
+		posix_smb1_setpath_array[i].name,
+		fname,
+		nt_errstr(status));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  Ensure we can call SMB1 setpathinfo in a symlink,
+  pointing to a real object or dangling. We mostly
+  expect errors, but the server must not crash.
+ */
+bool run_posix_symlink_setpathinfo_test(int dummy)
+{
+	TALLOC_CTX *frame = NULL;
+	struct cli_state *cli_unix = NULL;
+	NTSTATUS status;
+	uint16_t fnum = (uint16_t)-1;
+	const char *fname_real = "file_setpath_real";
+	const char *fname_real_symlink = "file_real_setpath_symlink";
+	const char *nonexist = "nonexist_setpath";
+	const char *nonexist_symlink = "dangling_setpath_symlink";
+	bool correct = false;
+	size_t i;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX-SYMLINK-SETPATHINFO test\n");
+
+	if (!torture_open_connection(&cli_unix, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	torture_conn_set_sockopt(cli_unix);
+
+	status = torture_setup_unix_extensions(cli_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Start with a clean slate. */
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	/* Create a real file. */
+	status = cli_posix_open(cli_unix,
+				fname_real,
+				O_RDWR|O_CREAT,
+				0644,
+				&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+	status = cli_close(cli_unix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Create symlink to real target. */
+	status = cli_posix_symlink(cli_unix,
+				   fname_real,
+				   fname_real_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       fname_real_symlink,
+		       fname_real,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	/* Now create symlink to non-existing target. */
+	status = cli_posix_symlink(cli_unix,
+				   nonexist,
+				   nonexist_symlink);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed error %s\n",
+		       nonexist_symlink,
+		       nonexist,
+		       nt_errstr(status));
+		goto out;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(posix_smb1_setpath_array); i++) {
+		status = do_setpath(frame,
+				  cli_unix,
+				  fname_real_symlink,
+				  i);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		status = do_setpath(frame,
+				  cli_unix,
+				  nonexist_symlink,
+				  i);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	printf("POSIX-SYMLINK-SETPATHINFO test passed\n");
+	correct = true;
+
+out:
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli_unix, fnum);
+	}
+	cli_posix_unlink(cli_unix, fname_real);
+	cli_posix_unlink(cli_unix, fname_real_symlink);
+	cli_posix_unlink(cli_unix, nonexist);
+	cli_posix_unlink(cli_unix, nonexist_symlink);
+
+	if (!torture_close_connection(cli_unix)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
