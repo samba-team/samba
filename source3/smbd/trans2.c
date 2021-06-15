@@ -744,6 +744,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
+	if (fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
 	status = refuse_symlink_fsp(fsp);
@@ -6862,7 +6866,7 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 
-	if (!fsp) {
+	if (fsp == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -7887,6 +7891,10 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -7942,6 +7950,10 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* create time */
