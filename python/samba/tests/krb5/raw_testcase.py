@@ -526,6 +526,11 @@ class RawKerberosTest(TestCaseInTempDir):
                                  allow_missing_password=allow_missing_password)
         return c
 
+    def get_admin_creds(self, allow_missing_password=False):
+        c = self._get_krb5_creds(prefix='ADMIN',
+                                 allow_missing_password=allow_missing_password)
+        return c
+
     def get_krbtgt_creds(self, require_strongest_key=False):
         c = self._get_krb5_creds(prefix='KRBTGT',
                                  default_username='krbtgt',
