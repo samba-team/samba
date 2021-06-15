@@ -437,9 +437,7 @@ class RawKerberosTest(TestCaseInTempDir):
                     allow_missing=False):
         val = None
         if prefix is not None:
-            allow_missing_prefix = allow_missing
-            if fallback_default:
-                allow_missing_prefix = True
+            allow_missing_prefix = allow_missing or fallback_default
             val = samba.tests.env_get_var_value('%s_%s' % (prefix, varname),
                                     allow_missing=allow_missing_prefix)
         else:
@@ -459,9 +457,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         domain = self.env_get_var('DOMAIN', prefix)
         realm = self.env_get_var('REALM', prefix)
-        allow_missing_username = False
-        if default_username is not None:
-            allow_missing_username = True
+        allow_missing_username = default_username is not None
         username = self.env_get_var('USERNAME', prefix,
                                     fallback_default=False,
                                     allow_missing=allow_missing_username)
