@@ -99,21 +99,27 @@ class KDCBaseTest(RawKerberosTest):
             base="", expression="", scope=SCOPE_BASE, attrs=["dnsHostName"])
         cls.dns_host_name = str(res[0]['dnsHostName'])
 
+        # A set containing DNs of accounts created as part of testing.
+        cls.accounts = set()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Clean up any accounts created by create_account. This is
+        # done in tearDownClass() rather than tearDown(), so that
+        # accounts need only be created once for permutation tests.
+        for dn in cls.accounts:
+            delete_force(cls.ldb, dn)
+        super().tearDownClass()
+
     def setUp(self):
         super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
-        self.accounts = []
-
-    def tearDown(self):
-        # Clean up any accounts created by create_account
-        for dn in self.accounts:
-            delete_force(self.ldb, dn)
 
     def create_account(self, name, machine_account=False, spn=None, upn=None):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
-           which is used by tearDown to clean up the created accounts.
+           which is used by tearDownClass to clean up the created accounts.
         '''
         dn = "cn=%s,%s" % (name, self.ldb.domain_dn())
 
@@ -153,8 +159,8 @@ class KDCBaseTest(RawKerberosTest):
         if machine_account:
             creds.set_workstation(name)
         #
-        # Save the account name so it can be deleted in the tearDown
-        self.accounts.append(dn)
+        # Save the account name so it can be deleted in tearDownClass
+        self.accounts.add(dn)
 
         return (creds, dn)
 
