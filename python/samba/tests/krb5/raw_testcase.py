@@ -375,6 +375,8 @@ class RawKerberosTest(TestCaseInTempDir):
     def setUpClass(cls):
         super().setUpClass()
 
+        cls.host = samba.tests.env_get_var_value('SERVER')
+
         # A dictionary containing credentials that have already been
         # obtained.
         cls.creds_dict = {}
@@ -388,8 +390,6 @@ class RawKerberosTest(TestCaseInTempDir):
         if strict_checking is None:
             strict_checking = '1'
         self.strict_checking = bool(int(strict_checking))
-
-        self.host = samba.tests.env_get_var_value('SERVER')
 
         self.s = None
 
