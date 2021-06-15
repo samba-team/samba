@@ -870,7 +870,7 @@ def build(bld):
         REPLACE_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
-        group='compiler_libraries',
+        group='hostcc_base_build_main',
         deps = extra_libs
     )
 

@@ -146,7 +146,7 @@ def HEIMDAL_ERRTABLE(name, source):
     if not SET_TARGET_TYPE(bld, name, 'ET'):
         return
 
-    bld.set_group('build_source')
+    bld.set_group('hostcc_build_source')
 
     out_files = []
     out_files.append('%s.c' % bname)
@@ -354,7 +354,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
     if not bld.CONFIG_SET('HAVE_ERR_H'):
         HEIMDAL_GENERATOR(
-            group='build_compiler_source',
+            group='hostcc_base_build_source',
             name="HEIMDAL_ERR_H",
             rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
             source = '../heimdal/lib/roken/err.hin',
@@ -416,7 +416,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/roken ../heimdal/include ../heimdal_build/include',
-        group='compiler_libraries',
+        group='hostcc_base_build_main',
         deps='LIBREPLACE_HOSTCC',
         )
 
@@ -680,13 +680,13 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
     HEIMDAL_AUTOPROTO('lib/asn1/der-protos.h',
                           HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                          group = 'compiler_prototypes',
+                          group='hostcc_build_source',
                           options="-q -P comment -o")
 
 
     HEIMDAL_AUTOPROTO('lib/asn1/der-private.h',
                           HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                          group = 'compiler_prototypes',
+                          group='hostcc_build_source',
                           options="-q -P comment -p")
 
     HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
@@ -894,14 +894,13 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS_HOSTCC',
        'lib/vers/print_version.c ../heimdal_build/version.c',
-        group='build_compilers',
+       group='hostcc_base_build_main',
        deps='LIBREPLACE_HOSTCC ROKEN_HOSTCC',
        use_global_deps=False,
        use_hostcc=True)
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
        'lib/vers/print_version.c ../heimdal_build/version.c',
-        group='build_compilers',
         deps='roken replace')
 
 
@@ -916,7 +915,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/asn1',
-        group='build_compilers',
+        group='hostcc_build_main',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
     )
@@ -929,7 +928,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/com_err',
-        group='build_compilers',
+        group='hostcc_base_build_main',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
         )

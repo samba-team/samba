@@ -717,13 +717,13 @@ def SETUP_BUILD_GROUPS(bld):
     bld.p_ln = bld.srcnode # we do want to see all targets!
     bld.env['USING_BUILD_GROUPS'] = True
     bld.add_group('setup')
-    bld.add_group('build_compiler_source')
+    bld.add_group('generators')
+    bld.add_group('hostcc_base_build_source')
+    bld.add_group('hostcc_base_build_main')
+    bld.add_group('hostcc_build_source')
+    bld.add_group('hostcc_build_main')
     bld.add_group('vscripts')
     bld.add_group('base_libraries')
-    bld.add_group('generators')
-    bld.add_group('compiler_prototypes')
-    bld.add_group('compiler_libraries')
-    bld.add_group('build_compilers')
     bld.add_group('build_source')
     bld.add_group('prototypes')
     bld.add_group('headers')
