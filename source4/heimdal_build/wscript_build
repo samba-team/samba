@@ -704,7 +704,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
     HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
         'lib/asn1/rfc2459.asn1',
-        options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
+        option_file='lib/asn1/rfc2459.opt',
         directory='lib/asn1'
         )
 
