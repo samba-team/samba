@@ -44,12 +44,14 @@ class LdapTests(KDCBaseTest):
         # credentials cache file where the service ticket authenticating the
         # user are stored.
 
+        samdb = self.get_samdb()
+
         user_name = "ldapusr"
-        mach_name = self.dns_host_name
+        mach_name = samdb.host_dns_name()
         service = "ldap"
 
         # Create the user account.
-        (user_credentials, _) = self.create_account(user_name)
+        (user_credentials, _) = self.create_account(samdb, user_name)
 
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the
@@ -63,9 +65,9 @@ class LdapTests(KDCBaseTest):
         # cached credentials.
 
         # Retrieve the user account's SID.
-        ldb_res = self.ldb.search(scope=SCOPE_SUBTREE,
-                                  expression="(sAMAccountName=%s)" % user_name,
-                                  attrs=["objectSid"])
+        ldb_res = samdb.search(scope=SCOPE_SUBTREE,
+                               expression="(sAMAccountName=%s)" % user_name,
+                               attrs=["objectSid"])
         self.assertEqual(1, len(ldb_res))
         sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 

@@ -89,15 +89,7 @@ class KDCBaseTest(RawKerberosTest):
 
         cls.credentials = c
 
-        cls.session = system_session()
-        cls.ldb = SamDB(url="ldap://%s" % cls.host,
-                        session_info=cls.session,
-                        credentials=cls.credentials,
-                        lp=cls.lp)
-        # fetch the dnsHostName from the RootDse
-        res = cls.ldb.search(
-            base="", expression="", scope=SCOPE_BASE, attrs=["dnsHostName"])
-        cls.dns_host_name = str(res[0]['dnsHostName'])
+        cls._ldb = None
 
         # A set containing DNs of accounts created as part of testing.
         cls.accounts = set()
@@ -107,8 +99,9 @@ class KDCBaseTest(RawKerberosTest):
         # Clean up any accounts created by create_account. This is
         # done in tearDownClass() rather than tearDown(), so that
         # accounts need only be created once for permutation tests.
-        for dn in cls.accounts:
-            delete_force(cls.ldb, dn)
+        if cls._ldb is not None:
+            for dn in cls.accounts:
+                delete_force(cls._ldb, dn)
         super().tearDownClass()
 
     def setUp(self):
@@ -116,16 +109,27 @@ class KDCBaseTest(RawKerberosTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-    def create_account(self, name, machine_account=False, spn=None, upn=None):
+    def get_samdb(self):
+        if self._ldb is None:
+            session = system_session()
+            type(self)._ldb = SamDB(url="ldap://%s" % self.host,
+                            session_info=session,
+                            credentials=self.credentials,
+                            lp=self.lp)
+
+        return self._ldb
+
+    def create_account(self, ldb, name, machine_account=False,
+                       spn=None, upn=None):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
         '''
-        dn = "cn=%s,%s" % (name, self.ldb.domain_dn())
+        dn = "cn=%s,%s" % (name, ldb.domain_dn())
 
         # remove the account if it exists, this will happen if a previous test
         # run failed
-        delete_force(self.ldb, dn)
+        delete_force(ldb, dn)
         if machine_account:
             object_class = "computer"
             account_name = "%s$" % name
@@ -148,12 +152,12 @@ class KDCBaseTest(RawKerberosTest):
             details["servicePrincipalName"] = spn
         if upn is not None:
             details["userPrincipalName"] = upn
-        self.ldb.add(details)
+        ldb.add(details)
 
         creds = Credentials()
         creds.guess(self.lp)
-        creds.set_realm(self.ldb.domain_dns_name().upper())
-        creds.set_domain(self.ldb.domain_netbios_name().upper())
+        creds.set_realm(ldb.domain_dns_name().upper())
+        creds.set_domain(ldb.domain_netbios_name().upper())
         creds.set_password(password)
         creds.set_username(account_name)
         if machine_account:
@@ -425,38 +429,38 @@ class KDCBaseTest(RawKerberosTest):
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
         return enc_ticket_part
 
-    def get_objectSid(self, dn):
+    def get_objectSid(self, samdb, dn):
         ''' Get the objectSID for a DN
             Note: performs an Ldb query.
         '''
-        res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=["objectSID"])
+        res = samdb.search(dn, scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res) == 1, "did not get objectSid for %s" % dn)
-        sid = self.ldb.schema_format_value("objectSID", res[0]["objectSID"][0])
+        sid = samdb.schema_format_value("objectSID", res[0]["objectSID"][0])
         return sid.decode('utf8')
 
-    def add_attribute(self, dn_str, name, value):
+    def add_attribute(self, samdb, dn_str, name, value):
         if isinstance(value, list):
             values = value
         else:
             values = [value]
         flag = ldb.FLAG_MOD_ADD
 
-        dn = ldb.Dn(self.ldb, dn_str)
+        dn = ldb.Dn(samdb, dn_str)
         msg = ldb.Message(dn)
         msg[name] = ldb.MessageElement(values, flag, name)
-        self.ldb.modify(msg)
+        samdb.modify(msg)
 
-    def modify_attribute(self, dn_str, name, value):
+    def modify_attribute(self, samdb, dn_str, name, value):
         if isinstance(value, list):
             values = value
         else:
             values = [value]
         flag = ldb.FLAG_MOD_REPLACE
 
-        dn = ldb.Dn(self.ldb, dn_str)
+        dn = ldb.Dn(samdb, dn_str)
         msg = ldb.Message(dn)
         msg[name] = ldb.MessageElement(values, flag, name)
-        self.ldb.modify(msg)
+        samdb.modify(msg)
 
     def create_ccache(self, cname, ticket, enc_part):
         """ Lay out a version 4 on-disk credentials cache, to be read using the
