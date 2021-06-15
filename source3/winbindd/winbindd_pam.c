@@ -2853,6 +2853,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const struct timeval start_time = timeval_current();
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
+	struct wbint_SidArray *sid_array = NULL;
 
 	/* This is child-only, so no check for privileged access is needed
 	   anymore */
@@ -2922,62 +2924,57 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if (NT_STATUS_IS_OK(result)) {
-		struct netr_SamInfo3 *info3 = NULL;
-		struct wbint_SidArray *sid_array = NULL;
+	result = map_validation_to_info3(state->mem_ctx,
+					 validation_level,
+					 validation,
+					 &info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
 
-		result = map_validation_to_info3(state->mem_ctx,
-						 validation_level,
-						 validation,
-						 &info3);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
-
-		result = extra_data_to_sid_array(
+	result = extra_data_to_sid_array(
+		state->request->data.auth_crap.require_membership_of_sid,
+		state->mem_ctx,
+		&sid_array);
+	if (!NT_STATUS_IS_OK(result)) {
+		DBG_ERR("Failed to parse '%s' into a sid array: %s\n",
 			state->request->data.auth_crap.require_membership_of_sid,
-			state->mem_ctx,
-			&sid_array);
-		if (!NT_STATUS_IS_OK(result)) {
-			DBG_ERR("Failed to parse '%s' into a sid array: %s\n",
-				state->request->data.auth_crap.require_membership_of_sid,
-				nt_errstr(result));
-			goto done;
-		}
+			nt_errstr(result));
+		goto done;
+	}
 
-		/* Check if the user is in the right group */
-		result = check_info3_in_group(info3, sid_array);
-		if (!NT_STATUS_IS_OK(result)) {
-			char *s = NDR_PRINT_STRUCT_STRING(state->mem_ctx,
-							  wbint_SidArray,
-							  sid_array);
-			DBG_NOTICE("User %s is not in the required groups:\n",
-				   state->request->data.auth_crap.user);
-			DEBUGADD(DBGLVL_NOTICE, ("%s", s));
-			DEBUGADD(DBGLVL_NOTICE,
-				 ("CRAP authentication is rejected\n"));
-			TALLOC_FREE(sid_array);
-			goto done;
-		}
+	/* Check if the user is in the right group */
+	result = check_info3_in_group(info3, sid_array);
+	if (!NT_STATUS_IS_OK(result)) {
+		char *s = NDR_PRINT_STRUCT_STRING(state->mem_ctx,
+						  wbint_SidArray,
+						  sid_array);
+		DBG_NOTICE("User %s is not in the required groups:\n",
+			   state->request->data.auth_crap.user);
+		DEBUGADD(DBGLVL_NOTICE, ("%s", s));
+		DEBUGADD(DBGLVL_NOTICE,
+			 ("CRAP authentication is rejected\n"));
 		TALLOC_FREE(sid_array);
+		goto done;
+	}
+	TALLOC_FREE(sid_array);
 
-		if (!is_allowed_domain(info3->base.logon_domain.string)) {
-			DBG_NOTICE("Authentication failed for user [%s] "
-				   "from firewalled domain [%s]\n",
-				   info3->base.account_name.string,
-				   info3->base.logon_domain.string);
-			result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
-			goto done;
-		}
+	if (!is_allowed_domain(info3->base.logon_domain.string)) {
+		DBG_NOTICE("Authentication failed for user [%s] "
+			   "from firewalled domain [%s]\n",
+			   info3->base.account_name.string,
+			   info3->base.logon_domain.string);
+		result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
+		goto done;
+	}
 
-		result = append_auth_data(state->mem_ctx, state->response,
-					  state->request->flags,
-					  validation_level,
-					  validation,
-					  name_domain, name_user);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto done;
-		}
+	result = append_auth_data(state->mem_ctx, state->response,
+				  state->request->flags,
+				  validation_level,
+				  validation,
+				  name_domain, name_user);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
 	}
 
 done:
