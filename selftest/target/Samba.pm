@@ -815,7 +815,6 @@ my @exported_envvars = (
 	"DNSNAME",
 	"REALM",
 	"DOMSID",
-	"SUPPORTED_ENCTYPE_BITS",
 
 	# stuff related to a trusted domain
 	"TRUST_SERVER",

@@ -23,7 +23,7 @@ sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests import DynamicTestCase
-from samba.tests.krb5.raw_testcase import RawKerberosTest
+from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_REQUIRED,
@@ -35,7 +35,7 @@ global_asn1_print = False
 global_hexdump = False
 
 @DynamicTestCase
-class AsReqKerberosTests(RawKerberosTest):
+class AsReqKerberosTests(KDCBaseTest):
 
     @classmethod
     def setUpDynamicTestCases(cls):
