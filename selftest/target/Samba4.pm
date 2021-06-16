@@ -562,9 +562,6 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
 	if ($functional_level eq "2000") {
 		$ctx->{supported_enctypes} = "arcfour-hmac-md5 des-cbc-md5 des-cbc-crc";
-		$ctx->{supported_enctypes_bits} = "4";
-	} else {
-		$ctx->{supported_enctypes_bits} = "28";
 	}
 
 #
@@ -879,7 +876,6 @@ nogroup:x:65534:nobody
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		KRB5_CCACHE => $ctx->{krb5_ccache},
 		MITKDC_CONFIG => $ctx->{mitkdc_conf},
-		SUPPORTED_ENCTYPE_BITS => $ctx->{supported_enctypes_bits},
 		PIDDIR => $ctx->{piddir},
 		SERVER => $ctx->{hostname},
 		DC_SERVER => $ctx->{hostname},
