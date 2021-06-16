@@ -409,6 +409,14 @@ class TestDNSAging(DNSTest):
         # If run with tombstoned=False, assert it isn't tombstoned
         # (and has no traces of tombstone). Otherwise assert it has
         # all the necessary bits.
+        #
+        # with timestamp=<non-zero number of hours>, we assert that
+        # the nttime timestamp is about that time.
+        #
+        # with timestamp=None, we assert it is within a century or so.
+        #
+        # with timestamp=False (or 0), we don't assert on it.
+
         node = self.get_one_node(name)
         if node is None:
             self.fail(f"no node named {name}")
@@ -435,7 +443,7 @@ class TestDNSAging(DNSTest):
             self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
             if timestamp is None:
                 self.assert_nttime_in_hour_range(recs[0].data)
-            else:
+            elif timestamp:
                 self.assert_nttime_in_hour_range(recs[0].data,
                                                  timestamp - 3,
                                                  timestamp + 3)
@@ -1927,6 +1935,53 @@ class TestDNSAging(DNSTest):
                 self.assertEqual(r.dwTimeStamp, 0)
             elif d == txt3:
                 self.assertNotEqual(r.dwTimeStamp, 0)
+
+    def test_tombstone_in_hours_and_nttime(self):
+        # Until now Samba has measured tombstone timestamps in hours,
+        # not ten-millionths of a second. After now, we want Samba to
+        # handle both.
+
+        nh, oh, nn, on, on0, onf, nn0, nnf, _1601 = 'abcdefgij'
+        now_hours = dsdb_dns.unix_to_dns_timestamp(int(time.time()))
+        old_hours = now_hours - 24 * 90
+        now_nttime = dsdb_dns.dns_timestamp_to_nt_time(now_hours)
+        old_nttime = dsdb_dns.dns_timestamp_to_nt_time(old_hours)
+        # calculations on hours might be based on the lower 32 bits,
+        # so we test with these forced to extremes (the maximum change
+        # is 429 seconds in NTTIME).
+        old_nttime0 = old_nttime & 0xffffffff00000000
+        old_nttimef = old_nttime | 0xffffffff
+        now_nttime0 = now_nttime & 0xffffffff00000000
+        now_nttimef = now_nttime | 0xffffffff
+        self.dns_tombstone(nh, epoch_nttime=now_hours)
+        self.dns_tombstone(oh, epoch_nttime=old_hours)
+        self.dns_tombstone(nn, epoch_nttime=now_nttime)
+        self.dns_tombstone(on, epoch_nttime=old_nttime)
+        self.dns_tombstone(nn0, epoch_nttime=now_nttime0)
+        self.dns_tombstone(nnf, epoch_nttime=now_nttimef)
+        self.dns_tombstone(on0, epoch_nttime=old_nttime0)
+        self.dns_tombstone(onf, epoch_nttime=old_nttimef)
+        # this is our (arbitrary) threshold that will make us think in
+        # NTTIME, not hours.
+        self.dns_tombstone(_1601, epoch_nttime=(10 * 1000 * 1000 + 1))
+
+        try:
+            file_samdb = get_file_samdb()
+        except ldb.LdbError as e:
+            raise AssertionError(
+                f"failing because '{e}': this is Windows?") from None
+        dsdb._dns_delete_tombstones(file_samdb)
+
+        # nh and nn should not be deleted
+        for name in nh, nn, nn0, nnf:
+            recs = self.ldap_get_records(name)
+            self.assertEqual(len(recs), 1)
+            self.assert_tombstoned(name, timestamp=False)
+
+        # oh and on should be GONE
+        for name in oh, on, on0, onf, _1601:
+            recs = self.ldap_get_records(name)
+            self.assertEqual(len(recs), 0)
 
     def test_dns_query_for_tombstoned_results(self):
         # This one fails on Windows, because the dns cache holds B
