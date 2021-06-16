@@ -703,16 +703,18 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			}
 		}
 
-		oldwd_fname = vfs_GetWd(talloc_tos(), conn);
-		if (oldwd_fname == NULL) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
+		if (!ISDOT(parent_dir_fname->base_name)) {
+			oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+			if (oldwd_fname == NULL) {
+				status = map_nt_error_from_unix(errno);
+				goto out;
+			}
 
-		/* Pin parent directory in place. */
-		if (vfs_ChDir(conn, parent_dir_fname) == -1) {
-			status = map_nt_error_from_unix(errno);
-			goto out;
+			/* Pin parent directory in place. */
+			if (vfs_ChDir(conn, parent_dir_fname) == -1) {
+				status = map_nt_error_from_unix(errno);
+				goto out;
+			}
 		}
 
 		/* Ensure the relative path is below the share. */
