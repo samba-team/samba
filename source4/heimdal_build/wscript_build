@@ -266,8 +266,9 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes='', cf
 def HEIMDAL_CFLAGS(use_hostcc=False, extra_cflags=[]):
     cflags_unpicky=[]
 
-    if not bld.env.enable_heimdal_warnings:
+    if bld.env.allow_heimdal_warnings:
         cflags_unpicky += bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS
+        cflags_unpicky += bld.env.HEIMDAL_UNPICKY_WNO_MAYBE_UNINITIALIZED_CFLAGS
         # old compilers on centos7 or ubuntu1604 need this
 
     allow_warnings = bld.env.allow_heimdal_warnings
