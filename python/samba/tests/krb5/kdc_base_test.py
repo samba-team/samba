@@ -109,7 +109,7 @@ class KDCBaseTest(RawKerberosTest):
 
     def get_samdb(self):
         if self._ldb is None:
-            creds = self.get_user_creds()
+            creds = self.get_admin_creds()
             lp = self.get_lp()
 
             session = system_session()

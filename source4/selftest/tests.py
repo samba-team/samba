@@ -852,10 +852,26 @@ planoldpythontestsuite("ad_dc_default", "samba.tests.dsdb_dns")
 
 planoldpythontestsuite("fl2008r2dc:local", "samba.tests.krb5.xrealm_tests")
 
-planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache")
-planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap")
-planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_rpc")
-planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb")
+planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache",
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD'
+                       })
+planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap",
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD'
+                       })
+planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_rpc",
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD'
+                       })
+planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD'
+                       })
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
     planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
@@ -1432,15 +1448,27 @@ for env in ["rodc", "promoted_dc", "fl2000dc", "fl2008r2dc"]:
                                                             '--option=torture:expect_machine_account=true'] + extra_options,
                              "samba4.krb5.kdc with machine account")
 
-planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests")
+planpythontestsuite("ad_dc", "samba.tests.krb5.as_canonicalization_tests",
+                       environ={
+                           'ADMIN_USERNAME': '$USERNAME',
+                           'ADMIN_PASSWORD': '$PASSWORD'
+                       })
 planpythontestsuite("ad_dc", "samba.tests.krb5.compatability_tests")
 planpythontestsuite("ad_dc", "samba.tests.krb5.kdc_tests")
 planpythontestsuite(
     "ad_dc",
-    "samba.tests.krb5.kdc_tgs_tests")
+    "samba.tests.krb5.kdc_tgs_tests",
+    environ={
+        'ADMIN_USERNAME': '$USERNAME',
+        'ADMIN_PASSWORD': '$PASSWORD'
+    })
 planpythontestsuite(
     "ad_dc",
-    "samba.tests.krb5.ms_kile_client_principal_lookup_tests")
+    "samba.tests.krb5.ms_kile_client_principal_lookup_tests",
+    environ={
+        'ADMIN_USERNAME': '$USERNAME',
+        'ADMIN_PASSWORD': '$PASSWORD'
+    })
 
 for env in [
         'vampire_dc',
