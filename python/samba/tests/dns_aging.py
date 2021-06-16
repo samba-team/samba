@@ -919,48 +919,6 @@ class TestDNSAging(DNSTest):
                                           888888,
                                           timestamp])
 
-    def broken_test_update_aging_disabled_rpc(self):
-        # This one doesn't work reliably on Windows because there is a
-        # race between RPC and ldap.
-        name = 'test'
-        txt1 = ['test txt']
-        txt2 = ['test', 'txt2']
-        txt3 = ['test', 'txt3']
-
-        self.set_aging(False)
-
-        current_time = self.dns_update_record(name, txt1).dwTimeStamp
-
-        six_days_ago = current_time - 6 * 24
-        eight_days_ago = current_time - 8 * 24
-        fifteen_days_ago = current_time - 15 * 24
-        hundred_days_ago = current_time - 100 * 24
-        thousand_days_ago = current_time - 1000 * 24
-
-        # with 3 records, rpc updates
-        timestamp3 = self.dns_update_record(name, txt3).dwTimeStamp
-        for timestamp in (current_time,
-                          six_days_ago,
-                          eight_days_ago,
-                          fifteen_days_ago,
-                          hundred_days_ago,
-                          thousand_days_ago,
-                          100000,
-                          10):
-            # wind back
-            self.ldap_update_record(name, txt1, dwTimeStamp=777777)
-            self.ldap_update_record(name, txt2, dwTimeStamp=888888)
-            self.ldap_update_record(name, txt3, dwTimeStamp=(timestamp))
-            timestamp3 = self.get_unique_txt_record(name, txt3).dwTimeStamp
-            self.assert_timestamps_equal(timestamp3, timestamp)
-
-            self.rpc_update_record(name, txt2)
-            time.sleep(2)
-            timestamps = self.get_txt_timestamps(name, txt1, txt2, txt3)
-            self.assertEqual(timestamps, [777777,
-                                          0,
-                                          timestamp])
-
     def _test_update_aging_disabled_n_days_ago(self, n_days):
         name = 'test'
         txt1 = ['1']
