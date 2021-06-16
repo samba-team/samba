@@ -22,6 +22,7 @@
 
 /* The following definitions come from printing/load.c  */
 
+bool pcap_cache_loaded(time_t *_last_change);
 void load_printers(void);
 
 #endif /* _PRINTING_LOAD_H_ */

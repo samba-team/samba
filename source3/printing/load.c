@@ -92,3 +92,18 @@ void load_printers(void)
 			   nt_errstr(status));
 	}
 }
+
+bool pcap_cache_loaded(time_t *_last_change)
+{
+	NTSTATUS status;
+	time_t last;
+
+	status = printer_list_get_last_refresh(&last);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	if (_last_change != NULL) {
+		*_last_change = last;
+	}
+	return true;
+}

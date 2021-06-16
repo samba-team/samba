@@ -35,7 +35,6 @@ struct pcap_cache;
 
 bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment, const char *location);
 void pcap_cache_destroy_specific(struct pcap_cache **ppcache);
-bool pcap_cache_loaded(time_t *_last_change);
 bool pcap_cache_replace(const struct pcap_cache *cache);
 void pcap_printer_fn_specific(const struct pcap_cache *, void (*fn)(const char *, const char *, const char *, void *), void *);
 
