@@ -20,10 +20,10 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "lib/global_contexts.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_pam_logoff_state {
-	struct winbindd_request *request;
-	struct winbindd_response *response;
+	struct wbint_PamLogOff r;
 };
 
 static void winbindd_pam_logoff_done(struct tevent_req *subreq);
@@ -47,7 +47,6 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->request = request;
 
 	/* Ensure null termination */
 	/* Ensure null termination */
@@ -99,8 +98,28 @@ struct tevent_req *winbindd_pam_logoff_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	subreq = wb_domain_request_send(state, global_event_context(), domain,
-					request);
+	state->r.in.client_name = talloc_strdup(state, request->client_name);
+	if (tevent_req_nomem(state->r.in.client_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->r.in.client_pid = request->pid;
+
+	state->r.in.flags = request->flags;
+	state->r.in.user = talloc_strdup(state, request->data.logoff.user);
+	if (tevent_req_nomem(state->r.in.user, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->r.in.uid = request->data.logoff.uid;
+	state->r.in.krb5ccname = talloc_strdup(state,
+					request->data.logoff.krb5ccname);
+	if (tevent_req_nomem(state->r.in.krb5ccname, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dcerpc_wbint_PamLogOff_r_send(state,
+					       global_event_context(),
+					       dom_child_handle(domain),
+					       &state->r);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -118,14 +137,14 @@ static void winbindd_pam_logoff_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct winbindd_pam_logoff_state *state = tevent_req_data(
 		req, struct winbindd_pam_logoff_state);
-	int res, err;
+	NTSTATUS status;
 
-	res = wb_domain_request_recv(subreq, state, &state->response, &err);
+	status = dcerpc_wbint_PamLogOff_r_recv(subreq, state);
 	TALLOC_FREE(subreq);
-	if (res == -1) {
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
 	tevent_req_done(req);
 }
 
@@ -134,20 +153,19 @@ NTSTATUS winbindd_pam_logoff_recv(struct tevent_req *req,
 {
 	struct winbindd_pam_logoff_state *state = tevent_req_data(
 		req, struct winbindd_pam_logoff_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		set_auth_errors(response, status);
 		return status;
 	}
-	*response = *state->response;
-	response->result = WINBINDD_PENDING;
-	state->response = talloc_move(response, &state->response);
 
-	status = NT_STATUS(response->data.auth.nt_status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	response->result = WINBINDD_PENDING;
+	set_auth_errors(response, state->r.out.result);
+
+	if (NT_STATUS_IS_OK(state->r.out.result)) {
+		winbindd_delete_memory_creds(state->r.in.user);
 	}
-	winbindd_delete_memory_creds(state->request->data.logoff.user);
-	return status;
+
+	return NT_STATUS(response->data.auth.nt_status);
 }

@@ -217,6 +217,15 @@ interface winbind
         [out,ref] wbint_PamAuthCrapValidation *validation
         );
 
+    NTSTATUS wbint_PamLogOff(
+        [in,string,charset(UTF8)] char *client_name,
+        [in] hyper client_pid,
+        [in] uint32 flags,
+        [in,string,charset(UTF8)] char *user,
+        [in,string,charset(UTF8)] char *krb5ccname,
+        [in] hyper uid
+        );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

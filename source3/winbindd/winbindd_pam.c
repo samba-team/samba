@@ -3081,51 +3081,68 @@ process_result:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
-					      struct winbindd_cli_state *state)
+NTSTATUS _wbint_PamLogOff(struct pipes_struct *p, struct wbint_PamLogOff *r)
 {
+	struct winbindd_domain *domain = wb_child_domain();
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
+	pid_t client_pid;
+	uid_t user_uid;
 
-	DEBUG(3, ("[%5lu]: pam dual logoff %s\n", (unsigned long)state->pid,
-		state->request->data.logoff.user));
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
 
-	if (!(state->request->flags & WBFLAG_PAM_KRB5)) {
+	/* Cut client_pid to 32bit */
+	client_pid = r->in.client_pid;
+	if ((uint64_t)client_pid != r->in.client_pid) {
+		DBG_DEBUG("pid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Cut uid to 32bit */
+	user_uid = r->in.uid;
+	if ((uint64_t)user_uid != r->in.uid) {
+		DBG_DEBUG("uid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DBG_NOTICE("[%"PRIu32"]: pam dual logoff %s\n", client_pid, r->in.user);
+
+	if (!(r->in.flags & WBFLAG_PAM_KRB5)) {
 		result = NT_STATUS_OK;
 		goto process_result;
 	}
 
-	if (state->request->data.logoff.krb5ccname[0] == '\0') {
+	if ((r->in.krb5ccname == NULL) || (strlen(r->in.krb5ccname) == 0)) {
 		result = NT_STATUS_OK;
 		goto process_result;
 	}
 
 #ifdef HAVE_KRB5
 
-	if (state->request->data.logoff.uid == (uid_t)-1) {
-		DEBUG(0,("winbindd_pam_logoff: invalid uid\n"));
+	if (user_uid == (uid_t)-1) {
+		DBG_DEBUG("Invalid uid for user '%s'\n", r->in.user);
 		goto process_result;
 	}
 
 	/* what we need here is to find the corresponding krb5 ccache name *we*
 	 * created for a given username and destroy it */
 
-	if (!ccache_entry_exists(state->request->data.logoff.user)) {
+	if (!ccache_entry_exists(r->in.user)) {
 		result = NT_STATUS_OK;
-		DEBUG(10,("winbindd_pam_logoff: no entry found.\n"));
+		DBG_DEBUG("No entry found for user '%s'.\n", r->in.user);
 		goto process_result;
 	}
 
-	if (!ccache_entry_identical(state->request->data.logoff.user,
-					state->request->data.logoff.uid,
-					state->request->data.logoff.krb5ccname)) {
-		DEBUG(0,("winbindd_pam_logoff: cached entry differs.\n"));
+	if (!ccache_entry_identical(r->in.user, user_uid, r->in.krb5ccname)) {
+		DBG_DEBUG("Cached entry differs for user '%s'\n", r->in.user);
 		goto process_result;
 	}
 
-	result = remove_ccache(state->request->data.logoff.user);
+	result = remove_ccache(r->in.user);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("winbindd_pam_logoff: failed to remove ccache: %s\n",
-			nt_errstr(result)));
+		DBG_DEBUG("Failed to remove ccache for user '%s': %s\n",
+			  r->in.user, nt_errstr(result));
 		goto process_result;
 	}
 
@@ -3134,7 +3151,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 	 * we might be using for krb5 ticket renewal.
 	 */
 
-	winbindd_delete_memory_creds(state->request->data.logoff.user);
+	winbindd_delete_memory_creds(r->in.user);
 
 #else
 	result = NT_STATUS_NOT_SUPPORTED;
@@ -3142,10 +3159,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 
 process_result:
 
-
-	set_auth_errors(state->response, result);
-
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	return result;
 }
 
 /* Change user password with auth crap*/
