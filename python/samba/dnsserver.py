@@ -17,6 +17,7 @@
 #
 
 import shlex
+import socket
 from samba.dcerpc import dnsserver, dnsp
 
 # Note: these are not quite the same as similar looking classes in
@@ -309,6 +310,12 @@ def dns_name_equal(n1, n2):
     return n1.str.rstrip('.').lower() == n2.str.rstrip('.').lower()
 
 
+def ipv6_normalise(addr):
+    """Convert an AAAA adresss into a canonical form."""
+    packed = socket.inet_pton(socket.AF_INET6, addr)
+    return socket.inet_ntop(socket.AF_INET6, packed)
+
+
 def dns_record_match(dns_conn, server, zone, name, record_type, data):
     """Find a dns record that matches the specified data"""
 
@@ -350,7 +357,7 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
             if rec.data == urec.data:
                 found = True
         elif record_type == dnsp.DNS_TYPE_AAAA:
-            if rec.data == urec.data:
+            if ipv6_normalise(rec.data) == ipv6_normalise(urec.data):
                 found = True
         elif record_type == dnsp.DNS_TYPE_PTR:
             if dns_name_equal(rec.data, urec.data):
