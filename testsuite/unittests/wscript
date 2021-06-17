@@ -11,15 +11,6 @@ def build(bld):
                      deps='krb5samba cmocka',
                      for_selftest=True)
 
-    bld.SAMBA_BINARY('test_sambafs_srv_pipe',
-                     source='test_sambafs_srv_pipe.c',
-                     deps='''
-                          RPC_SERVER
-                          RPC_SAMR
-                          cmocka
-                          ''',
-                     for_selftest=True)
-
     bld.SAMBA_BINARY('test_lib_util_modules',
                      source='test_lib_util_modules.c',
                      deps='''
