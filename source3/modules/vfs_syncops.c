@@ -111,7 +111,8 @@ static void syncops_two_names(const char *name1, const char *name2)
 /*
   sync two meta data changes for 1 names
  */
-static void syncops_smb_fname(const struct smb_filename *smb_fname)
+static void syncops_smb_fname(connection_struct *conn,
+			      const struct smb_filename *smb_fname)
 {
 	char *parent = NULL;
 	if (smb_fname != NULL) {
@@ -169,7 +170,7 @@ static int syncops_renameat(vfs_handle_struct *handle,
 	ret = SMB_VFS_NEXT_ ## op args; \
 	if (ret == 0 \
 	&& config->onmeta && !config->disable \
-	&& fname) syncops_smb_fname(full_fname); \
+	&& fname) syncops_smb_fname(dirfsp->conn, full_fname); \
 	TALLOC_FREE(full_fname); \
 	return ret; \
 } while (0)
