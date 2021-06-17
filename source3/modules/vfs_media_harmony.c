@@ -1223,11 +1223,11 @@ static int mh_renameat(vfs_handle_struct *handle,
 		files_struct *dstfsp,
 		const struct smb_filename *smb_fname_dst)
 {
-	int status;
-	struct smb_filename *srcClientFname;
-	struct smb_filename *dstClientFname;
-	TALLOC_CTX *ctx;
-
+	int status = -1;
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
+	struct smb_filename *srcClientFname = NULL;
+	struct smb_filename *dstClientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with "
 			      "smb_fname_src->base_name '%s', "
@@ -1247,30 +1247,45 @@ static int mh_renameat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	srcClientFname = NULL;
-	dstClientFname = NULL;
-	ctx = talloc_tos();
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						      srcfsp,
+						      smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		goto out;
+        }
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						      dstfsp,
+						      smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		errno = ENOMEM;
+		goto out;
+        }
 
-	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname_src,
+	if ((status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				full_fname_src,
 				&srcClientFname)))
 	{
 		goto err;
 	}
 
-	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				smb_fname_dst,
+	if ((status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				full_fname_dst,
 				&dstClientFname)))
 	{
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_RENAMEAT(handle,
-				srcfsp,
+				srcfsp->conn->cwd_fsp,
 				srcClientFname,
-				dstfsp,
+				dstfsp->conn->cwd_fsp,
 				dstClientFname);
 err:
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
 	TALLOC_FREE(dstClientFname);
 	TALLOC_FREE(srcClientFname);
 out:
