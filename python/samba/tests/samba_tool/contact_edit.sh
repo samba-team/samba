@@ -13,6 +13,11 @@ SERVER="$1"
 USERNAME="$2"
 PASSWORD="$3"
 
+samba_ldbsearch=ldbsearch
+if test -x $BINDIR/ldbsearch; then
+    samba_ldbsearch=$BINDIR/ldbsearch
+fi
+
 STpath=$(pwd)
 . $STpath/testprogs/blackbox/subunit.sh
 
@@ -51,7 +56,7 @@ EOF
 }
 
 get_attribute_base64() {
-	${STpath}/bin/ldbsearch '(&(objectClass=contact)(name=testcontact1))' \
+	$samba_ldbsearch '(&(objectClass=contact)(name=testcontact1))' \
 		displayName \
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
