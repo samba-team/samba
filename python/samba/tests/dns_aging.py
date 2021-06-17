@@ -25,7 +25,7 @@ from samba.auth import system_session
 import ldb
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
-from samba.dnsserver import TXTRecord
+from samba.dnsserver import TXTRecord, ARecord
 from samba.dnsserver import recbuf_from_string
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
@@ -1797,6 +1797,21 @@ class TestDNSAging(DNSTest):
         self.assertEqual(rec.dwSerial, 123)
         rec = self.dns_update_record('ldap', 'test')
         self.assertEqual(rec.dwSerial, 123)
+
+    def test_rpc_update_disparate_types(self):
+        """Can we use update to replace a TXT with an AAAA?"""
+        name = 'x'
+        old = TXTRecord("x")
+        new = ARecord("127.0.0.111")
+        self.rpc_replace(name, None, old)
+        recs = self.ldap_get_records(name)
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0].wType, old.wType)
+
+        self.rpc_replace(name, old, new)
+        recs = self.ldap_get_records(name)
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0].wType, new.wType)
 
     def test_add_update_many(self):
         # Samba fails often in this set, but we want to see how it
