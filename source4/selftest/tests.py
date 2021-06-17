@@ -811,6 +811,13 @@ planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_lmdb_size")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_userPassword_crypt")
 planpythontestsuite("none", "samba.tests.samba_tool.help")
+# Make sure samba-tool can execute without import failures when run
+# without the ad-dc built. The fileserver test environment runs against
+# the samba-h5l-build autobuild. This build was chosen because it's
+# configured with --without-ad-dc and does not disable ads, which is
+# required to run some samba-tool commands.
+planpythontestsuite("fileserver", "samba.tests.samba_tool.help")
+
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.passwordsettings")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dsacl")
 
