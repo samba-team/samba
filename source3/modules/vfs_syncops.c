@@ -144,6 +144,8 @@ static int syncops_renameat(vfs_handle_struct *handle,
 {
 
 	int ret;
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
 	struct syncops_config_data *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -165,9 +167,26 @@ static int syncops_renameat(vfs_handle_struct *handle,
 		return ret;
 	}
 
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						      srcfsp,
+						      smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		return ret;
+	}
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						      dstfsp,
+						      smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		TALLOC_FREE(full_fname_src);
+		errno = ENOMEM;
+		return ret;
+	}
 	syncops_two_names(handle->conn,
-			  smb_fname_src,
-			  smb_fname_dst);
+			  full_fname_src,
+			  full_fname_dst);
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
 	return ret;
 }
 
