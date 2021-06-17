@@ -248,19 +248,47 @@ static int audit_renameat(vfs_handle_struct *handle,
 			files_struct *dstfsp,
 			const struct smb_filename *smb_fname_dst)
 {
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
 	int result;
+	int saved_errno = 0;
 
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						  srcfsp,
+						  smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						  dstfsp,
+						  smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		TALLOC_FREE(full_fname_src);
+		errno = ENOMEM;
+		return -1;
+	}
 	result = SMB_VFS_NEXT_RENAMEAT(handle,
 			srcfsp,
 			smb_fname_src,
 			dstfsp,
 			smb_fname_dst);
+	if (result == -1) {
+		saved_errno = errno;
+	}
 
 	syslog(audit_syslog_priority(handle), "renameat %s -> %s %s%s\n",
-	       smb_fname_src->base_name,
-	       smb_fname_dst->base_name,
+	       full_fname_src->base_name,
+	       full_fname_dst->base_name,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
+
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 
 	return result;
 }
