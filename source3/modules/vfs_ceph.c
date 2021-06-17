@@ -621,17 +621,39 @@ static int cephwrap_renameat(struct vfs_handle_struct *handle,
 			files_struct *dstfsp,
 			const struct smb_filename *smb_fname_dst)
 {
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
 	int result = -1;
+
 	DBG_DEBUG("[CEPH] cephwrap_renameat\n");
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
 		errno = ENOENT;
 		return result;
 	}
 
-	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
-	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						  srcfsp,
+						  smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						  dstfsp,
+						  smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		TALLOC_FREE(full_fname_src);
+		errno = ENOMEM;
+		return -1;
+	}
 
-	result = ceph_rename(handle->data, smb_fname_src->base_name, smb_fname_dst->base_name);
+	result = ceph_rename(handle->data,
+			     full_fname_src->base_name,
+			     full_fname_dst->base_name);
+
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
+
 	WRAP_RETURN(result);
 }
 
