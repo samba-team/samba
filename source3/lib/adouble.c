@@ -2717,8 +2717,13 @@ int adouble_path(TALLOC_CTX *ctx,
 		return -1;
 	}
 
-	smb_fname->base_name = talloc_asprintf(smb_fname,
+	if (ISDOT(parent)) {
+		smb_fname->base_name = talloc_asprintf(smb_fname,
+					"._%s", base);
+	} else {
+		smb_fname->base_name = talloc_asprintf(smb_fname,
 					"%s/._%s", parent, base);
+	}
 	if (smb_fname->base_name == NULL) {
 		TALLOC_FREE(smb_fname);
 		return -1;
