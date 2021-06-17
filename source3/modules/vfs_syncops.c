@@ -74,19 +74,24 @@ static char *parent_dir(TALLOC_CTX *mem_ctx, const char *name)
 static void syncops_sync_directory(connection_struct *conn,
 				   char *dname)
 {
-#ifdef O_DIRECTORY
-	int fd = open(dname, O_DIRECTORY|O_RDONLY);
-	if (fd != -1) {
-		fsync(fd);
-		close(fd);
+	struct smb_Dir *dir_hnd = NULL;
+	struct files_struct *dirfsp = NULL;
+	struct smb_filename smb_dname = { .base_name = dname };
+
+	dir_hnd = OpenDir(talloc_tos(),
+			  conn,
+			  &smb_dname,
+			  "*",
+			  0);
+	if (dir_hnd == NULL) {
+		return;
 	}
-#else
-	DIR *d = opendir(dname);
-	if (d != NULL) {
-		fsync(dirfd(d));
-		closedir(d);
-	}
-#endif
+
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+
+	smb_vfs_fsync_sync(dirfsp);
+
+	TALLOC_FREE(dir_hnd);
 }
 
 /*
