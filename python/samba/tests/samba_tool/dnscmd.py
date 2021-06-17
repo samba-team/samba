@@ -378,10 +378,17 @@ class DnsCmdTestCase(SambaToolCmdTest):
                       "Errors above." % num_failures)
 
     def test_update_invalid_type(self):
+        """Make sure that a record can't be updated to another type leaving
+        the data the same, where that data would be incompatible with
+        the new type. This is not always enforced at the C level.
+
+        We don't try with all types, because many types are compatible
+        in their representations (e.g. A records could be TXT or CNAME
+        records; PTR record values are exactly the same as CNAME
+        record values, etc).
         """
-        Make sure that a record can't be updated to one of a different type.
-        """
-        for dnstype1 in self.good_records:
+        dnstypes = ('A', 'AAAA', 'SRV')
+        for dnstype1 in dnstypes:
             record1 = self.good_records[dnstype1][0]
             result, out, err = self.runsubcmd("dns", "add",
                                               os.environ["SERVER"],
@@ -392,23 +399,11 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                   "record %s with type %s."
                                   % (record1, dnstype1))
 
-            for dnstype2 in self.good_records:
+            for dnstype2 in dnstypes:
                 if dnstype1 == dnstype2:
                     continue
 
                 record2 = self.good_records[dnstype2][0]
-
-                # Make sure that record2 isn't a valid entry of dnstype1.
-                # For example, any A-type will also be a valid TXT-type.
-                result, out, err = self.runsubcmd("dns", "add",
-                                                  os.environ["SERVER"],
-                                                  self.zone, "testrecord",
-                                                  dnstype1, record2,
-                                                  self.creds_string)
-                try:
-                    self.assertCmdFail(result)
-                except AssertionError:
-                    continue  # Don't check this one, because record2 _is_ a valid entry of dnstype1.
 
                 # Check both ways: Give the current type and try to update,
                 # and give the new type and try to update.
@@ -450,8 +445,9 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                                   self.zone, "testrecord",
                                                   dnstype, record, record,
                                                   self.creds_string)
-                self.assertCmdFail(result, "Successfully updated record "
-                                   "'%s' to be exactly the same." % record)
+                self.assertCmdSuccess(result, out, err,
+                                      "Could not update record "
+                                      "'%s' to be exactly the same." % record)
 
                 result, out, err = self.runsubcmd("dns", "delete",
                                                   os.environ["SERVER"],
