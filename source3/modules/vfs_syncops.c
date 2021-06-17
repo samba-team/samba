@@ -155,11 +155,19 @@ static int syncops_renameat(vfs_handle_struct *handle,
 			smb_fname_src,
 			dstfsp,
 			smb_fname_dst);
-	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(handle->conn,
-				  smb_fname_src,
-				  smb_fname_dst);
+	if (ret == -1) {
+		return ret;
 	}
+	if (config->disable) {
+		return ret;
+	}
+	if (!config->onmeta) {
+		return ret;
+	}
+
+	syncops_two_names(handle->conn,
+			  smb_fname_src,
+			  smb_fname_dst);
 	return ret;
 }
 
