@@ -1209,11 +1209,34 @@ static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 			files_struct *dstfsp,
 			const struct smb_filename *smb_fname_dst)
 {
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
 	int ret;
 
 	START_PROFILE(syscall_renameat);
-	ret = glfs_rename(handle->data, smb_fname_src->base_name,
-			  smb_fname_dst->base_name);
+
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						      srcfsp,
+						      smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		END_PROFILE(syscall_renameat);
+		return -1;
+	}
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						      dstfsp,
+						      smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		TALLOC_FREE(full_fname_src);
+		errno = ENOMEM;
+		END_PROFILE(syscall_renameat);
+		return -1;
+	}
+	ret = glfs_rename(handle->data,
+			  full_fname_src->base_name,
+			  full_fname_dst->base_name);
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
 	END_PROFILE(syscall_renameat);
 
 	return ret;
