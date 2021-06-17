@@ -220,19 +220,6 @@ static int syncops_linkat(vfs_handle_struct *handle,
 				struct syncops_config_data,
 				return -1);
 
-	old_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-				srcfsp,
-				old_smb_fname);
-	if (old_full_fname == NULL) {
-		return -1;
-	}
-	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-				dstfsp,
-				new_smb_fname);
-	if (new_full_fname == NULL) {
-		TALLOC_FREE(old_full_fname);
-		return -1;
-	}
 	ret = SMB_VFS_NEXT_LINKAT(handle,
 			srcfsp,
 			old_smb_fname,
@@ -240,11 +227,32 @@ static int syncops_linkat(vfs_handle_struct *handle,
 			new_smb_fname,
 			flags);
 
-	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(handle->conn,
-				  old_full_fname,
-				  new_full_fname);
+	if (ret == -1) {
+		return ret;
 	}
+	if (config->disable) {
+		return ret;
+	}
+	if (!config->onmeta) {
+		return ret;
+	}
+
+	old_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						      srcfsp,
+						      old_smb_fname);
+	if (old_full_fname == NULL) {
+		return ret;
+	}
+	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						      dstfsp,
+						      new_smb_fname);
+	if (new_full_fname == NULL) {
+		TALLOC_FREE(old_full_fname);
+		return ret;
+	}
+	syncops_two_names(handle->conn,
+			  old_full_fname,
+			  new_full_fname);
 	TALLOC_FREE(old_full_fname);
 	TALLOC_FREE(new_full_fname);
 	return ret;
