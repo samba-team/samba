@@ -410,6 +410,8 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 
 	kdc_config->autodetect_referrals = false;
 
+	kdc_config->force_include_pa_etype_salt = true;
+
 	/* Register hdb-samba4 hooks for use as a keytab */
 
 	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
