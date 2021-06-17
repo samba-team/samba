@@ -91,19 +91,21 @@ static void syncops_sync_directory(const char *dname)
 /*
   sync two meta data changes for 2 names
  */
-static void syncops_two_names(const char *name1, const char *name2)
+static void syncops_two_names(connection_struct *conn,
+			      const struct smb_filename *name1,
+			      const struct smb_filename *name2)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	char *parent1, *parent2;
-	parent1 = parent_dir(tmp_ctx, name1);
-	parent2 = parent_dir(tmp_ctx, name2);
+	parent1 = parent_dir(tmp_ctx, name1->base_name);
+	parent2 = parent_dir(tmp_ctx, name2->base_name);
 	if (!parent1 || !parent2) {
 		talloc_free(tmp_ctx);
 		return;
 	}
 	syncops_sync_directory(parent1);
 	if (strcmp(parent1, parent2) != 0) {
-		syncops_sync_directory(parent2);		
+		syncops_sync_directory(parent2);
 	}
 	talloc_free(tmp_ctx);
 }
@@ -148,8 +150,9 @@ static int syncops_renameat(vfs_handle_struct *handle,
 			dstfsp,
 			smb_fname_dst);
 	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(smb_fname_src->base_name,
-				  smb_fname_dst->base_name);
+		syncops_two_names(handle->conn,
+				  smb_fname_src,
+				  smb_fname_dst);
 	}
 	return ret;
 }
@@ -225,8 +228,9 @@ static int syncops_linkat(vfs_handle_struct *handle,
 			flags);
 
 	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(old_full_fname->base_name,
-				  new_full_fname->base_name);
+		syncops_two_names(handle->conn,
+				  old_full_fname,
+				  new_full_fname);
 	}
 	TALLOC_FREE(old_full_fname);
 	TALLOC_FREE(new_full_fname);
