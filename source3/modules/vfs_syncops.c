@@ -71,7 +71,8 @@ static char *parent_dir(TALLOC_CTX *mem_ctx, const char *name)
 /*
   fsync a directory by name
  */
-static void syncops_sync_directory(const char *dname)
+static void syncops_sync_directory(connection_struct *conn,
+				   char *dname)
 {
 #ifdef O_DIRECTORY
 	int fd = open(dname, O_DIRECTORY|O_RDONLY);
@@ -103,9 +104,9 @@ static void syncops_two_names(connection_struct *conn,
 		talloc_free(tmp_ctx);
 		return;
 	}
-	syncops_sync_directory(parent1);
+	syncops_sync_directory(conn, parent1);
 	if (strcmp(parent1, parent2) != 0) {
-		syncops_sync_directory(parent2);
+		syncops_sync_directory(conn, parent2);
 	}
 	talloc_free(tmp_ctx);
 }
@@ -120,7 +121,7 @@ static void syncops_smb_fname(connection_struct *conn,
 	if (smb_fname != NULL) {
 		parent = parent_dir(NULL, smb_fname->base_name);
 		if (parent != NULL) {
-			syncops_sync_directory(parent);
+			syncops_sync_directory(conn, parent);
 			talloc_free(parent);
 		}
 	}
