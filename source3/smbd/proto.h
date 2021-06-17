@@ -714,6 +714,12 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					uint32_t max_data_count,
 					uint8_t **ppmarshalled_sd,
 					size_t *psd_size);
+NTSTATUS copy_internals(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_request *req,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
+			uint32_t attrs);
 #ifdef HAVE_SYS_QUOTAS
 
 struct smb2_query_quota_info;

@@ -1553,12 +1553,12 @@ void reply_ntcancel(struct smb_request *req)
  Copy a file.
 ****************************************************************************/
 
-static NTSTATUS copy_internals(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				struct smb_request *req,
-				struct smb_filename *smb_fname_src,
-				struct smb_filename *smb_fname_dst,
-				uint32_t attrs)
+NTSTATUS copy_internals(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			struct smb_request *req,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
+			uint32_t attrs)
 {
 	files_struct *fsp1,*fsp2;
 	uint32_t fattr;
