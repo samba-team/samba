@@ -1410,6 +1410,25 @@ static int smb_full_audit_renameat(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname_dst)
 {
 	int result;
+	int saved_errno;
+	struct smb_filename *full_fname_src = NULL;
+	struct smb_filename *full_fname_dst = NULL;
+
+	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
+						      srcfsp,
+						      smb_fname_src);
+	if (full_fname_src == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						      dstfsp,
+						      smb_fname_dst);
+	if (full_fname_dst == NULL) {
+		TALLOC_FREE(full_fname_src);
+		errno = ENOMEM;
+		return -1;
+	}
 
 	result = SMB_VFS_NEXT_RENAMEAT(handle,
 				srcfsp,
@@ -1417,10 +1436,19 @@ static int smb_full_audit_renameat(vfs_handle_struct *handle,
 				dstfsp,
 				smb_fname_dst);
 
+	if (result == -1) {
+		saved_errno = errno;
+	}
 	do_log(SMB_VFS_OP_RENAMEAT, (result >= 0), handle, "%s|%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname_src),
-	       smb_fname_str_do_log(handle->conn, smb_fname_dst));
+	       smb_fname_str_do_log(handle->conn, full_fname_src),
+	       smb_fname_str_do_log(handle->conn, full_fname_dst));
 
+	TALLOC_FREE(full_fname_src);
+	TALLOC_FREE(full_fname_dst);
+
+	if (result == -1) {
+		errno = saved_errno;
+	}
 	return result;
 }
 
