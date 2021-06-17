@@ -1582,6 +1582,8 @@ static int virusfilter_vfs_renameat(
 	char *fname = NULL;
 	char *dst_fname = NULL;
 	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
+	struct smb_filename *full_src = NULL;
+	struct smb_filename *full_dst = NULL;
 
 	if (ret != 0) {
 		return ret;
@@ -1594,16 +1596,39 @@ static int virusfilter_vfs_renameat(
 		return 0;
 	}
 
-	fname = smb_fname_src->base_name;
-	dst_fname = smb_fname_dst->base_name;
+	full_src = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						smb_fname_src);
+	if (full_src == NULL) {
+		errno = ENOMEM;
+		ret = -1;
+		goto out;
+	}
+
+	full_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						smb_fname_dst);
+	if (full_dst == NULL) {
+		errno = ENOMEM;
+		ret = -1;
+		goto out;
+	}
+
+	fname = full_src->base_name;
+	dst_fname = full_dst->base_name;
 
 	DBG_DEBUG("Renaming cache entry: fname: %s to: %s\n",
 		  fname, dst_fname);
 	virusfilter_cache_entry_rename(config->cache,
-				       cwd_fname, fname,
+				       cwd_fname,
+				       fname,
 				       dst_fname);
 
-	return 0;
+	ret = 0;
+  out:
+	TALLOC_FREE(full_src);
+	TALLOC_FREE(full_dst);
+	return ret;
 }
 
 
