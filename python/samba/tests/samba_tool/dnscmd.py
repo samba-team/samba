@@ -393,6 +393,9 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                   % (record1, dnstype1))
 
             for dnstype2 in self.good_records:
+                if dnstype1 == dnstype2:
+                    continue
+
                 record2 = self.good_records[dnstype2][0]
 
                 # Make sure that record2 isn't a valid entry of dnstype1.
