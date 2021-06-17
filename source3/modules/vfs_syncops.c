@@ -170,16 +170,23 @@ static int syncops_renameat(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, \
 				struct syncops_config_data, \
 				return -1); \
+	ret = SMB_VFS_NEXT_ ## op args; \
+	if (ret != 0) { \
+		return ret; \
+	} \
+	if (config->disable) { \
+		return ret; \
+	} \
+	if (!config->onmeta) { \
+		return ret; \
+	} \
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(), \
 				dirfsp, \
 				smb_fname); \
 	if (full_fname == NULL) { \
-		return -1; \
+		return ret; \
 	} \
-	ret = SMB_VFS_NEXT_ ## op args; \
-	if (ret == 0 \
-	&& config->onmeta && !config->disable \
-	&& fname) syncops_smb_fname(dirfsp->conn, full_fname); \
+	syncops_smb_fname(dirfsp->conn, full_fname); \
 	TALLOC_FREE(full_fname); \
 	return ret; \
 } while (0)
