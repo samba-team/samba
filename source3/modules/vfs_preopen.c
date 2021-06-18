@@ -60,6 +60,7 @@ struct preopen_state {
 				 */
 
 	struct samba_path_matching *preopen_names;
+	ssize_t last_match_idx; /* remember the last match */
 };
 
 static void preopen_helper_destroy(struct preopen_helper *c)
@@ -342,6 +343,7 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		TALLOC_FREE(state);
 		return NULL;
 	}
+	state->last_match_idx = -1;
 
 	if (!SMB_VFS_HANDLE_TEST_DATA(handle)) {
 		SMB_VFS_HANDLE_SET_DATA(handle, state, preopen_free_helpers,
@@ -407,7 +409,9 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	char *new_template = NULL;
 	size_t new_start = 0;
 	int new_digits = -1;
+	size_t new_end = 0;
 	ssize_t match_idx = -1;
+	bool need_reset = false;
 
 	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
 
@@ -476,6 +480,48 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 				 &new_start, &new_digits)) {
 		TALLOC_FREE(new_template);
 		return res;
+	}
+	new_end = new_start + new_digits;
+
+	if (state->last_match_idx != match_idx) {
+		/*
+		 * If a different pattern caused the match
+		 * we better reset the queue
+		 */
+		need_reset = true;
+	} else if (state->number_start != new_start) {
+		/*
+		 * If the digits started at a different possition
+		 * we better reset the queue
+		 */
+		need_reset = true;
+	} else if (state->num_digits != new_digits) {
+		/*
+		 * If number of digits changed
+		 * we better reset the queue
+		 */
+		need_reset = true;
+	} else if (strncmp(state->template_fname, new_template, new_start) != 0) {
+		/*
+		 * If name before the digits changed
+		 * we better reset the queue
+		 */
+		need_reset = true;
+	} else if (strcmp(state->template_fname + new_end, new_template + new_end) != 0) {
+		/*
+		 * If name after the digits changed
+		 * we better reset the queue
+		 */
+		need_reset = true;
+	}
+
+	if (need_reset) {
+		/*
+		 * Reset the queue
+		 */
+		state->fnum_sent = 0;
+		state->fnum_queue_end = 0;
+		state->last_match_idx = match_idx;
 	}
 
 	TALLOC_FREE(state->template_fname);
