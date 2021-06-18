@@ -57,6 +57,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	const struct auth_session_info *session_info,
 	struct npa_state **pnpa);
 
+struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx);
+
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       const struct tsocket_address *remote_address,

@@ -57,7 +57,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const struct tsocket_address *local_address,
 				const struct auth_session_info *session_info);
 
-static struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
+struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct npa_state *npa;
 
