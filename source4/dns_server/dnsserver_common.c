@@ -1012,6 +1012,25 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		enum ndr_err_code ndr_err;
 
 		if (records[i].wType == DNS_TYPE_TOMBSTONE) {
+			/*
+			 * There are two things that could be going on here.
+			 *
+			 * 1. We use a tombstone with EntombedTime == 0 for
+			 * passing deletion messages through the stack, and
+			 * this is the place we filter them out to perform
+			 * that deletion.
+			 *
+			 * 2. This node is tombstoned, with no records except
+			 * for a single tombstone, and it is just waiting to
+			 * disappear. In this case, unless the caller has
+			 * added a record, rec_count should be 1, and
+			 * el->num_values will end up at 0, and we will make
+			 * no changes. But if the caller has added a record,
+			 * we need to un-tombstone the node.
+			 *
+			 * It is not possible to add an explicit tombstone
+			 * record.
+			 */
 			if (records[i].data.EntombedTime != 0) {
 				was_tombstoned = true;
 			}
@@ -1065,6 +1084,10 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	}
 
 	if (el->num_values == 0) {
+		/*
+		 * We get here if there are no records or all the records were
+		 * tombstones.
+		 */
 		struct dnsp_DnssrvRpcRecord tbs;
 		struct ldb_val *v = &el->values[el->num_values];
 		enum ndr_err_code ndr_err;
