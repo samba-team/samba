@@ -949,7 +949,15 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
+	struct smb_filename *new_full_fname = NULL;
 
+	new_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dstfsp,
+						  newname);
+	if (new_full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_RENAMEAT(handle,
 			srcfsp,
@@ -960,9 +968,12 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("renameat", timediff, newname);
+		smb_time_audit_log_smb_fname("renameat",
+					timediff,
+					new_full_fname);
 	}
 
+	TALLOC_FREE(new_full_fname);
 	return result;
 }
 
