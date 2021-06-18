@@ -7569,6 +7569,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *parent_dir_fname_dst = NULL;
 	struct smb_filename *parent_dir_fname_dst_atname = NULL;
+	struct smb_filename *parent_dir_fname_src = NULL;
+	struct smb_filename *parent_dir_fname_src_atname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
@@ -7795,7 +7797,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	/*
-	 * Get a pathref on the parent directory, so
+	 * Get a pathref on the destination parent directory, so
 	 * we can call check_parent_access_fsp().
 	 */
 	status = parent_pathref(ctx,
@@ -7817,6 +7819,82 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
+	/*
+	 * If the target existed, make sure the destination
+	 * atname has the same stat struct.
+	 */
+	parent_dir_fname_dst_atname->st = smb_fname_dst->st;
+
+	/*
+	 * It's very common that source and
+	 * destination directories are the same.
+	 * Optimize by not opening the
+	 * second parent_pathref if we know
+	 * this is the case.
+	 */
+
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 ctx,
+					 fsp->fsp_name,
+					 &parent_dir_fname_src,
+					 &parent_dir_fname_src_atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/*
+	 * We do a case-sensitive string comparison. We want to be *sure*
+	 * this is the same path. The worst that can happen if
+	 * the case doesn't match is we lose out on the optimization,
+	 * the code still works.
+	 *
+	 * We can ignore twrp fields here. Rename is not allowed on
+	 * shadow copy handles.
+	 */
+
+	if (strcmp(parent_dir_fname_src->base_name,
+		   parent_dir_fname_dst->base_name) == 0) {
+		/*
+		 * parent directory is the same for source
+		 * and destination.
+		 */
+		/* Reparent the src_atname to the parent_dir_dest fname. */
+		parent_dir_fname_src_atname = talloc_move(
+						parent_dir_fname_dst,
+						&parent_dir_fname_src_atname);
+		/* Free the unneeded duplicate parent name. */
+		TALLOC_FREE(parent_dir_fname_src);
+		/*
+		 * And make the source parent name a copy of the
+		 * destination parent name.
+		 */
+		parent_dir_fname_src = parent_dir_fname_dst;
+	} else {
+		/*
+		 * source and destingation parent directories are
+		 * different.
+		 *
+		 * Get a pathref on the source parent directory, so
+		 * we can do a relative rename.
+		 */
+		TALLOC_FREE(parent_dir_fname_src);
+		status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_dir_fname_src,
+				&parent_dir_fname_src_atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	/*
+	 * Some modules depend on the source smb_fname having a valid stat.
+	 * The parent_dir_fname_src_atname is the relative name of the
+	 * currently open file, so just copy the stat from the open fsp.
+	 */
+	parent_dir_fname_src_atname->st = fsp->fsp_name->st;
+
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 
 	/*
@@ -7827,10 +7905,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	SMB_ASSERT(lck != NULL);
 
 	ret = SMB_VFS_RENAMEAT(conn,
-			conn->cwd_fsp,
-			fsp->fsp_name,
-			conn->cwd_fsp,
-			smb_fname_dst);
+			parent_dir_fname_src->fsp,
+			parent_dir_fname_src_atname,
+			parent_dir_fname_dst->fsp,
+			parent_dir_fname_dst_atname);
 	if (ret == 0) {
 		uint32_t create_options = fh_get_private_options(fsp->fh);
 
@@ -7908,6 +7986,16 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname_dst)));
 
  out:
+
+	/*
+	 * parent_dir_fname_src may be a copy of parent_dir_fname_dst.
+	 * See the optimization for same source and destination directory
+	 * above. Only free one in that case.
+	 */
+	if (parent_dir_fname_src != parent_dir_fname_dst) {
+		TALLOC_FREE(parent_dir_fname_src);
+	}
+	TALLOC_FREE(parent_dir_fname_dst);
 	TALLOC_FREE(smb_fname_dst);
 
 	return status;
