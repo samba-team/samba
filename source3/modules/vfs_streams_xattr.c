@@ -589,7 +589,10 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	ssize_t oret;
 	ssize_t nret;
 	struct ea_struct ea;
-	struct smb_filename *pathref = NULL;
+	struct smb_filename *pathref_src = NULL;
+	struct smb_filename *pathref_dst = NULL;
+	struct smb_filename *full_src = NULL;
+	struct smb_filename *full_dst = NULL;
 
 	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
 	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
@@ -631,33 +634,67 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	/* read the old stream */
-	status = get_ea_value(talloc_tos(), handle->conn, NULL,
-			      smb_fname_src, src_xattr_name, &ea);
+	full_src = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						smb_fname_src);
+	if (full_src == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+	full_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						smb_fname_dst);
+	if (full_dst == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	/* Get a pathref for full_src (base file, no stream name). */
+	status = synthetic_pathref(talloc_tos(),
+				handle->conn->cwd_fsp,
+				full_src->base_name,
+				NULL,
+				NULL,
+				full_src->twrp,
+				full_src->flags,
+				&pathref_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = ENOENT;
+		goto fail;
+	}
+
+	/* Read the old stream from the base file fsp. */
+	status = get_ea_value(talloc_tos(),
+			      handle->conn,
+			      pathref_src->fsp,
+			      NULL,
+			      src_xattr_name,
+			      &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
 
-	if (smb_fname_dst->fsp == NULL) {
-		status = synthetic_pathref(talloc_tos(),
+	/* Get a pathref for full_dst (base file, no stream name). */
+	status = synthetic_pathref(talloc_tos(),
 				handle->conn->cwd_fsp,
-				smb_fname_dst->base_name,
+				full_dst->base_name,
 				NULL,
 				NULL,
-				smb_fname_dst->twrp,
-				smb_fname_dst->flags,
-				&pathref);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = ENOENT;
-			goto fail;
-		}
-		smb_fname_dst = pathref;
+				full_dst->twrp,
+				full_dst->flags,
+				&pathref_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = ENOENT;
+		goto fail;
 	}
-	/* (over)write the new stream */
+
+	/* (Over)write the new stream on the base file fsp. */
 	nret = SMB_VFS_FSETXATTR(
-			smb_fname_dst->fsp,
-			dst_xattr_name, ea.value.data, ea.value.length,
+			pathref_dst->fsp,
+			dst_xattr_name,
+			ea.value.data,
+			ea.value.length,
 			0);
 	if (nret < 0) {
 		if (errno == ENOATTR) {
@@ -667,15 +704,10 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/*
-	 * remove the old stream.
-	 * Note that now we're doing this by handle
-	 * not by pathname we must do it on the base_fsp,
-	 * as we have to remove the actual xattr on the base file.
+	 * Remove the old stream from the base file fsp.
 	 */
-	SMB_ASSERT(smb_fname_src->fsp->base_fsp != NULL);
-
-	oret = SMB_VFS_FREMOVEXATTR(smb_fname_src->fsp->base_fsp,
-				   src_xattr_name);
+	oret = SMB_VFS_FREMOVEXATTR(pathref_src->fsp,
+				    src_xattr_name);
 	if (oret < 0) {
 		if (errno == ENOATTR) {
 			errno = ENOENT;
@@ -687,7 +719,10 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	errno = 0;
 	ret = 0;
  fail:
-	TALLOC_FREE(pathref);
+	TALLOC_FREE(pathref_src);
+	TALLOC_FREE(pathref_dst);
+	TALLOC_FREE(full_src);
+	TALLOC_FREE(full_dst);
 	TALLOC_FREE(src_xattr_name);
 	TALLOC_FREE(dst_xattr_name);
 	return ret;
