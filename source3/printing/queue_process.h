@@ -28,11 +28,7 @@ struct dcesrv_context;
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
 			     struct dcesrv_context *dce_ctx,
-			     bool start_daemons,
-			     bool background_queue);
-void printing_subsystem_update(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx,
-			       bool force);
+			     bool start_daemons);
 pid_t start_background_queue(struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     char *logfile);

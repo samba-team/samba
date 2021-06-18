@@ -19,7 +19,7 @@ bld.SAMBA_BINARY('fuzz_tiniparser',
 
 bld.SAMBA_BINARY('fuzz_parse_lpq_entry',
                  source='fuzz_parse_lpq_entry.c',
-                 deps='fuzzing  afl-fuzz-main smbd_base',
+                 deps='fuzzing  afl-fuzz-main smbd_base PRINTING',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_oLschema2ldif',

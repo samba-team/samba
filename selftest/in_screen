@@ -45,7 +45,7 @@ cleanup() {
     }
 
     case $ENVNAME in
-	*.nmbd|*.smbd|*.winbindd|*.samba)
+	*.nmbd|*.smbd|*.winbindd|*.samba|*.samba_dcerpcd)
 	    kill $(cat $basedir/../"${ENVNAME%\.*}"/pid/"${ENVNAME##*\.}".pid)
 	    ;;
     esac
@@ -81,7 +81,7 @@ read stdin_var
 echo "$(date) EOF on stdin" >> $basedir/$SERVERNAME.log
 
 case $ENVNAME in
-    *.nmbd|*.smbd|*.winbindd|*.samba)
+    *.nmbd|*.smbd|*.winbindd|*.samba|*.samba_dcerpcd)
 	kill $(cat $basedir/../"${ENVNAME%\.*}"/pid/"${ENVNAME##*\.}".pid)
 	;;
 esac

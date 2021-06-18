@@ -2948,9 +2948,6 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 
 	change_to_root_user();
 
-	/* update printer queue caches if necessary */
-	update_monitored_printq_cache(sconn->msg_ctx);
-
 	/* check if we need to reload services */
 	check_reload(sconn, time_mono(NULL));
 
@@ -3986,7 +3983,6 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 
 void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
-		  struct dcesrv_context *dce_ctx,
 		  int sock_fd,
 		  bool interactive)
 {
@@ -4029,7 +4025,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	sconn->ev_ctx = ev_ctx;
 	sconn->msg_ctx = msg_ctx;
-	sconn->dce_ctx = dce_ctx;
 
 	ret = pthreadpool_tevent_init(sconn, lp_aio_max_threads(),
 				      &sconn->pool);

@@ -21,9 +21,7 @@
 #include "messages.h"
 #include "ntdomain.h"
 #include "rpc_server/rpc_server.h"
-#include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_config.h"
-#include "rpc_server/rpc_modules.h"
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
 #include "libcli/security/security_token.h"
 #include "libcli/security/dom_sid.h"
@@ -38,50 +36,6 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
-
-static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx)
-{
-	const struct ndr_interface_table *t = &ndr_table_mdssvc;
-	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
-	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
-	bool external = service_mode != RPC_SERVICE_MODE_EMBEDDED ||
-			mdssvc_type != RPC_DAEMON_EMBEDDED;
-	bool in_mdssd = external && am_parent == NULL;
-	const struct dcesrv_endpoint_server *ep_server = NULL;
-
-	if (external && !in_mdssd) {
-		return true;
-	}
-
-	ep_server = mdssvc_get_ep_server();
-	if (ep_server == NULL) {
-		DBG_ERR("Failed to get endpoint server\n");
-		return false;
-	}
-
-	status = dcerpc_register_ep_server(ep_server);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("Failed to register 'mdssvc' endpoint "
-			"server: %s\n", nt_errstr(status));
-		return false;
-	}
-
-	return true;
-}
-
-static struct rpc_module_fns rpc_module_mdssvc_fns = {
-	.setup = rpc_setup_mdssvc,
-};
-
-static_decl_rpc;
-NTSTATUS rpc_mdssvc_module_init(TALLOC_CTX *mem_ctx)
-{
-	DBG_DEBUG("Registering mdsvc RPC service\n");
-
-	return register_rpc_module(&rpc_module_mdssvc_fns, "mdssvc");
-}
 
 static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 					    struct pipes_struct *p,

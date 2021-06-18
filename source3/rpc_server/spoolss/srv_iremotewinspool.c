@@ -2295,25 +2295,10 @@ static const struct dcesrv_interface dcesrv_iremotewinspool_interface = {
 #endif
 };
 
-static NTSTATUS iremotewinspool__check_register_in_endpoint(const char *name, struct dcerpc_binding *binding) {
-	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(binding);
-
-	/* If service is embedded, register only for ncacn_np
-	 * see 8466b3c85e4b835e57e41776853093f4a0edc8b8
-	 */
-	if (rpc_service_mode(name) == RPC_SERVICE_MODE_EMBEDDED && (transport != NCACN_NP && transport != NCALRPC)) {
-		DBG_INFO("Interface 'iremotewinspool' not registered in endpoint '%s' as service is embedded\n", name);
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS iremotewinspool__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	int i;
 	NTSTATUS ret;
-	struct dcerpc_binding *binding;
 
 #ifdef DCESRV_INTERFACE_IREMOTEWINSPOOL_NCACN_NP_SECONDARY_ENDPOINT
 	const char *ncacn_np_secondary_endpoint = DCESRV_INTERFACE_IREMOTEWINSPOOL_NCACN_NP_SECONDARY_ENDPOINT;
@@ -2323,19 +2308,6 @@ static NTSTATUS iremotewinspool__op_init_server(struct dcesrv_context *dce_ctx, 
 
 	for (i=0;i<ndr_table_iremotewinspool.endpoints->count;i++) {
 		const char *name = ndr_table_iremotewinspool.endpoints->names[i];
-
-		ret = dcerpc_parse_binding(dce_ctx, name, &binding);
-		if (NT_STATUS_IS_ERR(ret)) {
-			DBG_ERR("Failed to parse binding string '%s'\n", name);
-			return ret;
-		}
-
-		ret = iremotewinspool__check_register_in_endpoint("iremotewinspool", binding);
-		if (NT_STATUS_IS_ERR(ret)) {
-			talloc_free(binding);
-			continue;
-		}
-		talloc_free(binding);
 
 		ret = dcesrv_interface_register(dce_ctx, name, ncacn_np_secondary_endpoint, &dcesrv_iremotewinspool_interface, NULL);
 		if (!NT_STATUS_IS_OK(ret)) {

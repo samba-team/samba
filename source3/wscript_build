@@ -252,7 +252,7 @@ bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                            ''',
                     deps='SMBREGISTRY')
 
-bld.SAMBA3_SUBSYSTEM('REG_FULL',
+bld.SAMBA3_LIBRARY('REG_FULL',private_library=True,
                     source='''
                            registry/reg_backend_printing.c
                            registry/reg_backend_shares.c
@@ -267,6 +267,8 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     deps='''
                          smbconf
                          tdb-wrap3
+                         REG_PARSE_PRS
+                         pdb
                          ''')
 
 bld.SAMBA3_LIBRARY('cmdline_contexts',
@@ -638,6 +640,9 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/service.c
                           smbd/error.c
                           printing/printspoolss.c
+                          printing/rap_jobid.c
+                          printing/load.c
+                          printing/printer_list.c
                           lib/sessionid_tdb.c
                           lib/cleanupdb.c
                           smbd/fake_file.c
@@ -690,6 +695,8 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/build_options.c
                           smbd/smb1_utils.c
                           smbd/conn.c
+                          rpc_server/srv_pipe_hnd.c
+                          rpc_server/rpc_ncacn_np.c
                           ''' + NOTIFY_SOURCES,
                    deps='''
                         talloc
@@ -704,12 +711,10 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         samba3core
                         param_service
                         AVAHI
-                        PRINTBASE
                         PROFILE
                         LOCKING
                         LIBADS_SERVER
                         LIBAFS
-                        RPC_SERVICE
                         NDR_SMBXSRV
                         LEASES_DB
                         LEASES_UTIL
@@ -722,6 +727,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         NDR_QUOTA
                         GNUTLS_HELPERS
                         fd_handle
+                        cli_spoolss
                    ''' +
                    bld.env['dmapi_lib'] +
                    bld.env['legacy_quota_libs'] +
@@ -778,7 +784,6 @@ bld.SAMBA3_SUBSYSTEM('PRINTBASE',
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     source='''
                            printing/printing.c
-                           printing/rap_jobid.c
                            printing/nt_printing.c
                            printing/nt_printing_tdb.c
                            printing/nt_printing_migrate_internal.c
@@ -790,7 +795,6 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                          LIBADS_PRINTER
                          tdb
                          printing_migrate
-                         SPOOLSSD
                          ''')
 
 bld.SAMBA3_LIBRARY('printing_migrate',
@@ -816,14 +820,16 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
                            printing/print_cups.c
                            printing/print_generic.c
                            printing/lpq_parse.c
-                           printing/load.c
                            printing/print_standard.c
                            printing/print_iprint.c
-                           printing/printer_list.c
                            ''',
                     deps='''
                          NDR_PRINTCAP
-                         tdb
+                         dbwrap
+                         tdb-wrap3
+                         SMBCONF_PARAM
+                         PRINTBASE
+                         smbd_base
                          cups
                          ''')
 
@@ -833,7 +839,7 @@ bld.SAMBA_BINARY('samba-bgqd',
                  samba3core
                  CMDLINE_S3
                  AUTH_COMMON
-                 smbd_base
+                 RPC_SPOOLSS
                  ''',
                  install_path='${LIBEXECDIR}/samba')
 
@@ -1070,13 +1076,6 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
 bld.SAMBA3_SUBSYSTEM('LIBLSA',
                      source='lib/lsa.c')
 
-bld.SAMBA3_SUBSYSTEM('SPOOLSSD',
-                    source='printing/spoolssd.c',
-                    deps='''
-                         samba-util
-                         RPC_SOCK_HELPER
-                         ''')
-
 bld.SAMBA3_SUBSYSTEM('tevent-glib-glue',
                     source='lib/tevent_glib_glue.c',
                     deps='glib-2.0',
@@ -1100,11 +1099,7 @@ bld.SAMBA3_BINARY('smbd/smbd',
                  deps='''
                       CMDLINE_S3
                       smbd_base
-                      EPMD
-                      LSASD
-                      FSSD
-                      MDSSD
-                      SPOOLSSD
+                      REG_FULL
                       ''',
                  install_path='${SBINDIR}')
 

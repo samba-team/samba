@@ -90,6 +90,7 @@
 ^samba4.rpc.epmapper.*.Lookup_simple
 ^samba4.rpc.epmapper.*.Map_simple
 ^samba4.rpc.epmapper.*.Map_full
+^samba3.rpc.epmapper.*.Map_full
 ^samba4.rpc.lsalookup on ncalrpc
 ^samba4.rpc.lsalookup on ncacn_np
 ^samba4.rpc.lsalookup with seal,padcheck
@@ -342,11 +343,6 @@
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_no_auth_presentation_ctx_invalid4
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_auth_type2
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_transfer
-# Association groups between processes not implemented yet in s3 server implementation
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_ok2\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail1\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail2\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail3\(ad_member\)
 # NETLOGON is disabled in any non-DC environments
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_2nd_cancel_requests\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_08_requests\(ad_member\)
@@ -370,7 +366,6 @@
 ^samba4.rpc.echo.*on.*with.object.echo.enum.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.testcall.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.testcall2.*nt4_dc
-^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*

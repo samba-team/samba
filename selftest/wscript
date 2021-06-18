@@ -202,6 +202,7 @@ def cmd_testonly(opt):
         os.environ['NMBD_VALGRIND'] = EXPAND_VARIABLES(opt, server_wrapper)
         os.environ['WINBINDD_VALGRIND'] = EXPAND_VARIABLES(opt, server_wrapper)
         os.environ['SMBD_VALGRIND'] = EXPAND_VARIABLES(opt, server_wrapper)
+        os.environ['SAMBA_DCERPCD_VALGRIND'] = EXPAND_VARIABLES(opt, server_wrapper)
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')

@@ -1847,7 +1847,6 @@ main() {
             conf.fatal("Unmet dependencies for Spotlight backends")
 
         Logs.info("Building with Spotlight support, available backends: %s" % ', '.join(backends))
-        default_static_modules.extend(['rpc_mdssvc_module'])
         conf.DEFINE('WITH_SPOTLIGHT', '1')
         conf.env.with_spotlight = True
 
@@ -2030,7 +2029,7 @@ main() {
     static_list = {}
     shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount', 'rpc']
+    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
     conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
         for m in final_static_modules:

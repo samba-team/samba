@@ -74,6 +74,7 @@ void global_dcesrv_context_free(void)
 	TALLOC_FREE(global_dcesrv_ctx);
 }
 
+#if 0
 /* the default is "embedded" so this table
  * lists only services that are not using
  * the default in order to keep enumerating it
@@ -199,3 +200,4 @@ enum rpc_daemon_type_e rpc_daemon_type(const char *name)
 
 	return type;
 }
+#endif

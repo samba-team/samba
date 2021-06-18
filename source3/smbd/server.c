@@ -37,7 +37,6 @@
 #include "ctdbd_conn.h"
 #include "util_cluster.h"
 #include "printing/queue_process.h"
-#include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_config.h"
 #include "passdb.h"
 #include "auth.h"
@@ -56,10 +55,6 @@
 #include "lib/util/sys_rw.h"
 #include "cleanupdb.h"
 #include "g_lock.h"
-#include "rpc_server/epmd.h"
-#include "rpc_server/lsasd.h"
-#include "rpc_server/fssd.h"
-#include "rpc_server/mdssd.h"
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
 
@@ -75,7 +70,6 @@ struct smbd_parent_context {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
-	struct dcesrv_context *dce_ctx;
 
 	/* the list of listening sockets */
 	struct smbd_open_socket *sockets;
@@ -115,15 +109,12 @@ static void smbd_parent_conf_updated(struct messaging_context *msg,
 				     struct server_id server_id,
 				     DATA_BLOB *data)
 {
-	struct tevent_context *ev_ctx =
-		talloc_get_type_abort(private_data, struct tevent_context);
 	bool ok;
 
 	DEBUG(10,("smbd_parent_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(NULL, NULL, false);
-	printing_subsystem_update(ev_ctx, msg, false);
 
 	ok = reinit_guest_session_info(NULL);
 	if (!ok) {
@@ -976,7 +967,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct messaging_context *msg_ctx = s->parent->msg_ctx;
-	struct dcesrv_context *dce_ctx = s->parent->dce_ctx;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
@@ -995,7 +985,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 	if (s->parent->interactive) {
 		reinit_after_fork(msg_ctx, ev, true, NULL);
-		smbd_process(ev, msg_ctx, dce_ctx, fd, true);
+		smbd_process(ev, msg_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
@@ -1044,7 +1034,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		smbd_process(ev, msg_ctx, dce_ctx, fd, false);
+		smbd_process(ev, msg_ctx, fd, false);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
@@ -1434,15 +1424,9 @@ static void smbd_parent_sig_hup_handler(struct tevent_context *ev,
 					void *siginfo,
 					void *private_data)
 {
-	struct smbd_parent_context *parent =
-		talloc_get_type_abort(private_data,
-		struct smbd_parent_context);
-
 	change_to_root_user();
 	DEBUG(1,("parent: Reloading services after SIGHUP\n"));
 	reload_services(NULL, NULL, false);
-
-	printing_subsystem_update(parent->ev_ctx, parent->msg_ctx, true);
 }
 
 struct smbd_claim_version_state {
@@ -1571,7 +1555,6 @@ extern void build_options(bool screen);
 	int opt;
 	poptContext pc;
 	bool print_build_options = False;
-	bool serving_printers = false;
 	struct server_id main_server_id = {0};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1609,7 +1592,6 @@ extern void build_options(bool screen);
 	NTSTATUS status;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
-	struct dcesrv_context *dce_ctx = NULL;
 	struct server_id server_id;
 	struct tevent_signal *se;
 	int profiling_level;
@@ -1767,7 +1749,7 @@ extern void build_options(bool screen);
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
 
-	/* Output the build options to the debug log */ 
+	/* Output the build options to the debug log */
 	build_options(False);
 
 	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4) {
@@ -1805,11 +1787,6 @@ extern void build_options(bool screen);
 	 */
 	msg_ctx = global_messaging_context();
 	if (msg_ctx == NULL) {
-		exit(1);
-	}
-
-	dce_ctx = global_dcesrv_context();
-	if (dce_ctx == NULL) {
 		exit(1);
 	}
 
@@ -1918,7 +1895,6 @@ extern void build_options(bool screen);
 	parent->interactive = cmdline_daemon_cfg->interactive;
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
-	parent->dce_ctx = dce_ctx;
 	am_parent = parent;
 
 	se = tevent_add_signal(parent->ev_ctx,
@@ -2081,63 +2057,8 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	status = dcesrv_init(ev_ctx, ev_ctx, msg_ctx, dce_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("Failed to setup RPC server: %s\n", nt_errstr(status));
-		exit_daemon("Samba cannot setup ep pipe", EACCES);
-	}
-
 	if (!cmdline_daemon_cfg->interactive) {
 		daemon_ready("smbd");
-	}
-
-	serving_printers = (!lp__disable_spoolss() &&
-			    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED));
-
-	/* only start other daemons if we are running as a daemon
-	 * -- bad things will happen if smbd is launched via inetd
-	 *  and we fork a copy of ourselves here */
-	if (cmdline_daemon_cfg->daemon && !cmdline_daemon_cfg->interactive) {
-
-		if (rpc_epmapper_daemon() == RPC_DAEMON_FORK) {
-			start_epmd(ev_ctx, msg_ctx, dce_ctx);
-		}
-
-		if (rpc_lsasd_daemon() == RPC_DAEMON_FORK) {
-			start_lsasd(ev_ctx, msg_ctx, dce_ctx);
-		}
-
-		if (rpc_fss_daemon() == RPC_DAEMON_FORK) {
-			start_fssd(ev_ctx, msg_ctx, dce_ctx);
-		}
-
-		if (serving_printers) {
-			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
-			ok = printing_subsystem_init(ev_ctx,
-						     msg_ctx,
-						     dce_ctx,
-						     true,
-						     bgq);
-			if (!ok) {
-				exit_daemon("Samba failed to init printing subsystem", EACCES);
-			}
-		}
-
-#ifdef WITH_SPOTLIGHT
-		if ((rpc_mdssvc_mode() == RPC_SERVICE_MODE_EXTERNAL) &&
-		    (rpc_mdssd_daemon() == RPC_DAEMON_FORK)) {
-			start_mdssd(ev_ctx, msg_ctx, dce_ctx);
-		}
-#endif
-	} else if (serving_printers) {
-		ok = printing_subsystem_init(ev_ctx,
-					     msg_ctx,
-					     dce_ctx,
-					     false,
-					     false);
-		if (!ok) {
-			exit(1);
-		}
 	}
 
 	if (!cmdline_daemon_cfg->daemon) {
@@ -2173,7 +2094,7 @@ extern void build_options(bool screen);
 	        /* Stop zombies */
 		smbd_setup_sig_chld_handler(parent);
 
-		smbd_process(ev_ctx, msg_ctx, dce_ctx, sock, true);
+		smbd_process(ev_ctx, msg_ctx, sock, true);
 
 		exit_server_cleanly(NULL);
 		return(0);
@@ -2181,13 +2102,6 @@ extern void build_options(bool screen);
 
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
-
-	/* do a printer update now that all messaging has been set up,
-	 * before we allow clients to start connecting */
-	if (!lp__disable_spoolss() &&
-	    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
-		printing_subsystem_update(ev_ctx, msg_ctx, false);
-	}
 
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */

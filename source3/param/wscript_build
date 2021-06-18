@@ -33,7 +33,7 @@ bld.SAMBA3_SUBSYSTEM(pyparam_util,
 
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='service.c',
-                     deps = 'USER_UTIL smbconf PRINTING')
+                     deps = 'USER_UTIL smbconf')
 
 bld.SAMBA3_BINARY('test_lp_load',
                  source='test_lp_load.c',

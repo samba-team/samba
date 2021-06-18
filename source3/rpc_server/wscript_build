@@ -15,7 +15,6 @@ bld.SAMBA_BINARY('samba-dcerpcd',
                  AUTH_COMMON
                  RPC_SOCK_HELPER
                  NDR_RPC_HOST
-                 RPC_SERVER
                  ''',
                  install_path='${SAMBA_LIBEXECDIR}')
 
@@ -112,29 +111,32 @@ bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
                     source='rpc_ncacn_np.c rpc_handles.c',
-                    deps='RPC_CONFIG auth common_auth npa_tstream')
+                    deps='auth common_auth npa_tstream')
 
-bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',
-                    source='rpc_server.c',
-                    deps='samba-util')
+bld.SAMBA3_LIBRARY('RPC_SERVER_LOOP',
+                   private_library=True,
+                   source='rpc_server.c',
+                   deps='''
+                   LIBTSOCKET
+                   dcerpc-server-core
+                   npa_tstream
+                   auth
+                   RPC_NCACN_NP
+                   samba3-util
+                   ''')
 
 bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
                     source='srv_access_check.c',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
-                    source='srv_pipe_hnd.c srv_pipe.c',
+                    source='',
                     deps='''
                     dcerpc-server-core
                     RPC_CONFIG
-                    RPC_NCACN_NP
                     RPC_SERVER_LOOP
                     NDR_NAMED_PIPE_AUTH
                     ''')
-
-bld.SAMBA3_SUBSYSTEM('RPC_MODULES',
-                    source='rpc_modules.c',
-                    deps='samba-util')
 
 ### RPC_SERVICES
 bld.SAMBA3_SUBSYSTEM('RPC_DSSETUP',
@@ -247,17 +249,6 @@ if bld.env.spotlight_backend_es:
                           mdssvc/es_lexer.l
                           '''
     rpc_mdssvc_deps += ' http jansson'
-    if bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'):
-        bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
-                          'mdssvc/elasticsearch_mappings.json')
-
-bld.SAMBA3_MODULE('rpc_mdssvc_module',
-                  subsystem='rpc',
-                  source=rpc_mdssvc_sources,
-                  init_function='',
-                  deps=rpc_mdssvc_deps,
-                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_mdssvc_module'),
-                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'))
 
 bld.SAMBA3_BINARY('rpcd_mdssvc',
                   source='rpcd_mdssvc.c ' + rpc_mdssvc_sources,
@@ -268,18 +259,11 @@ bld.SAMBA3_BINARY('rpcd_mdssvc',
                   ''' + rpc_mdssvc_deps,
                   install_path='${SAMBA_LIBEXECDIR}')
 
-# RPC_SERVICE
-bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
-                    source='rpc_ep_register.c ../librpc/rpc/dcerpc_ep.c',
-                    deps='samba-util')
-
 bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
-                    source='rpc_service_setup.c',
+                     source='',
                     deps='''
                     rpc
                     RPC_SERVER
-                    RPC_SERVER_REGISTER
-		    RPC_MODULES
                     RPC_SAMR
                     RPC_LSARPC
                     RPC_WINREG
@@ -291,7 +275,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_NETLOGON
                     RPC_NETDFS
                     RPC_SRVSVC
-                    RPC_SPOOLSS
                     RPC_IREMOTEWINSPOOL
                     RPC_EVENTLOG
                     RPC_RPCECHO
@@ -303,21 +286,4 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
 # RPC_DAEMONS
 bld.SAMBA3_SUBSYSTEM('RPC_SOCK_HELPER',
                     source='rpc_sock_helper.c',
-                    deps='RPC_SERVER_REGISTER')
-
-bld.SAMBA3_SUBSYSTEM('EPMD',
-                    source='epmd.c',
-                    deps='samba-util')
-
-bld.SAMBA3_SUBSYSTEM('LSASD',
-                    source='lsasd.c',
-                    deps='RPC_SOCK_HELPER samba-util')
-
-bld.SAMBA3_SUBSYSTEM('FSSD',
-                    source='fssd.c',
-                    deps='samba-util')
-
-bld.SAMBA3_SUBSYSTEM('MDSSD',
-                    source='mdssd.c',
-                    deps='RPC_SOCK_HELPER RPC_MODULES samba-util tevent-glib-glue',
-                    enabled=bld.env.with_spotlight)
+                    deps='')

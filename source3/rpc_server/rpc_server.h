@@ -65,28 +65,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 
-struct dcerpc_ncacn_listen_state;
-int dcesrv_setup_ncacn_listener(
-	TALLOC_CTX *mem_ctx,
-	struct dcesrv_context *dce_ctx,
-	struct tevent_context *ev_ctx,
-	struct messaging_context *msg_ctx,
-	struct dcesrv_endpoint *e,
-	int *fd,
-	dcerpc_ncacn_termination_fn term_fn,
-	void *termination_data,
-	struct dcerpc_ncacn_listen_state **listen_state);
-
-void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
-			 struct messaging_context *msg_ctx,
-			 struct dcesrv_context *dce_ctx,
-			 struct dcesrv_endpoint *e,
-			 struct tsocket_address **cli_addr,
-			 struct tsocket_address **srv_addr,
-			 int s,
-			 dcerpc_ncacn_termination_fn termination_fn,
-			 void *termination_data);
-
 NTSTATUS dcesrv_auth_gensec_prepare(
 	TALLOC_CTX *mem_ctx,
 	struct dcesrv_call_state *call,

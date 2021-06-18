@@ -23,6 +23,7 @@
 #ifndef _RPC_CONFIG_H
 #define _RPC_CONFIG_H
 
+#if 0
 enum rpc_service_mode_e {
 	RPC_SERVICE_MODE_DISABLED = 0,
 	RPC_SERVICE_MODE_EMBEDDED,
@@ -68,6 +69,7 @@ enum rpc_daemon_type_e rpc_daemon_type(const char *name);
 #define rpc_lsasd_daemon() rpc_daemon_type("lsasd")
 #define rpc_fss_daemon() rpc_daemon_type("fssd")
 #define rpc_mdssd_daemon() rpc_daemon_type("mdssd")
+#endif
 
 struct dcesrv_context;
 struct dcesrv_context *global_dcesrv_context(void);

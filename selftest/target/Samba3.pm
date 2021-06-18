@@ -97,44 +97,54 @@ sub teardown_env_samba($$)
 	my $smbdpid = $envvars->{SMBD_TL_PID};
 	my $nmbdpid = $envvars->{NMBD_TL_PID};
 	my $winbinddpid = $envvars->{WINBINDD_TL_PID};
+	my $samba_dcerpcdpid = $envvars->{SAMBA_DCERPCD_TL_PID};
 
 	# This should give it time to write out the gcov data
 	until ($count > 20) {
 	    my $smbdchild = Samba::cleanup_child($smbdpid, "smbd");
 	    my $nmbdchild = Samba::cleanup_child($nmbdpid, "nmbd");
 	    my $winbinddchild = Samba::cleanup_child($winbinddpid, "winbindd");
+	    my $samba_dcerpcdchild = Samba::cleanup_child(
+		$samba_dcerpcdpid, "samba-dcerpcd");
 	    if ($smbdchild == -1
 		&& $nmbdchild == -1
-		&& $winbinddchild == -1) {
+		&& $winbinddchild == -1
+		&& $samba_dcerpcdpid == -1) {
 		last;
 	    }
 	    sleep(1);
 	    $count++;
 	}
 
-	if ($count <= 20 && kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
+	if ($count <= 20 &&
+	    kill(0, $smbdpid, $nmbdpid, $winbinddpid, $samba_dcerpcdpid) == 0) {
 	    return;
 	}
 
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
 	$self->stop_sig_term($winbinddpid);
+	$self->stop_sig_term($samba_dcerpcdpid);
 
 	$count = 0;
 	until ($count > 10) {
 	    my $smbdchild = Samba::cleanup_child($smbdpid, "smbd");
 	    my $nmbdchild = Samba::cleanup_child($nmbdpid, "nmbd");
 	    my $winbinddchild = Samba::cleanup_child($winbinddpid, "winbindd");
+	    my $samba_dcerpcdpid = Samba::cleanup_child(
+		$samba_dcerpcdpid, "samba-dcerpcd");
 	    if ($smbdchild == -1
 		&& $nmbdchild == -1
-		&& $winbinddchild == -1) {
+		&& $winbinddchild == -1
+		&& $samba_dcerpcdpid == -1) {
 		last;
 	    }
 	    sleep(1);
 	    $count++;
 	}
 
-	if ($count <= 10 && kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
+	if ($count <= 10 &&
+	    kill(0, $smbdpid, $nmbdpid, $winbinddpid, $samba_dcerpcdpid) == 0) {
 	    return;
 	}
 
@@ -142,6 +152,7 @@ sub teardown_env_samba($$)
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
 	$self->stop_sig_kill($winbinddpid);
+	$self->stop_sig_kill($samba_dcerpcdpid);
 
 	return 0;
 }
@@ -261,19 +272,8 @@ sub setup_nt4_dc
 	ntlm auth = yes
 	raw NTLMv2 auth = yes
 	server schannel = auto
+	rpc start on demand helpers = false
 
-	rpc_server:epmapper = external
-	rpc_server:spoolss = external
-	rpc_server:lsarpc = external
-	rpc_server:samr = external
-	rpc_server:netlogon = external
-	rpc_server:register_embedded_np = yes
-	rpc_server:FssagentRpc = external
-
-	rpc_daemon:epmd = fork
-	rpc_daemon:spoolssd = fork
-	rpc_daemon:lsasd = fork
-	rpc_daemon:fssd = fork
 	fss: sequence timeout = 1
 	check parent directory delete on close = yes
 ";
@@ -295,6 +295,7 @@ sub setup_nt4_dc
 
 	if (not $self->check_or_start(
 		env_vars => $vars,
+		samba_dcerpcd => "yes",
 		nmbd => "yes",
 		winbindd => "yes",
 		smbd => "yes")) {
@@ -339,17 +340,6 @@ sub setup_nt4_dc_schannel
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
-
-	rpc_server:epmapper = external
-	rpc_server:spoolss = external
-	rpc_server:lsarpc = external
-	rpc_server:samr = external
-	rpc_server:netlogon = external
-	rpc_server:register_embedded_np = yes
-
-	rpc_daemon:epmd = fork
-	rpc_daemon:spoolssd = fork
-	rpc_daemon:lsasd = fork
 
 	server schannel = yes
 	# used to reproduce bug #12772
@@ -722,15 +712,7 @@ sub provision_ad_member
 
 	allow dcerpc auth level connect:lsarpc = yes
 	dcesrv:max auth states = 8
-
-	rpc_server:epmapper = external
-	rpc_server:lsarpc = external
-	rpc_server:samr = external
-	rpc_server:netlogon = disabled
-	rpc_server:register_embedded_np = yes
-
-	rpc_daemon:epmd = fork
-	rpc_daemon:lsasd = fork
+	rpc start on demand helpers = false
 
 	# Begin extra member options
 	$extra_member_options
@@ -944,6 +926,7 @@ sub provision_ad_member
 
 		if (not $self->check_or_start(
 			env_vars => $ret,
+			samba_dcerpcd => "yes",
 			nmbd => "yes",
 			winbindd => "yes",
 			smbd => "yes")) {
@@ -2200,6 +2183,7 @@ sub check_or_start($$) {
 	my $nmbd = $args{nmbd} // "no";
 	my $winbindd = $args{winbindd} // "no";
 	my $smbd = $args{smbd} // "no";
+	my $samba_dcerpcd = $args{samba_dcerpcd} // "no";
 	my $child_cleanup = $args{child_cleanup};
 
 	my $STDIN_READER;
@@ -2209,16 +2193,47 @@ sub check_or_start($$) {
 	# exit when the test script exits
 	pipe($STDIN_READER, $env_vars->{STDIN_PIPE});
 
-	my $binary = Samba::bindir_path($self, "nmbd");
-	my @full_cmd = $self->make_bin_cmd($binary, $env_vars,
-					   $ENV{NMBD_OPTIONS}, $ENV{NMBD_VALGRIND},
-					   $ENV{NMBD_DONT_LOG_STDOUT});
+	my $binary = Samba::bindir_path($self, "samba-dcerpcd");
+	my @full_cmd = $self->make_bin_cmd(
+	    $binary,
+	    $env_vars,
+	    $ENV{SAMBA_DCERPCD_OPTIONS},
+	    $ENV{SAMBA_DCERPCD_VALGRIND},
+	    $ENV{SAMBA_DCERPCD_DONT_LOG_STDOUT});
+	push(@full_cmd, '--libexec-rpcds');
+
+	my $samba_dcerpcd_envs = Samba::get_env_for_process(
+	    "samba_dcerpcd", $env_vars);
+
+	# fork and exec() samba_dcerpcd in the child process
+	my $daemon_ctx = {
+		NAME => "samba_dcerpcd",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env_vars->{SAMBA_DCERPCD_TEST_LOG},
+		PCAP_FILE => "env-$ENV{ENVNAME}-samba_dcerpcd",
+		ENV_VARS => $samba_dcerpcd_envs,
+	};
+	if ($samba_dcerpcd ne "yes") {
+		$daemon_ctx->{SKIP_DAEMON} = 1;
+	}
+
+	my $pid = Samba::fork_and_exec(
+	    $self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup);
+
+	$env_vars->{SAMBA_DCERPCD_TL_PID} = $pid;
+	write_pid($env_vars, "samba_dcerpcd", $pid);
+
+	$binary = Samba::bindir_path($self, "nmbd");
+	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
+					$ENV{NMBD_OPTIONS}, $ENV{NMBD_VALGRIND},
+					$ENV{NMBD_DONT_LOG_STDOUT});
 	my $nmbd_envs = Samba::get_env_for_process("nmbd", $env_vars);
 	delete $nmbd_envs->{RESOLV_WRAPPER_CONF};
 	delete $nmbd_envs->{RESOLV_WRAPPER_HOSTS};
 
 	# fork and exec() nmbd in the child process
-	my $daemon_ctx = {
+	$daemon_ctx = {
 		NAME => "nmbd",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
@@ -2229,7 +2244,7 @@ sub check_or_start($$) {
 	if ($nmbd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	my $pid = Samba::fork_and_exec(
+	$pid = Samba::fork_and_exec(
 	    $self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup);
 
 	$env_vars->{NMBD_TL_PID} = $pid;
@@ -2285,7 +2300,11 @@ sub check_or_start($$) {
 	# close the parent's read-end of the pipe
 	close($STDIN_READER);
 
-	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
+	return $self->wait_for_start($env_vars,
+				$nmbd,
+				$winbindd,
+				$smbd,
+				$samba_dcerpcd);
 }
 
 sub createuser($$$$$)
@@ -3402,6 +3421,8 @@ force_user:x:$gid_force_user:
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{SERVER_IPV6} = $server_ipv6;
+	$ret{SAMBA_DCERPCD_TEST_LOG} = "$prefix/samba_dcerpcd_test.log";
+	$ret{SAMBA_DCERPCD_LOG_POS} = 0;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
 	$ret{NMBD_TEST_LOG_POS} = 0;
 	$ret{WINBINDD_TEST_LOG} = "$prefix/winbindd_test.log";
@@ -3454,10 +3475,32 @@ force_user:x:$gid_force_user:
 
 sub wait_for_start($$$$$)
 {
-	my ($self, $envvars, $nmbd, $winbindd, $smbd) = @_;
+	my ($self, $envvars, $nmbd, $winbindd, $smbd, $samba_dcerpcd) = @_;
 	my $cmd;
 	my $netcmd;
 	my $ret;
+
+	if ($samba_dcerpcd eq "yes") {
+	    my $count = 0;
+	    my $rpcclient = Samba::bindir_path($self, "rpcclient");
+
+	    print "checking for samba_dcerpcd\n";
+
+	    do {
+		$ret = system("$rpcclient $envvars->{CONFIGURATION} ncalrpc: -c epmmap");
+
+		if ($ret != 0) {
+		    sleep(1);
+		}
+		$count++
+	    } while ($ret != 0 && $count < 10);
+
+	    if ($count == 10) {
+		print "samba_dcerpcd not reachable after 10 retries\n";
+		teardown_env($self, $envvars);
+		return 0;
+	    }
+	}
 
 	if ($nmbd eq "yes") {
 		my $count = 0;

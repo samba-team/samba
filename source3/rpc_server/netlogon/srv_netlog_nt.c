@@ -1308,17 +1308,15 @@ static NTSTATUS netr_set_machine_account_password(
 				       &ndr_table_samr,
 				       local,
 				       NULL,
-				       session_info,
+				       get_session_info_system(),
 				       msg_ctx,
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	become_root();
 	status = samr_open_machine_account(
 		h, machine_sid, SEC_FLAG_MAXIMUM_ALLOWED, &user_handle);
-	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -1392,14 +1390,12 @@ static NTSTATUS netr_set_machine_account_password(
 		break;
 	}
 
-	become_root();
 	status = dcerpc_samr_SetUserInfo2(h,
 					  frame,
 					  &user_handle,
 					  infolevel,
 					  info,
 					  &result);
-	unbecome_root();
 	if (any_nt_status_not_ok(status, result, &status)) {
 		goto out;
 	}

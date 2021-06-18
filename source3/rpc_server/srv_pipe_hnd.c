@@ -25,7 +25,7 @@
 #include "ntdomain.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
-#include "rpc_server/srv_pipe.h"
+#include "rpc_client/local_np.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_config.h"
 #include "../lib/tsocket/tsocket.h"
@@ -57,77 +57,41 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 struct dcesrv_context *dce_ctx,
 		 struct fake_file_handle **phandle)
 {
-	enum rpc_service_mode_e pipe_mode;
-	const char **proxy_list;
 	struct fake_file_handle *handle;
-	struct dcesrv_endpoint *endpoint = NULL;
 	struct npa_state *npa = NULL;
-	NTSTATUS status;
-
-	proxy_list = lp_parm_string_list(-1, "np", "proxy", NULL);
+	int ret;
 
 	handle = talloc(mem_ctx, struct fake_file_handle);
 	if (handle == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Check what is the server type for this pipe.
-	   Defaults to "embedded" */
-	pipe_mode = rpc_service_mode(name);
-
-	/* Still support the old method for defining external servers */
-	if ((proxy_list != NULL) && str_list_check_ci(proxy_list, name)) {
-		pipe_mode = RPC_SERVICE_MODE_EXTERNAL;
+	npa = npa_state_init(handle);
+	if (npa == NULL) {
+		TALLOC_FREE(handle);
+		return NT_STATUS_NO_MEMORY;
 	}
+	*handle = (struct fake_file_handle) {
+		.type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY,
+		.private_data = npa,
+	};
 
-	switch (pipe_mode) {
-	case RPC_SERVICE_MODE_EXTERNAL:
-		status = make_external_rpc_pipe(handle,
-						name,
-						remote_client_address,
-						local_server_address,
-						session_info,
-						&npa);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(handle);
-			return status;
-		}
-
-		handle->private_data = (void *)npa;
-		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
-
-		break;
-	case RPC_SERVICE_MODE_EMBEDDED:
-		/* Check if we handle this pipe internally */
-		status = is_known_pipename(dce_ctx, name, &endpoint);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("'%s' is not a registered pipe!\n", name);
-			talloc_free(handle);
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-
-		status = make_internal_rpc_pipe_socketpair(
-			handle,
-			ev_ctx,
-			msg_ctx,
-			dce_ctx,
-			endpoint,
-			remote_client_address,
-			local_server_address,
-			session_info,
-			&npa);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(handle);
-			return status;
-		}
-
-		handle->private_data = (void *)npa;
-		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
-
-		break;
-	case RPC_SERVICE_MODE_DISABLED:
-		talloc_free(handle);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	ret = local_np_connect(
+		name,
+		NCACN_NP,
+		NULL,
+		remote_client_address,
+		NULL,
+		local_server_address,
+		session_info,
+		false,
+		npa,
+		&npa->stream);
+	if (ret != 0) {
+		DBG_DEBUG("local_np_connect failed: %s\n",
+			  strerror(ret));
+		TALLOC_FREE(handle);
+		return map_nt_error_from_unix(ret);
 	}
 
 	*phandle = handle;

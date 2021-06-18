@@ -62,10 +62,10 @@ static size_t spoolss_servers(
 
 	lp_load_with_shares(get_dyn_CONFIGFILE());
 
-	ok = printing_subsystem_init(ev_ctx, msg_ctx, dce_ctx, false, false);
+	ok = printing_subsystem_init(ev_ctx, msg_ctx, dce_ctx, true);
 	if (!ok) {
 		DBG_WARNING("printing_subsystem_init() failed\n");
-		return 1;
+		exit(1);
 	}
 
 	*_ep_servers = ep_servers;

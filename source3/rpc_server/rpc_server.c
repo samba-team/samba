@@ -33,8 +33,6 @@
 #include "auth.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
-#include "rpc_server/srv_pipe.h"
-#include "libcli/security/security_token.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -53,6 +51,7 @@ struct dcerpc_ncacn_listen_state {
 	void *termination_data;
 };
 
+#if 0
 static void dcesrv_ncacn_listener(
 	struct tevent_context *ev,
 	struct tevent_fd *fde,
@@ -201,6 +200,7 @@ static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 
 	return 0;
 }
+#endif
 
 NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
@@ -231,12 +231,15 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#if 0
 static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq);
 static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
+#endif
 
 static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,
 				       const char *reason);
 
+#if 0
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
 			 struct dcesrv_context *dce_ctx,
@@ -551,6 +554,7 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 
 	return;
 }
+#endif
 
 NTSTATUS dcesrv_auth_gensec_prepare(
 	TALLOC_CTX *mem_ctx,

@@ -11544,13 +11544,7 @@ static NTSTATUS spoolss_init_server(struct dcesrv_context *dce_ctx,
 		const struct dcesrv_endpoint_server *ep_server)
 {
 	struct messaging_context *msg_ctx = global_messaging_context();
-	NTSTATUS status;
 	bool ok;
-
-	status = dcesrv_init_ep_server(dce_ctx, "winreg");
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/*
 	 * Migrate the printers first.

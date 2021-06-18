@@ -51,12 +51,6 @@ struct np_proxy_state {
 	struct tevent_queue *write_queue;
 };
 
-static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-				const char *pipe_name,
-				const struct tsocket_address *remote_address,
-				const struct tsocket_address *local_address,
-				const struct auth_session_info *session_info);
-
 struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct npa_state *npa;
@@ -84,6 +78,7 @@ fail:
 	return NULL;
 }
 
+#if 0
 NTSTATUS make_internal_rpc_pipe_socketpair(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev_ctx,
@@ -656,6 +651,7 @@ static const struct dcerpc_binding_handle_ops rpcint_bh_ops = {
 	.ref_alloc		= rpcint_bh_ref_alloc,
 	.do_ndr_print		= rpcint_bh_do_ndr_print,
 };
+#endif
 
 static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 			const struct ndr_syntax_id *abstract_syntax,
@@ -666,46 +662,31 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
 			struct dcerpc_binding_handle **binding_handle)
 {
-	struct dcerpc_binding_handle *h;
-	struct rpcint_bh_state *hs;
-	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
+	struct rpc_pipe_client *rpccli = NULL;
 	NTSTATUS status;
 
-	h = dcerpc_binding_handle_create(mem_ctx,
-					 &rpcint_bh_ops,
-					 NULL,
-					 ndr_table,
-					 &hs,
-					 struct rpcint_bh_state,
-					 __location__);
-	if (h == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = make_internal_ncacn_conn(hs,
-					  ndr_table,
-					  remote_address,
-					  local_address,
-					  session_info,
-					  msg_ctx,
-					  &ncacn_conn);
+	status = rpc_pipe_open_local_np(
+		mem_ctx,
+		ndr_table,
+		NULL,
+		remote_address,
+		NULL,
+		local_address,
+		session_info,
+		&rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(h);
-		return status;
+		DBG_DEBUG("rpc_pipe_open_local_np failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
 	}
 
-	status = make_internal_dcesrv_connection(ncacn_conn,
-						 ndr_table,
-						 ncacn_conn,
-						 &hs->conn);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(h);
-		return status;
-	}
-
-	*binding_handle = h;
+	*binding_handle = rpccli->binding_handle;
 	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(rpccli);
+	return status;
 }
+
 /**
  * @brief Create a new DCERPC Binding Handle which uses a local dispatch function.
  *
@@ -750,6 +731,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 					msg_ctx, binding_handle);
 }
 
+#if 0
 /**
  * @internal
  *
@@ -1194,6 +1176,7 @@ done:
 	*_result = result;
 	return status;
 }
+#endif
 
 /**
  * @brief Create a new RPC client context which uses a local dispatch function
@@ -1237,10 +1220,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client **cli_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	enum rpc_service_mode_e pipe_mode;
-	const char *pipe_name;
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
 
 	if (cli_pipe != NULL) {
 		if (rpccli_is_connected(*cli_pipe)) {
@@ -1250,63 +1230,24 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	status = rpc_pipe_open_local_np(
+		mem_ctx,
+		table,
+		NULL,
+		remote_address,
+		NULL,
+		local_address,
+		session_info,
+		&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Could not connect to %s pipe: %s\n",
+			table->name,
+			nt_errstr(status));
+		return status;
 	}
 
-	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
-	if (pipe_name == NULL) {
-		DEBUG(1, ("Unable to find pipe name to forward %s to.\n", table->name));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
-
-	while (pipe_name[0] == '\\') {
-		pipe_name++;
-	}
-
-	DEBUG(5, ("Connecting to %s pipe.\n", pipe_name));
-
-	pipe_mode = rpc_service_mode(pipe_name);
-
-	switch (pipe_mode) {
-	case RPC_SERVICE_MODE_EMBEDDED:
-		status = rpc_pipe_open_internal(tmp_ctx,
-						table, session_info,
-						remote_address, local_address,
-						msg_ctx,
-						&cli);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-		break;
-	case RPC_SERVICE_MODE_EXTERNAL:
-		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
-		 * for now we need to use the special proxy setup to connect
-		 * to spoolssd. */
-
-		status = rpc_pipe_open_external(tmp_ctx,
-						pipe_name, table,
-						session_info,
-						remote_address, local_address,
-						&cli);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-		break;
-	case RPC_SERVICE_MODE_DISABLED:
-		status = NT_STATUS_NOT_IMPLEMENTED;
-		DEBUG(0, ("Service pipe %s is disabled in config file: %s",
-			  pipe_name, nt_errstr(status)));
-		goto done;
-        }
-
-	status = NT_STATUS_OK;
-done:
 	if (NT_STATUS_IS_OK(status) && cli_pipe != NULL) {
-		*cli_pipe = talloc_move(mem_ctx, &cli);
+		*cli_pipe = cli;
 	}
-	TALLOC_FREE(tmp_ctx);
 	return status;
 }

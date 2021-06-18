@@ -54,6 +54,7 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 #include "lib/global_contexts.h"
+#include "nsswitch/winbind_client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -3920,10 +3921,12 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 
 	/********** BEGIN Admin BLOCK **********/
 
+	(void)winbind_off();
 	become_root();
 	nt_status = pdb_create_user(p->mem_ctx, account, acb_info,
 				    r->out.rid);
 	unbecome_root();
+	(void)winbind_on();
 
 	/********** END Admin BLOCK **********/
 

@@ -35,7 +35,6 @@
 #include "smbd/smbd.h"
 #include "rpc_server/rpc_config.h"
 #include "printing/load.h"
-#include "printing/spoolssd.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "auth.h"
 #include "nt_printing.h"
@@ -369,7 +368,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 	str_list_add_printf(
 		&argv, "--ready-signal-fd=%d", ready_fds[1]);
 	str_list_add_printf(
-		&argv, "--parent-watch-fd=%d", parent_watch_fd());
+		&argv, "--parent-watch-fd=%d", 0);
 	str_list_add_printf(
 		&argv, "--debuglevel=%d", debuglevel_get_class(DBGC_RPC_SRV));
 	if (!is_default_dyn_CONFIGFILE()) {
@@ -418,8 +417,7 @@ fail:
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
 			     struct dcesrv_context *dce_ctx,
-			     bool start_daemons,
-			     bool background_queue)
+			     bool start_daemons)
 {
 	pid_t pid = -1;
 
@@ -429,15 +427,7 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 
 	/* start spoolss daemon */
 	/* start as a separate daemon only if enabled */
-	if (start_daemons && rpc_spoolss_daemon() == RPC_DAEMON_FORK) {
-
-		pid = start_spoolssd(ev_ctx, msg_ctx, dce_ctx);
-
-	} else if (start_daemons && background_queue) {
-
-		pid = start_background_queue(ev_ctx, msg_ctx, NULL);
-
-	} else {
+	if (!start_daemons) {
 		bool ret;
 		struct bq_state *state;
 
@@ -457,30 +447,13 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 		return ret;
 	}
 
+	pid = start_background_queue(NULL, NULL, NULL);
 	if (pid == -1) {
 		return false;
 	}
 	background_lpq_updater_pid = pid;
 
 	return true;
-}
-
-void printing_subsystem_update(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx,
-			       bool force)
-{
-	if (background_lpq_updater_pid != -1) {
-		load_printers();
-		if (force) {
-			/* Send a sighup to the background process.
-			 * this will force it to reload printers */
-			kill(background_lpq_updater_pid, SIGHUP);
-		}
-		return;
-	}
-
-	pcap_cache_reload(ev_ctx, msg_ctx,
-			  delete_and_reload_printers_full);
 }
 
 void send_to_bgqd(struct messaging_context *msg_ctx,

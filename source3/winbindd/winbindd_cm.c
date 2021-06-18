@@ -1568,24 +1568,8 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 	session_info = get_session_info_system();
 	SMB_ASSERT(session_info != NULL);
 
-	/* create a connection to the specified pipe */
-	if (lp_parm_bool(-1, "winbindd", "use external pipes", false)) {
-		status = rpc_pipe_open_interface(mem_ctx,
-						 table,
-						 session_info,
-						 NULL,
-						 NULL,
-						 global_messaging_context(),
-						 &cli);
-	} else {
-		status = rpc_pipe_open_internal(mem_ctx,
-						table,
-						session_info,
-						NULL,
-						NULL,
-						global_messaging_context(),
-						&cli);
-	}
+	status = rpc_pipe_open_local_np(
+		mem_ctx, table, NULL, NULL, NULL, NULL, session_info, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

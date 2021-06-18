@@ -65,14 +65,6 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 		}
 	}
 
-	/*
-	 * Check all pipes for any open handles. We cannot
-	 * idle with a handle open.
-	 */
-	if (check_open_pipes()) {
-		return false;
-	}
-
 	return true;
 }
 

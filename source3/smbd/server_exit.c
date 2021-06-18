@@ -82,7 +82,6 @@ static void exit_server_common(enum server_exit_reason how,
 	struct smbXsrv_client *client = global_smbXsrv_client;
 	struct smbXsrv_connection *xconn = NULL;
 	struct smbd_server_connection *sconn = NULL;
-	struct messaging_context *msg_ctx = global_messaging_context();
 	NTSTATUS disconnect_status;
 
 	if (!exit_firsttime) {
@@ -191,9 +190,6 @@ static void exit_server_common(enum server_exit_reason how,
 
 	change_to_root_user();
 
-	/* 3 second timeout. */
-	print_notify_send_messages(msg_ctx, 3);
-
 #ifdef USE_DMAPI
 	/* Destroy Samba DMAPI session only if we are master smbd process */
 	if (am_parent) {
@@ -203,11 +199,6 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 #endif
 
-	if (am_parent && sconn != NULL) {
-		dcesrv_shutdown_registered_ep_servers(sconn->dce_ctx);
-
-		global_dcesrv_context_free();
-	}
 
 	/*
 	 * we need to force the order of freeing the following,
@@ -227,7 +218,6 @@ static void exit_server_common(enum server_exit_reason how,
 	TALLOC_FREE(smbd_memcache_ctx);
 
 	locking_end();
-	printing_end();
 
 	if (how != SERVER_EXIT_NORMAL) {
 
