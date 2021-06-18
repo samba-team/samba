@@ -345,7 +345,7 @@ Table of Contents
    SMB_VFS_REALPATH()                 [P2px]      -
    SMB_VFS_RECVFILE()                 [fsp]       -
    SMB_VFS_REMOVEXATTR()              [Path]      -
-   SMB_VFS_RENAMEAT()                 [Path]      Todo
+   SMB_VFS_RENAMEAT()                 [Path]      -
    SMB_VFS_REWINDDIR()                [fsp]       -
    SMB_VFS_SEEKDIR()                  [fsp]       -
    SMB_VFS_SENDFILE()                 [fsp]       -
