@@ -129,6 +129,7 @@ smb.conf changes
   client use kerberos                New                        desired
   client protection                  New                        default
   winbind use krb5 enterprise principals  Changed               Yes
+  winbind scan trusted domains       Changed                    No
 
 
 KNOWN ISSUES

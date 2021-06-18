@@ -6,10 +6,10 @@
     <para>
     This option only takes effect when the <smbconfoption name="security"/> option is set to
     <constant>domain</constant> or <constant>ads</constant>.
-    If it is set to yes (the default), winbindd periodically tries to scan for new
+    If it is set to yes, winbindd periodically tries to scan for new
     trusted domains and adds them to a global list inside of winbindd.
     The list can be extracted with <command>wbinfo --trusted-domains --verbose</command>.
-    This matches the behaviour of Samba 4.7 and older.</para>
+    Setting it to yes matches the behaviour of Samba 4.7 and older.</para>
 
     <para>The construction of that global list is not reliable and often
     incomplete in complex trust setups. In most situations the list is
@@ -25,5 +25,5 @@
     </para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
