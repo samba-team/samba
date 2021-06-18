@@ -359,12 +359,6 @@ sub mk_krb5_conf($$)
 ";
 	}
 
-	print KRB5CONF "
-[realms]
- $our_realms_stanza
-";
-
-
         if (defined($ctx->{tlsdir})) {
 	       print KRB5CONF "
 
@@ -378,7 +372,32 @@ sub mk_krb5_conf($$)
 
 ";
         }
+
+	print KRB5CONF "
+[realms]
+ $our_realms_stanza
+";
+
 	close(KRB5CONF);
+}
+
+sub append_krb5_conf_trust_realms($$)
+{
+	my ($ctx) = @_;
+
+	unless (open(KRB5CONF, ">>$ctx->{KRB5_CONFIG}")) {
+	        warn("can't open $ctx->{KRB5_CONFIG}$?");
+		return undef;
+	}
+
+	my $trust_realms_stanza = mk_realms_stanza($ctx->{TRUST_REALM},
+						   $ctx->{TRUST_DNSNAME},
+						   $ctx->{TRUST_DOMAIN},
+						   $ctx->{TRUST_SERVER_IP});
+
+	print KRB5CONF " $trust_realms_stanza";
+
+	close(KRB5CONF)
 }
 
 sub mk_realms_stanza($$$$)

@@ -467,12 +467,17 @@ sub setup_trust($$$$$)
 	my ($self, $localenv, $remoteenv, $type, $extra_args) = @_;
 
 	$localenv->{TRUST_SERVER} = $remoteenv->{SERVER};
+	$localenv->{TRUST_SERVER_IP} = $remoteenv->{SERVER_IP};
+	$localenv->{TRUST_DNSNAME} = $remoteenv->{DNSNAME};
 
 	$localenv->{TRUST_USERNAME} = $remoteenv->{USERNAME};
 	$localenv->{TRUST_PASSWORD} = $remoteenv->{PASSWORD};
 	$localenv->{TRUST_DOMAIN} = $remoteenv->{DOMAIN};
 	$localenv->{TRUST_REALM} = $remoteenv->{REALM};
 	$localenv->{TRUST_DOMSID} = $remoteenv->{DOMSID};
+
+	# Add trusted domain realms to krb5.conf
+	Samba::append_krb5_conf_trust_realms($localenv);
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 
