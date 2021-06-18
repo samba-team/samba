@@ -32,6 +32,9 @@ static int vfs_preopen_debug_level = DBGC_VFS;
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_preopen_debug_level
 
+#define PREOPEN_MAX_DIGITS 19
+#define PREOPEN_MAX_NUMBER (uint64_t)9999999999999999999ULL
+
 struct preopen_state;
 
 struct preopen_helper {
@@ -53,9 +56,9 @@ struct preopen_state {
 	size_t number_start;	/* start offset into "template_fname" */
 	int num_digits;		/* How many digits is the number long? */
 
-	int fnum_sent;		/* last fname sent to children */
+	uint64_t fnum_sent;	/* last fname sent to children */
 
-	int fnum_queue_end;	/* last fname to be sent, based on
+	uint64_t fnum_queue_end;/* last fname to be sent, based on
 				 * last open call + preopen:queuelen
 				 */
 
@@ -102,8 +105,8 @@ static void preopen_queue_run(struct preopen_state *state)
 
 		snprintf(state->template_fname + state->number_start,
 			 state->num_digits + 1,
-			 "%.*lu", state->num_digits,
-			 (long unsigned int)(state->fnum_sent + 1));
+			 "%.*llu", state->num_digits,
+			 (long long unsigned int)(state->fnum_sent + 1));
 		*pdelimiter = delimiter;
 
 		to_write = talloc_get_size(state->template_fname);
@@ -353,12 +356,12 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 	return state;
 }
 
-static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
+static bool preopen_parse_fname(const char *fname, uint64_t *pnum,
 				size_t *pstart_idx, int *pnum_digits)
 {
 	const char *p;
 	char *q = NULL;
-	unsigned long num;
+	unsigned long long num;
 	size_t start_idx = 0;
 	int num_digits = -1;
 	int error = 0;
@@ -382,12 +385,12 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 
 	start_idx = (p - fname);
 
-	num = smb_strtoul(p, (char **)&q, 10, &error, SMB_STR_STANDARD);
+	num = smb_strtoull(p, (char **)&q, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return false;
 	}
 
-	if (num+1 < num) {
+	if (num >= PREOPEN_MAX_NUMBER) {
 		/* overflow */
 		return false;
 	}
@@ -400,6 +403,31 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 	return true;
 }
 
+static uint64_t num_digits_max_value(int num_digits)
+{
+	uint64_t num_max = 1;
+	int i;
+
+	if (num_digits < 1) {
+		return 0;
+	}
+	if (num_digits >= PREOPEN_MAX_DIGITS) {
+		return PREOPEN_MAX_NUMBER;
+	}
+
+	for (i = 0; i < num_digits; i++) {
+		num_max *= 10;
+	}
+
+	/*
+	 * We actually want
+	 * 9   instead of 10
+	 * 99  instead of 100
+	 * 999 instead of 1000
+	 */
+	return num_max - 1;
+}
+
 static int preopen_openat(struct vfs_handle_struct *handle,
 			  const struct files_struct *dirfsp,
 			  const struct smb_filename *smb_fname,
@@ -410,7 +438,8 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	const char *dirname = dirfsp->fsp_name->base_name;
 	struct preopen_state *state;
 	int res;
-	unsigned long num;
+	uint64_t num;
+	uint64_t num_max;
 	NTSTATUS status;
 	char *new_template = NULL;
 	size_t new_start = 0;
@@ -553,7 +582,8 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		state->fnum_sent = num;
 	}
 
-	state->fnum_queue_end = num + state->queue_max;
+	num_max = num_digits_max_value(state->num_digits);
+	state->fnum_queue_end = MIN(num_max, num + state->queue_max);
 
 	preopen_queue_run(state);
 
