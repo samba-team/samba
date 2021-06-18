@@ -21,6 +21,7 @@
 #
 # These can all be accesses via os.environ["VARIBLENAME"] when needed
 
+import os
 import random
 import string
 from samba.auth import system_session
@@ -150,3 +151,13 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     def assertWithin(self, val1, val2, delta, msg=""):
         """Assert that val1 is within delta of val2, useful for time computations"""
         self.assertTrue(((val1 + delta) > val2) and ((val1 - delta) < val2), msg)
+
+    def cleanup_join(self, netbios_name):
+        (result, out, err) \
+            = self.runsubcmd("domain",
+                             "demote",
+                             ("--remove-other-dead-server=%s " % netbios_name),
+                             ("-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"])),
+                             ("--server=%s" % os.environ["SERVER"]))
+
+        self.assertCmdSuccess(result, out, err)

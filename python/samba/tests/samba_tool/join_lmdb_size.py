@@ -47,7 +47,11 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
         if size:
             command += ("--backend-store-size=%s" % size)
 
-        return self.run_command(command)
+        (ret, stdout, stderr) = self.run_command(command)
+        if ret == 0:
+            self.cleanup_join(self.netbios_name)
+
+        return (ret, stdout, stderr)
 
     def is_rodc(self):
         url = "ldb://%s/private/sam.ldb" % self.tempsambadir

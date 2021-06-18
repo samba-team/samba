@@ -185,12 +185,15 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
     def join(self, backend):
         target = tempfile.mkdtemp(dir=self.tempdir)
 
+        new_dc_name = "offlinebackupdc"
+
         join_cmd = "samba-tool domain join {domain} DC " +\
                    "--server {server} " +\
                    "--realm {realm} " +\
                    "--username {username}%{password} " +\
                    "--targetdir {target} " +\
                    "--backend-store {backend} " +\
+                   "--option='netbios name = {new_dc_name}' " +\
                    "--option=\"vfs objects=dfs_samba4 acl_xattr fake_acls xattr_tdb\""
         join_cmd = join_cmd.format(server=os.environ["DC_SERVER"],
                                    domain=os.environ["DOMAIN"],
@@ -198,8 +201,20 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
                                    username=os.environ["USERNAME"],
                                    password=os.environ["PASSWORD"],
                                    target=target,
-                                   backend=backend)
+                                   backend=backend,
+                                   new_dc_name=new_dc_name)
         self.check_output(join_cmd)
+
+        demote_cmd = "samba-tool domain demote " +\
+                   "--server {server} " +\
+                   "--username {username}%{password} " +\
+                   "--remove-other-dead-server={new_dc_name}"
+
+        demote_cmd = demote_cmd.format(server=os.environ["DC_SERVER"],
+                                       username=os.environ["USERNAME"],
+                                       password=os.environ["PASSWORD"],
+                                       new_dc_name=new_dc_name)
+        self.check_output(demote_cmd)
 
         return target
 
