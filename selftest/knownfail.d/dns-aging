@@ -13,6 +13,7 @@ samba.tests.dns_aging.+test_add_update_ttl
 samba.tests.dns_aging.+test_add_update_ttl_serial
 samba.tests.dns_aging.+test_basic_scavenging
 samba.tests.dns_aging.+test_dynamic_record_static_update
+samba.tests.dns_aging.+test_multi_records_delete_aging
 samba.tests.dns_aging.+test_rpc_update_timestamps
 samba.tests.dns_aging.+test_static_record_dynamic_update
 samba.tests.dns_aging.+test_update_aging_disabled\b

@@ -26,7 +26,7 @@ import ldb
 from samba import credentials
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.dnsserver import TXTRecord, ARecord
-from samba.dnsserver import recbuf_from_string
+from samba.dnsserver import recbuf_from_string, ipv6_normalise
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import werror, WERRORError
 from samba.tests.dns_base import DNSTest
@@ -314,8 +314,11 @@ class TestDNSAging(DNSTest):
         r.rr_type = wtype
         r.rr_class = qclass
         r.ttl = ttl
-        r.length = 0xffff
-        r.rdata = data
+        if data is not None:
+            r.length = 0xffff
+            r.rdata = data
+        else:
+            r.length = 0
 
         p.nscount = 1
         p.nsrecs = [r]
@@ -329,6 +332,12 @@ class TestDNSAging(DNSTest):
                                         data,
                                         wtype,
                                         qclass=dns.DNS_QCLASS_NONE)
+
+    def dns_delete_type(self, name, wtype):
+        return self.dns_update_non_text(name,
+                                        None,
+                                        wtype,
+                                        qclass=dns.DNS_QCLASS_ANY)
 
     def dns_update_record(self, name, txt, ttl=900):
         if isinstance(txt, str):
@@ -2311,6 +2320,82 @@ class TestDNSAging(DNSTest):
 
     def test_AAAA_5_days_AAAA_6_days_no_aging(self):
         self._test_A_and_AAAA_records(IPv6_ADDR, IPv6_ADDR_2, 5, 6, aging=False)
+
+    def _test_multi_records_delete(self, aging):
+        # Batch deleting a type doesn't update other types timestamps.
+        self.set_aging(aging)
+
+        name = 'aargh'
+        now = dsdb_dns.unix_to_dns_timestamp(int(time.time()))
+
+        back_5_days = now - 5 * 24
+        back_10_days = now - 10 * 24
+        back_25_days = now - 25 * 24
+
+        ip4s = {
+            '1.1.1.1': now,
+            '2.2.2.2': back_5_days,
+            '3.3.3.3': back_10_days,
+        }
+        ip6s = {
+            '::1': now,
+            '::2': back_5_days,
+            '::3': back_25_days,
+        }
+
+        txts = {
+            '1': now,
+            '2': back_5_days,
+            '3': back_25_days,
+        }
+
+        # For windows, if we don't DNS update something, it won't know
+        # there's anything.
+        self.dns_update_record(name, '3')
+
+        for k, v in ip4s.items():
+            r = self.add_ip_record(name, k, wtype=dns.DNS_QTYPE_A, dwTimeStamp=v)
+
+        for k, v in ip6s.items():
+            r = self.add_ip_record(name, k, wtype=dns.DNS_QTYPE_AAAA, dwTimeStamp=v)
+
+        for k, v in txts.items():
+            r = self.ldap_update_record(name, k, dwTimeStamp=v)
+
+        self.dns_delete_type(name, dnsp.DNS_TYPE_A)
+
+        r = self.dns_query(name, dns.DNS_QTYPE_A)
+        self.assertEqual(r.ancount, 0)
+
+        r = self.dns_query(name, dns.DNS_QTYPE_TXT)
+        self.assertEqual(r.ancount, 3)
+        rset = set(x.rdata.txt.str[0] for x in r.answers)
+        self.assertEqual(rset, set(txts))
+
+        r = self.dns_query(name, dns.DNS_QTYPE_AAAA)
+        self.assertEqual(r.ancount, 3)
+        rset = set(ipv6_normalise(x.rdata) for x in r.answers)
+        self.assertEqual(rset, set(ip6s))
+
+        recs = self.ldap_get_records(name)
+        self.assertEqual(len(recs), 6)
+        for r in recs:
+            if r.wType == dns.DNS_QTYPE_AAAA:
+                k = ipv6_normalise(r.data)
+                expected = ip6s[k]
+            elif r.wType == dns.DNS_QTYPE_TXT:
+                k = r.data.str[0]
+                expected = txts[k]
+            else:
+                self.fail(f"unexpected wType {r.wType}")
+
+            self.assert_timestamps_equal(r.dwTimeStamp, expected)
+
+    def test_multi_records_delete_aging(self):
+        self._test_multi_records_delete(True)
+
+    def test_multi_records_delete_no_aging(self):
+        self._test_multi_records_delete(False)
 
     def _test_dns_delete_times(self, n_days, aging=True):
         # In these tests, Windows replaces the records with
