@@ -382,6 +382,14 @@ if with_pam:
                        "$DOMAIN", "alice", "Secret007",
                        pam_options])
 
+    description = "krb5"
+    pam_options = "'krb5_auth krb5_ccache_type=FILE:/tmp/krb5cc_pam_test_%u'"
+    plantestsuite("samba.tests.pam_winbind_setcred(domain+%s)" % description, "ad_dc:local",
+                  [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind_setcred.sh"),
+                   valgrindify(python), pam_wrapper_so_path,
+                   "${DOMAIN}", "${DC_USERNAME}", "${DC_PASSWORD}",
+                   pam_options])
+
 
 plantestsuite("samba.unittests.krb5samba", "none",
               [os.path.join(bindir(), "default/testsuite/unittests/test_krb5samba")])
