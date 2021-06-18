@@ -1179,6 +1179,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/nbench.c
                         torture/test_async_echo.c
                         torture/test_addrchange.c
+                        torture/test_matching.c
                         torture/test_posix_append.c
                         torture/test_posix.c
                         torture/test_nttrans_create.c

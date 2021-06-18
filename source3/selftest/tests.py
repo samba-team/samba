@@ -281,6 +281,7 @@ local_tests = [
     "LOCAL-RBTREE",
     "LOCAL-MEMCACHE",
     "LOCAL-STREAM-NAME",
+    "LOCAL-STR-MATCH-MSWILD",
     "LOCAL-string_to_sid",
     "LOCAL-sid_to_string",
     "LOCAL-binary_to_sid",

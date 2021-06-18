@@ -15346,6 +15346,10 @@ static struct {
 		.fn    = run_local_stream_name,
 	},
 	{
+		.name  = "LOCAL-STR-MATCH-MSWILD",
+		.fn    = run_str_match_mswild,
+	},
+	{
 		.name  = "WBCLIENT-MULTI-PING",
 		.fn    = run_wbclient_multi_ping,
 	},
