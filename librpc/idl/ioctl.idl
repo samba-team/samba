@@ -55,7 +55,7 @@ interface copychunk
 		uint32 token_type;
 		uint8 reserved[2];
 		uint16 token_id_len;
-		[size_is(token_id_len)] uint8 token[];
+	        uint8 token[token_id_len];
 	} storage_offload_token;
 
 	typedef [public] struct {
