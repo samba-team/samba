@@ -913,6 +913,8 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_src_stream = NULL;
 	struct smb_filename *smb_fname_dst_stream = NULL;
+	struct smb_filename *full_src = NULL;
+	struct smb_filename *full_dst = NULL;
 	bool src_is_stream, dst_is_stream;
 	NTSTATUS status;
 	int ret = -1;
@@ -939,24 +941,47 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	status = stream_smb_fname(handle, smb_fname_src, &smb_fname_src_stream,
+	full_src = full_path_from_dirfsp_atname(talloc_tos(),
+						srcfsp,
+						smb_fname_src);
+	if (full_src == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	full_dst = full_path_from_dirfsp_atname(talloc_tos(),
+						dstfsp,
+						smb_fname_dst);
+	if (full_dst == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	status = stream_smb_fname(handle, full_src, &smb_fname_src_stream,
 				  false);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto done;
 	}
 
-	status = stream_smb_fname(handle, smb_fname_dst,
+	status = stream_smb_fname(handle, full_dst,
 				  &smb_fname_dst_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto done;
 	}
 
+	/*
+	 * We must use handle->conn->cwd_fsp as
+	 * srcfsp and dstfsp directory handles here
+	 * as we used the full pathname from the cwd dir
+	 * to calculate the streams directory and filename
+	 * within.
+	 */
 	ret = SMB_VFS_NEXT_RENAMEAT(handle,
-				srcfsp,
+				handle->conn->cwd_fsp,
 				smb_fname_src_stream,
-				dstfsp,
+				handle->conn->cwd_fsp,
 				smb_fname_dst_stream);
 
 done:
