@@ -795,8 +795,7 @@ static int debug_lookup_classname(const char *classname)
 	if (ndx != -1)
 		return ndx;
 
-	DEBUG(0, ("debug_lookup_classname(%s): Unknown class\n",
-		  classname));
+	DBG_WARNING("Unknown classname[%s] -> adding it...\n", classname);
 	return debug_add_class(classname);
 }
 
