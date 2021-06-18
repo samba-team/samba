@@ -19,6 +19,11 @@ join_dc() {
     $SAMBA_TOOL domain join $REALM dc $JOIN_ARGS --option="netbios name = TESTJOINDC"
 }
 
+demote_joined_dc() {
+    DEMOTE_ARGS="--remove-other-dead-server=TESTJOINDC --server=$SERVER -U$USERNAME%$PASSWORD"
+    $SAMBA_TOOL domain demote $DEMOTE_ARGS
+}
+
 ldapcmp_result() {
     DB1_PATH="tdb://$PREFIX_ABS/$SERVER/private/sam.ldb"
     DB2_PATH="tdb://$TARGET_DIR/private/sam.ldb"
@@ -35,6 +40,8 @@ testit "check_dc_join" join_dc
 
 # check resulting DB matches server DC
 testit "new_db_matches" ldapcmp_result
+
+testit "demote_joined_dc" demote_joined_dc
 
 cleanup_output_dir
 
