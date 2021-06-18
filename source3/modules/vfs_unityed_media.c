@@ -947,18 +947,38 @@ static int um_renameat(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname_dst)
 {
 	int status;
+	struct smb_filename *src_full_fname = NULL;
+	struct smb_filename *dst_full_fname = NULL;
 	struct smb_filename *src_client_fname = NULL;
 	struct smb_filename *dst_client_fname = NULL;
 
-	DEBUG(10, ("Entering with "
+	src_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  srcfsp,
+						  smb_fname_src);
+	if (src_full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	dst_full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dstfsp,
+						  smb_fname_dst);
+	if (dst_full_fname == NULL) {
+		TALLOC_FREE(src_full_fname);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	DBG_DEBUG( "Entering with "
 		   "smb_fname_src->base_name '%s', "
 		   "smb_fname_dst->base_name '%s'\n",
 		   smb_fname_src->base_name,
-		   smb_fname_dst->base_name));
+		   smb_fname_dst->base_name);
 
-	if (!is_in_media_files(smb_fname_src->base_name)
+	if (!is_in_media_files(src_full_fname->base_name)
 	    &&
-	    !is_in_media_files(smb_fname_dst->base_name)) {
+	    !is_in_media_files(dst_full_fname->base_name)) {
+		TALLOC_FREE(src_full_fname);
+		TALLOC_FREE(dst_full_fname);
 		return SMB_VFS_NEXT_RENAMEAT(handle,
 					srcfsp,
 					smb_fname_src,
@@ -967,14 +987,14 @@ static int um_renameat(vfs_handle_struct *handle,
 	}
 
 	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname_src,
+					    src_full_fname,
 					    &src_client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
 	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname_dst,
+					    dst_full_fname,
 					    &dst_client_fname);
 
 	if (status != 0) {
@@ -982,18 +1002,20 @@ static int um_renameat(vfs_handle_struct *handle,
 	}
 
 	status = SMB_VFS_NEXT_RENAMEAT(handle,
-				srcfsp,
+				handle->conn->cwd_fsp,
 				src_client_fname,
-				dstfsp,
+				handle->conn->cwd_fsp,
 				dst_client_fname);
 
 err:
 	TALLOC_FREE(dst_client_fname);
 	TALLOC_FREE(src_client_fname);
-	DEBUG(10, ("Leaving with smb_fname_src->base_name '%s',"
+	TALLOC_FREE(src_full_fname);
+	TALLOC_FREE(dst_full_fname);
+	DBG_DEBUG( "Leaving with smb_fname_src->base_name '%s',"
 		   " smb_fname_dst->base_name '%s'\n",
 		   smb_fname_src->base_name,
-		   smb_fname_dst->base_name));
+		   smb_fname_dst->base_name);
 	return status;
 }
 
