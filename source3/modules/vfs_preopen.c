@@ -52,6 +52,14 @@ struct preopen_state {
 	size_t to_read;		/* How many bytes to read in children? */
 	int queue_max;
 
+	int queue_dbglvl;       /* DBGLVL_DEBUG by default */
+	int nomatch_dbglvl;     /* DBGLVL_INFO by default */
+	int match_dbglvl;       /* DBGLVL_INFO by default */
+	int reset_dbglvl;       /* DBGLVL_INFO by default */
+	int nodigits_dbglvl;    /* DBGLVL_WARNING by default */
+	int founddigits_dbglvl; /* DBGLVL_NOTICE by default */
+	int push_dbglvl;        /* DBGLVL_NOTICE by default */
+
 	char *template_fname;	/* Filename to be sent to children */
 	size_t number_start;	/* start offset into "template_fname" */
 	int num_digits;		/* How many digits is the number long? */
@@ -82,6 +90,16 @@ static void preopen_queue_run(struct preopen_state *state)
 	char *pdelimiter;
 	char delimiter;
 
+	DBG_PREFIX(state->queue_dbglvl, ("START: "
+		   "last_fname[%s] start_offset=%zu num_digits=%d "
+		   "last_pushed_num=%"PRIu64" queue_end_num=%"PRIu64" num_helpers=%d\n",
+		   state->template_fname,
+		   state->number_start,
+		   state->num_digits,
+		   state->fnum_sent,
+		   state->fnum_queue_end,
+		   state->num_helpers));
+
 	pdelimiter = state->template_fname + state->number_start
 		+ state->num_digits;
 	delimiter = *pdelimiter;
@@ -100,6 +118,14 @@ static void preopen_queue_run(struct preopen_state *state)
 		}
 		if (helper == state->num_helpers) {
 			/* everyone is busy */
+			DBG_PREFIX(state->queue_dbglvl, ("BUSY: "
+				   "template_fname[%s] start_offset=%zu num_digits=%d "
+				   "last_pushed_num=%"PRIu64" queue_end_num=%"PRIu64"\n",
+				   state->template_fname,
+				   state->number_start,
+				   state->num_digits,
+				   state->fnum_sent,
+				   state->fnum_queue_end));
 			return;
 		}
 
@@ -108,6 +134,10 @@ static void preopen_queue_run(struct preopen_state *state)
 			 "%.*llu", state->num_digits,
 			 (long long unsigned int)(state->fnum_sent + 1));
 		*pdelimiter = delimiter;
+
+		DBG_PREFIX(state->push_dbglvl, (
+			   "PUSH: fullpath[%s] to helper(idx=%d)\n",
+			   state->template_fname, helper));
 
 		to_write = talloc_get_size(state->template_fname);
 		written = write_data(state->helpers[helper].fd,
@@ -119,6 +149,14 @@ static void preopen_queue_run(struct preopen_state *state)
 		}
 		state->fnum_sent += 1;
 	}
+	DBG_PREFIX(state->queue_dbglvl, ("END: "
+		   "template_fname[%s] start_offset=%zu num_digits=%d "
+		   "last_pushed_num=%"PRIu64" queue_end_num=%"PRIu64"\n",
+		   state->template_fname,
+		   state->number_start,
+		   state->num_digits,
+		   state->fnum_sent,
+		   state->fnum_queue_end));
 }
 
 static void preopen_helper_readable(struct tevent_context *ev,
@@ -142,7 +180,9 @@ static void preopen_helper_readable(struct tevent_context *ev,
 
 	helper->busy = false;
 
+	DBG_PREFIX(state->queue_dbglvl, ("BEFORE: preopen_queue_run\n"));
 	preopen_queue_run(state);
+	DBG_PREFIX(state->queue_dbglvl, ("AFTER: preopen_queue_run\n"));
 }
 
 static int preopen_helpers_destructor(struct preopen_state *c)
@@ -338,6 +378,14 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		return NULL;
 	}
 
+	state->queue_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "queue_log_level", DBGLVL_DEBUG);
+	state->nomatch_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "nomatch_log_level", DBGLVL_INFO);
+	state->match_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "match_log_level", DBGLVL_INFO);
+	state->reset_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "reset_log_level", DBGLVL_INFO);
+	state->nodigits_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "nodigits_log_level", DBGLVL_WARNING);
+	state->founddigits_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "founddigits_log_level", DBGLVL_NOTICE);
+	state->push_dbglvl = lp_parm_int(SNUM(handle->conn), "preopen", "push_log_level", DBGLVL_NOTICE);
+
 	if (lp_parm_bool(SNUM(handle->conn), "preopen", "posix-basic-regex", false)) {
 		status = samba_path_matching_regex_sub1_create(state,
 							       namelist,
@@ -501,7 +549,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	ssize_t replace_end = -1;
 	bool need_reset = false;
 
-	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("called on %s\n", smb_fname_str_dbg(smb_fname));
 
 	state = preopen_state_get(handle);
 	if (state == NULL) {
@@ -552,15 +600,28 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 		match_idx = -1;
 	}
 	if (match_idx < 0) {
-		DEBUG(10, ("%s does not match the preopen:names list\n",
-			   smb_fname_str_dbg(smb_fname)));
+		DBG_PREFIX(state->nomatch_dbglvl, (
+			   "No match with the preopen:names list by name[%s]\n",
+		           smb_fname_str_dbg(smb_fname)));
 		return res;
+	}
+
+	if (replace_start != -1 && replace_end != -1) {
+		DBG_PREFIX(state->match_dbglvl, (
+			   "Pattern(idx=%zd) from preopen:names list matched name[%s] hints(start=%zd,end=%zd)\n",
+			   match_idx, smb_fname_str_dbg(smb_fname), replace_start, replace_end));
+	} else {
+		DBG_PREFIX(state->match_dbglvl, (
+			   "Pattern(idx=%zd) from preopen:names list matched name[%s]\n",
+			   match_idx, smb_fname_str_dbg(smb_fname)));
 	}
 
 	new_template = talloc_asprintf(
 		state, "%s/%s",
 		dirname, smb_fname->base_name);
 	if (new_template == NULL) {
+		DBG_ERR("talloc_asprintf(%s/%s) failed\n",
+			dirname, smb_fname_str_dbg(smb_fname));
 		return res;
 	}
 
@@ -572,40 +633,64 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 
 	if (!preopen_parse_fname(new_template, &num,
 				 &new_start, &new_digits)) {
+		DBG_PREFIX(state->nodigits_dbglvl, (
+			   "Pattern(idx=%zd) no valid digits found on fullpath[%s]\n",
+			   match_idx, new_template));
 		TALLOC_FREE(new_template);
 		return res;
 	}
 	new_end = new_start + new_digits;
+
+	DBG_PREFIX(state->founddigits_dbglvl, (
+		   "Pattern(idx=%zd) found num_digits[%d] start_offset[%zd] parsed_num[%lu] fullpath[%s]\n",
+		   match_idx, new_digits, new_start, num, new_template));
 
 	if (state->last_match_idx != match_idx) {
 		/*
 		 * If a different pattern caused the match
 		 * we better reset the queue
 		 */
+		if (state->last_match_idx != -1) {
+			DBG_PREFIX(state->reset_dbglvl, ("RESET: "
+				   "pattern changed from idx=%zd to idx=%zd by fullpath[%s]\n",
+				   state->last_match_idx, match_idx, new_template));
+		}
 		need_reset = true;
 	} else if (state->number_start != new_start) {
 		/*
 		 * If the digits started at a different possition
 		 * we better reset the queue
 		 */
+		DBG_PREFIX(state->reset_dbglvl, ("RESET: "
+			   "start_offset changed from byte=%zd to byte=%zd by fullpath[%s]\n",
+			   state->number_start, new_start, new_template));
 		need_reset = true;
 	} else if (state->num_digits != new_digits) {
 		/*
 		 * If number of digits changed
 		 * we better reset the queue
 		 */
+		DBG_PREFIX(state->reset_dbglvl, ("RESET: "
+			   "num_digits changed %d to %d by fullpath[%s]\n",
+			   state->num_digits, new_digits, new_template));
 		need_reset = true;
 	} else if (strncmp(state->template_fname, new_template, new_start) != 0) {
 		/*
 		 * If name before the digits changed
 		 * we better reset the queue
 		 */
+		DBG_PREFIX(state->reset_dbglvl, ("RESET: "
+			   "leading pathprefix[%.*s] changed by fullpath[%s]\n",
+			   (int)state->number_start, state->template_fname, new_template));
 		need_reset = true;
 	} else if (strcmp(state->template_fname + new_end, new_template + new_end) != 0) {
 		/*
 		 * If name after the digits changed
 		 * we better reset the queue
 		 */
+		DBG_PREFIX(state->reset_dbglvl, ("RESET: "
+			   "trailing suffix[%s] changed by fullpath[%s]\n",
+			   state->template_fname + new_end, new_template));
 		need_reset = true;
 	}
 
@@ -644,7 +729,9 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	num_max = num_digits_max_value(state->num_digits);
 	state->fnum_queue_end = MIN(num_max, num + state->queue_max);
 
+	DBG_PREFIX(state->queue_dbglvl, ("BEFORE: preopen_queue_run\n"));
 	preopen_queue_run(state);
+	DBG_PREFIX(state->queue_dbglvl, ("AFTER: preopen_queue_run\n"));
 
 	return res;
 }

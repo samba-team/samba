@@ -117,6 +117,139 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>preopen:nomatch_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug or audit the usage of the preopen logic
+		you can use this option to specify at what log level details
+		about filenames not matching any pattern from '<command>preopen:names</command>'
+		are logged.
+		</para>
+		<para>
+		Defaults to the log level 5.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:match_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug or audit the usage of the preopen logic
+		you can use this option to specify at what log level details
+		about filenames actually matching a pattern from '<command>preopen:names</command>'
+		are logged.
+		</para>
+		<para>
+		See also '<command>preopen:founddigits_log_level</command>' and '<command>preopen:push_log_level</command>'.
+		</para>
+		<para>
+		Defaults to the log level 5.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:nodigits_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug or audit problems with the preopen configuration
+		you can use this option to specify at what log level details
+		about filenames actually matching a pattern from '<command>preopen:names</command>',
+		but at the same time don't contain the expected digits, are logged.
+		This is typically something the administrator wants to notice and
+		adjust the configuration in order to define more precisely where to
+		find the digits in the filename.
+		</para>
+		<para>
+		Defaults to the log level 1.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:founddigits_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug or audit the usage of the preopen logic
+		you can use this option to specify at what log level details
+		about filenames actually matching a pattern from '<command>preopen:names</command>',
+		and at the same time having valid expected digits, are logged. This means enough information is available
+		in order to queue preopens.
+		</para>
+		<para>
+		Defaults to the log level 3.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:reset_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		If a matching filename belongs to a different pattern from '<command>preopen:names</command>',
+		a different parent directory or differs in a significant way from the last filename
+		that was found before, the module needs to reset it's internal queue state.
+		This means that no more preopens will be pushed to helper processes belonging to the
+		former queue state. In order to debug or audit such queue resets you can use this option to specify at what
+		log level details are logged.
+		</para>
+		<para>
+		Defaults to the log level 5.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:push_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug or audit the usage of the preopen logic
+		you can use this option to specify at what log level details
+		about filenames actually pushed to preopen helper processes are logged.
+		This means they will actually be preopened soon.
+		</para>
+		<para>
+		Defaults to the log level 3.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>preopen:queue_log_level = LOGLEVEL</term>
+		<listitem>
+		<para>
+		In order to debug details about internal queue processing
+		you can use this option to specify at what log level the details are logged.
+		</para>
+		<para>
+		Defaults to the log level 10.
+		See also <citerefentry><refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+		in the '<smbconfoption name="log level"/>' section
+		for special handling of the 'preopen' debug class.
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
