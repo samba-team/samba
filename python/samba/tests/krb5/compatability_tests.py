@@ -89,16 +89,16 @@ class SimpleKerberosTests(KDCBaseTest):
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
         self.assertTrue(ENC_PA_REP_FLAG & flags)
 
-    def test_heimdal_EncASRepPart_FAST_support(self):
+    def test_heimdal_and_windows_EncASRepPart_FAST_support(self):
         creds = self.get_user_creds()
         (enc, _) = self.as_req(creds)
         self.assertEqual(HIEMDAL_ENC_AS_REP_PART_TYPE_TAG, enc[0])
         as_rep = self.der_decode(enc, asn1Spec=krb5_asn1.EncASRepPart())
         flags = as_rep['flags']
         flags = int(as_rep['flags'], base=2)
-        # Heimdal does not set enc-pa-rep, flag bit 15
+        # Heimdal and Windows does set enc-pa-rep, flag bit 15
         # RFC 6806 11. Negotiation of FAST and Detecting Modified Requests
-        self.assertFalse(ENC_PA_REP_FLAG & flags)
+        self.assertTrue(ENC_PA_REP_FLAG & flags)
 
     def test_mit_arcfour_salt(self):
         creds = self.get_user_creds()
