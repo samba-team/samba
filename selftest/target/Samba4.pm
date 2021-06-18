@@ -1053,7 +1053,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 
 	$samba_tool_cmd = ${cmd_env};
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
-	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' '$testallowed_account' -d10";
+	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' '$testallowed_account'";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add '$testallowed_account' user to 'Allowed RODC Password Replication Group': \n$samba_tool_cmd\n");
 		return undef;
