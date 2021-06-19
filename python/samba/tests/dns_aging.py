@@ -2663,8 +2663,19 @@ class TestDNSAging(DNSTest):
         self.dns_update_record(name, B)
         a_rec = self.get_unique_txt_record(name, A)
         if not aging and touch:
-            # this resets the timestamp even if it is a static record.
-            self.assert_soon_after(a_rec, now)
+            # On Windows, this resets the timestamp even if it is a
+            # static record, though in that case it may be a
+            # transitory effect of the DNS cache. We will insist on
+            # the Samba behaviour of not changing (that is
+            # un-static-ing) a zero timestamp, because that is the
+            # sensible thing.
+            if a_days_ago == 0:
+                self.windows_variation(
+                    self.assert_soon_after, a_rec, now,
+                    msg="Windows resets static siblings (cache effect?)")
+                self.assert_timestamps_equal(a_rec, 0)
+            else:
+                self.assert_soon_after(a_rec, now)
         else:
             self.assert_timestamps_equal(a_rec, atime)
 
