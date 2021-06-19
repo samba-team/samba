@@ -33,7 +33,7 @@ from samba.tests.dns_base import DNSTest
 import samba.getopt as options
 import optparse
 import time
-
+from samba.colour import c_RED, c_GREEN, c_DARK_YELLOW
 
 parser = optparse.OptionParser(
     "dns_aging.py <server name> <server ip> [options]")
@@ -2622,6 +2622,18 @@ class TestDNSAging(DNSTest):
     def test_dns_delete_simple_10_0_days_no_aging_touch(self):
         self._test_dns_delete_simple(10, 1e9, False, True)
 
+    def windows_variation(self, fn, *args, msg=None, **kwargs):
+        try:
+            fn(*args, **kwargs)
+        except AssertionError as e:
+            print("Expected success on Windows only, failed as expected:\n" +
+                  c_GREEN(e))
+            return
+        print(c_RED("known Windows failure"))
+        if msg is not None:
+            print(c_DARK_YELLOW(msg))
+        print("Expected success on Windows:\n" +
+              c_GREEN(f"{fn.__name__} {args} {kwargs}"))
 
     def _test_dns_add_sibling(self, a_days, refresh, aging=True, touch=False):
         # Here we show that with aging enabled, the timestamp of
