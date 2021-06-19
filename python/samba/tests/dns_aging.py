@@ -2623,5 +2623,137 @@ class TestDNSAging(DNSTest):
         self._test_dns_delete_simple(10, 1e9, False, True)
 
 
+    def _test_dns_add_sibling(self, a_days, refresh, aging=True, touch=False):
+        # Here we show that with aging enabled, the timestamp of
+        # sibling records *is* modified when a record is added.
+        #
+        # With aging disabled, it *is* modified, if the dns server has
+        # seen it updated before ldap set the time (that is, probably
+        # the dns server overwrites AD). This happens even if AD
+        # thinks the record is static.
+        name = 'test'
+        A = ['A']
+        B = ['B']
+        self.set_zone_int_params(RefreshInterval=int(refresh),
+                                 NoRefreshInterval=7,
+                                 Aging=int(aging))
+
+        now = dsdb_dns.unix_to_dns_timestamp(int(time.time()))
+        a_days_ago = max(now - a_days * 24, 0)
+
+        if touch:
+            self.dns_update_record(name, A)
+
+        self.ldap_update_record(name, A, dwTimeStamp=a_days_ago)
+
+        atime = self.get_unique_txt_record(name, A).dwTimeStamp
+
+        self.dns_update_record(name, B)
+        a_rec = self.get_unique_txt_record(name, A)
+        if not aging and touch:
+            # this resets the timestamp even if it is a static record.
+            self.assert_soon_after(a_rec, now)
+        else:
+            self.assert_timestamps_equal(a_rec, atime)
+
+        b_rec = self.get_unique_txt_record(name, B)
+        self.assert_soon_after(b_rec, now)
+
+    def test_dns_add_sibling_2_7_days_aging(self):
+        self._test_dns_add_sibling(2, 7, True)
+
+    def test_dns_add_sibling_2_7_days_no_aging(self):
+        self._test_dns_add_sibling(2, 7, False)
+
+    def test_dns_add_sibling_12_7_days_aging(self):
+        self._test_dns_add_sibling(12, 7, True)
+
+    def test_dns_add_sibling_12_7_days_no_aging(self):
+        self._test_dns_add_sibling(12, 7, False)
+
+    def test_dns_add_sibling_12_3_days_aging(self):
+        self._test_dns_add_sibling(12, 3, True)
+
+    def test_dns_add_sibling_12_3_days_no_aging(self):
+        self._test_dns_add_sibling(12, 3, False)
+
+    def test_dns_add_sibling_112_7_days_aging(self):
+        self._test_dns_add_sibling(112, 7, True)
+
+    def test_dns_add_sibling_112_7_days_no_aging(self):
+        self._test_dns_add_sibling(112, 7, False)
+
+    def test_dns_add_sibling_12_113_days_aging(self):
+        self._test_dns_add_sibling(12, 113, True)
+
+    def test_dns_add_sibling_12_113_days_no_aging(self):
+        self._test_dns_add_sibling(12, 113, False)
+
+    def test_dns_add_sibling_0_7_days_aging(self):
+        # 1e9 days ago evaluates to 0, i.e static
+        self._test_dns_add_sibling(1e9, 7, True)
+
+    def test_dns_add_sibling_0_7_days_no_aging(self):
+        self._test_dns_add_sibling(1e9, 7, False)
+
+    def test_dns_add_sibling_0_0_days_aging(self):
+        self._test_dns_add_sibling(1e9, 0, True)
+
+    def test_dns_add_sibling_0_0_days_no_aging(self):
+        self._test_dns_add_sibling(1e9, 0, False)
+
+    def test_dns_add_sibling_10_0_days_aging(self):
+        self._test_dns_add_sibling(10, 0, True)
+
+    def test_dns_add_sibling_10_0_days_no_aging(self):
+        self._test_dns_add_sibling(10, 0, False)
+
+    def test_dns_add_sibling_2_7_days_aging_touch(self):
+        self._test_dns_add_sibling(2, 7, True, True)
+
+    def test_dns_add_sibling_2_7_days_no_aging_touch(self):
+        self._test_dns_add_sibling(2, 7, False, True)
+
+    def test_dns_add_sibling_12_7_days_aging_touch(self):
+        self._test_dns_add_sibling(12, 7, True, True)
+
+    def test_dns_add_sibling_12_7_days_no_aging_touch(self):
+        self._test_dns_add_sibling(12, 7, False, True)
+
+    def test_dns_add_sibling_12_3_days_aging_touch(self):
+        self._test_dns_add_sibling(12, 3, True, True)
+
+    def test_dns_add_sibling_12_3_days_no_aging_touch(self):
+        self._test_dns_add_sibling(12, 3, False, True)
+
+    def test_dns_add_sibling_112_7_days_aging_touch(self):
+        self._test_dns_add_sibling(112, 7, True, True)
+
+    def test_dns_add_sibling_112_7_days_no_aging_touch(self):
+        self._test_dns_add_sibling(112, 7, False, True)
+
+    def test_dns_add_sibling_12_113_days_aging_touch(self):
+        self._test_dns_add_sibling(12, 113, True, True)
+
+    def test_dns_add_sibling_12_113_days_no_aging_touch(self):
+        self._test_dns_add_sibling(12, 113, False, True)
+
+    def test_dns_add_sibling_0_7_days_aging_touch(self):
+        self._test_dns_add_sibling(1e9, 7, True, True)
+
+    def test_dns_add_sibling_0_7_days_no_aging_touch(self):
+        self._test_dns_add_sibling(1e9, 7, False, True)
+
+    def test_dns_add_sibling_0_0_days_aging_touch(self):
+        self._test_dns_add_sibling(1e9, 0, True, True)
+
+    def test_dns_add_sibling_0_0_days_no_aging_touch(self):
+        self._test_dns_add_sibling(1e9, 0, False, True)
+
+    def test_dns_add_sibling_10_0_days_aging_touch(self):
+        self._test_dns_add_sibling(10, 0, True, True)
+
+    def test_dns_add_sibling_10_0_days_no_aging_touch(self):
+        self._test_dns_add_sibling(10, 0, False, True)
 
 TestProgram(module=__name__, opts=subunitopts)

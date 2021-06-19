@@ -3,6 +3,32 @@
 # These all pass on Windows, apart from test_basic_scavenging, which
 # fails due to technical issues.
 
+samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_no_aging
+samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_0_7_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_0_7_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_0_7_days_no_aging
+samba.tests.dns_aging.+test_dns_add_sibling_0_7_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_10_0_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_10_0_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_10_0_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_112_7_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_112_7_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_112_7_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_113_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_12_113_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_113_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_3_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_12_3_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_3_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_7_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_12_7_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_12_7_days_no_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_aging
+samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_aging_touch
+samba.tests.dns_aging.+test_dns_add_sibling_2_7_days_no_aging_touch
 samba.tests.dns_aging.+test_add_update_dwFlags
 samba.tests.dns_aging.+test_add_update_dwReserved
 samba.tests.dns_aging.+test_add_update_dwSerial
