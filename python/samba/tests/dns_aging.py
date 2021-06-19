@@ -2492,5 +2492,136 @@ class TestDNSAging(DNSTest):
     def test_dns_delete_times_static_no_aging(self):
         self._test_dns_delete_times(1e10, False)
 
+    def _test_dns_delete_simple(self, a_days, b_days, aging=True, touch=False):
+        # Here we show that with aging enabled, the timestamp of
+        # sibling records is *not* modified when a record is deleted.
+        #
+        # With aging disabled, it *is* modified, if the dns server has
+        # seen it updated before ldap set the time (that is, probably
+        # the dns server overwrites AD). This happens even if AD
+        # thinks the record is static.
+        name = 'test'
+        A = ['A']
+        B = ['B']
+        self.set_aging(aging)
+        now = dsdb_dns.unix_to_dns_timestamp(int(time.time()))
+        a_days_ago = max(now - a_days * 24, 0)
+        b_days_ago = max(now - b_days * 24, 0)
+
+        if touch:
+            self.dns_update_record(name, A)
+            self.dns_update_record(name, B)
+
+        self.ldap_update_record(name, A, dwTimeStamp=a_days_ago)
+        self.ldap_update_record(name, B, dwTimeStamp=b_days_ago)
+
+        atime = self.get_unique_txt_record(name, A).dwTimeStamp
+
+        self.dns_delete(name, B)
+        if not aging and touch:
+            # this resets the timestamp even if it is a static record.
+            self.assert_soon_after(self.get_unique_txt_record(name, A), now)
+        else:
+            self.assert_timestamps_equal(self.get_unique_txt_record(name, A), atime)
+
+    def test_dns_delete_simple_2_3_days_aging(self):
+        self._test_dns_delete_simple(2, 3, True)
+
+    def test_dns_delete_simple_2_3_days_no_aging(self):
+        self._test_dns_delete_simple(2, 3, False)
+
+    def test_dns_delete_simple_2_13_days_aging(self):
+        self._test_dns_delete_simple(2, 13, True)
+
+    def test_dns_delete_simple_2_13_days_no_aging(self):
+        self._test_dns_delete_simple(2, 13, False)
+
+    def test_dns_delete_simple_12_13_days_aging(self):
+        self._test_dns_delete_simple(12, 13, True)
+
+    def test_dns_delete_simple_12_13_days_no_aging(self):
+        self._test_dns_delete_simple(12, 13, False)
+
+    def test_dns_delete_simple_112_113_days_aging(self):
+        self._test_dns_delete_simple(112, 113, True)
+
+    def test_dns_delete_simple_112_113_days_no_aging(self):
+        self._test_dns_delete_simple(112, 113, False)
+
+    def test_dns_delete_simple_112_113_days_aging(self):
+        self._test_dns_delete_simple(112, 113, True)
+
+    def test_dns_delete_simple_112_113_days_no_aging(self):
+        self._test_dns_delete_simple(112, 113, False)
+
+    def test_dns_delete_simple_0_113_days_aging(self):
+        # 1e9 hours ago evaluates to 0, i.e static
+        self._test_dns_delete_simple(1e9, 113, True)
+
+    def test_dns_delete_simple_0_113_days_no_aging(self):
+        self._test_dns_delete_simple(1e9, 113, False)
+
+    def test_dns_delete_simple_0_0_days_aging(self):
+        self._test_dns_delete_simple(1e9, 1e9, True)
+
+    def test_dns_delete_simple_0_0_days_no_aging(self):
+        self._test_dns_delete_simple(1e9, 1e9, False)
+
+    def test_dns_delete_simple_10_0_days_aging(self):
+        self._test_dns_delete_simple(10, 1e9, True)
+
+    def test_dns_delete_simple_10_0_days_no_aging(self):
+        self._test_dns_delete_simple(10, 1e9, False)
+
+    def test_dns_delete_simple_2_3_days_aging_touch(self):
+        self._test_dns_delete_simple(2, 3, True, True)
+
+    def test_dns_delete_simple_2_3_days_no_aging_touch(self):
+        self._test_dns_delete_simple(2, 3, False, True)
+
+    def test_dns_delete_simple_2_13_days_aging_touch(self):
+        self._test_dns_delete_simple(2, 13, True, True)
+
+    def test_dns_delete_simple_2_13_days_no_aging_touch(self):
+        self._test_dns_delete_simple(2, 13, False, True)
+
+    def test_dns_delete_simple_12_13_days_aging_touch(self):
+        self._test_dns_delete_simple(12, 13, True, True)
+
+    def test_dns_delete_simple_12_13_days_no_aging_touch(self):
+        self._test_dns_delete_simple(12, 13, False, True)
+
+    def test_dns_delete_simple_112_113_days_aging_touch(self):
+        self._test_dns_delete_simple(112, 113, True, True)
+
+    def test_dns_delete_simple_112_113_days_no_aging_touch(self):
+        self._test_dns_delete_simple(112, 113, False, True)
+
+    def test_dns_delete_simple_112_113_days_aging_touch(self):
+        self._test_dns_delete_simple(112, 113, True, True)
+
+    def test_dns_delete_simple_112_113_days_no_aging_touch(self):
+        self._test_dns_delete_simple(112, 113, False, True)
+
+    def test_dns_delete_simple_0_113_days_aging_touch(self):
+        # 1e9 hours ago evaluates to 0, i.e static
+        self._test_dns_delete_simple(1e9, 113, True, True)
+
+    def test_dns_delete_simple_0_113_days_no_aging_touch(self):
+        self._test_dns_delete_simple(1e9, 113, False, True)
+
+    def test_dns_delete_simple_0_0_days_aging_touch(self):
+        self._test_dns_delete_simple(1e9, 1e9, True, True)
+
+    def test_dns_delete_simple_0_0_days_no_aging_touch(self):
+        self._test_dns_delete_simple(1e9, 1e9, False, True)
+
+    def test_dns_delete_simple_10_0_days_aging_touch(self):
+        self._test_dns_delete_simple(10, 1e9, True, True)
+
+    def test_dns_delete_simple_10_0_days_no_aging_touch(self):
+        self._test_dns_delete_simple(10, 1e9, False, True)
+
+
 
 TestProgram(module=__name__, opts=subunitopts)
