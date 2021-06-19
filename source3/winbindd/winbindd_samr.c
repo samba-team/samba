@@ -37,6 +37,7 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "auth.h"
+#include "source3/lib/global_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -48,6 +49,7 @@
  * winbindd or a part of this process
  */
 struct winbind_internal_pipes {
+	struct tevent_timer *shutdown_timer;
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle samr_domain_hnd;
 	struct rpc_pipe_client *lsa_pipe;
@@ -120,6 +122,27 @@ NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static void cached_internal_pipe_close(
+	struct tevent_context *ev,
+	struct tevent_timer *te,
+	struct timeval current_time,
+	void *private_data)
+{
+	struct winbindd_domain *domain = talloc_get_type_abort(
+		private_data, struct winbindd_domain);
+	/*
+	 * domain->private_data is the struct winbind_internal_pipes *
+	 * pointer so freeing it closes the cached pipes.
+	 *
+	 * We can do a hard close because at the time of this commit
+	 * we only use sychronous calls to external pipes. So we can't
+	 * have any outstanding requests. Also, we don't set
+	 * dcerpc_binding_handle_set_sync_ev in winbind, so we don't
+	 * get nested event loops. Once we start to get async in
+	 * winbind children, we need to check for outstanding calls
+	 */
+	TALLOC_FREE(domain->private_data);
+}
 
 static NTSTATUS open_cached_internal_pipe_conn(
 	struct winbindd_domain *domain,
@@ -156,6 +179,17 @@ static NTSTATUS open_cached_internal_pipe_conn(
 			return status;
 		}
 
+		internal_pipes->shutdown_timer = tevent_add_timer(
+			global_event_context(),
+			internal_pipes,
+			timeval_current_ofs(5, 0),
+			cached_internal_pipe_close,
+			domain);
+		if (internal_pipes->shutdown_timer == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		domain->private_data = talloc_move(domain, &internal_pipes);
 
 		TALLOC_FREE(frame);
@@ -180,6 +214,10 @@ static NTSTATUS open_cached_internal_pipe_conn(
 	if (lsa_pipe) {
 		*lsa_pipe = internal_pipes->lsa_pipe;
 	}
+
+	tevent_update_timer(
+		internal_pipes->shutdown_timer,
+		timeval_current_ofs(5, 0));
 
 	return NT_STATUS_OK;
 }
