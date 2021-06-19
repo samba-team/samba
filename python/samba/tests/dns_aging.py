@@ -2251,8 +2251,12 @@ class TestDNSAging(DNSTest):
 
         # check the B timestamp
         rec_b = self.get_unique_ip_record(name, B)
-
-        self.assert_soon_after(rec_b, now)
+        if not aging:
+            self.windows_variation(
+                self.assert_soon_after, rec_b, now,
+                msg="windows updates non-aging, samba does not")
+        else:
+            self.assert_soon_after(rec_b, now)
 
         # rewind B
         rec_b = self.add_ip_record(name, B, dwTimeStamp=b_initial)
