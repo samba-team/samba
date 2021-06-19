@@ -1631,8 +1631,8 @@ class TestDNSAging(DNSTest):
 
     def test_aging_refresh(self):
         name, txt = 'agingtest', ['test txt']
-        no_refresh = 100
-        refresh = 80
+        no_refresh = 200
+        refresh = 160
         self.set_zone_int_params(NoRefreshInterval=no_refresh,
                                  RefreshInterval=refresh,
                                  Aging=1)
@@ -1640,22 +1640,22 @@ class TestDNSAging(DNSTest):
         start_time = before_mod.dwTimeStamp
 
         # go back 86 hours, which is in the no-refresh time (but
-        # wouldn't be if we had stuck to the default of 84).
-        self.ldap_modify_timestamps(name, -86)
+        # wouldn't be if we had stuck to the default of 168).
+        self.ldap_modify_timestamps(name, -170)
         rec = self.dns_update_record(name, txt)
         self.assert_timestamps_equal(rec.dwTimeStamp,
-                                     start_time - 86)
+                                     start_time - 170)
 
-        # back to -102 hours, into the refresh zone
+        # back to -202 hours, into the refresh zone
         # the update should reset the timestamp to now.
-        self.ldap_modify_timestamps(name, -16)
+        self.ldap_modify_timestamps(name, -32)
         rec = self.dns_update_record(name, txt)
         self.assert_soon_after(rec.dwTimeStamp, start_time)
 
-        # back to -182 hours, beyond the end of the refresh period.
+        # back to -362 hours, beyond the end of the refresh period.
         # Actually nothing changes at this time -- we can still
         # refresh, but the record is liable for scavenging.
-        self.ldap_modify_timestamps(name, -182)
+        self.ldap_modify_timestamps(name, -160)
         rec = self.dns_update_record(name, txt)
         self.assert_soon_after(rec.dwTimeStamp, start_time)
 
@@ -2030,8 +2030,8 @@ class TestDNSAging(DNSTest):
         # the database directly.
 
         # just to be sure we have the right limits.
-        self.set_zone_int_params(NoRefreshInterval=84,
-                                 RefreshInterval=84,
+        self.set_zone_int_params(NoRefreshInterval=168,
+                                 RefreshInterval=168,
                                  Aging=1)
 
         ts1, ts2, ts3, ts4, ts5, ts6 = ('1', '2', '3', '4', '5', '6')

@@ -3,6 +3,7 @@
 # These all pass on Windows, apart from test_basic_scavenging, which
 # fails due to technical issues.
 
+samba.tests.dns_aging.__main__.TestDNSAging.test_aging_refresh
 samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_aging
 samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_aging_touch
 samba.tests.dns_aging.+test_dns_add_sibling_0_0_days_no_aging
@@ -37,7 +38,6 @@ samba.tests.dns_aging.+test_add_update_many
 samba.tests.dns_aging.+test_add_update_timestamp
 samba.tests.dns_aging.+test_add_update_ttl
 samba.tests.dns_aging.+test_add_update_ttl_serial
-samba.tests.dns_aging.+test_basic_scavenging
 samba.tests.dns_aging.+test_dns_delete_simple_0_0_days_no_aging_touch
 samba.tests.dns_aging.+test_dns_delete_simple_0_113_days_no_aging_touch
 samba.tests.dns_aging.+test_dns_delete_simple_10_0_days_aging
