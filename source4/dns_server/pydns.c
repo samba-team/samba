@@ -311,7 +311,7 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 	werr = dns_common_replace(samdb,
 				  frame,
 				  dn,
-				  false, /* Not adding a record */
+				  false, /* Not adding a node */
 				  serial,
 				  records,
 				  num_records);
