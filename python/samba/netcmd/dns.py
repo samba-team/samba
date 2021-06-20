@@ -19,7 +19,7 @@ import samba.getopt as options
 from samba import WERRORError
 from samba import werror
 from struct import pack
-from socket import inet_ntop
+from socket import inet_ntop, inet_pton
 from socket import AF_INET
 from socket import AF_INET6
 import struct
@@ -1124,8 +1124,17 @@ class cmd_update_record(Command):
     def run(self, server, zone, name, rtype, olddata, newdata,
             sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SOA', 'SRV', 'TXT'):
+        rtype = rtype.upper()
+        if rtype not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SOA', 'SRV', 'TXT'):
             raise CommandError('Updating record of type %s is not supported' % rtype)
+
+        try:
+            if rtype == 'A':
+                inet_pton(AF_INET, newdata)
+            elif rtype == 'AAAA':
+                inet_pton(AF_INET6, newdata)
+        except OSError as e:
+            raise CommandError(f"bad data for {rtype}: {e!r}")
 
         record_type = dns_type_flag(rtype)
         rec = data_to_dns_record(record_type, newdata)
