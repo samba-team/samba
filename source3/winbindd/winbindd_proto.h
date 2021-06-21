@@ -447,7 +447,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 						 struct winbindd_cli_state *state);
 NTSTATUS _wbint_PamLogOff(struct pipes_struct *p,
 			  struct wbint_PamLogOff *r);
-enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domain *domainSt, struct winbindd_cli_state *state);
+NTSTATUS _wbint_PamAuthCrapChangePassword(struct pipes_struct *p,
+					  struct wbint_PamAuthCrapChangePassword *r);
 NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 				      TALLOC_CTX *mem_ctx,
 				      bool *p_is_trusted,

@@ -226,6 +226,17 @@ interface winbind
         [in] hyper uid
         );
 
+    NTSTATUS wbint_PamAuthCrapChangePassword(
+        [in,string,charset(UTF8)] char *client_name,
+        [in] hyper client_pid,
+        [in,string,charset(UTF8)] char *user,
+        [in,string,charset(UTF8)] char *domain,
+        [in,flag(NDR_SECRET)] DATA_BLOB new_nt_pswd,
+        [in,flag(NDR_SECRET)] DATA_BLOB old_nt_hash_enc,
+        [in,flag(NDR_SECRET)] DATA_BLOB new_lm_pswd,
+        [in,flag(NDR_SECRET)] DATA_BLOB old_lm_hash_enc
+        );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

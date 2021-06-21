@@ -3164,34 +3164,36 @@ process_result:
 
 /* Change user password with auth crap*/
 
-enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domain *domainSt, struct winbindd_cli_state *state)
+NTSTATUS _wbint_PamAuthCrapChangePassword(struct pipes_struct *p,
+				struct wbint_PamAuthCrapChangePassword *r)
 {
 	NTSTATUS result;
-	DATA_BLOB new_nt_password;
-	DATA_BLOB old_nt_hash_enc;
-	DATA_BLOB new_lm_password;
-	DATA_BLOB old_lm_hash_enc;
 	fstring  namespace, domain, user;
 	struct policy_handle dom_pol;
-	struct winbindd_domain *contact_domain = domainSt;
+	struct winbindd_domain *contact_domain = wb_child_domain();
 	struct rpc_pipe_client *cli = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	pid_t client_pid;
 
 	ZERO_STRUCT(dom_pol);
 
-	/* Ensure null termination */
-	state->request->data.chng_pswd_auth_crap.user[
-		sizeof(state->request->data.chng_pswd_auth_crap.user)-1]=0;
-	state->request->data.chng_pswd_auth_crap.domain[
-		sizeof(state->request->data.chng_pswd_auth_crap.domain)-1]=0;
+	if (contact_domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	/* Cut client_pid to 32bit */
+	client_pid = r->in.client_pid;
+	if ((uint64_t)client_pid != r->in.client_pid) {
+		DBG_DEBUG("pid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	domain[0] = '\0';
 	namespace[0] = '\0';
 	user[0] = '\0';
 
-	DEBUG(3, ("[%5lu]: pam change pswd auth crap domain: %s user: %s\n",
-		  (unsigned long)state->pid,
-		  state->request->data.chng_pswd_auth_crap.domain,
-		  state->request->data.chng_pswd_auth_crap.user));
+	DBG_NOTICE("[%"PRIu32"]: pam change pswd auth crap domain: %s "
+		   "user: %s\n", client_pid, r->in.domain, r->in.user);
 
 	if (lp_winbind_offline_logon()) {
 		DEBUG(0,("Refusing password change as winbind offline logons are enabled. "));
@@ -3200,12 +3202,12 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		goto done;
 	}
 
-	if (*state->request->data.chng_pswd_auth_crap.domain) {
-		fstrcpy(domain,state->request->data.chng_pswd_auth_crap.domain);
+	if (r->in.domain != NULL && strlen(r->in.domain) > 0) {
+		fstrcpy(domain, r->in.domain);
 	} else {
 		bool ok;
 
-		ok = parse_domain_user(state->request->data.chng_pswd_auth_crap.user,
+		ok = parse_domain_user(r->in.user,
 				       namespace,
 				       domain,
 				       user);
@@ -3214,10 +3216,9 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 			goto done;
 		}
 
-		if(!*domain) {
-			DEBUG(3,("no domain specified with username (%s) - "
-				 "failing auth\n",
-				 state->request->data.chng_pswd_auth_crap.user));
+		if (strlen(domain) == 0) {
+			DBG_NOTICE("no domain specified with username (%s) - "
+				   "failing auth\n", r->in.user);
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
@@ -3230,44 +3231,23 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	if (!is_allowed_domain(domain)) {
 		DBG_NOTICE("Authentication failed for user [%s] "
 			   "from firewalled domain [%s]\n",
-			   state->request->data.chng_pswd_auth_crap.user,
+			   r->in.user,
 			   domain);
 		result = NT_STATUS_AUTHENTICATION_FIREWALL_FAILED;
 		goto done;
 	}
 
 	if(!*user) {
-		fstrcpy(user, state->request->data.chng_pswd_auth_crap.user);
-	}
-
-	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n",
-		  (unsigned long)state->pid, domain, user));
-
-	/* Change password */
-	new_nt_password = data_blob_const(
-		state->request->data.chng_pswd_auth_crap.new_nt_pswd,
-		state->request->data.chng_pswd_auth_crap.new_nt_pswd_len);
-
-	old_nt_hash_enc = data_blob_const(
-		state->request->data.chng_pswd_auth_crap.old_nt_hash_enc,
-		state->request->data.chng_pswd_auth_crap.old_nt_hash_enc_len);
-
-	if(state->request->data.chng_pswd_auth_crap.new_lm_pswd_len > 0)	{
-		new_lm_password = data_blob_const(
-			state->request->data.chng_pswd_auth_crap.new_lm_pswd,
-			state->request->data.chng_pswd_auth_crap.new_lm_pswd_len);
-
-		old_lm_hash_enc = data_blob_const(
-			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc,
-			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc_len);
-	} else {
-		new_lm_password = data_blob_null;
-		old_lm_hash_enc = data_blob_null;
+		fstrcpy(user, r->in.user);
 	}
 
 	/* Get sam handle */
 
-	result = cm_connect_sam(contact_domain, state->mem_ctx, true, &cli, &dom_pol);
+	result = cm_connect_sam(contact_domain,
+				p->mem_ctx,
+				true,
+				&cli,
+				&dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;
@@ -3275,9 +3255,13 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 
 	b = cli->binding_handle;
 
-	result = rpccli_samr_chng_pswd_auth_crap(
-		cli, state->mem_ctx, user, new_nt_password, old_nt_hash_enc,
-		new_lm_password, old_lm_hash_enc);
+	result = rpccli_samr_chng_pswd_auth_crap(cli,
+						 p->mem_ctx,
+						 user,
+						 r->in.new_nt_pswd,
+						 r->in.old_nt_hash_enc,
+						 r->in.new_lm_pswd,
+						 r->in.old_lm_hash_enc);
 
  done:
 
@@ -3286,21 +3270,22 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		if (b) {
 			if (is_valid_policy_hnd(&dom_pol)) {
 				NTSTATUS _result;
-				dcerpc_samr_Close(b, state->mem_ctx, &dom_pol, &_result);
+				dcerpc_samr_Close(b,
+						  p->mem_ctx,
+						  &dom_pol,
+						  &_result);
 			}
 			TALLOC_FREE(cli);
 		}
 	}
 
-	set_auth_errors(state->response, result);
-
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
 	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n",
 	       domain, user,
-	       state->response->data.auth.nt_status_string,
-	       state->response->data.auth.pam_error));
+	       nt_errstr(result),
+	       nt_status_to_pam(result)));
 
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	return result;
 }
 
 #ifdef HAVE_KRB5
