@@ -329,7 +329,7 @@ nfs_monitor_list_shares ()
 {
     _cache_file="${CTDB_NFS_CALLOUT_STATE_DIR}/list_shares_cache"
     # -nt operator is well supported in Linux: dash, bash, ksh, ...
-    # shellcheck disable=SC2039
+    # shellcheck disable=SC2039,SC3013
     if  [ ! -r "$nfs_exports_file" ] || [ ! -r "$_cache_file" ] || \
 	    [ "$nfs_exports_file" -nt "$_cache_file" ] ; then
 	mkdir -p "$CTDB_NFS_CALLOUT_STATE_DIR"
