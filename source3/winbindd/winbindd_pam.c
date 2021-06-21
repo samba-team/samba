@@ -563,30 +563,32 @@ static void fill_in_password_policy(struct winbindd_response *r,
 		nt_time_to_unix_abs((const NTTIME *)&(p->min_password_age));
 }
 
-static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
-				       struct winbindd_response *response)
+static NTSTATUS get_password_policy(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    struct samr_DomInfo1 **_policy)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
-	struct samr_DomInfo1 password_policy;
+	struct samr_DomInfo1 *policy = NULL;
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(5,("fillup_password_policy: No inbound trust to "
-			 "contact domain %s\n", domain->name));
-		status = NT_STATUS_NOT_SUPPORTED;
-		goto done;
+		DBG_INFO("No inbound trust to contact domain %s\n",
+			 domain->name);
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	status = wb_cache_password_policy(domain, talloc_tos(),
-					  &password_policy);
+	policy = talloc_zero(mem_ctx, struct samr_DomInfo1);
+	if (policy == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = wb_cache_password_policy(domain, mem_ctx, policy);
 	if (NT_STATUS_IS_ERR(status)) {
-		goto done;
+		TALLOC_FREE(policy);
+		return status;
 	}
 
-	fill_in_password_policy(response, &password_policy);
+	*_policy = talloc_move(mem_ctx, &policy);
 
-done:
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -3043,8 +3045,9 @@ done:
 
 		NTSTATUS policy_ret;
 
-		policy_ret = fillup_password_policy(
-			contact_domain, state->response);
+		policy_ret = get_password_policy(contact_domain,
+						 state->mem_ctx,
+						 &info);
 
 		/* failure of this is non critical, it will just provide no
 		 * additional information to the client why the change has
@@ -3054,6 +3057,9 @@ done:
 			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(policy_ret)));
 			goto process_result;
 		}
+
+		fill_in_password_policy(state->response, info);
+		TALLOC_FREE(info);
 	}
 
 process_result:
