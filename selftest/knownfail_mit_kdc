@@ -641,3 +641,9 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_rc4_pac_None.fl2008r2dc
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_rc4_pac_True.fl2003dc
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_rc4_pac_True.fl2008r2dc
+# Differences in our KDC compared to windows
+#
+^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
+#
+# fl2000dc doesn't support AES
+^samba4.krb5.kdc.*as-req-aes.*fl2000dc

@@ -294,10 +294,6 @@
 ^samba4.winbind.struct.lookup_name_sid\(ad_member:local\)
 ^samba4.winbind.struct.getdcname\(nt4_member:local\) # Works in other modes, just not against the classic/NT4 DC
 #
-# Differences in our KDC compared to windows
-#
-^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
-#
 # This will fail against the classic DC, because it requires kerberos
 #
 ^samba4.winbind.pac.*\(nt4_member:local\) # No KDC on a classic DC
@@ -336,7 +332,7 @@
 #
 ^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
 # fl2000dc doesn't support AES
-^samba4.krb5.kdc.*as-req-aes.*fl2000dc
+^samba4.krb5.kdc.*as-req-aes.fl2000dc
 # nt4_member and ad_member don't support ntlmv1 (not even over SMB1)
 ^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.member.creds.*as.user.*_member
 ^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.*mNT1.member.creds.*as.user.*_member
