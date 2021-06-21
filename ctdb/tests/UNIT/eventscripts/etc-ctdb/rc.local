@@ -1,24 +1,14 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Use a "service" command in $PATH if one exists.
+# Always use stub version of service command
 service ()
 {
-    if _t=$(which "service" 2>/dev/null) ; then
-	"$_t" "$@"
-    else
-	_nice=""
-	_service "$@"
-    fi
+	"${CTDB_HELPER_BINDIR}/service" "$@"
 }
 
 nice_service ()
 {
-    if _t=$(which "service" 2>/dev/null) ; then
-	nice "$_t" "$@"
-    else
-	_nice="nice"
-	_service "$@"
-    fi
+	nice "${CTDB_HELPER_BINDIR}/service" "$@"
 }
 
 # Always succeeds
