@@ -120,13 +120,21 @@ static NTSTATUS remote_get_private(struct dcesrv_call_state *dce_call,
 	credentials = dcesrv_call_credentials(dce_call);
 
 	if (user && pass) {
+		bool ok;
+
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using specified account\n"));
 		credentials = cli_credentials_init(priv);
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		must_free_credentials = true;
-		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
+
+		ok = cli_credentials_set_conf(credentials,
+					      dce_call->conn->dce_ctx->lp_ctx);
+		if (!ok) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
