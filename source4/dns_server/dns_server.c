@@ -800,6 +800,7 @@ static NTSTATUS dns_task_init(struct task_server *task)
 	struct ldb_message *dns_acc;
 	char *hostname_lower;
 	char *dns_spn;
+	bool ok;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -849,7 +850,13 @@ static NTSTATUS dns_task_init(struct task_server *task)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
+	ok = cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
+	if (!ok) {
+		task_server_terminate(task,
+				      "dns: failed to load smb.conf",
+				      true);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	hostname_lower = strlower_talloc(dns, lpcfg_netbios_name(task->lp_ctx));
 	dns_spn = talloc_asprintf(dns, "DNS/%s.%s",
