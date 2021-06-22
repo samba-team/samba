@@ -213,7 +213,6 @@ static int streams_xattr_stat_base(vfs_handle_struct *handle,
 static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
-	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
@@ -228,32 +227,16 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					io->base,
-					NULL,
-					NULL,
-					fsp->fsp_name->twrp,
-					fsp->fsp_name->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = vfs_stat(handle->conn, smb_fname_base);
-	*sbuf = smb_fname_base->st;
-
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp->base_fsp, sbuf);
 	if (ret == -1) {
-		TALLOC_FREE(smb_fname_base);
 		return -1;
 	}
 
 	sbuf->st_ex_size = get_xattr_size(handle->conn,
+					  fsp->base_fsp,
 					  NULL,
-					  smb_fname_base,
 					  io->xattr_name);
 	if (sbuf->st_ex_size == -1) {
-		TALLOC_FREE(smb_fname_base);
 		SET_STAT_INVALID(*sbuf);
 		return -1;
 	}
@@ -266,7 +249,6 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
         sbuf->st_ex_mode |= S_IFREG;
         sbuf->st_ex_blocks = sbuf->st_ex_size / STAT_ST_BLOCKSIZE + 1;
 
-	TALLOC_FREE(smb_fname_base);
 	return 0;
 }
 
