@@ -309,50 +309,18 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 static int streams_xattr_lstat(vfs_handle_struct *handle,
 			       struct smb_filename *smb_fname)
 {
-	NTSTATUS status;
-	int result = -1;
-	char *xattr_name = NULL;
-
-	if (!is_named_stream(smb_fname)) {
-		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	/* Populate the stat struct with info from the base file. */
-	if (streams_xattr_stat_base(handle, smb_fname, false) == -1) {
-		return -1;
-	}
-
-	/* Derive the xattr name to lookup. */
-	status = streams_xattr_get_name(handle, talloc_tos(),
-					smb_fname->stream_name, &xattr_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	/* Augment the base file's stat information before returning. */
-	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
-						  NULL,
-						  smb_fname,
-						  xattr_name);
-	if (smb_fname->st.st_ex_size == -1) {
+	if (is_named_stream(smb_fname)) {
+		/*
+		 * There can never be EA's on a symlink.
+		 * Windows will never see a symlink, and
+		 * in SMB_FILENAME_POSIX_PATH mode we don't
+		 * allow EA's on a symlink.
+		 */
 		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
-		result = -1;
-		goto fail;
+		return -1;
 	}
-
-	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st, xattr_name);
-	smb_fname->st.st_ex_mode &= ~S_IFMT;
-        smb_fname->st.st_ex_mode |= S_IFREG;
-        smb_fname->st.st_ex_blocks =
-	    smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
-
-	result = 0;
-
- fail:
-	TALLOC_FREE(xattr_name);
-	return result;
+	return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 }
 
 static int streams_xattr_openat(struct vfs_handle_struct *handle,
