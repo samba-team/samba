@@ -382,41 +382,6 @@ SMB_ACL_T posixacl_xattr_acl_get_fd(vfs_handle_struct *handle,
 	return NULL;
 }
 
-int posixacl_xattr_acl_set_file(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				SMB_ACL_TYPE_T type,
-				SMB_ACL_T theacl)
-{
-	const char *name;
-	char *buf;
-	ssize_t size;
-	int ret;
-
-	size = smb_acl_to_posixacl_xattr(theacl, NULL, 0);
-	buf = alloca(size);
-	if (!buf) {
-		return -1;
-	}
-
-	ret = smb_acl_to_posixacl_xattr(theacl, buf, size);
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-
-	if (type == SMB_ACL_TYPE_ACCESS) {
-		name = ACL_EA_ACCESS;
-	} else if (type == SMB_ACL_TYPE_DEFAULT) {
-		name = ACL_EA_DEFAULT;
-	} else {
-		errno = EINVAL;
-		return -1;
-	}
-
-	return SMB_VFS_FSETXATTR(smb_fname->fsp,
-			name, buf, size, 0);
-}
-
 int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      SMB_ACL_TYPE_T type,
