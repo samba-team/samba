@@ -1588,6 +1588,8 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	const struct gensec_security_ops **backends = NULL;
 	size_t idx = 0;
 	isc_boolean_t result = ISC_FALSE;
+	NTSTATUS status;
+	bool ok;
 
 	/* Remove cached credentials, if any */
 	if (state->session_info) {
@@ -1615,8 +1617,24 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		goto exit;
 	}
 
-	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
-	cli_credentials_set_conf(server_credentials, state->lp);
+	status = cli_credentials_set_krb5_context(server_credentials,
+						  state->smb_krb5_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		state->log(ISC_LOG_ERROR,
+			   "samba_dlz: failed to set krb5 context");
+		talloc_free(tmp_ctx);
+		result = ISC_FALSE;
+		goto exit;
+	}
+
+	ok = cli_credentials_set_conf(server_credentials, state->lp);
+	if (!ok) {
+		state->log(ISC_LOG_ERROR,
+			   "samba_dlz: failed to load smb.conf");
+		talloc_free(tmp_ctx);
+		result = ISC_FALSE;
+		goto exit;
+	}
 
 	keytab_file = talloc_asprintf(tmp_ctx,
 				      "%s/dns.keytab",
