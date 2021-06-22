@@ -86,6 +86,8 @@ static struct vfs_offload_ctx *btrfs_offload_ctx;
 struct btrfs_offload_read_state {
 	struct vfs_handle_struct *handle;
 	files_struct *fsp;
+	uint32_t flags;
+	uint64_t xferlen;
 	DATA_BLOB token;
 };
 
@@ -158,6 +160,8 @@ static void btrfs_offload_read_done(struct tevent_req *subreq)
 	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
 						state->handle,
 						state,
+						&state->flags,
+						&state->xferlen,
 						&state->token);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -178,6 +182,8 @@ static void btrfs_offload_read_done(struct tevent_req *subreq)
 static NTSTATUS btrfs_offload_read_recv(struct tevent_req *req,
 					struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
+					uint32_t *flags,
+					uint64_t *xferlen,
 					DATA_BLOB *token)
 {
 	struct btrfs_offload_read_state *state = tevent_req_data(
@@ -189,6 +195,8 @@ static NTSTATUS btrfs_offload_read_recv(struct tevent_req *req,
 		return status;
 	}
 
+	*flags = state->flags;
+	*xferlen = state->xferlen;
 	token->length = state->token.length;
 	token->data = talloc_move(mem_ctx, &state->token.data);
 

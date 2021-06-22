@@ -254,11 +254,17 @@ static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct fsctl_dup_extents_state *state = tevent_req_data(
 		req, struct fsctl_dup_extents_state);
+	uint32_t flags;
+	uint64_t xferlen;
 	DATA_BLOB token;
 	NTSTATUS status;
 
+	/*
+	 * Note that both flags and xferlen are not used with copy-chunk.
+	 */
+
 	status = SMB_VFS_OFFLOAD_READ_RECV(subreq, state->dst_fsp->conn,
-					   state, &token);
+					   state, &flags, &xferlen, &token);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

@@ -2031,6 +2031,8 @@ static NTSTATUS smb_time_fset_dos_attributes(struct vfs_handle_struct *handle,
 struct time_audit_offload_read_state {
 	struct vfs_handle_struct *handle;
 	struct timespec ts_send;
+	uint32_t flags;
+	uint64_t xferlen;
 	DATA_BLOB token_blob;
 };
 
@@ -2081,6 +2083,8 @@ static void smb_time_audit_offload_read_done(struct tevent_req *subreq)
 	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
 						state->handle,
 						state,
+						&state->flags,
+						&state->xferlen,
 						&state->token_blob);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -2093,6 +2097,8 @@ static NTSTATUS smb_time_audit_offload_read_recv(
 	struct tevent_req *req,
 	struct vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
+	uint32_t *flags,
+	uint64_t *xferlen,
 	DATA_BLOB *token_blob)
 {
 	struct time_audit_offload_read_state *state = tevent_req_data(
@@ -2112,6 +2118,8 @@ static NTSTATUS smb_time_audit_offload_read_recv(
 		return status;
 	}
 
+	*flags = state->flags;
+	*xferlen = state->xferlen;
 	token_blob->length = state->token_blob.length;
 	token_blob->data = talloc_move(mem_ctx, &state->token_blob.data);
 

@@ -769,12 +769,19 @@ static void smb2_ioctl_network_fs_offload_read_done(struct tevent_req *subreq)
 		req, struct smbd_smb2_ioctl_state);
 	struct req_resume_key_rsp rkey_rsp;
 	enum ndr_err_code ndr_ret;
+	uint32_t flags;
+	uint64_t xferlen;
 	DATA_BLOB token;
 	NTSTATUS status;
 
+	/*
+	 * Note that both flags and xferlen are not used with copy-chunk.
+	 */
 	status = SMB_VFS_OFFLOAD_READ_RECV(subreq,
 					   state->fsp->conn,
 					   state,
+					   &flags,
+					   &xferlen,
 					   &token);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {

@@ -1990,6 +1990,8 @@ static struct tevent_req *vfswrap_offload_read_send(
 static NTSTATUS vfswrap_offload_read_recv(struct tevent_req *req,
 					  struct vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
+					  uint32_t *flags,
+					  uint64_t *xferlen,
 					  DATA_BLOB *token)
 {
 	struct vfswrap_offload_read_state *state = tevent_req_data(
@@ -2001,6 +2003,8 @@ static NTSTATUS vfswrap_offload_read_recv(struct tevent_req *req,
 		return status;
 	}
 
+	*flags = 0;
+	*xferlen = 0;
 	token->length = state->token.length;
 	token->data = talloc_move(mem_ctx, &state->token.data);
 

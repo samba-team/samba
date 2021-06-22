@@ -2516,10 +2516,12 @@ struct tevent_req *smb_vfs_call_offload_read_send(TALLOC_CTX *mem_ctx,
 NTSTATUS smb_vfs_call_offload_read_recv(struct tevent_req *req,
 					struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
+					uint32_t *flags,
+					uint64_t *xferlen,
 					DATA_BLOB *token_blob)
 {
 	VFS_FIND(offload_read_recv);
-	return handle->fns->offload_read_recv_fn(req, handle, mem_ctx, token_blob);
+	return handle->fns->offload_read_recv_fn(req, handle, mem_ctx, flags, xferlen, token_blob);
 }
 
 struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *handle,

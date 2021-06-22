@@ -361,6 +361,7 @@
  * Version 45 - Add SMB_VFS_FCHFLAGS
  * Version 45 - Remove SMB_VFS_GETXATTR
  * Version 46 - Rename SMB_VFS_KERNEL_FLOCK to SMB_VFS_FILESYSTEM_SHAREMODE
+ * Version 46 - Add flags and xferlen args to SMB_VFS_OFFLOAD_READ_RECV
  */
 
 #define SMB_VFS_INTERFACE_VERSION 46
@@ -1089,6 +1090,8 @@ struct vfs_fn_pointers {
 	NTSTATUS (*offload_read_recv_fn)(struct tevent_req *req,
 					 struct vfs_handle_struct *handle,
 					 TALLOC_CTX *mem_ctx,
+					 uint32_t *flags,
+					 uint64_t *xferlen,
 					 DATA_BLOB *token_blob);
 	struct tevent_req *(*offload_write_send_fn)(struct vfs_handle_struct *handle,
 						    TALLOC_CTX *mem_ctx,
@@ -1659,6 +1662,8 @@ struct tevent_req *smb_vfs_call_offload_read_send(
 NTSTATUS smb_vfs_call_offload_read_recv(struct tevent_req *req,
 					struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
+					uint32_t *flags,
+					uint64_t *xferlen,
 					DATA_BLOB *token_blob);
 struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *handle,
 						   TALLOC_CTX *mem_ctx,
@@ -2024,6 +2029,8 @@ struct tevent_req *vfs_not_implemented_offload_read_send(
 NTSTATUS vfs_not_implemented_offload_read_recv(struct tevent_req *req,
 				       struct vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx,
+				       uint32_t *flags,
+				       uint64_t *xferlen,
 				       DATA_BLOB *_token_blob);
 struct tevent_req *vfs_not_implemented_offload_write_send(
 			struct vfs_handle_struct *handle,

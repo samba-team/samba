@@ -2234,12 +2234,14 @@ static NTSTATUS smb_full_audit_offload_read_recv(
 	struct tevent_req *req,
 	struct vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
+	uint32_t *flags,
+	uint64_t *xferlen,
 	DATA_BLOB *_token_blob)
 {
 	NTSTATUS status;
 
 	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(req, handle, mem_ctx,
-						_token_blob);
+						flags, xferlen, _token_blob);
 
 	do_log(SMB_VFS_OP_OFFLOAD_READ_RECV, NT_STATUS_IS_OK(status), handle, "");
 
