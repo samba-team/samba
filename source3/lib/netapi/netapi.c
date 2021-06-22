@@ -129,7 +129,8 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
-	cli_credentials_guess(ctx->creds, lp_ctx);
+	/* Ignore return code, as we might not have a smb.conf */
+	(void)cli_credentials_guess(ctx->creds, lp_ctx);
 
 	status = libnetapi_init_private_context(ctx);
 	if (status != 0) {
