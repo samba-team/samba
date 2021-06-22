@@ -242,7 +242,7 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (fsp && !fsp->fsp_flags.is_pathref && fsp_get_io_fd(fsp) != -1) {
+	if (fsp) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
