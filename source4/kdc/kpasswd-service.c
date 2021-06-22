@@ -156,7 +156,10 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 		goto done;
 	}
 
-	cli_credentials_set_conf(server_credentials, kdc->task->lp_ctx);
+	ok = cli_credentials_set_conf(server_credentials, kdc->task->lp_ctx);
+	if (!ok) {
+		goto done;
+	}
 
 	ok = cli_credentials_set_username(server_credentials,
 					  "kadmin/changepw",
