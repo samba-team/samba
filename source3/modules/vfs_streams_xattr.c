@@ -779,8 +779,8 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 
 		status = get_ea_value(names,
 					handle->conn,
+					smb_fname->fsp,
 					NULL,
-					smb_fname,
 					names[i],
 					&ea);
 		if (!NT_STATUS_IS_OK(status)) {
