@@ -71,14 +71,36 @@ static bool file_is_valid(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
 	char buf;
+	NTSTATUS status;
+	struct smb_filename *pathref = NULL;
+	int ret;
 
 	DEBUG(10, ("file_is_valid (%s) called\n", smb_fname->base_name));
 
-	if (SMB_VFS_GETXATTR(handle->conn, smb_fname, SAMBA_XATTR_MARKER,
-				  &buf, sizeof(buf)) != sizeof(buf)) {
-		DEBUG(10, ("GETXATTR failed: %s\n", strerror(errno)));
+	status = synthetic_pathref(talloc_tos(),
+				handle->conn->cwd_fsp,
+                                smb_fname->base_name,
+                                NULL,
+                                NULL,
+                                smb_fname->twrp,
+                                smb_fname->flags,
+                                &pathref);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	ret = SMB_VFS_FGETXATTR(pathref->fsp,
+				SAMBA_XATTR_MARKER,
+				&buf,
+				sizeof(buf));
+	if (ret != sizeof(buf)) {
+		int saved_errno = errno;
+		DBG_DEBUG("FGETXATTR failed: %s\n", strerror(saved_errno));
+		TALLOC_FREE(pathref);
+		errno = saved_errno;
+		return false;
+	}
+
+	TALLOC_FREE(pathref);
 
 	if (buf != '1') {
 		DEBUG(10, ("got wrong buffer content: '%c'\n", buf));
