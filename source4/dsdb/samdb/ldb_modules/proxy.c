@@ -65,6 +65,7 @@ static int load_proxy_info(struct ldb_module *module)
 	int ret;
 	const char *olddn, *newdn, *url, *username, *password, *oldstr, *newstr;
 	struct cli_credentials *creds;
+	bool ok;
 
 	/* see if we have already loaded it */
 	if (proxy->upstream != NULL) {
@@ -131,7 +132,12 @@ static int load_proxy_info(struct ldb_module *module)
 		ldb_oom(ldb);
 		goto failed;
 	}
-	cli_credentials_guess(creds, ldb_get_opaque(ldb, "loadparm"));
+	ok = cli_credentials_guess(creds, ldb_get_opaque(ldb, "loadparm"));
+	if (!ok) {
+		ldb_oom(ldb);
+		goto failed;
+	}
+
 	cli_credentials_set_username(creds, username, CRED_SPECIFIED);
 	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
 
