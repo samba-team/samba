@@ -267,10 +267,18 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	}
 
 	/* Augment the base file's stat information before returning. */
-	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
+	if (smb_fname->fsp == NULL) {
+		smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
 						  NULL,
 						  smb_fname,
 						  xattr_name);
+	} else {
+		SMB_ASSERT(smb_fname->fsp->base_fsp != NULL);
+		smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
+						  smb_fname->fsp->base_fsp,
+						  NULL,
+						  xattr_name);
+	}
 	if (smb_fname->st.st_ex_size == -1) {
 		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
