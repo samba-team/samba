@@ -966,6 +966,13 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* First try and figure out the flags based on the userAccountControl */
 	entry_ex->entry.flags = uf2SDBFlags(context, userAccountControl, ent_type);
 
+	/*
+	 * Take control of the returned principal here, rather than
+	 * allowing the Heimdal code to do it as we have specific
+	 * behaviour around the forced realm to honour
+	 */
+	entry_ex->entry.flags.force_canonicalize = true;
+
 	/* Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
 	 * by asking for a ticket to them as a service (encrypted with

@@ -76,7 +76,7 @@ struct SDBFlags {
 	unsigned int _unused27:1;
 	unsigned int _unused28:1;
 	unsigned int _unused29:1;
-	unsigned int _unused30:1;
+	unsigned int force_canonicalize:1;
 	unsigned int do_not_store:1;
 };
 

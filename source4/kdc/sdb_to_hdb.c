@@ -63,7 +63,7 @@ static void sdb_flags_to_hdb_flags(const struct SDBFlags *s,
 	h->_unused27 = s->_unused27;
 	h->_unused28 = s->_unused28;
 	h->_unused29 = s->_unused29;
-	h->_unused30 = s->_unused30;
+	h->force_canonicalize = s->force_canonicalize;
 	h->do_not_store = s->do_not_store;
 }
 
