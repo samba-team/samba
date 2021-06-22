@@ -189,27 +189,6 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 	return true;
 }
 
-/**
- * Helper to stat/lstat the base file of an smb_fname.
- */
-static int streams_xattr_stat_base(vfs_handle_struct *handle,
-				   struct smb_filename *smb_fname,
-				   bool follow_links)
-{
-	char *tmp_stream_name;
-	int result;
-
-	tmp_stream_name = smb_fname->stream_name;
-	smb_fname->stream_name = NULL;
-	if (follow_links) {
-		result = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	} else {
-		result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-	smb_fname->stream_name = tmp_stream_name;
-	return result;
-}
-
 static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
@@ -258,6 +237,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	NTSTATUS status;
 	int result = -1;
 	char *xattr_name = NULL;
+	char *tmp_stream_name = NULL;
 
 	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -269,7 +249,12 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	 * not following links here. */
 
 	/* Populate the stat struct with info from the base file. */
-	if (streams_xattr_stat_base(handle, smb_fname, true) == -1) {
+	tmp_stream_name = smb_fname->stream_name;
+	smb_fname->stream_name = NULL;
+	result = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	smb_fname->stream_name = tmp_stream_name;
+
+	if (result == -1) {
 		return -1;
 	}
 
