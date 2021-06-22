@@ -55,16 +55,16 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	int samba_level = -1;
 	switch (level) {
 	case LDB_DEBUG_FATAL:
-		samba_level = 0;
+		samba_level = DBGLVL_ERR;
 		break;
 	case LDB_DEBUG_ERROR:
-		samba_level = 1;
+		samba_level = DBGLVL_WARNING;
 		break;
 	case LDB_DEBUG_WARNING:
-		samba_level = 2;
+		samba_level = DBGLVL_NOTICE;
 		break;
 	case LDB_DEBUG_TRACE:
-		samba_level = 11;
+		samba_level = DBGLVL_DEBUG + 1;
 		break;
 
 	};
