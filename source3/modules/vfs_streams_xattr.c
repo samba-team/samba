@@ -46,15 +46,29 @@ struct stream_io {
 };
 
 static ssize_t get_xattr_size(connection_struct *conn,
-				const struct smb_filename *smb_fname,
-				const char *xattr_name)
+			      struct files_struct *fsp,
+			      const struct smb_filename *smb_fname,
+			      const char *xattr_name)
 {
 	NTSTATUS status;
 	struct ea_struct ea;
 	ssize_t result;
 
-	status = get_ea_value(talloc_tos(), conn, NULL, smb_fname,
-			      xattr_name, &ea);
+	if (fsp) {
+		status = get_ea_value(talloc_tos(),
+				      conn,
+				      fsp,
+				      NULL,
+				      xattr_name,
+				      &ea);
+	} else {
+		status = get_ea_value(talloc_tos(),
+				      conn,
+				      NULL,
+				      smb_fname,
+				      xattr_name,
+				      &ea);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -235,7 +249,9 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	sbuf->st_ex_size = get_xattr_size(handle->conn,
-					smb_fname_base, io->xattr_name);
+					  NULL,
+					  smb_fname_base,
+					  io->xattr_name);
 	if (sbuf->st_ex_size == -1) {
 		TALLOC_FREE(smb_fname_base);
 		SET_STAT_INVALID(*sbuf);
@@ -285,6 +301,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 
 	/* Augment the base file's stat information before returning. */
 	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
+						  NULL,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
@@ -333,6 +350,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 
 	/* Augment the base file's stat information before returning. */
 	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
+						  NULL,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
