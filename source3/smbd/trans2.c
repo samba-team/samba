@@ -478,7 +478,7 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 		status = get_ea_value(listp,
 					fsp->conn,
 					fsp,
-					fsp->fsp_name,
+					NULL,
 					names[i],
 					&listp->ea);
 
