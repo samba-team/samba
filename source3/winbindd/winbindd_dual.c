@@ -761,7 +761,6 @@ static void child_process_request(struct winbindd_child *child,
 				  struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain = child->domain;
-	const struct winbindd_child_dispatch_table *table = child->table;
 
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
@@ -773,15 +772,7 @@ static void child_process_request(struct winbindd_child *child,
 	state->mem_ctx = talloc_tos();
 
 	/* Process command */
-
-	for (; table->name; table++) {
-		if (state->request->cmd == table->struct_cmd) {
-			DEBUG(10,("child_process_request: request fn %s\n",
-				  table->name));
-			state->response->result = table->struct_fn(domain, state);
-			return;
-		}
-	}
+	state->response->result = winbindd_dual_ndrcmd(domain, state);
 
 	DEBUG(1, ("child_process_request: unknown request fn number %d\n",
 		  (int)state->request->cmd));
@@ -789,7 +780,6 @@ static void child_process_request(struct winbindd_child *child,
 }
 
 void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
-		 const struct winbindd_child_dispatch_table *table,
 		 const char *logprefix,
 		 const char *logname)
 {
@@ -830,7 +820,6 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	child->pid = 0;
 	child->sock = -1;
 	child->domain = domain;
-	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
 

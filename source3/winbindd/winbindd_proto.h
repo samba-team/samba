@@ -292,7 +292,6 @@ int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct winbindd_response **presponse, int *err);
 
 void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
-		 const struct winbindd_child_dispatch_table *table,
 		 const char *logprefix,
 		 const char *logname);
 void winbind_child_died(pid_t pid);

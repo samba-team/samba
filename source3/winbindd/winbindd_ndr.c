@@ -45,7 +45,6 @@ void ndr_print_winbindd_child(struct ndr_print *ndr,
 	ndr_print_string(ndr, "logfilename", r->logfilename);
 	/* struct fd_event event; */
 	ndr_print_ptr(ndr, "lockout_policy_event", r->lockout_policy_event);
-	ndr_print_ptr(ndr, "table", r->table);
 	ndr->depth--;
 }
 
