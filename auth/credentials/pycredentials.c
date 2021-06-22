@@ -661,6 +661,7 @@ static PyObject *py_creds_guess(PyObject *self, PyObject *args)
 	struct loadparm_context *lp_ctx;
 	TALLOC_CTX *mem_ctx;
 	struct cli_credentials *creds;
+	bool ok;
 
 	creds = PyCredentials_AsCliCredentials(self);
 	if (creds == NULL) {
@@ -683,9 +684,11 @@ static PyObject *py_creds_guess(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	cli_credentials_guess(creds, lp_ctx);
-
+	ok = cli_credentials_guess(creds, lp_ctx);
 	talloc_free(mem_ctx);
+	if (!ok) {
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
