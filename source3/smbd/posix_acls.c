@@ -618,16 +618,8 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 	}
 
 	do {
-		if (fsp_get_pathref_fd(fsp) != -1) {
-			ret = SMB_VFS_FGETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
+		ret = SMB_VFS_FGETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 					pai_buf, pai_buf_size);
-		} else {
-			ret = SMB_VFS_GETXATTR(fsp->conn,
-					       fsp->fsp_name,
-					       SAMBA_POSIX_INHERITANCE_EA_NAME,
-					       pai_buf, pai_buf_size);
-		}
-
 		if (ret == -1) {
 			if (errno != ERANGE) {
 				break;
