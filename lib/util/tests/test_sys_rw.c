@@ -98,10 +98,78 @@ static void test_sys_io_ranges_overlap(void **state)
 	assert_true(overlap);
 }
 
+static void test_sys_block_align(void **state)
+{
+	int asize;
+
+	asize = sys_block_align(0, 2);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align(1, 2);
+	assert_int_equal(asize, 2);
+	asize = sys_block_align(2, 2);
+	assert_int_equal(asize, 2);
+	asize = sys_block_align(3, 2);
+	assert_int_equal(asize, 4);
+
+	asize = sys_block_align(0, 4);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align(1, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align(3, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align(4, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align(5, 4);
+	assert_int_equal(asize, 8);
+	asize = sys_block_align(7, 4);
+	assert_int_equal(asize, 8);
+	asize = sys_block_align(8, 4);
+	assert_int_equal(asize, 8);
+	asize = sys_block_align(9, 4);
+	assert_int_equal(asize, 12);
+}
+
+static void test_sys_block_align_truncate(void **state)
+{
+	int asize;
+
+	asize = sys_block_align_truncate(0, 2);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align_truncate(1, 2);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align_truncate(2, 2);
+	assert_int_equal(asize, 2);
+	asize = sys_block_align_truncate(3, 2);
+	assert_int_equal(asize, 2);
+	asize = sys_block_align_truncate(4, 2);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align_truncate(5, 2);
+	assert_int_equal(asize, 4);
+
+	asize = sys_block_align_truncate(0, 4);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align_truncate(1, 4);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align_truncate(3, 4);
+	assert_int_equal(asize, 0);
+	asize = sys_block_align_truncate(4, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align_truncate(5, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align_truncate(7, 4);
+	assert_int_equal(asize, 4);
+	asize = sys_block_align_truncate(8, 4);
+	assert_int_equal(asize, 8);
+	asize = sys_block_align_truncate(9, 4);
+	assert_int_equal(asize, 8);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_sys_io_ranges_overlap),
+		cmocka_unit_test(test_sys_block_align),
+		cmocka_unit_test(test_sys_block_align_truncate),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

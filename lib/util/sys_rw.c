@@ -23,6 +23,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "lib/util/sys_rw.h"
+#include <assert.h>
 
 bool sys_valid_io_range(off_t offset, size_t length)
 {
@@ -71,6 +72,20 @@ bool sys_io_ranges_overlap(size_t c1, off_t o1,
 		 */
 		return (o1 + c1 > o2);
 	}
+}
+
+off_t sys_block_align_truncate(off_t len, off_t align)
+{
+	assert(align > 1);
+	assert(((align - 1) & align) == 0);
+	return len & (~align + 1);
+}
+
+off_t sys_block_align(off_t len, off_t align)
+{
+	assert(align > 1);
+	assert(((align - 1) & align) == 0);
+	return (len + (align - 1)) & ~(align - 1);
 }
 
 /*******************************************************************
