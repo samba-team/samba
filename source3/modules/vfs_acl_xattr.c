@@ -37,7 +37,6 @@
 
 static ssize_t getxattr_do(vfs_handle_struct *handle,
 			   files_struct *fsp,
-			   const struct smb_filename *smb_fname,
 			   const char *xattr_name,
 			   uint8_t *val,
 			   size_t size)
@@ -46,12 +45,7 @@ static ssize_t getxattr_do(vfs_handle_struct *handle,
 	int saved_errno = 0;
 
 	become_root();
-	if (fsp && fsp_get_pathref_fd(fsp) != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, xattr_name, val, size);
-	} else {
-		sizeret = SMB_VFS_GETXATTR(handle->conn, smb_fname,
-					   XATTR_NTACL_NAME, val, size);
-	}
+	sizeret = SMB_VFS_FGETXATTR(fsp, xattr_name, val, size);
 	if (sizeret == -1) {
 		saved_errno = errno;
 	}
@@ -86,7 +80,7 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	val = tmp;
 
 	sizeret =
-	    getxattr_do(handle, fsp, NULL, XATTR_NTACL_NAME, val, size);
+	    getxattr_do(handle, fsp, XATTR_NTACL_NAME, val, size);
 
 	if (sizeret >= 0) {
 		pblob->data = val;
@@ -100,7 +94,7 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 
 	/* Too small, try again. */
 	sizeret =
-	    getxattr_do(handle, fsp, NULL, XATTR_NTACL_NAME, NULL, 0);
+	    getxattr_do(handle, fsp, XATTR_NTACL_NAME, NULL, 0);
 	if (sizeret < 0) {
 		goto err;
 	}
