@@ -21,10 +21,25 @@
 #include "winbindd.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
+
+static void fill_in_password_policy(struct winbindd_response *r,
+				    const struct samr_DomInfo1 *p)
+{
+	r->data.auth.policy.min_length_password =
+		p->min_password_length;
+	r->data.auth.policy.password_history =
+		p->password_history_length;
+	r->data.auth.policy.password_properties =
+		p->password_properties;
+	r->data.auth.policy.expire	=
+		nt_time_to_unix_abs((const NTTIME *)&(p->max_password_age));
+	r->data.auth.policy.min_passwordage =
+		nt_time_to_unix_abs((const NTTIME *)&(p->min_password_age));
+}
 
 struct winbindd_pam_chauthtok_state {
-	struct winbindd_request *request;
-	struct winbindd_response *response;
+	struct wbint_PamAuthChangePassword r;
 };
 
 static void winbindd_pam_chauthtok_done(struct tevent_req *subreq);
@@ -48,7 +63,6 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	state->request = request;
 
 	/* Ensure null termination */
 	request->data.chauthtok.user[
@@ -85,8 +99,35 @@ struct tevent_req *winbindd_pam_chauthtok_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_domain_request_send(state, global_event_context(),
-					contact_domain, request);
+	state->r.in.client_pid = request->pid;
+	state->r.in.flags = request->flags;
+
+	state->r.in.client_name = talloc_strdup(state, request->client_name);
+	if (tevent_req_nomem(state->r.in.client_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r.in.user = talloc_strdup(state, request->data.chauthtok.user);
+	if (tevent_req_nomem(state->r.in.user, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r.in.old_password = talloc_strdup(state,
+			request->data.chauthtok.oldpass);
+	if (tevent_req_nomem(state->r.in.old_password, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->r.in.new_password = talloc_strdup(state,
+			request->data.chauthtok.newpass);
+	if (tevent_req_nomem(state->r.in.new_password, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dcerpc_wbint_PamAuthChangePassword_r_send(state,
+					global_event_context(),
+					dom_child_handle(contact_domain),
+					&state->r);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -100,14 +141,14 @@ static void winbindd_pam_chauthtok_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct winbindd_pam_chauthtok_state *state = tevent_req_data(
 		req, struct winbindd_pam_chauthtok_state);
-	int res, err;
+	NTSTATUS status;
 
-	res = wb_domain_request_recv(subreq, state, &state->response, &err);
+	status = dcerpc_wbint_PamAuthChangePassword_r_recv(subreq, state);
 	TALLOC_FREE(subreq);
-	if (res == -1) {
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
 	tevent_req_done(req);
 }
 
@@ -116,27 +157,26 @@ NTSTATUS winbindd_pam_chauthtok_recv(struct tevent_req *req,
 {
 	struct winbindd_pam_chauthtok_state *state = tevent_req_data(
 		req, struct winbindd_pam_chauthtok_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		set_auth_errors(response, status);
 		return status;
 	}
-	*response = *state->response;
+
 	response->result = WINBINDD_PENDING;
-	state->response = talloc_move(response, &state->response);
 
-	status = NT_STATUS(response->data.auth.nt_status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	set_auth_errors(response, state->r.out.result);
+	if (*state->r.out.dominfo != NULL) {
+		fill_in_password_policy(response, *state->r.out.dominfo);
 	}
+	response->data.auth.reject_reason = *state->r.out.reject_reason;
 
-	if (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) {
+	if (state->r.in.flags & WBFLAG_PAM_CACHED_LOGIN) {
 
 		/* Update the single sign-on memory creds. */
 		status = winbindd_replace_memory_creds(
-			state->request->data.chauthtok.user,
-			state->request->data.chauthtok.newpass);
+			state->r.in.user, state->r.in.new_password);
 
 		DEBUG(10, ("winbindd_replace_memory_creds returned %s\n",
 			   nt_errstr(status)));
@@ -152,5 +192,6 @@ NTSTATUS winbindd_pam_chauthtok_recv(struct tevent_req *req,
 			status = NT_STATUS_OK;
 		}
 	}
-	return status;
+
+	return NT_STATUS(response->data.auth.nt_status);
 }

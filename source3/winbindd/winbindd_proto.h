@@ -443,8 +443,8 @@ NTSTATUS _wbint_PamAuth(struct pipes_struct *p,
 			struct wbint_PamAuth *r);
 NTSTATUS _wbint_PamAuthCrap(struct pipes_struct *p,
 			    struct wbint_PamAuthCrap *r);
-enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
-						 struct winbindd_cli_state *state);
+NTSTATUS _wbint_PamAuthChangePassword(struct pipes_struct *p,
+				struct wbint_PamAuthChangePassword *r);
 NTSTATUS _wbint_PamLogOff(struct pipes_struct *p,
 			  struct wbint_PamLogOff *r);
 NTSTATUS _wbint_PamAuthCrapChangePassword(struct pipes_struct *p,

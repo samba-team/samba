@@ -548,21 +548,6 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 	return find_our_domain();
 }
 
-static void fill_in_password_policy(struct winbindd_response *r,
-				    const struct samr_DomInfo1 *p)
-{
-	r->data.auth.policy.min_length_password =
-		p->min_password_length;
-	r->data.auth.policy.password_history =
-		p->password_history_length;
-	r->data.auth.policy.password_properties =
-		p->password_properties;
-	r->data.auth.policy.expire	=
-		nt_time_to_unix_abs((const NTTIME *)&(p->max_password_age));
-	r->data.auth.policy.min_passwordage =
-		nt_time_to_unix_abs((const NTTIME *)&(p->min_password_age));
-}
-
 static NTSTATUS get_password_policy(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    struct samr_DomInfo1 **_policy)
@@ -2918,11 +2903,10 @@ done:
 	return result;
 }
 
-enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact_domain,
-						 struct winbindd_cli_state *state)
+NTSTATUS _wbint_PamAuthChangePassword(struct pipes_struct *p,
+				      struct wbint_PamAuthChangePassword *r)
 {
-	char *oldpass;
-	char *newpass = NULL;
+	struct winbindd_domain *contact_domain = wb_child_domain();
 	struct policy_handle dom_pol;
 	struct rpc_pipe_client *cli = NULL;
 	bool got_info = false;
@@ -2932,13 +2916,25 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	fstring namespace, domain, user;
 	struct dcerpc_binding_handle *b = NULL;
 	bool ok;
+	pid_t client_pid;
 
 	ZERO_STRUCT(dom_pol);
 
-	DEBUG(3, ("[%5lu]: dual pam chauthtok %s\n", (unsigned long)state->pid,
-		  state->request->data.auth.user));
+	if (contact_domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
 
-	ok = parse_domain_user(state->request->data.chauthtok.user,
+	/* Cut client_pid to 32bit */
+	client_pid = r->in.client_pid;
+	if ((uint64_t)client_pid != r->in.client_pid) {
+		DBG_DEBUG("pid out of range\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DBG_NOTICE("[%"PRIu32"]: dual pam chauthtok %s\n",
+		   client_pid, r->in.user);
+
+	ok = parse_domain_user(r->in.user,
 			       namespace,
 			       domain,
 			       user);
@@ -2954,17 +2950,15 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		goto done;
 	}
 
-	/* Change password */
-
-	oldpass = state->request->data.chauthtok.oldpass;
-	newpass = state->request->data.chauthtok.newpass;
-
 	/* Initialize reject reason */
-	state->response->data.auth.reject_reason = Undefined;
+	*r->out.reject_reason = Undefined;
 
 	/* Get sam handle */
 
-	result = cm_connect_sam(contact_domain, state->mem_ctx, true, &cli,
+	result = cm_connect_sam(contact_domain,
+				p->mem_ctx,
+				true,
+				&cli,
 				&dom_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
@@ -2973,10 +2967,11 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 	b = cli->binding_handle;
 
-	result = rpccli_samr_chgpasswd_user3(cli, state->mem_ctx,
+	result = rpccli_samr_chgpasswd_user3(cli,
+					     p->mem_ctx,
 					     user,
-					     newpass,
-					     oldpass,
+					     r->in.new_password,
+					     r->in.old_password,
 					     &info,
 					     &reject);
 
@@ -2984,10 +2979,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION) ) {
 
-		fill_in_password_policy(state->response, info);
-
-		state->response->data.auth.reject_reason =
-			reject->extendedFailureReason;
+		*r->out.dominfo = talloc_steal(p->mem_ctx, info);
+		*r->out.reject_reason = reject->extendedFailureReason;
 
 		got_info = true;
 	}
@@ -3006,7 +2999,11 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		DEBUG(10,("Password change with chgpasswd_user3 failed with: %s, retrying chgpasswd_user2\n",
 			nt_errstr(result)));
 
-		result = rpccli_samr_chgpasswd_user2(cli, state->mem_ctx, user, newpass, oldpass);
+		result = rpccli_samr_chgpasswd_user2(cli,
+						     p->mem_ctx,
+						     user,
+						     r->in.new_password,
+						     r->in.old_password);
 
 		/* Windows 2000 returns NT_STATUS_ACCOUNT_RESTRICTION.
 		   Map to the same status code as Windows 2003. */
@@ -3019,10 +3016,10 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 done:
 
 	if (NT_STATUS_IS_OK(result)
-	    && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN)
+	    && (r->in.flags & WBFLAG_PAM_CACHED_LOGIN)
 	    && lp_winbind_offline_logon()) {
 		result = winbindd_update_creds_by_name(contact_domain, user,
-						       newpass);
+						       r->in.new_password);
 		/* Again, this happens when we login from gdm or xdm
 		 * and the password expires, *BUT* cached crendentials
 		 * doesn't exist. winbindd_update_creds_by_name()
@@ -3046,7 +3043,7 @@ done:
 		NTSTATUS policy_ret;
 
 		policy_ret = get_password_policy(contact_domain,
-						 state->mem_ctx,
+						 p->mem_ctx,
 						 &info);
 
 		/* failure of this is non critical, it will just provide no
@@ -3058,8 +3055,7 @@ done:
 			goto process_result;
 		}
 
-		fill_in_password_policy(state->response, info);
-		TALLOC_FREE(info);
+		*r->out.dominfo = talloc_steal(p->mem_ctx, info);
 	}
 
 process_result:
@@ -3069,22 +3065,23 @@ process_result:
 		if (b) {
 			if (is_valid_policy_hnd(&dom_pol)) {
 				NTSTATUS _result;
-				dcerpc_samr_Close(b, state->mem_ctx, &dom_pol, &_result);
+				dcerpc_samr_Close(b,
+						  p->mem_ctx,
+						  &dom_pol,
+						  &_result);
 			}
 			TALLOC_FREE(cli);
 		}
 	}
 
-	set_auth_errors(state->response, result);
-
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
 	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n",
 	       domain,
 	       user,
-	       state->response->data.auth.nt_status_string,
-	       state->response->data.auth.pam_error));
+	       nt_errstr(result),
+	       nt_status_to_pam(result)));
 
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	return result;
 }
 
 NTSTATUS _wbint_PamLogOff(struct pipes_struct *p, struct wbint_PamLogOff *r)

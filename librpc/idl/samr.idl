@@ -347,7 +347,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		DOMAIN_SERVER_DISABLED = 2
 	} samr_DomainServerState;
 
-	typedef struct {
+	typedef [public] struct {
 		uint16 min_password_length;
 		uint16 password_history_length;
 		samr_PasswordProperties password_properties;

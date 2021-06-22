@@ -1,5 +1,5 @@
 #include "idl_types.h"
-import "lsa.idl", "netlogon.idl", "misc.idl", "security.idl", "idmap.idl";
+import "lsa.idl", "netlogon.idl", "samr.idl", "misc.idl", "security.idl", "idmap.idl";
 
 [
     uuid("bf09192c-ed60-4928-9dff-d0d7bcb03ed8"),
@@ -235,6 +235,17 @@ interface winbind
         [in,flag(NDR_SECRET)] DATA_BLOB old_nt_hash_enc,
         [in,flag(NDR_SECRET)] DATA_BLOB new_lm_pswd,
         [in,flag(NDR_SECRET)] DATA_BLOB old_lm_hash_enc
+        );
+
+    NTSTATUS wbint_PamAuthChangePassword(
+        [in,string,charset(UTF8)] char *client_name,
+        [in] hyper client_pid,
+        [in] uint32 flags,
+        [in,string,charset(UTF8)] char *user,
+        [in,string,charset(UTF8),flag(NDR_SECRET)] char *old_password,
+        [in,string,charset(UTF8),flag(NDR_SECRET)] char *new_password,
+        [out,ref] samr_DomInfo1 **dominfo,
+        [out,ref] samPwdChangeReason *reject_reason
         );
 
   /* Public methods available via IRPC */
