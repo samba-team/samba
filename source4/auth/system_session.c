@@ -77,6 +77,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
+	bool ok;
 
 	mem_ctx = talloc_new(parent_ctx);
 	if (mem_ctx == NULL) {
@@ -101,7 +102,10 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials, lp_ctx);
+	ok = cli_credentials_set_conf(session_info->credentials, lp_ctx);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	cli_credentials_set_machine_account_pending(session_info->credentials, lp_ctx);
 	*_session_info = session_info;
@@ -322,6 +326,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	bool ok;
 	
 	nt_status = auth_anonymous_user_info_dc(mem_ctx,
 					       lpcfg_netbios_name(lp_ctx),
@@ -342,7 +347,10 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_conf(session_info->credentials, lp_ctx);
+	ok = cli_credentials_set_conf(session_info->credentials, lp_ctx);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	cli_credentials_set_anonymous(session_info->credentials);
 	
 	*_session_info = session_info;
