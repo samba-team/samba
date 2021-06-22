@@ -64,6 +64,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	struct gensec_settings *gensec_settings;
 	const struct gensec_security_ops **backends = NULL;
 	struct loadparm_context *lp_ctx;
+	bool ok;
 
 	ans = talloc_zero(mem_ctx, struct auth_generic_state);
 	if (!ans) {
@@ -120,7 +121,11 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_guess(ans->credentials, lp_ctx);
+	ok = cli_credentials_guess(ans->credentials, lp_ctx);
+	if (!ok) {
+		TALLOC_FREE(ans);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	talloc_unlink(ans, lp_ctx);
 	talloc_unlink(ans, gensec_settings);
