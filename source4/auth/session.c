@@ -255,6 +255,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 		gss_cred_id_t cred_handle;
 		const char *error_string;
 		int ret;
+		bool ok;
 
 		DEBUG(10, ("Delegated credentials supplied by client\n"));
 
@@ -276,7 +277,12 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 		}
 		session_info->credentials = creds;
 
-		cli_credentials_set_conf(creds, lp_ctx);
+		ok = cli_credentials_set_conf(creds, lp_ctx);
+		if (!ok) {
+			*reason = "Failed to load smb.conf";
+			return NULL;
+		}
+
 		/* Just so we don't segfault trying to get at a username */
 		cli_credentials_set_anonymous(creds);
 
