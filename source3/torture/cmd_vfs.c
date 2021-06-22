@@ -1370,6 +1370,8 @@ static NTSTATUS cmd_getxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	uint8_t *buf;
 	ssize_t ret;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *pathref_fname = NULL;
+	NTSTATUS status;
 
 	if (argc != 3) {
 		printf("Usage: getxattr <path> <xattr>\n");
@@ -1384,8 +1386,21 @@ static NTSTATUS cmd_getxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_GETXATTR(vfs->conn, smb_fname, argv[2], buf,
-			       talloc_get_size(buf));
+	status = synthetic_pathref(mem_ctx,
+				vfs->conn->cwd_fsp,
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->twrp,
+				smb_fname->flags,
+				&pathref_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	ret = SMB_VFS_FGETXATTR(pathref_fname->fsp,
+				argv[2],
+				buf,
+				talloc_get_size(buf));
 	if (ret == -1) {
 		int err = errno;
 		printf("getxattr returned (%s)\n", strerror(err));
@@ -1395,8 +1410,10 @@ static NTSTATUS cmd_getxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_GETXATTR(vfs->conn, smb_fname, argv[2], buf,
-			       talloc_get_size(buf));
+	ret = SMB_VFS_FGETXATTR(pathref_fname->fsp,
+				argv[2],
+				buf,
+				talloc_get_size(buf));
 	if (ret == -1) {
 		int err = errno;
 		printf("getxattr returned (%s)\n", strerror(err));
