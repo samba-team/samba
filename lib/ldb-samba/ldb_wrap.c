@@ -64,7 +64,7 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 		samba_level = 2;
 		break;
 	case LDB_DEBUG_TRACE:
-		samba_level = 10;
+		samba_level = 11;
 		break;
 
 	};
