@@ -1280,8 +1280,12 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, NULL,
-			      smb_fname_base, sio->xattr_name, &ea);
+	status = get_ea_value(talloc_tos(),
+			      handle->conn,
+			      fsp->base_fsp,
+			      NULL,
+			      sio->xattr_name,
+			      &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
