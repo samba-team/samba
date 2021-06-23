@@ -1828,43 +1828,6 @@ err:
  */
 
 /*
- * Success: return positive number
- * Failure: set errno, return -1
- * In this case, "name" is an attr name.
- */
-static ssize_t mh_getxattr(struct vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		const char *name,
-		void *value,
-		size_t size)
-{
-	int status;
-	struct smb_filename *clientFname = NULL;
-	ssize_t ret;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_getxattr\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		ret = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-					name, value, size);
-		goto out;
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&clientFname);
-	if (status != 0) {
-		ret = -1;
-		goto err;
-	}
-	ret = SMB_VFS_NEXT_GETXATTR(handle, clientFname, name, value, size);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return ret;
-}
-
-/*
  * Success: return 0
  * Failure: set errno, return -1
  * In this case, "name" is an attr name.
@@ -1905,7 +1868,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.realpath_fn = mh_realpath,
 
 	/* EA operations. */
-	.getxattr_fn = mh_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 
