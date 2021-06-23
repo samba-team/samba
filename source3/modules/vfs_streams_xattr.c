@@ -398,8 +398,12 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, NULL,
-			      smb_fname, xattr_name, &ea);
+	status = get_ea_value(talloc_tos(),
+			      handle->conn,
+			      fsp->base_fsp,
+			      NULL,
+			      xattr_name,
+			      &ea);
 
 	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
 
@@ -441,7 +445,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		ret = SMB_VFS_FSETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
+		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
 				       xattr_name,
 				       &null, sizeof(null),
 				       flags & O_EXCL ? XATTR_CREATE : 0);
