@@ -2045,16 +2045,6 @@ static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
 
 /* EA Operations */
 
-static ssize_t vfs_gluster_getxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size)
-{
-	return glfs_getxattr(handle->data, smb_fname->base_name,
-			     name, value, size);
-}
-
 static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,
 				     files_struct *fsp, const char *name,
 				     void *value, size_t size)
@@ -2398,7 +2388,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.sys_acl_delete_def_fd_fn = posixacl_xattr_acl_delete_def_fd,
 
 	/* EA Operations */
-	.getxattr_fn = vfs_gluster_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vfs_gluster_fgetxattr,
