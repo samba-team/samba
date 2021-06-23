@@ -524,35 +524,6 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
 }
 
-static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size){
-	int ret;
-
-	DEBUG(10, ("In vxfs_get_xattr\n"));
-	ret = vxfs_getxattr_path(smb_fname->base_name, name, value, size);
-	if ((ret != -1) || ((errno != ENOTSUP) &&
-			    (errno != ENOSYS) && (errno != ENODATA))) {
-		return ret;
-	}
-
-	DEBUG(10, ("Fallback to xattr\n"));
-	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		return SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-				XATTR_USER_NTACL, value, size);
-	}
-
-	/* Clients can't see XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
-		errno = ENOATTR;
-		return -1;
-	}
-
-	return SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
-}
-
 static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size){
@@ -724,7 +695,6 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 #endif
 
 	.fset_dos_attributes_fn = vxfs_fset_ea_dos_attributes,
-	.getxattr_fn = vxfs_get_xattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = vxfs_fget_xattr,
