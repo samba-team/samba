@@ -48,6 +48,7 @@
  */
 #define CEPH_SNAP_BTIME_XATTR "ceph.snap.btime"
 
+#if 0
 static int ceph_snap_get_btime(struct vfs_handle_struct *handle,
 			       struct smb_filename *smb_fname,
 			       time_t *_snap_secs)
@@ -112,6 +113,7 @@ static int ceph_snap_get_btime(struct vfs_handle_struct *handle,
 
 	return 0;
 }
+#endif
 
 static int ceph_snap_get_btime_fsp(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
@@ -647,7 +649,8 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
         while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
 	       != NULL)
 	{
-		struct smb_filename *smb_fname;
+		struct smb_filename *smb_fname = NULL;
+		struct smb_filename *atname = NULL;
 		time_t snap_secs = 0;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
@@ -673,10 +676,42 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 			goto err_out;
 		}
 
-		ret = ceph_snap_get_btime(handle, smb_fname, &snap_secs);
+		ret = vfs_stat(handle->conn, smb_fname);
 		if (ret < 0) {
+			ret = -errno;
+			TALLOC_FREE(smb_fname);
 			goto err_out;
 		}
+
+		atname = synthetic_smb_fname(tmp_ctx,
+					     dname,
+					     NULL,
+					     &smb_fname->st,
+					     0,
+					     0);
+		if (atname == NULL) {
+			TALLOC_FREE(smb_fname);
+			ret = -ENOMEM;
+			goto err_out;
+		}
+
+		status = openat_pathref_fsp(dirfsp, atname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(atname);
+			ret = -map_errno_from_nt_status(status);
+			goto err_out;
+		}
+
+		ret = ceph_snap_get_btime_fsp(handle, atname->fsp, &snap_secs);
+		if (ret < 0) {
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(atname);
+			goto err_out;
+		}
+
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(atname);
 
 		/*
 		 * check gmt_snap_time matches @timestamp
