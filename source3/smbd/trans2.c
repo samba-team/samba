@@ -245,6 +245,14 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 	if (fsp) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
+		if (smb_fname == NULL) {
+			/*
+			 * fsp == NULL and smb_fname == NULL.
+			 * This check will go away once get_ea_value()
+			 * is completely fsp-based.
+			 */
+			return NT_STATUS_INVALID_HANDLE;
+		}
 		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
 				ea_name, val, attr_size);
 	}
