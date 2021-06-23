@@ -1278,50 +1278,6 @@ static int ceph_snap_gmt_fchflags(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FCHFLAGS(handle, fsp, flags);
 }
 
-static ssize_t ceph_snap_gmt_getxattr(vfs_handle_struct *handle,
-				const struct smb_filename *csmb_fname,
-				const char *aname,
-				void *value,
-				size_t size)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
-	int ret;
-	struct smb_filename *new_fname;
-	int saved_errno;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname,
-					&timestamp, stripped, sizeof(stripped));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GETXATTR(handle, csmb_fname, aname, value,
-					     size);
-	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	new_fname = cp_smb_filename(talloc_tos(), csmb_fname);
-	if (new_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	new_fname->base_name = conv;
-
-	ret = SMB_VFS_NEXT_GETXATTR(handle, new_fname, aname, value, size);
-	saved_errno = errno;
-	TALLOC_FREE(new_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static int ceph_snap_gmt_fsetxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *aname, const void *value,
@@ -1491,7 +1447,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
 	.mkdirat_fn = ceph_snap_gmt_mkdirat,
-	.getxattr_fn = ceph_snap_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fsetxattr_fn = ceph_snap_gmt_fsetxattr,
