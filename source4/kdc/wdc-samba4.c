@@ -887,10 +887,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	}
 
 	/* Now do the standard Heimdal check */
-	return kdc_check_flags(context, config,
-			       client_ex, client_name,
-			       server_ex, server_name,
-			       req->msg_type == krb_as_req);
+	return KRB5_PLUGIN_NO_HANDLE;
 }
 
 static krb5_error_code samba_wdc_plugin_init(krb5_context context, void **ptr)
