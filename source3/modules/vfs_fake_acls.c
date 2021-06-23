@@ -35,45 +35,6 @@
 #define FAKE_ACL_ACCESS_XATTR "system.fake_access_acl"
 #define FAKE_ACL_DEFAULT_XATTR "system.fake_default_acl"
 
-#if 0
-static int fake_acls_uid(vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname,
-			 uid_t *uid)
-{
-	ssize_t size;
-	uint8_t uid_buf[4];
-	size = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-			FAKE_UID, uid_buf, sizeof(uid_buf));
-	if (size == -1 && errno == ENOATTR) {
-		return 0;
-	}
-	if (size != 4) {
-		return -1;
-	}
-	*uid = IVAL(uid_buf, 0);
-	return 0;
-}
-
-static int fake_acls_gid(vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname,
-			 uid_t *gid)
-{
-	ssize_t size;
-	uint8_t gid_buf[4];
-
-	size = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-			FAKE_GID, gid_buf, sizeof(gid_buf));
-	if (size == -1 && errno == ENOATTR) {
-		return 0;
-	}
-	if (size != 4) {
-		return -1;
-	}
-	*gid = IVAL(gid_buf, 0);
-	return 0;
-}
-#endif
-
 static int fake_acls_fuid(vfs_handle_struct *handle,
 			   files_struct *fsp,
 			   uid_t *uid)
