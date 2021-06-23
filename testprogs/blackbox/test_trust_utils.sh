@@ -35,9 +35,15 @@ CREDS="${DOMAIN}\\${USERNAME}%${PASSWORD}"
 TRUST_CREDS_DOMAIN="${TRUST_DOMAIN}\\${TRUST_USERNAME}%${TRUST_PASSWORD}"
 TRUST_SERVER_CREDS_DOMAIN_ARGS="--local-dc-ipaddress ${TRUST_SERVER} --local-dc-username ${TRUST_CREDS_DOMAIN}"
 
+TRUST_CREDS_REALM="${TRUST_REALM}\\${TRUST_USERNAME}%${TRUST_PASSWORD}"
+TRUST_SERVER_CREDS_REALM_ARGS="--local-dc-ipaddress ${TRUST_SERVER} --local-dc-username ${TRUST_CREDS_REALM}"
+
 list="$VALGRIND $PYTHON $samba_tool domain trust list"
 testit "list domains default" $list || failed=`expr $failed + 1`
-testit "list domains reverse" $list ${TRUST_SERVER_CREDS_DOMAIN_ARGS} || failed=`expr $failed + 1`
+
+# Show that the domain name and realm work
+testit "list domains reverse (DOMAIN)" $list ${TRUST_SERVER_CREDS_DOMAIN_ARGS} || failed=`expr $failed + 1`
+testit "list domains reverse (REALM)" $list ${TRUST_SERVER_CREDS_REALM_ARGS} || failed=`expr $failed + 1`
 
 show="$VALGRIND $PYTHON $samba_tool domain trust show"
 testit "show domains default realm" $show ${TRUST_REALM} || failed=`expr $failed + 1`
