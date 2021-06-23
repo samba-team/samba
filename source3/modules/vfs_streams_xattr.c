@@ -962,7 +962,6 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct ea_struct ea;
 	NTSTATUS status;
-	struct smb_filename *smb_fname_base = NULL;
 	int ret;
 
 	DEBUG(10, ("streams_xattr_pwrite called for %d bytes\n", (int)n));
@@ -993,18 +992,6 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 			"filesystem manpages prior to increasing this limit.\n",
 			sio->xattr_name, sio->base);
 		errno = EOVERFLOW;
-		return -1;
-	}
-
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					sio->base,
-					NULL,
-					NULL,
-					fsp->fsp_name->twrp,
-					fsp->fsp_name->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
 		return -1;
 	}
 
