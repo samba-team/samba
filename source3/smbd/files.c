@@ -1361,8 +1361,19 @@ NTSTATUS file_name_hash(connection_struct *conn,
 
 	/* Set the hash of the full pathname. */
 
-	len = full_path_tos(conn->connectpath, name, tmpbuf, sizeof(tmpbuf),
-			    &fullpath, &to_free);
+	if (name[0] == '/') {
+		strlcpy(tmpbuf, name, sizeof(tmpbuf));
+		fullpath = tmpbuf;
+		len = strlen(fullpath);
+		to_free = NULL;
+	} else {
+		len = full_path_tos(conn->connectpath,
+				    name,
+				    tmpbuf,
+				    sizeof(tmpbuf),
+				    &fullpath,
+				    &to_free);
+	}
 	if (len == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
