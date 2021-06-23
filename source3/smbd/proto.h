@@ -1203,7 +1203,7 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 			  files_struct *fsp,
 			  const char *ea_name,
 			  struct ea_struct *pea);
-NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
+NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
 			files_struct *fsp,
 			char ***pnames,
 			size_t *pnum_names);
