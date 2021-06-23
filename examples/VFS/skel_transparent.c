@@ -1081,15 +1081,6 @@ static int skel_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FD(handle, fsp);
 }
 
-static ssize_t skel_getxattr(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size)
-{
-	return SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
-}
-
 struct skel_getxattrat_state {
 	struct vfs_aio_state aio_state;
 	ssize_t xattr_size;
@@ -1374,7 +1365,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.sys_acl_delete_def_fd_fn = skel_sys_acl_delete_def_fd,
 
 	/* EA operations. */
-	.getxattr_fn = skel_getxattr,
 	.getxattrat_send_fn = skel_getxattrat_send,
 	.getxattrat_recv_fn = skel_getxattrat_recv,
 	.fgetxattr_fn = skel_fgetxattr,

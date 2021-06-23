@@ -3434,15 +3434,6 @@ static int vfswrap_sys_acl_delete_def_fd(vfs_handle_struct *handle,
  Extended attribute operations.
 *****************************************************************/
 
-static ssize_t vfswrap_getxattr(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name,
-			void *value,
-			size_t size)
-{
-	return getxattr(smb_fname->base_name, name, value, size);
-}
-
 struct vfswrap_getxattrat_state {
 	struct tevent_context *ev;
 	files_struct *dir_fsp;
@@ -4041,7 +4032,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.sys_acl_delete_def_fd_fn = vfswrap_sys_acl_delete_def_fd,
 
 	/* EA operations. */
-	.getxattr_fn = vfswrap_getxattr,
 	.getxattrat_send_fn = vfswrap_getxattrat_send,
 	.getxattrat_recv_fn = vfswrap_getxattrat_recv,
 	.fgetxattr_fn = vfswrap_fgetxattr,

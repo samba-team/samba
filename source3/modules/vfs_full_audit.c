@@ -202,7 +202,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,
 
 	/* EA operations. */
-	SMB_VFS_OP_GETXATTR,
 	SMB_VFS_OP_GETXATTRAT_SEND,
 	SMB_VFS_OP_GETXATTRAT_RECV,
 	SMB_VFS_OP_FGETXATTR,
@@ -329,7 +328,6 @@ static struct {
 	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,	"sys_acl_blob_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FD,	"sys_acl_delete_def_fd" },
-	{ SMB_VFS_OP_GETXATTR,	"getxattr" },
 	{ SMB_VFS_OP_GETXATTRAT_SEND, "getxattrat_send" },
 	{ SMB_VFS_OP_GETXATTRAT_RECV, "getxattrat_recv" },
 	{ SMB_VFS_OP_FGETXATTR,	"fgetxattr" },
@@ -2613,24 +2611,6 @@ static int smb_full_audit_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      const char *name, void *value, size_t size)
-{
-	ssize_t result;
-
-	result = SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
-
-	do_log(SMB_VFS_OP_GETXATTR,
-	       (result >= 0),
-	       handle,
-	       "%s|%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname),
-	       name);
-
-	return result;
-}
-
 struct smb_full_audit_getxattrat_state {
 	struct vfs_aio_state aio_state;
 	vfs_handle_struct *handle;
@@ -2990,7 +2970,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sys_acl_blob_get_fd_fn = smb_full_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = smb_full_audit_sys_acl_delete_def_fd,
-	.getxattr_fn = smb_full_audit_getxattr,
 	.getxattrat_send_fn = smb_full_audit_getxattrat_send,
 	.getxattrat_recv_fn = smb_full_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,

@@ -2767,17 +2767,6 @@ int smb_vfs_call_sys_acl_delete_def_fd(struct vfs_handle_struct *handle,
 	return handle->fns->sys_acl_delete_def_fd_fn(handle, fsp);
 }
 
-ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size)
-{
-	VFS_FIND(getxattr);
-	return handle->fns->getxattr_fn(handle, smb_fname, name, value, size);
-}
-
-
 struct smb_vfs_call_getxattrat_state {
 	files_struct *dir_fsp;
 	ssize_t (*recv_fn)(struct tevent_req *req,

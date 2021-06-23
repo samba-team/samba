@@ -2412,29 +2412,6 @@ static int smb_time_audit_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_time_audit_getxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size)
-{
-	ssize_t result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("getxattr", timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 struct smb_time_audit_getxattrat_state {
 	struct vfs_aio_state aio_state;
 	files_struct *dir_fsp;
@@ -2799,7 +2776,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.sys_acl_blob_get_fd_fn = smb_time_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = smb_time_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_fd_fn = smb_time_audit_sys_acl_delete_def_fd,
-	.getxattr_fn = smb_time_audit_getxattr,
 	.getxattrat_send_fn = smb_time_audit_getxattrat_send,
 	.getxattrat_recv_fn = smb_time_audit_getxattrat_recv,
 	.fgetxattr_fn = smb_time_audit_fgetxattr,

@@ -359,6 +359,7 @@
  * Version 45 - Remove SYS_ACL_GET_FILE
  * Version 45 - Remove SYS_ACL_BLOB_GET_FILE
  * Version 45 - Add SMB_VFS_FCHFLAGS
+ * Version 45 - Remove SMB_VFS_GETXATTR
  */
 
 #define SMB_VFS_INTERFACE_VERSION 45
@@ -1227,11 +1228,6 @@ struct vfs_fn_pointers {
 					struct files_struct *fsp);
 
 	/* EA operations. */
-	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					const char *name,
-					void *value,
-					size_t size);
 	struct tevent_req *(*getxattrat_send_fn)(
 				TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -1733,11 +1729,6 @@ int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_delete_def_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp);
-ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size);
 struct tevent_req *smb_vfs_call_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
@@ -2138,11 +2129,6 @@ int vfs_not_implemented_sys_acl_set_fd(vfs_handle_struct *handle,
 				       SMB_ACL_T theacl);
 int vfs_not_implemented_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 					files_struct *fsp);
-ssize_t vfs_not_implemented_getxattr(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *name,
-				void *value,
-				size_t size);
 struct tevent_req *vfs_not_implemented_getxattrat_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
