@@ -35,6 +35,7 @@
 #define FAKE_ACL_ACCESS_XATTR "system.fake_access_acl"
 #define FAKE_ACL_DEFAULT_XATTR "system.fake_default_acl"
 
+#if 0
 static int fake_acls_uid(vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname,
 			 uid_t *uid)
@@ -71,6 +72,7 @@ static int fake_acls_gid(vfs_handle_struct *handle,
 	*gid = IVAL(gid_buf, 0);
 	return 0;
 }
+#endif
 
 static int fake_acls_fuid(vfs_handle_struct *handle,
 			   files_struct *fsp,
@@ -185,26 +187,16 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			fsp = smb_fname_cp->fsp;
 		}
 
-		if (fsp != NULL) {
-			ret = fake_acls_fuid(handle,
-					     fsp,
-					     &smb_fname->st.st_ex_uid);
-		} else {
-			ret = fake_acls_uid(handle, smb_fname_cp,
-					&smb_fname->st.st_ex_uid);
-		}
+		ret = fake_acls_fuid(handle,
+				     fsp,
+				     &smb_fname->st.st_ex_uid);
 		if (ret != 0) {
 			TALLOC_FREE(smb_fname_cp);
 			return ret;
 		}
-		if (fsp != NULL) {
-			ret = fake_acls_fgid(handle,
-					     fsp,
-					     &smb_fname->st.st_ex_gid);
-		} else {
-			ret = fake_acls_gid(handle, smb_fname_cp,
-					&smb_fname->st.st_ex_gid);
-		}
+		ret = fake_acls_fgid(handle,
+				     fsp,
+				     &smb_fname->st.st_ex_gid);
 		if (ret != 0) {
 			TALLOC_FREE(smb_fname_cp);
 			return ret;
