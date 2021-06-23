@@ -947,6 +947,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	 * don't know if it's been modified by
 	 * VFS modules in the stack.
 	 */
+	fsp_set_fd(conn->cwd_fsp, AT_FDCWD);
 
 	/* conn cache. */
 	cwd = vfs_GetWd(conn, conn);
@@ -995,7 +996,6 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	talloc_move(talloc_tos(), &conn->cwd_fsp->fsp_name);
 
 	conn->cwd_fsp->fsp_name = talloc_move(conn->cwd_fsp, &cwd);
-	fsp_set_fd(conn->cwd_fsp, AT_FDCWD);
 
 	DBG_INFO("vfs_ChDir got %s\n", fsp_str_dbg(conn->cwd_fsp));
 
