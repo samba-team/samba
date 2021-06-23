@@ -192,10 +192,11 @@ static int ceph_snap_get_btime_fsp(struct vfs_handle_struct *handle,
  */
 static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 				TALLOC_CTX *tmp_ctx,
-				const char *parent_snapsdir,
+				struct files_struct *dirfsp,
 				const char *subdir,
 				SHADOW_COPY_LABEL this_label)
 {
+	const char *parent_snapsdir = dirfsp->fsp_name->base_name;
 	struct smb_filename *smb_fname;
 	time_t snap_secs;
 	struct tm gmt_snap_time;
@@ -328,8 +329,10 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 		}
 		DBG_DEBUG("filling shadow copy label for %s/%s\n",
 			  snaps_dname->base_name, dname);
-		ret = ceph_snap_fill_label(handle, snaps_dname,
-				snaps_dname->base_name, dname,
+		ret = ceph_snap_fill_label(handle,
+				snaps_dname,
+				dirfsp,
+				dname,
 				sc_data->labels[sc_data->num_volumes - 1]);
 		if (ret < 0) {
 			TALLOC_FREE(talloced);
