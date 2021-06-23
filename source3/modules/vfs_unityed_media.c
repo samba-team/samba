@@ -1466,37 +1466,6 @@ err:
 	return result_fname;
 }
 
-static ssize_t um_getxattr(struct vfs_handle_struct *handle,
-			   const struct smb_filename *smb_fname,
-			   const char *name,
-			   void *value,
-			   size_t size)
-{
-	ssize_t ret;
-	struct smb_filename *client_fname = NULL;
-	int status;
-
-	DEBUG(10, ("Entering um_getxattr\n"));
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-				name, value, size);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		ret = -1;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_GETXATTR(handle, client_fname, name, value, size);
-err:
-	TALLOC_FREE(client_fname);
-	return ret;
-}
-
 static int um_connect(vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user)
@@ -1570,7 +1539,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.realpath_fn = um_realpath,
 
 	/* EA operations. */
-	.getxattr_fn = um_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 };
