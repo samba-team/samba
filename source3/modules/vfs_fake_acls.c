@@ -118,14 +118,38 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 		struct smb_filename smb_fname_base = {
 			.base_name = smb_fname->base_name
 		};
+		struct files_struct *fsp = NULL;
 
-		ret = fake_acls_uid(handle, &smb_fname_base,
+		if (smb_fname->fsp != NULL) {
+			fsp = smb_fname->fsp;
+			if (fsp->base_fsp != NULL) {
+				/*
+				 * This is a stream pathname. Use
+				 * the base_fsp to get the xattr.
+				 */
+				fsp = fsp->base_fsp;
+			}
+		}
+
+		if (fsp != NULL) {
+			ret = fake_acls_fuid(handle,
+					     fsp,
+					     &smb_fname->st.st_ex_uid);
+		} else {
+			ret = fake_acls_uid(handle, &smb_fname_base,
 					&smb_fname->st.st_ex_uid);
+		}
 		if (ret != 0) {
 			return ret;
 		}
-		ret = fake_acls_gid(handle, &smb_fname_base,
+		if (fsp != NULL) {
+			ret = fake_acls_fgid(handle,
+					     fsp,
+					     &smb_fname->st.st_ex_gid);
+		} else {
+			ret = fake_acls_gid(handle, &smb_fname_base,
 					&smb_fname->st.st_ex_gid);
+		}
 		if (ret != 0) {
 			return ret;
 		}
