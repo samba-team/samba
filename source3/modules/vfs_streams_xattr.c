@@ -1305,9 +1305,11 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ea.value.length = offset + 1;
 	ea.value.data[offset] = 0;
 
-	ret = SMB_VFS_FSETXATTR(fsp->base_fsp ? fsp->base_fsp : fsp,
-			       sio->xattr_name,
-			       ea.value.data, ea.value.length, 0);
+	ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
+				sio->xattr_name,
+				ea.value.data,
+				ea.value.length,
+				0);
 
 	TALLOC_FREE(ea.value.data);
 
