@@ -222,18 +222,22 @@ bool samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			files_struct *fsp,
-			const struct smb_filename *smb_fname,
-			const char *ea_name,
-			struct ea_struct *pea)
+NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
+			  files_struct *fsp,
+			  const char *ea_name,
+			  struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
 	char *val = NULL;
 	ssize_t sizeret;
-	size_t max_xattr_size = lp_smbd_max_xattr_size(SNUM(conn));
+	size_t max_xattr_size = 0;
+
+	if (fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	max_xattr_size = lp_smbd_max_xattr_size(SNUM(fsp->conn));
 
  again:
 
@@ -242,21 +246,7 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (fsp) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
-	} else {
-		if (smb_fname == NULL) {
-			/*
-			 * fsp == NULL and smb_fname == NULL.
-			 * This check will go away once get_ea_value()
-			 * is completely fsp-based.
-			 */
-			return NT_STATUS_INVALID_HANDLE;
-		}
-		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
-				ea_name, val, attr_size);
-	}
-
+	sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	if (sizeret == -1 && errno == ERANGE && attr_size < max_xattr_size) {
 		attr_size = max_xattr_size;
 		goto again;
@@ -475,12 +465,10 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = get_ea_value(listp,
-					fsp->conn,
-					fsp,
-					NULL,
-					names[i],
-					&listp->ea);
+		status = get_ea_value_fsp(listp,
+					  fsp,
+					  names[i],
+					  &listp->ea);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(listp);

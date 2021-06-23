@@ -52,12 +52,10 @@ static ssize_t get_xattr_size_fsp(struct files_struct *fsp,
 	struct ea_struct ea;
 	ssize_t result;
 
-	status = get_ea_value(talloc_tos(),
-			      fsp->conn,
-			      fsp,
-			      NULL,
-			      xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  fsp,
+				  xattr_name,
+				  &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -375,14 +373,12 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	status = get_ea_value(talloc_tos(),
-			      handle->conn,
-			      fsp->base_fsp,
-			      NULL,
-			      xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  fsp->base_fsp,
+				  xattr_name,
+				  &ea);
 
-	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
+	DBG_DEBUG("get_ea_value_fsp returned %s\n", nt_errstr(status));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -645,12 +641,10 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* Read the old stream from the base file fsp. */
-	status = get_ea_value(talloc_tos(),
-			      handle->conn,
-			      pathref_src->fsp,
-			      NULL,
-			      src_xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  pathref_src->fsp,
+				  src_xattr_name,
+				  &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		goto fail;
@@ -758,12 +752,10 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			continue;
 		}
 
-		status = get_ea_value(names,
-					handle->conn,
-					smb_fname->fsp,
-					NULL,
-					names[i],
-					&ea);
+		status = get_ea_value_fsp(names,
+					  smb_fname->fsp,
+					  names[i],
+					  &ea);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not get ea %s for file %s: %s\n",
 				names[i],
@@ -976,12 +968,10 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(),
-			      handle->conn,
-			      fsp->base_fsp,
-			      NULL,
-			      sio->xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  fsp->base_fsp,
+				  sio->xattr_name,
+				  &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -1039,20 +1029,18 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(),
-			      handle->conn,
-			      fsp->base_fsp,
-			      NULL,
-			      sio->xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  fsp->base_fsp,
+				  sio->xattr_name,
+				  &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
 	length = ea.value.length-1;
 
-	DEBUG(10, ("streams_xattr_pread: get_ea_value returned %d bytes\n",
-		   (int)length));
+	DBG_DEBUG("get_ea_value_fsp returned %d bytes\n",
+		   (int)length);
 
         /* Attempt to read past EOF. */
         if (length <= offset) {
@@ -1248,12 +1236,10 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(),
-			      handle->conn,
-			      fsp->base_fsp,
-			      NULL,
-			      sio->xattr_name,
-			      &ea);
+	status = get_ea_value_fsp(talloc_tos(),
+				  fsp->base_fsp,
+				  sio->xattr_name,
+				  &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}

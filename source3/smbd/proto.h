@@ -1199,11 +1199,10 @@ NTSTATUS check_access_fsp(struct files_struct *fsp,
 			  uint32_t access_mask);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
 bool samba_private_attr_name(const char *unix_ea_name);
-NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			files_struct *fsp,
-			const struct smb_filename *smb_fname,
-			const char *ea_name,
-			struct ea_struct *pea);
+NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
+			  files_struct *fsp,
+			  const char *ea_name,
+			  struct ea_struct *pea);
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 			files_struct *fsp,
 			char ***pnames,
