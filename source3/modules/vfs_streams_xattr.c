@@ -1255,7 +1255,6 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	NTSTATUS status;
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct smb_filename *smb_fname_base = NULL;
 
 	DEBUG(10, ("streams_xattr_ftruncate called for file %s offset %.0f\n",
 		   fsp_str_dbg(fsp), (double)offset));
@@ -1265,18 +1264,6 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	}
 
 	if (!streams_xattr_recheck(sio)) {
-		return -1;
-	}
-
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					sio->base,
-					NULL,
-					NULL,
-					fsp->fsp_name->twrp,
-					fsp->fsp_name->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
 		return -1;
 	}
 
