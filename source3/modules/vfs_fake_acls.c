@@ -115,37 +115,20 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret == 0) {
-		TALLOC_CTX *frame = talloc_stackframe();
-		char *path;
 		struct smb_filename smb_fname_base = {
 			.base_name = smb_fname->base_name
 		};
-		NTSTATUS status;
-		/*
-		 * As we're calling getxattr directly here
-		 * we need to use only the base_name, not
-		 * the full name containing any stream name.
-		 */
-		status = get_full_smb_filename(frame, &smb_fname_base, &path);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			TALLOC_FREE(frame);
-			return -1;
-		}
-		
+
 		ret = fake_acls_uid(handle, &smb_fname_base,
 					&smb_fname->st.st_ex_uid);
 		if (ret != 0) {
-			TALLOC_FREE(frame);
 			return ret;
 		}
 		ret = fake_acls_gid(handle, &smb_fname_base,
 					&smb_fname->st.st_ex_gid);
 		if (ret != 0) {
-			TALLOC_FREE(frame);
 			return ret;
 		}
-		TALLOC_FREE(frame);
 	}
 
 	return ret;
