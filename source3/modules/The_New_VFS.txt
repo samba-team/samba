@@ -315,7 +315,7 @@ Table of Contents
    SMB_VFS_GET_REAL_FILENAME()        [P2px]      -
    SMB_VFS_GET_SHADOW_COPY_DATA()     [fsp]       -
    SMB_VFS_GETWD()                    [Special]   -
-   SMB_VFS_GETXATTR()                 [Path]      Todo
+   SMB_VFS_GETXATTR()                 [Path]      -
    SMB_VFS_GETXATTRAT_RECV()          [Enum]      -
    SMB_VFS_GETXATTRAT_SEND()          [Enum]      -
    SMB_VFS_KERNEL_FLOCK()             [fsp]       -

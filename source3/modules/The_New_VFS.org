@@ -247,7 +247,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_GET_REAL_FILENAME()       | [[P2px][P2px]]     | -      |
 | SMB_VFS_GET_SHADOW_COPY_DATA()    | [[fsp][fsp]]      | -      |
 | SMB_VFS_GETWD()                   | [[Special][Special]]  | -      |
-| SMB_VFS_GETXATTR()                | [[Path][Path]]     | Todo   |
+| SMB_VFS_GETXATTR()                | [[Path][Path]]     | -      |
 | SMB_VFS_GETXATTRAT_RECV()         | [[Enum][Enum]]     | -      |
 | SMB_VFS_GETXATTRAT_SEND()         | [[Enum][Enum]]     | -      |
 | SMB_VFS_KERNEL_FLOCK()            | [[fsp][fsp]]      | -      |
