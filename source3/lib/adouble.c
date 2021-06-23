@@ -2572,45 +2572,6 @@ struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
  * Set AppleDouble metadata on a file or directory
  *
  * @param[in] ad      adouble handle
- *
- * @param[in] smb_fname    pathname to file or directory
- *
- * @return            status code, 0 means success
- **/
-int ad_set(vfs_handle_struct *handle,
-	   struct adouble *ad,
-	   const struct smb_filename *smb_fname)
-{
-	bool ok;
-	int ret;
-
-	DBG_DEBUG("Path [%s]\n", smb_fname->base_name);
-
-	if (ad->ad_type != ADOUBLE_META) {
-		DBG_ERR("ad_set on [%s] used with ADOUBLE_RSRC\n",
-			smb_fname->base_name);
-		return -1;
-	}
-
-	ok = ad_pack(handle, ad, NULL);
-	if (!ok) {
-		return -1;
-	}
-
-	ret = SMB_VFS_FSETXATTR(smb_fname->fsp,
-			       AFPINFO_EA_NETATALK,
-			       ad->ad_data,
-			       AD_DATASZ_XATTR, 0);
-
-	DBG_DEBUG("Path [%s] ret [%d]\n", smb_fname->base_name, ret);
-
-	return ret;
-}
-
-/**
- * Set AppleDouble metadata on a file or directory
- *
- * @param[in] ad      adouble handle
  * @param[in] fsp     file handle
  *
  * @return            status code, 0 means success

@@ -175,9 +175,6 @@ struct adouble *ad_get(TALLOC_CTX *ctx,
 		       adouble_type_t type);
 struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 			files_struct *fsp, adouble_type_t type);
-int ad_set(vfs_handle_struct *handle,
-	   struct adouble *ad,
-	   const struct smb_filename *smb_fname);
 int ad_fset(struct vfs_handle_struct *handle,
 	    struct adouble *ad,
 	    files_struct *fsp);
