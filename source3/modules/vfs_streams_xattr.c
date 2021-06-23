@@ -1046,7 +1046,6 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 	struct ea_struct ea;
 	NTSTATUS status;
 	size_t length, overlap;
-	struct smb_filename *smb_fname_base = NULL;
 
 	DEBUG(10, ("streams_xattr_pread: offset=%d, size=%d\n",
 		   (int)offset, (int)n));
@@ -1056,18 +1055,6 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 	}
 
 	if (!streams_xattr_recheck(sio)) {
-		return -1;
-	}
-
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					sio->base,
-					NULL,
-					NULL,
-					fsp->fsp_name->twrp,
-					fsp->fsp_name->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
 		return -1;
 	}
 
