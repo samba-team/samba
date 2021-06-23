@@ -113,7 +113,6 @@ static int ceph_snap_get_btime(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-#if 0
 static int ceph_snap_get_btime_fsp(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   time_t *_snap_secs)
@@ -181,7 +180,6 @@ static int ceph_snap_get_btime_fsp(struct vfs_handle_struct *handle,
 
 	return 0;
 }
-#endif
 
 /*
  * XXX Ceph snapshots can be created with sub-second granularity, which means
@@ -198,12 +196,14 @@ static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 {
 	const char *parent_snapsdir = dirfsp->fsp_name->base_name;
 	struct smb_filename *smb_fname;
+	struct smb_filename *atname = NULL;
 	time_t snap_secs;
 	struct tm gmt_snap_time;
 	struct tm *tm_ret;
 	size_t str_sz;
 	char snap_path[PATH_MAX + 1];
 	int ret;
+	NTSTATUS status;
 
 	/*
 	 * CephFS snapshot creation times are available via a special
@@ -225,10 +225,39 @@ static int ceph_snap_fill_label(struct vfs_handle_struct *handle,
 		return -ENOMEM;
 	}
 
-	ret = ceph_snap_get_btime(handle, smb_fname, &snap_secs);
+	ret = vfs_stat(handle->conn, smb_fname);
 	if (ret < 0) {
+		ret = -errno;
+		TALLOC_FREE(smb_fname);
 		return ret;
 	}
+
+	atname = synthetic_smb_fname(tmp_ctx,
+				     subdir,
+				     NULL,
+				     &smb_fname->st,
+				     0,
+				     0);
+	if (atname == NULL) {
+		TALLOC_FREE(smb_fname);
+		return -ENOMEM;
+	}
+
+	status = openat_pathref_fsp(dirfsp, atname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(atname);
+		return -map_errno_from_nt_status(status);
+	}
+
+	ret = ceph_snap_get_btime_fsp(handle, atname->fsp, &snap_secs);
+	if (ret < 0) {
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(atname);
+		return ret;
+	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(atname);
 
 	tm_ret = gmtime_r(&snap_secs, &gmt_snap_time);
 	if (tm_ret == NULL) {
