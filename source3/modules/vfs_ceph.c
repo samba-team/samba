@@ -1290,24 +1290,6 @@ static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,
  Extended attribute operations.
 *****************************************************************/
 
-static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *name,
-			void *value,
-			size_t size)
-{
-	int ret;
-	DBG_DEBUG("[CEPH] getxattr(%p, %s, %s, %p, %llu)\n", handle,
-			smb_fname->base_name, name, value, llu(size));
-	ret = ceph_getxattr(handle->data,
-			smb_fname->base_name, name, value, size);
-	DBG_DEBUG("[CEPH] getxattr(...) = %d\n", ret);
-	if (ret < 0) {
-		WRAP_RETURN(ret);
-	}
-	return (ssize_t)ret;
-}
-
 static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
 	int ret;
@@ -1641,7 +1623,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.connectpath_fn = cephwrap_connectpath,
 
 	/* EA operations. */
-	.getxattr_fn = cephwrap_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
 	.getxattrat_recv_fn = vfs_not_implemented_getxattrat_recv,
 	.fgetxattr_fn = cephwrap_fgetxattr,
