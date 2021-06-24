@@ -454,6 +454,16 @@ def configure(conf):
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
     conf.CHECK_FUNCS('port_create')
     conf.CHECK_FUNCS('getprogname')
+    if not conf.CHECK_FUNCS('copy_file_range'):
+        conf.CHECK_CODE('''
+#include <sys/syscall.h>
+#include <unistd.h>
+syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
+                        ''',
+                        'HAVE_SYSCALL_COPY_FILE_RANGE',
+                        msg='Checking whether we have copy_file_range system call')
+    if conf.CONFIG_SET('HAVE_COPY_FILE_RANGE') or conf.CONFIG_SET('HAVE_SYSCALL_COPY_FILE_RANGE'):
+        conf.DEFINE('USE_COPY_FILE_RANGE', 1)
 
     conf.SET_TARGET_TYPE('attr', 'EMPTY')
 
@@ -835,7 +845,7 @@ REPLACEMENT_FUNCTIONS = {
                   'strsep', 'strtok_r', 'strtoll', 'strtoull', 'setenv', 'unsetenv',
                   'utime', 'utimes', 'dup2', 'chown', 'link', 'readlink',
                   'symlink', 'lchown', 'realpath', 'memmem', 'vdprintf',
-                  'dprintf', 'get_current_dir_name',
+                  'dprintf', 'get_current_dir_name', 'copy_file_range',
                   'strerror_r', 'clock_gettime', 'memset_s'],
     'timegm.c': ['timegm'],
     # Note: C99_VSNPRINTF is not a function, but a special condition
