@@ -2050,6 +2050,7 @@ static void vfswrap_offload_write_cleanup(struct tevent_req *req,
 	state->dst_fsp = NULL;
 }
 
+static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req);
 static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req);
 
 static struct tevent_req *vfswrap_offload_write_send(
@@ -2189,6 +2190,16 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return tevent_req_post(req, ev);
 	}
 
+	status = vfswrap_offload_copy_file_range(req);
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
 	state->buf = talloc_array(state, uint8_t, num);
 	if (tevent_req_nomem(state->buf, req)) {
 		return tevent_req_post(req, ev);
@@ -2201,6 +2212,129 @@ static struct tevent_req *vfswrap_offload_write_send(
 	}
 
 	return req;
+}
+
+static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req)
+{
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
+	struct lock_struct lck;
+	ssize_t nwritten;
+	NTSTATUS status;
+	bool same_file;
+	bool ok;
+
+#ifndef USE_COPY_FILE_RANGE
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+#endif
+
+	same_file = file_id_equal(&state->src_fsp->file_id,
+				  &state->dst_fsp->file_id);
+	if (same_file &&
+	    sys_io_ranges_overlap(state->remaining,
+				  state->src_off,
+				  state->remaining,
+				  state->dst_off))
+	{
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	if (is_named_stream(state->src_fsp->fsp_name) ||
+	    is_named_stream(state->dst_fsp->fsp_name))
+	{
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	init_strict_lock_struct(state->src_fsp,
+				state->src_fsp->op->global->open_persistent_id,
+				state->src_off,
+				state->remaining,
+				READ_LOCK,
+				&lck);
+
+	ok = SMB_VFS_STRICT_LOCK_CHECK(state->src_fsp->conn,
+				 state->src_fsp,
+				 &lck);
+	if (!ok) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	ok = change_to_user_and_service_by_fsp(state->dst_fsp);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	init_strict_lock_struct(state->dst_fsp,
+				state->dst_fsp->op->global->open_persistent_id,
+				state->dst_off,
+				state->remaining,
+				WRITE_LOCK,
+				&lck);
+
+	ok = SMB_VFS_STRICT_LOCK_CHECK(state->dst_fsp->conn,
+				       state->dst_fsp,
+				       &lck);
+	if (!ok) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	while (state->remaining > 0) {
+		nwritten = copy_file_range(fsp_get_pathref_fd(state->src_fsp),
+					   &state->src_off,
+					   fsp_get_pathref_fd(state->dst_fsp),
+					   &state->dst_off,
+					   state->remaining,
+					   0);
+		if (nwritten == -1) {
+			DBG_DEBUG("copy_file_range src [%s]:[%jd] dst [%s]:[%jd] "
+				  "n [%jd] failed: %s\n",
+				  fsp_str_dbg(state->src_fsp),
+				  (intmax_t)state->src_off,
+				  fsp_str_dbg(state->dst_fsp),
+				  (intmax_t)state->dst_off,
+				  (intmax_t)state->remaining,
+				  strerror(errno));
+			switch (errno) {
+			case EXDEV:
+				status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+				break;
+			default:
+				status = map_nt_error_from_unix(errno);
+				if (NT_STATUS_EQUAL(
+					    status,
+					    NT_STATUS_MORE_PROCESSING_REQUIRED))
+				{
+					/* Avoid triggering the fallback */
+					status = NT_STATUS_INTERNAL_ERROR;
+				}
+				break;
+			}
+			return status;
+		}
+
+		if (state->remaining < nwritten) {
+			DBG_DEBUG("copy_file_range src [%s] dst [%s] "
+				  "n [%jd] remaining [%jd]\n",
+				  fsp_str_dbg(state->src_fsp),
+				  fsp_str_dbg(state->dst_fsp),
+				  (intmax_t)nwritten,
+				  (intmax_t)state->remaining);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (nwritten == 0) {
+			break;
+		}
+		state->copied += nwritten;
+		state->remaining -= nwritten;
+	}
+
+	/*
+	 * Tell the req cleanup function there's no need to call
+	 * change_to_user_and_service_by_fsp() on the dst handle.
+	 */
+	state->dst_fsp = NULL;
+	return NT_STATUS_OK;
 }
 
 static void vfswrap_offload_write_read_done(struct tevent_req *subreq);
