@@ -1056,3 +1056,28 @@ const char *rep_getprogname(void)
 #endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
 }
 #endif /* HAVE_GETPROGNAME */
+
+#ifndef HAVE_COPY_FILE_RANGE
+# ifdef HAVE_SYSCALL_COPY_FILE_RANGE
+# include <sys/syscall.h>
+# endif
+ssize_t rep_copy_file_range(int fd_in,
+			    loff_t *off_in,
+			    int fd_out,
+			    loff_t *off_out,
+			    size_t len,
+			    unsigned int flags)
+{
+# ifdef HAVE_SYSCALL_COPY_FILE_RANGE
+	return syscall(__NR_copy_file_range,
+		       fd_in,
+		       off_in,
+		       fd_out,
+		       off_out,
+		       len,
+		       flags);
+# endif /* HAVE_SYSCALL_COPY_FILE_RANGE */
+	errno = ENOSYS;
+	return -1;
+}
+#endif /* HAVE_COPY_FILE_RANGE */
