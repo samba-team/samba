@@ -2096,10 +2096,12 @@ exit:
 	if (rc != 0) {
 		ealen = -1;
 		if (errno == EINVAL) {
-			become_root();
-			(void)SMB_VFS_FREMOVEXATTR(smb_fname->fsp,
-						  AFPINFO_EA_NETATALK);
-			unbecome_root();
+			if (smb_fname->fsp != NULL) {
+				become_root();
+				(void)SMB_VFS_FREMOVEXATTR(smb_fname->fsp,
+							   AFPINFO_EA_NETATALK);
+				unbecome_root();
+			}
 			errno = ENOENT;
 		}
 	}
