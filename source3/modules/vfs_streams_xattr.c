@@ -322,7 +322,6 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 
 	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st, xattr_name);
 	smb_fname->st.st_ex_mode &= ~S_IFMT;
-	smb_fname->st.st_ex_mode &= ~S_IFDIR;
         smb_fname->st.st_ex_mode |= S_IFREG;
         smb_fname->st.st_ex_blocks =
 	    smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
