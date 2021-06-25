@@ -1827,7 +1827,8 @@ static bool check_stream(struct smb2_tree *tree,
 			TALLOC_FREE(full_name);
 			return true;
 		}
-		torture_comment(tctx, "Unable to open stream %s\n", full_name);
+		torture_comment(tctx, "Unable to open stream %s: %s\n",
+			full_name, nt_errstr(status));
 		TALLOC_FREE(full_name);
 		return false;
 	}
@@ -1901,8 +1902,8 @@ static ssize_t read_stream(struct smb2_tree *tree,
 
 	status = smb2_create(tree, mem_ctx, &create);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Unable to open stream %s\n",
-				full_name);
+		torture_comment(tctx, "Unable to open stream %s: %s\n",
+				full_name, nt_errstr(status));
 		return -1;
 	}
 
