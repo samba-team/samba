@@ -1968,6 +1968,7 @@ struct vfswrap_offload_write_state {
 	off_t dst_off;
 	off_t to_copy;
 	off_t remaining;
+	off_t copied;
 	size_t next_io_size;
 };
 
@@ -2278,6 +2279,7 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
+	state->copied += nwritten;
 	state->remaining -= nwritten;
 	if (state->remaining == 0) {
 		tevent_req_done(req);
@@ -2314,7 +2316,7 @@ static NTSTATUS vfswrap_offload_write_recv(struct vfs_handle_struct *handle,
 		return status;
 	}
 
-	*copied = state->to_copy;
+	*copied = state->copied;
 	DBG_DEBUG("copy chunk copied %lu\n", (unsigned long)*copied);
 	tevent_req_received(req);
 
