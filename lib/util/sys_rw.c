@@ -48,6 +48,31 @@ bool sys_valid_io_range(off_t offset, size_t length)
 	return true;
 }
 
+bool sys_io_ranges_overlap(size_t c1, off_t o1,
+			   size_t c2, off_t o2)
+{
+	if (c1 == 0 || c2 == 0) {
+		return false;
+	}
+	if (o2 < o1) {
+		/*
+		 *          o1
+		 *          |····c1····|
+		 *  o2
+		 *  |····c2···| ?
+		 */
+		return (o2 + c2 > o1);
+	} else {
+		/*
+		 *  o1
+		 *  |····c1···|
+		 *          o2
+		 *          |····c2····| ?
+		 */
+		return (o1 + c1 > o2);
+	}
+}
+
 /*******************************************************************
 A read wrapper that will deal with EINTR/EWOULDBLOCK
 ********************************************************************/
