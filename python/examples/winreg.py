@@ -11,7 +11,7 @@ import sys
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-from samba.dcerpc import winreg
+from samba.dcerpc import winreg,misc
 import optparse
 import samba.getopt as options
 
@@ -29,42 +29,32 @@ if len(args) < 1:
 
 binding = args[0]
 
-print "Connecting to " + binding
+print("Connecting to " + binding)
 conn = winreg.winreg(binding, sambaopts.get_loadparm())
 
-
 def list_values(key):
-    (num_values, max_valnamelen, max_valbufsize) = conn.QueryInfoKey(key, winreg.String())[4:8]
+    (num_values, max_valnamelen, max_valbufsize) = conn.QueryInfoKey(key, winreg.String())[4:7]
     for i in range(num_values):
-        name = winreg.StringBuf()
+        name = winreg.ValNameBuf()
         name.size = max_valnamelen
-        (name, type, data, _, data_len) = conn.EnumValue(key, i, name, 0, "", max_valbufsize, 0)
-        print "\ttype=%-30s size=%4d  '%s'" % type, len, name
-        if type in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
-            print "\t\t'%s'" % data
-#        if (v.type == reg.REG_MULTI_SZ) {
-#            for (j in v.value) {
-#                printf("\t\t'%s'\n", v.value[j])
-#            }
-#        }
-#        if (v.type == reg.REG_DWORD || v.type == reg.REG_DWORD_BIG_ENDIAN) {
-#            printf("\t\t0x%08x (%d)\n", v.value, v.value)
-#        }
-#        if (v.type == reg.REG_QWORD) {
-#            printf("\t\t0x%llx (%lld)\n", v.value, v.value)
-#        }
+        (name, type, data, _, data_len) = conn.EnumValue(key, i, name, 0, [], max_valbufsize, 0)
+        print("\ttype=%-30s size=%4d  '%s'" % (type, name.size, name))
+        if type in (misc.REG_SZ, misc.REG_EXPAND_SZ):
+            print("\t\t'%s'" % data)
 
 
 def list_path(key, path):
     count = 0
-    (num_subkeys, max_subkeylen, max_subkeysize) = conn.QueryInfoKey(key, winreg.String())[1:4]
+    (num_subkeys, max_subkeylen, max_classlen) = conn.QueryInfoKey(key, winreg.String())[1:4]
     for i in range(num_subkeys):
         name = winreg.StringBuf()
-        name.size = max_subkeysize
+        name.size = max_subkeylen+2 # utf16 0-terminator
         keyclass = winreg.StringBuf()
-        keyclass.size = max_subkeysize
-        (name, _, _) = conn.EnumKey(key, i, name, keyclass=keyclass, last_changed_time=None)[0]
-        subkey = conn.OpenKey(key, name, 0, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
+        keyclass.size = max_classlen+2 # utf16 0-terminator
+        (name, _, _) = conn.EnumKey(key, i, name, keyclass=keyclass, last_changed_time=None)
+        name2 = winreg.String()
+        name2.name = name.name
+        subkey = conn.OpenKey(key, name2, 0, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
         count += list_path(subkey, "%s\\%s" % (path, name))
         list_values(subkey)
     return count
@@ -76,15 +66,29 @@ else:
     root = "HKLM"
 
 if opts.createkey:
-    winreg.create_key("HKLM\\SOFTWARE", opts.createkey)
+    name = winreg.String()
+    name.name = "SOFTWARE"
+
+    # Just sample code, "HKLM\SOFTWARE" should already exist
+
+    root = conn.OpenHKLM(
+        None, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
+    conn.CreateKey(
+        root,
+        name,
+        keyclass=winreg.String(),
+        options=0,
+        access_mask=0,
+        secdesc=None,
+        action_taken=0)
 else:
-    print "Listing registry tree '%s'" % root
+    print("Listing registry tree '%s'" % root)
     try:
         root_key = getattr(conn, "Open%s" % root)(None, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
     except AttributeError:
-        print "Unknown root key name %s" % root
+        print("Unknown root key name %s" % root)
         sys.exit(1)
     count = list_path(root_key, root)
     if count == 0:
-        print "No entries found"
+        print("No entries found")
         sys.exit(1)
