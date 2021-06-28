@@ -116,6 +116,11 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			 */
 			smb_fname_cp = cp_smb_filename(talloc_tos(),
 						       smb_fname);
+			if (smb_fname_cp == NULL) {
+				errno = ENOMEM;
+				return -1;
+			}
+
 			/* Recursion guard. */
 			in_openat_pathref_fsp = true;
 			status = openat_pathref_fsp(handle->conn->cwd_fsp,
