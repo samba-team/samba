@@ -101,8 +101,10 @@ static const char basechars[36] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /* the list of reserved dos names - all of these are illegal */
 static const char * const reserved_names[] =
-{ "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
-  "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
+{ "AUX", "LOCK$", "CON",
+  "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+  "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+  "NUL", "PRN", NULL };
 
 #define DYNAMIC_MANGLE_TABLES 0
 
