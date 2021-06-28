@@ -30,6 +30,7 @@
 #include "../librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
+#include "lib/util/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -96,43 +97,16 @@ static NTSTATUS fsctl_dup_extents_check_overlap(struct files_struct *src_fsp,
 						struct files_struct *dst_fsp,
 				struct fsctl_dup_extents_to_file *dup_extents)
 {
-	uint64_t src_off_last;
-	uint64_t tgt_off_last;
-
 	if (!file_id_equal(&src_fsp->file_id, &dst_fsp->file_id)) {
 		/* src and dest refer to different files */
 		return NT_STATUS_OK;
 	}
 
-	if (dup_extents->byte_count == 0) {
-		/* no range to overlap */
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * [MS-FSCC] 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE Reply
-	 * STATUS_NOT_SUPPORTED:
-	 * The source and target destination ranges overlap on the same file.
-	 */
-
-	src_off_last = dup_extents->source_off + dup_extents->byte_count - 1;
-	if ((dup_extents->target_off >= dup_extents->source_off)
-				&& (dup_extents->target_off <= src_off_last)) {
-		/*
-		 * src: |-----------|
-		 * tgt:       |-----------|
-		 */
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-
-	tgt_off_last = dup_extents->target_off + dup_extents->byte_count - 1;
-	if ((tgt_off_last >= dup_extents->source_off)
-					&& (tgt_off_last <= src_off_last)) {
-		/*
-		 * src:       |-----------|
-		 * tgt: |-----------|
-		 */
+	if (sys_io_ranges_overlap(dup_extents->byte_count,
+				  dup_extents->source_off,
+				  dup_extents->byte_count,
+				  dup_extents->target_off))
+	{
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
