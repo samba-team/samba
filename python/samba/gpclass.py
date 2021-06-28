@@ -500,10 +500,10 @@ def __rsop_vals(vals, level=4):
     if type(vals) == dict:
         ret = [' '*level + '[ %s ] = %s' % (k, __rsop_vals(v, level+2))
                 for k, v in vals.items()]
-        return '\n'.join(ret)
+        return '\n' + '\n'.join(ret)
     elif type(vals) == list:
         ret = [' '*level + '[ %s ]' % __rsop_vals(v, level+2) for v in vals]
-        return '\n'.join(ret)
+        return '\n' + '\n'.join(ret)
     else:
         return vals
 
@@ -532,7 +532,7 @@ def rsop(lp, creds, logger, store, gp_extensions, target):
             for section, settings in ext.rsop(gpo).items():
                 print('    Policy Type: %s' % section)
                 print('    ' + ('-'*int(term_width/2)))
-                print(__rsop_vals(settings))
+                print(__rsop_vals(settings).lstrip('\n'))
                 print('    ' + ('-'*int(term_width/2)))
             print('  ' + ('-'*int(term_width/2)))
         print('%s\n' % ('='*term_width))
