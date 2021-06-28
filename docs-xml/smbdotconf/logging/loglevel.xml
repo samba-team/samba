@@ -59,6 +59,22 @@
 	<listitem><para><parameter moreinfo="none">dsdb_group_json_audit</parameter></para></listitem>
     </itemizedlist>
 
+    <para>Various modules register dynamic debug classes at first usage:</para>
+    <itemizedlist>
+	<listitem><para><parameter moreinfo="none">catia</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">dfs_samba4</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">extd_audit</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">fileid</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">fruit</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">full_audit</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">media_harmony</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">recycle</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">shadow_copy</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">shadow_copy</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">unityed_media</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">virusfilter</parameter></para></listitem>
+    </itemizedlist>
+
     <para>To configure the logging for specific classes to go into a different
     file then <smbconfoption name="log file"/>, you can append
     <emphasis>@PATH</emphasis> to the class, eg <parameter>log level = 1
