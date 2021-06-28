@@ -49,14 +49,16 @@
 	<variablelist>
 
 		<varlistentry>
-		<term>preopen:names = /pattern/</term>
+		<term>preopen:names = /pattern1/pattern2/</term>
 		<listitem>
 		<para>
-		preopen:names specifies the file name pattern which should
+		preopen:names specifies the file name pattern(s) which should
 		trigger the preopen helpers to do their work. We assume that
 		the files are numbered incrementally. So if your file names
 		are numbered FRAME00000.frm FRAME00001.frm and so on you would
-		list them as <command>preopen:names=/FRAME*.frm/</command>
+		list them as <command>preopen:names=/FRAME*.frm/</command>.
+		The current algorithm uses the first (at least 3) digits it finds
+		in order to calculate the name of the next frames.
 		</para>
 		</listitem>
 		</varlistentry>
