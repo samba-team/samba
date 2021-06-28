@@ -3440,8 +3440,23 @@ NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 	}
 
 	/* Case (4). */
+	/* If "dos filemode" isn't set, we're done. */
 	if (!lp_dos_filemode(SNUM(fsp->conn))) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+	/*
+	 * If we have a writable handle, obviously we
+	 * can write to the file.
+	 */
+	if (!fsp->fsp_flags.can_write) {
+		/*
+		 * If we don't have a writable handle, we
+		 * need to read the ACL on the file to
+		 * see if we can write to it.
+		 */
+		if (!can_write_to_fsp(fsp)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	/* only allow chown to the current user. This is more secure,
