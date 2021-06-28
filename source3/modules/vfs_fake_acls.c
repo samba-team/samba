@@ -35,6 +35,10 @@
 #define FAKE_ACL_ACCESS_XATTR "system.fake_access_acl"
 #define FAKE_ACL_DEFAULT_XATTR "system.fake_default_acl"
 
+struct in_pathref_data {
+	bool calling_pathref_fsp;
+};
+
 static int fake_acls_fuid(vfs_handle_struct *handle,
 			   files_struct *fsp,
 			   uid_t *uid)
@@ -75,26 +79,17 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname)
 {
 	int ret = -1;
-	static bool in_openat_pathref_fsp = false;
+	struct in_pathref_data *prd = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				prd,
+				struct in_pathref_data,
+				return -1);
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret == 0) {
 		struct smb_filename *smb_fname_cp = NULL;
 		struct files_struct *fsp = NULL;
-
-		/*
-		 * Ensure openat_pathref_fsp()
-		 * can't recurse into fake_acls_stat().
-		 * openat_pathref_fsp() doesn't care
-		 * about the uid/gid values, it only
-		 * wants a valid/invalid stat answer
-		 * and we know smb_fname exists as
-		 * the SMB_VFS_NEXT_STAT() returned
-		 * zero above.
-		 */
-		if (in_openat_pathref_fsp) {
-			return 0;
-		}
 
 		if (smb_fname->fsp != NULL) {
 			fsp = smb_fname->fsp;
@@ -107,6 +102,21 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			}
 		} else {
 			NTSTATUS status;
+
+			/*
+			 * Ensure openat_pathref_fsp()
+			 * can't recurse into fake_acls_stat().
+			 * openat_pathref_fsp() doesn't care
+			 * about the uid/gid values, it only
+			 * wants a valid/invalid stat answer
+			 * and we know smb_fname exists as
+			 * the SMB_VFS_NEXT_STAT() returned
+			 * zero above.
+			 */
+			if (prd->calling_pathref_fsp) {
+				return 0;
+			}
+
 			/*
 			 * openat_pathref_fsp() expects a talloc'ed
 			 * smb_filename. stat can be passed a struct
@@ -122,11 +132,11 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			}
 
 			/* Recursion guard. */
-			in_openat_pathref_fsp = true;
+			prd->calling_pathref_fsp = true;
 			status = openat_pathref_fsp(handle->conn->cwd_fsp,
 						    smb_fname_cp);
 			/* End recursion guard. */
-			in_openat_pathref_fsp = false;
+			prd->calling_pathref_fsp = false;
 
 			if (!NT_STATUS_IS_OK(status)) {
 				/*
@@ -177,7 +187,12 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname)
 {
 	int ret = -1;
-	static bool in_synthetic_pathref = false;
+	struct in_pathref_data *prd = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				prd,
+				struct in_pathref_data,
+				return -1);
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	if (ret == 0) {
@@ -185,22 +200,22 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 		SMB_STRUCT_STAT sbuf = { 0 };
 		NTSTATUS status;
 
-		if (in_synthetic_pathref) {
-			/*
-			 * Ensure synthetic_pathref()
-			 * can't recurse into fake_acls_lstat().
-			 * synthetic_pathref() doesn't care
-			 * about the uid/gid values, it only
-			 * wants a valid/invalid stat answer
-			 * and we know smb_fname exists as
-			 * the SMB_VFS_NEXT_LSTAT() returned
-			 * zero above.
-			 */
+		/*
+		 * Ensure synthetic_pathref()
+		 * can't recurse into fake_acls_lstat().
+		 * synthetic_pathref() doesn't care
+		 * about the uid/gid values, it only
+		 * wants a valid/invalid stat answer
+		 * and we know smb_fname exists as
+		 * the SMB_VFS_NEXT_LSTAT() returned
+		 * zero above.
+		 */
+		if (prd->calling_pathref_fsp) {
 			return 0;
 		}
 
 		/* Recursion guard. */
-		in_synthetic_pathref = true;
+		prd->calling_pathref_fsp = true;
 		status = synthetic_pathref(talloc_tos(),
 					   handle->conn->cwd_fsp,
 					   smb_fname->base_name,
@@ -210,7 +225,7 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 					   0, /* we want stat, not lstat. */
 					   &smb_fname_base);
 		/* End recursion guard. */
-		in_synthetic_pathref = false;
+		prd->calling_pathref_fsp = false;
 		if (NT_STATUS_IS_OK(status)) {
 			/*
 			 * This isn't quite right (calling fgetxattr not
@@ -640,7 +655,40 @@ static int fake_acls_fchmod(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int fake_acls_connect(struct vfs_handle_struct *handle,
+			     const char *service,
+			     const char *user)
+{
+	struct in_pathref_data *prd = NULL;
+	int ret;
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
+	}
+	/*
+	 * Create a struct can tell us if we're recursing
+	 * into open_pathref_fsp() in this module. This will
+	 * go away once we have SMB_VFS_STATX() and we will
+	 * have a way for a caller to as for specific stat
+	 * fields in a granular way. Then we will know exactly
+	 * what fields the caller wants, so we won't have to
+	 * fill in everything.
+	 */
+	prd = talloc_zero(handle->conn, struct in_pathref_data);
+	if (prd == NULL) {
+		return -1;
+	}
+	SMB_VFS_HANDLE_SET_DATA(handle,
+				prd,
+				NULL,
+				struct in_pathref_data,
+				return -1);
+	return 0;
+}
+
 static struct vfs_fn_pointers vfs_fake_acls_fns = {
+	.connect_fn = fake_acls_connect,
 	.stat_fn = fake_acls_stat,
 	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
