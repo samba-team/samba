@@ -160,97 +160,6 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static NTSTATUS smb2cli_ioctl_parse_buffer(uint32_t dyn_offset,
-					   const DATA_BLOB dyn_buffer,
-					   uint32_t min_offset,
-					   uint32_t buffer_offset,
-					   uint32_t buffer_length,
-					   uint32_t max_length,
-					   uint32_t *next_offset,
-					   DATA_BLOB *buffer)
-{
-	uint32_t offset;
-	bool oob;
-
-	*buffer = data_blob_null;
-	*next_offset = dyn_offset;
-
-	if (buffer_offset == 0) {
-		/*
-		 * If the offset is 0, we better ignore
-		 * the buffer_length field.
-		 */
-		return NT_STATUS_OK;
-	}
-
-	if (buffer_length == 0) {
-		/*
-		 * If the length is 0, we better ignore
-		 * the buffer_offset field.
-		 */
-		return NT_STATUS_OK;
-	}
-
-	if ((buffer_offset % 8) != 0) {
-		/*
-		 * The offset needs to be 8 byte aligned.
-		 */
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	/*
-	 * We used to enforce buffer_offset to be
-	 * an exact match of the expected minimum,
-	 * but the NetApp Ontap 7.3.7 SMB server
-	 * gets the padding wrong and aligns the
-	 * input_buffer_offset by a value of 8.
-	 *
-	 * So we just enforce that the offset is
-	 * not lower than the expected value.
-	 */
-	SMB_ASSERT(min_offset >= dyn_offset);
-	if (buffer_offset < min_offset) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	/*
-	 * Make [input|output]_buffer_offset relative to "dyn_buffer"
-	 */
-	offset = buffer_offset - dyn_offset;
-	oob = smb_buffer_oob(dyn_buffer.length, offset, buffer_length);
-	if (oob) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	/*
-	 * Give the caller a hint what we consumed,
-	 * the caller may need to add possible padding.
-	 */
-	*next_offset = buffer_offset + buffer_length;
-
-	if (max_length == 0) {
-		/*
-		 * If max_input_length is 0 we ignore the
-		 * input_buffer_length, because Windows 2008 echos the
-		 * DCERPC request from the requested input_buffer to
-		 * the response input_buffer.
-		 *
-		 * We just use the same logic also for max_output_length...
-		 */
-		buffer_length = 0;
-	}
-
-	if (buffer_length > max_length) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*buffer = (DATA_BLOB) {
-		.data = dyn_buffer.data + offset,
-		.length = buffer_length,
-	};
-	return NT_STATUS_OK;
-}
-
 static void smb2cli_ioctl_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
@@ -352,14 +261,14 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 
 	input_min_offset = dyn_ofs;
 	input_next_offset = dyn_ofs;
-	error = smb2cli_ioctl_parse_buffer(dyn_ofs,
-					   dyn_buffer,
-					   input_min_offset,
-					   input_buffer_offset,
-					   input_buffer_length,
-					   state->max_input_length,
-					   &input_next_offset,
-					   &state->out_input_buffer);
+	error = smb2cli_parse_dyn_buffer(dyn_ofs,
+					 dyn_buffer,
+					 input_min_offset,
+					 input_buffer_offset,
+					 input_buffer_length,
+					 state->max_input_length,
+					 &input_next_offset,
+					 &state->out_input_buffer);
 	if (tevent_req_nterror(req, error)) {
 		return;
 	}
@@ -370,14 +279,14 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 	 */
 	output_min_offset = NDR_ROUND(input_next_offset, 8);
 	output_next_offset = 0; /* this variable is completely ignored */
-	error = smb2cli_ioctl_parse_buffer(dyn_ofs,
-					   dyn_buffer,
-					   output_min_offset,
-					   output_buffer_offset,
-					   output_buffer_length,
-					   state->max_output_length,
-					   &output_next_offset,
-					   &state->out_output_buffer);
+	error = smb2cli_parse_dyn_buffer(dyn_ofs,
+					 dyn_buffer,
+					 output_min_offset,
+					 output_buffer_offset,
+					 output_buffer_length,
+					 state->max_output_length,
+					 &output_next_offset,
+					 &state->out_output_buffer);
 	if (tevent_req_nterror(req, error)) {
 		return;
 	}

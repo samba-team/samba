@@ -6664,3 +6664,94 @@ uint64_t smb2cli_conn_get_mid(struct smbXcli_conn *conn)
 {
 	return conn->smb2.mid;
 }
+
+NTSTATUS smb2cli_parse_dyn_buffer(uint32_t dyn_offset,
+				  const DATA_BLOB dyn_buffer,
+				  uint32_t min_offset,
+				  uint32_t buffer_offset,
+				  uint32_t buffer_length,
+				  uint32_t max_length,
+				  uint32_t *next_offset,
+				  DATA_BLOB *buffer)
+{
+	uint32_t offset;
+	bool oob;
+
+	*buffer = data_blob_null;
+	*next_offset = dyn_offset;
+
+	if (buffer_offset == 0) {
+		/*
+		 * If the offset is 0, we better ignore
+		 * the buffer_length field.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (buffer_length == 0) {
+		/*
+		 * If the length is 0, we better ignore
+		 * the buffer_offset field.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if ((buffer_offset % 8) != 0) {
+		/*
+		 * The offset needs to be 8 byte aligned.
+		 */
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	/*
+	 * We used to enforce buffer_offset to be
+	 * an exact match of the expected minimum,
+	 * but the NetApp Ontap 7.3.7 SMB server
+	 * gets the padding wrong and aligns the
+	 * input_buffer_offset by a value of 8.
+	 *
+	 * So we just enforce that the offset is
+	 * not lower than the expected value.
+	 */
+	SMB_ASSERT(min_offset >= dyn_offset);
+	if (buffer_offset < min_offset) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	/*
+	 * Make [input|output]_buffer_offset relative to "dyn_buffer"
+	 */
+	offset = buffer_offset - dyn_offset;
+	oob = smb_buffer_oob(dyn_buffer.length, offset, buffer_length);
+	if (oob) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	/*
+	 * Give the caller a hint what we consumed,
+	 * the caller may need to add possible padding.
+	 */
+	*next_offset = buffer_offset + buffer_length;
+
+	if (max_length == 0) {
+		/*
+		 * If max_input_length is 0 we ignore the
+		 * input_buffer_length, because Windows 2008 echos the
+		 * DCERPC request from the requested input_buffer to
+		 * the response input_buffer.
+		 *
+		 * We just use the same logic also for max_output_length...
+		 */
+		buffer_length = 0;
+	}
+
+	if (buffer_length > max_length) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*buffer = (DATA_BLOB) {
+		.data = dyn_buffer.data + offset,
+		.length = buffer_length,
+	};
+	return NT_STATUS_OK;
+}

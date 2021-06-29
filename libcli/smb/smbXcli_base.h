@@ -390,6 +390,15 @@ void smb2cli_conn_set_cc_max_chunks(struct smbXcli_conn *conn,
 void smb2cli_conn_set_mid(struct smbXcli_conn *conn, uint64_t mid);
 uint64_t smb2cli_conn_get_mid(struct smbXcli_conn *conn);
 
+NTSTATUS smb2cli_parse_dyn_buffer(uint32_t dyn_offset,
+				  const DATA_BLOB dyn_buffer,
+				  uint32_t min_offset,
+				  uint32_t buffer_offset,
+				  uint32_t buffer_length,
+				  uint32_t max_length,
+				  uint32_t *next_offset,
+				  DATA_BLOB *buffer);
+
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,
