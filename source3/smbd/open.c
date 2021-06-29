@@ -4404,6 +4404,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	struct timespec mtimespec;
 	int info = 0;
 	bool ok;
+	uint32_t need_fd_access;
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
@@ -4596,12 +4597,25 @@ static NTSTATUS open_directory(connection_struct *conn,
 	*/
 	mtimespec = make_omit_timespec();
 
-	status = reopen_from_fsp(fsp, O_RDONLY|O_DIRECTORY, 0, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("Could not open fd for%s (%s)\n",
-			 smb_fname_str_dbg(smb_dname),
-			 nt_errstr(status));
-		return status;
+	/*
+	 * Obviously for FILE_LIST_DIRECTORY we need to reopen to get an fd
+	 * usable for reading a directory. SMB2_FLUSH may be called on
+	 * directories opened with FILE_ADD_FILE and FILE_ADD_SUBDIRECTORY so
+	 * for those we need to reopen as well.
+	 */
+	need_fd_access =
+		FILE_LIST_DIRECTORY |
+		FILE_ADD_FILE |
+		FILE_ADD_SUBDIRECTORY;
+
+	if (access_mask & need_fd_access) {
+		status = reopen_from_fsp(fsp, O_RDONLY | O_DIRECTORY, 0, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_INFO("Could not open fd for [%s]: %s\n",
+				 smb_fname_str_dbg(smb_dname),
+				 nt_errstr(status));
+			return status;
+		}
 	}
 
 	status = vfs_stat_fsp(fsp);
