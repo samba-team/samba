@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import sys
 import samba.getopt as options
 import ldb
 import re
@@ -76,6 +77,7 @@ from samba.ntstatus import (
     NT_STATUS_ACCESS_DENIED
 )
 from samba.netcmd.gpcommon import create_directory_hier, smb_connection
+from samba.policies import RegistryGroupPolicies
 
 
 def gpo_flags_string(value):
@@ -670,6 +672,128 @@ class cmd_show(GPOCommand):
         self.outf.write("Policies     :\n")
         json.dump(policy_defs, self.outf, indent=4)
         self.outf.write("\n")
+
+
+class cmd_load(GPOCommand):
+    """Load policies onto a GPO.
+
+    Reads json from standard input until EOF, unless a json formatted
+    file is provided via --content.
+
+    Example json_input:
+    [
+        {
+            "keyname": "Software\\Policies\\Mozilla\\Firefox\\Homepage",
+            "valuename": "StartPage",
+            "class": "USER",
+            "type": "REG_SZ",
+            "data": "homepage"
+        },
+        {
+            "keyname": "Software\\Policies\\Mozilla\\Firefox\\Homepage",
+            "valuename": "URL",
+            "class": "USER",
+            "type": "REG_SZ",
+            "data": "google.com"
+        },
+    ]
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['gpo']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--content", help="JSON file of policy inputs", type=str)
+    ]
+
+    def run(self, gpo, H=None, content=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        if content is None:
+            policy_defs = json.loads(sys.stdin.read())
+        elif os.path.exists(content):
+            with open(content, 'rb') as r:
+                policy_defs = json.load(r)
+        else:
+            raise CommandError("The JSON content file does not exist")
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, H)
+        try:
+            reg.merge_s(policy_defs)
+        except NTSTATUSError as e:
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
+
+
+class cmd_remove(GPOCommand):
+    """Remove policies from a GPO.
+
+    Reads json from standard input until EOF, unless a json formatted
+    file is provided via --content.
+
+    Example json_input:
+    [
+        {
+            "keyname": "Software\\Policies\\Mozilla\\Firefox\\Homepage",
+            "valuename": "StartPage",
+            "class": "USER",
+        },
+        {
+            "keyname": "Software\\Policies\\Mozilla\\Firefox\\Homepage",
+            "valuename": "URL",
+            "class": "USER",
+        },
+    ]
+    """
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['gpo']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--content", help="JSON file of policy inputs", type=str)
+    ]
+
+    def run(self, gpo, H=None, content=None, sambaopts=None, credopts=None,
+            versionopts=None):
+        if content is None:
+            policy_defs = json.loads(sys.stdin.read())
+        elif os.path.exists(content):
+            with open(content, 'rb') as r:
+                policy_defs = json.load(r)
+        else:
+            raise CommandError("The JSON content file does not exist")
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+        reg = RegistryGroupPolicies(gpo, self.lp, self.creds, H)
+        try:
+            reg.remove_s(policy_defs)
+        except NTSTATUSError as e:
+            if e.args[0] == NT_STATUS_ACCESS_DENIED:
+                raise CommandError("The authenticated user does "
+                                   "not have sufficient privileges")
+            else:
+                raise
 
 
 class cmd_getlink(GPOCommand):
@@ -4092,6 +4216,8 @@ class cmd_gpo(SuperCommand):
     subcommands["listall"] = cmd_listall()
     subcommands["list"] = cmd_list()
     subcommands["show"] = cmd_show()
+    subcommands["load"] = cmd_load()
+    subcommands["remove"] = cmd_remove()
     subcommands["getlink"] = cmd_getlink()
     subcommands["setlink"] = cmd_setlink()
     subcommands["dellink"] = cmd_dellink()
