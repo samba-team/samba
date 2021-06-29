@@ -90,8 +90,13 @@ static void smb2cli_read_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2cli_read_state);
 	NTSTATUS status;
+	NTSTATUS error;
 	struct iovec *iov;
+	const uint8_t dyn_ofs = SMB2_HDR_BODY + 0x10;
+	DATA_BLOB dyn_buffer = data_blob_null;
 	uint8_t data_offset;
+	DATA_BLOB data_buffer = data_blob_null;
+	uint32_t next_offset = 0; /* this variable is completely ignored */
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = STATUS_BUFFER_OVERFLOW,
@@ -117,14 +122,23 @@ static void smb2cli_read_done(struct tevent_req *subreq)
 	data_offset = CVAL(iov[1].iov_base, 2);
 	state->data_length = IVAL(iov[1].iov_base, 4);
 
-	if ((data_offset != SMB2_HDR_BODY + 16) ||
-	    (state->data_length > iov[2].iov_len)) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+	dyn_buffer = data_blob_const((uint8_t *)iov[2].iov_base,
+				     iov[2].iov_len);
+
+	error = smb2cli_parse_dyn_buffer(dyn_ofs,
+					 dyn_buffer,
+					 dyn_ofs, /* min_offset */
+					 data_offset,
+					 state->data_length,
+					 dyn_buffer.length, /* max_length */
+					 &next_offset,
+					 &data_buffer);
+	if (tevent_req_nterror(req, error)) {
 		return;
 	}
 
 	state->recv_iov = iov;
-	state->data = (uint8_t *)iov[2].iov_base;
+	state->data = data_buffer.data;
 
 	state->out_valid = true;
 
