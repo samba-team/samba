@@ -22,6 +22,15 @@
 #ifndef _WINBIND_NSS_LINUX_H
 #define _WINBIND_NSS_LINUX_H
 
+#ifndef _PUBLIC_ON_LINUX_
+/* If _PUBLIC_ON_LINUX_ is not defined via the wscript_build
+ * section we should mark the symbols as _PRIVATE_ because
+ * the Linux symbols are only used internally in order to
+ * implement the glue for other platforms on top.
+ */
+#define _PUBLIC_ON_LINUX_ _PRIVATE_
+#endif
+
 NSS_STATUS _nss_winbind_setpwent(void);
 NSS_STATUS _nss_winbind_endpwent(void);
 NSS_STATUS _nss_winbind_getpwent_r(struct passwd *result, char *buffer,

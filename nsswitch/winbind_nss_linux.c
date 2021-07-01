@@ -361,6 +361,7 @@ static int num_pw_cache;                 /* Current size of pwd cache */
 
 /* Rewind "file pointer" to start of ntdom password database */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_setpwent(void)
 {
@@ -393,6 +394,7 @@ _nss_winbind_setpwent(void)
 
 /* Close ntdom password database "file pointer" */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_endpwent(void)
 {
@@ -426,6 +428,7 @@ _nss_winbind_endpwent(void)
 
 /* Fetch the next password entry from ntdom password database */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
@@ -522,6 +525,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 /* Return passwd struct from uid */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
@@ -600,6 +604,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 }
 
 /* Return passwd struct from username */
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 			size_t buflen, int *errnop)
@@ -690,6 +695,7 @@ static int num_gr_cache;                 /* Current size of grp cache */
 
 /* Rewind "file pointer" to start of ntdom group database */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_setgrent(void)
 {
@@ -723,6 +729,7 @@ _nss_winbind_setgrent(void)
 
 /* Close "file pointer" for ntdom group database */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_endgrent(void)
 {
@@ -863,6 +870,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 }
 
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getgrent_r(struct group *result,
 			char *buffer, size_t buflen, int *errnop)
@@ -870,6 +878,7 @@ _nss_winbind_getgrent_r(struct group *result,
 	return winbind_getgrent(WINBINDD_GETGRENT, result, buffer, buflen, errnop);
 }
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getgrlst_r(struct group *result,
 			char *buffer, size_t buflen, int *errnop)
@@ -879,6 +888,7 @@ _nss_winbind_getgrlst_r(struct group *result,
 
 /* Return group struct from group name */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getgrnam_r(const char *name,
 			struct group *result, char *buffer,
@@ -966,6 +976,7 @@ _nss_winbind_getgrnam_r(const char *name,
 
 /* Return group struct from gid */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_getgrgid_r(gid_t gid,
 			struct group *result, char *buffer,
@@ -1051,6 +1062,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 /* Initialise supplementary groups */
 
+_PUBLIC_ON_LINUX_
 NSS_STATUS
 _nss_winbind_initgroups_dyn(const char *user, gid_t group, long int *start,
 			    long int *size, gid_t **groups, long int limit,

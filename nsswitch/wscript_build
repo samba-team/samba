@@ -27,6 +27,7 @@ if bld.CONFIG_SET('HAVE_PTHREAD'):
 # The nss_wrapper code relies strictly on the linux implementation and
 # name, so compile but do not install a copy under this name.
 bld.SAMBA_LIBRARY('nss_wrapper_winbind',
+		  cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
 		  source='winbind_nss_linux.c',
 		  deps='winbind-client',
 		  realname='libnss_wrapper_winbind.so.2',
@@ -39,6 +40,7 @@ bld.SAMBA_LIBRARY('nss_wrapper_winbind',
 if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
     bld.SAMBA_LIBRARY('nss_winbind',
               keep_underscore=True,
+              cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
               source='winbind_nss_linux.c',
               deps='winbind-client',
               public_headers=[],
@@ -48,6 +50,7 @@ if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
 
     bld.SAMBA3_LIBRARY('nss_wins',
                        keep_underscore=True,
+                       cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
                        source='wins.c',
                        deps='wbclient replace',
                        public_headers=[],
