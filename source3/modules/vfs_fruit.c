@@ -1425,6 +1425,13 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
+	/*
+	 * We know this is a stream open, so fsp->base_fsp must
+	 * already be open.
+	 */
+	SMB_ASSERT(fsp->base_fsp != NULL);
+	SMB_ASSERT(fsp->base_fsp->fsp_name->fsp == fsp->base_fsp);
+
 	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
 	if (ad != NULL) {
 		meta_exists = true;
