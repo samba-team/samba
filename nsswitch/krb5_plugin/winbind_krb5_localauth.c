@@ -248,13 +248,13 @@ static void winbind_free_string(krb5_context context,
 	free(str);
 }
 
-krb5_error_code
+_PUBLIC_ krb5_error_code
 localauth_winbind_initvt(krb5_context context,
 			 int maj_ver,
 			 int min_ver,
 			 krb5_plugin_vtable vtable);
 
-krb5_error_code
+_PUBLIC_ krb5_error_code
 localauth_winbind_initvt(krb5_context context,
 			 int maj_ver,
 			 int min_ver,

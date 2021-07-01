@@ -408,7 +408,7 @@ static krb5_error_code smb_krb5_locator_lookup(void *private_data,
 #define SMB_KRB5_LOCATOR_SYMBOL_NAME service_locator /* MIT */
 #endif
 
-const krb5plugin_service_locate_ftable SMB_KRB5_LOCATOR_SYMBOL_NAME = {
+_PUBLIC_ const krb5plugin_service_locate_ftable SMB_KRB5_LOCATOR_SYMBOL_NAME = {
 	.minor_version	= 0,
 	.init		= smb_krb5_locator_init,
 	.fini		= smb_krb5_locator_close,
