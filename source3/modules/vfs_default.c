@@ -2279,9 +2279,9 @@ static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req)
 	}
 
 	while (state->remaining > 0) {
-		nwritten = copy_file_range(fsp_get_pathref_fd(state->src_fsp),
+		nwritten = copy_file_range(fsp_get_io_fd(state->src_fsp),
 					   &state->src_off,
-					   fsp_get_pathref_fd(state->dst_fsp),
+					   fsp_get_io_fd(state->dst_fsp),
 					   &state->dst_off,
 					   state->remaining,
 					   0);
