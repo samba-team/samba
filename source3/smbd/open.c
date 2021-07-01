@@ -664,7 +664,6 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	struct smb_filename *orig_fsp_name = fsp->fsp_name;
 	struct smb_filename *orig_base_fsp_name = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
-	struct smb_filename base_smb_fname_rel;
 	struct smb_filename *oldwd_fname = NULL;
 	struct smb_filename *parent_dir_fname = NULL;
 	bool have_opath = false;
@@ -728,11 +727,35 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 
 		/* Also setup base_fsp to be relative to the new cwd */
 		if (fsp->base_fsp != NULL) {
-			base_smb_fname_rel = (struct smb_filename) {
-				.base_name = smb_fname_rel->base_name,
-			};
+			struct smb_filename *base_smb_fname_rel = NULL;
+
+			/* Check the invarient is true. */
+			SMB_ASSERT(fsp->base_fsp->fsp_name->fsp ==
+				   fsp->base_fsp);
+
+			base_smb_fname_rel = synthetic_smb_fname(
+						talloc_tos(),
+						smb_fname_rel->base_name,
+						NULL,
+						&smb_fname_rel->st,
+						smb_fname_rel->twrp,
+						smb_fname_rel->flags);
+			if (base_smb_fname_rel == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
+
+			base_smb_fname_rel->fsp = fsp->base_fsp;
+
 			orig_base_fsp_name = fsp->base_fsp->fsp_name;
-			fsp->base_fsp->fsp_name = &base_smb_fname_rel;
+			fsp->base_fsp->fsp_name = base_smb_fname_rel;
+
+			/*
+			 * We should have preserved the invarient
+			 * fsp->base_fsp->fsp_name->fsp == fsp->base_fsp.
+			 */
+			SMB_ASSERT(fsp->base_fsp->fsp_name->fsp ==
+				   fsp->base_fsp);
 		}
 	} else {
 		/*
@@ -835,7 +858,20 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
   out:
 	fsp->fsp_name = orig_fsp_name;
 	if (fsp->base_fsp != NULL) {
+		/* Save off the temporary name. */
+		struct smb_filename *base_smb_fname_rel =
+			fsp->base_fsp->fsp_name;
+		/* It no longer has an associated fsp. */
+		base_smb_fname_rel->fsp = NULL;
+
+		/* Replace the original name. */
 		fsp->base_fsp->fsp_name = orig_base_fsp_name;
+		/*
+		 * We should have preserved the invarient
+		 * fsp->base_fsp->fsp_name->fsp == fsp->base_fsp.
+		 */
+		SMB_ASSERT(fsp->base_fsp->fsp_name->fsp == fsp->base_fsp);
+		TALLOC_FREE(base_smb_fname_rel);
 	}
 	TALLOC_FREE(parent_dir_fname);
 
