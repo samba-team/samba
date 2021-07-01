@@ -39,7 +39,7 @@ NSS_METHOD_PROTOTYPE(__nss_compat_setpwent);
 NSS_METHOD_PROTOTYPE(__nss_compat_endpwent);
 NSS_METHOD_PROTOTYPE(__nss_compat_endpwent);
 
-NSS_METHOD_PROTOTYPE(__freebsd_getgroupmembership);
+static NSS_METHOD_PROTOTYPE(__freebsd_getgroupmembership);
 
 static ns_mtab methods[] = {
 { NSDB_GROUP, "getgrnam_r", __nss_compat_getgrnam_r, _nss_winbind_getgrnam_r },
@@ -85,7 +85,7 @@ gr_addgid(gid_t gid, gid_t *groups, int maxgrp, int *grpcnt)
 	            defaultsrc, uname, agroup, groups, maxgrp, grpcnt);
 */
 
-int
+static int
 __freebsd_getgroupmembership(void *retval, void *mdata, va_list ap)
 {
 	const char 	*uname  = va_arg(ap, const char *);
@@ -127,7 +127,7 @@ __freebsd_getgroupmembership(void *retval, void *mdata, va_list ap)
 	return NSS_STATUS_NOTFOUND;
 }
 
-ns_mtab *
+_PUBLIC_ ns_mtab *
 nss_module_register(const char *source, unsigned int *mtabsize,
     nss_module_unregister_fn *unreg)
 {

@@ -26,7 +26,7 @@ extern enum nss_status _nss_wins_gethostbyname2_r(const char *name, int af, stru
 
 ns_mtab *nss_module_register(const char *source, unsigned int *, nss_module_unregister_fn *);
 
-NSS_METHOD_PROTOTYPE(__nss_wins_freebsd_gethostbyname2_r);
+static NSS_METHOD_PROTOTYPE(__nss_wins_freebsd_gethostbyname2_r);
 
 static ns_mtab methods[] =
 {
@@ -43,7 +43,7 @@ static ns_mtab methods[] =
        { NSDB_HOSTS, "getnetbyaddr",     NULL, NULL }
 };
 
-int
+static int
 __nss_wins_freebsd_gethostbyname2_r(void *retval, void *mdata, va_list ap)
 {
        int (*fn)(const char *, int, struct hostent *, char *, size_t, int *);
@@ -71,7 +71,7 @@ __nss_wins_freebsd_gethostbyname2_r(void *retval, void *mdata, va_list ap)
        return (status);
 }
 
-ns_mtab *
+_PUBLIC_ ns_mtab *
 nss_module_register(const char *source __unused, unsigned int *mtabsize,
     nss_module_unregister_fn *unreg)
 {
