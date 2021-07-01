@@ -3,14 +3,6 @@ from waflib import Utils
 import sys
 host_os = sys.platform
 
-bld.SAMBA_LIBRARY('winbind-client',
-	source='wb_common.c',
-	deps='replace',
-	cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
-	private_library=True
-	)
-
-
 bld.SAMBA_BINARY('nsstest',
 		 source='nsstest.c',
 		 deps='replace dl',
@@ -26,10 +18,10 @@ if bld.CONFIG_SET('HAVE_PTHREAD'):
 
 # The nss_wrapper code relies strictly on the linux implementation and
 # name, so compile but do not install a copy under this name.
-bld.SAMBA_LIBRARY('nss_wrapper_winbind',
+bld.SAMBA_PLUGIN('nss_wrapper_winbind',
 		  cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
 		  source='winbind_nss_linux.c',
-		  deps='winbind-client',
+		  deps='wbclient',
 		  realname='libnss_wrapper_winbind.so.2',
 		  install=False,
 		  vnum='2')
@@ -38,35 +30,33 @@ bld.SAMBA_LIBRARY('nss_wrapper_winbind',
 # the search for .rfind('gnu') covers gnu* and *-gnu is that too broad?
 
 if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
-    bld.SAMBA_LIBRARY('nss_winbind',
+    bld.SAMBA_PLUGIN('nss_winbind',
               keep_underscore=True,
               cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
               source='winbind_nss_linux.c',
-              deps='winbind-client',
-              public_headers=[],
-              public_headers_install=False,
-              pc_files=[],
+              deps='wbclient',
+              realname='libnss_winbind.so.2',
+              soname='libnss_winbind.so.2',
               vnum='2')
 
-    bld.SAMBA3_LIBRARY('nss_wins',
-                       keep_underscore=True,
-                       cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
-                       source='wins.c',
-                       deps='wbclient replace',
-                       public_headers=[],
-                       public_headers_install=False,
-                       pc_files=[],
-                       vnum='2')
+    bld.SAMBA3_PLUGIN('nss_wins',
+                      keep_underscore=True,
+                      cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
+                      source='wins.c',
+                      deps='wbclient replace',
+                      realname='libnss_wins.so.2',
+                      soname='libnss_wins.so.2',
+                      vnum='2')
 elif (host_os.rfind('freebsd') > -1):
 	# FreeBSD winbind client is implemented as a wrapper around
 	# the Linux version.
-	bld.SAMBA_LIBRARY('nss_winbind',
+	bld.SAMBA_PLUGIN('nss_winbind',
 			  source='winbind_nss_linux.c winbind_nss_freebsd.c',
-			  deps='winbind-client',
+			  deps='wbclient',
 			  realname='nss_winbind.so.1',
 			  vnum='1')
 
-	bld.SAMBA3_LIBRARY('nss_wins',
+	bld.SAMBA3_PLUGIN('nss_wins',
 			  source='wins.c wins_freebsd.c',
 			  deps='''wbclient''',
 			  realname='nss_wins.so.1',
@@ -78,66 +68,102 @@ elif (host_os.rfind('netbsd') > -1):
 	# indicate libc's use of the correct nsdispatch API.
 
 	if bld.CONFIG_SET("HAVE_GETPWENT_R"):
-		bld.SAMBA_LIBRARY('nss_winbind',
+		bld.SAMBA_PLUGIN('nss_winbind',
 				  source='winbind_nss_linux.c winbind_nss_netbsd.c',
-				  deps='winbind-client', 
+				  deps='wbclient',
 				  realname='libnss_winbind.so')
 elif Utils.unversioned_sys_platform() == 'sunos':
-	bld.SAMBA_LIBRARY('nss_winbind',
+	bld.SAMBA_PLUGIN('nss_winbind',
 			  source='winbind_nss_solaris.c winbind_nss_linux.c',
-			  deps='winbind-client',
+			  deps='wbclient',
 			  realname='nss_winbind.so.1',
 			  vnum='1')
 elif (host_os.rfind('hpux') > -1):
-	bld.SAMBA_LIBRARY('nss_winbind',
+	bld.SAMBA_PLUGIN('nss_winbind',
 			  source='winbind_nss_linux.c',
-			  deps='winbind-client', 
+			  deps='wbclient',
 			  realname='libnss_winbind.so')
 elif (host_os.rfind('aix') > -1):
-	bld.SAMBA_LIBRARY('nss_winbind',
+	bld.SAMBA_PLUGIN('nss_winbind',
 			  source='winbind_nss_aix.c',
-			  deps='winbind-client', 
+			  deps='wbclient',
 			  realname='WINBIND')
 
 if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
-	bld.SAMBA_LIBRARY('pamwinbind',
+	bld.SAMBA_PLUGIN('pamwinbind',
 		source='pam_winbind.c',
-		deps='talloc wbclient winbind-client tiniparser pam samba_intl',
+		deps='talloc wbclient tiniparser pam samba_intl',
 		cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
 		realname='pam_winbind.so',
 		install_path='${PAMMODULESDIR}'
 		)
 
-if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
-    bld.SAMBA_LIBRARY('winbind_krb5_locator',
-                      source='krb5_plugin/winbind_krb5_locator.c',
-                      deps='wbclient krb5 com_err',
-                      realname='winbind_krb5_locator.so',
-                      install_path='${MODULESDIR}/krb5')
+if bld.CONFIG_GET("USING_SYSTEM_KRB5"):
+    # If we build locator plugins for a
+    # system library we should use builtin
+    # linking of our own subsystems,
+    # while we may link to the system
+    # krb5 libraries.
+    winbind_krb5_require_builtin_deps = True
+else:
+    # If we build locator plugins for our own heimdal
+    # version we don't want to do builtin linking.
+    # As we're already using private libraries
+    # it's not a problem...
+    winbind_krb5_require_builtin_deps = False
 
 if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
-    bld.SAMBA_LIBRARY('async_dns_krb5_locator',
-                      source='krb5_plugin/async_dns_krb5_locator.c',
-                      deps='''
-                      talloc
-                      addns
-                      samba_intl
-                      libsmb
-                      smbconf
-                      KRBCLIENT
-                      smbd_base
-                      krb5
-                      com_err
-                      ''',
-                      realname='async_dns_krb5_locator.so',
-                      install_path='${MODULESDIR}/krb5')
+    bld.SAMBA_PLUGIN('winbind_krb5_locator',
+                     source='krb5_plugin/winbind_krb5_locator.c',
+                     deps='wbclient krb5 com_err',
+                     require_builtin_deps=winbind_krb5_require_builtin_deps,
+                     realname='winbind_krb5_locator.so',
+                     install_path='${MODULESDIR}/krb5')
+
+if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
+    # libkrb5.so scans it's plugin directories for files
+    # and calls dlopen()/dlsym() on them. The actual path
+    # depends on MIT vs. Heimdal.
+    #
+    # The async_dns_krb5_locator don't use winbind,
+    # instead it uses almost all of samba directly,
+    # which means everything will be injected
+    # into all processes using the libkrb5.so.
+    #
+    # See https://bugzilla.samba.org/show_bug.cgi?id=14780
+    # why this is a bad idea.
+    #
+    # We install this plugin (and also the other krb5 plugins)
+    # under Samba's MODULESDIR, it's not available to
+    # libkrb5.so by default.
+    #
+    # Packagers should leave it that way and allow admins
+    # to create symlinks for the plugins they actually want
+    # to be used.
+    bld.SAMBA_PLUGIN('async_dns_krb5_locator',
+                     source='krb5_plugin/async_dns_krb5_locator.c',
+                     deps='''
+                     talloc
+                     addns
+                     samba_intl
+                     libsmb
+                     smbconf
+                     KRBCLIENT
+                     smbd_base
+                     krb5
+                     com_err
+                     ''',
+                     require_builtin_deps=False,
+                     realname='async_dns_krb5_locator.so',
+                     install_path='${MODULESDIR}/krb5')
 
 if bld.CONFIG_SET('HAVE_KRB5_LOCALAUTH_PLUGIN_H'):
-    bld.SAMBA_LIBRARY('winbind_krb5_localauth',
-                      source='krb5_plugin/winbind_krb5_localauth.c',
-                      deps='wbclient krb5 com_err',
-                      realname='winbind_krb5_localauth.so',
-                      install_path='${MODULESDIR}/krb5')
+    bld.SAMBA_PLUGIN('winbind_krb5_localauth',
+                     source='krb5_plugin/winbind_krb5_localauth.c',
+                     deps='wbclient krb5 com_err',
+                     require_builtin_deps=winbind_krb5_require_builtin_deps,
+                     realname='winbind_krb5_localauth.so',
+                     install_path='${MODULESDIR}/krb5')
 
 bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
 	source='wb_reqtrans.c',

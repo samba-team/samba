@@ -783,7 +783,7 @@ for env in ["s4member_dflt_domain", "s4member"]:
 nsstest4 = binpath("nsstest")
 for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", "nt4_member:local"]:
     if os.path.exists(nsstest4):
-        plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "shared/libnss_wrapper_winbind.so.2")])
+        plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "plugins/libnss_wrapper_winbind.so.2")])
     else:
         skiptestsuite("samba.nss.test using winbind(%s)" % env, "nsstest not available")
 

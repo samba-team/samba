@@ -11,12 +11,13 @@ bld.SAMBA_LIBRARY('time-basic',
 
 bld.SAMBA_SUBSYSTEM('tini',
                     source='tini.c',
-                    deps='',
+                    provide_builtin_linking=True,
                     local_include=False)
 
 bld.SAMBA_SUBSYSTEM('tiniparser',
                     source='tiniparser.c',
                     deps='tini',
+                    provide_builtin_linking=True,
                     local_include=False)
 
 bld.SAMBA_SUBSYSTEM('strv',
@@ -122,6 +123,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
 
 bld.SAMBA_SUBSYSTEM('smb_strtox',
                     source='smb_strtox.c',
+                    provide_builtin_linking=True,
                     local_include=False)
 
 

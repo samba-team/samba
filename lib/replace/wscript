@@ -909,6 +909,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
+                      provide_builtin_linking=True,
                       deps='dl attr' + extra_libs)
 
     replace_test_cflags = ''

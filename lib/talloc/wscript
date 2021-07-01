@@ -114,6 +114,7 @@ def build(bld):
         bld.SAMBA_LIBRARY('talloc',
                           'talloc.c',
                           deps='replace',
+                          provide_builtin_linking=True,
                           abi_directory='ABI',
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,

@@ -18,7 +18,7 @@ shift 1
 
 PAM_WRAPPER_PATH="$BINDIR/default/third_party/pam_wrapper"
 
-pam_winbind="$BINDIR/shared/pam_winbind.so"
+pam_winbind="$BINDIR/plugins/pam_winbind.so"
 service_dir="$SELFTEST_TMPDIR/pam_services"
 service_file="$service_dir/samba"
 

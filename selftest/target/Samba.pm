@@ -167,7 +167,7 @@ sub nss_wrapper_winbind_so_path($) {
         my ($object) = @_;
 	my $ret = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
         if (not defined($ret)) {
-	    $ret = bindir_path($object, "shared/libnss_wrapper_winbind.so.2");
+	    $ret = bindir_path($object, "plugins/libnss_wrapper_winbind.so.2");
 	    $ret = abs_path($ret);
 	}
 	return $ret;

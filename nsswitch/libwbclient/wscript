@@ -27,6 +27,15 @@ def build(bld):
 #
 #    Logs.info("\tSelected embedded libwbclient build")
 
+    bld.SAMBA_SUBSYSTEM('wbclient-internal',
+        source='../wb_common.c',
+        deps='replace',
+        cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
+        hide_symbols=True,
+        provide_builtin_linking=True,
+        builtin_cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
+        )
+
     abi_match = 'wbc*'
     bld.SAMBA_LIBRARY('wbclient',
                       source='''
@@ -38,7 +47,9 @@ def build(bld):
                              wbc_sid.c
                              wbc_util.c''',
                       hide_symbols=True,
-                      deps='winbind-client smb_strtox',
+                      deps='wbclient-internal smb_strtox',
+                      require_builtin_deps=True,
+                      provide_builtin_linking=True,
                       pc_files='wbclient.pc',
                       public_headers='wbclient.h',
                       abi_directory='ABI',
