@@ -34,7 +34,7 @@ def options(opt):
                    action="store", dest='BUNDLED_LIBS', default='')
 
     gr.add_option('--private-libraries',
-                   help=("comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private. Can be 'NONE' or 'ALL' [auto]"),
+                   help=("comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private in order to limit the effect of 'ALL'"),
                    action="store", dest='PRIVATE_LIBS', default='')
 
     extension_default = default_value('PRIVATE_EXTENSION_DEFAULT')
