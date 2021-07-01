@@ -269,6 +269,8 @@ def configure(conf):
 
     conf.env.PRIVATE_EXTENSION = Options.options.PRIVATE_EXTENSION
     conf.env.PRIVATE_EXTENSION_EXCEPTION = Options.options.PRIVATE_EXTENSION_EXCEPTION.split(',')
+    conf.env.PRIVATE_VERSION = "%s_%s_%s" % (Context.g_module.APPNAME,
+        Context.g_module.VERSION, conf.env.PRIVATE_EXTENSION)
 
     conf.env.CROSS_COMPILE = Options.options.CROSS_COMPILE
     conf.env.CROSS_EXECUTE = Options.options.CROSS_EXECUTE

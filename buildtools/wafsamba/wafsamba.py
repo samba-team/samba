@@ -222,6 +222,8 @@ def SAMBA_LIBRARY(bld, libname, source,
             raise Errors.WafError("public library '%s' must have header files" %
                        libname)
 
+    abi_vnum = vnum
+
     if bundled_name is not None:
         pass
     elif target_type == 'PYTHON' or realname or not private_library:
@@ -232,6 +234,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         assert (private_library == True and realname is None)
         bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'))
+        vnum = None
 
     ldflags = TO_LIST(ldflags)
     if bld.env['ENABLE_RELRO'] is True:
@@ -258,7 +261,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     vscript = None
     if bld.env.HAVE_LD_VERSION_SCRIPT:
         if private_library:
-            version = "%s_%s" % (Context.g_module.APPNAME, Context.g_module.VERSION)
+            version = bld.env.PRIVATE_VERSION
         elif vnum:
             version = "%s_%s" % (libname, vnum)
         else:
@@ -266,7 +269,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if version:
             vscript = "%s.vscript" % libname
             bld.ABI_VSCRIPT(version_libname, abi_directory, version, vscript,
-                            abi_match)
+                            abi_match, private_library)
             fullname = apply_pattern(bundled_name, bld.env.cshlib_PATTERN)
             fullpath = bld.path.find_or_declare(fullname)
             vscriptpath = bld.path.find_or_declare(vscript)
@@ -303,6 +306,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_install   = install,
         abi_directory   = "%s/%s" % (bld.path.abspath(), abi_directory),
         abi_match       = abi_match,
+        abi_vnum        = abi_vnum,
         private_library = private_library,
         grouping_library=grouping_library,
         allow_undefined_symbols=allow_undefined_symbols
