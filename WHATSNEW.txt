@@ -135,12 +135,20 @@ which have been out of support since 2018.
 smb.conf changes
 ================
 
-  Parameter Name                     Description                Default
-  --------------                     -----------                -------
-  client use kerberos                New                        desired
-  client protection                  New                        default
-  winbind use krb5 enterprise principals  Changed               Yes
-  winbind scan trusted domains       Changed                    No
+  Parameter Name                          Description     Default
+  --------------                          -----------     -------
+  client use kerberos                     New             desired
+  client protection                       New             default
+  preopen:posix-basic-regex               New             No
+  preopen:nomatch_log_level               New             5
+  preopen:match_log_level                 New             5
+  preopen:nodigits_log_level              New             1
+  preopen:founddigits_log_level           New             3
+  preopen:reset_log_level                 New             5
+  preopen:push_log_level                  New             3
+  preopen:queue_log_level                 New             10
+  winbind use krb5 enterprise principals  Changed         Yes
+  winbind scan trusted domains            Changed         No
 
 
 KNOWN ISSUES
