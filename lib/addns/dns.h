@@ -285,8 +285,6 @@ DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 uint16_t mac_length, const uint8_t *mac,
 				 uint16_t original_id, uint16_t error,
 				 struct dns_rrec **prec);
-DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-		       uint16_t *num_records, struct dns_rrec ***records);
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
