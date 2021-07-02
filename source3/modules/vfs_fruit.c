@@ -3108,7 +3108,7 @@ static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
 	if (ad == NULL) {
 		DBG_INFO("fruit_stat_meta %s: %s\n",
 			 smb_fname_str_dbg(smb_fname), strerror(errno));
