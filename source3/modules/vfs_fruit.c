@@ -144,6 +144,8 @@ struct fruit_config_data {
 	bool readdir_attr_rsize;
 	bool readdir_attr_finder_info;
 	bool readdir_attr_max_access;
+	/* Recursion guard. Will go away when we have STATX. */
+	bool in_openat_pathref_fsp;
 };
 
 static const struct enum_list fruit_rsrc[] = {
