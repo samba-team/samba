@@ -204,7 +204,6 @@ struct fio {
  * Helper functions
  *****************************************************************************/
 
-#if 0
 static struct adouble *ad_get_meta_fsp(TALLOC_CTX *ctx,
 				       vfs_handle_struct *handle,
 				       const struct smb_filename *smb_fname)
@@ -245,7 +244,6 @@ static struct adouble *ad_get_meta_fsp(TALLOC_CTX *ctx,
 	TALLOC_FREE(smb_fname_cp);
 	return ad;
 }
-#endif
 
 static struct fio *fruit_get_complete_fio(vfs_handle_struct *handle,
 					  files_struct *fsp)
@@ -530,7 +528,7 @@ static void update_btime(vfs_handle_struct *handle,
 		return;
 	}
 
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
 	if (ad == NULL) {
 		return;
 	}
