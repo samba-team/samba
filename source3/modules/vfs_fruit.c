@@ -3667,7 +3667,7 @@ static NTSTATUS fruit_streaminfo_meta_netatalk(
 		}
 	}
 
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
 	if (ad == NULL) {
 		return NT_STATUS_OK;
 	}
