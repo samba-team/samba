@@ -204,6 +204,49 @@ struct fio {
  * Helper functions
  *****************************************************************************/
 
+#if 0
+static struct adouble *ad_get_meta_fsp(TALLOC_CTX *ctx,
+				       vfs_handle_struct *handle,
+				       const struct smb_filename *smb_fname)
+{
+	NTSTATUS status;
+	struct adouble *ad = NULL;
+	struct smb_filename *smb_fname_cp = NULL;
+	struct fruit_config_data *config = NULL;
+
+	if (smb_fname->fsp != NULL) {
+		return ad_get(ctx, handle, smb_fname, ADOUBLE_META);
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct fruit_config_data,
+				return NULL);
+
+	if (config->in_openat_pathref_fsp) {
+		return NULL;
+	}
+
+	smb_fname_cp = cp_smb_filename(ctx,
+				       smb_fname);
+	if (smb_fname_cp == NULL) {
+		return NULL;
+	}
+	config->in_openat_pathref_fsp = true;
+	status = openat_pathref_fsp(handle->conn->cwd_fsp,
+				    smb_fname_cp);
+	config->in_openat_pathref_fsp = false;
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname_cp);
+		return NULL;
+	}
+
+	ad = ad_get(ctx, handle, smb_fname_cp, ADOUBLE_META);
+	TALLOC_FREE(smb_fname_cp);
+	return ad;
+}
+#endif
+
 static struct fio *fruit_get_complete_fio(vfs_handle_struct *handle,
 					  files_struct *fsp)
 {
