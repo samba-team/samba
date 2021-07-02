@@ -1,0 +1,84 @@
+#!/usr/bin/python3
+import optparse
+import os, sys, re
+import pickle
+
+sys.path.insert(0, "bin/python")
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('getcert <cmd> [options]')
+    parser.add_option('-i')
+    parser.add_option('-c')
+    parser.add_option('-T')
+    parser.add_option('-I')
+    parser.add_option('-k')
+    parser.add_option('-f')
+    parser.add_option('-e')
+    parser.add_option('-g')
+
+    (opts, args) = parser.parse_args()
+    assert len(args) == 1
+    assert args[0] in ['add-ca', 'request', 'remove-ca', 'stop-tracking',
+                       'list', 'list-cas']
+
+    # Use a dir we can write to in the testenv
+    if 'LOCAL_PATH' in os.environ:
+        data_dir = os.path.realpath(os.environ.get('LOCAL_PATH'))
+    else:
+        data_dir = os.path.dirname(os.path.realpath(__file__))
+    dump_file = os.path.join(data_dir, 'getcert.dump')
+    if os.path.exists(dump_file):
+        with open(dump_file, 'rb') as r:
+            cas, certs = pickle.load(r)
+    else:
+        cas = {}
+        certs = {}
+    if args[0] == 'add-ca':
+        # Add a fake CA entry
+        assert opts.c not in cas.keys()
+        cas[opts.c] = opts.e
+    elif args[0] == 'remove-ca':
+        # Remove a fake CA entry
+        assert opts.c in cas.keys()
+        del cas[opts.c]
+    elif args[0] == 'list-cas':
+        # List the fake CAs
+        for ca, helper_location in cas.items():
+            print('CA \'%s\':\n\tis-default: no\n\tca-type: EXTERNAL\n' % ca +
+                  '\thelper-location: %s' % helper_location)
+    elif args[0] == 'request':
+        # Add a fake cert request
+        assert opts.c in cas.keys()
+        assert opts.I not in certs.keys()
+        certs[opts.I] = { 'ca': opts.c, 'template': opts.T,
+                          'keyfile': os.path.abspath(opts.k),
+                          'certfile': os.path.abspath(opts.f),
+                          'keysize': opts.g }
+        # Create dummy key and cert (empty files)
+        with open(opts.k, 'w') as w:
+            pass
+        with open(opts.f, 'w') as w:
+            pass
+    elif args[0] == 'stop-tracking':
+        # Remove the fake cert request
+        assert opts.i in certs.keys()
+        del certs[opts.i]
+    elif args[0] == 'list':
+        # List the fake cert requests
+        print('Number of certificates and requests being tracked: %d.' % \
+              len(certs))
+        for rid, data in certs.items():
+            print('Request ID \'%s\':\n\tstatus: MONITORING\n' % rid +
+                  '\tstuck: no\n\tkey pair storage: type=FILE,' +
+                  'location=\'%s\'' % data['keyfile'] + '\n\t' +
+                  'certificate: type=FILE,location=\'%s\'' % data['certfile'] +
+                  '\n\tCA: %s\n\t' % data['ca'] +
+                  'certificate template/profile: %s\n\t' % data['template'] +
+                  'track: yes\n\tauto-renew: yes')
+
+    if len(cas.items()) == 0 and len(certs.items()) == 0:
+        if os.path.exists(dump_file):
+            os.unlink(dump_file)
+    else:
+        with open(dump_file, 'wb') as w:
+            pickle.dump((cas, certs), w)

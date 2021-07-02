@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+import optparse
+import os, sys, re
+
+sys.path.insert(0, "bin/python")
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('cepces-submit [options]')
+    parser.add_option('--server')
+
+    (opts, args) = parser.parse_args()
+    assert opts.server is not None
+    if 'CERTMONGER_OPERATION' in os.environ and \
+       os.environ['CERTMONGER_OPERATION'] == 'GET-SUPPORTED-TEMPLATES':
+        print('Machine') # Report a Machine template

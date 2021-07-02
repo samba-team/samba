@@ -38,6 +38,7 @@ from samba.vgp_motd_ext import vgp_motd_ext
 from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
+from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -51,6 +52,9 @@ import hashlib
 from samba.gp_parse.gp_pol import GPPolParser
 from glob import glob
 from configparser import ConfigParser
+from samba.gpclass import get_dc_hostname
+from samba import Ldb
+from samba.auth import system_session
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -195,6 +199,28 @@ b"""
         <ValueName>google</ValueName>
         <Value>google</Value>
     </Entry>
+</PolFile>
+"""
+
+auto_enroll_reg_pol = \
+b"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="3" signature="PReg" version="1">
+        <Entry type="4" type_name="REG_DWORD">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>AEPolicy</ValueName>
+                <Value>7</Value>
+        </Entry>
+        <Entry type="4" type_name="REG_DWORD">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>OfflineExpirationPercent</ValueName>
+                <Value>10</Value>
+        </Entry>
+        <Entry type="1" type_name="REG_SZ">
+                <Key>Software\Policies\Microsoft\Cryptography\AutoEnrollment</Key>
+                <ValueName>OfflineExpirationStoreNames</ValueName>
+                <Value>MY</Value>
+        </Entry>
 </PolFile>
 """
 
@@ -1857,6 +1883,104 @@ class GPOTests(tests.TestCase):
             del_lock_check('cmdline')
             del_db_check('goa')
             del_lock_check('goa')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
+
+    def test_gp_cert_auto_enroll_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_cert_auto_enroll_ext(logger, self.lp, machine_creds, store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        parser = GPPolParser()
+        parser.load_xml(etree.fromstring(auto_enroll_reg_pol.strip()))
+        ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        # Write the dummy CA entry, Enrollment Services, and Templates Entries
+        admin_creds = Credentials()
+        admin_creds.set_username(os.environ.get('DC_USERNAME'))
+        admin_creds.set_password(os.environ.get('DC_PASSWORD'))
+        admin_creds.set_realm(os.environ.get('REALM'))
+        hostname = get_dc_hostname(machine_creds, self.lp)
+        url = 'ldap://%s' % hostname
+        ldb = Ldb(url=url, session_info=system_session(),
+                  lp=self.lp, credentials=admin_creds)
+        # Write the dummy CA
+        confdn = 'CN=Public Key Services,CN=Services,CN=Configuration,%s' % base_dn
+        ca_cn = '%s-CA' % hostname.replace('.', '-')
+        certa_dn = 'CN=%s,CN=Certification Authorities,%s' % (ca_cn, confdn)
+        ldb.add({'dn': certa_dn,
+                 'objectClass': 'certificationAuthority',
+                 'authorityRevocationList': ['XXX'],
+                 'cACertificate': 'XXX',
+                 'certificateRevocationList': ['XXX'],
+                })
+        # Write the dummy pKIEnrollmentService
+        enroll_dn = 'CN=%s,CN=Enrollment Services,%s' % (ca_cn, confdn)
+        ldb.add({'dn': enroll_dn,
+                 'objectClass': 'pKIEnrollmentService',
+                 'cACertificate': 'XXXX',
+                 'certificateTemplates': ['Machine'],
+                 'dNSHostName': hostname,
+                })
+        # Write the dummy pKICertificateTemplate
+        template_dn = 'CN=Machine,CN=Certificate Templates,%s' % confdn
+        ldb.add({'dn': template_dn,
+                 'objectClass': 'pKICertificateTemplate',
+                })
+
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname, dname)
+            ca_crt = os.path.join(dname, '%s.crt' % ca_cn)
+            self.assertTrue(os.path.exists(ca_crt),
+                            'Root CA certificate was not requested')
+            machine_crt = os.path.join(dname, '%s.Machine.crt' % ca_cn)
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine certificate was not requested')
+            machine_key = os.path.join(dname, '%s.Machine.key' % ca_cn)
+            self.assertTrue(os.path.exists(machine_crt),
+                            'Machine key was not generated')
+
+            # Verify RSOP does not fail
+            ext.rsop([g for g in gpos if g.name == guid][0])
+
+            # Remove policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            self.assertFalse(os.path.exists(ca_crt),
+                            'Root CA certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine certificate was not removed')
+            self.assertFalse(os.path.exists(machine_crt),
+                            'Machine key was not removed')
+            out, _ = Popen(['getcert', 'list-cas'], stdout=PIPE).communicate()
+            self.assertNotIn(get_bytes(ca_cn), out, 'CA was not removed')
+            out, _ = Popen(['getcert', 'list'], stdout=PIPE).communicate()
+            self.assertNotIn(b'Machine', out,
+                             'Machine certificate not removed')
+
+        # Remove the dummy CA, pKIEnrollmentService, and pKICertificateTemplate
+        ldb.delete(certa_dn)
+        ldb.delete(enroll_dn)
+        ldb.delete(template_dn)
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
