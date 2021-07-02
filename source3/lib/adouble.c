@@ -2041,22 +2041,14 @@ static ssize_t ad_read_meta(vfs_handle_struct *handle,
 
 	DEBUG(10, ("reading meta xattr for %s\n", smb_fname->base_name));
 
-	if (fsp != NULL && fsp->base_fsp != NULL) {
+	if (fsp->base_fsp != NULL) {
 		fsp = fsp->base_fsp;
 	}
 
-	if (fsp != NULL) {
-		ealen = SMB_VFS_FGETXATTR(fsp,
-					  AFPINFO_EA_NETATALK,
-					  ad->ad_data,
-					  AD_DATASZ_XATTR);
-	} else {
-		ealen = SMB_VFS_GETXATTR(handle->conn,
-					 smb_fname,
-					 AFPINFO_EA_NETATALK,
-					 ad->ad_data,
-					 AD_DATASZ_XATTR);
-	}
+	ealen = SMB_VFS_FGETXATTR(fsp,
+				  AFPINFO_EA_NETATALK,
+				  ad->ad_data,
+				  AD_DATASZ_XATTR);
 
 	if (ealen == -1) {
 		switch (errno) {
@@ -2111,12 +2103,10 @@ exit:
 	if (rc != 0) {
 		ealen = -1;
 		if (errno == EINVAL) {
-			if (fsp != NULL) {
-				become_root();
-				(void)SMB_VFS_FREMOVEXATTR(fsp,
-							   AFPINFO_EA_NETATALK);
-				unbecome_root();
-			}
+			become_root();
+			(void)SMB_VFS_FREMOVEXATTR(fsp,
+						   AFPINFO_EA_NETATALK);
+			unbecome_root();
 			errno = ENOENT;
 		}
 	}
