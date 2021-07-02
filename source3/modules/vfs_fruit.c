@@ -3060,6 +3060,11 @@ static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
 {
 	struct adouble *ad = NULL;
 
+	/* Populate the stat struct with info from the base file. */
+	if (fruit_stat_base(handle, smb_fname, follow_links) == -1) {
+		return -1;
+	}
+
 	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
 	if (ad == NULL) {
 		DBG_INFO("fruit_stat_meta %s: %s\n",
@@ -3069,10 +3074,6 @@ static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
 	}
 	TALLOC_FREE(ad);
 
-	/* Populate the stat struct with info from the base file. */
-	if (fruit_stat_base(handle, smb_fname, follow_links) == -1) {
-		return -1;
-	}
 	smb_fname->st.st_ex_size = AFP_INFO_SIZE;
 	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
 					      smb_fname->stream_name);
