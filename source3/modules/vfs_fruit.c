@@ -1432,7 +1432,7 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	SMB_ASSERT(fsp->base_fsp != NULL);
 	SMB_ASSERT(fsp->base_fsp->fsp_name->fsp == fsp->base_fsp);
 
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	ad = ad_get(talloc_tos(), handle, fsp->base_fsp->fsp_name, ADOUBLE_META);
 	if (ad != NULL) {
 		meta_exists = true;
 	}
