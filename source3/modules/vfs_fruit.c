@@ -1015,7 +1015,7 @@ static bool readdir_attr_meta_finderi_netatalk(
 	struct adouble *ad = NULL;
 	char *p = NULL;
 
-	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_META);
+	ad = ad_get_meta_fsp(talloc_tos(), handle, smb_fname);
 	if (ad == NULL) {
 		return false;
 	}
