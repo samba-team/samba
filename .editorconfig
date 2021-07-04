@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+max_line_length = 80
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = false
+
+[*.{c,h,idl}]
+indent_style = tab
+indent_size = 8
+tab_width = 8
+
+[*.{py,sh}]
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+[*.{pl,pm}]
+indent_style = tab
+indent_size = 8
+tab_width = 8
+
+[wscript*]
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+[source4/heimdal/**.{c,h}]
+indent_style = space
+indent_size = 4
+tab_width = 4
