@@ -116,6 +116,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
+	uint16_t body_size;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint8_t out_data_offset;
@@ -139,9 +140,10 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	out_data_offset = SMB2_HDR_BODY + 0x10;
+	body_size = 0x10;
+	out_data_offset = SMB2_HDR_BODY + body_size;
 
-	outbody = smbd_smb2_generate_outbody(req, 0x10);
+	outbody = smbd_smb2_generate_outbody(req, body_size);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
