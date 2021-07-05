@@ -109,9 +109,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -168,9 +168,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(mc, rep)
+        padata = self.get_enc_timestamp_pa_data(mc, rep)
         key = self.get_as_rep_key(mc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -230,9 +230,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -368,13 +368,13 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
         # Note: although we used the alt security id for the pre-auth
         #       we need to use the username for the auth
         cname = self.PrincipalName_create(
             name_type=NT_PRINCIPAL, names=[user_name])
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -436,12 +436,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         # Use the alternate security identifier
         #     this should fail
         cname = self.PrincipalName_create(
             name_type=NT_PRINCIPAL, names=[alt_sec])
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
 
     def test_enterprise_principal_step_1_3(self):
@@ -475,9 +475,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -538,9 +538,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -602,9 +602,9 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(mc, rep)
+        padata = self.get_enc_timestamp_pa_data(mc, rep)
         key = self.get_as_rep_key(mc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -744,13 +744,13 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
         # Note: although we used the alt security id for the pre-auth
         #       we need to use the username for the auth
         cname = self.PrincipalName_create(
             name_type=NT_ENTERPRISE_PRINCIPAL, names=[uname])
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
@@ -813,12 +813,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         # Use the alternate security identifier
         #     this should fail
         cname = self.PrincipalName_create(
             name_type=NT_ENTERPRISE_PRINCIPAL, names=[ename])
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
 
 
