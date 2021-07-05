@@ -197,6 +197,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
 	case FSCTL_SMBTORTURE_FORCE_UNACKED_TIMEOUT:
 	case FSCTL_SMBTORTURE_IOCTL_RESPONSE_BODY_PADDING8:
+	case FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8:
 		/*
 		 * Some SMB2 specific CtlCodes like FSCTL_DFS_GET_REFERRALS or
 		 * FSCTL_PIPE_WAIT does not take a file handle.
@@ -424,6 +425,15 @@ static struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 
+	case FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8:
+		if (state->in_input.length != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		state->smb2req->xconn->smb2.smbtorture.read_body_padding = 8;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	default:
 		goto not_supported;
 	}
