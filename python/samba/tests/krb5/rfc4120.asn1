@@ -1,3 +1,43 @@
+-- Portions of these ASN.1 modules are structures are from RFC6113
+-- authored by S. Hartman (Painless Security) and L. Zhu (Microsoft)
+--
+-- Copyright (c) 2011 IETF Trust and the persons identified as authors of the
+-- code. All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, is permitted pursuant to, and subject to the license terms
+-- contained in, the Simplified BSD License set forth in Section 4.c of the IETF
+-- Trust’s Legal Provisions Relating to IETF Documents
+-- (http://trustee.ietf.org/license-info).
+--
+-- BSD License:
+--
+-- Copyright (c) 2011 IETF Trust and the persons identified as authors of the code. All rights reserved.
+-- Redistribution and use in source and binary forms, with or without modification, are permitted provided
+-- that the following conditions are met:
+-- • Redistributions of source code must retain the above copyright notice, this list of conditions and
+-- the following disclaimer.
+--
+-- • Redistributions in binary form must reproduce the above copyright notice, this list of conditions
+-- and the following disclaimer in the documentation and/or other materials provided with the
+-- distribution.
+--
+-- • Neither the name of Internet Society, IETF or IETF Trust, nor the names of specific contributors,
+-- may be used to endorse or promote products derived from this software without specific prior written
+-- permission.
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+-- AND  ANY  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+-- ARE  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+-- LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+-- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+-- SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+-- INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+-- CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+-- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+
 KerberosV5Spec2 {
         iso(1) identified-organization(3) dod(6) internet(1)
         security(5) kerberosV5(2) modules(4) krb5spec2(2)
@@ -464,6 +504,69 @@ PA-PAC-OPTIONS ::= SEQUENCE {
 KERB-KEY-LIST-REQ ::= SEQUENCE OF EncryptionType -- Int32 encryption type --
 KERB-KEY-LIST-REP ::= SEQUENCE OF EncryptionKey
 
+FastOptions     ::= BIT STRING {
+        reserved(0),
+        hide-client-names(1),
+        kdc-follow-referrals(16)
+}
+
+KrbFastReq      ::= SEQUENCE {
+        fast-options    [0] FastOptions,
+        padata          [1] SEQUENCE OF PA-DATA,
+        req-body        [2] KDC-REQ-BODY,
+        ...
+}
+
+KrbFastArmor    ::= SEQUENCE {
+        armor-type      [0] Int32,
+        armor-value     [1] OCTET STRING,
+        ...
+}
+
+KrbFastArmoredReq ::= SEQUENCE {
+        armor           [0] KrbFastArmor OPTIONAL,
+        req-checksum    [1] Checksum,
+        enc-fast-req    [2] EncryptedData -- KrbFastReq --
+}
+
+PA-FX-FAST-REQUEST ::= CHOICE {
+        armored-data    [0] KrbFastArmoredReq,
+        ...
+}
+
+KrbFastFinished ::= SEQUENCE {
+        timestamp       [0] KerberosTime,
+        usec            [1] Int32,
+        crealm          [2] Realm,
+        cname           [3] PrincipalName,
+        ticket-checksum [4] Checksum,
+        ...
+}
+
+KrbFastResponse ::= SEQUENCE {
+        padata          [0] SEQUENCE OF PA-DATA,
+                -- padata typed holes.
+        strengthen-key  [1] EncryptionKey OPTIONAL,
+                -- This, if present, strengthens the reply key for AS and
+                -- TGS. MUST be present for TGS.
+                -- MUST be absent in KRB-ERROR.
+        finished        [2] KrbFastFinished OPTIONAL,
+	        -- Present in AS or TGS reply; absent otherwise.
+        nonce           [3] UInt32,
+	        -- Nonce from the client request.
+        ...
+}
+
+KrbFastArmoredRep ::= SEQUENCE {
+        enc-fast-rep    [0] EncryptedData, -- KrbFastResponse --
+        ...
+}
+
+PA-FX-FAST-REPLY ::= CHOICE {
+        armored-data    [0] KrbFastArmoredRep,
+        ...
+}
+
 -- MS-KILE End
 --
 --
@@ -631,7 +734,8 @@ PADataTypeValues ::= INTEGER {
 	kRB5-PADATA-PKINIT-KX(147),		-- krb-wg-anon
 	kRB5-PADATA-PKU2U-NAME(148),		-- zhu-pku2u
 	kRB5-PADATA-REQ-ENC-PA-REP(149),	--
-	kRB5-PADATA-SUPPORTED-ETYPES(165)	-- MS-KILE
+	kRB5-PADATA-SUPPORTED-ETYPES(165),	-- MS-KILE
+	kRB5-PADATA-PAC-OPTIONS(167)		-- MS-KILE
 }
 PADataTypeSequence ::= SEQUENCE {
         dummy [0] PADataTypeValues
