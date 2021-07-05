@@ -534,6 +534,10 @@ struct smbXsrv_connection {
 		struct smbXsrv_preauth preauth;
 
 		struct smbd_smb2_request *requests;
+
+		struct {
+			uint8_t read_body_padding;
+		} smbtorture;
 	} smb2;
 };
 
