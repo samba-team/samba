@@ -444,7 +444,7 @@ class KDCBaseTest(RawKerberosTest):
 
         return enc_part
 
-    def check_pre_authenication(self, rep):
+    def check_pre_authentication(self, rep):
         """ Check that the kdc response was pre-authentication required
         """
         self.check_error_rep(rep, KDC_ERR_PREAUTH_REQUIRED)
@@ -794,7 +794,7 @@ class KDCBaseTest(RawKerberosTest):
                                           names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(user_credentials, rep)
