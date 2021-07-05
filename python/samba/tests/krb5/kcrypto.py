@@ -653,9 +653,11 @@ def prfplus(key, pepper, ln):
     return out[:ln]
 
 
-def cf2(enctype, key1, key2, pepper1, pepper2):
+def cf2(key1, key2, pepper1, pepper2, enctype=None):
     # Combine two keys and two pepper strings to produce a result key
     # of type enctype, using the RFC 6113 KRB-FX-CF2 function.
+    if enctype is None:
+        enctype = key1.enctype
     e = _get_enctype_profile(enctype)
     return e.random_to_key(_xorbytes(prfplus(key1, pepper1, e.seedsize),
                                      prfplus(key2, pepper2, e.seedsize)))
@@ -748,7 +750,7 @@ class KcrytoTest(TestCase):
         kb = h('97DF97E4B798B29EB31ED7280287A92A')
         k1 = string_to_key(Enctype.AES128, b'key1', b'key1')
         k2 = string_to_key(Enctype.AES128, b'key2', b'key2')
-        k = cf2(Enctype.AES128, k1, k2, b'a', b'b')
+        k = cf2(k1, k2, b'a', b'b')
         self.assertEqual(k.contents, kb)
 
     def test_aes256_cf2(self):
@@ -757,7 +759,7 @@ class KcrytoTest(TestCase):
                'E72B1C7B')
         k1 = string_to_key(Enctype.AES256, b'key1', b'key1')
         k2 = string_to_key(Enctype.AES256, b'key2', b'key2')
-        k = cf2(Enctype.AES256, k1, k2, b'a', b'b')
+        k = cf2(k1, k2, b'a', b'b')
         self.assertEqual(k.contents, kb)
 
     def test_des3_crypt(self):
@@ -794,7 +796,7 @@ class KcrytoTest(TestCase):
         kb = h('E58F9EB643862C13AD38E529313462A7F73E62834FE54A01')
         k1 = string_to_key(Enctype.DES3, b'key1', b'key1')
         k2 = string_to_key(Enctype.DES3, b'key2', b'key2')
-        k = cf2(Enctype.DES3, k1, k2, b'a', b'b')
+        k = cf2(k1, k2, b'a', b'b')
         self.assertEqual(k.contents, kb)
 
     def test_rc4_crypt(self):
@@ -830,7 +832,7 @@ class KcrytoTest(TestCase):
         kb = h('24D7F6B6BAE4E5C00D2082C5EBAB3672')
         k1 = string_to_key(Enctype.RC4, b'key1', b'key1')
         k2 = string_to_key(Enctype.RC4, b'key2', b'key2')
-        k = cf2(Enctype.RC4, k1, k2, b'a', b'b')
+        k = cf2(k1, k2, b'a', b'b')
         self.assertEqual(k.contents, kb)
 
     def _test_md5_unkeyed_checksum(self, etype, usage):
