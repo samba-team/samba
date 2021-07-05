@@ -652,7 +652,7 @@ static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac,
 				 LDB_SCOPE_SUBTREE, no_attrs,
 				 DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
-				 "(msDC-SecondaryKrbTgtNumber=%u)",
+				 "(msDS-SecondaryKrbTgtNumber=%u)",
 				 krbtgt_number);
 	if (ret == LDB_SUCCESS && res->count == 0) {
 		talloc_free(tmp_ctx);
@@ -670,7 +670,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	int ret;
 	struct ldb_val newpass_utf16;
 
-	/* find a unused msDC-SecondaryKrbTgtNumber */
+	/* find a unused msDS-SecondaryKrbTgtNumber */
 	i_start = generate_random() & 0xFFFF;
 	if (i_start == 0) {
 		i_start = 1;
