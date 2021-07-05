@@ -1013,6 +1013,17 @@ class RawKerberosTest(TestCaseInTempDir):
         }
         return PrincipalName_obj
 
+    def AuthorizationData_create(self, ad_type, ad_data):
+        # AuthorizationData ::= SEQUENCE {
+        #         ad-type         [0] Int32,
+        #         ad-data         [1] OCTET STRING
+        # }
+        AUTH_DATA_obj = {
+            'ad-type': ad_type,
+            'ad-data': ad_data
+        }
+        return AUTH_DATA_obj
+
     def PA_DATA_create(self, padata_type, padata_value):
         # PA-DATA         ::= SEQUENCE {
         #         -- NOTE: first tag is [1], not [0]
@@ -1035,6 +1046,65 @@ class RawKerberosTest(TestCaseInTempDir):
             'pausec': usec,
         }
         return PA_ENC_TS_ENC_obj
+
+    def PA_PAC_OPTIONS_create(self, options):
+        # PA-PAC-OPTIONS  ::= SEQUENCE {
+        #         options         [0] PACOptionFlags
+        # }
+        PA_PAC_OPTIONS_obj = {
+            'options': options
+        }
+        return PA_PAC_OPTIONS_obj
+
+    def KRB_FAST_ARMOR_create(self, armor_type, armor_value):
+        # KrbFastArmor    ::= SEQUENCE {
+        #         armor-type      [0] Int32,
+        #         armor-value     [1] OCTET STRING,
+        #         ...
+        # }
+        KRB_FAST_ARMOR_obj = {
+            'armor-type': armor_type,
+            'armor-value': armor_value
+        }
+        return KRB_FAST_ARMOR_obj
+
+    def KRB_FAST_REQ_create(self, fast_options, padata, req_body):
+        # KrbFastReq      ::= SEQUENCE {
+        #         fast-options    [0] FastOptions,
+        #         padata          [1] SEQUENCE OF PA-DATA,
+        #         req-body        [2] KDC-REQ-BODY,
+        #         ...
+        # }
+        KRB_FAST_REQ_obj = {
+            'fast-options': fast_options,
+            'padata': padata,
+            'req-body': req_body
+        }
+        return KRB_FAST_REQ_obj
+
+    def KRB_FAST_ARMORED_REQ_create(self, armor, req_checksum, enc_fast_req):
+        # KrbFastArmoredReq ::= SEQUENCE {
+        #         armor           [0] KrbFastArmor OPTIONAL,
+        #         req-checksum    [1] Checksum,
+        #         enc-fast-req    [2] EncryptedData -- KrbFastReq --
+        # }
+        KRB_FAST_ARMORED_REQ_obj = {
+            'req-checksum': req_checksum,
+            'enc-fast-req': enc_fast_req
+        }
+        if armor is not None:
+            KRB_FAST_ARMORED_REQ_obj['armor'] = armor
+        return KRB_FAST_ARMORED_REQ_obj
+
+    def PA_FX_FAST_REQUEST_create(self, armored_data):
+        # PA-FX-FAST-REQUEST ::= CHOICE {
+        #         armored-data    [0] KrbFastArmoredReq,
+        #         ...
+        # }
+        PA_FX_FAST_REQUEST_obj = {
+            'armored-data': armored_data
+        }
+        return PA_FX_FAST_REQUEST_obj
 
     def KERB_PA_PAC_REQUEST_create(self, include_pac, pa_data_create=True):
         # KERB-PA-PAC-REQUEST ::= SEQUENCE {
