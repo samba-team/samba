@@ -83,7 +83,7 @@ class KdcTests(RawKerberosTest):
         rep = self.send_recv_transaction(req)
         return rep
 
-    def get_pa_data(self, creds, rep, skew=0):
+    def get_enc_timestamp_pa_data(self, creds, rep, skew=0):
         rep_padata = self.der_decode(
             rep['e-data'],
             asn1Spec=krb5_asn1.METHOD_DATA())
@@ -107,8 +107,7 @@ class KdcTests(RawKerberosTest):
 
         pa_ts = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, pa_ts)
 
-        padata = [pa_ts]
-        return padata
+        return pa_ts
 
     def check_pre_authenication(self, rep):
         """ Check that the kdc response was pre-authentication required
@@ -160,8 +159,8 @@ class KdcTests(RawKerberosTest):
         rep = self.as_req(creds, etype)
         self.check_pre_authenication(rep)
 
-        padata = self.get_pa_data(creds, rep)
-        rep = self.as_req(creds, etype, padata=padata)
+        padata = self.get_enc_timestamp_pa_data(creds, rep)
+        rep = self.as_req(creds, etype, padata=[padata])
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
@@ -174,8 +173,8 @@ class KdcTests(RawKerberosTest):
         rep = self.as_req(creds, etype)
         self.check_pre_authenication(rep)
 
-        padata = self.get_pa_data(creds, rep)
-        rep = self.as_req(creds, etype, padata=padata)
+        padata = self.get_enc_timestamp_pa_data(creds, rep)
+        rep = self.as_req(creds, etype, padata=[padata])
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
@@ -188,8 +187,8 @@ class KdcTests(RawKerberosTest):
         rep = self.as_req(creds, etype)
         self.check_pre_authenication(rep)
 
-        padata = self.get_pa_data(creds, rep)
-        rep = self.as_req(creds, etype, padata=padata)
+        padata = self.get_enc_timestamp_pa_data(creds, rep)
+        rep = self.as_req(creds, etype, padata=[padata])
         self.check_as_reply(rep)
 
         etype = rep['enc-part']['etype']
@@ -202,8 +201,8 @@ class KdcTests(RawKerberosTest):
         rep = self.as_req(creds, etype)
         self.check_pre_authenication(rep)
 
-        padata = self.get_pa_data(creds, rep, skew=3600)
-        rep = self.as_req(creds, etype, padata=padata)
+        padata = self.get_enc_timestamp_pa_data(creds, rep, skew=3600)
+        rep = self.as_req(creds, etype, padata=[padata])
 
         self.check_error_rep(rep, KDC_ERR_SKEW)
 
@@ -216,8 +215,8 @@ class KdcTests(RawKerberosTest):
         rep = self.as_req(creds, etype)
         self.check_pre_authenication(rep)
 
-        padata = self.get_pa_data(creds, rep)
-        rep = self.as_req(creds, etype, padata=padata)
+        padata = self.get_enc_timestamp_pa_data(creds, rep)
+        rep = self.as_req(creds, etype, padata=[padata])
 
         self.check_error_rep(rep, KDC_ERR_PREAUTH_FAILED)
 
