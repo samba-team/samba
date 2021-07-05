@@ -106,7 +106,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -165,7 +165,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(mc, rep)
@@ -227,7 +227,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -365,7 +365,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -433,7 +433,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -472,7 +472,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -535,7 +535,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -599,7 +599,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(mc, rep)
@@ -741,7 +741,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
@@ -810,7 +810,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             name_type=NT_SRV_INST, names=["krbtgt", realm])
 
         rep = self.as_req(cname, sname, realm, etype)
-        self.check_pre_authenication(rep)
+        self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
         padata = self.get_pa_data(uc, rep)
