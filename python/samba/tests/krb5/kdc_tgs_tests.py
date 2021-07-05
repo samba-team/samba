@@ -66,9 +66,9 @@ class KdcTgsTests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a service ticket, but use a cname that does not match
@@ -116,9 +116,9 @@ class KdcTgsTests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         enc_part2 = self.get_as_rep_enc_data(key, rep)
@@ -157,9 +157,9 @@ class KdcTgsTests(KDCBaseTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(uc, rep)
+        padata = self.get_enc_timestamp_pa_data(uc, rep)
         key = self.get_as_rep_key(uc, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
