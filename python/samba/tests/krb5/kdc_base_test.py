@@ -409,7 +409,8 @@ class KDCBaseTest(RawKerberosTest):
         etype_info2 = self.der_decode(
             padata_value, asn1Spec=krb5_asn1.ETYPE_INFO2())
 
-        key = self.PasswordKey_from_etype_info2(creds, etype_info2[0])
+        key = self.PasswordKey_from_etype_info2(creds, etype_info2[0],
+                                                creds.get_kvno())
         return key
 
     def get_pa_data(self, creds, rep, skew=0):
