@@ -148,7 +148,7 @@ class KDCBaseTest(RawKerberosTest):
         return default_enctypes
 
     def create_account(self, ldb, name, machine_account=False,
-                       spn=None, upn=None):
+                       spn=None, upn=None, additional_details=None):
         '''Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
@@ -180,6 +180,8 @@ class KDCBaseTest(RawKerberosTest):
             details["servicePrincipalName"] = spn
         if upn is not None:
             details["userPrincipalName"] = upn
+        if additional_details is not None:
+            details.update(additional_details)
         ldb.add(details)
 
         creds = KerberosCredentials()
