@@ -1645,6 +1645,15 @@ static NTSTATUS smbXsrv_open_global_parse_record(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (global_blob.info.info0 == NULL) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		DEBUG(1,("Invalid record in smbXsrv_tcon_global.tdb:"
+			 "key '%s' info0 NULL pointer - %s\n",
+			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 nt_errstr(status)));
+		goto done;
+	}
+
 	*global = talloc_move(mem_ctx, &global_blob.info.info0);
 	status = NT_STATUS_OK;
 done:
