@@ -117,6 +117,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
 	uint16_t body_size;
+	uint8_t body_padding = req->xconn->smb2.smbtorture.read_body_padding;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint8_t out_data_offset;
@@ -140,7 +141,11 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	body_size = 0x10;
+	/*
+	 * Only FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8
+	 * sets body_padding to a value different from 0.
+	 */
+	body_size = 0x10 + body_padding;
 	out_data_offset = SMB2_HDR_BODY + body_size;
 
 	outbody = smbd_smb2_generate_outbody(req, body_size);
@@ -163,6 +168,9 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 	SIVAL(outbody.data, 0x08,
 	      out_data_remaining);		/* data remaining */
 	SIVAL(outbody.data, 0x0C, 0);		/* reserved */
+	if (body_padding != 0) {
+		memset(outbody.data + 0x10, 0, body_padding);
+	}
 
 	outdyn = out_data_buffer;
 
