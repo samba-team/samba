@@ -334,6 +334,80 @@ class KDCBaseTest(RawKerberosTest):
                                  fallback_creds_fn=create_client_account)
         return c
 
+    def get_mach_creds(self,
+                       allow_missing_password=False,
+                       allow_missing_keys=True):
+        def create_mach_account():
+            samdb = self.get_samdb()
+
+            mach_name = 'kdctestmac'
+            details = {
+                'msDS-SupportedEncryptionTypes': str(
+                    security.KERB_ENCTYPE_FAST_SUPPORTED |
+                    security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
+                    security.KERB_ENCTYPE_CLAIMS_SUPPORTED
+                )
+            }
+
+            creds, dn = self.create_account(samdb, mach_name,
+                                            machine_account=True,
+                                            spn='host/' + mach_name,
+                                            additional_details=details)
+
+            res = samdb.search(base=dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['msDS-KeyVersionNumber'])
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            creds.set_kvno(kvno)
+
+            keys = self.get_keys(samdb, dn)
+            self.creds_set_keys(creds, keys)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='MAC',
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys,
+                                 fallback_creds_fn=create_mach_account)
+        return c
+
+    def get_service_creds(self,
+                          allow_missing_password=False,
+                          allow_missing_keys=True):
+        def create_service_account():
+            samdb = self.get_samdb()
+
+            mach_name = 'kdctestservice'
+            details = {
+                'msDS-SupportedEncryptionTypes': str(
+                    security.KERB_ENCTYPE_FAST_SUPPORTED |
+                    security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
+                    security.KERB_ENCTYPE_CLAIMS_SUPPORTED
+                )
+            }
+
+            creds, dn = self.create_account(samdb, mach_name,
+                                            machine_account=True,
+                                            spn='host/' + mach_name,
+                                            additional_details=details)
+
+            res = samdb.search(base=dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['msDS-KeyVersionNumber'])
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            creds.set_kvno(kvno)
+
+            keys = self.get_keys(samdb, dn)
+            self.creds_set_keys(creds, keys)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='SERVICE',
+                                 allow_missing_password=allow_missing_password,
+                                 allow_missing_keys=allow_missing_keys,
+                                 fallback_creds_fn=create_service_account)
+        return c
+
     def get_krbtgt_creds(self,
                          require_keys=True,
                          require_strongest_key=False):
