@@ -413,7 +413,7 @@ class KDCBaseTest(RawKerberosTest):
                                                 creds.get_kvno())
         return key
 
-    def get_pa_data(self, creds, rep, skew=0):
+    def get_enc_timestamp_pa_data(self, creds, rep, skew=0):
         '''generate the pa_data data element for an AS-REQ
         '''
         key = self.get_as_rep_key(creds, rep)
@@ -427,7 +427,7 @@ class KDCBaseTest(RawKerberosTest):
 
         padata = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, padata)
 
-        return [padata]
+        return padata
 
     def get_as_rep_enc_data(self, key, rep):
         ''' Decrypt and Decode the encrypted data in an AS-REP
@@ -795,9 +795,9 @@ class KDCBaseTest(RawKerberosTest):
         self.check_pre_authentication(rep)
 
         # Do the next AS-REQ
-        padata = self.get_pa_data(user_credentials, rep)
+        padata = self.get_enc_timestamp_pa_data(user_credentials, rep)
         key = self.get_as_rep_key(user_credentials, rep)
-        rep = self.as_req(cname, sname, realm, etype, padata=padata)
+        rep = self.as_req(cname, sname, realm, etype, padata=[padata])
         self.check_as_reply(rep)
 
         # Request a ticket to the host service on the machine account
