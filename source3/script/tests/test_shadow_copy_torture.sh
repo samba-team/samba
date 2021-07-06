@@ -5,7 +5,7 @@
 
 if [ $# -lt 7 ]; then
 cat <<EOF
-Usage: test_shadow_copy SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBTORTURE
+Usage: test_shadow_copy SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBTORTURE SMBCLIENT
 EOF
 exit 1;
 fi
@@ -17,6 +17,7 @@ USERNAME=${4}
 PASSWORD=${5}
 WORKDIR=${6}
 SMBTORTURE="$VALGRIND ${7}"
+SMBCLIENT="$VALGRIND ${8}"
 shift 7
 
 incdir=`dirname $0`/../../../testprogs/blackbox
