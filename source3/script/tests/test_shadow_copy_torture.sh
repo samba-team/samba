@@ -43,8 +43,7 @@ build_snapshots()
 
     snapdir=$WORKDIR/.snapshots
 
-    mkdir -p $snapdir
-    mkdir $snapdir/$SNAPSHOT
+    mkdir -p $snapdir/$SNAPSHOT
 
     build_files $snapdir/$SNAPSHOT
 }
