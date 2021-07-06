@@ -299,6 +299,13 @@ def configure(conf):
                     msg='Checking for __sync_fetch_and_add compiler builtin')
 
     conf.CHECK_CODE('''
+                    int i;
+                    (void)__sync_add_and_fetch(&i, 1);
+                    ''',
+                    'HAVE___SYNC_ADD_AND_FETCH',
+                    msg='Checking for __sync_add_and_fetch compiler builtin')
+
+    conf.CHECK_CODE('''
                     int32_t i;
                     atomic_add_32(&i, 1);
                     ''',
