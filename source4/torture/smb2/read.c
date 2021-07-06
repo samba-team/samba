@@ -26,6 +26,8 @@
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "../libcli/smb/smbXcli_base.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
 
 
 #define CHECK_STATUS(_status, _expected) \
@@ -303,6 +305,138 @@ done:
 	return ret;
 }
 
+/*
+   basic regression test for BUG 14607
+   https://bugzilla.samba.org/show_bug.cgi?id=14607
+*/
+static bool test_read_bug14607(struct torture_context *torture,
+				struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_handle h;
+	uint8_t buf[64 * 1024];
+	struct smb2_read rd;
+	uint32_t timeout_msec;
+	DATA_BLOB out_input_buffer = data_blob_null;
+	DATA_BLOB out_output_buffer = data_blob_null;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	uint8_t *data = NULL;
+	uint32_t data_length = 0;
+
+	memset(buf, 0x1f, ARRAY_SIZE(buf));
+
+	/* create a file */
+	smb2_util_unlink(tree, FNAME);
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length = ARRAY_SIZE(buf);
+	rd.in.offset = 0;
+	status = smb2_read(tree, tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.out.data.length, ARRAY_SIZE(buf));
+	torture_assert_mem_equal_goto(torture, rd.out.data.data,
+				      buf, ARRAY_SIZE(buf),
+				      ret, done,
+				      "Invalid content smb2_read");
+
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+
+	status = smb2cli_read(tree->session->transport->conn,
+			      timeout_msec,
+			      tree->session->smbXcli,
+			      tree->smbXcli,
+			      rd.in.length,
+			      rd.in.offset,
+			      h.data[0],
+			      h.data[1],
+			      rd.in.min_count,
+			      rd.in.remaining,
+			      tmp_ctx,
+			      &data, &data_length);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(data_length, ARRAY_SIZE(buf));
+	torture_assert_mem_equal_goto(torture, data,
+				      buf, ARRAY_SIZE(buf),
+				      ret, done,
+				      "Invalid content smb2cli_read");
+
+	status = smb2cli_ioctl(tree->session->transport->conn,
+			       timeout_msec,
+			       tree->session->smbXcli,
+			       tree->smbXcli,
+			       UINT64_MAX, /* in_fid_persistent */
+			       UINT64_MAX, /* in_fid_volatile */
+			       FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8,
+			       0, /* in_max_input_length */
+			       NULL, /* in_input_buffer */
+			       1, /* in_max_output_length */
+			       NULL, /* in_output_buffer */
+			       SMB2_IOCTL_FLAG_IS_FSCTL,
+			       tmp_ctx,
+			       &out_input_buffer,
+			       &out_output_buffer);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FS_DRIVER_REQUIRED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST))
+	{
+		torture_comment(torture,
+				"FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8: %s\n",
+				nt_errstr(status));
+		torture_skip(torture, "server doesn't support FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8\n");
+	}
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SMBTORTURE_GLOBAL_READ_RESPONSE_BODY_PADDING8");
+
+	torture_assert_int_equal(torture, out_output_buffer.length, 0,
+				 "output length");
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length = ARRAY_SIZE(buf);
+	rd.in.offset = 0;
+	status = smb2_read(tree, tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.out.data.length, ARRAY_SIZE(buf));
+	torture_assert_mem_equal_goto(torture, rd.out.data.data,
+				      buf, ARRAY_SIZE(buf),
+				      ret, done,
+				      "Invalid content after padding smb2_read");
+
+	status = smb2cli_read(tree->session->transport->conn,
+			      timeout_msec,
+			      tree->session->smbXcli,
+			      tree->smbXcli,
+			      rd.in.length,
+			      rd.in.offset,
+			      h.data[0],
+			      h.data[1],
+			      rd.in.min_count,
+			      rd.in.remaining,
+			      tmp_ctx,
+			      &data, &data_length);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(data_length, ARRAY_SIZE(buf));
+	torture_assert_mem_equal_goto(torture, data,
+				      buf, ARRAY_SIZE(buf),
+				      ret, done,
+				      "Invalid content after padding smb2cli_read");
+
+	status = smb2_util_close(tree, h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 /* 
    basic testing of SMB2 read
 */
@@ -314,6 +448,8 @@ struct torture_suite *torture_smb2_read_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "position", test_read_position);
 	torture_suite_add_1smb2_test(suite, "dir", test_read_dir);
 	torture_suite_add_1smb2_test(suite, "access", test_read_access);
+	torture_suite_add_1smb2_test(suite, "bug14607",
+				     test_read_bug14607);
 
 	suite->description = talloc_strdup(suite, "SMB2-READ tests");
 
