@@ -19,6 +19,7 @@
 import sys
 import logging
 from samba.colour import GREY, YELLOW, GREEN, RED, DARK_RED, C_NORMAL
+from samba.colour import is_colour_wanted
 
 LEVEL_COLORS = {
     logging.CRITICAL: DARK_RED,
@@ -55,8 +56,7 @@ def get_samba_logger(
                  (quiet and logging.WARNING) or logging.INFO)
 
     logger.setLevel(level)
-
-    if (hasattr(stream, 'isatty') and stream.isatty()):
+    if is_colour_wanted(stream):
         Formatter = ColoredFormatter
     else:
         Formatter = logging.Formatter
