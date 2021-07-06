@@ -54,11 +54,13 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REP,
     KRB_ERROR,
     KU_AS_REP_ENC_PART,
+    KU_ENC_CHALLENGE_CLIENT,
     KU_PA_ENC_TIMESTAMP,
     KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_HST,
+    PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO2,
 )
@@ -508,6 +510,23 @@ class KDCBaseTest(RawKerberosTest):
         padata = self.der_encode(padata, asn1Spec=krb5_asn1.EncryptedData())
 
         padata = self.PA_DATA_create(PADATA_ENC_TIMESTAMP, padata)
+
+        return padata
+
+    def get_challenge_pa_data(self, client_challenge_key, skew=0):
+        patime, pausec = self.get_KerberosTimeWithUsec(offset=skew)
+        padata = self.PA_ENC_TS_ENC_create(patime, pausec)
+        padata = self.der_encode(padata,
+                                 asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
+
+        padata = self.EncryptedData_create(client_challenge_key,
+                                           KU_ENC_CHALLENGE_CLIENT,
+                                           padata)
+        padata = self.der_encode(padata,
+                                 asn1Spec=krb5_asn1.EncryptedData())
+
+        padata = self.PA_DATA_create(PADATA_ENCRYPTED_CHALLENGE,
+                                     padata)
 
         return padata
 
