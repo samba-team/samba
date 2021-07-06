@@ -867,6 +867,18 @@ class RawKerberosTest(TestCaseInTempDir):
         v = random.randint(nonce_min, nonce_max)
         return v
 
+    def get_pa_dict(self, pa_data):
+        pa_dict = {}
+
+        if pa_data is not None:
+            for pa in pa_data:
+                pa_type = pa['padata-type']
+                if pa_type in pa_dict:
+                    raise RuntimeError(f'Duplicate type {pa_type}')
+                pa_dict[pa_type] = pa['padata-value']
+
+        return pa_dict
+
     def SessionKey_create(self, etype, contents, kvno=None):
         key = kcrypto.Key(etype, contents)
         return Krb5EncryptionKey(key, kvno)
