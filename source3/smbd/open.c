@@ -779,12 +779,12 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 	fsp_set_fd(fsp, fd);
 
 	if (fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &orig_fsp_name->st);
+		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
-		fsp->fsp_name->st = orig_fsp_name->st;
+		orig_fsp_name->st = fsp->fsp_name->st;
 	}
 
 	if (!is_ntfs_stream_smb_fname(fsp->fsp_name) &&
