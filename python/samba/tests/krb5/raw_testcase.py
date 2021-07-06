@@ -2137,6 +2137,43 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return subkey, subkey_usage
 
+    def generate_armor_key(self, subkey, session_key):
+        armor_key = kcrypto.cf2(subkey.key,
+                                session_key.key,
+                                b'subkeyarmor',
+                                b'ticketarmor')
+        armor_key = Krb5EncryptionKey(armor_key, None)
+
+        return armor_key
+
+    def generate_strengthen_reply_key(self, strengthen_key, reply_key):
+        strengthen_reply_key = kcrypto.cf2(strengthen_key.key,
+                                           reply_key.key,
+                                           b'strengthenkey',
+                                           b'replykey')
+        strengthen_reply_key = Krb5EncryptionKey(strengthen_reply_key,
+                                                 reply_key.kvno)
+
+        return strengthen_reply_key
+
+    def generate_client_challenge_key(self, armor_key, longterm_key):
+        client_challenge_key = kcrypto.cf2(armor_key.key,
+                                           longterm_key.key,
+                                           b'clientchallengearmor',
+                                           b'challengelongterm')
+        client_challenge_key = Krb5EncryptionKey(client_challenge_key, None)
+
+        return client_challenge_key
+
+    def generate_kdc_challenge_key(self, armor_key, longterm_key):
+        kdc_challenge_key = kcrypto.cf2(armor_key.key,
+                                        longterm_key.key,
+                                        b'kdcchallengearmor',
+                                        b'challengelongterm')
+        kdc_challenge_key = Krb5EncryptionKey(kdc_challenge_key, None)
+
+        return kdc_challenge_key
+
     def _test_as_exchange(self,
                           cname,
                           realm,
