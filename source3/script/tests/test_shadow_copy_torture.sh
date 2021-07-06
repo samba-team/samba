@@ -36,6 +36,9 @@ build_files()
     destdir=$1
 
     echo "$content" > $destdir/foo
+
+    mkdir -p $WORKDIR/subdir/
+    touch $WORKDIR/subdir/hardlink
 }
 
 # build a snapshots directory
@@ -48,6 +51,9 @@ build_snapshots()
     mkdir -p $snapdir/$SNAPSHOT
 
     build_files $snapdir/$SNAPSHOT
+
+    mkdir -p $snapdir/$SNAPSHOT/subdir
+    ln "$WORKDIR"/subdir/hardlink "$snapdir"/$SNAPSHOT/subdir/hardlink
 }
 
 build_stream_on_snapshot()
@@ -126,6 +132,24 @@ test_shadow_copy_openroot()
         failed=`expr $failed + 1`
 }
 
+test_shadow_copy_fix_inodes()
+{
+    local msg
+
+    msg=$1
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots
+
+    out=$($SMBCLIENT \
+	   -U $USERNAME%$PASSWORD \
+	   "//$SERVER/shadow_write" \
+	   -c "open $SNAPSHOT/subdir/hardlink") || failed=`expr $failed + 1`
+    echo $out
+    echo $out | grep "hardlink: for read/write fnum 1" || return 1
+}
+
 build_files $WORKDIR
 
 # test open for writing and write behaviour of snapshoted files
@@ -134,5 +158,7 @@ test_shadow_copy_write "write behaviour of snapshoted files"
 test_shadow_copy_stream "reading stream of snapshotted file"
 
 test_shadow_copy_openroot "opening root of shadow copy share"
+
+testit "fix inodes with hardlink" test_shadow_copy_fix_inodes || failed=`expr $failed + 1`
 
 exit $failed
