@@ -204,22 +204,11 @@ class Command(object):
         "constants" in the colour module to be either real colours or empty
         strings.
         """
-        requested = requested.lower()
-        if requested == 'no':
-            colour.switch_colour_off()
-
-        elif requested == 'yes':
-            colour.switch_colour_on()
-
-        elif requested == 'auto':
-            if (hasattr(self.outf, 'isatty') and self.outf.isatty()):
-                colour.switch_colour_on()
-            else:
-                colour.switch_colour_off()
-
-        else:
-            raise CommandError("Unknown --color option: %s "
-                               "please choose from yes, no, auto")
+        try:
+            colour.colour_if_wanted(self.outf, requested)
+        except ValueError as e:
+            raise CommandError(f"Unknown --color option: {requested} "
+                               "please choose from always|never|auto")
 
 
 class SuperCommand(Command):
