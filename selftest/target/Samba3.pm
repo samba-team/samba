@@ -3060,6 +3060,7 @@ sub provision($$)
 	aio write size = 0
 	error_inject:pwrite = EBADF
 	shadow:mountpoint = $shadow_tstdir
+	shadow:fixinodes = yes
 
 [dfq]
 	path = $shrdir/dfree
