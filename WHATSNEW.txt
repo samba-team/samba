@@ -46,6 +46,15 @@ NEW FEATURES/CHANGES
   In order to be accepted, the request must be issued by a client
   that is in the allow list and NOT in the deny list.
 
+samba-tool available without the ad-dc
+--------------------------------------
+
+The samba-tool command is now available when samba is configured
+--without-ad-dc. Not all features will work, and some ad-dc specific options
+have been disabled. The samba-tool domain options, for example, are limited
+when no ad-dc is present. Samba must still be built with ads in order to enable
+samba-tool.
+
 Improved command line user experience
 -------------------------------------
 
