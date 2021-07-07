@@ -542,6 +542,13 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		goto fail;
 	}
 
+	/*
+	 * fd_openat() has done an FSTAT on the handle
+	 * so update the smb_fname stat info with "truth".
+	 * from the handle.
+	 */
+	smb_fname->st = fsp->fsp_name->st;
+
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	status = fsp_smb_fname_link(fsp,
