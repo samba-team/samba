@@ -529,32 +529,18 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 		goto fail;
 	}
 
-	/*
-	 * As this is an internal open and we don't have any
-	 * locks around, we don't have to mandate the dev and ino
-	 * pair are the same (and in fact not doing so fixes bugs
-	 * when this is called by VFS modules that like to play tricks
-	 * with ino number on stream paths (fruit, and streams_xattr
-	 * are the two that currently do this).
-	 *
-	 * There's no security advantage to checking that, as the
-	 * fd_openat() above ensures this is safe.
-	 */
-	if ((S_IFMT & smb_fname->st.st_ex_mode) != (S_IFMT & fsp->fsp_name->st.st_ex_mode)) {
-		DBG_DEBUG("file [%s] - S_IFMT mismatch. "
-			  "old = 0%o, new = 0%o\n",
+	if (!check_same_dev_ino(&smb_fname->st, &fsp->fsp_name->st)) {
+		DBG_DEBUG("file [%s] - dev/ino mismatch. "
+			  "Old (dev=%ju, ino=%ju). "
+			  "New (dev=%ju, ino=%ju).\n",
 			  smb_fname_str_dbg(smb_fname),
-			  (unsigned int)(S_IFMT & smb_fname->st.st_ex_mode),
-			  (unsigned int)(S_IFMT & fsp->fsp_name->st.st_ex_mode));
+			  (uintmax_t)smb_fname->st.st_ex_dev,
+			  (uintmax_t)smb_fname->st.st_ex_ino,
+			  (uintmax_t)fsp->fsp_name->st.st_ex_dev,
+			  (uintmax_t)fsp->fsp_name->st.st_ex_ino);
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
-	/*
-	 * fd_openat() has done an FSTAT on the handle
-	 * so update the smb_fname stat info with "truth".
-	 * from the handle.
-	 */
-	smb_fname->st = fsp->fsp_name->st;
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
