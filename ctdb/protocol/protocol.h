@@ -376,6 +376,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_VACUUM_FETCH            = 154,
 		    CTDB_CONTROL_DB_VACUUM               = 155,
 		    CTDB_CONTROL_ECHO_DATA               = 156,
+		    CTDB_CONTROL_DISABLE_NODE            = 157,
+		    CTDB_CONTROL_ENABLE_NODE             = 158,
 };
 
 #define MAX_COUNT_BUCKETS 16
