@@ -499,10 +499,5 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 	}
 
-	/* tell the recovery daemon something has changed */
-	c->new_flags = node->flags;
-	ctdb_daemon_send_message(ctdb, ctdb->pnn,
-				 CTDB_SRVID_SET_NODE_FLAGS, indata);
-
 	return 0;
 }
