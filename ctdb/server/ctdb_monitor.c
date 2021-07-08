@@ -455,34 +455,35 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_node *node;
 	uint32_t old_flags;
 
-	if (c->pnn >= ctdb->num_nodes) {
-		DEBUG(DEBUG_ERR,(__location__ " Node %d is invalid, num_nodes :%d\n", c->pnn, ctdb->num_nodes));
+	/*
+	 * Don't let other nodes override the current node's flags.
+	 * The recovery master fetches flags from this node so there's
+	 * no need to push them back.  Doing so is racy.
+	 */
+	if (c->pnn == ctdb->pnn) {
+		DBG_DEBUG("Ignoring flag changes for current node\n");
+		return 0;
+	}
+
+	node = ctdb_find_node(ctdb, c->pnn);
+	if (node == NULL) {
+		DBG_ERR("Node %u is invalid\n", c->pnn);
 		return -1;
 	}
 
-	node         = ctdb->nodes[c->pnn];
-	old_flags    = node->flags;
-	if (c->pnn != ctdb->pnn) {
-		c->old_flags  = node->flags;
-	}
-	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
-	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
+	/*
+	 * Remember the old flags.  We don't care what some other node
+	 * thought the old flags were - that's irrelevant.
+	 */
+	old_flags = node->flags;
 
-	/* we don't let other nodes modify our STOPPED status */
-	if (c->pnn == ctdb->pnn) {
-		node->flags &= ~NODE_FLAGS_STOPPED;
-		if (old_flags & NODE_FLAGS_STOPPED) {
-			node->flags |= NODE_FLAGS_STOPPED;
-		}
-	}
-
-	/* we don't let other nodes modify our BANNED status */
-	if (c->pnn == ctdb->pnn) {
-		node->flags &= ~NODE_FLAGS_BANNED;
-		if (old_flags & NODE_FLAGS_BANNED) {
-			node->flags |= NODE_FLAGS_BANNED;
-		}
-	}
+	/*
+	 * This node tracks nodes it is connected to, so don't let
+	 * another node override this
+	 */
+	node->flags =
+		(old_flags & NODE_FLAGS_DISCONNECTED) |
+		(c->new_flags & ~NODE_FLAGS_DISCONNECTED);
 
 	if (node->flags == old_flags) {
 		return 0;
