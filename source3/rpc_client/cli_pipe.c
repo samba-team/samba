@@ -3005,9 +3005,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
-		DBG_ERR("connect(%s) failed: %s\n",
-			addr.sun_path,
-			strerror(errno));
+		DBG_WARNING("connect(%s) failed: %s\n",
+			    addr.sun_path,
+			    strerror(errno));
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
