@@ -485,11 +485,13 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	if (node->flags == old_flags) {
-		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", c->pnn, node->flags));
 		return 0;
 	}
 
-	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", c->pnn, node->flags));
+	D_NOTICE("Node %u has changed flags - 0x%x -> 0x%x\n",
+		 c->pnn,
+		 old_flags,
+		 node->flags);
 
 	if (node->flags == 0 && ctdb->runstate <= CTDB_RUNSTATE_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " Node %u became healthy - force recovery for startup\n",
