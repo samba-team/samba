@@ -3513,6 +3513,52 @@ static void control_check_pid_srvid(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
+static void control_disable_node(TALLOC_CTX *mem_ctx,
+				 struct tevent_req *req,
+				 struct ctdb_req_header *header,
+				 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+
+	DEBUG(DEBUG_INFO, ("Disabling node\n"));
+	ctdb->node_map->node[header->destnode].flags |=
+		NODE_FLAGS_PERMANENTLY_DISABLED;
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+	return;
+}
+
+static void control_enable_node(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+
+	DEBUG(DEBUG_INFO, ("Enable node\n"));
+	ctdb->node_map->node[header->destnode].flags &=
+		~NODE_FLAGS_PERMANENTLY_DISABLED;
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+	return;
+}
+
 static bool fake_control_failure(TALLOC_CTX *mem_ctx,
 				 struct tevent_req *req,
 				 struct ctdb_req_header *header,
@@ -4203,6 +4249,14 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		control_check_pid_srvid(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		control_disable_node(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
+		control_enable_node(mem_ctx, req, &header, &request);
 		break;
 
 	default:

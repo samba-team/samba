@@ -173,6 +173,40 @@ done:
 	TALLOC_FREE(state);
 }
 
+static int ctdb_control_disable_node(struct ctdb_context *ctdb)
+{
+	struct ctdb_node *node;
+
+	node = ctdb_find_node(ctdb, CTDB_CURRENT_NODE);
+	if (node == NULL) {
+		/* Can't happen */
+		DBG_ERR("Unable to find current node\n");
+		return -1;
+	}
+
+	D_ERR("Disable node\n");
+	node->flags |= NODE_FLAGS_PERMANENTLY_DISABLED;
+
+	return 0;
+}
+
+static int ctdb_control_enable_node(struct ctdb_context *ctdb)
+{
+	struct ctdb_node *node;
+
+	node = ctdb_find_node(ctdb, CTDB_CURRENT_NODE);
+	if (node == NULL) {
+		/* Can't happen */
+		DBG_ERR("Unable to find current node\n");
+		return -1;
+	}
+
+	D_ERR("Enable node\n");
+	node->flags &= ~NODE_FLAGS_PERMANENTLY_DISABLED;
+
+	return 0;
+}
+
 /*
   process a control request
  */
@@ -826,6 +860,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_ECHO_DATA: {
 		return ctdb_control_echo_data(ctdb, c, indata, async_reply);
 	}
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_disable_node(ctdb);
+
+	case CTDB_CONTROL_ENABLE_NODE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_enable_node(ctdb);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
