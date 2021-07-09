@@ -45,8 +45,6 @@ const char *smb_protocol_types_string(enum protocol_types protocol)
 		return "SMB2_02";
 	case PROTOCOL_SMB2_10:
 		return "SMB2_10";
-	case PROTOCOL_SMB2_22:
-		return "SMB2_22";
 	case PROTOCOL_SMB2_24:
 		return "SMB2_24";
 	case PROTOCOL_SMB3_00:
