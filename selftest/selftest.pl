@@ -271,6 +271,8 @@ unless (defined($ENV{VALGRIND})) {
 # make all our python scripts unbuffered
 $ENV{PYTHONUNBUFFERED} = 1;
 
+$ENV{SAMBA_DEPRECATED_SUPPRESS} = 1;
+
 # do not depend on the users setup
 # see also bootstrap/config.py
 $ENV{TZ} = "UTC";
