@@ -241,9 +241,15 @@ NTSTATUS vfs_offload_token_create_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	/* combine persistent and volatile handles for the resume key */
-	SBVAL(token_blob->data,  0, fsp->op->global->open_persistent_id);
-	SBVAL(token_blob->data,  8, fsp->op->global->open_volatile_id);
-	SIVAL(token_blob->data, 16, fsctl);
+	SBVAL(token_blob->data,
+	      SMB_VFS_ODX_TOKEN_OFFSET_PFID,
+	      fsp->op->global->open_persistent_id);
+	SBVAL(token_blob->data,
+	      SMB_VFS_ODX_TOKEN_OFFSET_VFID,
+	      fsp->op->global->open_volatile_id);
+	SIVAL(token_blob->data,
+	      SMB_VFS_ODX_TOKEN_OFFSET_FSCTL,
+	      fsctl);
 
 	return NT_STATUS_OK;
 }

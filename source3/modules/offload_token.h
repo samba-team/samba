@@ -22,6 +22,10 @@
 struct vfs_offload_ctx;
 struct req_resume_key_rsp;
 
+#define SMB_VFS_ODX_TOKEN_OFFSET_PFID      0
+#define SMB_VFS_ODX_TOKEN_OFFSET_VFID      8
+#define SMB_VFS_ODX_TOKEN_OFFSET_FSCTL     16
+
 NTSTATUS vfs_offload_token_ctx_init(TALLOC_CTX *mem_ctx,
 				    struct vfs_offload_ctx **_ctx);
 NTSTATUS vfs_offload_token_db_store_fsp(struct vfs_offload_ctx *ctx,
