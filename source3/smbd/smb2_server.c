@@ -2119,19 +2119,27 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 static
 struct smb2_signing_key *smbd_smb2_signing_key(struct smbXsrv_session *session,
-					       struct smbXsrv_connection *xconn)
+					       struct smbXsrv_connection *xconn,
+					       bool *_has_channel)
 {
 	struct smbXsrv_channel_global0 *c = NULL;
 	NTSTATUS status;
 	struct smb2_signing_key *key = NULL;
+	bool has_channel = false;
 
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (NT_STATUS_IS_OK(status)) {
 		key = c->signing_key;
+		has_channel = true;
 	}
 
 	if (!smb2_signing_key_valid(key)) {
 		key = session->global->signing_key;
+		has_channel = false;
+	}
+
+	if (_has_channel != NULL) {
+		*_has_channel = has_channel;
 	}
 
 	return key;
@@ -2338,7 +2346,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
 		struct smb2_signing_key *signing_key =
-			smbd_smb2_signing_key(x, xconn);
+			smbd_smb2_signing_key(x, xconn, NULL);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
@@ -3080,6 +3088,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		signing_required = false;
 	} else if (signing_required || (flags & SMB2_HDR_FLAG_SIGNED)) {
 		struct smb2_signing_key *signing_key = NULL;
+		bool has_channel = false;
 
 		if (x == NULL) {
 			/*
@@ -3101,7 +3110,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
-		signing_key = smbd_smb2_signing_key(x, xconn);
+		signing_key = smbd_smb2_signing_key(x, xconn, &has_channel);
 
 		/*
 		 * If we have a signing key, we should
@@ -3114,6 +3123,33 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		status = smb2_signing_check_pdu(signing_key,
 						SMBD_SMB2_IN_HDR_IOV(req),
 						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+		    opcode == SMB2_OP_SESSSETUP && !has_channel &&
+		    NT_STATUS_IS_OK(session_status))
+		{
+			if (!NT_STATUS_EQUAL(x->status, NT_STATUS_BAD_LOGON_SESSION_STATE)) {
+				struct smbXsrv_session *session = NULL;
+				NTSTATUS error;
+
+				error = smb2srv_session_lookup_global(req->xconn->client,
+								      x->global->session_wire_id,
+								      req,
+								      &session);
+				if (!NT_STATUS_IS_OK(error)) {
+					return smbd_smb2_request_error(req, error);
+				}
+
+				/*
+				 * We fallback to a session of
+				 * another process in order to
+				 * get the signing correct.
+				 *
+				 * We don't set req->last_session_id here.
+				 */
+				req->session = x = session;
+			}
+			goto skipped_signing;
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
@@ -3164,6 +3200,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			break;
 		}
 	}
+
+skipped_signing:
 
 	if (flags & SMB2_HDR_FLAG_CHAINED) {
 		req->compound_related = true;
@@ -3594,7 +3632,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		if (req->do_signing && firsttf->iov_len == 0) {
 			struct smbXsrv_session *x = req->session;
 			struct smb2_signing_key *signing_key =
-				smbd_smb2_signing_key(x, xconn);
+				smbd_smb2_signing_key(x, xconn, NULL);
 
 			/*
 			 * we need to remember the signing key
@@ -3648,7 +3686,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
 		struct smb2_signing_key *signing_key =
-			smbd_smb2_signing_key(x, xconn);
+			smbd_smb2_signing_key(x, xconn, NULL);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       outhdr,
