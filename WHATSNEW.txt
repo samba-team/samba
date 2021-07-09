@@ -12,6 +12,25 @@ Samba 4.15 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+Removed SMB (development) dialects
+----------------------------------
+
+The following SMB (development) dialects are no longer
+supported: SMB2_22, SMB2_24 and SMB3_10. They are were
+only supported by Windows technical preview builds.
+They used to be useful in order to test against the
+latest Windows versions, but it's no longer useful
+to have them. If you have them explicitly specified
+in your smb.conf or an the command line,
+you need to replace them like this:
+- SMB2_22 => SMB3_00
+- SMB2_24 => SMB3_00
+- SMB3_10 => SMB3_11
+Note that it's typically not useful to specify
+"client max protocol" or "server max protocol"
+explicitly to a specific dialect, just leave
+them unspecified or specify the value "default".
+
 New GPG key
 -----------
 
@@ -147,6 +166,8 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   client use kerberos                     New             desired
+  client max protocol                     Values Removed
+  client min protocol                     Values Removed
   client protection                       New             default
   preopen:posix-basic-regex               New             No
   preopen:nomatch_log_level               New             5
@@ -156,6 +177,8 @@ smb.conf changes
   preopen:reset_log_level                 New             5
   preopen:push_log_level                  New             3
   preopen:queue_log_level                 New             10
+  server max protocol                     Values Removed
+  server min protocol                     Values Removed
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
 
