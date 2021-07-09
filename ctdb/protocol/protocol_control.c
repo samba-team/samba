@@ -411,6 +411,12 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_ECHO_DATA:
 		len = ctdb_echo_data_len(cd->data.echo_data);
 		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
+		break;
 	}
 
 	return len;
@@ -1384,6 +1390,12 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_ECHO_DATA:
 		len = ctdb_echo_data_len(cd->data.echo_data);
+		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
 		break;
 	}
 

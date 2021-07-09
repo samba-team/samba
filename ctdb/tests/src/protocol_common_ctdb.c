@@ -594,6 +594,12 @@ void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		assert(cd->data.echo_data != NULL);
 		fill_ctdb_echo_data(mem_ctx, cd->data.echo_data);
 		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
+		break;
 	}
 }
 
@@ -983,6 +989,12 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_ECHO_DATA:
 		verify_ctdb_echo_data(cd->data.echo_data, cd2->data.echo_data);
+		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
 		break;
 	}
 }
@@ -1380,6 +1392,12 @@ void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		assert(cd->data.echo_data != NULL);
 		fill_ctdb_echo_data(mem_ctx, cd->data.echo_data);
 		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
+		break;
 	}
 }
 
@@ -1716,6 +1734,12 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_ECHO_DATA:
 		verify_ctdb_echo_data(cd->data.echo_data, cd2->data.echo_data);
+		break;
+
+	case CTDB_CONTROL_DISABLE_NODE:
+		break;
+
+	case CTDB_CONTROL_ENABLE_NODE:
 		break;
 	}
 }
