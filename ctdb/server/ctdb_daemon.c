@@ -1264,7 +1264,7 @@ static void initialise_node_flags (struct ctdb_context *ctdb)
 	/* do we start out in DISABLED mode? */
 	if (ctdb->start_as_disabled != 0) {
 		D_ERR("This node is configured to start in DISABLED state\n");
-		node->flags |= NODE_FLAGS_DISABLED;
+		node->flags |= NODE_FLAGS_PERMANENTLY_DISABLED;
 	}
 	/* do we start out in STOPPED mode? */
 	if (ctdb->start_as_stopped != 0) {
