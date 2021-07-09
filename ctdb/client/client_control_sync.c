@@ -2718,3 +2718,71 @@ int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	return 0;
 }
+
+int ctdb_ctrl_disable_node(TALLOC_CTX *mem_ctx,
+			   struct tevent_context *ev,
+			   struct ctdb_client_context *client,
+			   int destnode,
+			   struct timeval timeout)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_disable_node(&request);
+	ret = ctdb_client_control(mem_ctx,
+				  ev,
+				  client,
+				  destnode,
+				  timeout,
+				  &request,
+				  &reply);
+	if (ret != 0) {
+		D_ERR("Control DISABLE_NODE failed to node %u, ret=%d\n",
+		      destnode,
+		      ret);
+		return ret;
+	}
+
+	ret = ctdb_reply_control_disable_node(reply);
+	if (ret != 0) {
+		D_ERR("Control DISABLE_NODE failed, ret=%d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_enable_node(TALLOC_CTX *mem_ctx,
+			  struct tevent_context *ev,
+			  struct ctdb_client_context *client,
+			  int destnode,
+			  struct timeval timeout)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_enable_node(&request);
+	ret = ctdb_client_control(mem_ctx,
+				  ev,
+				  client,
+				  destnode,
+				  timeout,
+				  &request,
+				  &reply);
+	if (ret != 0) {
+		D_ERR("Control ENABLE_NODE failed to node %u, ret=%d\n",
+		      destnode,
+		      ret);
+		return ret;
+	}
+
+	ret = ctdb_reply_control_enable_node(reply);
+	if (ret != 0) {
+		D_ERR("Control ENABLE_NODE failed, ret=%d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}

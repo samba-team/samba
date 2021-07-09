@@ -491,6 +491,18 @@ int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				int destnode, struct timeval timeout,
 				uint64_t tunnel_id);
 
+int ctdb_ctrl_disable_node(TALLOC_CTX *mem_ctx,
+			   struct tevent_context *ev,
+			   struct ctdb_client_context *client,
+			   int destnode,
+			   struct timeval timeout);
+
+int ctdb_ctrl_enable_node(TALLOC_CTX *mem_ctx,
+			  struct tevent_context *ev,
+			  struct ctdb_client_context *client,
+			  int destnode,
+			  struct timeval timeout);
+
 /* from client/client_message_sync.c */
 
 int ctdb_message_recd_update_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
