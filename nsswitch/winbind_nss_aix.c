@@ -833,7 +833,7 @@ static attrlist_t **wb_aix_attrlist(void)
 	logit("method attrlist called\n");
 
 	n = sizeof(attr_list) / sizeof(struct attr_types);
-	size = (n*sizeof(attrlist_t *));
+	size = ((n + 1) * sizeof(attrlist_t *));
 
 	if ( (ret = malloc( size )) == NULL ) {
 		errno = ENOMEM;
