@@ -171,6 +171,107 @@ utility. The existing options for the provisioning and joining steps
 are documented in the net(8) manpage.
 
 
+samba-tool dns zoneoptions for aging control
+--------------------------------------------
+
+The samba-tool dns zoneoptions command can be used to turn aging on
+and off, alter the refresh and no-refresh periods, and manipulate the
+timestamps of existing records.
+
+To turn aging on for a zone, you can use something like this:
+
+  samba-tool dns zoneoptions --aging=1 --refreshinterval=306600
+
+which turns on aging and ensures no records less than five years old
+are aged out and scavenged. After aging has been on for sufficient
+time for records to be renewed, the command
+
+  samba-tool dns zoneoptions --refreshinterval=168
+
+will set the refresh period to the standard seven days. Using this two
+step process will help prevent the temporary loss of dynamic records
+if scavenging happens before their first renewal.
+
+
+Marking old records as static or dynamic with samba-tool
+--------------------------------------------------------
+
+A bug in Samba versions prior to 4.9 meant records that were meant to
+be static were marked as dynamic and vice versa. To fix the timestamps
+in these domains, it is possible to use the following options,
+preferably before turning aging on.
+
+   --mark-old-records-static
+   --mark-records-dynamic-regex
+   --mark-records-static-regex
+
+The --mark-old-records-static option will make records older than the
+specified date static (that is, with a zero timestamp). For example,
+if you upgraded to Samba 4.9 in November 2018, you could use ensure no
+old records will be mistakenly interpreted as dynamic using the
+following option:
+
+  samba-tool dns zoneoptions --mark-old-records-static=2018-11-30
+
+Then, if you know that that will have marked some records as static
+that should be dynamic, and you know which those are due to your
+naming scheme, you can use commands like:
+
+  samba-tool dns zoneoptions --mark-records-dynamic-regex='\w+-desktop'
+
+where '\w+-desktop' is a perl-compatible regular expression that will
+match 'bob-desktop', 'alice-desktop', and so on.
+
+These options are deliberately long and cumbersome to type, so people
+have a chance to think before they get to the end. You can make a
+mess if you get it wrong.
+
+All samba-tool dns zoneoptions modes can be given a --dry-run/-n
+argument that allows you to inspect the likely results before going
+ahead.
+
+NOTE: for aging to work, you need to have "dns zone scavenging = yes"
+set in the smb.conf of at least one server.
+
+
+DNS tombstones are now deleted as appropriate
+---------------------------------------------
+
+When all the records for a DNS name have been deleted, the node is put
+in a tombstoned state (separate from general AD object tombstoning,
+which deleted nodes also go through). These tombstones should be
+cleaned up periodically. Due to a conflation of scavenging and
+tombstoning, we have only been deleting tombstones when aging is
+enabled.
+
+If you have a lot of tombstoned DNS nodes (that is, DNS names for
+which you have removed all the records), cleaning up these DNS
+tombstones may take a noticeable time.
+
+
+DNS tombstones use a consistent timestamp format
+------------------------------------------------
+
+DNS records use an hours-since-1601 timestamp format except for in the
+case of tombstone records where a 100-nanosecond-intervals-since-1601
+format is used (this latter format being the most common in Windows).
+We had mixed that up, which might have had strange effects in zones
+where aging was enabled (and hence tombstone timestamps were used).
+
+
+samba-tool dns update and RPC changes
+-------------------------------------
+
+The dnsserver DCERPC pipe can be used by samba-tool and Windows tools
+to manipulate dns records on the remote server. A bug in Samba meant
+it was not possible to update an existing DNS record to change the
+TTL. The general behaviour of RPC updates is now closer to that of
+Windows.
+
+samba-tool dns update is now a bit more careful in rejecting and
+warning you about malformed IPv4 and IPv6 addresses.
+
+
 REMOVED FEATURES
 ================
 
