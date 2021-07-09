@@ -888,21 +888,21 @@ bool run_smb2_multi_channel(int dummy)
 	cli_state_client_guid = saved_guid;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
-				 PROTOCOL_SMB2_22, PROTOCOL_LATEST);
+				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smbXcli_negprot(cli2->conn, cli2->timeout,
-				 PROTOCOL_SMB2_22, PROTOCOL_LATEST);
+				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smbXcli_negprot(cli3->conn, cli3->timeout,
-				 PROTOCOL_SMB2_22, PROTOCOL_LATEST);
+				 PROTOCOL_SMB3_00, PROTOCOL_LATEST);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -1456,7 +1456,7 @@ bool run_smb2_session_reauth(int dummy)
 	 * PROTOCOL_SMB2_22 has a bug in win8pre0
 	 * it behaves like PROTOCOL_SMB2_02
 	 * and returns NT_STATUS_REQUEST_NOT_ACCEPTED,
-	 * while it allows it on PROTOCOL_SMB2_02.
+	 * while it allows it on PROTOCOL_SMB2_10.
 	 */
 	status = smbXcli_negprot(cli->conn, cli->timeout,
 				 PROTOCOL_SMB2_10, PROTOCOL_SMB2_10);
