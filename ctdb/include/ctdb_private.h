@@ -565,6 +565,8 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb,
 void daemon_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
 			   void *private_data);
 
+struct ctdb_node *ctdb_find_node(struct ctdb_context *ctdb, uint32_t pnn);
+
 int ctdb_start_daemon(struct ctdb_context *ctdb,
 		      bool interactive,
 		      bool test_mode_enabled);
