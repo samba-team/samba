@@ -1225,17 +1225,38 @@ failed:
 	return -1;	
 }
 
-static void initialise_node_flags (struct ctdb_context *ctdb)
+struct ctdb_node *ctdb_find_node(struct ctdb_context *ctdb, uint32_t pnn)
 {
 	struct ctdb_node *node = NULL;
 	unsigned int i;
 
+	if (pnn == CTDB_CURRENT_NODE) {
+		pnn = ctdb->pnn;
+	}
+
 	/* Always found: PNN correctly set just before this is called */
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		node = ctdb->nodes[i];
-		if (ctdb->pnn == node->pnn) {
-			break;
+		if (pnn == node->pnn) {
+			return node;
 		}
+	}
+
+	return NULL;
+}
+
+static void initialise_node_flags (struct ctdb_context *ctdb)
+{
+	struct ctdb_node *node = NULL;
+
+	node = ctdb_find_node(ctdb, CTDB_CURRENT_NODE);
+	/*
+	 * PNN correctly set just before this is called so always
+	 * found but keep static analysers happy...
+	 */
+	if (node == NULL) {
+		DBG_ERR("Unable to find current node\n");
+		return;
 	}
 
 	node->flags &= ~NODE_FLAGS_DISCONNECTED;
