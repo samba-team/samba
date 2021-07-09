@@ -484,7 +484,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
-	if (node->flags == c->old_flags) {
+	if (node->flags == old_flags) {
 		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", c->pnn, node->flags));
 		return 0;
 	}
