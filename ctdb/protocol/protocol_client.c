@@ -2360,3 +2360,39 @@ int ctdb_reply_control_echo_data(struct ctdb_reply_control *reply)
 
 	return reply->status;
 }
+
+/* CTDB_CONTROL_DISABLE_NODE */
+
+void ctdb_req_control_disable_node(struct ctdb_req_control *request)
+{
+	request->opcode = CTDB_CONTROL_DISABLE_NODE;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DISABLE_NODE;
+}
+
+int ctdb_reply_control_disable_node(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DISABLE_NODE);
+}
+
+/* CTDB_CONTROL_ENABLE_NODE */
+
+void ctdb_req_control_enable_node(struct ctdb_req_control *request)
+{
+	request->opcode = CTDB_CONTROL_ENABLE_NODE;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_ENABLE_NODE;
+}
+
+int ctdb_reply_control_enable_node(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_NODE);
+}
