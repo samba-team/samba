@@ -26,6 +26,7 @@
 #include "torture/libsmbclient/proto.h"
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
+#include "libcli/smb/smb_constants.h"
 #include "dynconfig.h"
 #include "lib/util/time.h"
 
@@ -210,10 +211,10 @@ static bool torture_libsmbclient_setConfiguration(struct torture_context *tctx)
 			"NEW_WORKGROUP",
 			"smbc_setConfiguration failed, "
 			"'workgroup' not updated");
-	torture_assert_int_equal(tctx, global_config->client_min_protocol, 7,
+	torture_assert_int_equal(tctx, global_config->client_min_protocol, PROTOCOL_NT1,
 			"smbc_setConfiguration failed, 'client min protocol' "
 			"not updated");
-	torture_assert_int_equal(tctx, global_config->_client_max_protocol, 13,
+	torture_assert_int_equal(tctx, global_config->_client_max_protocol, PROTOCOL_SMB3_00,
 			"smbc_setConfiguration failed, 'client max protocol' "
 			"not updated");
 	torture_assert_int_equal(tctx, global_config->client_signing, 1,
