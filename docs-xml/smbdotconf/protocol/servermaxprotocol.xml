@@ -48,10 +48,7 @@
 		    <para><constant>SMB3_02</constant>: Windows 8.1 SMB3 version.</para>
 		</listitem>
 		<listitem>
-		    <para><constant>SMB3_10</constant>: early Windows 10 technical preview SMB3 version.</para>
-		</listitem>
-		<listitem>
-		    <para><constant>SMB3_11</constant>: Windows 10 technical preview SMB3 version (maybe final).</para>
+		    <para><constant>SMB3_11</constant>: Windows 10 SMB3 version.</para>
 		</listitem>
 	    </itemizedlist>
 	    <para>By default SMB3 selects the SMB3_11 variant.</para>
