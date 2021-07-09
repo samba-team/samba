@@ -55,15 +55,17 @@ See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
 
 NEW FEATURES/CHANGES
 ====================
-- bind DLZ: Added the ability to set allow/deny lists for zone
-  transfer clients.
-  Up to now, any client could use a DNS zone transfer request
-  to the bind server, and get an answer from Samba.
-  Now the default behaviour will be to deny those request.
-  Two new options have been added to manage the list of
-  authorized/denied clients for zone transfer requests.
-  In order to be accepted, the request must be issued by a client
-  that is in the allow list and NOT in the deny list.
+
+Bind DLZ: add the ability to set allow/deny lists for zone transfer clients
+---------------------------------------------------------------------------
+
+Up to now, any client could use a DNS zone transfer request to the
+bind server, and get an answer from Samba. Now the default behaviour
+will be to deny those request. Two new options have been added to
+manage the list of authorized/denied clients for zone transfer
+requests. In order to be accepted, the request must be issued by a
+client that is in the allow list and NOT in the deny list.
+
 
 "server multi channel support" no longer experimental
 -----------------------------------------------------
@@ -80,6 +82,7 @@ The samba-tool command is now available when samba is configured
 have been disabled. The samba-tool domain options, for example, are limited
 when no ad-dc is present. Samba must still be built with ads in order to enable
 samba-tool.
+
 
 Improved command line user experience
 -------------------------------------
@@ -142,6 +145,7 @@ smbd:
 
 winbindd:
 --log-stdout  ->    --debug-stdout
+
 
 Scanning of trusted domains and enterprise principals
 -----------------------------------------------------
