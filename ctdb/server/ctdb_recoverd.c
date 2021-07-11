@@ -555,13 +555,20 @@ static int update_flags(struct ctdb_recoverd *rec,
 		uint32_t local_flags = nodemap->nodes[j].flags;
 		uint32_t remote_pnn = nodemap->nodes[j].pnn;
 		uint32_t remote_flags;
+		unsigned int i;
 		int ret;
 
 		if (local_flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 		if (remote_pnn == ctdb->pnn) {
-			continue;
+			/*
+			 * No remote nodemap for this node since this
+			 * is the local nodemap.  However, still need
+			 * to check this against the remote nodes and
+			 * push it if they are out-of-date.
+			 */
+			goto compare_remotes;
 		}
 
 		remote_nodemap = remote_nodemaps[j];
@@ -580,6 +587,26 @@ static int update_flags(struct ctdb_recoverd *rec,
 			nodemap->nodes[j].flags = remote_flags;
 			local_flags = remote_flags;
 			goto push;
+		}
+
+compare_remotes:
+		for (i = 0; i < nodemap->num; i++) {
+			if (i == j) {
+				continue;
+			}
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+				continue;
+			}
+			if (nodemap->nodes[i].pnn == ctdb->pnn) {
+				continue;
+			}
+
+			remote_nodemap = remote_nodemaps[i];
+			remote_flags = remote_nodemap->nodes[j].flags;
+
+			if (local_flags != remote_flags) {
+				goto push;
+			}
 		}
 
 		continue;
