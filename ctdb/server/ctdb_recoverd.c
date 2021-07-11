@@ -568,16 +568,6 @@ static int update_flags(struct ctdb_recoverd *rec,
 		remote_flags = remote_nodemap->nodes[j].flags;
 
 		if (local_flags != remote_flags) {
-			ret = update_flags_on_all_nodes(rec,
-							remote_pnn,
-							remote_flags);
-			if (ret != 0) {
-				DBG_ERR(
-				    "Unable to update flags on remote nodes\n");
-				talloc_free(mem_ctx);
-				return -1;
-			}
-
 			/*
 			 * Update the local copy of the flags in the
 			 * recovery daemon.
@@ -588,6 +578,21 @@ static int update_flags(struct ctdb_recoverd *rec,
 				 remote_flags,
 				 local_flags);
 			nodemap->nodes[j].flags = remote_flags;
+			local_flags = remote_flags;
+			goto push;
+		}
+
+		continue;
+
+push:
+		D_NOTICE("Pushing updated flags for node %u (0x%x)\n",
+			 remote_pnn,
+			 local_flags);
+		ret = update_flags_on_all_nodes(rec, remote_pnn, local_flags);
+		if (ret != 0) {
+			DBG_ERR("Unable to update flags on remote nodes\n");
+			talloc_free(mem_ctx);
+			return -1;
 		}
 	}
 	talloc_free(mem_ctx);
