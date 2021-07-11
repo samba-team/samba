@@ -553,13 +553,14 @@ static int update_flags(struct ctdb_recoverd *rec,
 	for (j=0; j<nodemap->num; j++) {
 		struct ctdb_node_map_old *remote_nodemap=NULL;
 		uint32_t local_flags = nodemap->nodes[j].flags;
+		uint32_t remote_pnn = nodemap->nodes[j].pnn;
 		uint32_t remote_flags;
 		int ret;
 
 		if (local_flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
-		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+		if (remote_pnn == ctdb->pnn) {
 			continue;
 		}
 
@@ -568,7 +569,7 @@ static int update_flags(struct ctdb_recoverd *rec,
 
 		if (local_flags != remote_flags) {
 			ret = update_flags_on_all_nodes(rec,
-							nodemap->nodes[j].pnn,
+							remote_pnn,
 							remote_flags);
 			if (ret != 0) {
 				DBG_ERR(
@@ -583,7 +584,7 @@ static int update_flags(struct ctdb_recoverd *rec,
 			 */
 			D_NOTICE("Remote node %u had flags 0x%x, "
 				 "local had 0x%x - updating local\n",
-				 nodemap->nodes[j].pnn,
+				 remote_pnn,
 				 remote_flags,
 				 local_flags);
 			nodemap->nodes[j].flags = remote_flags;
