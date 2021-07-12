@@ -41,6 +41,11 @@
 
 struct mit_samba_context *ks_get_context(krb5_context kcontext);
 
+krb5_error_code ks_get_principal(krb5_context context,
+				 krb5_const_principal principal,
+				 unsigned int kflags,
+				 krb5_db_entry **kentry);
+
 bool ks_data_eq_string(krb5_data d, const char *s);
 
 krb5_data ks_make_data(void *data, unsigned int len);
