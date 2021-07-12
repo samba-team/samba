@@ -925,11 +925,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		status = move_smb_fname_fsp_link(smb_fname, atname);
-		TALLOC_FREE(atname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("Failed to move pathref for [%s]: %s\n",
 				    smb_fname_str_dbg(smb_fname),
 				    nt_errstr(status));
+			TALLOC_FREE(atname);
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
@@ -937,6 +937,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		if (!is_visible_fsp(smb_fname->fsp)) {
+			TALLOC_FREE(atname);
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
@@ -945,11 +946,14 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		ok = mode_fn(ctx, private_data, smb_fname, get_dosmode, &mode);
 		if (!ok) {
+			TALLOC_FREE(atname);
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			continue;
 		}
+
+		TALLOC_FREE(atname);
 
 		/*
 		 * The only valid cases where we return the directory entry if
