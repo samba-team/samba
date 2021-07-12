@@ -1466,9 +1466,8 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 	char link_target_buf[7];
 #endif
 	struct ceph_statx stx;
+	struct smb_filename *full_fname = NULL;
 	int ret;
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	if (is_named_stream(smb_fname)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1490,8 +1489,16 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		}
 	}
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
+	}
+
 	ret = ceph_statx(handle->data,
-			 smb_fname->base_name,
+			 full_fname->base_name,
 			 &stx,
 			 SAMBA_STATX_ATTR_MASK,
 			 AT_SYMLINK_NOFOLLOW);
@@ -1501,20 +1508,20 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 	}
 
         referral_len = ceph_readlink(handle->data,
-                                smb_fname->base_name,
+                                full_fname->base_name,
                                 link_target,
                                 bufsize - 1);
         if (referral_len < 0) {
 		/* ceph errors are -errno. */
 		if (-referral_len == EINVAL) {
 			DBG_INFO("%s is not a link.\n",
-				smb_fname->base_name);
+				full_fname->base_name);
 			status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 		} else {
 	                status = map_nt_error_from_unix(-referral_len);
 			DBG_ERR("Error reading "
 				"msdfs link %s: %s\n",
-				smb_fname->base_name,
+				full_fname->base_name,
 			strerror(errno));
 		}
                 goto err;
@@ -1522,7 +1529,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
         link_target[referral_len] = '\0';
 
         DBG_INFO("%s -> %s\n",
-                        smb_fname->base_name,
+                        full_fname->base_name,
                         link_target);
 
         if (!strnequal(link_target, "msdfs:", 6)) {
@@ -1532,6 +1539,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 
         if (ppreflist == NULL && preferral_count == NULL) {
                 /* Early return for checking if this is a DFS link. */
+		TALLOC_FREE(full_fname);
 		init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
                 return NT_STATUS_OK;
         }
@@ -1554,6 +1562,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
         if (link_target != link_target_buf) {
                 TALLOC_FREE(link_target);
         }
+	TALLOC_FREE(full_fname);
         return status;
 }
 
