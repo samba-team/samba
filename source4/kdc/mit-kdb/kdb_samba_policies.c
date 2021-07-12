@@ -309,6 +309,8 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    krb5_data ***auth_indicators,
 					    krb5_authdata ***signed_auth_data)
 {
+	krb5_const_principal ks_client_princ = NULL;
+	krb5_db_entry *client_entry = NULL;
 	krb5_authdata **authdata = NULL;
 	krb5_boolean is_as_req;
 	krb5_error_code code;
@@ -325,8 +327,72 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 
 	is_as_req = ((flags & KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY) != 0);
 
+	/*
+	 * When using s4u2proxy client_princ actually refers to the proxied user
+	 * while client->princ to the proxy service asking for the TGS on behalf
+	 * of the proxied user. So always use client_princ in preference.
+	 *
+	 * Note that when client principal is not NULL, client entry might be
+	 * NULL for cross-realm case, so we need to make sure to not
+	 * dereference NULL pointer here.
+	 */
+	if (client_princ != NULL) {
+		ks_client_princ = client_princ;
+		if (!is_as_req) {
+			krb5_boolean is_equal = false;
+
+			if (client != NULL && client->princ != NULL) {
+				is_equal =
+					krb5_principal_compare(context,
+							       client_princ,
+							       client->princ);
+			}
+
+			/*
+			 * When client principal is the same as supplied client
+			 * entry, don't fetch it.
+			 */
+			if (!is_equal) {
+				code = ks_get_principal(context,
+							ks_client_princ,
+							0,
+							&client_entry);
+				if (code != 0) {
+					char *client_name = NULL;
+
+					(void)krb5_unparse_name(context,
+								ks_client_princ,
+								&client_name);
+
+					DBG_DEBUG("We didn't find the client "
+						  "principal [%s] in our "
+						  "database.\n",
+						  client_name);
+					SAFE_FREE(client_name);
+
+					/*
+					 * If we didn't find client_princ in our
+					 * database it might be from another
+					 * realm.
+					 */
+					client_entry = NULL;
+				}
+			}
+		}
+	} else {
+		if (client == NULL) {
+			*signed_auth_data = NULL;
+			return 0;
+		}
+		ks_client_princ = client->princ;
+	}
+
+	if (client_entry == NULL) {
+		client_entry = client;
+	}
+
 	if (is_as_req && (flags & KRB5_KDB_FLAG_INCLUDE_PAC)) {
-		code = ks_get_pac(context, client, client_key, &pac);
+		code = ks_get_pac(context, client_entry, client_key, &pac);
 		if (code != 0) {
 			goto done;
 		}
@@ -335,8 +401,8 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	if (!is_as_req) {
 		code = ks_verify_pac(context,
 				     flags,
-				     client_princ,
-				     client,
+				     ks_client_princ,
+				     client_entry,
 				     server,
 				     krbtgt,
 				     server_key,
@@ -349,9 +415,9 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		}
 	}
 
-	if (pac == NULL && client != NULL) {
+	if (pac == NULL) {
 
-		code = ks_get_pac(context, client, client_key, &pac);
+		code = ks_get_pac(context, client_entry, client_key, &pac);
 		if (code != 0) {
 			goto done;
 		}
@@ -362,7 +428,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		goto done;
 	}
 
-	code = krb5_pac_sign(context, pac, authtime, client_princ,
+	code = krb5_pac_sign(context, pac, authtime, ks_client_princ,
 			server_key, krbtgt_key, &pac_data);
 	if (code != 0) {
 		DBG_ERR("krb5_pac_sign failed: %d\n", code);
@@ -396,6 +462,9 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	code = 0;
 
 done:
+	if (client_entry != NULL && client_entry != client) {
+		ks_free_principal(context, client_entry);
+	}
 	krb5_pac_free(context, pac);
 	krb5_free_authdata(context, authdata);
 
