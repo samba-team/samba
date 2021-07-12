@@ -745,6 +745,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 					    char **_fname),
 			   bool (*mode_fn)(TALLOC_CTX *ctx,
 					   void *private_data,
+					   struct files_struct *dirfsp,
+					   struct smb_filename *atname,
 					   struct smb_filename *smb_fname,
 					   bool get_dosmode,
 					   uint32_t *_mode),
@@ -944,7 +946,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		ok = mode_fn(ctx, private_data, smb_fname, get_dosmode, &mode);
+		ok = mode_fn(ctx,
+			     private_data,
+			     dirptr->dir_hnd->fsp,
+			     atname,
+			     smb_fname,
+			     get_dosmode,
+			     &mode);
 		if (!ok) {
 			TALLOC_FREE(atname);
 			TALLOC_FREE(smb_fname);
@@ -1092,6 +1100,8 @@ static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
 
 static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 				    void *private_data,
+				    struct files_struct *dirfsp,
+				    struct smb_filename *atname,
 				    struct smb_filename *smb_fname,
 				    bool get_dosmode,
 				    uint32_t *_mode)
