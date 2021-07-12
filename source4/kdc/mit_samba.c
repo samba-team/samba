@@ -1153,3 +1153,11 @@ void mit_samba_update_bad_password_count(krb5_db_entry *db_entry)
 				     p->msg,
 				     ldb_get_default_basedn(p->kdc_db_ctx->samdb));
 }
+
+bool mit_samba_princ_needs_pac(krb5_db_entry *db_entry)
+{
+	struct samba_kdc_entry *skdc_entry =
+		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
+
+	return samba_princ_needs_pac(skdc_entry);
+}
