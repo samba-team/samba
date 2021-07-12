@@ -1076,7 +1076,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	struct samr_DomInfo1 *dominfo;
 	const char *error_string = NULL;
 	struct auth_user_info_dc *user_info_dc;
-	struct samba_kdc_entry *p;
+	struct samba_kdc_entry *p =
+		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	krb5_error_code code = 0;
 
 #ifdef DEBUG_PASSWORD
@@ -1087,8 +1088,6 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 	if (tmp_ctx == NULL) {
 		return ENOMEM;
 	}
-
-	p = (struct samba_kdc_entry *)db_entry->e_data;
 
 	status = authsam_make_user_info_dc(tmp_ctx,
 					   ctx->db_ctx->samdb,
@@ -1165,10 +1164,9 @@ out:
 void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 {
 	struct netr_SendToSamBase *send_to_sam = NULL;
-	struct samba_kdc_entry *p;
+	struct samba_kdc_entry *p =
+		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	struct ldb_dn *domain_dn;
-
-	p = (struct samba_kdc_entry *)db_entry->e_data;
 
 	domain_dn = ldb_get_default_basedn(p->kdc_db_ctx->samdb);
 
@@ -1183,9 +1181,8 @@ void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 
 void mit_samba_update_bad_password_count(krb5_db_entry *db_entry)
 {
-	struct samba_kdc_entry *p;
-
-	p = (struct samba_kdc_entry *)db_entry->e_data;
+	struct samba_kdc_entry *p =
+		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 
 	authsam_update_bad_pwd_count(p->kdc_db_ctx->samdb,
 				     p->msg,
