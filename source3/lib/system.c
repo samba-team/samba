@@ -370,6 +370,32 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 }
 
 /*******************************************************************
+ An fstatat() wrapper.
+********************************************************************/
+
+int sys_fstatat(int fd,
+		const char *pathname,
+		SMB_STRUCT_STAT *sbuf,
+		int flags,
+		bool fake_dir_create_times)
+{
+	int ret;
+	struct stat statbuf;
+
+	ret = fstatat(fd, pathname, &statbuf, flags);
+	if (ret != 0) {
+		return -1;
+	}
+
+	/* we always want directories to appear zero size */
+	if (S_ISDIR(statbuf.st_mode)) {
+		statbuf.st_size = 0;
+	}
+	init_stat_ex_from_stat(sbuf, &statbuf, fake_dir_create_times);
+	return 0;
+}
+
+/*******************************************************************
  An posix_fallocate() wrapper.
 ********************************************************************/
 int sys_posix_fallocate(int fd, off_t offset, off_t len)

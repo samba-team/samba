@@ -214,6 +214,11 @@ int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
+int sys_fstatat(int fd,
+		const char *pathname,
+		SMB_STRUCT_STAT *sbuf,
+		int flags,
+		bool fake_dir_create_times);
 int sys_posix_fallocate(int fd, off_t offset, off_t len);
 int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len);
 void kernel_flock(int fd, uint32_t share_access, uint32_t access_mask);
