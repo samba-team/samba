@@ -437,6 +437,10 @@ int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 					    &upn_dns_info_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
+		if (NT_STATUS_EQUAL(nt_status,
+				    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			return ENOENT;
+		}
 		return EINVAL;
 	}
 
