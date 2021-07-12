@@ -823,11 +823,20 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 			struct referral **ppreflist,
 			size_t *preferral_count)
 {
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = NULL;
 	NTSTATUS status;
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						dirfsp,
+						smb_fname);
+	if (full_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	cappath = capencode(talloc_tos(), full_fname->base_name);
 	if (cappath == NULL) {
+		TALLOC_FREE(full_fname);
 		return NT_STATUS_NO_MEMORY;
 	}
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
@@ -837,13 +846,14 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 				smb_fname->twrp,
 				smb_fname->flags);
 	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(cappath);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
 			mem_ctx,
-			dirfsp,
+			handle->conn->cwd_fsp,
 			cap_smb_fname,
 			ppreflist,
 			preferral_count);
@@ -853,6 +863,7 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		smb_fname->st = cap_smb_fname->st;
 	}
 
+	TALLOC_FREE(full_fname);
 	TALLOC_FREE(cappath);
 	TALLOC_FREE(cap_smb_fname);
 	return status;
