@@ -4,7 +4,7 @@
    Samba KDB plugin for MIT Kerberos
 
    Copyright (c) 2010      Simo Sorce <idra@samba.org>.
-   Copyright (c) 2014      Andreas Schneider <asn@samba.org>
+   Copyright (c) 2014-2021 Andreas Schneider <asn@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -311,11 +311,16 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 {
 	krb5_const_principal ks_client_princ = NULL;
 	krb5_db_entry *client_entry = NULL;
+	krb5_authdata **pac_auth_data = NULL;
 	krb5_authdata **authdata = NULL;
 	krb5_boolean is_as_req;
 	krb5_error_code code;
 	krb5_pac pac = NULL;
 	krb5_data pac_data;
+	bool with_pac = false;
+	bool generate_pac = false;
+	char *client_name = NULL;
+
 
 	krbtgt = krbtgt == NULL ? local_krbtgt : krbtgt;
 	krbtgt_key = krbtgt_key == NULL ? local_krbtgt_key : krbtgt_key;
@@ -358,8 +363,6 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 							0,
 							&client_entry);
 				if (code != 0) {
-					char *client_name = NULL;
-
 					(void)krb5_unparse_name(context,
 								ks_client_princ,
 								&client_name);
@@ -391,43 +394,105 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		client_entry = client;
 	}
 
-	if (is_as_req && (flags & KRB5_KDB_FLAG_INCLUDE_PAC)) {
-		code = ks_get_pac(context, client_entry, client_key, &pac);
-		if (code != 0) {
-			goto done;
-		}
+	if (is_as_req) {
+		with_pac = mit_samba_princ_needs_pac(client_entry);
+	} else {
+		with_pac = mit_samba_princ_needs_pac(server);
 	}
 
-	if (!is_as_req) {
-		code = ks_verify_pac(context,
-				     flags,
-				     ks_client_princ,
-				     client_entry,
-				     server,
-				     krbtgt,
-				     server_key,
-				     krbtgt_key,
-				     authtime,
-				     tgt_auth_data,
-				     &pac);
-		if (code != 0) {
-			goto done;
-		}
-	}
-
-	if (pac == NULL) {
-
-		code = ks_get_pac(context, client_entry, client_key, &pac);
-		if (code != 0) {
-			goto done;
-		}
-	}
-
-	if (pac == NULL) {
-		code = KRB5_KDB_DBTYPE_NOSUP;
+	code = krb5_unparse_name(context,
+				 client_princ,
+				 &client_name);
+	if (code != 0) {
 		goto done;
 	}
 
+	if (is_as_req && (flags & KRB5_KDB_FLAG_INCLUDE_PAC) != 0) {
+		generate_pac = true;
+	}
+
+	DBG_DEBUG("*** Sign data for client principal: %s [%s %s%s]\n",
+		  client_name,
+		  is_as_req ? "AS-REQ" : "TGS_REQ",
+		  with_pac ? is_as_req ? "WITH_PAC" : "FIND_PAC" : "NO_PAC",
+		  generate_pac ? " GENERATE_PAC" : "");
+
+	/*
+	 * Generate PAC for the AS-REQ or check or generate one for the TGS if
+	 * needed.
+	 */
+	if (with_pac && generate_pac) {
+		DBG_DEBUG("Generate PAC for AS-REQ [%s]\n", client_name);
+		code = ks_get_pac(context, client_entry, client_key, &pac);
+		if (code != 0) {
+			goto done;
+		}
+	} else if (with_pac && !is_as_req) {
+		/*
+		 * Find the PAC in the TGS, if one exists.
+		 */
+		code = krb5_find_authdata(context,
+					  tgt_auth_data,
+					  NULL,
+					  KRB5_AUTHDATA_WIN2K_PAC,
+					  &pac_auth_data);
+		if (code != 0) {
+			DBG_ERR("krb5_find_authdata failed: %d\n", code);
+			goto done;
+		}
+		DBG_DEBUG("Found PAC data for TGS-REQ [%s]\n", client_name);
+
+		if (pac_auth_data != NULL && pac_auth_data[0] != NULL) {
+			if (pac_auth_data[1] != NULL) {
+				DBG_ERR("Invalid PAC data!\n");
+				code = KRB5KDC_ERR_BADOPTION;
+				goto done;
+			}
+
+			DBG_DEBUG("Verify PAC for TGS [%s]\n",
+				client_name);
+
+			code = ks_verify_pac(context,
+					     flags,
+					     ks_client_princ,
+					     client_entry,
+					     server,
+					     krbtgt,
+					     server_key,
+					     krbtgt_key,
+					     authtime,
+					     tgt_auth_data,
+					     &pac);
+			if (code != 0) {
+				goto done;
+			}
+		} else {
+			if (flags & KRB5_KDB_FLAG_CONSTRAINED_DELEGATION) {
+				DBG_DEBUG("Generate PAC for constrained"
+					  "delegation TGS [%s]\n",
+					  client_name);
+
+				code = ks_get_pac(context,
+						  client_entry,
+						  client_key,
+						  &pac);
+				if (code != 0 && code != ENOENT) {
+					goto done;
+				}
+			}
+		}
+	}
+
+	if (pac == NULL) {
+		DBG_DEBUG("No PAC data - we're done [%s]\n", client_name);
+		*signed_auth_data = NULL;
+		code = 0;
+		goto done;
+	}
+
+	DBG_DEBUG("Signing PAC for %s [%s]\n",
+		  is_as_req ? "AS-REQ" : "TGS-REQ",
+		  client_name);
 	code = krb5_pac_sign(context, pac, authtime, ks_client_princ,
 			server_key, krbtgt_key, &pac_data);
 	if (code != 0) {
@@ -465,8 +530,9 @@ done:
 	if (client_entry != NULL && client_entry != client) {
 		ks_free_principal(context, client_entry);
 	}
-	krb5_pac_free(context, pac);
+	SAFE_FREE(client_name);
 	krb5_free_authdata(context, authdata);
+	krb5_pac_free(context, pac);
 
 	return code;
 }
