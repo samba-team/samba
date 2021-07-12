@@ -459,7 +459,7 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		}
 	}
 
-	referral_len = readlinkat(fsp_get_io_fd(dirfsp),
+	referral_len = readlinkat(fsp_get_pathref_fd(dirfsp),
 				smb_fname->base_name,
 				link_target,
 				bufsize - 1);
