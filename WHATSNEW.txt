@@ -16,6 +16,19 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Certificate Auto Enrollment
+---------------------------
+
+Certificate Auto Enrollment allows devices to enroll for certificates from
+Active Directory Certificate Services. It is enabled by Group Policy.
+To enable Certificate Auto Enrollment, Samba's group policy will need to be
+enabled by setting the smb.conf option `apply group policies` to Yes. Samba
+Certificate Auto Enrollment depends on certmonger, the cepces certmonger
+plugin, and sscep. Samba uses sscep to download the CA root chain, then uses
+certmonger paired with cepces to monitor the host certificate templates.
+Certificates are installed in /var/lib/samba/certs and private keys are
+installed in /var/lib/samba/private/certs.
+
 
 REMOVED FEATURES
 ================
