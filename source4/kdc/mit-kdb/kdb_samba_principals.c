@@ -36,10 +36,10 @@
 #define ADMIN_LIFETIME 60*60*3 /* 3 hours */
 #define CHANGEPW_LIFETIME 60*5 /* 5 minutes */
 
-static krb5_error_code ks_get_principal(krb5_context context,
-				        krb5_const_principal principal,
-				        unsigned int kflags,
-				        krb5_db_entry **kentry)
+krb5_error_code ks_get_principal(krb5_context context,
+				 krb5_const_principal principal,
+				 unsigned int kflags,
+				 krb5_db_entry **kentry)
 {
 	struct mit_samba_context *mit_ctx;
 	krb5_error_code code;
