@@ -85,4 +85,6 @@ void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry);
 
 void mit_samba_update_bad_password_count(krb5_db_entry *db_entry);
 
+bool mit_samba_princ_needs_pac(krb5_db_entry *db_entry);
+
 #endif /* _MIT_SAMBA_H */
