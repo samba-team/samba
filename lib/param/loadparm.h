@@ -285,6 +285,8 @@ enum samba_weak_crypto {
 #define DEFAULT_SMB2_MAX_TRANSACT (8*1024*1024)
 #define DEFAULT_SMB2_MAX_CREDITS 8192
 
+#define DEFAULT_SMB3_ENCRYPTION_ALGORITHMS "aes-128-gcm aes-128-ccm"
+
 #define LOADPARM_EXTRA_LOCALS						\
 	int usershare;							\
 	struct timespec usershare_last_mod;				\

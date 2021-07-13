@@ -2980,6 +2980,13 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "winbind use krb5 enterprise principals",
 				  "yes");
 
+	lpcfg_do_global_parameter(lp_ctx,
+				  "client smb3 encryption algorithms",
+				  DEFAULT_SMB3_ENCRYPTION_ALGORITHMS);
+	lpcfg_do_global_parameter(lp_ctx,
+				  "server smb3 encryption algorithms",
+				  DEFAULT_SMB3_ENCRYPTION_ALGORITHMS);
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;

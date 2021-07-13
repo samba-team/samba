@@ -1,0 +1,21 @@
+<samba:parameter name="server smb3 encryption algorithms"
+                 context="G"
+                 type="list"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter specifies the availability and order of
+	encryption algorithms which are available for negotiation in the SMB3_11 dialect.
+	</para>
+	<para>It is also possible to remove individual algorithms from the default list,
+	by prefixing them with '-'. This can avoid having to specify a hardcoded list.
+	</para>
+	<para>Note: that the removal of aes-128-ccm from the list will result
+	in SMB3_00 and SMB3_02 being unavailable, as it is the default and only
+	available algorithm for these dialects.
+	</para>
+</description>
+
+<value type="default">aes-128-gcm, aes-128-ccm</value>
+<value type="example">aes-128-gcm</value>
+<value type="example">-aes-128-ccm</value>
+</samba:parameter>

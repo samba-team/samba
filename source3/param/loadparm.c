@@ -966,6 +966,11 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.winbind_use_krb5_enterprise_principals = true;
 
+	Globals.client_smb3_encryption_algorithms =
+		str_list_make_v3_const(NULL, DEFAULT_SMB3_ENCRYPTION_ALGORITHMS, NULL);
+	Globals.server_smb3_encryption_algorithms =
+		str_list_make_v3_const(NULL, DEFAULT_SMB3_ENCRYPTION_ALGORITHMS, NULL);
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
