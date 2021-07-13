@@ -2339,17 +2339,28 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
+	struct smb_filename *full_fname = NULL;
 	struct smb_filename *conv = NULL;
 	NTSTATUS status;
 
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (!shadow_copy2_strip_snapshot(mem_ctx,
 					handle,
-					smb_fname,
+					full_fname,
 					&timestamp,
 					&stripped)) {
+		TALLOC_FREE(full_fname);
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (timestamp == 0) {
+		TALLOC_FREE(full_fname);
+		TALLOC_FREE(stripped);
 		return SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
 					mem_ctx,
 					dirfsp,
@@ -2358,11 +2369,13 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 					preferral_count);
 	}
 
-	conv = cp_smb_filename(mem_ctx, smb_fname);
+	conv = cp_smb_filename(mem_ctx, full_fname);
 	if (conv == NULL) {
+		TALLOC_FREE(full_fname);
 		TALLOC_FREE(stripped);
 		return NT_STATUS_NO_MEMORY;
 	}
+	TALLOC_FREE(full_fname);
 	conv->base_name = shadow_copy2_convert(conv,
 					handle,
 					stripped,
@@ -2375,7 +2388,7 @@ static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
 
 	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
 				mem_ctx,
-				dirfsp,
+				handle->conn->cwd_fsp,
 				conv,
 				ppreflist,
 				preferral_count);
