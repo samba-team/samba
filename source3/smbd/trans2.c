@@ -1556,7 +1556,13 @@ static bool check_msdfs_link(struct files_struct *dirfsp,
 	int saved_errno = errno;
 	if(lp_host_msdfs() &&
 		lp_msdfs_root(SNUM(dirfsp->conn)) &&
-		is_msdfs_link(dirfsp->conn, smb_fname)) {
+		is_msdfs_link(dirfsp, atname)) {
+
+		/*
+		 * Copy the returned stat struct from the relative
+		 * to the full pathname.
+		 */
+		smb_fname->st = atname->st;
 
 		DEBUG(5,("check_msdfs_link: Masquerading msdfs link %s "
 			"as a directory\n",

@@ -538,8 +538,8 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 			const char *target,
 			struct referral **preflist,
 			size_t *refcount);
-bool is_msdfs_link(connection_struct *conn,
-		struct smb_filename *smb_fname);
+bool is_msdfs_link(struct files_struct *dirfsp,
+		   struct smb_filename *smb_fname);
 struct junction_map;
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   struct auth_session_info *session_info,

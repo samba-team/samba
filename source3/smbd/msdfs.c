@@ -668,13 +668,13 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
  Returns true if the unix path is a valid msdfs symlink.
 **********************************************************************/
 
-bool is_msdfs_link(connection_struct *conn,
-		struct smb_filename *smb_fname)
+bool is_msdfs_link(struct files_struct *dirfsp,
+		   struct smb_filename *atname)
 {
-	NTSTATUS status = SMB_VFS_READ_DFS_PATHAT(conn,
+	NTSTATUS status = SMB_VFS_READ_DFS_PATHAT(dirfsp->conn,
 					talloc_tos(),
-					conn->cwd_fsp,
-					smb_fname,
+					dirfsp,
+					atname,
 					NULL,
 					NULL);
 	return (NT_STATUS_IS_OK(status));
@@ -1645,7 +1645,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 		if (smb_dname == NULL) {
 			goto out;
 		}
-		if (is_msdfs_link(conn, smb_dname)) {
+		if (is_msdfs_link(dir_hnd_fetch_fsp(dir_hnd), smb_dname)) {
 			if (cnt + 1 < cnt) {
 				cnt = 0;
 				goto out;
