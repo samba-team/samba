@@ -120,6 +120,7 @@ struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const cha
 void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm);
 bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name);
+bool lpcfg_parm_is_unspecified(struct loadparm_context *lp_ctx, const char *name);
 
 bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 			    const char *pszParmName, const char *pszParmValue);

@@ -800,6 +800,16 @@ bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name)
 	return lp_ctx->flags[parmnum] & FLAG_CMDLINE;
 }
 
+bool lpcfg_parm_is_unspecified(struct loadparm_context *lp_ctx, const char *name)
+{
+	int parmnum;
+
+	parmnum = lpcfg_map_parameter(name);
+	if (parmnum == -1) return false;
+
+	return lp_ctx->flags[parmnum] & FLAG_DEFAULT;
+}
+
 /**
  * Find a service by name. Otherwise works like get_service.
  */
