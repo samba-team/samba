@@ -3123,7 +3123,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * If we have a signing key, we should
 		 * sign the response
 		 */
-		if (smb2_signing_key_valid(signing_key)) {
+		if (smb2_signing_key_valid(signing_key) && opcode != SMB2_OP_CANCEL) {
 			req->do_signing = true;
 		}
 
@@ -3165,7 +3165,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * Now that we know the request was correctly signed
 		 * we have to sign the response too.
 		 */
-		req->do_signing = true;
+		if (opcode != SMB2_OP_CANCEL) {
+			req->do_signing = true;
+		}
 
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
