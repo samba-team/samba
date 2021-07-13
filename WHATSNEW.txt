@@ -1,4 +1,65 @@
                    ==============================
+                   Release Notes for Samba 4.14.6
+                            July 13, 2021
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.14 release series.
+
+
+Changes since 4.14.5
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14722: s3: lib: Fix talloc heirarcy error in parent_smb_fname().
+   * BUG 14732: smbd: Fix pathref unlinking in create_file_unixpath().
+   * BUG 14734: s3: VFS: default: Add proc_fd's fallback for vfswrap_fchown().
+   * BUG 14736: s3: smbd: Remove erroneous TALLOC_FREE(smb_fname_parent) in
+     change_file_owner_to_parent() error path.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14730: NT_STATUS_FILE_IS_A_DIRECTORY error messages when using
+     glusterfs VFS module.
+   * BUG 14734: s3/modules: fchmod: Fallback to path based chmod if pathref.
+   * BUG 14740: Spotlight RPC service doesn't work with vfs_glusterfs.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14750: gensec_krb5: Restore ipv6 support for kpasswd.
+   * BUG 14752: smbXsrv_{open,session,tcon}: protect
+     smbXsrv_{open,session,tcon}_global_traverse_fn against invalid records.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14027: samba-tool domain backup offline doesn't work against bind DLZ
+     backend.
+   * BUG 14669: netcmd: Use next_free_rid() function to calculate a SID for
+     restoring a backup.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.14.5
                             June 01, 2021
                    ==============================
@@ -59,8 +120,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
