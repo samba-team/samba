@@ -70,15 +70,9 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	bool use_level_II_oplocks = false;
 	uint32_t smb1_capabilities = 0;
 	uint32_t smb2_capabilities = 0;
-	struct smb311_capabilities smb3_capabilities = {
-		.encryption = {
-			.num_algos = 2,
-			.algos = {
-				SMB2_ENCRYPTION_AES128_GCM,
-				SMB2_ENCRYPTION_AES128_CCM,
-			},
-		},
-	};
+	struct smb311_capabilities smb3_capabilities =
+		smb311_capabilities_parse("client",
+			lp_client_smb3_encryption_algorithms());
 	struct GUID client_guid;
 
 	if (!GUID_all_zero(&cli_state_client_guid)) {
