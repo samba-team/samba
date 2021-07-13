@@ -966,6 +966,11 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.winbind_use_krb5_enterprise_principals = true;
 
+	Globals.client_smb3_signing_algorithms =
+		str_list_make_v3_const(NULL, DEFAULT_SMB3_SIGNING_ALGORITHMS, NULL);
+	Globals.server_smb3_signing_algorithms =
+		str_list_make_v3_const(NULL, DEFAULT_SMB3_SIGNING_ALGORITHMS, NULL);
+
 	Globals.client_smb3_encryption_algorithms =
 		str_list_make_v3_const(NULL, DEFAULT_SMB3_ENCRYPTION_ALGORITHMS, NULL);
 	Globals.server_smb3_encryption_algorithms =

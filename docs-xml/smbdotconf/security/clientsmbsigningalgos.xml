@@ -1,0 +1,22 @@
+<samba:parameter name="client smb3 signing algorithms"
+                 context="G"
+                 type="list"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter specifies the availability and order of
+	signing algorithms which are available for negotiation in the SMB3_11 dialect.
+	</para>
+	<para>It is also possible to remove individual algorithms from the default list,
+	by prefixing them with '-'. This can avoid having to specify a hardcoded list.
+	</para>
+	<para>Note: that the removal of aes-128-cmac from the list will result
+	in SMB3_00 and SMB3_02 being unavailable, and the removal od hmac-sha-256
+	will result in SMB2_02 and SMB2_10 being unavailable, as these are the default and only
+	available algorithms for these dialects.
+	</para>
+</description>
+
+<value type="default">aes-128-cmac, hmac-sha-256</value>
+<value type="example">aes-128-cmac</value>
+<value type="example">-aes-128-cmac</value>
+</samba:parameter>

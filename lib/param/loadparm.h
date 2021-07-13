@@ -285,6 +285,7 @@ enum samba_weak_crypto {
 #define DEFAULT_SMB2_MAX_TRANSACT (8*1024*1024)
 #define DEFAULT_SMB2_MAX_CREDITS 8192
 
+#define DEFAULT_SMB3_SIGNING_ALGORITHMS "aes-128-cmac hmac-sha-256"
 #define DEFAULT_SMB3_ENCRYPTION_ALGORITHMS "aes-128-gcm aes-128-ccm aes-256-gcm aes-256-ccm"
 
 #define LOADPARM_EXTRA_LOCALS						\

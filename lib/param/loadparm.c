@@ -2981,6 +2981,13 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "yes");
 
 	lpcfg_do_global_parameter(lp_ctx,
+				  "client smb3 signing algorithms",
+				  DEFAULT_SMB3_SIGNING_ALGORITHMS);
+	lpcfg_do_global_parameter(lp_ctx,
+				  "server smb3 signing algorithms",
+				  DEFAULT_SMB3_SIGNING_ALGORITHMS);
+
+	lpcfg_do_global_parameter(lp_ctx,
 				  "client smb3 encryption algorithms",
 				  DEFAULT_SMB3_ENCRYPTION_ALGORITHMS);
 	lpcfg_do_global_parameter(lp_ctx,
