@@ -2717,9 +2717,6 @@ static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
 		/* Unencrypted packet, can be signed */
 		if (req->do_signing) {
 			sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
-		} else if (opcode == SMB2_OP_CANCEL) {
-			/* Cancel requests are allowed to skip signing */
-			sign_flag &= ~SMBXSRV_PROCESSED_UNSIGNED_PACKET;
 		}
 	}
 
@@ -3080,8 +3077,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
 		}
-	} else if (opcode == SMB2_OP_CANCEL) {
-		/* Cancel requests are allowed to skip the signing */
 	} else if (opcode == SMB2_OP_IOCTL) {
 		/*
 		 * Some special IOCTL calls don't require
@@ -3118,13 +3113,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			call = &_root_ioctl_call;
 			break;
 		}
-	} else if (signing_required) {
-		/*
-		 * If signing is required we try to sign
-		 * a possible error response
-		 */
-		req->do_signing = true;
-		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 
 	if (flags & SMB2_HDR_FLAG_CHAINED) {
