@@ -2211,9 +2211,8 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 	char link_target_buf[7];
 #endif
 	struct stat st;
+	struct smb_filename *full_fname = NULL;
 	int ret;
-
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	if (is_named_stream(smb_fname)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2235,25 +2234,33 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 		}
 	}
 
-	ret = glfs_lstat(handle->data, smb_fname->base_name, &st);
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
+        }
+
+	ret = glfs_lstat(handle->data, full_fname->base_name, &st);
 	if (ret < 0) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
 	referral_len = glfs_readlink(handle->data,
-				smb_fname->base_name,
+				full_fname->base_name,
 				link_target,
 				bufsize - 1);
 	if (referral_len < 0) {
 		if (errno == EINVAL) {
-			DBG_INFO("%s is not a link.\n", smb_fname->base_name);
+			DBG_INFO("%s is not a link.\n", full_fname->base_name);
 			status = NT_STATUS_OBJECT_TYPE_MISMATCH;
 		} else {
 			status = map_nt_error_from_unix(errno);
 			DBG_ERR("Error reading "
 				"msdfs link %s: %s\n",
-				smb_fname->base_name,
+				full_fname->base_name,
 				strerror(errno));
 		}
 		goto err;
@@ -2261,7 +2268,7 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 	link_target[referral_len] = '\0';
 
 	DBG_INFO("%s -> %s\n",
-			smb_fname->base_name,
+			full_fname->base_name,
 			link_target);
 
 	if (!strnequal(link_target, "msdfs:", 6)) {
@@ -2271,6 +2278,7 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 
 	if (ppreflist == NULL && preferral_count == NULL) {
 		/* Early return for checking if this is a DFS link. */
+		TALLOC_FREE(full_fname);
 		smb_stat_ex_from_stat(&smb_fname->st, &st);
 		return NT_STATUS_OK;
 	}
@@ -2293,6 +2301,7 @@ static NTSTATUS vfs_gluster_read_dfs_pathat(struct vfs_handle_struct *handle,
 	if (link_target != link_target_buf) {
 		TALLOC_FREE(link_target);
 	}
+	TALLOC_FREE(full_fname);
 	return status;
 }
 
