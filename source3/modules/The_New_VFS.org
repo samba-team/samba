@@ -270,7 +270,7 @@ whenever VFS access is done in a piecemeal fashion.
 | SMB_VFS_PREAD_SEND()              | [[fsp][fsp]]      | -      |
 | SMB_VFS_PWRITE()                  | [[fsp][fsp]]      | -      |
 | SMB_VFS_PWRITE_SEND()             | [[fsp][fsp]]      | -      |
-| SMB_VFS_READ_DFS_PATHAT()         | [[Symlink][Symlink]]  | Todo   |
+| SMB_VFS_READ_DFS_PATHAT()         | [[Symlink][Symlink]]  | -      |
 | SMB_VFS_READDIR()                 | [[fsp][fsp]]      | -      |
 | SMB_VFS_READDIR_ATTR()            | [[Path][Path]]    | -      |
 | SMB_VFS_READLINKAT()              | [[Symlink][Symlink]]  | -      |
