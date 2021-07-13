@@ -499,9 +499,11 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 		goto err;
 	}
 
-	ret = sys_lstat(smb_fname->base_name,
-			&smb_fname->st,
-			lp_fake_directory_create_times(SNUM(handle->conn)));
+       ret = sys_fstatat(fsp_get_pathref_fd(dirfsp),
+			 smb_fname->base_name,
+			 &smb_fname->st,
+			 AT_SYMLINK_NOFOLLOW,
+			 lp_fake_directory_create_times(SNUM(handle->conn)));
 	if (ret < 0) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
