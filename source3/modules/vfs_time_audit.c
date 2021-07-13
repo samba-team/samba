@@ -369,6 +369,14 @@ static NTSTATUS smb_time_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
 	NTSTATUS result;
 	struct timespec ts1,ts2;
 	double timediff;
+	struct smb_filename *full_fname = NULL;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
@@ -381,9 +389,12 @@ static NTSTATUS smb_time_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log("read_dfs_pathat", timediff);
+		smb_time_audit_log_smb_fname("read_dfs_pathat",
+			timediff,
+			full_fname);
 	}
 
+	TALLOC_FREE(full_fname);
 	return result;
 }
 
