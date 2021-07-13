@@ -66,4 +66,9 @@ struct smb311_capabilities {
 	struct smb3_encryption_capabilities encryption;
 };
 
+const char *smb3_encryption_algorithm_name(uint16_t algo);
+
+struct smb311_capabilities smb311_capabilities_parse(const char *role,
+				const char * const *encryption_algos);
+
 #endif /* _LIBCLI_SMB_SMB2_NEGOTIATE_BLOB_H_ */
