@@ -818,29 +818,48 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 			*q = '\0';
 		}
 
-		status = SMB_VFS_READ_DFS_PATHAT(conn,
-					ctx,
+		/*
+		 * Ensure parent_pathref() calls vfs_stat() on
+		 * the newly truncated path.
+		 */
+		SET_STAT_INVALID(smb_fname->st);
+		status = parent_pathref(ctx,
 					conn->cwd_fsp,
 					smb_fname,
-					ppreflist,
-					preferral_count);
-
+					&parent_fname,
+					&atname);
 		if (NT_STATUS_IS_OK(status)) {
-			DBG_INFO("Redirecting %s because "
-				"parent %s is a dfs link\n",
-				dfspath,
-				smb_fname_str_dbg(smb_fname));
+			/*
+			 * We must have a parent_fname->fsp before
+			 * we can call SMB_VFS_READ_DFS_PATHAT().
+			 */
+			status = SMB_VFS_READ_DFS_PATHAT(conn,
+							 ctx,
+							 parent_fname->fsp,
+							 atname,
+							 ppreflist,
+							 preferral_count);
 
-			if (consumedcntp) {
-				*consumedcntp = strlen(canon_dfspath);
-				DEBUG(10, ("dfs_path_lookup: Path consumed: %s "
-					"(%d)\n",
-					canon_dfspath,
-					*consumedcntp));
+			/* We're now done with parent_fname and atname. */
+			TALLOC_FREE(parent_fname);
+
+			if (NT_STATUS_IS_OK(status)) {
+				DBG_INFO("Redirecting %s because "
+					 "parent %s is a dfs link\n",
+					 dfspath,
+					 smb_fname_str_dbg(smb_fname));
+
+				if (consumedcntp) {
+					*consumedcntp = strlen(canon_dfspath);
+					DBG_DEBUG("Path consumed: %s "
+						  "(%d)\n",
+						  canon_dfspath,
+						  *consumedcntp);
+				}
+
+				status = NT_STATUS_PATH_NOT_COVERED;
+				goto out;
 			}
-
-			status = NT_STATUS_PATH_NOT_COVERED;
-			goto out;
 		}
 
 		/* Step back on the filesystem. */
@@ -855,6 +874,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	status = NT_STATUS_OK;
  out:
 
+	/* This should already be free, but make sure. */
+	TALLOC_FREE(parent_fname);
 	TALLOC_FREE(smb_fname);
 	return status;
 }
