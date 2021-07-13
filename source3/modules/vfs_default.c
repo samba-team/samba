@@ -437,8 +437,6 @@ static NTSTATUS vfswrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 #endif
 	int ret;
 
-	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-
 	if (is_named_stream(smb_fname)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto err;
