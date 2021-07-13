@@ -231,6 +231,7 @@ static struct adouble *ad_get_meta_fsp(TALLOC_CTX *ctx,
 	if (smb_fname_cp == NULL) {
 		return NULL;
 	}
+	TALLOC_FREE(smb_fname_cp->stream_name);
 	config->in_openat_pathref_fsp = true;
 	status = openat_pathref_fsp(handle->conn->cwd_fsp,
 				    smb_fname_cp);
