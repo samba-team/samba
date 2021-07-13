@@ -2924,6 +2924,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "smb2 leases", "yes");
 
+	lpcfg_do_global_parameter(lp_ctx, "server multi channel support", "yes");
+
 	lpcfg_do_global_parameter(lp_ctx, "kerberos encryption types", "all");
 
 	lpcfg_do_global_parameter(lp_ctx,

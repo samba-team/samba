@@ -10,17 +10,18 @@
     </para>
     <para>This parameter was added with version 4.4.</para>
     <para>
-    Warning: Note that this feature is still considered experimental.
-    Use it at your own risk: Even though it may seem to work well in testing,
-    it may result in data corruption under some race conditions.
-    Future releases may improve this situation.
+    Note that this feature was still considered experimental up to 4.14.
     </para>
 
     <para>Due to dependencies to kernel APIs of Linux or FreeBSD, it's only possible
     to use this feature on Linux and FreeBSD for now. For testing this restriction
     can be overwritten by specifying <constant>force:server multi channel support=yes</constant>
     in addition.</para>
+
+    <para>
+    This option is enabled by default starting with to 4.15 (on Linux and FreeBSD).
+    </para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>

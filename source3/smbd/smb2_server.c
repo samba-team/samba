@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "lib/param/param.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
@@ -1132,6 +1133,11 @@ bool smbXsrv_server_multi_channel_enabled(void)
 	bool enabled = lp_server_multi_channel_support();
 #ifndef __ALLOW_MULTI_CHANNEL_SUPPORT
 	bool forced = false;
+	struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+	bool unspecified = lpcfg_parm_is_unspecified(lp_ctx, "server multi channel support");
+	if (unspecified) {
+		enabled = false;
+	}
 	/*
 	 * If we don't have support from the kernel
 	 * to ask for the un-acked number of bytes
@@ -1147,6 +1153,7 @@ bool smbXsrv_server_multi_channel_enabled(void)
 			"https://bugzilla.samba.org/show_bug.cgi?id=11897\n"));
 		enabled = false;
 	}
+	TALLOC_FREE(lp_ctx);
 #endif /* ! __ALLOW_MULTI_CHANNEL_SUPPORT */
 	return enabled;
 }
