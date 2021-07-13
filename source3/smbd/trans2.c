@@ -1549,13 +1549,14 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
  to be a directory if it's a msdfs link.
 ****************************************************************************/
 
-static bool check_msdfs_link(connection_struct *conn,
-				struct smb_filename *smb_fname)
+static bool check_msdfs_link(struct files_struct *dirfsp,
+			     struct smb_filename *atname,
+			     struct smb_filename *smb_fname)
 {
 	int saved_errno = errno;
 	if(lp_host_msdfs() &&
-		lp_msdfs_root(SNUM(conn)) &&
-		is_msdfs_link(conn, smb_fname)) {
+		lp_msdfs_root(SNUM(dirfsp->conn)) &&
+		is_msdfs_link(dirfsp->conn, smb_fname)) {
 
 		DEBUG(5,("check_msdfs_link: Masquerading msdfs link %s "
 			"as a directory\n",
@@ -1704,7 +1705,8 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 		/* Needed to show the msdfs symlinks as
 		 * directories */
 
-		ms_dfs_link = check_msdfs_link(state->conn,
+		ms_dfs_link = check_msdfs_link(dirfsp,
+					       atname,
 					       smb_fname);
 		if (!ms_dfs_link) {
 			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
