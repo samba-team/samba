@@ -134,7 +134,6 @@ def configure(conf):
     conf.CHECK_FUNCS('fseeko setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('fdopendir')
-    conf.CHECK_FUNCS('fstatat')
     conf.CHECK_FUNCS('getpwent_r setenv clearenv strcasecmp')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale')
     conf.CHECK_FUNCS('lutimes utimensat futimens')
@@ -388,7 +387,6 @@ fchflags
 chmod
 crypt16
 devnm
-dirfd
 endmntent
 execl
 fchmod

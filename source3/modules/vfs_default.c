@@ -581,17 +581,12 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 				      SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
-	bool do_stat = false;
 	bool fake_ctime = lp_fake_directory_create_times(SNUM(handle->conn));
 	int flags = AT_SYMLINK_NOFOLLOW;
 	struct stat st;
 	int ret;
 
 	START_PROFILE(syscall_readdir);
-
-#if defined(HAVE_DIRFD) && defined(HAVE_FSTATAT)
-	do_stat = true;
-#endif
 
 	result = readdir(dirp);
 	END_PROFILE(syscall_readdir);
@@ -608,11 +603,6 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	 * Set to invalid to indicate we didn't return this info.
 	 */
 	SET_STAT_INVALID(*sbuf);
-
-	/* See if we can efficiently return this. */
-	if (!do_stat) {
-		return result;
-	}
 
 	ret = fstatat(dirfd(dirp),
 		      result->d_name,

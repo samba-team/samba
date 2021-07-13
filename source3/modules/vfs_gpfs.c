@@ -1573,7 +1573,6 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 static int stat_with_capability(struct vfs_handle_struct *handle,
 				struct smb_filename *smb_fname, int flag)
 {
-#if defined(HAVE_FSTATAT)
 	int fd = -1;
 	NTSTATUS status;
 	struct smb_filename *dir_name = NULL;
@@ -1611,9 +1610,6 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 	}
 
 	return ret;
-#else
-	return -1;
-#endif
 }
 
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
