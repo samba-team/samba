@@ -16,7 +16,7 @@
 	</para>
 </description>
 
-<value type="default">aes-128-cmac, hmac-sha-256</value>
-<value type="example">aes-128-cmac</value>
+<value type="default">aes-128-gmac, aes-128-cmac, hmac-sha-256</value>
+<value type="example">aes-128-cmac, hmac-sha-256</value>
 <value type="example">-aes-128-cmac</value>
 </samba:parameter>
