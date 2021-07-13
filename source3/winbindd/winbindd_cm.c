@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon connection manager
@@ -470,13 +470,13 @@ void set_domain_offline(struct winbindd_domain *domain)
 		if (idmap_pid != 0) {
 			messaging_send_buf(global_messaging_context(),
 					   pid_to_procid(idmap_pid),
-					   MSG_WINBIND_OFFLINE, 
+					   MSG_WINBIND_OFFLINE,
 					   (const uint8_t *)domain->name,
 					   strlen(domain->name)+1);
-		}			
+		}
 	}
 
-	return;	
+	return;
 }
 
 /****************************************************************
@@ -556,13 +556,13 @@ static void set_domain_online(struct winbindd_domain *domain)
 		if (idmap_pid != 0) {
 			messaging_send_buf(global_messaging_context(),
 					   pid_to_procid(idmap_pid),
-					   MSG_WINBIND_ONLINE, 
+					   MSG_WINBIND_ONLINE,
 					   (const uint8_t *)domain->name,
 					   strlen(domain->name)+1);
-		}			
+		}
 	}
 
-	return;	
+	return;
 }
 
 /****************************************************************
@@ -649,7 +649,7 @@ static void winbind_add_failed_connection_entry(
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
-   connections" set in the win2k Local Security Policy. 
+   connections" set in the win2k Local Security Policy.
 
    Caller to free() result in domain, username, password
 */
@@ -668,7 +668,7 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
-		DEBUG(3, ("cm_get_ipc_userpass: Retrieved auth-user from secrets.tdb [%s\\%s]\n", 
+		DEBUG(3, ("cm_get_ipc_userpass: Retrieved auth-user from secrets.tdb [%s\\%s]\n",
 			  *domain, *username));
 
 	} else {
@@ -1924,7 +1924,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 	saf_servername = saf_fetch(mem_ctx, domain->name );
 
-	/* we have to check the server affinity cache here since 
+	/* we have to check the server affinity cache here since
 	   later we select a DC based on response time and not preference */
 
 	/* Check the negative connection cache
@@ -2298,8 +2298,8 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 	/* Our primary domain doesn't need to worry about trust flags.
 	   Force it to go through the network setup */
-	if ( domain->primary ) {		
-		return False;		
+	if ( domain->primary ) {
+		return False;
 	}
 
 	mem_ctx = talloc_stackframe();
@@ -2334,7 +2334,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_trustinfo: Could not open "
-			  "a connection to %s for PIPE_NETLOGON (%s)\n", 
+			  "a connection to %s for PIPE_NETLOGON (%s)\n",
 			  domain->name, nt_errstr(result)));
 		TALLOC_FREE(mem_ctx);
 		return False;
@@ -2373,18 +2373,18 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 			if ( domain->domain_type == LSA_TRUST_TYPE_UPLEVEL )
 				domain->active_directory = True;
 
-			/* This flag is only set if the domain is *our* 
+			/* This flag is only set if the domain is *our*
 			   primary domain and the primary domain is in
 			   native mode */
 
 			domain->native_mode = (domain->domain_flags & NETR_TRUST_FLAG_NATIVE);
 
 			DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s is %sin "
-				  "native mode.\n", domain->name, 
+				  "native mode.\n", domain->name,
 				  domain->native_mode ? "" : "NOT "));
 
 			DEBUG(5,("set_dc_type_and_flags_trustinfo: domain %s is %s"
-				 "running active directory.\n", domain->name, 
+				 "running active directory.\n", domain->name,
 				 domain->active_directory ? "" : "NOT "));
 
 			domain->can_do_ncacn_ip_tcp = domain->active_directory;
@@ -2392,12 +2392,12 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 			domain->initialized = True;
 
 			break;
-		}		
+		}
 	}
 
 	TALLOC_FREE(mem_ctx);
 
-	return domain->initialized;	
+	return domain->initialized;
 }
 
 /******************************************************************************
@@ -2509,7 +2509,7 @@ no_dssetup:
 					 SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
 	if (NT_STATUS_IS_OK(status)) {
-		/* This particular query is exactly what Win2k clients use 
+		/* This particular query is exactly what Win2k clients use
 		   to determine that the DC is active directory */
 		status = dcerpc_lsa_QueryInfoPolicy2(cli->binding_handle, mem_ctx,
 						     &pol,
@@ -2685,7 +2685,7 @@ done:
 }
 
 /**********************************************************************
- Set the domain_flags (trust attributes, domain operating modes, etc... 
+ Set the domain_flags (trust attributes, domain operating modes, etc...
 ***********************************************************************/
 
 static void set_dc_type_and_flags( struct winbindd_domain *domain )
@@ -2705,13 +2705,13 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 		DEBUG(10,("set_dc_type_and_flags: setting up flags for "
 			  "primary or internal domain\n"));
 		set_dc_type_and_flags_connect( domain );
-		return;		
+		return;
 	}
 
 	/* Use our DC to get the information if possible */
 
 	if ( !set_dc_type_and_flags_trustinfo( domain ) ) {
-		/* Otherwise, fallback to contacting the 
+		/* Otherwise, fallback to contacting the
 		   domain directly */
 		set_dc_type_and_flags_connect( domain );
 	}
