@@ -583,7 +583,7 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	struct dirent *result;
 	bool fake_ctime = lp_fake_directory_create_times(SNUM(handle->conn));
 	int flags = AT_SYMLINK_NOFOLLOW;
-	struct stat st;
+	SMB_STRUCT_STAT st;
 	int ret;
 
 	START_PROFILE(syscall_readdir);
@@ -604,10 +604,11 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	 */
 	SET_STAT_INVALID(*sbuf);
 
-	ret = fstatat(dirfd(dirp),
+	ret = sys_fstatat(dirfd(dirp),
 		      result->d_name,
 		      &st,
-		      flags);
+		      flags,
+		      fake_ctime);
 	if (ret != 0) {
 		return result;
 	}
@@ -618,12 +619,12 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	 * as we don't know if they wanted the link info, or its
 	 * target info.
 	 */
-	if (S_ISLNK(st.st_mode) &&
+	if (S_ISLNK(st.st_ex_mode) &&
 	    !(dirfsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH))
 	{
 		return result;
 	}
-	init_stat_ex_from_stat(sbuf, &st, fake_ctime);
+	*sbuf = st;
 
 	return result;
 }
