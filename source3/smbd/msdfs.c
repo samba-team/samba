@@ -709,6 +709,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	char *q = NULL;
 	NTSTATUS status;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *parent_fname = NULL;
+	struct smb_filename *atname = NULL;
 	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
 				  components). */
 
@@ -736,31 +738,44 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	}
 
 	/* Optimization - check if we can redirect the whole path. */
-
-	status = SMB_VFS_READ_DFS_PATHAT(conn,
-					ctx,
-					conn->cwd_fsp,
-					smb_fname,
-					ppreflist,
-					preferral_count);
-
+	status = parent_pathref(ctx,
+				conn->cwd_fsp,
+				smb_fname,
+				&parent_fname,
+				&atname);
 	if (NT_STATUS_IS_OK(status)) {
-		/* XX_ALLOW_WCARD_XXX is called from search functions. */
-		if (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP) {
-			DEBUG(6,("dfs_path_lookup (FindFirst) No redirection "
-				 "for dfs link %s.\n", dfspath));
-			status = NT_STATUS_OK;
+		/*
+		 * We must have a parent_fname->fsp before
+		 * we can call SMB_VFS_READ_DFS_PATHAT().
+		 */
+		status = SMB_VFS_READ_DFS_PATHAT(conn,
+						 ctx,
+						 parent_fname->fsp,
+						 atname,
+						 ppreflist,
+						 preferral_count);
+		/* We're now done with parent_fname and atname. */
+		TALLOC_FREE(parent_fname);
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* XX_ALLOW_WCARD_XXX is called from search functions.*/
+			if (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP) {
+				DBG_INFO("(FindFirst) No redirection "
+					 "for dfs link %s.\n",
+					 dfspath);
+				status = NT_STATUS_OK;
+				goto out;
+			}
+
+			DBG_INFO("%s resolves to a valid dfs link\n",
+				 dfspath);
+
+			if (consumedcntp) {
+				*consumedcntp = strlen(dfspath);
+			}
+			status = NT_STATUS_PATH_NOT_COVERED;
 			goto out;
 		}
-
-		DBG_INFO("%s resolves to a valid dfs link\n",
-			dfspath);
-
-		if (consumedcntp) {
-			*consumedcntp = strlen(dfspath);
-		}
-		status = NT_STATUS_PATH_NOT_COVERED;
-		goto out;
 	}
 
 	/* Prepare to test only for '/' components in the given path,
