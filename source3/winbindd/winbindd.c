@@ -159,7 +159,7 @@ static void winbindd_status(void)
 
 void winbindd_flush_caches(void)
 {
-	/* We need to invalidate cached user list entries on a SIGHUP 
+	/* We need to invalidate cached user list entries on a SIGHUP
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
 
@@ -202,7 +202,7 @@ static void terminate(bool is_parent)
 		/* When parent goes away we should
 		 * remove the socket file. Not so
 		 * when children terminate.
-		 */ 
+		 */
 		char *path = NULL;
 
 		if (asprintf(&path, "%s/%s",
