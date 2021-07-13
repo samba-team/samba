@@ -2408,6 +2408,10 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 		uint64_t message_id;
 		uint64_t async_id;
 
+		if (cur->session != req->session) {
+			continue;
+		}
+
 		if (cur->compound_related) {
 			/*
 			 * Never cancel anything in a compound request.
