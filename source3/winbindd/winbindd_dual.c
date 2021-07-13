@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind child daemons
@@ -872,7 +872,7 @@ void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 	}
 }
 
-/* 
+/*
  * Parent winbindd process sets its own debug level first and then
  * sends a message to all the winbindd children to adjust their debug
  * level to that of parents.
@@ -1093,15 +1093,15 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 	struct winbindd_domain *domain;
 	char *buf = NULL;
 
-	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
-				   get_global_winbindd_state_offline() ? 
+	if ((buf = talloc_asprintf(mem_ctx, "global:%s ",
+				   get_global_winbindd_state_offline() ?
 				   "Offline":"Online")) == NULL) {
 		return NULL;
 	}
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		if ((buf = talloc_asprintf_append_buffer(buf, "%s:%s ", 
-						  domain->name, 
+		if ((buf = talloc_asprintf_append_buffer(buf, "%s:%s ",
+						  domain->name,
 						  domain->online ?
 						  "Online":"Offline")) == NULL) {
 			return NULL;
@@ -1232,10 +1232,10 @@ static void account_lockout_policy_handler(struct tevent_context *ctx,
 
 	if ( !winbindd_can_contact_domain( child->domain ) ) {
 		DEBUG(10,("account_lockout_policy_handler: Removing myself since I "
-			  "do not have an incoming trust to domain %s\n", 
+			  "do not have an incoming trust to domain %s\n",
 			  child->domain->name));
 
-		return;		
+		return;
 	}
 
 	mem_ctx = talloc_init("account_lockout_policy_handler ctx");
@@ -1457,7 +1457,7 @@ static void child_msg_offline(struct messaging_context *msg,
 		if (strequal(domain->name, domainname)) {
 			DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
 			set_domain_offline(domain);
-			/* we are in the trusted domain, set the primary domain 
+			/* we are in the trusted domain, set the primary domain
 			 * offline too */
 			if (domain != primary_domain) {
 				set_domain_offline(primary_domain);
