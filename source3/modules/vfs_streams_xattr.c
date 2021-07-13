@@ -222,7 +222,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	int result = -1;
 	char *xattr_name = NULL;
 	char *tmp_stream_name = NULL;
-	struct smb_filename *smb_fname_cp = NULL;
+	struct smb_filename *pathref = NULL;
 	struct files_struct *fsp = smb_fname->fsp;
 
 	if (!is_named_stream(smb_fname)) {
@@ -254,49 +254,30 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 
 	/* Augment the base file's stat information before returning. */
 	if (fsp == NULL) {
-		/*
-		 * openat_pathref_fsp() checks for the same
-		 * filetype as the incoming stat info before allowing
-		 * the open, so we must ensure it's correct here.
-		 */
-		smb_fname->st.st_ex_mode &= ~S_IFMT;
-		smb_fname->st.st_ex_mode |= S_IFREG;
-
-		/*
-		 * openat_pathref_fsp() expects a talloc'ed
-		 * smb_filename. stat can be passed a struct
-		 * from the stack. Make a talloc'ed copy
-		 * so openat_pathref_fsp() can add its
-		 * destructor.
-		 */
-		smb_fname_cp = cp_smb_filename(talloc_tos(),
-					       smb_fname);
-		if (smb_fname_cp == NULL) {
-			TALLOC_FREE(xattr_name);
-			errno = ENOMEM;
-			return -1;
-		}
-		status = openat_pathref_fsp(handle->conn->cwd_fsp,
-					    smb_fname_cp);
+		status = synthetic_pathref(talloc_tos(),
+					   handle->conn->cwd_fsp,
+					   smb_fname->base_name,
+					   NULL,
+					   NULL,
+					   smb_fname->twrp,
+					   smb_fname->flags,
+					   &pathref);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("openat_pathref_fsp for %s failed with %s\n",
-				smb_fname_str_dbg(smb_fname),
-				nt_errstr(status));
 			TALLOC_FREE(xattr_name);
-			TALLOC_FREE(smb_fname_cp);
 			SET_STAT_INVALID(smb_fname->st);
 			errno = ENOENT;
 			return -1;
 		}
-		fsp = smb_fname_cp->fsp;
+		fsp = pathref->fsp;
+	} else {
+		fsp = fsp->base_fsp;
 	}
 
-	SMB_ASSERT(fsp->base_fsp != NULL);
-	smb_fname->st.st_ex_size = get_xattr_size_fsp(fsp->base_fsp,
+	smb_fname->st.st_ex_size = get_xattr_size_fsp(fsp,
 						      xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
 		TALLOC_FREE(xattr_name);
-		TALLOC_FREE(smb_fname_cp);
+		TALLOC_FREE(pathref);
 		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
 		return -1;
@@ -309,7 +290,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	    smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
 
 	TALLOC_FREE(xattr_name);
-	TALLOC_FREE(smb_fname_cp);
+	TALLOC_FREE(pathref);
 	return 0;
 }
 
