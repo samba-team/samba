@@ -160,6 +160,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
 	const struct smb311_capabilities default_smb3_capabilities =
 		smb311_capabilities_parse("server",
+			lp_server_smb3_signing_algorithms(),
 			lp_server_smb3_encryption_algorithms());
 	DATA_BLOB out_negotiate_context_blob = data_blob_null;
 	uint32_t out_negotiate_context_offset = 0;
@@ -621,6 +622,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 					   NT_STATUS_INVALID_PARAMETER,
 					   "server",
 					   protocol,
+					   xconn->smb2.server.sign_algo,
 					   xconn->smb2.server.cipher);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);

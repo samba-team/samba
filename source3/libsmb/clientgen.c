@@ -72,6 +72,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	uint32_t smb2_capabilities = 0;
 	struct smb311_capabilities smb3_capabilities =
 		smb311_capabilities_parse("client",
+			lp_client_smb3_signing_algorithms(),
 			lp_client_smb3_encryption_algorithms());
 	struct GUID client_guid;
 

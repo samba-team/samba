@@ -531,9 +531,9 @@ static int32_t parse_enum_val(const struct enum_list *e,
 }
 
 struct smb311_capabilities smb311_capabilities_parse(const char *role,
+				const char * const *signing_algos,
 				const char * const *encryption_algos)
 {
-	const char * const *signing_algos = NULL;
 	struct smb311_capabilities c = {
 		.signing = {
 			.num_algos = 0,
@@ -638,12 +638,26 @@ NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
 				   NTSTATUS error_status,
 				   const char *role,
 				   enum protocol_types protocol,
+				   uint16_t sign_algo,
 				   uint16_t cipher_algo)
 {
+	const struct smb3_signing_capabilities *sign_algos =
+		&c->signing;
 	const struct smb3_encryption_capabilities *ciphers =
 		&c->encryption;
+	bool found_signing = false;
 	bool found_encryption = false;
 	size_t i;
+
+	for (i = 0; i < sign_algos->num_algos; i++) {
+		if (sign_algo == sign_algos->algos[i]) {
+			/*
+			 * We found a match
+			 */
+			found_signing = true;
+			break;
+		}
+	}
 
 	for (i = 0; i < ciphers->num_algos; i++) {
 		if (cipher_algo == SMB2_ENCRYPTION_NONE) {
@@ -661,6 +675,23 @@ NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
 			found_encryption = true;
 			break;
 		}
+	}
+
+	if (!found_signing) {
+		/*
+		 * We negotiated a signing algo we don't allow,
+		 * most likely for SMB < 3.1.1
+		 */
+		DEBUG(debug_lvl,("%s: "
+		      "SMB3 signing algorithm[%u][%s] on dialect[%s] "
+		      "not allowed by '%s smb3 signing algorithms' - %s.\n",
+		      debug_prefix,
+		      sign_algo,
+		      smb3_signing_algorithm_name(sign_algo),
+		      smb_protocol_types_string(protocol),
+		      role,
+		      nt_errstr(error_status)));
+		return error_status;
 	}
 
 	if (!found_encryption) {

@@ -77,6 +77,7 @@ const char *smb3_signing_algorithm_name(uint16_t algo);
 const char *smb3_encryption_algorithm_name(uint16_t algo);
 
 struct smb311_capabilities smb311_capabilities_parse(const char *role,
+				const char * const *signing_algos,
 				const char * const *encryption_algos);
 
 NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
@@ -85,6 +86,7 @@ NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
 				   NTSTATUS error_status,
 				   const char *role,
 				   enum protocol_types protocol,
+				   uint16_t sign_algo,
 				   uint16_t cipher_algo);
 
 #endif /* _LIBCLI_SMB_SMB2_NEGOTIATE_BLOB_H_ */

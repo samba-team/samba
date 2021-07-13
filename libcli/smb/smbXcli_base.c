@@ -5415,6 +5415,7 @@ static NTSTATUS smbXcli_negprot_smb3_check_capabilities(struct tevent_req *req)
 					 NT_STATUS_ACCESS_DENIED,
 					 "client",
 					 conn->protocol,
+					 conn->smb2.server.sign_algo,
 					 conn->smb2.server.cipher);
 }
 
