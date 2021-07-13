@@ -157,15 +157,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_context *in_preauth = NULL;
 	struct smb2_negotiate_context *in_cipher = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
-	const struct smb311_capabilities default_smb3_capabilities = {
-		.encryption = {
-			.num_algos = 2,
-			.algos = {
-				SMB2_ENCRYPTION_AES128_GCM,
-				SMB2_ENCRYPTION_AES128_CCM,
-			},
-		},
-	};
+	const struct smb311_capabilities default_smb3_capabilities =
+		smb311_capabilities_parse("server",
+			lp_server_smb3_encryption_algorithms());
 	DATA_BLOB out_negotiate_context_blob = data_blob_null;
 	uint32_t out_negotiate_context_offset = 0;
 	uint16_t out_negotiate_context_count = 0;
