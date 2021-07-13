@@ -919,7 +919,15 @@ static NTSTATUS smb_full_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
 			struct referral **ppreflist,
 			size_t *preferral_count)
 {
+	struct smb_filename *full_fname = NULL;
 	NTSTATUS status;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
 			mem_ctx,
@@ -932,8 +940,9 @@ static NTSTATUS smb_full_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
 		NT_STATUS_IS_OK(status),
 		handle,
 		"%s",
-		smb_fname_str_do_log(handle->conn, smb_fname));
+		smb_fname_str_do_log(handle->conn, full_fname));
 
+	TALLOC_FREE(full_fname);
 	return status;
 }
 
