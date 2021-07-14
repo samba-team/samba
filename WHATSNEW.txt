@@ -1,3 +1,70 @@
+                   ===============================
+                   Release Notes for Samba 4.13.10
+                            July 14, 2021
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.9
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14708: s3: smbd: Ensure POSIX default ACL is mapped into returned
+     Windows ACL for directory handles.
+   * BUG 14721: Take a copy to make sure we don't reference free'd memory.
+   * BUG 14722: s3: lib: Fix talloc heirarcy error in parent_smb_fname().
+   * BUG 14736: s3: smbd: Remove erroneous TALLOC_FREE(smb_fname_parent) in
+     change_file_owner_to_parent() error path.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14575: samba-tool: Give better error information when the
+     'domain backup restore' fails with a duplicate SID.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14714: smbd: Correctly initialize close timestamp fields.
+   * BUG 14740: Spotlight RPC service doesn't work with vfs_glusterfs.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14475: ctdb: Fix a crash in run_proc_signal_handler().
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14750: gensec_krb5: Restore ipv6 support for kpasswd.
+   * BUG 14752: smbXsrv_{open,session,tcon}: Protect
+     smbXsrv_{open,session,tcon}_global_traverse_fn against invalid records.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14027: samba-tool domain backup offline doesn't work against bind DLZ
+     backend.
+   * BUG 14669: netcmd: Use next_free_rid() function to calculate a SID for
+     restoring a backup.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
                    ==============================
                    Release Notes for Samba 4.13.9
                             May 11, 2021
@@ -61,8 +128,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
