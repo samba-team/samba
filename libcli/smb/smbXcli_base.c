@@ -4870,6 +4870,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				UINT16_MAX); /* max_dyn_len */
 }
 
+static NTSTATUS smbXcli_negprot_smb3_check_capabilities(struct tevent_req *req);
+
 static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
@@ -5013,6 +5015,12 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
 			conn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
 		}
+
+		status = smbXcli_negprot_smb3_check_capabilities(req);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
 		tevent_req_done(req);
 		return;
 	}
@@ -5234,7 +5242,28 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		return;
 	}
 
+	status = smbXcli_negprot_smb3_check_capabilities(req);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	tevent_req_done(req);
+}
+
+static NTSTATUS smbXcli_negprot_smb3_check_capabilities(struct tevent_req *req)
+{
+	struct smbXcli_negprot_state *state =
+		tevent_req_data(req,
+		struct smbXcli_negprot_state);
+	struct smbXcli_conn *conn = state->conn;
+
+	return smb311_capabilities_check(&conn->smb2.client.smb3_capabilities,
+					 "smbXcli_negprot",
+					 DBGLVL_ERR,
+					 NT_STATUS_ACCESS_DENIED,
+					 "client",
+					 conn->protocol,
+					 conn->smb2.server.cipher);
 }
 
 static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
