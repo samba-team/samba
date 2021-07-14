@@ -242,6 +242,22 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-STREAM-ACL",
                 "",
                 "-l $LOCAL_PATH"])
 
+#
+# SMB2-LIST-DIR-ASYNC needs to run against a special share vfs_aio_pthread_async_dosmode_default1
+#
+plantestsuite("samba3.smbtorture_s3.plain.%s" % "SMB2-LIST-DIR-ASYNC",
+                "simpleserver",
+                [os.path.join(samba3srcdir,
+                              "script/tests/test_smbtorture_s3.sh"),
+                'SMB2-LIST-DIR-ASYNC',
+                '//$SERVER_IP/vfs_aio_pthread_async_dosmode_default1',
+                '$USERNAME',
+                '$PASSWORD',
+                smbtorture3,
+                "",
+                "-l $LOCAL_PATH"])
+
+
 shares = [
     "vfs_aio_pthread_async_dosmode_default1",
     "vfs_aio_pthread_async_dosmode_default2",

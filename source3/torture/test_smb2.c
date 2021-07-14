@@ -3144,3 +3144,87 @@ bool run_smb2_stream_acl(int dummy)
 	(void)cli_unlink(cli, fname, 0);
 	return ret;
 }
+
+static NTSTATUS list_fn(struct file_info *finfo,
+			const char *name,
+			void *state)
+{
+	bool *matched = (bool *)state;
+	if (finfo->attr & FILE_ATTRIBUTE_DIRECTORY) {
+		*matched = true;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+ * Must be run against a share with "smbd async dosmode = yes".
+ * Checks we can return DOS attriutes other than "N".
+ * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14758
+ */
+
+bool run_list_dir_async_test(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	const char *dname = "ASYNC_DIR";
+	bool ret = false;
+	bool matched = false;
+
+	printf("SMB2 list dir async\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn,
+				cli->timeout,
+				PROTOCOL_SMB2_02,
+				PROTOCOL_SMB3_11);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure directory doesn't exist. */
+	(void)cli_rmdir(cli, dname);
+
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_mkdir %s returned %s\n", dname, nt_errstr(status));
+		return false;
+	}
+
+	status = cli_list(cli,
+			  dname,
+			  FILE_ATTRIBUTE_NORMAL|FILE_ATTRIBUTE_DIRECTORY,
+			  list_fn,
+			  &matched);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_list %s returned %s\n", dname, nt_errstr(status));
+		goto fail;
+	}
+
+	if (!matched) {
+		printf("Failed to find %s\n", dname);
+		goto fail;
+	}
+
+	ret = true;
+
+  fail:
+
+	(void)cli_rmdir(cli, dname);
+	return ret;
+}

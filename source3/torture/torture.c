@@ -15246,6 +15246,10 @@ static struct {
 		.fn    = run_smb2_stream_acl,
 	},
 	{
+		.name  = "SMB2-LIST-DIR-ASYNC",
+		.fn    = run_list_dir_async_test,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},
