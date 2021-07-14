@@ -562,3 +562,54 @@ struct smb311_capabilities smb311_capabilities_parse(const char *role,
 
 	return c;
 }
+
+NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
+				   const char *debug_prefix,
+				   int debug_lvl,
+				   NTSTATUS error_status,
+				   const char *role,
+				   enum protocol_types protocol,
+				   uint16_t cipher_algo)
+{
+	const struct smb3_encryption_capabilities *ciphers =
+		&c->encryption;
+	bool found_encryption = false;
+	size_t i;
+
+	for (i = 0; i < ciphers->num_algos; i++) {
+		if (cipher_algo == SMB2_ENCRYPTION_NONE) {
+			/*
+			 * encryption not supported, we'll error out later
+			 */
+			found_encryption = true;
+			break;
+		}
+
+		if (cipher_algo == ciphers->algos[i]) {
+			/*
+			 * We found a match
+			 */
+			found_encryption = true;
+			break;
+		}
+	}
+
+	if (!found_encryption) {
+		/*
+		 * We negotiated a cipher we don't allow,
+		 * most likely for SMB 3.0 and 3.0.2
+		 */
+		DEBUG(debug_lvl,("%s: "
+		      "SMB3 encryption algorithm[%u][%s] on dialect[%s] "
+		      "not allowed by '%s smb3 encryption algorithms' - %s.\n",
+		      debug_prefix,
+		      cipher_algo,
+		      smb3_encryption_algorithm_name(cipher_algo),
+		      smb_protocol_types_string(protocol),
+		      role,
+		      nt_errstr(error_status)));
+		return error_status;
+	}
+
+	return NT_STATUS_OK;
+}
