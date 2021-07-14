@@ -3425,6 +3425,36 @@ static int vfswrap_sys_acl_delete_def_fd(vfs_handle_struct *handle,
  Extended attribute operations.
 *****************************************************************/
 
+static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 const char *name,
+				 void *value,
+				 size_t size)
+{
+	int fd = fsp_get_pathref_fd(fsp);
+
+	if (!fsp->fsp_flags.is_pathref) {
+		return fgetxattr(fd, name, value, size);
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		return getxattr(p, name, value, size);
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	return getxattr(fsp->fsp_name->base_name, name, value, size);
+}
+
 struct vfswrap_getxattrat_state {
 	struct tevent_context *ev;
 	files_struct *dir_fsp;
@@ -3740,36 +3770,6 @@ static ssize_t vfswrap_getxattrat_recv(struct tevent_req *req,
 
 	tevent_req_received(req);
 	return xattr_size;
-}
-
-static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 const char *name,
-				 void *value,
-				 size_t size)
-{
-	int fd = fsp_get_pathref_fd(fsp);
-
-	if (!fsp->fsp_flags.is_pathref) {
-		return fgetxattr(fd, name, value, size);
-	}
-
-	if (fsp->fsp_flags.have_proc_fds) {
-		const char *p = NULL;
-		char buf[PATH_MAX];
-
-		p = sys_proc_fd_path(fd, buf, sizeof(buf));
-		if (p == NULL) {
-			return -1;
-		}
-
-		return getxattr(p, name, value, size);
-	}
-
-	/*
-	 * This is no longer a handle based call.
-	 */
-	return getxattr(fsp->fsp_name->base_name, name, value, size);
 }
 
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
