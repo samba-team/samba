@@ -166,7 +166,7 @@ static int catia_connect(struct vfs_handle_struct *handle,
 	 * Unless we have an async implementation of get_dos_attributes turn
 	 * this off.
 	 */
-	lp_do_parameter(SNUM(handle->conn), "smbd:async dosmode", "false");
+	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
 
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }

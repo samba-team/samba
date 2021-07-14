@@ -1470,7 +1470,7 @@ sub setup_simpleserver
 	read only = no
 	vfs objects = aio_pthread
 	aio_pthread:aio open = yes
-	smbd:async dosmode = no
+	smbd async dosmode = no
 
 [vfs_aio_pthread_async_dosmode_default1]
 	path = $prefix_abs/share
@@ -1478,7 +1478,7 @@ sub setup_simpleserver
 	vfs objects = aio_pthread
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_default2]
 	path = $prefix_abs/share
@@ -1486,7 +1486,7 @@ sub setup_simpleserver
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_force_sync1]
 	path = $prefix_abs/share
@@ -1494,7 +1494,7 @@ sub setup_simpleserver
 	vfs objects = aio_pthread
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 	# This simulates non linux systems
 	smbd:force sync user path safe threadpool = yes
 	smbd:force sync user chdir safe threadpool = yes
@@ -1507,7 +1507,7 @@ sub setup_simpleserver
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 	# This simulates non linux systems
 	smbd:force sync user path safe threadpool = yes
 	smbd:force sync user chdir safe threadpool = yes
@@ -1834,7 +1834,7 @@ sub setup_fileserver_smb1
 	read only = no
 	vfs objects = aio_pthread
 	aio_pthread:aio open = yes
-	smbd:async dosmode = no
+	smbd async dosmode = no
 
 [vfs_aio_pthread_async_dosmode_default1]
 	path = $prefix_abs/share
@@ -1842,7 +1842,7 @@ sub setup_fileserver_smb1
 	vfs objects = aio_pthread
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_default2]
 	path = $prefix_abs/share
@@ -1850,7 +1850,7 @@ sub setup_fileserver_smb1
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_force_sync1]
 	path = $prefix_abs/share
@@ -1858,7 +1858,7 @@ sub setup_fileserver_smb1
 	vfs objects = aio_pthread
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 	# This simulates non linux systems
 	smbd:force sync user path safe threadpool = yes
 	smbd:force sync user chdir safe threadpool = yes
@@ -1871,7 +1871,7 @@ sub setup_fileserver_smb1
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
 	aio_pthread:aio open = yes
-	smbd:async dosmode = yes
+	smbd async dosmode = yes
 	# This simulates non linux systems
 	smbd:force sync user path safe threadpool = yes
 	smbd:force sync user chdir safe threadpool = yes
