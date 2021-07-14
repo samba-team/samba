@@ -2551,23 +2551,27 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	}
 
 	if (_smb_fname != NULL) {
-		struct smb_filename *name = NULL;
+		/*
+		 * smb_fname is already talloc'ed off ctx.
+		 * We just need to make sure we don't return
+		 * any stream_name, and replace base_name
+		 * with fname in case base_name got mangled.
+		 * This allows us to preserve any smb_fname->fsp
+		 * for asynchronous handle lookups.
+		 */
+		TALLOC_FREE(smb_fname->stream_name);
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = talloc_strdup(smb_fname, fname);
 
-		name = synthetic_smb_fname(ctx,
-					   fname,
-					   NULL,
-					   &smb_fname->st,
-					   smb_fname->twrp,
-					   0);
-		if (name == NULL) {
+		if (smb_fname->base_name == NULL) {
 			TALLOC_FREE(smb_fname);
 			TALLOC_FREE(fname);
 			return NT_STATUS_NO_MEMORY;
 		}
-		*_smb_fname = name;
+		*_smb_fname = smb_fname;
+	} else {
+		TALLOC_FREE(smb_fname);
 	}
-
-	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(fname);
 
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
