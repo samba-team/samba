@@ -196,7 +196,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectguid_modify_record\n");
 
 	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
 

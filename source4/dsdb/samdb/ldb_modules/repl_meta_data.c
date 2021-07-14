@@ -3781,7 +3781,7 @@ static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 
 	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+	if (ldb_dn_is_special(req->op.rename.olddn)) {
 		return ldb_next_request(module, req);
 	}
 
