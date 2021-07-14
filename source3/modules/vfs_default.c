@@ -3457,6 +3457,7 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 
 struct vfswrap_getxattrat_state {
 	struct tevent_context *ev;
+	struct vfs_handle_struct *handle;
 	files_struct *dir_fsp;
 	const struct smb_filename *smb_fname;
 
@@ -3509,6 +3510,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	}
 	*state = (struct vfswrap_getxattrat_state) {
 		.ev = ev,
+		.handle = handle,
 		.dir_fsp = dir_fsp,
 		.smb_fname = smb_fname,
 	};
