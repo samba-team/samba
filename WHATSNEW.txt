@@ -176,6 +176,8 @@ smb.conf changes
   client max protocol                     Values Removed
   client min protocol                     Values Removed
   client protection                       New             default
+  client smb3 signing algorithms          New             see man smb.conf
+  client smb3 encryption algorithms       New             see man smb.conf
   preopen:posix-basic-regex               New             No
   preopen:nomatch_log_level               New             5
   preopen:match_log_level                 New             5
@@ -187,6 +189,8 @@ smb.conf changes
   server max protocol                     Values Removed
   server min protocol                     Values Removed
   server multi channel support            Changed         Yes (on Linux and FreeBSD)
+  server smb3 signing algorithms          New             see man smb.conf
+  server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
 
