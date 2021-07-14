@@ -59,6 +59,58 @@ cleanup:
 	return code;
 }
 
+static void ks_free_principal_e_data(krb5_context context, krb5_octet *e_data)
+{
+	struct samba_kdc_entry *skdc_entry;
+
+	skdc_entry = talloc_get_type_abort(e_data,
+					   struct samba_kdc_entry);
+	talloc_set_destructor(skdc_entry, NULL);
+	TALLOC_FREE(skdc_entry);
+}
+
+void ks_free_principal(krb5_context context, krb5_db_entry *entry)
+{
+	krb5_tl_data *tl_data_next = NULL;
+	krb5_tl_data *tl_data = NULL;
+	size_t i, j;
+
+	if (entry != NULL) {
+		krb5_free_principal(context, entry->princ);
+
+		for (tl_data = entry->tl_data; tl_data; tl_data = tl_data_next) {
+			tl_data_next = tl_data->tl_data_next;
+			if (tl_data->tl_data_contents != NULL) {
+				free(tl_data->tl_data_contents);
+			}
+			free(tl_data);
+		}
+
+		if (entry->key_data != NULL) {
+			for (i = 0; i < entry->n_key_data; i++) {
+				for (j = 0; j < entry->key_data[i].key_data_ver; j++) {
+					if (entry->key_data[i].key_data_length[j] != 0) {
+						if (entry->key_data[i].key_data_contents[j] != NULL) {
+							memset(entry->key_data[i].key_data_contents[j], 0, entry->key_data[i].key_data_length[j]);
+							free(entry->key_data[i].key_data_contents[j]);
+						}
+					}
+					entry->key_data[i].key_data_contents[j] = NULL;
+					 entry->key_data[i].key_data_length[j] = 0;
+					 entry->key_data[i].key_data_type[j] = 0;
+				}
+			}
+			free(entry->key_data);
+		}
+
+		if (entry->e_data) {
+			ks_free_principal_e_data(context, entry->e_data);
+		}
+
+		free(entry);
+	}
+}
+
 static krb5_boolean ks_is_master_key_principal(krb5_context context,
 					       krb5_const_principal princ)
 {

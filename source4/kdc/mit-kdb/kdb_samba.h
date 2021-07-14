@@ -46,6 +46,8 @@ krb5_error_code ks_get_principal(krb5_context context,
 				 unsigned int kflags,
 				 krb5_db_entry **kentry);
 
+void ks_free_principal(krb5_context context, krb5_db_entry *entry);
+
 bool ks_data_eq_string(krb5_data d, const char *s);
 
 krb5_data ks_make_data(void *data, unsigned int len);
