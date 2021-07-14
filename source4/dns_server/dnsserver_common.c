@@ -292,8 +292,10 @@ static struct ldb_parse_tree *build_equality_operation(
 	value->length = length;
 	if (add_asterix) {
 		value->data[0] = '*';
-		memcpy(&value->data[1], name, size);
-	} else {
+		if (name != NULL) {
+			memcpy(&value->data[1], name, size);
+		}
+	} else if (name != NULL) {
 		memcpy(value->data, name, size);
 	}
 	return el;
