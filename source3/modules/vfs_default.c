@@ -3609,31 +3609,19 @@ static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
 {
 	struct vfswrap_getxattrat_state *state = tevent_req_data(
 		req, struct vfswrap_getxattrat_state);
-	char *path = NULL;
-	char *tofree = NULL;
-	char pathbuf[PATH_MAX+1];
-	ssize_t pathlen;
-	int err;
+	struct files_struct *fsp = state->smb_fname->fsp;
 
-	pathlen = full_path_tos(state->dir_fsp->fsp_name->base_name,
-				state->smb_fname->base_name,
-				pathbuf,
-				sizeof(pathbuf),
-				&path,
-				&tofree);
-	if (pathlen == -1) {
-		tevent_req_error(req, ENOMEM);
-		return;
+	if (fsp->base_fsp != NULL) {
+		fsp = fsp->base_fsp;
 	}
 
-	state->xattr_size = getxattr(path,
-				     state->xattr_name,
-				     state->xattr_value,
-				     talloc_array_length(state->xattr_value));
-	err = errno;
-	TALLOC_FREE(tofree);
+	state->xattr_size = vfswrap_fgetxattr(state->handle,
+					      fsp,
+					      state->xattr_name,
+					      state->xattr_value,
+					      talloc_array_length(state->xattr_value));
 	if (state->xattr_size == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, errno);
 		return;
 	}
 
