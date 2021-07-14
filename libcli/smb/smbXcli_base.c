@@ -2808,6 +2808,16 @@ uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn)
 	return conn->smb2.server.security_mode;
 }
 
+uint16_t smb2cli_conn_server_signing_algo(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.sign_algo;
+}
+
+uint16_t smb2cli_conn_server_encryption_algo(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.cipher;
+}
+
 uint32_t smb2cli_conn_max_trans_size(struct smbXcli_conn *conn)
 {
 	return conn->smb2.server.max_trans_size;
