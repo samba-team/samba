@@ -16,6 +16,10 @@ SMBCONTROL=$1; shift 1
 SERVER=$1; shift 1
 SHARE=$1; shift 1
 
+# Do not let deprecated option warnings muck this up
+SAMBA_DEPRECATED_SUPPRESS=1
+export SAMBA_DEPRECATED_SUPPRESS
+
 error_inject_conf=$(dirname ${SERVERCONFFILE})/error_inject.conf
 > ${error_inject_conf}
 
@@ -41,7 +45,6 @@ exec 100>smbclient-stdin 101<smbclient-stdout 102<smbclient-stderr
 
 # consume the smbclient startup messages
 head -n 1 <&101
-head -n 1 <&102
 
 echo "error_inject:openat = EINTR" > ${error_inject_conf}
 ${SMBCONTROL} ${CONF} 0 reload-config

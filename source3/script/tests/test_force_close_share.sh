@@ -22,6 +22,10 @@ SHARE=$5
 PREFIX=$6
 shift 6
 
+# Do not let deprecated option warnings muck this up
+SAMBA_DEPRECATED_SUPPRESS=1
+export SAMBA_DEPRECATED_SUPPRESS
+
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh
 . $incdir/common_test_fns.inc
@@ -71,7 +75,6 @@ exec 100>$FIFO_STDIN  101<$FIFO_STDOUT 102<$FIFO_STDERR
 
 # consume the smbclient startup messages
 head -n 1 <&101
-head -n 1 <&102
 
 # Ensure we're putting a fresh file.
 echo "lcd $(dirname $TESTFILE)" >&100
