@@ -535,6 +535,17 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
 	}
 
+	status = smb311_capabilities_check(&default_smb3_capabilities,
+					   "smb2srv_negprot",
+					   DBGLVL_NOTICE,
+					   NT_STATUS_INVALID_PARAMETER,
+					   "server",
+					   protocol,
+					   xconn->smb2.server.cipher);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
 	if (protocol >= PROTOCOL_SMB3_00 &&
 	    xconn->client->server_multi_channel_enabled)
 	{
