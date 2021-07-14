@@ -1426,6 +1426,13 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (table == NULL) {
+		DEBUG(0, ("smbXsrv_session_update(0x%08x): "
+			  "Called with table == NULL'\n",
+			  session->global->session_global_id));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	session->global->db_rec = smbXsrv_session_global_fetch_locked(
 					table->global.db_ctx,
 					session->global->session_global_id,
