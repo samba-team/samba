@@ -161,7 +161,14 @@ int main(int argc, char *argv[])
 
 	workgroups = smbc_getFunctionOpendir(ctx)(ctx, "smb://");
 	if (workgroups == NULL) {
-		perror("smbc_opendir");
+		DBG_ERR("This is utility doesn't work if netbios name "
+			"resolution is not configured.\n"
+			"If you are using SMB2 or SMB3, network browsing uses "
+			"WSD/LLMNR, which is not yet supported by Samba. SMB1 "
+			"is disabled by default on the latest Windows versions "
+			"for security reasons. It is still possible to access "
+			"the Samba resources directly via \\name or "
+			"\\ip.address.\n");
 		goto fail;
 	}
 
