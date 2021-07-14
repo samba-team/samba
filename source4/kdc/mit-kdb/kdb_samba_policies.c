@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 /* FIXME: This is a krb5 function which is exported, but in no header */
 extern krb5_error_code decode_krb5_padata_sequence(const krb5_data *output,
 						   krb5_pa_data ***rep);

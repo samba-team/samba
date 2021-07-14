@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 #define ADMIN_LIFETIME 60*60*3 /* 3 hours */
 #define CHANGEPW_LIFETIME 60*5 /* 5 minutes */
 
