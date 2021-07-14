@@ -2812,6 +2812,12 @@ static bool test_session_bind_negative_smb2to3s(struct torture_context *tctx, st
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB3_00;
 	options2.max_protocol = PROTOCOL_SMB3_11;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
@@ -2852,6 +2858,12 @@ static bool test_session_bind_negative_smb2to3d(struct torture_context *tctx, st
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB3_00;
 	options2.max_protocol = PROTOCOL_SMB3_11;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
@@ -2885,12 +2897,24 @@ static bool test_session_bind_negative_smb3to2s(struct torture_context *tctx, st
 	options1.client_guid = GUID_random();
 	options1.min_protocol = PROTOCOL_SMB3_00;
 	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	/* same client guid */
 	options2 = options1;
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB2_02;
 	options2.max_protocol = PROTOCOL_SMB2_10;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_HMAC_SHA256,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
@@ -2924,6 +2948,12 @@ static bool test_session_bind_negative_smb3to2d(struct torture_context *tctx, st
 	options1.client_guid = GUID_random();
 	options1.min_protocol = PROTOCOL_SMB3_00;
 	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	/* different client guid */
 	options2 = options1;
@@ -2931,6 +2961,12 @@ static bool test_session_bind_negative_smb3to2d(struct torture_context *tctx, st
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB2_02;
 	options2.max_protocol = PROTOCOL_SMB2_10;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_HMAC_SHA256,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
@@ -2963,6 +2999,12 @@ static bool test_session_bind_negative_smb3to3s(struct torture_context *tctx, st
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB3_11;
 	options2.max_protocol = PROTOCOL_SMB3_11;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
@@ -2996,6 +3038,12 @@ static bool test_session_bind_negative_smb3to3d(struct torture_context *tctx, st
 	options2.only_negprot = true;
 	options2.min_protocol = PROTOCOL_SMB3_11;
 	options2.max_protocol = PROTOCOL_SMB3_11;
+	options2.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
 
 	ret = test_session_bind_negative_smbXtoX(tctx, __func__,
 						 credentials,
