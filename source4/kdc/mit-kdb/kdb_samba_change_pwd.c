@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 krb5_error_code kdb_samba_change_pwd(krb5_context context,
 				     krb5_keyblock *master_key,
 				     krb5_key_salt_tuple *ks_tuple,

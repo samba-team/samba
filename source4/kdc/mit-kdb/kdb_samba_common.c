@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 struct mit_samba_context *ks_get_context(krb5_context kcontext)
 {
 	void *db_ctx;

@@ -30,6 +30,9 @@
 #include "kdc/mit_samba.h"
 #include "kdb_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 krb5_error_code kdb_samba_dbekd_decrypt_key_data(krb5_context context,
 						 const krb5_keyblock *mkey,
 						 const krb5_key_data *key_data,

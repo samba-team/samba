@@ -40,6 +40,9 @@
 
 #include "mit_samba.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_KERBEROS
+
 void mit_samba_context_free(struct mit_samba_context *ctx)
 {
 	/* free heimdal's krb5_context */
