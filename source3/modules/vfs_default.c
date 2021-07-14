@@ -3636,6 +3636,11 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 	struct timespec start_time;
 	struct timespec end_time;
 	int ret;
+	struct files_struct *fsp = state->smb_fname->fsp;
+
+	if (fsp->base_fsp != NULL) {
+		fsp = fsp->base_fsp;
+	}
 
 	PROFILE_TIMESTAMP(&start_time);
 	SMBPROFILE_BYTES_ASYNC_SET_BUSY(state->profile_bytes);
@@ -3658,17 +3663,11 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 		goto end_profile;
 	}
 
-	ret = fchdir(fsp_get_pathref_fd(state->dir_fsp));
-	if (ret == -1) {
-		state->xattr_size = -1;
-		state->vfs_aio_state.error = errno;
-		goto end_profile;
-	}
-
-	state->xattr_size = getxattr(state->name,
-				     state->xattr_name,
-				     state->xattr_value,
-				     talloc_array_length(state->xattr_value));
+	state->xattr_size = vfswrap_fgetxattr(state->handle,
+					      fsp,
+					      state->xattr_name,
+					      state->xattr_value,
+					      talloc_array_length(state->xattr_value));
 	if (state->xattr_size == -1) {
 		state->vfs_aio_state.error = errno;
 	}
