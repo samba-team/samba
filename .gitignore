@@ -83,6 +83,7 @@ python/samba/provision/kerberos_implementation.py
 # read by direnv to auto load environment variables
 .envrc
 
-# YouCompleteMe
+# LSP servers
 compile_commands.json
 .clangd/
+.cache/
