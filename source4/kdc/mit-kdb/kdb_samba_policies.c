@@ -304,7 +304,6 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    krb5_timestamp authtime,
 					    krb5_authdata **tgt_auth_data,
 					    krb5_authdata ***signed_auth_data)
-{
 #else
 krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    unsigned int flags,
@@ -324,8 +323,8 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    void *authdata_info,
 					    krb5_data ***auth_indicators,
 					    krb5_authdata ***signed_auth_data)
-{
 #endif
+{
 	krb5_authdata **authdata = NULL;
 	krb5_boolean is_as_req;
 	krb5_error_code code;
