@@ -9,3 +9,6 @@ export TDB_NO_FSYNC=1
 export NMBD_DONT_LOG_STDOUT=1
 export SMBD_DONT_LOG_STDOUT=1
 export WINBINDD_DONT_LOG_STDOUT=1
+
+# Setup python path for lsp server
+export PYTHONPATH="$(pwd)/third_party/waf:$(pwd)/python:$(pwd)/selftest:$PYTHONPATH"
