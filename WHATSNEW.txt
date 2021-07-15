@@ -1,171 +1,24 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.15.  This is *not*
+This is the first pre release of Samba 4.16.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.15 will be the next version of the Samba suite.
+Samba 4.16 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
-Removed SMB (development) dialects
-----------------------------------
-
-The following SMB (development) dialects are no longer
-supported: SMB2_22, SMB2_24 and SMB3_10. They are were
-only supported by Windows technical preview builds.
-They used to be useful in order to test against the
-latest Windows versions, but it's no longer useful
-to have them. If you have them explicitly specified
-in your smb.conf or an the command line,
-you need to replace them like this:
-- SMB2_22 => SMB3_00
-- SMB2_24 => SMB3_00
-- SMB3_10 => SMB3_11
-Note that it's typically not useful to specify
-"client max protocol" or "server max protocol"
-explicitly to a specific dialect, just leave
-them unspecified or specify the value "default".
-
-New GPG key
------------
-
-The GPG release key for Samba releases changed from:
-
-pub   dsa1024/6F33915B6568B7EA 2007-02-04 [SC] [expires: 2021-02-05]
-      Key fingerprint = 52FB C0B8 6D95 4B08 4332  4CDC 6F33 915B 6568 B7EA
-uid                 [  full  ] Samba Distribution Verification Key <samba-bugs@samba.org>
-sub   elg2048/9C6ED163DA6DFB44 2007-02-04 [E] [expires: 2021-02-05]
-
-to the following new key:
-
-pub   rsa4096/AA99442FB680B620 2020-12-21 [SC] [expires: 2022-12-21]
-      Key fingerprint = 81F5 E283 2BD2 545A 1897  B713 AA99 442F B680 B620
-uid                 [ultimate] Samba Distribution Verification Key <samba-bugs@samba.org>
-sub   rsa4096/97EF9386FBFD4002 2020-12-21 [E] [expires: 2022-12-21]
-
-Starting from Jan 21th 2021, all Samba releases will be signed with the new key.
-
-See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
-
 
 NEW FEATURES/CHANGES
 ====================
-- bind DLZ: Added the ability to set allow/deny lists for zone
-  transfer clients.
-  Up to now, any client could use a DNS zone transfer request
-  to the bind server, and get an answer from Samba.
-  Now the default behaviour will be to deny those request.
-  Two new options have been added to manage the list of
-  authorized/denied clients for zone transfer requests.
-  In order to be accepted, the request must be issued by a client
-  that is in the allow list and NOT in the deny list.
-
-"server multi channel support" no longer experimental
------------------------------------------------------
-
-This option is enabled by default starting with to 4.15 (on Linux and FreeBSD).
-Due to dependencies on kernel APIs of Linux or FreeBSD, it's only possible
-to use this feature on Linux and FreeBSD for now.
-
-samba-tool available without the ad-dc
---------------------------------------
-
-The samba-tool command is now available when samba is configured
---without-ad-dc. Not all features will work, and some ad-dc specific options
-have been disabled. The samba-tool domain options, for example, are limited
-when no ad-dc is present. Samba must still be built with ads in order to enable
-samba-tool.
-
-Improved command line user experience
--------------------------------------
-
-Samba utilities did not consistently implement their command line interface. A
-number of options were requiring to specify values in one tool and not in the
-other, some options meant different in different tools.
-
-These should be stories of the past now. A new command line parser has been
-implemented with sanity checking. Also the command line interface has been
-simplified and provides better control for encryption, singing and kerberos.
-
-Also several command line options have a smb.conf variable to control the
-default now.
-
-All tools are logging to stderr by default. You can use --debug-stdout to
-change the behavior.
-
-### Common parser:
-
-Options added:
---client-protection=off|sign|encrypt
-
-Options renamed:
---kerberos       ->    --use-kerberos=required|desired|off
---krb5-ccache    ->    --use-krb5-ccache=CCACHE
---scope          ->    --netbios-scope=SCOPE
---use-ccache     ->    --use-winbind-ccache
-
-Options removed:
--e|--encrypt
--C removed from --use-winbind-ccache
--i removed from --netbios-scope
--S|--signing
-
-
-### Duplicates in command line utils
-
-ldbadd/ldbsearch/ldbdel/ldbmodify/ldbrename:
--e is not available for --editor anymore
--s is not used for --configfile anymore
-
-ndrdump:
--l is not available for --load-dso anymore
-
-net:
--l is not available for --long anymore
-
-sharesec:
--V is not available for --viewsddl anymore
-
-smbcquotas:
---user        ->    --quota-user
-
-nmbd:
---log-stdout  ->    --debug-stdout
-
-smbd:
---log-stdout  ->    --debug-stdout
-
-winbindd:
---log-stdout  ->    --debug-stdout
-
-Scanning of trusted domains and enterprise principals
------------------------------------------------------
-
-As an artifact from the NT4 times, we still scanned the list of trusted domains
-on winbindd startup. This is wrong as we never can get a full picture in Active
-Directory. It is time to change the default value to "No". Also with this change
-we always use enterprise principals for Kerberos so that the DC will be able
-to redirect ticket requests to the right DC. This is e.g. needed for one way
-trusts. The options `winbind use krb5 enterprise principals` and
-`winbind scan trusted domains` will be deprecated in one of the next releases.
 
 
 REMOVED FEATURES
 ================
-
-Tru64 ACL support has been removed from this release. The last
-supported release of Tru64 UNIX was in 2012.
-
-NIS support has been removed from this release. This is not
-available in Linux distributions anymore.
-
-The DLZ DNS plugin is no longer built for Bind versions 9.8 and 9.9,
-which have been out of support since 2018.
 
 
 smb.conf changes
@@ -173,33 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  client use kerberos                     New             desired
-  client max protocol                     Values Removed
-  client min protocol                     Values Removed
-  client protection                       New             default
-  client smb3 signing algorithms          New             see man smb.conf
-  client smb3 encryption algorithms       New             see man smb.conf
-  preopen:posix-basic-regex               New             No
-  preopen:nomatch_log_level               New             5
-  preopen:match_log_level                 New             5
-  preopen:nodigits_log_level              New             1
-  preopen:founddigits_log_level           New             3
-  preopen:reset_log_level                 New             5
-  preopen:push_log_level                  New             3
-  preopen:queue_log_level                 New             10
-  server max protocol                     Values Removed
-  server min protocol                     Values Removed
-  server multi channel support            Changed         Yes (on Linux and FreeBSD)
-  server smb3 signing algorithms          New             see man smb.conf
-  server smb3 encryption algorithms       New             see man smb.conf
-  winbind use krb5 enterprise principals  Changed         Yes
-  winbind scan trusted domains            Changed         No
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.15#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.16#Release_blocking_bugs
 
 
 #######################################
