@@ -814,15 +814,20 @@ struct tevent_req *dos_mode_at_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smb_fname->fsp == NULL) {
-		/*
-		 * The pathological case where a caller does
-		 * dos_mode_at_send() and smb_fname points at a
-		 * symlink in POSIX context. smb_fname->fsp is NULL.
-		 *
-		 * FIXME ? Should we move to returning
-		 * FILE_ATTRIBUTE_REPARSE_POINT here ?
-		 */
-		state->dosmode = FILE_ATTRIBUTE_NORMAL;
+		if (ISDOTDOT(smb_fname->base_name)) {
+			/*
+			 * smb_fname->fsp is explicitly closed
+			 * for ".." to prevent meta-data leakage.
+			 */
+			state->dosmode = FILE_ATTRIBUTE_DIRECTORY;
+		} else {
+			/*
+			 * This is a symlink in POSIX context.
+			 * FIXME ? Should we move to returning
+			 * FILE_ATTRIBUTE_REPARSE_POINT here ?
+			 */
+			state->dosmode = FILE_ATTRIBUTE_NORMAL;
+		}
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
