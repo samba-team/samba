@@ -143,14 +143,14 @@ smbd:
 winbindd:
 --log-stdout  ->    --debug-stdout
 
-Scanning of trusted domains and enterpise principals
-----------------------------------------------------
+Scanning of trusted domains and enterprise principals
+-----------------------------------------------------
 
 As an artifact from the NT4 times, we still scanned the list of trusted domains
 on winbindd startup. This is wrong as we never can get a full picture in Active
-Directory. It is time to change the default value to No. Also with this change
+Directory. It is time to change the default value to "No". Also with this change
 we always use enterprise principals for Kerberos so that the DC will be able
-to redirect ticket requests to the right DC. This is e.g needed for one way
+to redirect ticket requests to the right DC. This is e.g. needed for one way
 trusts. The options `winbind use krb5 enterprise principals` and
 `winbind scan trusted domains` will be deprecated in one of the next releases.
 
@@ -166,6 +166,7 @@ available in Linux distributions anymore.
 
 The DLZ DNS plugin is no longer built for Bind versions 9.8 and 9.9,
 which have been out of support since 2018.
+
 
 smb.conf changes
 ================
