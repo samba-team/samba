@@ -946,6 +946,31 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
+		/*
+		 * Don't leak metadata about the containing
+		 * directory of the share.
+		 */
+		if (dirptr_path_is_dot && ISDOTDOT(dname)) {
+			/*
+			 * Making a copy here, then freeing
+			 * the original will close the smb_fname->fsp.
+			 */
+			struct smb_filename *tmp_smb_fname =
+				cp_smb_filename(ctx, smb_fname);
+
+			if (tmp_smb_fname == NULL) {
+				TALLOC_FREE(atname);
+				TALLOC_FREE(smb_fname);
+				TALLOC_FREE(dname);
+				TALLOC_FREE(fname);
+				return false;
+			}
+			TALLOC_FREE(smb_fname);
+			smb_fname = tmp_smb_fname;
+			mode = FILE_ATTRIBUTE_DIRECTORY;
+			get_dosmode = false;
+		}
+
 		ok = mode_fn(ctx,
 			     private_data,
 			     dirptr->dir_hnd->fsp,
