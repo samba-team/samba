@@ -346,6 +346,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		case SMB2_ENCRYPTION_AES128_GCM:
 			nonce_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_GCM);
 			break;
+		case SMB2_ENCRYPTION_AES256_CCM:
+			nonce_size = SMB2_AES_128_CCM_NONCE_SIZE;
+			break;
+		case SMB2_ENCRYPTION_AES256_GCM:
+			nonce_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_256_GCM);
+			break;
 		default:
 			nonce_size = 0;
 			break;
