@@ -33,6 +33,19 @@ extern "C" {
 #include <signal.h>
 #include <stdbool.h>
 
+/* for old gcc releases that don't have the feature test macro __has_attribute */
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
+#ifndef _PUBLIC_
+#if __has_attribute(visibility)
+#define _PUBLIC_ __attribute__((visibility("default")))
+#else
+#define _PUBLIC_
+#endif
+#endif
+
 /**
  * @defgroup tdb The tdb API
  *
