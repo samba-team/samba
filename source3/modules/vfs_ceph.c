@@ -403,14 +403,23 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 			   int flags,
 			   mode_t mode)
 {
+	struct smb_filename *name = NULL;
 	bool have_opath = false;
 	bool became_root = false;
 	int result = -ENOENT;
 
 	/*
-	 * cephfs API doesn't have ceph_openat(), so for now assert this.
+	 * ceph doesn't have openat().
 	 */
-	SMB_ASSERT(fsp_get_pathref_fd(dirfsp) == AT_FDCWD);
+	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
+		name = full_path_from_dirfsp_atname(talloc_tos(),
+						    dirfsp,
+						    smb_fname);
+		if (name == NULL) {
+			return -1;
+		}
+		smb_fname = name;
+	}
 
 	DBG_DEBUG("[CEPH] openat(%p, %s, %p, %d, %d)\n", handle,
 		  smb_fname_str_dbg(smb_fname), fsp, flags, mode);
@@ -438,6 +447,7 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	}
 
 out:
+	TALLOC_FREE(name);
 	fsp->fsp_flags.have_proc_fds = false;
 	DBG_DEBUG("[CEPH] open(...) = %d\n", result);
 	WRAP_RETURN(result);
