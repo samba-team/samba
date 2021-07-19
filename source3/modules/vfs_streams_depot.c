@@ -544,6 +544,8 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 			     void *private_data)
 {
 	char *dirname;
+	char *rootdir = NULL;
+	char *orig_connectpath = NULL;
 	struct smb_filename *dir_smb_fname = NULL;
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname = NULL;
@@ -576,8 +578,26 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * For OpenDir to succeed if the stream rootdir is outside
+	 * the share path, we must temporarily swap out the connect
+	 * path for this share. We're dealing with absolute paths
+	 * here so we don't care about chdir calls.
+	 */
+	rootdir = stream_rootdir(handle, talloc_tos());
+	if (rootdir == NULL) {
+		TALLOC_FREE(dir_smb_fname);
+		TALLOC_FREE(dirname);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	orig_connectpath = handle->conn->connectpath;
+	handle->conn->connectpath = rootdir;
+
 	dir_hnd = OpenDir(talloc_tos(), handle->conn, dir_smb_fname, NULL, 0);
 	if (dir_hnd == NULL) {
+		handle->conn->connectpath = orig_connectpath;
+		TALLOC_FREE(rootdir);
 		TALLOC_FREE(dir_smb_fname);
 		TALLOC_FREE(dirname);
 		return map_nt_error_from_unix(errno);
@@ -600,6 +620,9 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		TALLOC_FREE(talloced);
 	}
 
+	/* Restore the original connectpath. */
+	handle->conn->connectpath = orig_connectpath;
+	TALLOC_FREE(rootdir);
 	TALLOC_FREE(dir_smb_fname);
 	TALLOC_FREE(dir_hnd);
 
