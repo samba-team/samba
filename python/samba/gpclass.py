@@ -23,6 +23,7 @@ sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
 from configparser import ConfigParser
 from io import StringIO
+import traceback
 from samba.common import get_bytes
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
@@ -467,7 +468,8 @@ def apply_gp(lp, creds, logger, store, gp_extensions, force=False):
             ext.process_group_policy(del_gpos, changed_gpos)
         except Exception as e:
             logger.error('Failed to apply extension  %s' % str(ext))
-            logger.error('Message was: ' + str(e))
+            logger.error('Message was: %s: %s' % (type(e).__name__, str(e)))
+            logger.debug(traceback.format_exc())
             continue
     for gpo_obj in gpos:
         if not gpo_obj.file_sys_path:
