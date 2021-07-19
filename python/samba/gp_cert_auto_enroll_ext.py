@@ -98,6 +98,8 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
                      root_cert, '-u', url]).wait()
         if ret != 0:
             logger.warn('sscep failed to fetch the root certificate chain.')
+            logger.warn('Ensure you have installed and configured the' +
+                        ' Network Device Enrollment Service.')
         root_certs = glob('%s*' % root_cert)
         data['files'].extend(root_certs)
         for src in root_certs:
