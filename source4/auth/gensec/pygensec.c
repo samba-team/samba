@@ -468,6 +468,9 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	PyObject *py_bytes, *result, *py_in;
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	PyObject *finished_processing;
+	char *data = NULL;
+	Py_ssize_t len;
+	int err;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -477,14 +480,21 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 		return PyErr_NoMemory();
 	}
 
-	if (!PyBytes_Check(py_in)) {
+	err = PyBytes_AsStringAndSize(py_in, &data, &len);
+	if (err) {
 		talloc_free(mem_ctx);
-		PyErr_Format(PyExc_TypeError, "bytes expected");
 		return NULL;
 	}
 
-	in.data = (uint8_t *)PyBytes_AsString(py_in);
-	in.length = PyBytes_Size(py_in);
+	/*
+	 * Make a copy of the input buffer, as gensec_update may modify its
+	 * input argument.
+	 */
+	in = data_blob_talloc(mem_ctx, data, len);
+	if (!in.data) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	status = gensec_update(security, mem_ctx, in, &out);
 
@@ -556,6 +566,9 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 	DATA_BLOB in, out;
 	PyObject *ret, *py_in;
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
+	char *data = NULL;
+	Py_ssize_t len;
+	int err;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -565,14 +578,21 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 		return PyErr_NoMemory();
 	}
 
-	if (!PyBytes_Check(py_in)) {
+	err = PyBytes_AsStringAndSize(py_in, &data, &len);
+	if (err) {
 		talloc_free(mem_ctx);
-		PyErr_Format(PyExc_TypeError, "bytes expected");
 		return NULL;
 	}
 
-	in.data = (uint8_t *)PyBytes_AsString(py_in);
-	in.length = PyBytes_Size(py_in);
+	/*
+	 * Make a copy of the input buffer, as gensec_unwrap may modify its
+	 * input argument.
+	 */
+	in = data_blob_talloc(mem_ctx, data, len);
+	if (!in.data) {
+		talloc_free(mem_ctx);
+		return PyErr_NoMemory();
+	}
 
 	status = gensec_unwrap(security, mem_ctx, &in, &out);
 
