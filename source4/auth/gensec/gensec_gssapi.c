@@ -1168,6 +1168,10 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 		}
 	}
 	
+	/*
+	 * FIXME: input_message_buffer is marked const, but gss_unwrap() may
+	 * modify it (see calls to rrc_rotate() in _gssapi_unwrap_cfx()).
+	 */
 	maj_stat = gss_unwrap(&min_stat, 
 			      gensec_gssapi_state->gssapi_context, 
 			      &input_token,
