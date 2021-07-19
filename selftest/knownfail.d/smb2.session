@@ -2,3 +2,6 @@
 # we required the same client guid for session binds
 ^samba3.smb2.session.*.bind_negative_smb3signCtoHd
 ^samba3.smb2.session.*.bind_negative_smb3signHtoCd
+# aes-256-* is not fully working yet
+^samba3.smb2.session.*.encryption-aes-256-ccm
+^samba3.smb2.session.*.encryption-aes-256-gcm
