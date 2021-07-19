@@ -76,13 +76,17 @@ def find_cepces_submit():
                        '/usr/libexec/certmonger']
     return which('cepces-submit', path=':'.join(certmonger_dirs))
 
-def get_supported_templates(server):
+def get_supported_templates(server, logger):
     cepces_submit = find_cepces_submit()
     if os.path.exists(cepces_submit):
         env = os.environ
         env['CERTMONGER_OPERATION'] = 'GET-SUPPORTED-TEMPLATES'
-        out, _ = Popen([cepces_submit, '--server=%s' % server], env=env,
-                       stdout=PIPE, stderr=PIPE).communicate()
+        p = Popen([cepces_submit, '--server=%s' % server], env=env,
+                       stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        if p.returncode != 0:
+            logger.warn('Failed to fetch the list of supported templates:' +
+                        '\n%s' % err)
         return out.strip().split()
     return []
 
@@ -128,7 +132,8 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
     if getcert is not None and os.path.exists(cepces_submit):
         Popen([getcert, 'add-ca', '-c', ca['cn'][0], '-e',
                '%s --server=%s' % (cepces_submit, ca['dNSHostName'][0])]).wait()
-        supported_templates = get_supported_templates(ca['dNSHostName'][0])
+        supported_templates = get_supported_templates(ca['dNSHostName'][0],
+                                                      logger)
         for template, attrs in ca['certificateTemplates'].items():
             if template not in supported_templates:
                 continue
@@ -240,7 +245,8 @@ class gp_cert_auto_enroll_ext(gp_pol_ext):
                         output[policy][cn]['Auto Enrollment Server'] = \
                             ca['dNSHostName'][0]
                         supported_templates = \
-                            get_supported_templates(ca['dNSHostName'][0])
+                            get_supported_templates(ca['dNSHostName'][0],
+                                                    self.logger)
                         output[policy][cn]['Templates'] = \
                             [t.decode() for t in supported_templates]
         return output
