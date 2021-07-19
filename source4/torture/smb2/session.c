@@ -48,6 +48,13 @@
 				"out.reserverd2 incorrect");			\
 	} while(0)
 
+#define WAIT_FOR_ASYNC_RESPONSE(req) \
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) { \
+		if (tevent_loop_once(tctx->ev) != 0) { \
+			break; \
+		} \
+	}
+
 /**
  * basic test for doing a session reconnect
  */
@@ -4942,6 +4949,428 @@ static bool test_session_two_logoff(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_session_sign_enc(struct torture_context *tctx,
+				  const char *testname,
+				  struct cli_credentials *credentials1,
+				  const struct smbcli_options *options1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	NTSTATUS status;
+	bool ret = false;
+	struct smb2_tree *tree1 = NULL;
+	char fname[256];
+	struct smb2_handle rh = {{0}};
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo1;
+	union smb_notify notify;
+	struct smb2_request *req = NULL;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials1,
+			      &tree1,
+			      tctx->ev,
+			      options1,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect options1 failed");
+
+	status = smb2_util_roothandle(tree1, &rh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_roothandle failed");
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "%s_%s.dat",
+		 testname, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	status = smb2_create(tree1, tctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
+
+	/* Check the initial session is still alive */
+	ZERO_STRUCT(qfinfo1);
+	qfinfo1.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo1.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree1, tctx, &qfinfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	/* ask for a change notify,
+	   on file or directory name changes */
+	ZERO_STRUCT(notify);
+	notify.smb2.level = RAW_NOTIFY_SMB2;
+	notify.smb2.in.buffer_size = 1000;
+	notify.smb2.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.smb2.in.file.handle = rh;
+	notify.smb2.in.recursive = true;
+
+	req = smb2_notify_send(tree1, &(notify.smb2));
+	WAIT_FOR_ASYNC_RESPONSE(req);
+
+	status = smb2_cancel(req);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_cancel failed");
+
+	status = smb2_notify_recv(req, tctx, &(notify.smb2));
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb2_notify_recv failed");
+
+	/* Check the initial session is still alive */
+	ZERO_STRUCT(qfinfo1);
+	qfinfo1.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo1.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree1, tctx, &qfinfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	ret = true;
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	TALLOC_FREE(tree1);
+
+	return ret;
+}
+
+static bool test_session_signing_hmac_sha_256(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test signing only if encrytion is required");
+	}
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_HMAC_SHA256,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_signing_aes_128_cmac(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test signing only if encrytion is required");
+	}
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_CMAC,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_signing_aes_128_gmac(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials = samba_cmdline_get_creds();
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool encrypted;
+
+	encrypted = smb2cli_tcon_is_encryption_on(tree0->smbXcli);
+	if (encrypted) {
+		torture_skip(tctx,
+			     "Can't test signing only if encrytion is required");
+	}
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.signing = (struct smb3_signing_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_SIGNING_AES128_GMAC,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_encryption_aes_128_ccm(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials0 = samba_cmdline_get_creds();
+	struct cli_credentials *credentials = NULL;
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool ok;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	credentials = cli_credentials_shallow_copy(tctx, credentials0);
+	torture_assert(tctx, credentials != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(credentials,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES128_CCM,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_encryption_aes_128_gcm(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials0 = samba_cmdline_get_creds();
+	struct cli_credentials *credentials = NULL;
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool ok;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	credentials = cli_credentials_shallow_copy(tctx, credentials0);
+	torture_assert(tctx, credentials != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(credentials,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES128_GCM,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_encryption_aes_256_ccm(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials0 = samba_cmdline_get_creds();
+	struct cli_credentials *credentials = NULL;
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool ok;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	credentials = cli_credentials_shallow_copy(tctx, credentials0);
+	torture_assert(tctx, credentials != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(credentials,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES256_CCM,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
+static bool test_session_encryption_aes_256_gcm(struct torture_context *tctx, struct smb2_tree *tree0)
+{
+	struct cli_credentials *credentials0 = samba_cmdline_get_creds();
+	struct cli_credentials *credentials = NULL;
+	bool ret = false;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options1;
+	bool ok;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_11) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 support");
+	}
+
+	if (smb2cli_conn_server_signing_algo(transport0->conn) < SMB2_SIGNING_AES128_GMAC) {
+		torture_skip(tctx,
+			     "Can't test without SMB 3.1.1 signing negotiation support");
+	}
+
+	credentials = cli_credentials_shallow_copy(tctx, credentials0);
+	torture_assert(tctx, credentials != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(credentials,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options1 = transport0->options;
+	options1.client_guid = GUID_random();
+	options1.min_protocol = PROTOCOL_SMB3_11;
+	options1.max_protocol = PROTOCOL_SMB3_11;
+	options1.signing = SMB_SIGNING_REQUIRED;
+	options1.smb3_capabilities.encryption = (struct smb3_encryption_capabilities) {
+		.num_algos = 1,
+		.algos = {
+			SMB2_ENCRYPTION_AES256_GCM,
+		},
+	};
+
+	ret = test_session_sign_enc(tctx,
+				    __func__,
+				    credentials,
+				    &options1);
+	TALLOC_FREE(tree0);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5006,6 +5435,13 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb3signGtoH2Xs", test_session_bind_negative_smb3signGtoH2Xs);
 	torture_suite_add_1smb2_test(suite, "bind_negative_smb3signGtoH2Xd", test_session_bind_negative_smb3signGtoH2Xd);
 	torture_suite_add_1smb2_test(suite, "two_logoff", test_session_two_logoff);
+	torture_suite_add_1smb2_test(suite, "signing-hmac-sha-256", test_session_signing_hmac_sha_256);
+	torture_suite_add_1smb2_test(suite, "signing-aes-128-cmac", test_session_signing_aes_128_cmac);
+	torture_suite_add_1smb2_test(suite, "signing-aes-128-gmac", test_session_signing_aes_128_gmac);
+	torture_suite_add_1smb2_test(suite, "encryption-aes-128-ccm", test_session_encryption_aes_128_ccm);
+	torture_suite_add_1smb2_test(suite, "encryption-aes-128-gcm", test_session_encryption_aes_128_gcm);
+	torture_suite_add_1smb2_test(suite, "encryption-aes-256-ccm", test_session_encryption_aes_256_ccm);
+	torture_suite_add_1smb2_test(suite, "encryption-aes-256-gcm", test_session_encryption_aes_256_gcm);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
