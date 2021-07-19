@@ -129,6 +129,39 @@ static bool mark_file_valid(vfs_handle_struct *handle,
 	return true;
 }
 
+/*
+ * Return the root of the stream directory. Can be
+ * external to the share definition but by default
+ * is "handle->conn->connectpath/.streams".
+ *
+ * Note that this is an *absolute* path, starting
+ * with '/', so the dirfsp being used in the
+ * calls below isn't looked at.
+ */
+
+static char *stream_rootdir(vfs_handle_struct *handle,
+			    TALLOC_CTX *ctx)
+{
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *tmp;
+
+	tmp = talloc_asprintf(ctx,
+			      "%s/.streams",
+			      handle->conn->connectpath);
+	if (tmp == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	return lp_parm_substituted_string(ctx,
+					  lp_sub,
+					  SNUM(handle->conn),
+					  "streams_depot",
+					  "directory",
+					  tmp);
+}
+
 /**
  * Given an smb_filename, determine the stream directory using the file's
  * base_name.
@@ -137,14 +170,12 @@ static char *stream_dir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const SMB_STRUCT_STAT *base_sbuf, bool create_it)
 {
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
 	uint32_t hash;
 	struct smb_filename *smb_fname_hash = NULL;
 	char *result = NULL;
 	SMB_STRUCT_STAT base_sbuf_tmp;
+	char *tmp = NULL;
 	uint8_t first, second;
-	char *tmp;
 	char *id_hex;
 	struct file_id id;
 	uint8_t id_buf[16];
@@ -159,17 +190,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 	check_valid = lp_parm_bool(SNUM(handle->conn),
 		      "streams_depot", "check_valid", true);
 
-	tmp = talloc_asprintf(talloc_tos(), "%s/.streams",
-		handle->conn->connectpath);
-
-	if (tmp == NULL) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
-	rootdir = lp_parm_substituted_string(talloc_tos(), lp_sub,
-		SNUM(handle->conn), "streams_depot", "directory",
-		tmp);
+	rootdir = stream_rootdir(handle,
+				 talloc_tos());
 	if (rootdir == NULL) {
 		errno = ENOMEM;
 		goto fail;
