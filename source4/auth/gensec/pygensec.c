@@ -310,9 +310,13 @@ static PyObject *py_gensec_session_info(PyObject *self,
 		return NULL;
 	}
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	status = gensec_session_info(security, mem_ctx, &info);
 	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
@@ -337,6 +341,9 @@ static PyObject *py_gensec_session_key(PyObject *self,
 		return NULL;
 	}
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	status = gensec_session_key(security, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -466,7 +473,12 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
 	if (!PyBytes_Check(py_in)) {
+		talloc_free(mem_ctx);
 		PyErr_Format(PyExc_TypeError, "bytes expected");
 		return NULL;
 	}
@@ -510,8 +522,12 @@ static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	if (!PyBytes_Check(py_in)) {
+		talloc_free(mem_ctx);
 		PyErr_Format(PyExc_TypeError, "bytes expected");
 		return NULL;
 	}
@@ -545,8 +561,12 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	if (!PyBytes_Check(py_in)) {
+		talloc_free(mem_ctx);
 		PyErr_Format(PyExc_TypeError, "bytes expected");
 		return NULL;
 	}
@@ -599,6 +619,9 @@ static PyObject *py_gensec_sign_packet(PyObject *self, PyObject *args)
 	pdu.length = pdu_length;
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
 
 	status = gensec_sign_packet(security, mem_ctx,
 				    data.data, data.length,
