@@ -39,6 +39,7 @@ class GPOTests(tests.TestCase):
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
         try:
-            gp_access_ext(logger, self.lp, self.creds, store)
+            gp_access_ext(logger, self.lp, self.creds,
+                          self.creds.get_username(), store)
         except Exception:
             self.fail('Initializing gp_access_ext should not require ad-dc')

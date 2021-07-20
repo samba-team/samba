@@ -46,6 +46,7 @@ from samba.vgp_startup_scripts_ext import vgp_startup_scripts_ext
 from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
 from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
+from samba.credentials import Credentials
 import logging
 
 if __name__ == "__main__":
@@ -73,6 +74,15 @@ if __name__ == "__main__":
     lp = sambaopts.get_loadparm()
 
     creds = credopts.get_credentials(lp, fallback_machine=True)
+    # Apply policy to the command line specified user
+    if opts.target == 'Computer':
+        username = creds.get_username()
+    elif opts.target == 'User':
+        username = '%s\\%s' % (creds.get_domain(), creds.get_username())
+    # Always supply the machine creds for fetching the gpo list
+    creds = Credentials()
+    creds.guess(lp)
+    creds.set_machine_account(lp)
 
     # Set up logging
     logger = logging.getLogger('samba-gpupdate')
@@ -116,9 +126,11 @@ if __name__ == "__main__":
         gp_extensions.extend(user_exts)
 
     if opts.rsop:
-        rsop(lp, creds, logger, store, gp_extensions, opts.target)
+        rsop(lp, creds, logger, store, gp_extensions, username, opts.target)
     elif not opts.unapply:
-        apply_gp(lp, creds, logger, store, gp_extensions, opts.force)
+        apply_gp(lp, creds, logger, store, gp_extensions, username,
+                 opts.target, opts.force)
     else:
-        unapply_gp(lp, creds, logger, store, gp_extensions)
+        unapply_gp(lp, creds, logger, store, gp_extensions, username,
+                   opts.target)
 

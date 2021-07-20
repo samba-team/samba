@@ -478,7 +478,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_krb_ext(logger, self.lp, machine_creds, store)
+        ext = gp_krb_ext(logger, self.lp, machine_creds,
+                         machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -532,7 +533,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_scripts_ext(logger, self.lp, machine_creds, store)
+        ext = gp_scripts_ext(logger, self.lp, machine_creds,
+                             machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -590,7 +592,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_sudoers_ext(logger, self.lp, machine_creds, store)
+        ext = gp_sudoers_ext(logger, self.lp, machine_creds,
+                             machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -641,7 +644,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_sudoers_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_sudoers_ext(logger, self.lp, machine_creds,
+                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -734,7 +738,8 @@ class GPOTests(tests.TestCase):
         machine_creds.guess(self.lp)
         machine_creds.set_machine_account()
 
-        ext = gp_inf_ext(logger, self.lp, machine_creds, store)
+        ext = gp_inf_ext(logger, self.lp, machine_creds,
+                         machine_creds.get_username(), store)
         test_data = '[Kerberos Policy]\nMaxTicketAge = 99\n'
 
         with NamedTemporaryFile() as f:
@@ -819,7 +824,8 @@ class GPOTests(tests.TestCase):
             self.assertTrue(ret, 'Could not create the target %s' %
                                  (reg_pol % g.name))
             for ext in gp_extensions:
-                ext = ext(logger, self.lp, machine_creds, store)
+                ext = ext(logger, self.lp, machine_creds,
+                          machine_creds.get_username(), store)
                 ret = ext.rsop(g)
                 self.assertEquals(len(ret.keys()), 1,
                                   'A single policy should have been displayed')
@@ -918,7 +924,8 @@ class GPOTests(tests.TestCase):
         remove = []
         with TemporaryDirectory() as dname:
             for ext in gp_extensions:
-                ext = ext(logger, self.lp, machine_creds, store)
+                ext = ext(logger, self.lp, machine_creds,
+                          machine_creds.get_username(), store)
                 if type(ext) == gp_krb_ext:
                     ext.process_group_policy([], gpos)
                     ret = store.get_int('kdc:user_ticket_lifetime')
@@ -994,7 +1001,8 @@ class GPOTests(tests.TestCase):
             lp = LoadParm(f.name)
 
             # Initialize the group policy extension
-            ext = gp_smb_conf_ext(logger, lp, machine_creds, store)
+            ext = gp_smb_conf_ext(logger, lp, machine_creds,
+                                  machine_creds.get_username(), store)
             ext.process_group_policy([], gpos)
             lp = LoadParm(f.name)
 
@@ -1041,7 +1049,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_msgs_ext(logger, self.lp, machine_creds, store)
+        ext = gp_msgs_ext(logger, self.lp, machine_creds,
+                          machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1104,7 +1113,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_symlink_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_symlink_ext(logger, self.lp, machine_creds,
+                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1181,7 +1191,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_files_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_files_ext(logger, self.lp, machine_creds,
+                            machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1265,7 +1276,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_openssh_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_openssh_ext(logger, self.lp, machine_creds,
+                              machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1335,7 +1347,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_startup_scripts_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_startup_scripts_ext(logger, self.lp, machine_creds,
+                                      machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1451,7 +1464,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_motd_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_motd_ext(logger, self.lp, machine_creds,
+                           machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1500,7 +1514,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_issue_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_issue_ext(logger, self.lp, machine_creds,
+                            machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1551,7 +1566,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = vgp_access_ext(logger, self.lp, machine_creds, store)
+        ext = vgp_access_ext(logger, self.lp, machine_creds,
+                             machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1679,7 +1695,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_gnome_settings_ext(logger, self.lp, machine_creds, store)
+        ext = gp_gnome_settings_ext(logger, self.lp, machine_creds,
+                                    machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
@@ -1901,7 +1918,8 @@ class GPOTests(tests.TestCase):
         machine_creds.set_machine_account()
 
         # Initialize the group policy extension
-        ext = gp_cert_auto_enroll_ext(logger, self.lp, machine_creds, store)
+        ext = gp_cert_auto_enroll_ext(logger, self.lp, machine_creds,
+                                      machine_creds.get_username(), store)
 
         ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
         if ads.connect():
