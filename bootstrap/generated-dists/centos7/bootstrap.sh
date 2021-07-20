@@ -45,6 +45,7 @@ yum install -y \
     keyutils-libs-devel \
     krb5-devel \
     krb5-server \
+    krb5-workstation \
     lcov \
     libacl-devel \
     libarchive-devel \

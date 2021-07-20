@@ -116,7 +116,7 @@ PKGS = [
     ('bind9utils', 'bind-utils'),
     ('dnsutils', ''),
     ('xsltproc', 'libxslt'),
-    ('krb5-user', ''),
+    ('krb5-user', 'krb5-workstation'),
     ('krb5-config', ''),
     ('krb5-kdc', 'krb5-server'),
     ('apt-utils', 'yum-utils'),

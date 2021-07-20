@@ -40,6 +40,7 @@ zypper --non-interactive install \
     hostname \
     htop \
     keyutils-devel \
+    krb5-client \
     krb5-devel \
     krb5-server \
     lcov \
