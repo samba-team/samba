@@ -154,6 +154,18 @@ to redirect ticket requests to the right DC. This is e.g. needed for one way
 trusts. The options `winbind use krb5 enterprise principals` and
 `winbind scan trusted domains` will be deprecated in one of the next releases.
 
+Support for Offline Domain Join (ODJ)
+-------------------------------------
+
+The net utility is now able to support the offline domain join feature
+as known from the Windows djoin.exe command for many years. Samba's
+implementation is accessible via the "net offlinejoin" subcommand. It
+can provision computers and request offline joining for both Windows
+and Unix machines. It is also possible to provision computers from
+Windows (using djoin.exe) and use the generated data in Samba's net
+utility. The existing options for the provisioning and joining steps
+are documented in the net(8) manpage.
+
 
 REMOVED FEATURES
 ================
