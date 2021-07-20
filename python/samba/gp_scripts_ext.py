@@ -73,9 +73,9 @@ class gp_scripts_ext(gp_pol_ext):
                                 self.gp_db.store(str(self), attribute, f.name)
                         self.gp_db.commit()
 
-    def rsop(self, gpo):
+    def rsop(self, gpo, target='MACHINE'):
         output = {}
-        pol_file = 'MACHINE/Registry.pol'
+        pol_file = '%s/Registry.pol' % target
         if gpo.file_sys_path:
             path = os.path.join(gpo.file_sys_path, pol_file)
             pol_conf = self.parse(path)
@@ -88,3 +88,10 @@ class gp_scripts_ext(gp_pol_ext):
                         output[key] = []
                     output[key].append(e.data)
         return output
+
+class gp_user_scripts_ext(gp_scripts_ext):
+    def process_group_policy(self, deleted_gpo_list, changed_gpo_list):
+        pass
+
+    def rsop(self, gpo):
+        return super().rsop(gpo, target='USER')

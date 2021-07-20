@@ -24,8 +24,11 @@ from samba.gpclass import check_refresh_gpo_list, check_safe_path, \
     check_guid, parse_gpext_conf, atomic_write_conf, get_deleted_gpos_list
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, TemporaryDirectory
+from samba import gpclass
+# Disable privilege dropping for testing
+gpclass.drop_privileges = lambda _, func, *args : func(*args)
 from samba.gp_sec_ext import gp_krb_ext, gp_access_ext
-from samba.gp_scripts_ext import gp_scripts_ext
+from samba.gp_scripts_ext import gp_scripts_ext, gp_user_scripts_ext
 from samba.gp_sudoers_ext import gp_sudoers_ext
 from samba.vgp_sudoers_ext import vgp_sudoers_ext
 from samba.vgp_symlink_ext import vgp_symlink_ext
@@ -2002,3 +2005,64 @@ class GPOTests(tests.TestCase):
 
         # Unstage the Registry.pol file
         unstage_file(reg_pol)
+
+    def test_gp_user_scripts_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'USER/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_user_scripts_ext(logger, self.lp, machine_creds,
+                                  os.environ.get('DC_USERNAME'), store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        reg_key = b'Software\\Policies\\Samba\\Unix Settings'
+        sections = { b'%s\\Daily Scripts' % reg_key : b'@daily',
+                     b'%s\\Monthly Scripts' % reg_key : b'@monthly',
+                     b'%s\\Weekly Scripts' % reg_key : b'@weekly',
+                     b'%s\\Hourly Scripts' % reg_key : b'@hourly' }
+        for keyname in sections.keys():
+            # Stage the Registry.pol file with test data
+            stage = preg.file()
+            e = preg.entry()
+            e.keyname = keyname
+            e.valuename = b'Software\\Policies\\Samba\\Unix Settings'
+            e.type = 1
+            e.data = b'echo hello world'
+            stage.num_entries = 1
+            stage.entries = [e]
+            ret = stage_file(reg_pol, ndr_pack(stage))
+            self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+            # Process all gpos, intentionally skipping the privilege drop
+            ext.process_group_policy([], gpos)
+            # Dump the fake crontab setup for testing
+            p = Popen(['crontab', '-l'], stdout=PIPE)
+            crontab, _ = p.communicate()
+            entry = b'%s %s' % (sections[keyname], e.data.encode())
+            self.assertIn(entry, crontab,
+                'The crontab entry was not installed')
+
+            # Remove policy
+            gp_db = store.get_gplog(os.environ.get('DC_USERNAME'))
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [])
+            # Dump the fake crontab setup for testing
+            p = Popen(['crontab', '-l'], stdout=PIPE)
+            crontab, _ = p.communicate()
+            self.assertNotIn(entry, crontab,
+                'Unapply failed to cleanup crontab entry')
+
+            # Unstage the Registry.pol file
+            unstage_file(reg_pol)

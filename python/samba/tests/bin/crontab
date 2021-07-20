@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+import optparse
+import os, sys
+from shutil import copy
+
+sys.path.insert(0, "bin/python")
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('crontab <file> [options]')
+    parser.add_option('-l', action="store_true")
+    parser.add_option('-u')
+
+    (opts, args) = parser.parse_args()
+
+    # Use a dir we can write to in the testenv
+    if 'LOCAL_PATH' in os.environ:
+        data_dir = os.path.realpath(os.environ.get('LOCAL_PATH'))
+    else:
+        data_dir = os.path.dirname(os.path.realpath(__file__))
+    dump_file = os.path.join(data_dir, 'crontab.dump')
+    if opts.u:
+        assert opts.u == os.environ.get('DC_USERNAME')
+    if len(args) == 1:
+        assert os.path.exists(args[0])
+        copy(args[0], dump_file)
+    elif opts.l:
+        if os.path.exists(dump_file):
+            with open(dump_file, 'r') as r:
+                print(r.read())
