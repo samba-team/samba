@@ -1157,6 +1157,17 @@ for env in ['fileserver', 'simpleserver']:
                    "$USERNAME", "$PASSWORD", "$SERVER",
                    smbclient3, env])
 
+for env in ['ad_dc', 'ad_dc_fips', 'ad_member_fips']:
+    plantestsuite("samba3.blackbox.smbclient.kerberos", env,
+                  [os.path.join(samba3srcdir,
+                                "script/tests/test_smbclient_kerberos.sh"),
+                   "alice",
+                   "$REALM",
+                   "Secret007",
+                   "$SERVER",
+                   smbclient3,
+                   env])
+
 plantestsuite("samba3.blackbox.rpcclient_netsessenum", "ad_member",
               [os.path.join(samba3srcdir,
                             "script/tests/test_rpcclient_netsessenum.sh"),
