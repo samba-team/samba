@@ -5,7 +5,6 @@ from waflib import Options, Errors
 
 # work out what python external libraries we need to be successful
 selftest_pkgs = {
-    'iso8601': 'python3-iso8601',
     'cryptography': 'python3-cryptography',
     'pyasn1': 'python3-pyasn1'
 }
@@ -16,18 +15,22 @@ ad_dc_pkgs = {
 }
 
 
-def find_third_party_module(conf, module, package):
+def find_third_party_module(conf, module, package, required=True):
     conf.COMPOUND_START("Checking for system installation of Python module %s" % module)
     try:
         __import__(module)
     except ImportError:
         conf.COMPOUND_END(False)
+        if not required:
+            return False
         raise Errors.WafError("""\
         Unable to find Python module '%s'. Please install the system package: %s'.
 """ % (module, package))
     else:
         # Installed on the system
         conf.COMPOUND_END("system")
+
+    return True
 
 
 def configure(conf):
@@ -73,6 +76,20 @@ def configure(conf):
         for module, package in selftest_pkgs.items():
             find_third_party_module(conf, module, package)
 
+        # Prefer dateutil.parser which is much more widely used.
+        if not find_third_party_module(conf,
+                                       'dateutil.parser',
+                                       'python3-dateutilis',
+                                       required=False):
+            if not find_third_party_module(conf,
+                                           'iso8601',
+                                           'python3-iso8601',
+                                           required=False):
+                raise Errors.WafError("Could not find Python package "
+                                      "'python3-dateutils' nor "
+                                      "'python3-iso8601'. Please install "
+                                      "one of the packages.")
+
     if not Options.options.without_ad_dc:
         for module, package in ad_dc_pkgs.items():
             find_third_party_module(conf, module, package)
@@ -117,5 +134,5 @@ def build(bld):
         bld.SAMBA_SCRIPT('samba_python_files',
                          pattern='samba/**/*.py',
                          installdir='python')
-        
+
         bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'samba/**/*.py', flat=False)
