@@ -56,7 +56,7 @@ static bool _samba_cmdline_load_config_s3(void)
 		ok = lp_load_client(config_file);
 		break;
 	case SAMBA_CMDLINE_CONFIG_SERVER:
-		ok = lp_load_initial_only(config_file);
+		ok = lp_load_global(config_file);
 		break;
 	}
 

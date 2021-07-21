@@ -59,6 +59,15 @@ enum smb_cmdline_popt_options {
  * The function will also setup fault handler, set logging to STDERR by
  * default, setup talloc logging and the panic handler.
  *
+ * The function also setups a callback for loading the smb.conf file, the
+ * config file will be parsed after the commandline options have been parsed
+ * by popt. This is done by one of the following options parser:
+ *
+ *     POPT_COMMON_DEBUG_ONLY
+ *     POPT_COMMON_OPTION_ONLY
+ *     POPT_COMMON_CONFIG_ONLY
+ *     POPT_COMMON_SAMBA
+ *
  * @param[in]  mem_ctx  The talloc memory context to use for allocating memory.
  *                      This should be a long living context till the client
  *                      exits.
