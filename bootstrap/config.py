@@ -485,6 +485,7 @@ RPM_DISTS = {
             'lsb-release': 'redhat-lsb',
             'libsemanage-python': 'python3-libsemanage',
             'policycoreutils-python': 'python3-policycoreutils',
+            'python3-iso8601': 'python3-dateutil',
         }
     },
     'fedora34': {
@@ -496,6 +497,7 @@ RPM_DISTS = {
             'libsemanage-python': 'python3-libsemanage',
             'policycoreutils-python': 'python3-policycoreutils',
             'perl-FindBin': '',
+            'python3-iso8601': 'python3-dateutil',
             'libtracker-sparql-2.0-dev': '', # only tracker 3.x is available
         }
     },
@@ -552,6 +554,7 @@ RPM_DISTS = {
             'perl-interpreter': '',
             'perl-FindBin': '',
             'procps-ng': 'procps',
+            'python3-iso8601': 'python3-python-dateutil',
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
             'quota-devel': '',
