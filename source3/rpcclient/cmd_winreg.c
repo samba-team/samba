@@ -99,7 +99,7 @@ static void display_winreg_data(const char *v,
 				uint8_t *data,
 				uint32_t length)
 {
-	int i;
+	size_t i;
 	union winreg_Data r;
 	DATA_BLOB blob = data_blob_const(data, length);
 	WERROR result;
@@ -162,7 +162,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 	struct QueryMultipleValue *values_in, *values_out;
 	uint32_t num_values;
 	uint8_t *buffer = NULL;
-	int i;
+	uint32_t i;
 
 
 	if (argc < 2) {
