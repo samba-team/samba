@@ -978,6 +978,11 @@ plansmbtorture4testsuite(
     "fileserver:local",
     '//foo/bar -U%')
 
+plansmbtorture4testsuite(
+    "smb2.streams",
+    "simpleserver",
+    '//$SERVER/external_streams_depot -U$USERNAME%$PASSWORD')
+
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
 signseal_options = ["", ",connect", ",packet", ",sign", ",seal"]
