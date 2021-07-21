@@ -1458,6 +1458,11 @@ sub setup_simpleserver
 	print "PROVISIONING simple server...";
 
 	my $prefix_abs = abs_path($path);
+	mkdir($prefix_abs, 0777);
+
+	my $external_streams_depot="$prefix_abs/external_streams_depot";
+	remove_tree($external_streams_depot);
+	mkdir($external_streams_depot, 0777);
 
 	my $simpleserver_options = "
 	lanman auth = yes
@@ -1531,6 +1536,11 @@ sub setup_simpleserver
 [hidenewfiles]
 	path = $prefix_abs/share
 	hide new files timeout = 5
+
+[external_streams_depot]
+	path = $prefix_abs/share
+	read only = no
+	streams_depot:directory = $external_streams_depot
 ";
 
 	my $vars = $self->provision(

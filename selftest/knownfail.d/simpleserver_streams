@@ -1,0 +1,6 @@
+^samba3.smb2.streams.names\(simpleserver\)
+^samba3.smb2.streams.io\(simpleserver\)
+^samba3.smb2.streams.names3\(simpleserver\)
+^samba3.smb2.streams.delete\(simpleserver\)
+^samba3.smb2.streams.zero-byte\(simpleserver\)
+^samba3.smb2.streams.sharemodes\(simpleserver\)
