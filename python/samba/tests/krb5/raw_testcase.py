@@ -295,6 +295,20 @@ class KerberosCredentials(Credentials):
     def get_forced_salt(self):
         return self.forced_salt
 
+    def get_salt(self):
+        if self.forced_salt is not None:
+            return self.forced_salt
+
+        if self.get_workstation():
+            salt_string = '%shost%s.%s' % (
+                self.get_realm().upper(),
+                self.get_username().lower().rsplit('$', 1)[0],
+                self.get_realm().lower())
+        else:
+            salt_string = self.get_realm().upper() + self.get_username()
+
+        return salt_string.encode('utf-8')
+
 
 class KerberosTicketCreds:
     def __init__(self, ticket, session_key,
@@ -940,10 +954,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         password = creds.get_password()
         self.assertIsNotNone(password, msg=fail_msg)
-        salt = creds.get_forced_salt()
-        if salt is None:
-            salt = bytes("%s%s" % (creds.get_realm(), creds.get_username()),
-                         encoding='utf-8')
+        salt = creds.get_salt()
         return self.PasswordKey_create(etype=etype,
                                        pwd=password,
                                        salt=salt,
