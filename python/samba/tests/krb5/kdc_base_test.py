@@ -732,15 +732,9 @@ class KDCBaseTest(RawKerberosTest):
         cred.client = cprincipal
         cred.server = sprincipal
         cred.keyblock = keyblock
-        cred.authtime = int(datetime.strptime(authtime.decode(),
-                                              "%Y%m%d%H%M%SZ")
-                            .replace(tzinfo=timezone.utc).timestamp())
-        cred.starttime = int(datetime.strptime(starttime.decode(),
-                                               "%Y%m%d%H%M%SZ")
-                            .replace(tzinfo=timezone.utc).timestamp())
-        cred.endtime = int(datetime.strptime(endtime.decode(),
-                                             "%Y%m%d%H%M%SZ")
-                            .replace(tzinfo=timezone.utc).timestamp())
+        cred.authtime = self.get_EpochFromKerberosTime(authtime)
+        cred.starttime = self.get_EpochFromKerberosTime(starttime)
+        cred.endtime = self.get_EpochFromKerberosTime(endtime)
 
         # Account for clock skew of up to five minutes.
         self.assertLess(cred.authtime - 5 * 60,

@@ -861,6 +861,17 @@ class RawKerberosTest(TestCaseInTempDir):
         (s, _) = self.get_KerberosTimeWithUsec(epoch=epoch, offset=offset)
         return s
 
+    def get_EpochFromKerberosTime(self, kerberos_time):
+        if isinstance(kerberos_time, bytes):
+            kerberos_time = kerberos_time.decode()
+
+        epoch = datetime.datetime.strptime(kerberos_time,
+                                           '%Y%m%d%H%M%SZ')
+        epoch = epoch.replace(tzinfo=datetime.timezone.utc)
+        epoch = int(epoch.timestamp())
+
+        return epoch
+
     def get_Nonce(self):
         nonce_min = 0x7f000000
         nonce_max = 0x7fffffff
