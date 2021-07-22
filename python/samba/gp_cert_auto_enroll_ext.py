@@ -85,8 +85,8 @@ def get_supported_templates(server, logger):
                        stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if p.returncode != 0:
-            logger.warn('Failed to fetch the list of supported templates:' +
-                        '\n%s' % err)
+            logger.warn('Failed to fetch the list of supported templates.')
+            logger.debug(err.decode())
         return out.strip().split()
     return []
 
