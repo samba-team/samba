@@ -120,6 +120,11 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
                             ' admin trust anchors.' +
                             ' The directory %s was not found' % \
                                                         global_trust_dir)
+            except FileExistsError:
+                # If we're simply downloading a renewed cert, the symlink
+                # already exists. Ignore the FileExistsError. Preserve the
+                # existing symlink in the unapply data.
+                data['files'].append(dst)
     else:
         logger.warn('sscep is not installed, which prevents the installation' +
                     ' of the root certificate chain.')
