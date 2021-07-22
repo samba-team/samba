@@ -192,6 +192,8 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_username(account_name)
         if machine_account:
             creds.set_workstation(name)
+        else:
+            creds.set_workstation('')
         #
         # Save the account name so it can be deleted in tearDownClass
         self.accounts.add(dn)
