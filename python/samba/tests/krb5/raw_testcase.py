@@ -864,7 +864,7 @@ class RawKerberosTest(TestCaseInTempDir):
             # The value on the wire should never be 0
             self.assertNotEqual(v, 0)
             # unspecified_kvno means we don't know the kvno,
-            # but want to enforce its presense
+            # but want to enforce its presence
             if value is not self.unspecified_kvno:
                 value = int(value)
                 self.assertNotEqual(value, 0)
