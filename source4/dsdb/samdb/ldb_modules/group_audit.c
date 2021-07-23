@@ -911,7 +911,7 @@ static void log_user_primary_group_change(
 	const int status)
 {
 	TALLOC_CTX *ctx = talloc_new(NULL);
-	uint32_t new_rid;
+	uint32_t new_rid = UINT32_MAX;
 	struct dom_sid *account_sid = NULL;
 	int ret;
 	const struct ldb_message *msg = dsdb_audit_get_message(acc->request);
@@ -945,7 +945,7 @@ static void log_user_primary_group_change(
 	 * Otherwise only log if the primary group has actually changed.
 	 */
 	if (account_sid != NULL &&
-	    new_rid != ~0 &&
+	    new_rid != UINT32_MAX &&
 	    acc->primary_group != new_rid) {
 		const char* group = get_primary_group_dn(
 			ctx,
