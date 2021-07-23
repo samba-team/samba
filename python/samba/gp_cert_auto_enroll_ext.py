@@ -135,8 +135,13 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
     getcert = which('getcert')
     cepces_submit = find_cepces_submit()
     if getcert is not None and os.path.exists(cepces_submit):
-        Popen([getcert, 'add-ca', '-c', ca['cn'][0], '-e',
-               '%s --server=%s' % (cepces_submit, ca['dNSHostName'][0])]).wait()
+        p = Popen([getcert, 'add-ca', '-c', ca['cn'][0], '-e',
+                  '%s --server=%s' % (cepces_submit, ca['dNSHostName'][0])],
+                  stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        logger.debug(out.decode())
+        if p.returncode != 0:
+            logger.debug(err.decode())
         supported_templates = get_supported_templates(ca['dNSHostName'][0],
                                                       logger)
         for template, attrs in ca['certificateTemplates'].items():
@@ -145,10 +150,15 @@ def cert_enroll(ca, trust_dir, private_dir, logger):
             nickname = '%s.%s' % (ca['cn'][0], template.decode())
             keyfile = os.path.join(private_dir, '%s.key' % nickname)
             certfile = os.path.join(trust_dir, '%s.crt' % nickname)
-            Popen([getcert, 'request', '-c', ca['cn'][0],
-                   '-T', template.decode(),
-                   '-I', nickname, '-k', keyfile, '-f', certfile,
-                   '-g', attrs['msPKI-Minimal-Key-Size'][0]]).wait()
+            p = Popen([getcert, 'request', '-c', ca['cn'][0],
+                       '-T', template.decode(),
+                       '-I', nickname, '-k', keyfile, '-f', certfile,
+                       '-g', attrs['msPKI-Minimal-Key-Size'][0]],
+                       stdout=PIPE, stderr=PIPE)
+            out, err = p.communicate()
+            logger.debug(out.decode())
+            if p.returncode != 0:
+                logger.debug(err.decode())
             data['files'].extend([keyfile, certfile])
             data['templates'].append(nickname)
         if update is not None:
