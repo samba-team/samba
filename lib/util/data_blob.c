@@ -212,9 +212,11 @@ _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length)
 **/
 _PUBLIC_ bool data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
 {
-	blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, length);
-	if (blob->data == NULL)
+	uint8_t *tmp = talloc_realloc(mem_ctx, blob->data, uint8_t, length);
+	if (tmp == NULL) {
 		return false;
+	}
+	blob->data = tmp;
 	blob->length = length;
 	return true;
 }
