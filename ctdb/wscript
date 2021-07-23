@@ -204,6 +204,12 @@ def configure(conf):
     if sys.platform.startswith('linux'):
         conf.SET_TARGET_TYPE('pcap', 'EMPTY')
     else:
+        conf.find_program('pcap-config', var='PCAP_CONFIG')
+        if conf.env.PCAP_CONFIG:
+            conf.CHECK_CFG(path=conf.env.PCAP_CONFIG,
+                           args="--cflags --libs",
+                           package="",
+                           uselib_store="PCAP")
         if not conf.CHECK_HEADERS('pcap.h'):
             Logs.error('Need libpcap')
             sys.exit(1)
