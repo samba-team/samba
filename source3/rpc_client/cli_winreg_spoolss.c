@@ -3699,11 +3699,11 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct policy_handle hive_hnd, key_hnd;
-	struct spoolss_DriverInfo8 i8, *info8;
+	struct spoolss_DriverInfo8 i8, *info8 = NULL;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR result;
 	NTSTATUS status;
 	uint32_t i;
@@ -4168,15 +4168,15 @@ WERROR winreg_get_core_driver(TALLOC_CTX *mem_ctx,
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct policy_handle hive_hnd, key_hnd;
-	struct spoolss_CorePrinterDriver *c;
+	struct spoolss_CorePrinterDriver *c = NULL;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR result;
 	NTSTATUS status;
-	const char *path;
-	const char *guid_str;
+	const char *path = NULL;
+	const char *guid_str = NULL;
 	uint32_t i;
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;
@@ -4505,12 +4505,12 @@ WERROR winreg_get_driver_package(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR result;
 	NTSTATUS status;
-	const char *path;
+	const char *path = NULL;
 	uint32_t i;
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;

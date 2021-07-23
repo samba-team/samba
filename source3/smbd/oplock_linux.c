@@ -51,7 +51,7 @@ int linux_set_lease_sighandler(int fd)
 int linux_setlease(int fd, int leasetype)
 {
 	int ret;
-	int saved_errno;
+	int saved_errno = 0;
 
 	/*
 	 * Ensure the lease owner is root to allow

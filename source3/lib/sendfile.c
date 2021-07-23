@@ -136,12 +136,9 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
   out:
 
 	if (socket_flags_changed) {
-		int saved_errno;
+		int saved_errno = errno;
 		int err;
 
-		if (ret == -1) {
-			saved_errno = errno;
-		}
 		/* Restore the old state of the socket. */
 		err = fcntl(tofd, F_SETFL, old_flags);
 		if (err == -1) {

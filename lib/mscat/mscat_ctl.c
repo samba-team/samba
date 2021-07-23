@@ -990,8 +990,8 @@ static int ctl_get_member_attributes(struct mscat_ctl *ctl,
 
 		ok = mscat_asn1_oid_equal(oid, CAT_MEMBERINFO_OBJID);
 		if (ok) {
-			char *name;
-			uint32_t id;
+			char *name = NULL;
+			uint32_t id = 0;
 
 			rc = ctl_parse_member_info(ctl,
 						   tmp_ctx,

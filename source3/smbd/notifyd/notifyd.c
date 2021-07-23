@@ -336,11 +336,11 @@ static bool notifyd_apply_rec_change(
 	struct sys_notify_context *sys_notify_ctx,
 	struct messaging_context *msg_ctx)
 {
-	struct db_record *rec;
-	struct notifyd_instance *instances;
+	struct db_record *rec = NULL;
+	struct notifyd_instance *instances = NULL;
 	size_t num_instances;
 	size_t i;
-	struct notifyd_instance *instance;
+	struct notifyd_instance *instance = NULL;
 	TDB_DATA value;
 	NTSTATUS status;
 	bool ok = false;
