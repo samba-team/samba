@@ -111,17 +111,11 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
 					    &info,
 					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		d_fprintf(stderr, "lsaquery %s: %s\n",
 			  _("failed"),
 			  nt_errstr(status));
 		return status;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "lsaquery %s: %s\n",
-			  _("failed"),
-			  nt_errstr(result));
-		return result;
 	}
 
 	*domain_name = info->account_domain.name.string;
