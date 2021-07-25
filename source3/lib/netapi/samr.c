@@ -87,12 +87,8 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 						  connect_mask,
 						  connect_handle,
 						  &result);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (any_nt_status_not_ok(status, result, &status)) {
 			werr = ntstatus_to_werror(status);
-			goto done;
-		}
-		if (!NT_STATUS_IS_OK(result)) {
-			werr = ntstatus_to_werror(result);
 			goto done;
 		}
 	}
@@ -104,12 +100,8 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 					 0xffffffff,
 					 &num_entries,
 					 &result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		werr = ntstatus_to_werror(result);
 		goto done;
 	}
 
@@ -137,12 +129,8 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 					  &lsa_domain_name,
 					  domain_sid,
 					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		werr = ntstatus_to_werror(result);
 		goto done;
 	}
 
@@ -152,12 +140,8 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 					*domain_sid,
 					domain_handle,
 					&result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		werr = ntstatus_to_werror(result);
 		goto done;
 	}
 
@@ -227,12 +211,8 @@ WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 						  connect_mask,
 						  connect_handle,
 						  &result);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (any_nt_status_not_ok(status, result, &status)) {
 			werr = ntstatus_to_werror(status);
-			goto done;
-		}
-		if (!NT_STATUS_IS_OK(result)) {
-			werr = ntstatus_to_werror(result);
 			goto done;
 		}
 	}
@@ -243,12 +223,8 @@ WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 					discard_const_p(struct dom_sid, &global_sid_Builtin),
 					builtin_handle,
 					&result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		werr = ntstatus_to_werror(result);
 		goto done;
 	}
 
