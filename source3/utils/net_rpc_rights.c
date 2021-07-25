@@ -73,7 +73,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* maybe its a raw SID */
-	if ( strncmp(name, "S-", 2) == 0 && string_to_sid(sid, name) ) {
+	if (dom_sid_parse(name, sid)) {
 		return NT_STATUS_OK;
 	}
 
