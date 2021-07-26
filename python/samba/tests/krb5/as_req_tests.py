@@ -89,12 +89,16 @@ class AsReqKerberosTests(KDCBaseTest):
                                   req_body):
             return initial_padata, req_body
 
+        generate_padata_fn = (_generate_padata_copy
+                              if initial_padata is not None
+                              else None)
+
         kdc_exchange_dict = self.as_exchange_dict(
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
-            generate_padata_fn=_generate_padata_copy,
+            generate_padata_fn=generate_padata_fn,
             check_error_fn=self.generic_check_as_error,
             check_rep_fn=None,
             expected_error_mode=expected_error_mode,
