@@ -23,6 +23,8 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "source4/librpc/rpc/dcerpc.h"
+#include "auth/credentials/credentials.h"
+#include "libcli/smb/smb_constants.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -870,28 +872,55 @@ static NTSTATUS libnet_SetPassword_generic(struct libnet_context *ctx, TALLOC_CT
 
 NTSTATUS libnet_SetPassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	enum smb_encryption_setting encryption_state =
+		cli_credentials_get_smb_encryption(ctx->cred);
+	NTSTATUS status =  NT_STATUS_INVALID_LEVEL;
+
 	switch (r->generic.level) {
 		case LIBNET_SET_PASSWORD_GENERIC:
-			return libnet_SetPassword_generic(ctx, mem_ctx, r);
+			status = libnet_SetPassword_generic(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR:
-			return libnet_SetPassword_samr(ctx, mem_ctx, r);
+			status = libnet_SetPassword_samr(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR_HANDLE:
-			return libnet_SetPassword_samr_handle(ctx, mem_ctx, r);
+			status = libnet_SetPassword_samr_handle(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR_HANDLE_26:
-			return libnet_SetPassword_samr_handle_26(ctx, mem_ctx, r);
+			if (encryption_state == SMB_ENCRYPTION_REQUIRED) {
+				GNUTLS_FIPS140_SET_LAX_MODE();
+			}
+			status = libnet_SetPassword_samr_handle_26(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR_HANDLE_25:
-			return libnet_SetPassword_samr_handle_25(ctx, mem_ctx, r);
+			if (encryption_state == SMB_ENCRYPTION_REQUIRED) {
+				GNUTLS_FIPS140_SET_LAX_MODE();
+			}
+			status = libnet_SetPassword_samr_handle_25(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR_HANDLE_24:
-			return libnet_SetPassword_samr_handle_24(ctx, mem_ctx, r);
+			if (encryption_state == SMB_ENCRYPTION_REQUIRED) {
+				GNUTLS_FIPS140_SET_LAX_MODE();
+			}
+			status = libnet_SetPassword_samr_handle_24(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_SAMR_HANDLE_23:
-			return libnet_SetPassword_samr_handle_23(ctx, mem_ctx, r);
+			if (encryption_state == SMB_ENCRYPTION_REQUIRED) {
+				GNUTLS_FIPS140_SET_LAX_MODE();
+			}
+			status = libnet_SetPassword_samr_handle_23(ctx, mem_ctx, r);
+			break;
 		case LIBNET_SET_PASSWORD_KRB5:
-			return NT_STATUS_NOT_IMPLEMENTED;
+			status = NT_STATUS_NOT_IMPLEMENTED;
+			break;
 		case LIBNET_SET_PASSWORD_LDAP:
-			return NT_STATUS_NOT_IMPLEMENTED;
+			status = NT_STATUS_NOT_IMPLEMENTED;
+			break;
 		case LIBNET_SET_PASSWORD_RAP:
-			return NT_STATUS_NOT_IMPLEMENTED;
+			status = NT_STATUS_NOT_IMPLEMENTED;
+			break;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+	return status;
 }
