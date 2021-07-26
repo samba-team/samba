@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Copyright (C) Stefan Metzmacher	2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -245,7 +245,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_ChangePasswordUser2 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name, 
+								   r->samr.in.domain_name, r->samr.in.account_name,
 								   nt_errstr(status));
 		}
 		goto disconnect;
@@ -296,7 +296,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		if (!NT_STATUS_IS_OK(oe2.out.result)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_OemChangePasswordUser2 for '%s\\%s' failed: %s",
-								   r->samr.in.domain_name, r->samr.in.account_name, 
+								   r->samr.in.domain_name, r->samr.in.account_name,
 								   nt_errstr(status));
 		}
 		goto disconnect;
@@ -337,7 +337,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	if (!NT_STATUS_IS_OK(pw.out.result)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_ChangePasswordUser for '%s\\%s' failed: %s",
-						r->samr.in.domain_name, r->samr.in.account_name, 
+						r->samr.in.domain_name, r->samr.in.account_name,
 						nt_errstr(pw.out.result));
 		if (NT_STATUS_EQUAL(pw.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
 			status = pw.out.result;
@@ -426,7 +426,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	sui.in.user_handle = r->samr_handle.in.user_handle;
 	sui.in.info = &u_info;
 	sui.in.level = 26;
-	
+
 	/* 7. try samr_SetUserInfo2 level 26 to set the password */
 	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
 	/* check result of samr_SetUserInfo2 level 26 */
@@ -671,7 +671,7 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 		}
 		break;
 	}
-	
+
 	return status;
 }
 /*
@@ -707,7 +707,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	c.level               = LIBNET_RPC_CONNECT_PDC;
 	c.in.name             = r->samr.in.domain_name;
 	c.in.dcerpc_iface     = &ndr_table_samr;
-	
+
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -802,7 +802,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 						"samr_LookupNames for [%s] returns %d RIDs",
 						r->samr.in.account_name, ln.out.rids->count);
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto disconnect;	
+		goto disconnect;
 	}
 
 	if (ln.out.types->count != 1) {
