@@ -1453,6 +1453,7 @@ class RawKerberosTest(TestCaseInTempDir):
         req_asn1Spec = kdc_exchange_dict['req_asn1Spec']
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
 
+        expected_error_mode = kdc_exchange_dict['expected_error_mode']
         kdc_options = kdc_exchange_dict['kdc_options']
 
         if till_time is None:
@@ -1497,12 +1498,17 @@ class RawKerberosTest(TestCaseInTempDir):
         msg_type = self.getElementValue(rep, 'msg-type')
         self.assertIsNotNone(msg_type)
 
-        allowed_msg_types = ()
+        expected_msg_type = None
         if check_error_fn is not None:
-            allowed_msg_types = (KRB_ERROR,)
+            expected_msg_type = KRB_ERROR
+            self.assertIsNone(check_rep_fn)
+            self.assertNotEqual(0, expected_error_mode)
         if check_rep_fn is not None:
-            allowed_msg_types += (rep_msg_type,)
-        self.assertIn(msg_type, allowed_msg_types)
+            expected_msg_type = rep_msg_type
+            self.assertIsNone(check_error_fn)
+            self.assertEqual(0, expected_error_mode)
+        self.assertIsNotNone(expected_msg_type)
+        self.assertEqual(msg_type, expected_msg_type)
 
         if msg_type == KRB_ERROR:
             return check_error_fn(kdc_exchange_dict,
@@ -2039,6 +2045,13 @@ class RawKerberosTest(TestCaseInTempDir):
             as_rep_usage = KU_AS_REP_ENC_PART
             return preauth_key, as_rep_usage
 
+        if expected_error_mode == 0:
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+        else:
+            check_error_fn = self.generic_check_as_error
+            check_rep_fn = None
+
         kdc_exchange_dict = self.as_exchange_dict(
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
@@ -2046,8 +2059,8 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_sname=expected_sname,
             ticket_decryption_key=ticket_decryption_key,
             generate_padata_fn=_generate_padata_copy,
-            check_error_fn=self.generic_check_as_error,
-            check_rep_fn=self.generic_check_kdc_rep,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
             check_padata_fn=_check_padata_preauth_key,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
