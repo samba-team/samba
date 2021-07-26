@@ -702,6 +702,9 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      TALLOC_CTX *mem_ctx,
 			      struct samr_CryptPasswordEx *pwbuf)
 {
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
 
@@ -710,6 +713,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	DATA_BLOB pw_data = data_blob_const(pwbuf->data, 516);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	int rc;
+	bool encrypted;
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -719,10 +723,18 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	encrypted = dcerpc_is_transport_encrypted(session_info);
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	GNUTLS_FIPS140_SET_LAX_MODE();
 	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
 						 &session_key,
 						 &pw_data,
 						 SAMBA_GNUTLS_DECRYPT);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	if (rc < 0) {
 		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
