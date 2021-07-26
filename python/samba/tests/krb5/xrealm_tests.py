@@ -68,8 +68,6 @@ class XrealmKerberosTests(RawKerberosTest):
                                  nonce=0x7fffffff,
                                  etypes=etypes,
                                  addresses=None,
-                                 EncAuthorizationData=None,
-                                 EncAuthorizationData_key=None,
                                  additional_tickets=None)
         rep = self.send_recv_transaction(req)
         self.assertIsNotNone(rep)
@@ -112,8 +110,6 @@ class XrealmKerberosTests(RawKerberosTest):
                                  nonce=0x7fffffff,
                                  etypes=etypes,
                                  addresses=None,
-                                 EncAuthorizationData=None,
-                                 EncAuthorizationData_key=None,
                                  additional_tickets=None)
         rep = self.send_recv_transaction(req)
         self.assertIsNotNone(rep)
