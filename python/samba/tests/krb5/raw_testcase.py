@@ -1486,7 +1486,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          check_rep_fn=None,
                          check_padata_fn=None,
                          check_kdc_private_fn=None,
-                         callback_dict=dict(),
+                         callback_dict=None,
                          expected_error_mode=None,
                          client_as_etypes=None,
                          expected_salt=None):
@@ -1511,6 +1511,9 @@ class RawKerberosTest(TestCaseInTempDir):
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
         }
+        if callback_dict is None:
+            callback_dict = {}
+
         return kdc_exchange_dict
 
     def tgs_exchange_dict(self,
@@ -1524,7 +1527,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_rep_fn=None,
                           check_padata_fn=None,
                           check_kdc_private_fn=None,
-                          callback_dict=dict(),
+                          callback_dict=None,
                           tgt=None,
                           authenticator_subkey=None,
                           body_checksum_type=None):
@@ -1549,6 +1552,9 @@ class RawKerberosTest(TestCaseInTempDir):
             'body_checksum_type': body_checksum_type,
             'authenticator_subkey': authenticator_subkey,
         }
+        if callback_dict is None:
+            callback_dict = {}
+
         return kdc_exchange_dict
 
     def generic_check_kdc_rep(self,
