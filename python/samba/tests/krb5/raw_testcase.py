@@ -1489,6 +1489,7 @@ class RawKerberosTest(TestCaseInTempDir):
             padata, req_body = generate_padata_fn(kdc_exchange_dict,
                                                   callback_dict,
                                                   req_body)
+            self.assertIsNotNone(padata)
         else:
             padata = None
 
@@ -2082,13 +2083,18 @@ class RawKerberosTest(TestCaseInTempDir):
             check_error_fn = self.generic_check_as_error
             check_rep_fn = None
 
+        if padata is not None:
+            generate_padata_fn = _generate_padata_copy
+        else:
+            generate_padata_fn = None
+
         kdc_exchange_dict = self.as_exchange_dict(
             expected_crealm=expected_crealm,
             expected_cname=expected_cname,
             expected_srealm=expected_srealm,
             expected_sname=expected_sname,
             ticket_decryption_key=ticket_decryption_key,
-            generate_padata_fn=_generate_padata_copy,
+            generate_padata_fn=generate_padata_fn,
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
             check_padata_fn=_check_padata_preauth_key,
