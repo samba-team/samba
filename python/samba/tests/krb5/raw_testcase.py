@@ -1625,8 +1625,9 @@ class RawKerberosTest(TestCaseInTempDir):
 
         self.assertElementEqual(rep, 'msg-type', msg_type)  # AS-REP | TGS-REP
         padata = self.getElementValue(rep, 'padata')
-        self.assertElementEqualUTF8(rep, 'crealm', expected_crealm)
-        self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
+        if self.strict_checking:
+            self.assertElementEqualUTF8(rep, 'crealm', expected_crealm)
+            self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
         self.assertElementPresent(rep, 'ticket')
         ticket = self.getElementValue(rep, 'ticket')
         ticket_encpart = None
@@ -1682,8 +1683,9 @@ class RawKerberosTest(TestCaseInTempDir):
         if encpart_decryption_key is not None:
             self.assertElementEqual(encpart, 'etype',
                                     encpart_decryption_key.etype)
-            self.assertElementKVNO(encpart, 'kvno',
-                                   encpart_decryption_key.kvno)
+            if self.strict_checking:
+                self.assertElementKVNO(encpart, 'kvno',
+                                       encpart_decryption_key.kvno)
             rep_decpart = encpart_decryption_key.decrypt(
                 encpart_decryption_usage,
                 encpart_cipher)
@@ -1846,17 +1848,17 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
         self.assertElementEqual(rep, 'error-code', expected_error_mode)
-        self.assertElementMissing(rep, 'ctime')
-        self.assertElementMissing(rep, 'cusec')
+        if self.strict_checking:
+            self.assertElementMissing(rep, 'ctime')
+            self.assertElementMissing(rep, 'cusec')
         self.assertElementPresent(rep, 'stime')
         self.assertElementPresent(rep, 'susec')
         # error-code checked above
         if self.strict_checking:
             self.assertElementMissing(rep, 'crealm')
             self.assertElementMissing(rep, 'cname')
-        self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
-        self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
-        if self.strict_checking:
+            self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
+            self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
         if expected_error_mode == KDC_ERR_GENERIC:
             self.assertElementMissing(rep, 'e-data')
@@ -1922,7 +1924,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNotNone(pk_as_rep19)
             return
 
-        self.assertIsNotNone(etype_info2)
+        if self.strict_checking:
+            self.assertIsNotNone(etype_info2)
         if expect_etype_info:
             self.assertIsNotNone(etype_info)
         else:
@@ -1931,23 +1934,22 @@ class RawKerberosTest(TestCaseInTempDir):
         if unexpect_etype_info:
             self.assertIsNone(etype_info)
 
-        self.assertGreaterEqual(len(etype_info2), 1)
-        self.assertLessEqual(len(etype_info2), len(expect_etype_info2))
         if self.strict_checking:
+            self.assertGreaterEqual(len(etype_info2), 1)
             self.assertEqual(len(etype_info2), len(expect_etype_info2))
-        for i in range(0, len(etype_info2)):
-            e = self.getElementValue(etype_info2[i], 'etype')
-            self.assertEqual(e, expect_etype_info2[i])
-            salt = self.getElementValue(etype_info2[i], 'salt')
-            if e == kcrypto.Enctype.RC4:
-                self.assertIsNone(salt)
-            else:
-                self.assertIsNotNone(salt)
-                if expected_salt is not None:
-                    self.assertEqual(salt, expected_salt)
-            s2kparams = self.getElementValue(etype_info2[i], 's2kparams')
-            if self.strict_checking:
-                self.assertIsNone(s2kparams)
+            for i in range(0, len(etype_info2)):
+                e = self.getElementValue(etype_info2[i], 'etype')
+                self.assertEqual(e, expect_etype_info2[i])
+                salt = self.getElementValue(etype_info2[i], 'salt')
+                if e == kcrypto.Enctype.RC4:
+                    self.assertIsNone(salt)
+                else:
+                    self.assertIsNotNone(salt)
+                    if expected_salt is not None:
+                        self.assertEqual(salt, expected_salt)
+                s2kparams = self.getElementValue(etype_info2[i], 's2kparams')
+                if self.strict_checking:
+                    self.assertIsNone(s2kparams)
         if etype_info is not None:
             self.assertEqual(len(etype_info), 1)
             e = self.getElementValue(etype_info[0], 'etype')
