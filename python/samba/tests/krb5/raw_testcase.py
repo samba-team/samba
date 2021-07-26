@@ -53,6 +53,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TGS_REQ_AUTH,
     KU_TGS_REQ_AUTH_CKSUM,
+    KU_TGS_REQ_AUTH_DAT_SESSION,
+    KU_TGS_REQ_AUTH_DAT_SUBKEY,
     KU_TICKET,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO,
@@ -1022,9 +1024,10 @@ class RawKerberosTest(TestCaseInTempDir):
                             nonce,
                             etypes,
                             addresses,
+                            additional_tickets,
                             EncAuthorizationData,
                             EncAuthorizationData_key,
-                            additional_tickets,
+                            EncAuthorizationData_usage,
                             asn1_print=None,
                             hexdump=None):
         # KDC-REQ-BODY    ::= SEQUENCE {
@@ -1054,8 +1057,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 asn1Spec=krb5_asn1.AuthorizationData(),
                 asn1_print=asn1_print,
                 hexdump=hexdump)
-            enc_ad = self.EncryptedData_create(
-                EncAuthorizationData_key, enc_ad_plain)
+            enc_ad = self.EncryptedData_create(EncAuthorizationData_key,
+                                               EncAuthorizationData_usage,
+                                               enc_ad_plain)
         else:
             enc_ad = None
         KDC_REQ_BODY_obj = {
@@ -1123,8 +1127,6 @@ class RawKerberosTest(TestCaseInTempDir):
                       nonce,        # required
                       etypes,       # required
                       addresses,    # optional
-                      EncAuthorizationData,
-                      EncAuthorizationData_key,
                       additional_tickets,
                       native_decoded_only=True,
                       asn1_print=None,
@@ -1170,9 +1172,10 @@ class RawKerberosTest(TestCaseInTempDir):
             nonce,
             etypes,
             addresses,
-            EncAuthorizationData,
-            EncAuthorizationData_key,
             additional_tickets,
+            EncAuthorizationData=None,
+            EncAuthorizationData_key=None,
+            EncAuthorizationData_usage=None,
             asn1_print=asn1_print,
             hexdump=hexdump)
         obj, decoded = self.KDC_REQ_create(
@@ -1290,6 +1293,11 @@ class RawKerberosTest(TestCaseInTempDir):
         #                                        -- NOTE: not empty
         # }
 
+        if authenticator_subkey is not None:
+            EncAuthorizationData_usage = KU_TGS_REQ_AUTH_DAT_SUBKEY
+        else:
+            EncAuthorizationData_usage = KU_TGS_REQ_AUTH_DAT_SESSION
+
         req_body = self.KDC_REQ_BODY_create(
             kdc_options=kdc_options,
             cname=None,
@@ -1301,9 +1309,10 @@ class RawKerberosTest(TestCaseInTempDir):
             nonce=nonce,
             etypes=etypes,
             addresses=addresses,
+            additional_tickets=additional_tickets,
             EncAuthorizationData=EncAuthorizationData,
             EncAuthorizationData_key=EncAuthorizationData_key,
-            additional_tickets=additional_tickets)
+            EncAuthorizationData_usage=EncAuthorizationData_usage)
         req_body_blob = self.der_encode(req_body,
                                         asn1Spec=krb5_asn1.KDC_REQ_BODY(),
                                         asn1_print=asn1_print, hexdump=hexdump)
@@ -1397,9 +1406,10 @@ class RawKerberosTest(TestCaseInTempDir):
                               nonce=None,  # required
                               etypes=None,  # required
                               addresses=None,  # optional
+                              additional_tickets=None,  # optional
                               EncAuthorizationData=None,  # optional
                               EncAuthorizationData_key=None,  # optional
-                              additional_tickets=None):  # optional
+                              EncAuthorizationData_usage=None):  # optional
 
         check_error_fn = kdc_exchange_dict['check_error_fn']
         check_rep_fn = kdc_exchange_dict['check_rep_fn']
@@ -1425,9 +1435,10 @@ class RawKerberosTest(TestCaseInTempDir):
             nonce=nonce,
             etypes=etypes,
             addresses=addresses,
+            additional_tickets=additional_tickets,
             EncAuthorizationData=EncAuthorizationData,
             EncAuthorizationData_key=EncAuthorizationData_key,
-            additional_tickets=additional_tickets)
+            EncAuthorizationData_usage=EncAuthorizationData_usage)
         if generate_padata_fn is not None:
             # This can alter req_body...
             padata, req_body = generate_padata_fn(kdc_exchange_dict,
