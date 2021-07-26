@@ -24,6 +24,8 @@ import datetime
 import random
 import binascii
 import itertools
+import collections
+
 from pyasn1.codec.der.decoder import decode as pyasn1_der_decode
 from pyasn1.codec.der.encoder import encode as pyasn1_der_encode
 from pyasn1.codec.native.decoder import decode as pyasn1_native_decode
@@ -817,6 +819,9 @@ class RawKerberosTest(TestCaseInTempDir):
     def assertElementPresent(self, obj, elem):
         v = self.getElementValue(obj, elem)
         self.assertIsNotNone(v)
+        if self.strict_checking:
+            if isinstance(v, collections.abc.Container):
+                self.assertNotEqual(0, len(v))
 
     def assertElementEqual(self, obj, elem, value):
         v = self.getElementValue(obj, elem)
