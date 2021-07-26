@@ -99,10 +99,10 @@ class AsReqKerberosTests(KDCBaseTest):
             check_rep_fn=self.generic_check_kdc_rep,
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
-            expected_salt=expected_salt)
+            expected_salt=expected_salt,
+            kdc_options=str(initial_kdc_options))
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
-                                         kdc_options=str(initial_kdc_options),
                                          cname=cname,
                                          realm=realm,
                                          sname=sname,
