@@ -1633,7 +1633,7 @@ class RawKerberosTest(TestCaseInTempDir):
         ticket_cipher = None
         self.assertIsNotNone(ticket)
         if ticket is not None:  # Never None, but gives indentation
-            self.assertElementPresent(ticket, 'tkt-vno')
+            self.assertElementEqual(ticket, 'tkt-vno', 5)
             self.assertElementEqualUTF8(ticket, 'realm', expected_srealm)
             self.assertElementEqualPrincipal(ticket, 'sname', expected_sname)
             self.assertElementPresent(ticket, 'enc-part')
