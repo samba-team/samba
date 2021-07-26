@@ -40,9 +40,7 @@ from samba.tests import TestCaseInTempDir
 
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
-    KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_GENERIC,
-    KDC_ERR_PREAUTH_REQUIRED,
     KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
@@ -1524,7 +1522,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          check_padata_fn=None,
                          check_kdc_private_fn=None,
                          callback_dict=None,
-                         expected_error_mode=None,
+                         expected_error_mode=0,
                          client_as_etypes=None,
                          expected_salt=None):
         kdc_exchange_dict = {
@@ -1809,13 +1807,11 @@ class RawKerberosTest(TestCaseInTempDir):
         if expected_rc4_type != 0:
             expect_etype_info2 += (expected_rc4_type,)
 
-        expected_error = KDC_ERR_ETYPE_NOSUPP
         expected_patypes = ()
         if expect_etype_info:
             self.assertGreater(len(expect_etype_info2), 0)
             expected_patypes += (PADATA_ETYPE_INFO,)
         if len(expect_etype_info2) != 0:
-            expected_error = KDC_ERR_PREAUTH_REQUIRED
             expected_patypes += (PADATA_ETYPE_INFO2,)
 
         expected_patypes += (PADATA_ENC_TIMESTAMP,)
@@ -1824,7 +1820,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
-        self.assertElementEqual(rep, 'error-code', expected_error)
+        self.assertElementEqual(rep, 'error-code', expected_error_mode)
         self.assertElementMissing(rep, 'ctime')
         self.assertElementMissing(rep, 'cusec')
         self.assertElementPresent(rep, 'stime')
@@ -1889,7 +1885,10 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertEqual(len(pk_as_rep19), 0)
                 continue
 
-        if expected_error == KDC_ERR_ETYPE_NOSUPP:
+        if all(etype not in client_as_etypes or etype not in proposed_etypes
+               for etype in (kcrypto.Enctype.AES256,
+                             kcrypto.Enctype.AES128,
+                             kcrypto.Enctype.RC4)):
             self.assertIsNone(etype_info2)
             self.assertIsNone(etype_info)
             if self.strict_checking:

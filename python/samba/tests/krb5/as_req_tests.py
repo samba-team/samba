@@ -24,8 +24,10 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 from samba.tests import DynamicTestCase
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
+import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
     NT_PRINCIPAL,
@@ -68,12 +70,19 @@ class AsReqKerberosTests(KDCBaseTest):
         sname = self.PrincipalName_create(name_type=NT_SRV_INST,
                                           names=[krbtgt_account, realm])
 
-        expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
         expected_crealm = realm
         expected_cname = cname
         expected_srealm = realm
         expected_sname = sname
         expected_salt = client_creds.get_forced_salt()
+
+        if any(etype in client_as_etypes and etype in initial_etypes
+               for etype in (kcrypto.Enctype.AES256,
+                             kcrypto.Enctype.AES128,
+                             kcrypto.Enctype.RC4)):
+            expected_error_mode = KDC_ERR_PREAUTH_REQUIRED
+        else:
+            expected_error_mode = KDC_ERR_ETYPE_NOSUPP
 
         def _generate_padata_copy(_kdc_exchange_dict,
                                   _callback_dict,
