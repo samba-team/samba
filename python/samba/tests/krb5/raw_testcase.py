@@ -1431,7 +1431,6 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def _generic_kdc_exchange(self,
                               kdc_exchange_dict,  # required
-                              kdc_options=None,  # required
                               cname=None,  # optional
                               realm=None,  # required
                               sname=None,  # optional
@@ -1453,6 +1452,8 @@ class RawKerberosTest(TestCaseInTempDir):
         req_msg_type = kdc_exchange_dict['req_msg_type']
         req_asn1Spec = kdc_exchange_dict['req_asn1Spec']
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
+
+        kdc_options = kdc_exchange_dict['kdc_options']
 
         if till_time is None:
             till_time = self.get_KerberosTime(offset=36000)
@@ -1524,7 +1525,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          callback_dict=None,
                          expected_error_mode=0,
                          client_as_etypes=None,
-                         expected_salt=None):
+                         expected_salt=None,
+                         kdc_options=''):
         kdc_exchange_dict = {
             'req_msg_type': KRB_AS_REQ,
             'req_asn1Spec': krb5_asn1.AS_REQ,
@@ -1545,6 +1547,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_error_mode': expected_error_mode,
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
+            'kdc_options': kdc_options,
         }
         if callback_dict is None:
             callback_dict = {}
@@ -1565,7 +1568,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           callback_dict=None,
                           tgt=None,
                           authenticator_subkey=None,
-                          body_checksum_type=None):
+                          body_checksum_type=None,
+                          kdc_options=''):
         kdc_exchange_dict = {
             'req_msg_type': KRB_TGS_REQ,
             'req_asn1Spec': krb5_asn1.TGS_REQ,
@@ -1586,6 +1590,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'tgt': tgt,
             'body_checksum_type': body_checksum_type,
             'authenticator_subkey': authenticator_subkey,
+            'kdc_options': kdc_options
         }
         if callback_dict is None:
             callback_dict = {}
@@ -2047,10 +2052,10 @@ class RawKerberosTest(TestCaseInTempDir):
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
-            expected_salt=expected_salt)
+            expected_salt=expected_salt,
+            kdc_options=str(kdc_options))
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
-                                         kdc_options=str(kdc_options),
                                          cname=cname,
                                          realm=realm,
                                          sname=sname,
