@@ -540,26 +540,7 @@ class KDCBaseTest(RawKerberosTest):
                 kvno
             match the expected values
         """
-
-        # Should have a reply, and it should an AS-REP message.
-        self.assertIsNotNone(rep)
-        self.assertEqual(rep['msg-type'], KRB_AS_REP, "rep = {%s}" % rep)
-
-        # Protocol version number should be 5
-        pvno = int(rep['pvno'])
-        self.assertEqual(5, pvno, "rep = {%s}" % rep)
-
-        # The ticket version number should be 5
-        tkt_vno = int(rep['ticket']['tkt-vno'])
-        self.assertEqual(5, tkt_vno, "rep = {%s}" % rep)
-
-        # Check that the kvno is not an RODC kvno
-        # MIT kerberos does not provide the kvno, so we treat it as optional.
-        # This is tested in compatability_test.py
-        if 'kvno' in rep['enc-part']:
-            kvno = int(rep['enc-part']['kvno'])
-            # If the high order bits are set this is an RODC kvno.
-            self.assertEqual(0, kvno & 0xFFFF0000, "rep = {%s}" % rep)
+        self.check_reply(rep, msg_type=KRB_AS_REP)
 
     def check_tgs_reply(self, rep):
         """ Check that the kdc response is an TGS-REP and that the
@@ -570,10 +551,13 @@ class KDCBaseTest(RawKerberosTest):
                 kvno
             match the expected values
         """
+        self.check_reply(rep, msg_type=KRB_TGS_REP)
+
+    def check_reply(self, rep, msg_type):
 
         # Should have a reply, and it should an TGS-REP message.
         self.assertIsNotNone(rep)
-        self.assertEqual(rep['msg-type'], KRB_TGS_REP, "rep = {%s}" % rep)
+        self.assertEqual(rep['msg-type'], msg_type, "rep = {%s}" % rep)
 
         # Protocol version number should be 5
         pvno = int(rep['pvno'])
