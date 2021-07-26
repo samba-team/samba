@@ -64,6 +64,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TGS_REQ_AUTH_DAT_SESSION,
     KU_TGS_REQ_AUTH_DAT_SUBKEY,
     KU_TICKET,
+    NT_SRV_INST,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO,
     PADATA_ETYPE_INFO2,
@@ -2522,6 +2523,15 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return (claims_pos < len(pac_options)
                 and pac_options[claims_pos] == '1')
+
+    def get_krbtgt_sname(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_username = krbtgt_creds.get_username()
+        krbtgt_realm = krbtgt_creds.get_realm()
+        krbtgt_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+
+        return krbtgt_sname
 
     def _test_as_exchange(self,
                           cname,
