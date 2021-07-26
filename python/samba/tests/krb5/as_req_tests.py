@@ -96,7 +96,7 @@ class AsReqKerberosTests(KDCBaseTest):
             expected_sname=expected_sname,
             generate_padata_fn=_generate_padata_copy,
             check_error_fn=self.generic_check_as_error,
-            check_rep_fn=self.generic_check_kdc_rep,
+            check_rep_fn=None,
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
