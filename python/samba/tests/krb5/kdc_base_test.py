@@ -416,8 +416,12 @@ class KDCBaseTest(RawKerberosTest):
     def get_enc_timestamp_pa_data(self, creds, rep, skew=0):
         '''generate the pa_data data element for an AS-REQ
         '''
+
         key = self.get_as_rep_key(creds, rep)
 
+        return self.get_enc_timestamp_pa_data_from_key(key, skew=skew)
+
+    def get_enc_timestamp_pa_data_from_key(self, key, skew=0):
         (patime, pausec) = self.get_KerberosTimeWithUsec(offset=skew)
         padata = self.PA_ENC_TS_ENC_create(patime, pausec)
         padata = self.der_encode(padata, asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
