@@ -121,6 +121,7 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/testjoin.c
                         rpc/schannel.c
                         rpc/netlogon.c
+                        rpc/netlogon_crypto.c
                         rpc/remote_pac.c
                         rpc/samlogon.c
                         rpc/samsync.c

@@ -201,7 +201,11 @@ all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn
 rpc_s3only = [
     "rpc.mdssvc",
 ]
-rpc_tests = [x for x in smbtorture4_testsuites("rpc.") if x not in rpc_s3only]
+rpc_fipsonly = [
+    "rpc.fips.netlogon.crypto",
+]
+rpc_exclude = rpc_s3only + rpc_fipsonly
+rpc_tests = [x for x in smbtorture4_testsuites("rpc.") if x not in rpc_exclude]
 auto_rpc_tests = list(filter(lambda t: t not in all_rpc_tests, rpc_tests))
 
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
@@ -635,6 +639,16 @@ if have_gnutls_fips_mode_support:
                    '$DC_USERNAME'],
                   environ={'GNUTLS_FORCE_FIPS_MODE': '1',
                            'OPENSSL_FORCE_FIPS_MODE': '1'})
+
+    plansmbtorture4testsuite('rpc.fips.netlogon.crypto',
+                             'ad_dc_fips',
+                             ['ncacn_np:$SERVER[krb5]',
+                              '-U$USERNAME%$PASSWORD',
+                              '--workgroup=$DOMAIN',
+                              '--client-protection=encrypt'],
+                             'samba4.rpc.fips.netlogon.crypto',
+                             environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                                      'OPENSSL_FORCE_FIPS_MODE': '1'})
 
 plansmbtorture4testsuite('rpc.echo', "ad_dc_ntvfs", ['ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD'], "samba4.rpc.echo against NetBIOS alias")
 
