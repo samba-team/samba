@@ -1699,6 +1699,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def as_exchange_dict(self,
                          expected_crealm=None,
                          expected_cname=None,
+                         expected_cname_private=None,
                          expected_srealm=None,
                          expected_sname=None,
                          ticket_decryption_key=None,
@@ -1752,6 +1753,10 @@ class RawKerberosTest(TestCaseInTempDir):
             'kdc_options': kdc_options,
             'outer_req': outer_req
         }
+        if expected_cname_private is not None:
+            kdc_exchange_dict['expected_cname_private'] = (
+                expected_cname_private)
+
         if callback_dict is None:
             callback_dict = {}
 
@@ -1760,6 +1765,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def tgs_exchange_dict(self,
                           expected_crealm=None,
                           expected_cname=None,
+                          expected_cname_private=None,
                           expected_srealm=None,
                           expected_sname=None,
                           ticket_decryption_key=None,
@@ -1811,6 +1817,10 @@ class RawKerberosTest(TestCaseInTempDir):
             'kdc_options': kdc_options,
             'outer_req': outer_req
         }
+        if expected_cname_private is not None:
+            kdc_exchange_dict['expected_cname_private'] = (
+                expected_cname_private)
+
         if callback_dict is None:
             callback_dict = {}
 
@@ -1989,10 +1999,14 @@ class RawKerberosTest(TestCaseInTempDir):
                         and kdc_options[canon_pos] == '1')
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
-        expected_cname = kdc_exchange_dict['expected_cname']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
+
+        try:
+            expected_cname = kdc_exchange_dict['expected_cname_private']
+        except KeyError:
+            expected_cname = kdc_exchange_dict['expected_cname']
 
         ticket = self.getElementValue(rep, 'ticket')
 
