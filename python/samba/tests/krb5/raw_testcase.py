@@ -1720,6 +1720,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          armor_key=None,
                          armor_tgt=None,
                          armor_subkey=None,
+                         auth_data=None,
                          kdc_options='',
                          outer_req=None):
         kdc_exchange_dict = {
@@ -1750,6 +1751,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'armor_key': armor_key,
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
+            'auth_data': auth_data,
             'kdc_options': kdc_options,
             'outer_req': outer_req
         }
@@ -1784,6 +1786,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           armor_tgt=None,
                           armor_subkey=None,
                           authenticator_subkey=None,
+                          auth_data=None,
                           body_checksum_type=None,
                           kdc_options='',
                           outer_req=None):
@@ -1813,6 +1816,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'armor_key': armor_key,
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
+            'auth_data': auth_data,
             'authenticator_subkey': authenticator_subkey,
             'kdc_options': kdc_options,
             'outer_req': outer_req
@@ -2328,6 +2332,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                                      req_body_blob,
                                                      ctype=body_checksum_type)
 
+        auth_data = kdc_exchange_dict['auth_data']
+
         subkey_obj = None
         if authenticator_subkey is not None:
             subkey_obj = authenticator_subkey.export_obj()
@@ -2341,7 +2347,7 @@ class RawKerberosTest(TestCaseInTempDir):
             ctime=ctime,
             subkey=subkey_obj,
             seq_number=seq_number,
-            authorization_data=None)
+            authorization_data=auth_data)
         authenticator_blob = self.der_encode(
             authenticator_obj,
             asn1Spec=krb5_asn1.Authenticator())
