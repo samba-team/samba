@@ -141,20 +141,21 @@ class AsReqKerberosTests(KDCBaseTest):
         initial_kdc_options = krb5_asn1.KDCOptions('forwardable')
         initial_error_mode = KDC_ERR_PREAUTH_REQUIRED
 
-        etype_info2 = self._test_as_exchange(cname,
-                                             realm,
-                                             sname,
-                                             till,
-                                             client_as_etypes,
-                                             initial_error_mode,
-                                             expected_crealm,
-                                             expected_cname,
-                                             expected_srealm,
-                                             expected_sname,
-                                             expected_salt,
-                                             initial_etypes,
-                                             initial_padata,
-                                             initial_kdc_options)
+        rep, kdc_exchange_dict = self._test_as_exchange(cname,
+                                                        realm,
+                                                        sname,
+                                                        till,
+                                                        client_as_etypes,
+                                                        initial_error_mode,
+                                                        expected_crealm,
+                                                        expected_cname,
+                                                        expected_srealm,
+                                                        expected_sname,
+                                                        expected_salt,
+                                                        initial_etypes,
+                                                        initial_padata,
+                                                        initial_kdc_options)
+        etype_info2 = kdc_exchange_dict['preauth_etype_info2']
         self.assertIsNotNone(etype_info2)
 
         preauth_key = self.PasswordKey_from_etype_info2(client_creds,
@@ -179,22 +180,23 @@ class AsReqKerberosTests(KDCBaseTest):
         krbtgt_decryption_key = (
             self.TicketDecryptionKey_from_creds(krbtgt_creds))
 
-        as_rep = self._test_as_exchange(cname,
-                                        realm,
-                                        sname,
-                                        till,
-                                        client_as_etypes,
-                                        preauth_error_mode,
-                                        expected_crealm,
-                                        expected_cname,
-                                        expected_srealm,
-                                        expected_sname,
-                                        expected_salt,
-                                        preauth_etypes,
-                                        preauth_padata,
-                                        preauth_kdc_options,
-                                        preauth_key=preauth_key,
-                                        ticket_decryption_key=krbtgt_decryption_key)
+        as_rep, kdc_exchange_dict = self._test_as_exchange(
+            cname,
+            realm,
+            sname,
+            till,
+            client_as_etypes,
+            preauth_error_mode,
+            expected_crealm,
+            expected_cname,
+            expected_srealm,
+            expected_sname,
+            expected_salt,
+            preauth_etypes,
+            preauth_padata,
+            preauth_kdc_options,
+            preauth_key=preauth_key,
+            ticket_decryption_key=krbtgt_decryption_key)
         self.assertIsNotNone(as_rep)
 
 if __name__ == "__main__":
