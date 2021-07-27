@@ -67,6 +67,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_ETYPE_INFO,
     PADATA_ETYPE_INFO2,
     PADATA_FOR_USER,
+    PADATA_FX_FAST,
     PADATA_KDC_REQ,
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
@@ -1827,6 +1828,7 @@ class RawKerberosTest(TestCaseInTempDir):
         check_kdc_private_fn = kdc_exchange_dict['check_kdc_private_fn']
         rep_encpart_asn1Spec = kdc_exchange_dict['rep_encpart_asn1Spec']
         msg_type = kdc_exchange_dict['rep_msg_type']
+        armor_key = kdc_exchange_dict['armor_key']
 
         self.assertElementEqual(rep, 'msg-type', msg_type)  # AS-REP | TGS-REP
         padata = self.getElementValue(rep, 'padata')
@@ -1862,6 +1864,8 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(encpart, 'cipher')
             encpart_cipher = self.getElementValue(encpart, 'cipher')
 
+        ticket_checksum = None
+
         encpart_decryption_key = None
         self.assertIsNotNone(check_padata_fn)
         if check_padata_fn is not None:
@@ -1869,6 +1873,33 @@ class RawKerberosTest(TestCaseInTempDir):
             encpart_decryption_key, encpart_decryption_usage = (
                 check_padata_fn(kdc_exchange_dict, callback_dict,
                                 rep, padata))
+
+            if armor_key is not None:
+                pa_dict = self.get_pa_dict(padata)
+
+                if PADATA_FX_FAST in pa_dict:
+                    fx_fast_data = pa_dict[PADATA_FX_FAST]
+                    fast_response = self.check_fx_fast_data(kdc_exchange_dict,
+                                                            fx_fast_data,
+                                                            armor_key,
+                                                            finished=True)
+
+                    if 'strengthen-key' in fast_response:
+                        strengthen_key = self.EncryptionKey_import(
+                            fast_response['strengthen-key'])
+                        encpart_decryption_key = (
+                            self.generate_strengthen_reply_key(
+                                strengthen_key,
+                                encpart_decryption_key))
+
+                    fast_finished = fast_response.get('finished', None)
+                    if fast_finished is not None:
+                        ticket_checksum = fast_finished['ticket-checksum']
+
+                    self.check_rep_padata(kdc_exchange_dict,
+                                          callback_dict,
+                                          rep,
+                                          fast_response['padata'])
 
         ticket_private = None
         self.assertIsNotNone(ticket_decryption_key)
@@ -1908,7 +1939,8 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertIsNotNone(check_kdc_private_fn)
         if check_kdc_private_fn is not None:
             check_kdc_private_fn(kdc_exchange_dict, callback_dict,
-                                 rep, ticket_private, encpart_private)
+                                 rep, ticket_private, encpart_private,
+                                 ticket_checksum)
 
         return rep
 
@@ -1947,7 +1979,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                   callback_dict,
                                   rep,
                                   ticket_private,
-                                  encpart_private):
+                                  encpart_private,
+                                  ticket_checksum):
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
@@ -1956,6 +1989,10 @@ class RawKerberosTest(TestCaseInTempDir):
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
 
         ticket = self.getElementValue(rep, 'ticket')
+
+        if ticket_checksum is not None:
+            armor_key = kdc_exchange_dict['armor_key']
+            self.verify_ticket_checksum(ticket, ticket_checksum, armor_key)
 
         ticket_session_key = None
         if ticket_private is not None:
