@@ -2316,6 +2316,7 @@ class RawKerberosTest(TestCaseInTempDir):
         pk_as_req = None
         pk_as_rep19 = None
         fast_cookie = None
+        fast_error = None
         fx_fast = None
         pac_options = None
         for pa in rep_padata:
@@ -2355,6 +2356,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 fast_cookie = pavalue
                 self.assertIsNotNone(fast_cookie)
                 continue
+            if patype == PADATA_FX_ERROR:
+                self.assertIsNone(fast_error)
+                fast_error = pavalue
+                self.assertIsNotNone(fast_error)
+                continue
             if patype == PADATA_FX_FAST:
                 self.assertIsNone(fx_fast)
                 fx_fast = pavalue
@@ -2368,6 +2374,14 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if fast_cookie is not None:
             kdc_exchange_dict['fast_cookie'] = fast_cookie
+
+        if fast_error is not None:
+            fast_error = self.der_decode(fast_error,
+                                         asn1Spec=krb5_asn1.KRB_ERROR())
+            self.generic_check_kdc_error(kdc_exchange_dict,
+                                         callback_dict,
+                                         fast_error,
+                                         inner=True)
 
         if pac_options is not None:
             self.check_pac_options_claims_support(pac_options)
