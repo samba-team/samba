@@ -1630,9 +1630,16 @@ class RawKerberosTest(TestCaseInTempDir):
             rep_decpart = encpart_decryption_key.decrypt(
                 encpart_decryption_usage,
                 encpart_cipher)
-            encpart_private = self.der_decode(
-                rep_decpart,
-                asn1Spec=rep_encpart_asn1Spec())
+            # MIT KDC encodes both EncASRepPart and EncTGSRepPart with
+            # application tag 26
+            try:
+                encpart_private = self.der_decode(
+                    rep_decpart,
+                    asn1Spec=rep_encpart_asn1Spec())
+            except Exception:
+                encpart_private = self.der_decode(
+                    rep_decpart,
+                    asn1Spec=krb5_asn1.EncTGSRepPart())
 
         if check_kdc_private_fn is not None:
             check_kdc_private_fn(kdc_exchange_dict, callback_dict,
