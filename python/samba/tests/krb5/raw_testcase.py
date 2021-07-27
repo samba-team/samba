@@ -1631,12 +1631,14 @@ class RawKerberosTest(TestCaseInTempDir):
         ticket = self.getElementValue(rep, 'ticket')
         ticket_encpart = None
         ticket_cipher = None
+        self.assertIsNotNone(ticket)
         if ticket is not None:  # Never None, but gives indentation
             self.assertElementPresent(ticket, 'tkt-vno')
             self.assertElementEqualUTF8(ticket, 'realm', expected_srealm)
             self.assertElementEqualPrincipal(ticket, 'sname', expected_sname)
             self.assertElementPresent(ticket, 'enc-part')
             ticket_encpart = self.getElementValue(ticket, 'enc-part')
+            self.assertIsNotNone(ticket_encpart)
             if ticket_encpart is not None:  # Never None, but gives indentation
                 self.assertElementPresent(ticket_encpart, 'etype')
                 # 'unspecified' means present, with any value != 0
@@ -1647,6 +1649,7 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertElementPresent(rep, 'enc-part')
         encpart = self.getElementValue(rep, 'enc-part')
         encpart_cipher = None
+        self.assertIsNotNone(encpart)
         if encpart is not None:  # Never None, but gives indentation
             self.assertElementPresent(encpart, 'etype')
             self.assertElementKVNO(ticket_encpart, 'kvno', 'autodetect')
@@ -1654,6 +1657,7 @@ class RawKerberosTest(TestCaseInTempDir):
             encpart_cipher = self.getElementValue(encpart, 'cipher')
 
         encpart_decryption_key = None
+        self.assertIsNotNone(check_padata_fn)
         if check_padata_fn is not None:
             # See if we can get the decryption key from the preauth phase
             encpart_decryption_key, encpart_decryption_usage = (
@@ -1661,6 +1665,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                 rep, padata))
 
         ticket_private = None
+        self.assertIsNotNone(ticket_decryption_key)
         if ticket_decryption_key is not None:
             self.assertElementEqual(ticket_encpart, 'etype',
                                     ticket_decryption_key.etype)
@@ -1673,6 +1678,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 asn1Spec=krb5_asn1.EncTicketPart())
 
         encpart_private = None
+        self.assertIsNotNone(encpart_decryption_key)
         if encpart_decryption_key is not None:
             self.assertElementEqual(encpart, 'etype',
                                     encpart_decryption_key.etype)
@@ -1692,6 +1698,7 @@ class RawKerberosTest(TestCaseInTempDir):
                     rep_decpart,
                     asn1Spec=krb5_asn1.EncTGSRepPart())
 
+        self.assertIsNotNone(check_kdc_private_fn)
         if check_kdc_private_fn is not None:
             check_kdc_private_fn(kdc_exchange_dict, callback_dict,
                                  rep, ticket_private, encpart_private)
@@ -1718,6 +1725,7 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(ticket_private, 'flags')
             self.assertElementPresent(ticket_private, 'key')
             ticket_key = self.getElementValue(ticket_private, 'key')
+            self.assertIsNotNone(ticket_key)
             if ticket_key is not None:  # Never None, but gives indentation
                 self.assertElementPresent(ticket_key, 'keytype')
                 self.assertElementPresent(ticket_key, 'keyvalue')
@@ -1739,6 +1747,7 @@ class RawKerberosTest(TestCaseInTempDir):
         if encpart_private is not None:
             self.assertElementPresent(encpart_private, 'key')
             encpart_key = self.getElementValue(encpart_private, 'key')
+            self.assertIsNotNone(encpart_key)
             if encpart_key is not None:  # Never None, but gives indentation
                 self.assertElementPresent(encpart_key, 'keytype')
                 self.assertElementPresent(encpart_key, 'keyvalue')
