@@ -72,7 +72,8 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_OPTIONS,
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
-    PADATA_PK_AS_REP_19
+    PADATA_PK_AS_REP_19,
+    PADATA_SUPPORTED_ETYPES
 )
 import samba.tests.krb5.kcrypto as kcrypto
 
@@ -1982,6 +1983,10 @@ class RawKerberosTest(TestCaseInTempDir):
                                   ticket_private,
                                   encpart_private,
                                   ticket_checksum):
+        kdc_options = kdc_exchange_dict['kdc_options']
+        canon_pos = len(tuple(krb5_asn1.KDCOptions('canonicalize'))) - 1
+        canonicalize = (canon_pos < len(kdc_options)
+                        and kdc_options[canon_pos] == '1')
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
@@ -2044,6 +2049,46 @@ class RawKerberosTest(TestCaseInTempDir):
                                              expected_sname)
             # TODO self.assertElementMissing(encpart_private, 'caddr')
 
+            sent_claims = self.sent_claims(kdc_exchange_dict)
+
+            if self.strict_checking:
+                if sent_claims or canonicalize:
+                    self.assertElementPresent(encpart_private,
+                                              'encrypted-pa-data')
+                    enc_pa_dict = self.get_pa_dict(
+                        encpart_private['encrypted-pa-data'])
+                    if canonicalize:
+                        self.assertIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
+
+                        (supported_etypes,) = struct.unpack(
+                            '<L',
+                            enc_pa_dict[PADATA_SUPPORTED_ETYPES])
+
+                        self.assertTrue(
+                            security.KERB_ENCTYPE_FAST_SUPPORTED
+                            & supported_etypes)
+                        self.assertTrue(
+                            security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED
+                            & supported_etypes)
+                        self.assertTrue(
+                            security.KERB_ENCTYPE_CLAIMS_SUPPORTED
+                            & supported_etypes)
+                    else:
+                        self.assertNotIn(PADATA_SUPPORTED_ETYPES, enc_pa_dict)
+
+                    # ClaimsCompIdFASTSupported registry key
+                    if sent_claims:
+                        self.assertIn(PADATA_PAC_OPTIONS, enc_pa_dict)
+
+                        self.check_pac_options_claims_support(
+                            enc_pa_dict[PADATA_PAC_OPTIONS])
+                    else:
+                        self.assertNotIn(PADATA_PAC_OPTIONS, enc_pa_dict)
+                else:
+                    self.assertElementEqual(encpart_private,
+                                            'encrypted-pa-data',
+                                            [])
+
         if ticket_session_key is not None and encpart_session_key is not None:
             self.assertEqual(ticket_session_key.etype,
                              encpart_session_key.etype)
@@ -2065,6 +2110,11 @@ class RawKerberosTest(TestCaseInTempDir):
             encpart_private=encpart_private)
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
+
+    def check_pac_options_claims_support(self, pac_options):
+        pac_options = self.der_decode(pac_options,
+                                      asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
+        self.assertEqual('1', pac_options['options'][0])  # claims bit
 
     def generic_check_kdc_error(self,
                                 kdc_exchange_dict,
