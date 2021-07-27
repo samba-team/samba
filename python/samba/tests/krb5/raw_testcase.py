@@ -1536,6 +1536,9 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
         kdc_options = kdc_exchange_dict['kdc_options']
 
+        # Parameters specific to the outer request body
+        outer_req = kdc_exchange_dict['outer_req']
+
         if till_time is None:
             till_time = self.get_KerberosTime(offset=36000)
 
@@ -1560,6 +1563,14 @@ class RawKerberosTest(TestCaseInTempDir):
             EncAuthorizationData=EncAuthorizationData,
             EncAuthorizationData_key=EncAuthorizationData_key,
             EncAuthorizationData_usage=EncAuthorizationData_usage)
+
+        inner_req_body = dict(req_body)
+        if outer_req is not None:
+            for key, value in outer_req.items():
+                if value is not None:
+                    req_body[key] = value
+                else:
+                    del req_body[key]
 
         if req_msg_type == KRB_AS_REQ:
             tgs_req = None
@@ -1625,7 +1636,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
             fast = generate_fast_fn(kdc_exchange_dict,
                                     callback_dict,
-                                    req_body,
+                                    inner_req_body,
                                     fast_padata,
                                     fast_armor,
                                     checksum)
@@ -1648,7 +1659,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         kdc_exchange_dict['req_padata'] = padata
         kdc_exchange_dict['fast_padata'] = fast_padata
-        kdc_exchange_dict['req_body'] = req_body
+        kdc_exchange_dict['req_body'] = inner_req_body
 
         req_obj, req_decoded = self.KDC_REQ_create(msg_type=req_msg_type,
                                                    padata=padata,
@@ -1703,7 +1714,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          armor_key=None,
                          armor_tgt=None,
                          armor_subkey=None,
-                         kdc_options=''):
+                         kdc_options='',
+                         outer_req=None):
         kdc_exchange_dict = {
             'req_msg_type': KRB_AS_REQ,
             'req_asn1Spec': krb5_asn1.AS_REQ,
@@ -1733,6 +1745,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
             'kdc_options': kdc_options,
+            'outer_req': outer_req
         }
         if callback_dict is None:
             callback_dict = {}
@@ -1761,7 +1774,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           armor_subkey=None,
                           authenticator_subkey=None,
                           body_checksum_type=None,
-                          kdc_options=''):
+                          kdc_options='',
+                          outer_req=None):
         kdc_exchange_dict = {
             'req_msg_type': KRB_TGS_REQ,
             'req_asn1Spec': krb5_asn1.TGS_REQ,
@@ -1789,7 +1803,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
             'authenticator_subkey': authenticator_subkey,
-            'kdc_options': kdc_options
+            'kdc_options': kdc_options,
+            'outer_req': outer_req
         }
         if callback_dict is None:
             callback_dict = {}
