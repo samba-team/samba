@@ -66,7 +66,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline):
+def plantestsuite(name, env, cmd, environ={}):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -80,8 +80,18 @@ def plantestsuite(name, env, cmdline):
         fullname = "%s(%s)" % (name, env)
     print(fullname)
     print(env)
-    if isinstance(cmdline, list):
-        cmdline = " ".join(cmdline)
+
+    cmdline = ""
+    if environ:
+        environ = dict(environ)
+        cmdline_env = ["%s=%s" % item for item in environ.items()]
+        cmdline = " ".join(cmdline_env) + " "
+
+    if isinstance(cmd, list):
+        cmdline += " ".join(cmd)
+    else:
+        cmdline += cmd
+
     if "$LISTOPT" in cmdline:
         raise AssertionError("test %s supports --list, but not --load-list" % name)
     print(cmdline + " 2>&1 " + " | " + add_prefix(name, env))
@@ -182,14 +192,17 @@ smbtorture4_options = [
 ] + get_env_torture_options()
 
 
-def plansmbtorture4testsuite(name, env, options, target, environ={}, modname=None):
+def plansmbtorture4testsuite(name, env, options, target, modname=None, environ={}):
     if modname is None:
         modname = "samba4.%s" % name
     if isinstance(options, list):
         options = " ".join(options)
     options = " ".join(smbtorture4_options + ["--target=%s" % target]) + " " + options
-    cmdline = ["%s=%s" % item for item in environ.items()]
-    cmdline += "%s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
+    cmdline = ""
+    if environ:
+        environ = dict(environ)
+        cmdline = ["%s=%s" % item for item in environ.items()]
+    cmdline += " %s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
 
