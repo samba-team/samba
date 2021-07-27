@@ -471,6 +471,11 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
+	if (node->flags & NODE_FLAGS_DISCONNECTED) {
+		DBG_DEBUG("Ignoring flag changes for disconnected node\n");
+		return 0;
+	}
+
 	/*
 	 * Remember the old flags.  We don't care what some other node
 	 * thought the old flags were - that's irrelevant.
