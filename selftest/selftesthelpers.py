@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+#
 # This script generates a list of testsuites that should be run as part of
 # the Samba 4 test suite.
 
@@ -24,7 +25,8 @@ import sys
 
 
 def srcdir():
-    return os.path.normpath(os.getenv("SRCDIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")))
+    alternate_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    return os.path.normpath(os.getenv("SRCDIR", alternate_path))
 
 
 def source4dir():
@@ -90,7 +92,8 @@ def add_prefix(prefix, env, support_list=False):
         listopt = "$LISTOPT "
     else:
         listopt = ""
-    return "%s %s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" % (python, srcdir(), listopt, prefix, env)
+    return ("%s %s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" %
+            (python, srcdir(), listopt, prefix, env))
 
 
 def plantestsuite_loadlist(name, env, cmdline):
@@ -108,7 +111,9 @@ def plantestsuite_loadlist(name, env, cmdline):
         raise AssertionError("loadlist test %s does not support not --list" % name)
     if "$LOADLIST" not in cmdline:
         raise AssertionError("loadlist test %s does not support --load-list" % name)
-    print(("%s | %s" % (cmdline.replace("$LOADLIST", ""), add_prefix(name, env, support_list))).replace("$LISTOPT", "--list "))
+    print(("%s | %s" %
+           (cmdline.replace("$LOADLIST", ""),
+            add_prefix(name, env, support_list))).replace("$LISTOPT", "--list "))
     print(cmdline.replace("$LISTOPT", "") + " 2>&1 " + " | " + add_prefix(name, env, False))
 
 
@@ -163,7 +168,10 @@ bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 configuration = "--configfile=$SMB_CONF_PATH"
 
 smbtorture4 = binpath("smbtorture")
-smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].decode('utf8').splitlines()
+smbtorture4_testsuite_list = subprocess.Popen(
+    [smbtorture4, "--list-suites"],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE).communicate("")[0].decode('utf8').splitlines()
 
 smbtorture4_options = [
     configuration,
