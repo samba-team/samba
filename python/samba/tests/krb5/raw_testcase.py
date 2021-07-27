@@ -44,6 +44,7 @@ import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_GENERIC,
+    KDC_ERR_PREAUTH_FAILED,
     KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
@@ -65,10 +66,13 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TGS_REQ_AUTH_DAT_SUBKEY,
     KU_TICKET,
     NT_SRV_INST,
+    PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO,
     PADATA_ETYPE_INFO2,
     PADATA_FOR_USER,
+    PADATA_FX_COOKIE,
+    PADATA_FX_ERROR,
     PADATA_FX_FAST,
     PADATA_KDC_REQ,
     PADATA_PAC_OPTIONS,
@@ -406,6 +410,8 @@ class RawKerberosTest(TestCaseInTempDir):
         # A dictionary containing credentials that have already been
         # obtained.
         cls.creds_dict = {}
+
+        cls.kdc_fast_support = False
 
     def setUp(self):
         super().setUp()
@@ -2214,6 +2220,9 @@ class RawKerberosTest(TestCaseInTempDir):
         proposed_etypes = req_body['etype']
         client_as_etypes = kdc_exchange_dict.get('client_as_etypes', [])
 
+        sent_fast = self.sent_fast(kdc_exchange_dict)
+        sent_enc_challenge = self.sent_enc_challenge(kdc_exchange_dict)
+
         expect_etype_info2 = ()
         expect_etype_info = False
         unexpect_etype_info = True
@@ -2240,15 +2249,31 @@ class RawKerberosTest(TestCaseInTempDir):
             expect_etype_info2 += (expected_rc4_type,)
 
         expected_patypes = ()
+        if sent_fast and expected_error_mode != 0:
+            expected_patypes += (PADATA_FX_ERROR,)
+            expected_patypes += (PADATA_FX_COOKIE,)
+
         if expect_etype_info:
             self.assertGreater(len(expect_etype_info2), 0)
             expected_patypes += (PADATA_ETYPE_INFO,)
         if len(expect_etype_info2) != 0:
             expected_patypes += (PADATA_ETYPE_INFO2,)
 
-        expected_patypes += (PADATA_ENC_TIMESTAMP,)
-        expected_patypes += (PADATA_PK_AS_REQ,)
-        expected_patypes += (PADATA_PK_AS_REP_19,)
+        if expected_error_mode != KDC_ERR_PREAUTH_FAILED:
+            if sent_fast:
+                expected_patypes += (PADATA_ENCRYPTED_CHALLENGE,)
+            else:
+                expected_patypes += (PADATA_ENC_TIMESTAMP,)
+
+            if not sent_enc_challenge:
+                expected_patypes += (PADATA_PK_AS_REQ,)
+                expected_patypes += (PADATA_PK_AS_REP_19,)
+
+        if (self.kdc_fast_support
+                and not sent_fast
+                and not sent_enc_challenge):
+            expected_patypes += (PADATA_FX_FAST,)
+            expected_patypes += (PADATA_FX_COOKIE,)
 
         if self.strict_checking:
             for i, patype in enumerate(expected_patypes):
@@ -2296,7 +2321,12 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertIsNone(etype_info2)
             self.assertIsNone(etype_info)
             if self.strict_checking:
-                self.assertIsNotNone(enc_timestamp)
+                if sent_fast:
+                    self.assertIsNotNone(enc_challenge)
+                    self.assertIsNone(enc_timestamp)
+                else:
+                    self.assertIsNotNone(enc_timestamp)
+                    self.assertIsNone(enc_challenge)
                 self.assertIsNotNone(pk_as_req)
                 self.assertIsNotNone(pk_as_rep19)
             return None
@@ -2338,9 +2368,27 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNotNone(salt)
                 self.assertEqual(len(salt), 0)
 
-        self.assertIsNotNone(enc_timestamp)
-        self.assertIsNotNone(pk_as_req)
-        self.assertIsNotNone(pk_as_rep19)
+        if expected_error_mode != KDC_ERR_PREAUTH_FAILED:
+            if sent_fast:
+                self.assertIsNotNone(enc_challenge)
+                if self.strict_checking:
+                    self.assertIsNone(enc_timestamp)
+            else:
+                self.assertIsNotNone(enc_timestamp)
+                if self.strict_checking:
+                    self.assertIsNone(enc_challenge)
+            if not sent_enc_challenge:
+                self.assertIsNotNone(pk_as_req)
+                self.assertIsNotNone(pk_as_rep19)
+            else:
+                self.assertIsNone(pk_as_req)
+                self.assertIsNone(pk_as_rep19)
+        else:
+            if self.strict_checking:
+                self.assertIsNone(enc_timestamp)
+                self.assertIsNone(enc_challenge)
+            self.assertIsNone(pk_as_req)
+            self.assertIsNone(pk_as_rep19)
 
         return etype_info2
 
