@@ -2034,7 +2034,4 @@ class RawKerberosTest(TestCaseInTempDir):
                                          till_time=till,
                                          etypes=etypes)
 
-        if expected_error_mode == 0:  # AS-REP
-            return rep
-
-        return kdc_exchange_dict['preauth_etype_info2']
+        return rep, kdc_exchange_dict
