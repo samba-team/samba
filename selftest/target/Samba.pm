@@ -936,10 +936,6 @@ my @exported_envvars = (
 	# resolv_wrapper
 	"RESOLV_WRAPPER_CONF",
 	"RESOLV_WRAPPER_HOSTS",
-
-	# crypto libraries
-	"GNUTLS_FORCE_FIPS_MODE",
-	"OPENSSL_FORCE_FIPS_MODE",
 );
 
 sub exported_envvars_str
