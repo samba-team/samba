@@ -27,6 +27,7 @@ ARCFOUR_HMAC_MD5 = int(
 
 # Message types
 KRB_ERROR = int(krb5_asn1.MessageTypeValues('krb-error'))
+KRB_AP_REQ = int(krb5_asn1.MessageTypeValues('krb-ap-req'))
 KRB_AS_REP = int(krb5_asn1.MessageTypeValues('krb-as-rep'))
 KRB_AS_REQ = int(krb5_asn1.MessageTypeValues('krb-as-req'))
 KRB_TGS_REP = int(krb5_asn1.MessageTypeValues('krb-tgs-rep'))
@@ -39,8 +40,12 @@ PADATA_ETYPE_INFO = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-ETYPE-INFO'))
 PADATA_ETYPE_INFO2 = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-ETYPE-INFO2'))
+PADATA_FOR_USER = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-FOR-USER'))
 PADATA_KDC_REQ = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-KDC-REQ'))
+PADATA_PAC_REQUEST = int(
+    krb5_asn1.PADataTypeValues('kRB5-PADATA-PA-PAC-REQUEST'))
 PADATA_PK_AS_REQ = int(
     krb5_asn1.PADataTypeValues('kRB5-PADATA-PK-AS-REQ'))
 PADATA_PK_AS_REP_19 = int(
@@ -125,3 +130,5 @@ KU_KRB_CRED = 14
 KU_KRB_SAFE_CKSUM = 15
 ''' KRB-SAFE cksum, keyed with a key chosen by the application
     (section 5.6.1) '''
+KU_NON_KERB_SALT = 16
+KU_NON_KERB_CKSUM_SALT = 17
