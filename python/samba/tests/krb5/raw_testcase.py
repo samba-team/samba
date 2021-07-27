@@ -52,6 +52,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_FAST_ENC,
     KU_FAST_FINISHED,
     KU_FAST_REP,
     KU_FAST_REQ_CHKSUM,
@@ -2308,6 +2309,39 @@ class RawKerberosTest(TestCaseInTempDir):
 
         kdc_exchange_dict['preauth_etype_info2'] = etype_info2
         return
+
+    def generate_simple_fast(self,
+                             kdc_exchange_dict,
+                             _callback_dict,
+                             req_body,
+                             fast_padata,
+                             fast_armor,
+                             checksum,
+                             fast_options=''):
+        armor_key = kdc_exchange_dict['armor_key']
+
+        fast_req = self.KRB_FAST_REQ_create(fast_options,
+                                            fast_padata,
+                                            req_body)
+        fast_req = self.der_encode(fast_req,
+                                   asn1Spec=krb5_asn1.KrbFastReq())
+        fast_req = self.EncryptedData_create(armor_key,
+                                             KU_FAST_ENC,
+                                             fast_req)
+
+        fast_armored_req = self.KRB_FAST_ARMORED_REQ_create(fast_armor,
+                                                            checksum,
+                                                            fast_req)
+
+        fx_fast_request = self.PA_FX_FAST_REQUEST_create(fast_armored_req)
+        fx_fast_request = self.der_encode(
+            fx_fast_request,
+            asn1Spec=krb5_asn1.PA_FX_FAST_REQUEST())
+
+        fast_padata = self.PA_DATA_create(PADATA_FX_FAST,
+                                          fx_fast_request)
+
+        return fast_padata
 
     def generate_ap_req(self,
                         kdc_exchange_dict,
