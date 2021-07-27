@@ -2177,6 +2177,21 @@ class RawKerberosTest(TestCaseInTempDir):
             rep_padata = self.der_decode(edata,
                                          asn1Spec=krb5_asn1.METHOD_DATA())
             self.assertGreater(len(rep_padata), 0)
+
+            if sent_fast:
+                self.assertEqual(1, len(rep_padata))
+                rep_pa_dict = self.get_pa_dict(rep_padata)
+                self.assertIn(PADATA_FX_FAST, rep_pa_dict)
+
+                armor_key = kdc_exchange_dict['armor_key']
+                self.assertIsNotNone(armor_key)
+                fast_response = self.check_fx_fast_data(
+                    kdc_exchange_dict,
+                    rep_pa_dict[PADATA_FX_FAST],
+                    armor_key,
+                    expect_strengthen_key=False)
+
+                rep_padata = fast_response['padata']
         else:
             rep_padata = []
 
