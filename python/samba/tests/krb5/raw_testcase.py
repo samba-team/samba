@@ -2144,13 +2144,54 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_cname = kdc_exchange_dict['expected_cname']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
-        expected_salt = kdc_exchange_dict['expected_salt']
-        client_as_etypes = kdc_exchange_dict['client_as_etypes']
+        expected_error_mode = kdc_exchange_dict['expected_error_mode']
+
+        self.assertElementEqual(rep, 'pvno', 5)
+        self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
+        self.assertElementEqual(rep, 'error-code', expected_error_mode)
+        if self.strict_checking:
+            self.assertElementMissing(rep, 'ctime')
+            self.assertElementMissing(rep, 'cusec')
+        self.assertElementPresent(rep, 'stime')
+        self.assertElementPresent(rep, 'susec')
+        # error-code checked above
+        if self.strict_checking:
+            self.assertElementMissing(rep, 'crealm')
+            self.assertElementMissing(rep, 'cname')
+            self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
+            self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
+            self.assertElementMissing(rep, 'e-text')
+        if expected_error_mode == KDC_ERR_GENERIC:
+            self.assertElementMissing(rep, 'e-data')
+            return rep
+        edata = self.getElementValue(rep, 'e-data')
+        if self.strict_checking:
+            self.assertIsNotNone(edata)
+        if edata is not None:
+            rep_padata = self.der_decode(edata,
+                                         asn1Spec=krb5_asn1.METHOD_DATA())
+            self.assertGreater(len(rep_padata), 0)
+        else:
+            rep_padata = []
+
+        etype_info2 = self.check_rep_padata(kdc_exchange_dict,
+                                            callback_dict,
+                                            rep,
+                                            rep_padata)
+
+        kdc_exchange_dict['preauth_etype_info2'] = etype_info2
+
+        return rep
+
+    def check_rep_padata(self,
+                         kdc_exchange_dict,
+                         callback_dict,
+                         rep,
+                         rep_padata):
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
         req_body = kdc_exchange_dict['req_body']
         proposed_etypes = req_body['etype']
-
-        kdc_exchange_dict['preauth_etype_info2'] = None
+        client_as_etypes = kdc_exchange_dict.get('client_as_etypes', [])
 
         expect_etype_info2 = ()
         expect_etype_info = False
@@ -2187,34 +2228,6 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_patypes += (PADATA_ENC_TIMESTAMP,)
         expected_patypes += (PADATA_PK_AS_REQ,)
         expected_patypes += (PADATA_PK_AS_REP_19,)
-
-        self.assertElementEqual(rep, 'pvno', 5)
-        self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
-        self.assertElementEqual(rep, 'error-code', expected_error_mode)
-        if self.strict_checking:
-            self.assertElementMissing(rep, 'ctime')
-            self.assertElementMissing(rep, 'cusec')
-        self.assertElementPresent(rep, 'stime')
-        self.assertElementPresent(rep, 'susec')
-        # error-code checked above
-        if self.strict_checking:
-            self.assertElementMissing(rep, 'crealm')
-            self.assertElementMissing(rep, 'cname')
-            self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
-            self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
-            self.assertElementMissing(rep, 'e-text')
-        if expected_error_mode == KDC_ERR_GENERIC:
-            self.assertElementMissing(rep, 'e-data')
-            return
-        edata = self.getElementValue(rep, 'e-data')
-        if self.strict_checking:
-            self.assertIsNotNone(edata)
-        if edata is not None:
-            rep_padata = self.der_decode(edata,
-                                         asn1Spec=krb5_asn1.METHOD_DATA())
-            self.assertGreater(len(rep_padata), 0)
-        else:
-            rep_padata = []
 
         if self.strict_checking:
             for i, patype in enumerate(expected_patypes):
@@ -2265,7 +2278,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNotNone(enc_timestamp)
                 self.assertIsNotNone(pk_as_req)
                 self.assertIsNotNone(pk_as_rep19)
-            return
+            return None
 
         if self.strict_checking:
             self.assertIsNotNone(etype_info2)
@@ -2288,6 +2301,7 @@ class RawKerberosTest(TestCaseInTempDir):
                     self.assertIsNone(salt)
                 else:
                     self.assertIsNotNone(salt)
+                    expected_salt = kdc_exchange_dict['expected_salt']
                     if expected_salt is not None:
                         self.assertEqual(salt, expected_salt)
                 s2kparams = self.getElementValue(etype_info2[i], 's2kparams')
@@ -2307,8 +2321,7 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertIsNotNone(pk_as_req)
         self.assertIsNotNone(pk_as_rep19)
 
-        kdc_exchange_dict['preauth_etype_info2'] = etype_info2
-        return
+        return etype_info2
 
     def generate_simple_fast(self,
                              kdc_exchange_dict,
