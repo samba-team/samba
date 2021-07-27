@@ -53,6 +53,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_ENC_CHALLENGE_KDC,
     KU_FAST_ENC,
     KU_FAST_FINISHED,
     KU_FAST_REP,
@@ -2283,6 +2284,7 @@ class RawKerberosTest(TestCaseInTempDir):
         etype_info2 = None
         etype_info = None
         enc_timestamp = None
+        enc_challenge = None
         pk_as_req = None
         pk_as_rep19 = None
         for pa in rep_padata:
@@ -2303,6 +2305,10 @@ class RawKerberosTest(TestCaseInTempDir):
                 enc_timestamp = pavalue
                 self.assertEqual(len(enc_timestamp), 0)
                 continue
+            if patype == PADATA_ENCRYPTED_CHALLENGE:
+                self.assertIsNone(enc_challenge)
+                enc_challenge = pavalue
+                continue
             if patype == PADATA_PK_AS_REQ:
                 self.assertIsNone(pk_as_req)
                 pk_as_req = pavalue
@@ -2313,6 +2319,54 @@ class RawKerberosTest(TestCaseInTempDir):
                 pk_as_rep19 = pavalue
                 self.assertEqual(len(pk_as_rep19), 0)
                 continue
+
+        if enc_challenge is not None:
+            if not sent_enc_challenge:
+                self.assertEqual(len(enc_challenge), 0)
+            else:
+                armor_key = kdc_exchange_dict['armor_key']
+                self.assertIsNotNone(armor_key)
+
+                check_padata_fn = kdc_exchange_dict['check_padata_fn']
+                padata = self.getElementValue(rep, 'padata')
+                self.assertIsNotNone(check_padata_fn)
+                preauth_key, _ = check_padata_fn(kdc_exchange_dict,
+                                                 callback_dict,
+                                                 rep,
+                                                 padata)
+
+                kdc_challenge_key = self.generate_kdc_challenge_key(
+                    armor_key, preauth_key)
+
+                # Ensure that the encrypted challenge FAST factor is supported
+                # (RFC6113 5.4.6).
+                if self.strict_checking:
+                    self.assertNotEqual(len(enc_challenge), 0)
+                if len(enc_challenge) != 0:
+                    encrypted_challenge = self.der_decode(
+                        enc_challenge,
+                        asn1Spec=krb5_asn1.EncryptedData())
+                    self.assertEqual(encrypted_challenge['etype'],
+                                     kdc_challenge_key.etype)
+
+                    challenge = kdc_challenge_key.decrypt(
+                        KU_ENC_CHALLENGE_KDC,
+                        encrypted_challenge['cipher'])
+                    challenge = self.der_decode(
+                        challenge,
+                        asn1Spec=krb5_asn1.PA_ENC_TS_ENC())
+
+                    # Retrieve the returned timestamp.
+                    rep_patime = challenge['patimestamp']
+                    self.assertIn('pausec', challenge)
+
+                    # Ensure the returned time is within five minutes of the
+                    # current time.
+                    rep_time = self.get_EpochFromKerberosTime(rep_patime)
+                    current_time = time.time()
+
+                    self.assertLess(current_time - 300, rep_time)
+                    self.assertLess(rep_time, current_time)
 
         if all(etype not in client_as_etypes or etype not in proposed_etypes
                for etype in (kcrypto.Enctype.AES256,
