@@ -2140,7 +2140,6 @@ class RawKerberosTest(TestCaseInTempDir):
                                 callback_dict,
                                 rep):
 
-        expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']

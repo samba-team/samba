@@ -256,8 +256,6 @@ class KDCBaseTest(RawKerberosTest):
 
         rid = identifier.sid.split()[1]
 
-        forced_keys = dict()
-
         net_ctx = net.Net(admin_creds)
 
         keys = {}
