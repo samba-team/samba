@@ -2287,6 +2287,8 @@ class RawKerberosTest(TestCaseInTempDir):
         enc_challenge = None
         pk_as_req = None
         pk_as_rep19 = None
+        fast_cookie = None
+        fx_fast = None
         for pa in rep_padata:
             patype = self.getElementValue(pa, 'padata-type')
             pavalue = self.getElementValue(pa, 'padata-value')
@@ -2319,6 +2321,19 @@ class RawKerberosTest(TestCaseInTempDir):
                 pk_as_rep19 = pavalue
                 self.assertEqual(len(pk_as_rep19), 0)
                 continue
+            if patype == PADATA_FX_COOKIE:
+                self.assertIsNone(fast_cookie)
+                fast_cookie = pavalue
+                self.assertIsNotNone(fast_cookie)
+                continue
+            if patype == PADATA_FX_FAST:
+                self.assertIsNone(fx_fast)
+                fx_fast = pavalue
+                self.assertEqual(len(fx_fast), 0)
+                continue
+
+        if fast_cookie is not None:
+            kdc_exchange_dict['fast_cookie'] = fast_cookie
 
         if enc_challenge is not None:
             if not sent_enc_challenge:
