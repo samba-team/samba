@@ -52,6 +52,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_FAST_REP,
     KU_FAST_REQ_CHKSUM,
     KU_NON_KERB_CKSUM_SALT,
     KU_TGS_REP_ENC_PART_SESSION,
@@ -1909,6 +1910,36 @@ class RawKerberosTest(TestCaseInTempDir):
                                  rep, ticket_private, encpart_private)
 
         return rep
+
+    def check_fx_fast_data(self,
+                           kdc_exchange_dict,
+                           fx_fast_data,
+                           armor_key,
+                           finished=False,
+                           expect_strengthen_key=True):
+        fx_fast_data = self.der_decode(fx_fast_data,
+                                       asn1Spec=krb5_asn1.PA_FX_FAST_REPLY())
+
+        enc_fast_rep = fx_fast_data['armored-data']['enc-fast-rep']
+        self.assertEqual(enc_fast_rep['etype'], armor_key.etype)
+
+        fast_rep = armor_key.decrypt(KU_FAST_REP, enc_fast_rep['cipher'])
+
+        fast_response = self.der_decode(fast_rep,
+                                        asn1Spec=krb5_asn1.KrbFastResponse())
+
+        if expect_strengthen_key and self.strict_checking:
+            self.assertIn('strengthen-key', fast_response)
+
+        if finished:
+            self.assertIn('finished', fast_response)
+
+        # Ensure that the nonce matches the nonce in the body of the request
+        # (RFC6113 5.4.3).
+        nonce = kdc_exchange_dict['nonce']
+        self.assertEqual(nonce, fast_response['nonce'])
+
+        return fast_response
 
     def generic_check_kdc_private(self,
                                   kdc_exchange_dict,
