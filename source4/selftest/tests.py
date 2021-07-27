@@ -594,12 +594,43 @@ if have_gnutls_fips_mode_support:
     plantestsuite("samba4.blackbox.weak_crypto.client", "ad_dc", [os.path.join(bbdir, "test_weak_crypto.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc"])
 
     for env in ["ad_dc_fips", "ad_member_fips"]:
-        plantestsuite("samba4.blackbox.weak_crypto.server", env, [os.path.join(bbdir, "test_weak_crypto_server.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc_fips", configuration])
-    plantestsuite("samba4.blackbox.net_ads_fips", "ad_dc_fips:client", [os.path.join(bbdir, "test_net_ads_fips.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
+        plantestsuite("samba4.blackbox.weak_crypto.server",
+                      env,
+                      [os.path.join(bbdir, "test_weak_crypto_server.sh"),
+                       '$SERVER',
+                       '$USERNAME',
+                       '$PASSWORD',
+                       '$REALM',
+                       '$DOMAIN',
+                       "$PREFIX/ad_dc_fips",
+                       configuration],
+                      environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                               'OPENSSL_FORCE_FIPS_MODE': '1'})
+
+    plantestsuite("samba4.blackbox.net_ads_fips",
+                  "ad_dc_fips:client",
+                  [os.path.join(bbdir, "test_net_ads_fips.sh"),
+                   '$DC_SERVER',
+                   '$DC_USERNAME',
+                   '$DC_PASSWORD',
+                   '$PREFIX_ABS'],
+                  environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                           'OPENSSL_FORCE_FIPS_MODE': '1'})
 
     t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
-    plantestsuite("samba3.wbinfo_simple.fips.%s" % t, "ad_member_fips:local", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
-    plantestsuite("samba4.wbinfo_name_lookup.fips", "ad_member_fips", [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_name_lookup.sh"), '$DOMAIN', '$REALM', '$DC_USERNAME'])
+    plantestsuite("samba3.wbinfo_simple.fips.%s" % t,
+                  "ad_member_fips:local",
+                  [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t],
+                  environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                           'OPENSSL_FORCE_FIPS_MODE': '1'})
+    plantestsuite("samba4.wbinfo_name_lookup.fips",
+                  "ad_member_fips",
+                  [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_name_lookup.sh"),
+                   '$DOMAIN',
+                   '$REALM',
+                   '$DC_USERNAME'],
+                  environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                           'OPENSSL_FORCE_FIPS_MODE': '1'})
 
 plansmbtorture4testsuite('rpc.echo', "ad_dc_ntvfs", ['ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD'], "samba4.rpc.echo against NetBIOS alias")
 
@@ -754,8 +785,14 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     plantestsuite_loadlist(name, env, args)
 
 if have_gnutls_fips_mode_support:
-    planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
-    planoldpythontestsuite("ad_dc_fips", "samba.tests.dcerpc.createtrustrelax", environ={'GNUTLS_FORCE_FIPS_MODE':'1'})
+    planoldpythontestsuite("ad_dc",
+                           "samba.tests.dcerpc.createtrustrelax",
+                           environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                                    'OPENSSL_FORCE_FIPS_MODE': '1'})
+    planoldpythontestsuite("ad_dc_fips",
+                           "samba.tests.dcerpc.createtrustrelax",
+                           environ={'GNUTLS_FORCE_FIPS_MODE': '1',
+                                    'OPENSSL_FORCE_FIPS_MODE': '1'})
 
 # Run complex search expressions test once for each database backend.
 # Right now ad_dc has mdb and ad_dc_ntvfs has tdb
