@@ -2146,6 +2146,8 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_sname = kdc_exchange_dict['expected_sname']
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
 
+        sent_fast = self.sent_fast(kdc_exchange_dict)
+
         self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
         self.assertElementEqual(rep, 'error-code', expected_error_mode)
@@ -2159,7 +2161,11 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementMissing(rep, 'crealm')
             self.assertElementMissing(rep, 'cname')
             self.assertElementEqualUTF8(rep, 'realm', expected_srealm)
-            self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
+            if sent_fast and expected_error_mode == KDC_ERR_GENERIC:
+                self.assertElementEqualPrincipal(rep, 'sname',
+                                                 self.get_krbtgt_sname())
+            else:
+                self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
         if expected_error_mode == KDC_ERR_GENERIC:
             self.assertElementMissing(rep, 'e-data')
