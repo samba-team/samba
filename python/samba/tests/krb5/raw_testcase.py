@@ -45,6 +45,7 @@ from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_GENERIC,
     KDC_ERR_PREAUTH_FAILED,
+    KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
@@ -2150,12 +2151,16 @@ class RawKerberosTest(TestCaseInTempDir):
                                 callback_dict,
                                 rep):
 
+        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+
         expected_cname = kdc_exchange_dict['expected_cname']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
 
         sent_fast = self.sent_fast(kdc_exchange_dict)
+
+        fast_armor_type = kdc_exchange_dict['fast_armor_type']
 
         self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
@@ -2176,7 +2181,12 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
-        if expected_error_mode == KDC_ERR_GENERIC:
+        if (expected_error_mode in (KDC_ERR_GENERIC,
+                                    KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS)
+                or (rep_msg_type == KRB_TGS_REP
+                    and not sent_fast)
+                or (sent_fast and fast_armor_type is not None
+                    and fast_armor_type != FX_FAST_ARMOR_AP_REQUEST)):
             self.assertElementMissing(rep, 'e-data')
             return rep
         edata = self.getElementValue(rep, 'e-data')
