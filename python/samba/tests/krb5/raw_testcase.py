@@ -1484,13 +1484,34 @@ class RawKerberosTest(TestCaseInTempDir):
             EncAuthorizationData=EncAuthorizationData,
             EncAuthorizationData_key=EncAuthorizationData_key,
             EncAuthorizationData_usage=EncAuthorizationData_usage)
+
+        if req_msg_type == KRB_AS_REQ:
+            tgs_req = None
+            tgs_req_padata = None
+        else:
+            self.assertEqual(KRB_TGS_REQ, req_msg_type)
+
+            tgs_req = self.generate_ap_req(kdc_exchange_dict,
+                                           callback_dict,
+                                           req_body)
+            tgs_req_padata = self.PA_DATA_create(PADATA_KDC_REQ, tgs_req)
+
         if generate_padata_fn is not None:
             # This can alter req_body...
             padata, req_body = generate_padata_fn(kdc_exchange_dict,
                                                   callback_dict,
                                                   req_body)
             self.assertIsNotNone(padata)
+            self.assertNotIn(PADATA_KDC_REQ,
+                             [pa['padata-type'] for pa in padata],
+                             'Don\'t create TGS-REQ manually')
         else:
+            padata = []
+
+        if tgs_req_padata is not None:
+            padata.insert(0, tgs_req_padata)
+
+        if not padata:
             padata = None
 
         kdc_exchange_dict['req_padata'] = padata
