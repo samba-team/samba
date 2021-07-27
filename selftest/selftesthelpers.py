@@ -182,13 +182,14 @@ smbtorture4_options = [
 ] + get_env_torture_options()
 
 
-def plansmbtorture4testsuite(name, env, options, target, modname=None):
+def plansmbtorture4testsuite(name, env, options, target, environ={}, modname=None):
     if modname is None:
         modname = "samba4.%s" % name
     if isinstance(options, list):
         options = " ".join(options)
     options = " ".join(smbtorture4_options + ["--target=%s" % target]) + " " + options
-    cmdline = "%s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
+    cmdline = ["%s=%s" % item for item in environ.items()]
+    cmdline += "%s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
 
