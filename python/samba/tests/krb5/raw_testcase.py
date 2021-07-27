@@ -52,6 +52,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_FAST_FINISHED,
     KU_FAST_REP,
     KU_FAST_REQ_CHKSUM,
     KU_NON_KERB_CKSUM_SALT,
@@ -2321,6 +2322,17 @@ class RawKerberosTest(TestCaseInTempDir):
         kdc_challenge_key = Krb5EncryptionKey(kdc_challenge_key, None)
 
         return kdc_challenge_key
+
+    def verify_ticket_checksum(self, ticket, expected_checksum, armor_key):
+        expected_type = expected_checksum['cksumtype']
+        self.assertEqual(armor_key.ctype, expected_type)
+
+        ticket_blob = self.der_encode(ticket,
+                                      asn1Spec=krb5_asn1.Ticket())
+        checksum = self.Checksum_create(armor_key,
+                                        KU_FAST_FINISHED,
+                                        ticket_blob)
+        self.assertEqual(expected_checksum, checksum)
 
     def _test_as_exchange(self,
                           cname,
