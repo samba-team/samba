@@ -41,12 +41,14 @@ import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
+    KRB_AP_REQ,
     KRB_AS_REP,
     KRB_AS_REQ,
     KRB_ERROR,
     KRB_TGS_REP,
     KRB_TGS_REQ,
     KU_AS_REP_ENC_PART,
+    KU_NON_KERB_CKSUM_SALT,
     KU_TGS_REP_ENC_PART_SESSION,
     KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TGS_REQ_AUTH,
@@ -55,7 +57,9 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO,
     PADATA_ETYPE_INFO2,
+    PADATA_FOR_USER,
     PADATA_KDC_REQ,
+    PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19
 )
@@ -740,12 +744,12 @@ class RawKerberosTest(TestCaseInTempDir):
         pvno = k5_raw['field-0']
         self.assertEqual(pvno, 5)
         msg_type = k5_raw['field-1']
-        self.assertIn(msg_type, [11, 13, 30])
-        if msg_type == 11:
+        self.assertIn(msg_type, [KRB_AS_REP, KRB_TGS_REP, KRB_ERROR])
+        if msg_type == KRB_AS_REP:
             asn1Spec = krb5_asn1.AS_REP()
-        elif msg_type == 13:
+        elif msg_type == KRB_TGS_REP:
             asn1Spec = krb5_asn1.TGS_REP()
-        elif msg_type == 30:
+        elif msg_type == KRB_ERROR:
             asn1Spec = krb5_asn1.KRB_ERROR()
         rep = self.der_decode(rep_pdu, asn1Spec=asn1Spec,
                               asn1_print=asn1_print, hexdump=False)
@@ -1004,7 +1008,7 @@ class RawKerberosTest(TestCaseInTempDir):
             return KERB_PA_PAC_REQUEST_obj
         pa_pac = self.der_encode(KERB_PA_PAC_REQUEST_obj,
                                  asn1Spec=krb5_asn1.KERB_PA_PAC_REQUEST())
-        pa_data = self.PA_DATA_create(128, pa_pac)  # PA-PAC-REQUEST
+        pa_data = self.PA_DATA_create(PADATA_PAC_REQUEST, pa_pac)
         return pa_data
 
     def KDC_REQ_BODY_create(self,
@@ -1172,7 +1176,7 @@ class RawKerberosTest(TestCaseInTempDir):
             asn1_print=asn1_print,
             hexdump=hexdump)
         obj, decoded = self.KDC_REQ_create(
-            msg_type=10,
+            msg_type=KRB_AS_REQ,
             padata=padata,
             req_body=KDC_REQ_BODY_obj,
             asn1Spec=krb5_asn1.AS_REQ(),
@@ -1192,7 +1196,7 @@ class RawKerberosTest(TestCaseInTempDir):
         # }
         AP_REQ_obj = {
             'pvno': 5,
-            'msg-type': 14,
+            'msg-type': KRB_AP_REQ,
             'ap-options': ap_options,
             'ticket': ticket,
             'authenticator': authenticator,
@@ -1305,7 +1309,7 @@ class RawKerberosTest(TestCaseInTempDir):
                                         asn1_print=asn1_print, hexdump=hexdump)
 
         req_body_checksum = self.Checksum_create(ticket_session_key,
-                                                 6,
+                                                 KU_TGS_REQ_AUTH_CKSUM,
                                                  req_body_blob,
                                                  ctype=body_checksum_type)
 
@@ -1329,7 +1333,7 @@ class RawKerberosTest(TestCaseInTempDir):
             hexdump=hexdump)
 
         authenticator = self.EncryptedData_create(
-            ticket_session_key, 7, authenticator)
+            ticket_session_key, KU_TGS_REQ_AUTH, authenticator)
 
         ap_options = krb5_asn1.APOptions('0')
         ap_req = self.AP_REQ_create(ap_options=str(ap_options),
@@ -1337,14 +1341,14 @@ class RawKerberosTest(TestCaseInTempDir):
                                     authenticator=authenticator)
         ap_req = self.der_encode(ap_req, asn1Spec=krb5_asn1.AP_REQ(),
                                  asn1_print=asn1_print, hexdump=hexdump)
-        pa_tgs_req = self.PA_DATA_create(1, ap_req)
+        pa_tgs_req = self.PA_DATA_create(PADATA_KDC_REQ, ap_req)
         if padata is not None:
             padata.append(pa_tgs_req)
         else:
             padata = [pa_tgs_req]
 
         obj, decoded = self.KDC_REQ_create(
-            msg_type=12,
+            msg_type=KRB_TGS_REQ,
             padata=padata,
             req_body=req_body,
             asn1Spec=krb5_asn1.TGS_REQ(),
@@ -1367,7 +1371,7 @@ class RawKerberosTest(TestCaseInTempDir):
         cksum_data += realm.encode()
         cksum_data += "Kerberos".encode()
         cksum = self.Checksum_create(tgt_session_key,
-                                     17,
+                                     KU_NON_KERB_CKSUM_SALT,
                                      cksum_data,
                                      ctype)
 
@@ -1379,7 +1383,7 @@ class RawKerberosTest(TestCaseInTempDir):
         }
         pa_s4u2self = self.der_encode(
             PA_S4U2Self_obj, asn1Spec=krb5_asn1.PA_S4U2Self())
-        return self.PA_DATA_create(129, pa_s4u2self)
+        return self.PA_DATA_create(PADATA_FOR_USER, pa_s4u2self)
 
     def _generic_kdc_exchange(self,
                               kdc_exchange_dict,  # required
