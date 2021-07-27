@@ -1442,7 +1442,6 @@ class RawKerberosTest(TestCaseInTempDir):
                               from_time=None,  # optional
                               till_time=None,  # required
                               renew_time=None,  # optional
-                              nonce=None,  # required
                               etypes=None,  # required
                               addresses=None,  # optional
                               additional_tickets=None,  # optional
@@ -1463,8 +1462,12 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if till_time is None:
             till_time = self.get_KerberosTime(offset=36000)
-        if nonce is None:
+
+        if 'nonce' in kdc_exchange_dict:
+            nonce = kdc_exchange_dict['nonce']
+        else:
             nonce = self.get_Nonce()
+            kdc_exchange_dict['nonce'] = nonce
 
         req_body = self.KDC_REQ_BODY_create(
             kdc_options=kdc_options,
@@ -1755,7 +1758,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertElementPresent(encpart_key, 'keyvalue')
                 encpart_session_key = self.EncryptionKey_import(encpart_key)
             self.assertElementPresent(encpart_private, 'last-req')
-            self.assertElementPresent(encpart_private, 'nonce')
+            self.assertElementEqual(encpart_private, 'nonce',
+                                    kdc_exchange_dict['nonce'])
             # TODO self.assertElementPresent(encpart_private,
             #                                'key-expiration')
             self.assertElementPresent(encpart_private, 'flags')
