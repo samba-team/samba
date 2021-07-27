@@ -69,6 +69,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_FOR_USER,
     PADATA_FX_FAST,
     PADATA_KDC_REQ,
+    PADATA_PAC_OPTIONS,
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19
@@ -2381,6 +2382,30 @@ class RawKerberosTest(TestCaseInTempDir):
             return req_pa_dict
 
         return self.get_outer_pa_dict(kdc_exchange_dict)
+
+    def sent_fast(self, kdc_exchange_dict):
+        outer_pa_dict = self.get_outer_pa_dict(kdc_exchange_dict)
+
+        return PADATA_FX_FAST in outer_pa_dict
+
+    def sent_enc_challenge(self, kdc_exchange_dict):
+        fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
+
+        return PADATA_ENCRYPTED_CHALLENGE in fast_pa_dict
+
+    def sent_claims(self, kdc_exchange_dict):
+        fast_pa_dict = self.get_fast_pa_dict(kdc_exchange_dict)
+
+        if PADATA_PAC_OPTIONS not in fast_pa_dict:
+            return False
+
+        pac_options = self.der_decode(fast_pa_dict[PADATA_PAC_OPTIONS],
+                                      asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
+        pac_options = pac_options['options']
+        claims_pos = len(tuple(krb5_asn1.PACOptionFlags('claims'))) - 1
+
+        return (claims_pos < len(pac_options)
+                and pac_options[claims_pos] == '1')
 
     def _test_as_exchange(self,
                           cname,
