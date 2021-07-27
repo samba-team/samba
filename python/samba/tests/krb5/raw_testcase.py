@@ -2371,6 +2371,17 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
 
+    def get_outer_pa_dict(self, kdc_exchange_dict):
+        return self.get_pa_dict(kdc_exchange_dict['req_padata'])
+
+    def get_fast_pa_dict(self, kdc_exchange_dict):
+        req_pa_dict = self.get_pa_dict(kdc_exchange_dict['fast_padata'])
+
+        if req_pa_dict:
+            return req_pa_dict
+
+        return self.get_outer_pa_dict(kdc_exchange_dict)
+
     def _test_as_exchange(self,
                           cname,
                           realm,
