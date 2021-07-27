@@ -1786,6 +1786,7 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_patypes += (PADATA_PK_AS_REQ,)
         expected_patypes += (PADATA_PK_AS_REP_19,)
 
+        self.assertElementEqual(rep, 'pvno', 5)
         self.assertElementEqual(rep, 'msg-type', KRB_ERROR)
         self.assertElementEqual(rep, 'error-code', expected_error)
         self.assertElementMissing(rep, 'ctime')
