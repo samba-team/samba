@@ -40,6 +40,7 @@ from samba.tests import TestCaseInTempDir
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_ETYPE_NOSUPP,
+    KDC_ERR_GENERIC,
     KDC_ERR_PREAUTH_REQUIRED,
     KRB_AP_REQ,
     KRB_AS_REP,
@@ -1799,7 +1800,7 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
         if self.strict_checking:
             self.assertElementMissing(rep, 'e-text')
-        if expected_error_mode != KDC_ERR_PREAUTH_REQUIRED:
+        if expected_error_mode == KDC_ERR_GENERIC:
             self.assertElementMissing(rep, 'e-data')
             return
         edata = self.getElementValue(rep, 'e-data')
