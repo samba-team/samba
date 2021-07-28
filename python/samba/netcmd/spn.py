@@ -18,7 +18,6 @@
 
 import samba.getopt as options
 import ldb
-from samba import provision
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.netcmd.common import _get_user_realm_domain
@@ -40,14 +39,20 @@ class cmd_spn_list(Command):
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
     }
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
 
     takes_args = ["user"]
 
-    def run(self, user, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, user, H=None,
+            credopts=None,
+            sambaopts=None,
+            versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        sam = SamDB(H, session_info=system_session(),
                     credentials=creds, lp=lp)
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
@@ -82,17 +87,20 @@ class cmd_spn_add(Command):
         "versionopts": options.VersionOptions,
     }
     takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
         Option("--force", help="Force the addition of the spn"
                                " even it exists already", action="store_true"),
-            ]
+    ]
     takes_args = ["name", "user"]
 
-    def run(self, name, user, force=False, credopts=None, sambaopts=None,
+    def run(self, name, user, H=None, force=False,
+            credopts=None,
+            sambaopts=None,
             versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        sam = SamDB(H, session_info=system_session(),
                     credentials=creds, lp=lp)
         res = sam.search(
             expression="servicePrincipalName=%s" % ldb.binary_encode(name),
@@ -141,15 +149,18 @@ class cmd_spn_delete(Command):
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
     }
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
 
     takes_args = ["name", "user?"]
 
-    def run(self, name, user=None, credopts=None, sambaopts=None,
+    def run(self, name, user=None, H=None, credopts=None, sambaopts=None,
             versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
-        sam = SamDB(paths.samdb, session_info=system_session(),
+        sam = SamDB(H, session_info=system_session(),
                     credentials=creds, lp=lp)
         res = sam.search(
             expression="servicePrincipalName=%s" % ldb.binary_encode(name),
