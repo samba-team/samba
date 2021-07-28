@@ -1435,7 +1435,7 @@ planpythontestsuite(
     environ={
         'ADMIN_USERNAME': '$USERNAME',
         'ADMIN_PASSWORD': '$PASSWORD',
-        'SERVICE_USERNAME': '$SERVER'
+        'STRICT_CHECKING': '0',
     })
 planpythontestsuite(
     "ad_dc",
