@@ -1971,10 +1971,10 @@ class RawKerberosTest(TestCaseInTempDir):
         kdc_exchange_dict['preauth_etype_info2'] = etype_info2
         return
 
-    def generate_simple_tgs_padata(self,
-                                   kdc_exchange_dict,
-                                   callback_dict,
-                                   req_body):
+    def generate_ap_req(self,
+                        kdc_exchange_dict,
+                        _callback_dict,
+                        req_body):
         tgt = kdc_exchange_dict['tgt']
         authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
         body_checksum_type = kdc_exchange_dict['body_checksum_type']
@@ -2014,6 +2014,16 @@ class RawKerberosTest(TestCaseInTempDir):
                                         ticket=tgt.ticket,
                                         authenticator=authenticator)
         ap_req = self.der_encode(ap_req_obj, asn1Spec=krb5_asn1.AP_REQ())
+
+        return ap_req
+
+    def generate_simple_tgs_padata(self,
+                                   kdc_exchange_dict,
+                                   callback_dict,
+                                   req_body):
+        ap_req = self.generate_ap_req(kdc_exchange_dict,
+                                      callback_dict,
+                                      req_body)
         pa_tgs_req = self.PA_DATA_create(PADATA_KDC_REQ, ap_req)
         padata = [pa_tgs_req]
 
