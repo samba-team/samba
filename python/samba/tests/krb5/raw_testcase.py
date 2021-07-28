@@ -49,6 +49,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_ERROR,
     KRB_TGS_REP,
     KRB_TGS_REQ,
+    KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
     KU_NON_KERB_CKSUM_SALT,
     KU_TGS_REP_ENC_PART_SESSION,
@@ -1563,7 +1564,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
             tgs_req = self.generate_ap_req(kdc_exchange_dict,
                                            callback_dict,
-                                           req_body)
+                                           req_body,
+                                           armor=False)
             tgs_req_padata = self.PA_DATA_create(PADATA_KDC_REQ, tgs_req)
 
         if generate_padata_fn is not None:
@@ -1633,6 +1635,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          client_as_etypes=None,
                          expected_salt=None,
                          authenticator_subkey=None,
+                         armor_tgt=None,
+                         armor_subkey=None,
                          kdc_options=''):
         kdc_exchange_dict = {
             'req_msg_type': KRB_AS_REQ,
@@ -1655,6 +1659,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
+            'armor_tgt': armor_tgt,
+            'armor_subkey': armor_subkey,
             'kdc_options': kdc_options,
         }
         if callback_dict is None:
@@ -1675,6 +1681,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_kdc_private_fn=None,
                           callback_dict=None,
                           tgt=None,
+                          armor_tgt=None,
+                          armor_subkey=None,
                           authenticator_subkey=None,
                           body_checksum_type=None,
                           kdc_options=''):
@@ -1697,6 +1705,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'callback_dict': callback_dict,
             'tgt': tgt,
             'body_checksum_type': body_checksum_type,
+            'armor_tgt': armor_tgt,
+            'armor_subkey': armor_subkey,
             'authenticator_subkey': authenticator_subkey,
             'kdc_options': kdc_options
         }
@@ -2068,18 +2078,25 @@ class RawKerberosTest(TestCaseInTempDir):
     def generate_ap_req(self,
                         kdc_exchange_dict,
                         _callback_dict,
-                        req_body):
-        tgt = kdc_exchange_dict['tgt']
-        authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
-        body_checksum_type = kdc_exchange_dict['body_checksum_type']
+                        req_body,
+                        armor):
+        if armor:
+            tgt = kdc_exchange_dict['armor_tgt']
+            authenticator_subkey = kdc_exchange_dict['armor_subkey']
 
-        req_body_blob = self.der_encode(req_body,
-                                        asn1Spec=krb5_asn1.KDC_REQ_BODY())
+            req_body_checksum = None
+        else:
+            tgt = kdc_exchange_dict['tgt']
+            authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
+            body_checksum_type = kdc_exchange_dict['body_checksum_type']
 
-        req_body_checksum = self.Checksum_create(tgt.session_key,
-                                                 KU_TGS_REQ_AUTH_CKSUM,
-                                                 req_body_blob,
-                                                 ctype=body_checksum_type)
+            req_body_blob = self.der_encode(req_body,
+                                            asn1Spec=krb5_asn1.KDC_REQ_BODY())
+
+            req_body_checksum = self.Checksum_create(tgt.session_key,
+                                                     KU_TGS_REQ_AUTH_CKSUM,
+                                                     req_body_blob,
+                                                     ctype=body_checksum_type)
 
         subkey_obj = None
         if authenticator_subkey is not None:
@@ -2099,8 +2116,9 @@ class RawKerberosTest(TestCaseInTempDir):
             authenticator_obj,
             asn1Spec=krb5_asn1.Authenticator())
 
+        usage = KU_AP_REQ_AUTH if armor else KU_TGS_REQ_AUTH
         authenticator = self.EncryptedData_create(tgt.session_key,
-                                                  KU_TGS_REQ_AUTH,
+                                                  usage,
                                                   authenticator_blob)
 
         ap_options = krb5_asn1.APOptions('0')
@@ -2117,7 +2135,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                    req_body):
         ap_req = self.generate_ap_req(kdc_exchange_dict,
                                       callback_dict,
-                                      req_body)
+                                      req_body,
+                                      armor=False)
         pa_tgs_req = self.PA_DATA_create(PADATA_KDC_REQ, ap_req)
         padata = [pa_tgs_req]
 
