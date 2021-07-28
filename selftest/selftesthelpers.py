@@ -201,7 +201,8 @@ def plansmbtorture4testsuite(name, env, options, target, modname=None, environ={
     cmdline = ""
     if environ:
         environ = dict(environ)
-        cmdline = ["%s=%s" % item for item in environ.items()]
+        cmdline_env = ["%s=%s" % item for item in environ.items()]
+        cmdline += " ".join(cmdline_env) + " "
     cmdline += " %s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
