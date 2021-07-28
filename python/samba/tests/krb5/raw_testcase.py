@@ -42,6 +42,7 @@ from samba.tests import TestCaseInTempDir
 
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_GENERIC,
     KRB_AP_REQ,
     KRB_AS_REP,
@@ -51,6 +52,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KRB_TGS_REQ,
     KU_AP_REQ_AUTH,
     KU_AS_REP_ENC_PART,
+    KU_FAST_REQ_CHKSUM,
     KU_NON_KERB_CKSUM_SALT,
     KU_TGS_REP_ENC_PART_SESSION,
     KU_TGS_REP_ENC_PART_SUB_KEY,
@@ -1522,6 +1524,9 @@ class RawKerberosTest(TestCaseInTempDir):
 
         check_error_fn = kdc_exchange_dict['check_error_fn']
         check_rep_fn = kdc_exchange_dict['check_rep_fn']
+        generate_fast_fn = kdc_exchange_dict['generate_fast_fn']
+        generate_fast_armor_fn = kdc_exchange_dict['generate_fast_armor_fn']
+        generate_fast_padata_fn = kdc_exchange_dict['generate_fast_padata_fn']
         generate_padata_fn = kdc_exchange_dict['generate_padata_fn']
         callback_dict = kdc_exchange_dict['callback_dict']
         req_msg_type = kdc_exchange_dict['req_msg_type']
@@ -1568,25 +1573,81 @@ class RawKerberosTest(TestCaseInTempDir):
                                            armor=False)
             tgs_req_padata = self.PA_DATA_create(PADATA_KDC_REQ, tgs_req)
 
+        if generate_fast_padata_fn is not None:
+            self.assertIsNotNone(generate_fast_fn)
+            # This can alter req_body...
+            fast_padata, req_body = generate_fast_padata_fn(kdc_exchange_dict,
+                                                            callback_dict,
+                                                            req_body)
+        else:
+            fast_padata = []
+
+        if generate_fast_armor_fn is not None:
+            self.assertIsNotNone(generate_fast_fn)
+            fast_ap_req = generate_fast_armor_fn(kdc_exchange_dict,
+                                                 callback_dict,
+                                                 req_body,
+                                                 armor=True)
+
+            fast_armor_type = kdc_exchange_dict['fast_armor_type']
+            fast_armor = self.KRB_FAST_ARMOR_create(fast_armor_type,
+                                                    fast_ap_req)
+        else:
+            fast_armor = None
+
         if generate_padata_fn is not None:
             # This can alter req_body...
-            padata, req_body = generate_padata_fn(kdc_exchange_dict,
-                                                  callback_dict,
-                                                  req_body)
-            self.assertIsNotNone(padata)
+            outer_padata, req_body = generate_padata_fn(kdc_exchange_dict,
+                                                        callback_dict,
+                                                        req_body)
+            self.assertIsNotNone(outer_padata)
             self.assertNotIn(PADATA_KDC_REQ,
-                             [pa['padata-type'] for pa in padata],
+                             [pa['padata-type'] for pa in outer_padata],
                              'Don\'t create TGS-REQ manually')
         else:
-            padata = []
+            outer_padata = None
+
+        if generate_fast_fn is not None:
+            armor_key = kdc_exchange_dict['armor_key']
+            self.assertIsNotNone(armor_key)
+
+            if req_msg_type == KRB_AS_REQ:
+                checksum_blob = self.der_encode(
+                    req_body,
+                    asn1Spec=krb5_asn1.KDC_REQ_BODY())
+            else:
+                self.assertEqual(KRB_TGS_REQ, req_msg_type)
+                checksum_blob = tgs_req
+
+            checksum = self.Checksum_create(armor_key,
+                                            KU_FAST_REQ_CHKSUM,
+                                            checksum_blob)
+
+            fast = generate_fast_fn(kdc_exchange_dict,
+                                    callback_dict,
+                                    req_body,
+                                    fast_padata,
+                                    fast_armor,
+                                    checksum)
+        else:
+            fast = None
+
+        padata = []
 
         if tgs_req_padata is not None:
-            padata.insert(0, tgs_req_padata)
+            padata.append(tgs_req_padata)
+
+        if fast is not None:
+            padata.append(fast)
+
+        if outer_padata is not None:
+            padata += outer_padata
 
         if not padata:
             padata = None
 
         kdc_exchange_dict['req_padata'] = padata
+        kdc_exchange_dict['fast_padata'] = fast_padata
         kdc_exchange_dict['req_body'] = req_body
 
         req_obj, req_decoded = self.KDC_REQ_create(msg_type=req_msg_type,
@@ -1625,6 +1686,10 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_srealm=None,
                          expected_sname=None,
                          ticket_decryption_key=None,
+                         generate_fast_fn=None,
+                         generate_fast_armor_fn=None,
+                         generate_fast_padata_fn=None,
+                         fast_armor_type=FX_FAST_ARMOR_AP_REQUEST,
                          generate_padata_fn=None,
                          check_error_fn=None,
                          check_rep_fn=None,
@@ -1635,6 +1700,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          client_as_etypes=None,
                          expected_salt=None,
                          authenticator_subkey=None,
+                         armor_key=None,
                          armor_tgt=None,
                          armor_subkey=None,
                          kdc_options=''):
@@ -1649,6 +1715,10 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'ticket_decryption_key': ticket_decryption_key,
+            'generate_fast_fn': generate_fast_fn,
+            'generate_fast_armor_fn': generate_fast_armor_fn,
+            'generate_fast_padata_fn': generate_fast_padata_fn,
+            'fast_armor_type': fast_armor_type,
             'generate_padata_fn': generate_padata_fn,
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
@@ -1659,6 +1729,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
+            'armor_key': armor_key,
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
             'kdc_options': kdc_options,
@@ -1674,6 +1745,10 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_srealm=None,
                           expected_sname=None,
                           ticket_decryption_key=None,
+                          generate_fast_fn=None,
+                          generate_fast_armor_fn=None,
+                          generate_fast_padata_fn=None,
+                          fast_armor_type=FX_FAST_ARMOR_AP_REQUEST,
                           generate_padata_fn=None,
                           check_error_fn=None,
                           check_rep_fn=None,
@@ -1681,6 +1756,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_kdc_private_fn=None,
                           callback_dict=None,
                           tgt=None,
+                          armor_key=None,
                           armor_tgt=None,
                           armor_subkey=None,
                           authenticator_subkey=None,
@@ -1697,6 +1773,10 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'ticket_decryption_key': ticket_decryption_key,
+            'generate_fast_fn': generate_fast_fn,
+            'generate_fast_armor_fn': generate_fast_armor_fn,
+            'generate_fast_padata_fn': generate_fast_padata_fn,
+            'fast_armor_type': fast_armor_type,
             'generate_padata_fn': generate_padata_fn,
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
@@ -1705,6 +1785,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'callback_dict': callback_dict,
             'tgt': tgt,
             'body_checksum_type': body_checksum_type,
+            'armor_key': armor_key,
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
             'authenticator_subkey': authenticator_subkey,
