@@ -34,9 +34,13 @@ from selftesthelpers import smbtorture4, ntlm_auth3, samba3srcdir
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
 
-def plansmbtorture4testsuite(name, env, options, modname=None):
-    return selftesthelpers.plansmbtorture4testsuite(name, env, options,
-                                                    target='samba4', modname=modname)
+def plansmbtorture4testsuite(name, env, options, modname=None, environ={}):
+    return selftesthelpers.plansmbtorture4testsuite(name,
+                                                    env,
+                                                    options,
+                                                    target='samba4',
+                                                    modname=modname,
+                                                    environ=environ)
 
 
 samba4srcdir = source4dir()
