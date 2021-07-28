@@ -1237,26 +1237,28 @@ failed:
 
 static void initialise_node_flags (struct ctdb_context *ctdb)
 {
+	struct ctdb_node *node = NULL;
 	unsigned int i;
 
 	/* Always found: PNN correctly set just before this is called */
 	for (i = 0; i < ctdb->num_nodes; i++) {
-		if (ctdb->pnn == ctdb->nodes[i]->pnn) {
+		node = ctdb->nodes[i];
+		if (ctdb->pnn == node->pnn) {
 			break;
 		}
 	}
 
-	ctdb->nodes[i]->flags &= ~NODE_FLAGS_DISCONNECTED;
+	node->flags &= ~NODE_FLAGS_DISCONNECTED;
 
 	/* do we start out in DISABLED mode? */
 	if (ctdb->start_as_disabled != 0) {
 		D_ERR("This node is configured to start in DISABLED state\n");
-		ctdb->nodes[i]->flags |= NODE_FLAGS_DISABLED;
+		node->flags |= NODE_FLAGS_DISABLED;
 	}
 	/* do we start out in STOPPED mode? */
 	if (ctdb->start_as_stopped != 0) {
 		D_ERR("This node is configured to start in STOPPED state\n");
-		ctdb->nodes[i]->flags |= NODE_FLAGS_STOPPED;
+		node->flags |= NODE_FLAGS_STOPPED;
 	}
 }
 
