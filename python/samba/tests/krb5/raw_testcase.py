@@ -1632,6 +1632,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_error_mode=0,
                          client_as_etypes=None,
                          expected_salt=None,
+                         authenticator_subkey=None,
                          kdc_options=''):
         kdc_exchange_dict = {
             'req_msg_type': KRB_AS_REQ,
@@ -1653,6 +1654,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_error_mode': expected_error_mode,
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
+            'authenticator_subkey': authenticator_subkey,
             'kdc_options': kdc_options,
         }
         if callback_dict is None:
