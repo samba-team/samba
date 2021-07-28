@@ -1888,10 +1888,10 @@ class RawKerberosTest(TestCaseInTempDir):
 
         kdc_exchange_dict['rep_ticket_creds'] = ticket_creds
 
-    def generic_check_as_error(self,
-                               kdc_exchange_dict,
-                               callback_dict,
-                               rep):
+    def generic_check_kdc_error(self,
+                                kdc_exchange_dict,
+                                callback_dict,
+                                rep):
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
@@ -2208,7 +2208,7 @@ class RawKerberosTest(TestCaseInTempDir):
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
         else:
-            check_error_fn = self.generic_check_as_error
+            check_error_fn = self.generic_check_kdc_error
             check_rep_fn = None
 
         if padata is not None:
