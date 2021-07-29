@@ -55,6 +55,9 @@ struct gpfs_config_data {
 	bool acl;
 	bool settimes;
 	bool recalls;
+	struct {
+		bool gpfs_fstat_x;
+	} pathref_ok;
 };
 
 struct gpfs_fsp_extension {
@@ -1856,6 +1859,68 @@ static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
 	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
 }
 
+#ifdef O_PATH
+static int vfs_gpfs_check_pathref_fstat_x(struct gpfs_config_data *config,
+					  struct connection_struct *conn)
+{
+	struct gpfs_iattr64 iattr = {0};
+	unsigned int litemask;
+	int saved_errno;
+	int fd;
+	int ret;
+
+	fd = open(conn->connectpath, O_PATH);
+	if (fd == -1) {
+		DBG_ERR("openat() of share with O_PATH failed: %s\n",
+			strerror(errno));
+		return -1;
+	}
+
+	ret = gpfswrap_fstat_x(fd, &litemask, &iattr, sizeof(iattr));
+	if (ret == 0) {
+		close(fd);
+		config->pathref_ok.gpfs_fstat_x = true;
+		return 0;
+	}
+
+	saved_errno = errno;
+	ret = close(fd);
+	if (ret != 0) {
+		DBG_ERR("close failed: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if (saved_errno != EBADF) {
+		DBG_ERR("gpfswrap_fstat_x() of O_PATH handle failed: %s\n",
+			strerror(saved_errno));
+		return -1;
+	}
+
+	return 0;
+}
+#endif
+
+static int vfs_gpfs_check_pathref(struct gpfs_config_data *config,
+				  struct connection_struct *conn)
+{
+#ifndef O_PATH
+	/*
+	 * This code path leaves all struct gpfs_config_data.pathref_ok members
+	 * initialized to false.
+	 */
+	return 0;
+#else
+	int ret;
+
+	ret = vfs_gpfs_check_pathref_fstat_x(config, conn);
+	if (ret != 0) {
+		return -1;
+	}
+
+	return 0;
+#endif
+}
+
 static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 			    const char *service, const char *user)
 {
@@ -1944,6 +2009,14 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 					"settimes", true);
 	config->recalls = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				       "recalls", true);
+
+	ret = vfs_gpfs_check_pathref(config, handle->conn);
+	if (ret != 0) {
+		DBG_ERR("vfs_gpfs_check_pathref() on [%s] failed\n",
+			handle->conn->connectpath);
+		TALLOC_FREE(config);
+		return -1;
+	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
