@@ -670,6 +670,45 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_outer_no_sname(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'outer_req': {
+                    'sname': None  # should be ignored
+                }
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_padata_fn': self.generate_enc_challenge_padata,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'outer_req': {
+                    'sname': None  # should be ignored
+                }
+            }
+        ])
+
+    def test_fast_tgs_outer_no_sname(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': 0,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None,
+                'outer_req': {
+                    'sname': None  # should be ignored
+                }
+            }
+        ])
+
     def test_fast_outer_wrong_till(self):
         self._run_test_sequence([
             {
