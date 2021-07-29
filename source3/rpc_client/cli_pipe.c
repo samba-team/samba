@@ -1964,91 +1964,82 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 
-	switch(pauth->auth_type) {
-
-	case DCERPC_AUTH_TYPE_NONE:
+	if (pauth->auth_type == DCERPC_AUTH_TYPE_NONE) {
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
+	}
 
-	default:
-		if (pkt->auth_length == 0) {
-			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
-			return;
-		}
+	if (pkt->auth_length == 0) {
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
 
-		/* get auth credentials */
-		status = dcerpc_pull_auth_trailer(pkt, talloc_tos(),
-						  &pkt->u.bind_ack.auth_info,
-						  &auth, NULL, true);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
-				  nt_errstr(status)));
-			tevent_req_nterror(req, status);
-			return;
-		}
+	/* get auth credentials */
+	status = dcerpc_pull_auth_trailer(pkt, talloc_tos(),
+					  &pkt->u.bind_ack.auth_info,
+					  &auth, NULL, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
+			  nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
 
-		if (auth.auth_type != pauth->auth_type) {
-			DEBUG(0, (__location__ " Auth type %u mismatch expected %u.\n",
-				  auth.auth_type, pauth->auth_type));
-			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
-			return;
-		}
+	if (auth.auth_type != pauth->auth_type) {
+		DBG_ERR("Auth type %u mismatch expected %u.\n",
+			auth.auth_type, pauth->auth_type);
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
 
-		if (auth.auth_level != pauth->auth_level) {
-			DEBUG(0, (__location__ " Auth level %u mismatch expected %u.\n",
-				  auth.auth_level, pauth->auth_level));
-			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
-			return;
-		}
+	if (auth.auth_level != pauth->auth_level) {
+		DBG_ERR("Auth level %u mismatch expected %u.\n",
+			auth.auth_level, pauth->auth_level);
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
 
-		if (auth.auth_context_id != pauth->auth_context_id) {
-			DEBUG(0, (__location__ " Auth context id %u mismatch expected %u.\n",
-				  (unsigned)auth.auth_context_id,
-				  (unsigned)pauth->auth_context_id));
-			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
-			return;
-		}
-
-		break;
+	if (auth.auth_context_id != pauth->auth_context_id) {
+		DBG_ERR("Auth context id %"PRIu32" mismatch "
+			"expected %"PRIu32".\n",
+			auth.auth_context_id,
+			pauth->auth_context_id);
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
 	}
 
 	/*
 	 * For authenticated binds we may need to do 3 or 4 leg binds.
 	 */
 
-	switch(pauth->auth_type) {
-
-	case DCERPC_AUTH_TYPE_NONE:
+	if (pauth->auth_type == DCERPC_AUTH_TYPE_NONE) {
 		/* Bind complete. */
 		tevent_req_done(req);
 		return;
+	}
 
-	default:
-		gensec_security = pauth->auth_ctx;
+	gensec_security = pauth->auth_ctx;
 
-
-		status = gensec_update(gensec_security, state,
-				       auth.credentials, &auth_token);
-		if (NT_STATUS_EQUAL(status,
-				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			status = rpc_bind_next_send(req, state,
-							&auth_token);
-		} else if (NT_STATUS_IS_OK(status)) {
-			if (pauth->hdr_signing) {
-				gensec_want_feature(gensec_security,
-						    GENSEC_FEATURE_SIGN_PKT_HEADER);
-			}
-
-			if (auth_token.length == 0) {
-				/* Bind complete. */
-				tevent_req_done(req);
-				return;
-			}
-			status = rpc_bind_finish_send(req, state,
-							&auth_token);
+	status = gensec_update(gensec_security, state,
+			       auth.credentials, &auth_token);
+	if (NT_STATUS_EQUAL(status,
+			    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = rpc_bind_next_send(req, state,
+					    &auth_token);
+	} else if (NT_STATUS_IS_OK(status)) {
+		if (pauth->hdr_signing) {
+			gensec_want_feature(gensec_security,
+					    GENSEC_FEATURE_SIGN_PKT_HEADER);
 		}
-		break;
+
+		if (auth_token.length == 0) {
+			/* Bind complete. */
+			tevent_req_done(req);
+			return;
+		}
+		status = rpc_bind_finish_send(req, state,
+					      &auth_token);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
