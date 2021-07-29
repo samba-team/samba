@@ -405,6 +405,21 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_encrypted_challenge_no_fast(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_REQUIRED,
+                'use_fast': False
+            },
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_PREAUTH_FAILED,
+                'use_fast': False,
+                'gen_padata_fn': self.generate_enc_challenge_padata_wrong_key
+            }
+        ])
+
     def test_fast_encrypted_challenge_clock_skew(self):
         # The KDC is supposed to confirm that the timestamp is within its
         # current clock skew, and return KRB_APP_ERR_SKEW if it is not (RFC6113
