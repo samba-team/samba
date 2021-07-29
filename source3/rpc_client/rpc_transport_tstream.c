@@ -95,10 +95,9 @@ static void rpc_tstream_next_vector_init(
 				struct rpc_tstream_next_vector_state *s,
 				uint8_t *buf, size_t len)
 {
-	ZERO_STRUCTP(s);
-
-	s->buf = buf;
-	s->len = MIN(len, UINT16_MAX);
+	*s = (struct rpc_tstream_next_vector_state) {
+		.buf = buf, .len = MIN(len, UINT16_MAX),
+	};
 }
 
 static int rpc_tstream_next_vector(struct tstream_context *stream,
