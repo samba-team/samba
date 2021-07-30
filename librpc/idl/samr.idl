@@ -779,7 +779,9 @@ import "misc.idl", "lsa.idl", "security.idl";
 		UserInternal4Information	= 23,
 		UserInternal5Information	= 24,
 		UserInternal4InformationNew	= 25,
-		UserInternal5InformationNew	= 26
+		UserInternal5InformationNew	= 26,
+		UserInternal7InformationNew	= 31,
+		UserInternal8InformationNew	= 32
 	} samr_UserInfoLevel;
 
 	typedef struct {
@@ -1014,6 +1016,24 @@ import "misc.idl", "lsa.idl", "security.idl";
 		uint8 password_expired;
 	} samr_UserInfo26;
 
+	typedef struct {
+		uint8 auth_data[64];
+		uint8 salt[16];
+		uint32 cipher_len;
+		[size_is(cipher_len)] uint8 *cipher;
+		hyper PBKDF2Iterations;
+	} samr_EncryptedPasswordAES;
+
+	typedef struct {
+		samr_EncryptedPasswordAES password;
+		uint8 password_expired;
+	} samr_UserInfo31;
+
+	typedef struct {
+		samr_UserInfo21 info;
+		samr_EncryptedPasswordAES password;
+	} samr_UserInfo32;
+
 	typedef [switch_type(uint16)] union {
 		[case(1)] samr_UserInfo1 info1;
 		[case(2)] samr_UserInfo2 info2;
@@ -1038,6 +1058,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[case(24)] samr_UserInfo24 info24;
 		[case(25)] samr_UserInfo25 info25;
 		[case(26)] samr_UserInfo26 info26;
+		[case(31)] samr_UserInfo31 info31;
+		[case(32)] samr_UserInfo32 info32;
 	} samr_UserInfo;
 
 	[public] NTSTATUS samr_QueryUserInfo(
