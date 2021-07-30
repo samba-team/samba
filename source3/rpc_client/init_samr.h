@@ -29,4 +29,25 @@ NTSTATUS init_samr_CryptPassword(const char *pwd,
 				 DATA_BLOB *session_key,
 				 struct samr_CryptPassword *pwd_buf);
 
+/**
+ * @brief Initialize a AES encrypted password structure.
+ *
+ * This takes a password and a session key and encrypts the password. The
+ * encrypted password is then stored in the encrypted passwors structure.
+ *
+ * @param mem_ctx       The memory context to allocate the password buffer on.
+ *
+ * @param password      The password to encrypt.
+ *
+ * @param session_key   The session key used to encrypt the password.
+ *
+ * @param ppwd_buf      A pointer to the talloc allocated password structure.
+ *
+ * @return On success NT_STATUS_OK, an error status code otherwise.
+ */
+NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
+				    const char *password,
+				    DATA_BLOB *session_key,
+				    struct samr_EncryptedPasswordAES *ppwd_buf);
+
 #endif /* _RPC_CLIENT_INIT_SAMR_H_ */

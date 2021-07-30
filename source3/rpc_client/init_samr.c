@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "rpc_client/init_samr.h"
+#include "librpc/rpc/dcerpc_samr.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -72,6 +73,61 @@ NTSTATUS init_samr_CryptPassword(const char *pwd,
 	if (rc != 0) {
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS init_samr_CryptPasswordAES(TALLOC_CTX *mem_ctx,
+				    const char *password,
+				    DATA_BLOB *session_key,
+				    struct samr_EncryptedPasswordAES *ppwd_buf)
+{
+	uint8_t pw_data[514] = {0};
+	DATA_BLOB plaintext = {
+		.data = pw_data,
+		.length = sizeof(pw_data),
+	};
+	size_t iv_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_256_CBC);
+	uint8_t iv_data[iv_size];
+	DATA_BLOB iv = {
+		.data = iv_data,
+		.length = iv_size,
+	};
+	DATA_BLOB ciphertext = data_blob_null;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	bool ok;
+
+	if (ppwd_buf == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	generate_nonce_buffer(iv.data, iv.length);
+
+	ok = encode_pwd_buffer514_from_str(pw_data, password, STR_UNICODE);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(
+			mem_ctx,
+			&plaintext,
+			session_key,
+			&samr_aes256_enc_key_salt,
+			&samr_aes256_mac_key_salt,
+			&iv,
+			&ciphertext,
+			ppwd_buf->auth_data);
+	BURN_DATA(pw_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ppwd_buf->cipher_len = ciphertext.length;
+	ppwd_buf->cipher = ciphertext.data;
+	ppwd_buf->PBKDF2Iterations = 0;
+
+	SMB_ASSERT(iv.length == sizeof(ppwd_buf->salt));
+	memcpy(ppwd_buf->salt, iv.data, iv.length);
 
 	return NT_STATUS_OK;
 }
