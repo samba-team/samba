@@ -6655,61 +6655,48 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 				     struct files_struct *fsp,
-				     struct smb_filename *smb_fname,
 				     uint32_t dosmode)
 {
-	struct smb_filename *smb_fname_base;
-	NTSTATUS status;
+	struct files_struct *dos_fsp = NULL;
+	uint32_t current_dosmode;
+	int ret;
 
-	if (!VALID_STAT(smb_fname->st)) {
+	if (!VALID_STAT(fsp->fsp_name->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	/* Always operate on the base_name, even if a stream was passed in. */
-	status = synthetic_pathref(talloc_tos(),
-					conn->cwd_fsp,
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->twrp,
-					smb_fname->flags,
-					&smb_fname_base);
+	dos_fsp = fsp->base_fsp != NULL ? fsp->base_fsp : fsp;
 
-	/* do we handle link as non error here ? */
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (dosmode) {
-		if (S_ISDIR(smb_fname_base->st.st_ex_mode)) {
+	if (dosmode != 0) {
+		if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
 			dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 		} else {
 			dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
 		}
 	}
 
-	DEBUG(6,("smb_set_file_dosmode: dosmode: 0x%x\n", (unsigned int)dosmode));
+	DBG_DEBUG("dosmode: 0x%" PRIx32 "\n", dosmode);
 
 	/* check the mode isn't different, before changing it */
-	if ((dosmode != 0) && (dosmode != fdos_mode(fsp))) {
-		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode "
-			  "0x%x\n", smb_fname_str_dbg(smb_fname_base),
-			  (unsigned int)dosmode));
-
-		if(file_set_dosmode(conn, smb_fname_base, dosmode, NULL,
-				    false)) {
-			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of "
-				 "%s failed (%s)\n",
-				 smb_fname_str_dbg(smb_fname_base),
-				 strerror(errno)));
-			status = map_nt_error_from_unix(errno);
-			goto out;
-		}
+	if (dosmode == 0) {
+		return NT_STATUS_OK;
 	}
-	status = NT_STATUS_OK;
- out:
-	TALLOC_FREE(smb_fname_base);
-	return status;
+	current_dosmode = fdos_mode(dos_fsp);
+	if (dosmode == current_dosmode) {
+		return NT_STATUS_OK;
+	}
+
+	DBG_DEBUG("file %s : setting dos mode 0x%" PRIx32 "\n",
+		  fsp_str_dbg(dos_fsp), dosmode);
+
+	ret = file_set_dosmode(conn, dos_fsp->fsp_name, dosmode, NULL, false);
+	if (ret != 0) {
+		DBG_WARNING("file_set_dosmode of %s failed: %s\n",
+			    fsp_str_dbg(dos_fsp), strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -7912,7 +7899,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
-	status = smb_set_file_dosmode(conn, fsp, smb_fname, dosmode);
+	status = smb_set_file_dosmode(conn, fsp, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
