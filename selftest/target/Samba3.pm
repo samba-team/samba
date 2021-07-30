@@ -517,6 +517,7 @@ sub setup_clusteredmember
        server signing = on
        clustering = yes
        ctdbd socket = ${socket}
+       include = registry
        dbwrap_tdb_mutexes:* = yes
        ${require_mutexes}
 ";
