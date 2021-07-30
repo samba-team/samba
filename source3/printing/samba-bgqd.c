@@ -195,6 +195,44 @@ static int closeall_except(int *fds, size_t num_fds)
 	return 0;
 }
 
+static int closeall_except_fd_params(
+	size_t num_fd_params,
+	const char *fd_params[],
+	int argc,
+	const char *argv[])
+{
+	int fds[num_fd_params+3];
+	size_t i;
+	struct poptOption long_options[num_fd_params + 1];
+	poptContext pc;
+	int ret;
+
+	for (i=0; i<num_fd_params; i++) {
+		fds[i] = -1;
+		long_options[i] = (struct poptOption) {
+			.longName = fd_params[i],
+			.argInfo = POPT_ARG_INT,
+			.arg = &fds[i],
+		};
+	}
+	long_options[num_fd_params] = (struct poptOption) { .longName=NULL, };
+
+	fds[num_fd_params] = 0;
+	fds[num_fd_params+1] = 1;
+	fds[num_fd_params+2] = 2;
+
+	pc = poptGetContext(argv[0], argc, argv, long_options, 0);
+
+	while ((ret = poptGetNextOpt(pc)) != -1) {
+		/* do nothing */
+	}
+
+	poptFreeContext(pc);
+
+	ret = closeall_except(fds, ARRAY_SIZE(fds));
+	return ret;
+}
+
 int main(int argc, const char *argv[])
 {
 	const struct loadparm_substitution *lp_sub =
@@ -261,6 +299,15 @@ int main(int argc, const char *argv[])
 		POPT_TABLEEND
 	};
 
+	{
+		const char *fd_params[] = {
+			"ready-signal-fd", "parent-watch-fd",
+		};
+
+		closeall_except_fd_params(
+			ARRAY_SIZE(fd_params), fd_params, argc, argv);
+	}
+
 	frame = talloc_stackframe();
 
 	umask(0);
@@ -292,17 +339,6 @@ int main(int argc, const char *argv[])
 	poptFreeContext(pc);
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
-
-	{
-		int keep[] = { 0, 1, 2, ready_signal_fd, watch_fd };
-		ret = closeall_except(keep, ARRAY_SIZE(keep));
-		if (ret != 0) {
-			fprintf(stderr,
-				"Could not close fds: %s\n",
-				strerror(ret));
-			goto done;
-		}
-	}
 
 	if (foreground) {
 		daemon_status(progname, "Starting process ... ");
