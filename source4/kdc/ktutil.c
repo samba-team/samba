@@ -96,10 +96,10 @@ int main (int argc, char **argv)
 						 enctype,
 						 &enctype_str);
 		if (ret) {
-			smb_krb5_err(mem_ctx, context, 1, ret, "krb5_enctype_to_string");
+			printf("%s (%d)\n", principal, (int)enctype);
+		} else {
+			printf("%s (%s)\n", principal, enctype_str);
 		}
-
-		printf("%s (%s)\n", principal, enctype_str);
 
 		TALLOC_FREE(principal);
 		SAFE_FREE(enctype_str);
