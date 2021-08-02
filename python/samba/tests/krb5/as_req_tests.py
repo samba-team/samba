@@ -46,7 +46,6 @@ class AsReqKerberosTests(KDCBaseTest):
                 tname = "%s_pac_%s" % (name, pac)
                 targs = (idx, pac)
                 cls.generate_dynamic_test("test_as_req_no_preauth", tname, *targs)
-        return
 
     def setUp(self):
         super(AsReqKerberosTests, self).setUp()
@@ -197,7 +196,6 @@ class AsReqKerberosTests(KDCBaseTest):
                                         preauth_key=preauth_key,
                                         ticket_decryption_key=krbtgt_decryption_key)
         self.assertIsNotNone(as_rep)
-        return
 
 if __name__ == "__main__":
     global_asn1_print = True
