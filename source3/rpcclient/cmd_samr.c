@@ -3128,6 +3128,7 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	union samr_UserInfo info;
 	struct samr_CryptPassword pwd_buf;
 	struct samr_CryptPasswordEx pwd_buf_ex;
+	struct samr_EncryptedPasswordAES pwd_buf_aes;
 	uint8_t nt_hash[16];
 	uint8_t lm_hash[16];
 	DATA_BLOB session_key;
@@ -3172,6 +3173,15 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	case 25:
 	case 26:
 		status = init_samr_CryptPasswordEx(param, &session_key, &pwd_buf_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		break;
+	case 31:
+		status = init_samr_CryptPasswordAES(frame,
+						    param,
+						    &session_key,
+						    &pwd_buf_aes);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -3307,6 +3317,10 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		info.info26.password		= pwd_buf_ex;
 		info.info26.password_expired	= password_expired;
 
+		break;
+	case 31:
+		info.info31.password		= pwd_buf_aes;
+		info.info31.password_expired	= password_expired;
 		break;
 	default:
 		status = NT_STATUS_INVALID_INFO_CLASS;
