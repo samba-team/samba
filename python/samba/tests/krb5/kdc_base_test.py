@@ -722,10 +722,7 @@ class KDCBaseTest(RawKerberosTest):
         ticket_data = self.der_encode(ticket, asn1Spec=krb5_asn1.Ticket())
 
         authtime = enc_part['authtime']
-        try:
-            starttime = enc_part['starttime']
-        except KeyError:
-            starttime = authtime
+        starttime = enc_part.get('starttime', authtime)
         endtime = enc_part['endtime']
 
         cred = krb5ccache.CREDENTIAL()
