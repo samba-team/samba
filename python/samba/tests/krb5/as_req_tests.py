@@ -82,16 +82,16 @@ class AsReqKerberosTests(KDCBaseTest):
             return initial_padata, req_body
 
         kdc_exchange_dict = self.as_exchange_dict(
-                         expected_crealm=expected_crealm,
-                         expected_cname=expected_cname,
-                         expected_srealm=expected_srealm,
-                         expected_sname=expected_sname,
-                         generate_padata_fn=_generate_padata_copy,
-                         check_error_fn=self.generic_check_as_error,
-                         check_rep_fn=self.generic_check_kdc_rep,
-                         expected_error_mode=expected_error_mode,
-                         client_as_etypes=client_as_etypes,
-                         expected_salt=expected_salt)
+            expected_crealm=expected_crealm,
+            expected_cname=expected_cname,
+            expected_srealm=expected_srealm,
+            expected_sname=expected_sname,
+            generate_padata_fn=_generate_padata_copy,
+            check_error_fn=self.generic_check_as_error,
+            check_rep_fn=self.generic_check_kdc_rep,
+            expected_error_mode=expected_error_mode,
+            client_as_etypes=client_as_etypes,
+            expected_salt=expected_salt)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          kdc_options=str(initial_kdc_options),

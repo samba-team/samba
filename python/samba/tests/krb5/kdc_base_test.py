@@ -21,10 +21,7 @@ import os
 from datetime import datetime, timezone
 import tempfile
 import binascii
-import struct
 
-sys.path.insert(0, "bin/python")
-os.environ["PYTHONUNBUFFERED"] = "1"
 from collections import namedtuple
 import ldb
 from ldb import SCOPE_BASE
@@ -65,6 +62,9 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_ENC_TIMESTAMP,
     PADATA_ETYPE_INFO2,
 )
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 global_asn1_print = False
 global_hexdump = False
@@ -114,9 +114,9 @@ class KDCBaseTest(RawKerberosTest):
 
             session = system_session()
             type(self)._ldb = SamDB(url="ldap://%s" % self.host,
-                            session_info=session,
-                            credentials=creds,
-                            lp=lp)
+                                    session_info=session,
+                                    credentials=creds,
+                                    lp=lp)
 
         return self._ldb
 
@@ -337,6 +337,7 @@ class KDCBaseTest(RawKerberosTest):
                          require_strongest_key=False):
         if require_strongest_key:
             self.assertTrue(require_keys)
+
         def download_krbtgt_creds():
             samdb = self.get_samdb()
 
@@ -742,15 +743,16 @@ class KDCBaseTest(RawKerberosTest):
                             .replace(tzinfo=timezone.utc).timestamp())
 
         # Account for clock skew of up to five minutes.
-        self.assertLess(cred.authtime - 5*60,
+        self.assertLess(cred.authtime - 5 * 60,
                         datetime.now(timezone.utc).timestamp(),
                         "Ticket not yet valid - clocks may be out of sync.")
-        self.assertLess(cred.starttime - 5*60,
+        self.assertLess(cred.starttime - 5 * 60,
                         datetime.now(timezone.utc).timestamp(),
                         "Ticket not yet valid - clocks may be out of sync.")
-        self.assertGreater(cred.endtime - 60*60,
+        self.assertGreater(cred.endtime - 60 * 60,
                            datetime.now(timezone.utc).timestamp(),
-                           "Ticket already expired/about to expire - clocks may be out of sync.")
+                           "Ticket already expired/about to expire - "
+                           "clocks may be out of sync.")
 
         cred.renew_till = cred.endtime
         cred.is_skey = 0
