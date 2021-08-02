@@ -39,6 +39,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM("GNUTLS_HELPERS",
                         source='''
                         gnutls_error.c
+                        gnutls_aead_aes_256_cbc_hmac_sha512.c
                         gnutls_arcfour_confounded_md5.c
                         gnutls_weak_crypto.c
                         ''',
