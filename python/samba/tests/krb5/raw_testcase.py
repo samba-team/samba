@@ -279,9 +279,7 @@ class KerberosCredentials(Credentials):
 
     def get_forced_key(self, etype):
         etype = int(etype)
-        if etype in self.forced_keys:
-            return self.forced_keys[etype]
-        return None
+        return self.forced_keys.get(etype, None)
 
     def set_forced_salt(self, salt):
         self.forced_salt = bytes(salt)
@@ -789,12 +787,7 @@ class RawKerberosTest(TestCaseInTempDir):
         self.assertIsNotNone(value)
 
     def getElementValue(self, obj, elem):
-        v = None
-        try:
-            v = obj[elem]
-        except KeyError:
-            pass
-        return v
+        return obj.get(elem, None)
 
     def assertElementMissing(self, obj, elem):
         v = self.getElementValue(obj, elem)
@@ -879,11 +872,8 @@ class RawKerberosTest(TestCaseInTempDir):
 
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
         e = etype_info2['etype']
-        salt = None
-        try:
-            salt = etype_info2['salt']
-        except Exception:
-            pass
+
+        salt = etype_info2.get('salt', None)
 
         if e == kcrypto.Enctype.RC4:
             nthash = creds.get_nt_hash()
