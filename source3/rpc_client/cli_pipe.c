@@ -97,7 +97,7 @@ static struct tevent_req *rpc_read_send(TALLOC_CTX *mem_ctx,
 	state->size = size;
 	state->num_read = 0;
 
-	DEBUG(5, ("rpc_read_send: data_to_read: %u\n", (unsigned int)size));
+	DBG_INFO("data_to_read: %zu\n", size);
 
 	subreq = transport->read_send(state, ev, (uint8_t *)data, size,
 				      transport->priv);
@@ -177,7 +177,7 @@ static struct tevent_req *rpc_write_send(TALLOC_CTX *mem_ctx,
 	state->size = size;
 	state->num_written = 0;
 
-	DEBUG(5, ("rpc_write_send: data_to_write: %u\n", (unsigned int)size));
+	DBG_INFO("data_to_write: %zu\n", size);
 
 	subreq = transport->write_send(state, ev, data, size, transport->priv);
 	if (subreq == NULL) {
