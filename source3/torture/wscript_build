@@ -125,12 +125,3 @@ bld.SAMBA3_BINARY('vfstest',
                       SMBREADLINE
                       ''',
                  for_selftest=True)
-
-bld.SAMBA3_BINARY('rpc_open_tcp',
-                 source='rpc_open_tcp.c',
-                 deps='''
-                      talloc
-                      msrpc3
-                      ''',
-                 for_selftest=True)
-
