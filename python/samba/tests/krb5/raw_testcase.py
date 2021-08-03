@@ -184,7 +184,7 @@ krb5_asn1.KerbErrorDataType.prettyPrint =\
     Integer_NamedValues_prettyPrint
 
 
-class Krb5EncryptionKey(object):
+class Krb5EncryptionKey:
     def __init__(self, key, kvno):
         EncTypeChecksum = {
             kcrypto.Enctype.AES256: kcrypto.Cksumtype.SHA1_AES256,
@@ -288,7 +288,7 @@ class KerberosCredentials(Credentials):
         return self.forced_salt
 
 
-class KerberosTicketCreds(object):
+class KerberosTicketCreds:
     def __init__(self, ticket, session_key,
                  crealm=None, cname=None,
                  srealm=None, sname=None,
@@ -956,7 +956,7 @@ class RawKerberosTest(TestCaseInTempDir):
         return Checksum_obj
 
     @classmethod
-    def PrincipalName_create(self, name_type, names):
+    def PrincipalName_create(cls, name_type, names):
         # PrincipalName   ::= SEQUENCE {
         #         name-type       [0] Int32,
         #         name-string     [1] SEQUENCE OF KerberosString
@@ -1785,10 +1785,8 @@ class RawKerberosTest(TestCaseInTempDir):
             rep_padata = []
 
         if self.strict_checking:
-            for i in range(0, len(expected_patypes)):
-                self.assertElementEqual(rep_padata[i],
-                                        'padata-type',
-                                        expected_patypes[i])
+            for i, patype in enumerate(expected_patypes):
+                self.assertElementEqual(rep_padata[i], 'padata-type', patype)
             self.assertEqual(len(rep_padata), len(expected_patypes))
 
         etype_info2 = None
