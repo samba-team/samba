@@ -34,6 +34,7 @@ int tru64acl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
+			    SMB_ACL_TYPE_T type,
 			    SMB_ACL_T theacl);
 
 int tru64acl_sys_acl_delete_def_file(vfs_handle_struct *handle,
