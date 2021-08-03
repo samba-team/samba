@@ -394,7 +394,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 						DATA_BLOB *reply_pdu)
 {
 	const struct dcerpc_response *r = NULL;
-	DATA_BLOB tmp_stub = data_blob_null;
+	DATA_BLOB tmp_stub = { .data = NULL };
 	NTSTATUS ret;
 
 	/*
@@ -925,7 +925,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	struct rpc_api_pipe_state *state = tevent_req_data(
 		req, struct rpc_api_pipe_state);
 	NTSTATUS status;
-	DATA_BLOB rdata = data_blob_null;
+	DATA_BLOB rdata = { .data = NULL };
 
 	status = get_complete_frag_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -1136,7 +1136,7 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 						 bool *client_hdr_signing)
 {
 	struct gensec_security *gensec_security;
-	DATA_BLOB null_blob = data_blob_null;
+	DATA_BLOB null_blob = { .data = NULL };
 	NTSTATUS status;
 
 	gensec_security = cli->auth->auth_ctx;
@@ -1230,8 +1230,8 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 				    const struct ndr_syntax_id *transfer,
 				    DATA_BLOB *rpc_out)
 {
-	DATA_BLOB auth_token = data_blob_null;
-	DATA_BLOB auth_info = data_blob_null;
+	DATA_BLOB auth_token = { .data = NULL };
+	DATA_BLOB auth_info = { .data = NULL };
 	NTSTATUS ret;
 
 	if (auth->auth_type != DCERPC_AUTH_TYPE_NONE) {
@@ -1924,7 +1924,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct gensec_security *gensec_security;
 	struct ncacn_packet *pkt = NULL;
 	struct dcerpc_auth auth;
-	DATA_BLOB auth_token = data_blob_null;
+	DATA_BLOB auth_token = { .data = NULL };
 	NTSTATUS status;
 
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, NULL);
@@ -3509,7 +3509,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct pipe_auth_data *a;
 	struct gensec_security *gensec_security;
-	DATA_BLOB sk = data_blob_null;
+	DATA_BLOB sk = { .data = NULL };
 	bool make_dup = false;
 
 	if (!session_key || !cli) {
