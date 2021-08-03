@@ -1234,20 +1234,14 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	DATA_BLOB auth_info = data_blob_null;
 	NTSTATUS ret;
 
-	switch (auth->auth_type) {
-	case DCERPC_AUTH_TYPE_NONE:
-		break;
-
-	default:
-		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx,
-						       &auth_token,
-						       &auth->client_hdr_signing);
+	if (auth->auth_type != DCERPC_AUTH_TYPE_NONE) {
+		ret = create_generic_auth_rpc_bind_req(
+			cli, mem_ctx, &auth_token, &auth->client_hdr_signing);
 
 		if (!NT_STATUS_IS_OK(ret) &&
 		    !NT_STATUS_EQUAL(ret, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			return ret;
 		}
-		break;
 	}
 
 	if (auth_token.length != 0) {
