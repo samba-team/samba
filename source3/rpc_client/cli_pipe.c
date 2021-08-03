@@ -2872,10 +2872,12 @@ done:
  * The port is determined by asking the endpoint mapper on the given
  * host.
  */
-NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
-			   const struct sockaddr_storage *addr,
-			   const struct ndr_interface_table *table,
-			   struct rpc_pipe_client **presult)
+static NTSTATUS rpc_pipe_open_tcp(
+	TALLOC_CTX *mem_ctx,
+	const char *host,
+	const struct sockaddr_storage *addr,
+	const struct ndr_interface_table *table,
+	struct rpc_pipe_client **presult)
 {
 	NTSTATUS status;
 	uint16_t port = 0;

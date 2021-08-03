@@ -49,12 +49,6 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct pipe_auth_data **presult);
 
-NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx,
-			   const char *host,
-			   const struct sockaddr_storage *ss_addr,
-			   const struct ndr_interface_table *table,
-			   struct rpc_pipe_client **presult);
-
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult);
