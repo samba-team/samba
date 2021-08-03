@@ -1266,6 +1266,8 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 					      &auth_info,
 					      auth->client_hdr_signing,
 					      rpc_out);
+	data_blob_free(&auth_info);
+
 	return ret;
 }
 
