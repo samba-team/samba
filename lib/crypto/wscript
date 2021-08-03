@@ -83,3 +83,12 @@ def build(bld):
                      source='py_crypto.c',
                      deps='gnutls talloc',
                      realname='samba/crypto.so')
+
+    bld.SAMBA_BINARY('test_gnutls_aead_aes_256_cbc_hmac_sha512',
+                     source='''
+                            gnutls_error.c
+                            tests/test_gnutls_aead_aes_256_cbc_hmac_sha512.c
+                            ''',
+                     deps='cmocka gnutls samba-util samba-errors',
+                     local_include=False,
+                     for_selftest=True)

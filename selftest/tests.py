@@ -461,3 +461,5 @@ plantestsuite("samba.unittests.tsocket_bsd_addr", "none",
               [os.path.join(bindir(), "default/lib/tsocket/test_tsocket_bsd_addr")])
 plantestsuite("samba.unittests.adouble", "none",
               [os.path.join(bindir(), "test_adouble")])
+plantestsuite("samba.unittests.gnutls_aead_aes_256_cbc_hmac_sha512", "none",
+              [os.path.join(bindir(), "test_gnutls_aead_aes_256_cbc_hmac_sha512")])
