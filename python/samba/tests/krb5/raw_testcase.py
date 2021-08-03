@@ -33,6 +33,7 @@ from pyasn1.codec.ber.encoder import BitStringEncoder
 
 from samba.credentials import Credentials
 from samba.dcerpc import security
+from samba.gensec import FEATURE_SEAL
 
 import samba.tests
 from samba.tests import TestCaseInTempDir
@@ -606,6 +607,7 @@ class RawKerberosTest(TestCaseInTempDir):
         c = self._get_krb5_creds(prefix='ADMIN',
                                  allow_missing_password=allow_missing_password,
                                  allow_missing_keys=allow_missing_keys)
+        c.set_gensec_features(c.get_gensec_features() | FEATURE_SEAL)
         return c
 
     def get_krbtgt_creds(self,
