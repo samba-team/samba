@@ -1658,6 +1658,7 @@ int main(int argc, const char **argv)
 	bool ok;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
 	struct dcesrv_context *dce_ctx = NULL;
+	size_t winbindd_socket_dir_len = 0;
 
 	setproctitle_init(argc, discard_const(argv), environ);
 
@@ -1808,6 +1809,30 @@ int main(int argc, const char **argv)
 				"parameter is required to be set!\n");
 			exit(1);
 		}
+	}
+
+	winbindd_socket_dir_len = strlen(lp_winbindd_socket_directory());
+	if (winbindd_socket_dir_len > 0) {
+		size_t winbindd_socket_len =
+			winbindd_socket_dir_len + 1 +
+			strlen(WINBINDD_SOCKET_NAME);
+		struct sockaddr_un un = {
+			.sun_family = AF_UNIX,
+		};
+		size_t sun_path_len = sizeof(un.sun_path);
+
+		if (winbindd_socket_len >= sun_path_len) {
+			DBG_ERR("The winbind socket path [%s/%s] is too long "
+				"(%zu >= %zu)\n",
+				lp_winbindd_socket_directory(),
+				WINBINDD_SOCKET_NAME,
+				winbindd_socket_dir_len,
+				sun_path_len);
+			exit(1);
+		}
+	} else {
+		DBG_ERR("'winbindd_socket_directory' parameter is empty\n");
+		exit(1);
 	}
 
 	if (!cluster_probe_ok()) {
