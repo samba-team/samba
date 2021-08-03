@@ -82,8 +82,7 @@ free a data blob
 _PUBLIC_ void data_blob_free(DATA_BLOB *d)
 {
 	if (d) {
-		talloc_free(d->data);
-		d->data = NULL;
+		TALLOC_FREE(d->data);
 		d->length = 0;
 	}
 }
