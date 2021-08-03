@@ -331,10 +331,10 @@ samba-ad-dc-ntvfs:
 samba-admem-mit:
   extends: .needs_samba-mit-build
 
-samba-ad-dc-4a-mitkrb5:
+samba-addc-mit-4a:
   extends: .needs_samba-mit-build
 
-samba-ad-dc-4b-mitkrb5:
+samba-addc-mit-4b:
   extends: .needs_samba-mit-build
 
 # This task is run first to ensure we compile before we start the
@@ -389,7 +389,7 @@ samba-ad-dc-1:
 samba-nt4:
   extends: .needs_samba-nt4-build-private
 
-samba-ad-dc-1-mitkrb5:
+samba-addc-mit-1:
   extends: .needs_samba-mit-build-private
 
 samba-no-opath1:
@@ -421,15 +421,15 @@ pages:
     - samba-ctdb
     - samba-ad-dc-ntvfs
     - samba-admem-mit
-    - samba-ad-dc-4a-mitkrb5
-    - samba-ad-dc-4b-mitkrb5
+    - samba-addc-mit-4a
+    - samba-addc-mit-4b
     - samba-ad-back1
     - samba-ad-back2
     - samba-fileserver
     - samba-ad-dc-1
     - samba-nt4
     - samba-schemaupgrade
-    - samba-ad-dc-1-mitkrb5
+    - samba-addc-mit-1
     - samba-fips
     - samba-no-opath1
     - samba-no-opath2
