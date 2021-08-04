@@ -56,10 +56,11 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.username[sizeof(request->data.username)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getpwnam %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.username);
+	D_NOTICE("[%s (%u)] Winbind external command GETPWNAM start.\n"
+		 "Query username '%s'.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.username);
 
 	domuser = request->data.username;
 
@@ -76,7 +77,7 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 			       state->domname,
 			       state->username);
 	if (!ok) {
-		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
+		D_WARNING("Could not parse domain user: %s\n", domuser);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
@@ -138,11 +139,24 @@ NTSTATUS winbindd_getpwnam_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(&state->sid, &buf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 	response->data.pw = state->pw;
+
+	D_NOTICE("Winbind external command GETPWNAM end.\n"
+		 "(name:passwd:uid:gid:gecos:dir:shell)\n"
+		 "%s:%s:%u:%u:%s:%s:%s\n",
+		 state->pw.pw_name,
+		 state->pw.pw_passwd,
+		 (unsigned int)state->pw.pw_uid,
+		 (unsigned int)state->pw.pw_gid,
+		 state->pw.pw_gecos,
+		 state->pw.pw_dir,
+		 state->pw.pw_shell
+		 );
+
 	return NT_STATUS_OK;
 }
