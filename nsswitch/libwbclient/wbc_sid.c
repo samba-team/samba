@@ -78,7 +78,7 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 
 	len = wbcSidToStringBuf(sid, buf, sizeof(buf));
 
-	if (len+1 > sizeof(buf)) {
+	if (len >= WBC_SID_STRING_BUFLEN) {
 		return WBC_ERR_INVALID_SID;
 	}
 
