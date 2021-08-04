@@ -49,10 +49,11 @@ struct tevent_req *winbindd_getgrgid_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DBG_NOTICE("[%s (%u)] getgrgid %d\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   (int)request->data.gid);
+	D_NOTICE("[%s (%u)] Winbind external command GETGRGID start.\n"
+		 "gid=%u\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 (int)request->data.gid);
 
 	state->xid = (struct unixid) {
 		.id = request->data.uid, .type = ID_TYPE_GID };
@@ -120,21 +121,22 @@ NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf sidbuf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(state->sid, &sidbuf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 
 	if (!fill_grent(talloc_tos(), &response->data.gr, state->domname,
 			state->name, state->gid)) {
-		DEBUG(5, ("fill_grent failed\n"));
+		D_WARNING("fill_grent failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = winbindd_print_groupmembers(state->members, response,
 					     &num_members, &buf);
 	if (!NT_STATUS_IS_OK(status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
@@ -145,6 +147,10 @@ NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 	response->data.gr.gr_mem_ofs = 0;
 	response->extra_data.data = buf;
 	response->length += talloc_get_size(response->extra_data.data);
+
+	D_NOTICE("Winbind external command GETGRGID end.\n"
+		 "Returning %u group member(s).\n",
+		 response->data.gr.num_gr_mem);
 
 	return NT_STATUS_OK;
 }
