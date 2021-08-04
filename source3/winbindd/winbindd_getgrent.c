@@ -48,11 +48,15 @@ struct tevent_req *winbindd_getgrent_send(TALLOC_CTX *mem_ctx,
 	state->num_groups = 0;
 	state->cli = cli;
 
-	DBG_NOTICE("[%s (%u)] getgrent\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid);
+	D_NOTICE("[%s (%u)] Winbind external command GETGRENT start.\n"
+		 "The caller (%s) provided room for %d entries.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 cli->client_name,
+		 request->data.num_entries);
 
 	if (cli->grent_state == NULL) {
+		D_NOTICE("The grent state from winbindd client state is NULL.\n");
 		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 		return tevent_req_post(req, ev);
 	}
@@ -98,8 +102,8 @@ static void winbindd_getgrent_done(struct tevent_req *subreq)
 				    &state->members[state->num_groups]);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		DEBUG(10, ("winbindd_getgrent_done: done with %d groups\n",
-			   (int)state->num_groups));
+		D_WARNING("winbindd_getgrent_done: done with %d groups\n",
+			  (int)state->num_groups);
 		TALLOC_FREE(state->cli->grent_state);
 		tevent_req_done(req);
 		return;
@@ -110,14 +114,13 @@ static void winbindd_getgrent_done(struct tevent_req *subreq)
 	}
 	state->num_groups += 1;
 	if (state->num_groups >= state->max_groups) {
-		DEBUG(10, ("winbindd_getgrent_done: Got enough groups: %d\n",
-			   (int)state->num_groups));
+		D_DEBUG("winbindd_getgrent_done: Got enough groups: %d\n",
+			(int)state->num_groups);
 		tevent_req_done(req);
 		return;
 	}
 	if (state->cli->grent_state == NULL) {
-		DEBUG(10, ("winbindd_getgrent_done: endgrent called in "
-			   "between\n"));
+		D_DEBUG("winbindd_getgrent_done: endgrent called in between\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
@@ -144,7 +147,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		TALLOC_FREE(state->cli->grent_state);
-		DEBUG(5, ("getgrent failed: %s\n", nt_errstr(status)));
+		D_WARNING("getgrent failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
@@ -201,5 +204,10 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 	response->data.num_entries = state->num_groups;
 	response->length += talloc_get_size(result);
 	response->extra_data.data = talloc_move(response, &result);
+
+	D_NOTICE("Winbind external command GETGRENT end.\n"
+		 "Received %d entries.\n",
+		 response->data.num_entries);
+
 	return NT_STATUS_OK;
 }
