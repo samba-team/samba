@@ -44,10 +44,11 @@ struct tevent_req *winbindd_getdcname_send(TALLOC_CTX *mem_ctx,
 
 	request->domain_name[sizeof(request->domain_name)-1] = '\0';
 
-	DBG_NOTICE("[%s (%u)] getdcname for %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->domain_name);
+	D_NOTICE("[%s (%u)] Winbind external command GETDCNAME start.\n"
+		 "Search DCNAME for domain %s.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->domain_name);
 
 	subreq = wb_dsgetdcname_send(state, ev, request->domain_name, NULL,
 				     NULL, 0);
@@ -82,9 +83,13 @@ NTSTATUS winbindd_getdcname_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("getdcname failed: %s\n", nt_errstr(status)));
+		D_WARNING("getdcname failed: %s\n", nt_errstr(status));
 		return status;
 	}
 	fstrcpy(response->data.dc_name, strip_hostname(state->dcinfo->dc_unc));
+
+	D_NOTICE("Winbind external command GETDCNAME end.\n"
+		 "Got DCNAME '%s'.\n",
+		 response->data.dc_name);
 	return NT_STATUS_OK;
 }
