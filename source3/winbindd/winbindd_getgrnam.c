@@ -56,7 +56,8 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.groupname[sizeof(request->data.groupname)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getgrnam %s\n",
+	D_NOTICE("[%s (%u)] Winbind external command GETGRNAM start.\n"
+		   "Searching group name '%s'.\n",
 		   cli->client_name,
 		   (unsigned int)cli->pid,
 		   request->data.groupname);
@@ -171,15 +172,15 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf sidbuf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(&state->sid, &sidbuf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 
 	if (!fill_grent(talloc_tos(), &response->data.gr, state->domname,
 			state->name, state->gid)) {
-		DEBUG(5, ("fill_grent failed\n"));
+		D_WARNING("fill_grent failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -196,6 +197,10 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 	response->data.gr.gr_mem_ofs = 0;
 	response->extra_data.data = buf;
 	response->length += talloc_get_size(response->extra_data.data);
+
+	D_NOTICE("Winbind external command GETGRNAM end.\n"
+		 "Returning %u memmber(s).\n",
+		 response->data.gr.num_gr_mem);
 
 	return NT_STATUS_OK;
 }
