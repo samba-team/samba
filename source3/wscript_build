@@ -663,6 +663,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/smb2_ioctl_filesys.c
                           smbd/smb2_ioctl_named_pipe.c
                           smbd/smb2_ioctl_network_fs.c
+                          smbd/smb2_ioctl_smbtorture.c
                           smbd/smb2_keepalive.c
                           smbd/smb2_query_directory.c
                           smbd/smb2_notify.c
