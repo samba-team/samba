@@ -49,22 +49,17 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.sid[sizeof(request->data.sid)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getsidaliases %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.sid);
-
 	if (!string_to_sid(&state->sid, request->data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  request->data.sid));
+		D_WARNING("Could not get convert sid %s from string\n",
+			  request->data.sid);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
 	domain = find_domain_from_sid_noinit(&state->sid);
 	if (domain == NULL) {
-		DEBUG(1,("could not find domain entry for sid %s\n",
-			 request->data.sid));
+		D_WARNING("could not find domain entry for sid %s\n",
+			 request->data.sid);
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}
@@ -74,25 +69,27 @@ struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
 
 	if (request->extra_data.data != NULL) {
 		if (request->extra_data.data[request->extra_len-1] != '\0') {
-			DEBUG(1, ("Got non-NULL terminated sidlist\n"));
+			D_WARNING("Got non-NULL terminated sidlist\n");
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
 		if (!parse_sidlist(state, request->extra_data.data,
 				   &sids, &num_sids)) {
-			DEBUG(1, ("Could not parse SID list: %s\n",
-				  request->extra_data.data));
+			D_WARNING("Could not parse SID list: %s\n",
+				  request->extra_data.data);
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		size_t i;
-		for (i=0; i<num_sids; i++) {
-			struct dom_sid_buf sidstr;
-			DBG_DEBUG("%s\n", dom_sid_str_buf(&sids[i], &sidstr));
-		}
+	D_NOTICE("[%s (%u)] Winbind external command GETSIDALIASES start.\n"
+		 "sid=%s\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.sid);
+	for (i = 0; i < num_sids; i++) {
+		struct dom_sid_buf sidstr;
+		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&sids[i], &sidstr));
 	}
 
 	subreq = wb_lookupuseraliases_send(state, ev, domain, num_sids, sids);
@@ -130,11 +127,15 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 	char *sidlist;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
 	sidlist = talloc_strdup(response, "");
 
+	D_NOTICE("Winbind external command GETSIDALIASES end.\n"
+		 "Received %u alias(es).\n",
+		 state->num_aliases);
 	for (i=0; i<state->num_aliases; i++) {
 		struct dom_sid sid;
 		struct dom_sid_buf tmp;
@@ -142,6 +143,7 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 
 		talloc_asprintf_addbuf(
 			&sidlist, "%s\n", dom_sid_str_buf(&sid, &tmp));
+		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&sid, &tmp));
 	}
 
 	if (sidlist == NULL) {
