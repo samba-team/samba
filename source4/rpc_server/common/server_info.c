@@ -28,6 +28,8 @@
 #include "param/param.h"
 #include "rpc_server/common/common.h"
 #include "libds/common/roles.h"
+#include "auth/auth_util.h"
+#include "lib/tsocket/tsocket.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces
@@ -188,30 +190,117 @@ bool dcesrv_common_validate_share_name(TALLOC_CTX *mem_ctx, const char *share_na
 	return true;
 }
 
+static struct ldb_context *dcesrv_samdb_connect_common(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_call_state *dce_call,
+	bool as_system)
+{
+	struct ldb_context *samdb = NULL;
+	struct auth_session_info *system_session_info = NULL;
+	const struct auth_session_info *call_session_info =
+		dcesrv_call_session_info(dce_call);
+	struct auth_session_info *user_session_info = NULL;
+	struct auth_session_info *ldb_session_info = NULL;
+	struct auth_session_info *audit_session_info = NULL;
+	struct tsocket_address *remote_address = NULL;
+
+	if (as_system) {
+		system_session_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
+		if (system_session_info == NULL) {
+			return NULL;
+		}
+	}
+
+	user_session_info = copy_session_info(mem_ctx, call_session_info);
+	if (user_session_info == NULL) {
+		return NULL;
+	}
+
+	if (dce_call->conn->remote_address != NULL) {
+		remote_address = tsocket_address_copy(dce_call->conn->remote_address,
+						      user_session_info);
+		if (remote_address == NULL) {
+			return NULL;
+		}
+	}
+
+	if (system_session_info != NULL) {
+		ldb_session_info = system_session_info;
+		audit_session_info = user_session_info;
+	} else {
+		ldb_session_info = user_session_info;
+		audit_session_info = NULL;
+	}
+
+	/*
+	 * We need to make sure every argument
+	 * stays arround for the lifetime of 'samdb',
+	 * typically it is allocated on the scope of
+	 * an assoc group, so we can't reference dce_call->conn,
+	 * as the assoc group may stay when the current connection
+	 * gets disconnected.
+	 *
+	 * The following are global per process:
+	 * - dce_call->conn->dce_ctx->lp_ctx
+	 * - dce_call->event_ctx
+	 * - system_session
+	 *
+	 * We make a copy of:
+	 * - dce_call->conn->remote_address
+	 * - dce_call->auth_state->session_info
+	 */
+	samdb = samdb_connect(
+		mem_ctx,
+		dce_call->event_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		ldb_session_info,
+		remote_address,
+		0);
+	if (samdb == NULL) {
+		talloc_free(user_session_info);
+		return NULL;
+	}
+	talloc_move(samdb, &user_session_info);
+
+	if (audit_session_info != NULL) {
+		int ret;
+
+		ret = ldb_set_opaque(samdb,
+				     DSDB_NETWORK_SESSION_INFO,
+				     audit_session_info);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(samdb);
+			return NULL;
+		}
+	}
+
+	return samdb;
+}
+
 /*
  * Open an ldb connection under the system session and save the remote users
  * session details in a ldb_opaque. This will allow the audit logging to
  * log the original session for operations performed in the system session.
+ *
+ * Access checks are required by the caller!
  */
 struct ldb_context *dcesrv_samdb_connect_as_system(
 	TALLOC_CTX *mem_ctx,
 	struct dcesrv_call_state *dce_call)
 {
-	struct ldb_context *samdb = NULL;
-	samdb = samdb_connect(
-		mem_ctx,
-		dce_call->event_ctx,
-		dce_call->conn->dce_ctx->lp_ctx,
-		system_session(dce_call->conn->dce_ctx->lp_ctx),
-		dce_call->conn->remote_address,
-		0);
-	if (samdb) {
-		struct auth_session_info *session_info =
-			dcesrv_call_session_info(dce_call);
-		ldb_set_opaque(
-			samdb,
-			DSDB_NETWORK_SESSION_INFO,
-			session_info);
-	}
-	return samdb;
+	return dcesrv_samdb_connect_common(mem_ctx, dce_call,
+					   true /* as_system */);
+}
+
+/*
+ * Open an ldb connection under the remote users session details.
+ *
+ * Access checks are done at the ldb level.
+ */
+struct ldb_context *dcesrv_samdb_connect_as_user(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_call_state *dce_call)
+{
+	return dcesrv_samdb_connect_common(mem_ctx, dce_call,
+					   false /* not as_system */);
 }
