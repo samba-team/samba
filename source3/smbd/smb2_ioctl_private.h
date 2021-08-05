@@ -52,4 +52,9 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t,
 					 struct tevent_req *,
 					 struct smbd_smb2_ioctl_state *);
 
+struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
+					 struct tevent_context *ev,
+					 struct tevent_req *req,
+					 struct smbd_smb2_ioctl_state *state);
+
 #endif
