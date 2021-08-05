@@ -46,10 +46,11 @@ struct tevent_req *winbindd_getpwuid_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	DBG_NOTICE("[%s (%u)] getpwuid %d\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   (int)request->data.uid);
+	D_NOTICE("[%s (%u)] Winbind external command GETPWUID start.\n"
+		 "Search UID %u.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 (int)request->data.uid);
 
 	state->xid = (struct unixid) {
 		.id = request->data.uid, .type = ID_TYPE_UID };
@@ -74,10 +75,12 @@ static void winbindd_getpwuid_uid2sid_done(struct tevent_req *subreq)
 	status = wb_xids2sids_recv(subreq, state, &state->sid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 	if (is_null_sid(state->sid)) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+		D_WARNING("Failed with NT_STATUS_NO_SUCH_USER.\n");
 		return;
 	}
 
@@ -97,6 +100,7 @@ static void winbindd_getpwuid_done(struct tevent_req *subreq)
 	status = wb_getpwsid_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
 	}
 	tevent_req_done(req);
@@ -111,11 +115,23 @@ NTSTATUS winbindd_getpwuid_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(state->sid, &buf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 	response->data.pw = state->pw;
+	D_NOTICE("Winbind external command GETPWUID end.\n"
+		 "(name:passwd:uid:gid:gecos:dir:shell)\n"
+		 "%s:%s:%u:%u:%s:%s:%s\n",
+		 state->pw.pw_name,
+		 state->pw.pw_passwd,
+		 (unsigned int)state->pw.pw_uid,
+		 (unsigned int)state->pw.pw_gid,
+		 state->pw.pw_gecos,
+		 state->pw.pw_dir,
+		 state->pw.pw_shell
+		 );
+
 	return NT_STATUS_OK;
 }
