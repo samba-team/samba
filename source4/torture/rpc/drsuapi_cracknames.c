@@ -801,7 +801,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "BIND GUID (ie, not in the directory)",
-				.str = GUID_string2(mem_ctx, &priv->bind_guid),
+				.str = DRSUAPI_DS_BIND_GUID,
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
