@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/common/common.h"
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "lib/crypto/md4.h"
@@ -156,12 +157,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	/* Connect to a SAMDB with system privileges for fetching the old pw
 	 * hashes. */
-	sam_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx),
-				dce_call->conn->remote_address,
-				0);
+	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -262,12 +258,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Connect to a SAMDB with user privileges for the password change */
-	sam_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				session_info,
-				dce_call->conn->remote_address,
-				0);
+	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -340,8 +331,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct samr_ChangePasswordUser3 *r)
 {
-	struct auth_session_info *session_info =
-		dcesrv_call_session_info(dce_call);
 	struct imessaging_context *imsg_ctx =
 		dcesrv_imessaging_context(dce_call->conn);
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
@@ -387,12 +376,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	/* Connect to a SAMDB with system privileges for fetching the old pw
 	 * hashes. */
-	sam_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx),
-				dce_call->conn->remote_address,
-				0);
+	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -498,12 +482,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Connect to a SAMDB with user privileges for the password change */
-	sam_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				session_info,
-				dce_call->conn->remote_address,
-				0);
+	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

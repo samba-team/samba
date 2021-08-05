@@ -212,8 +212,6 @@ exit:
 static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			     struct samr_Connect *r)
 {
-	struct auth_session_info *session_info =
-		dcesrv_call_session_info(dce_call);
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *handle;
 
@@ -225,17 +223,11 @@ static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* make sure the sam database is accessible */
-	c_state->sam_ctx = samdb_connect(c_state,
-					 dce_call->event_ctx,
-					 dce_call->conn->dce_ctx->lp_ctx,
-					 session_info,
-					 dce_call->conn->remote_address,
-					 0);
+	c_state->sam_ctx = dcesrv_samdb_connect_as_user(c_state, dce_call);
 	if (c_state->sam_ctx == NULL) {
 		talloc_free(c_state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-
 
 	handle = dcesrv_handle_create(dce_call, SAMR_HANDLE_CONNECT);
 	if (!handle) {
@@ -4809,8 +4801,6 @@ static NTSTATUS dcesrv_samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_st
 static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_GetDomPwInfo *r)
 {
-	struct auth_session_info *session_info =
-		dcesrv_call_session_info(dce_call);
 	struct ldb_message **msgs;
 	int ret;
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
@@ -4818,12 +4808,7 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 
 	ZERO_STRUCTP(r->out.info);
 
-	sam_ctx = samdb_connect(mem_ctx,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				session_info,
-				dce_call->conn->remote_address,
-				0);
+	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
