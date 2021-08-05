@@ -27,6 +27,7 @@
  * Data structure common for most of DRSUAPI tests
  */
 struct DsPrivate {
+	struct cli_credentials *admin_credentials;
 	struct dcerpc_pipe *drs_pipe;
 	struct policy_handle bind_handle;
 	struct drsuapi_DsBindInfo28 srv_bind_info;
