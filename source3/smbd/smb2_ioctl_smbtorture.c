@@ -31,7 +31,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
 
-#if 0
 struct async_sleep_state {
 	struct smbd_server_connection *sconn;
 	files_struct *fsp;
@@ -132,7 +131,6 @@ static void smbd_fsctl_torture_async_sleep_done(struct tevent_req *subreq)
 	}
 	tevent_req_done(req);
 }
-#endif
 
 struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 					 struct tevent_context *ev,
@@ -187,6 +185,35 @@ struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 		state->smb2req->xconn->smb2.smbtorture.read_body_padding = 8;
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
+
+	case FSCTL_SMBTORTURE_FSP_ASYNC_SLEEP: {
+		struct tevent_req *subreq = NULL;
+
+		/* Data is 1 byte of CVAL stored seconds to delay for. */
+		if (state->in_input.length != 1) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		if (state->fsp == NULL) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = smbd_fsctl_torture_async_sleep_send(
+						req,
+						ev,
+						state->fsp,
+						CVAL(state->in_input.data,0));
+		if (subreq == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					smbd_fsctl_torture_async_sleep_done,
+					req);
+		return req;
+        }
+
 	default:
 		goto not_supported;
 	}
