@@ -28,12 +28,14 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
-bool test_DsBind(struct dcerpc_pipe *p,
-		 struct torture_context *tctx,
-		 struct DsPrivate *priv)
+static bool test_DsBind(struct dcerpc_pipe *p,
+			struct torture_context *tctx,
+			struct policy_handle *bind_handle,
+			struct drsuapi_DsBindInfo28 *srv_info28)
 {
 	NTSTATUS status;
 	struct drsuapi_DsBind r;
+	struct GUID bind_guid;
 	struct drsuapi_DsBindInfo28 *bind_info28;
 	struct drsuapi_DsBindInfoCtr bind_info_ctr;
 
@@ -70,19 +72,20 @@ bool test_DsBind(struct dcerpc_pipe *p,
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
 
-	GUID_from_string(DRSUAPI_DS_BIND_GUID, &priv->bind_guid);
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
 
-	r.in.bind_guid = &priv->bind_guid;
+	r.in.bind_guid = &bind_guid;
 	r.in.bind_info = &bind_info_ctr;
-	r.out.bind_handle = &priv->bind_handle;
+	r.out.bind_handle = bind_handle;
 
 	torture_comment(tctx, "Testing DsBind\n");
 
 	status = dcerpc_drsuapi_DsBind_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call(tctx, p, status, &r, "dcerpc_drsuapi_DsBind");
 
-	/* cache server supported extensions, i.e. bind_info */
-	priv->srv_bind_info = r.out.bind_info->info.info28;
+	if (srv_info28 != NULL) {
+		*srv_info28 = r.out.bind_info->info.info28;
+	}
 
 	return true;
 }
@@ -786,7 +789,10 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 					 &machine_credentials);
 	torture_assert(tctx, priv->join, "Failed to join as BDC");
 
-	if (!test_DsBind(priv->drs_pipe, tctx, priv)) {
+	if (!test_DsBind(priv->drs_pipe, tctx,
+			 &priv->bind_handle,
+			 &priv->srv_bind_info))
+	{
 		/* clean up */
 		torture_drsuapi_tcase_teardown_common(tctx, priv);
 		torture_fail(tctx, "Failed execute test_DsBind()");
