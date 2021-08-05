@@ -74,9 +74,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	uint32_t supported_extensions;
 	uint32_t req_length;
 	int ret;
-	struct auth_session_info *auth_info;
 	WERROR werr;
-	bool connected_as_system = false;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
@@ -87,45 +85,30 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/* if this is a DC connecting, give them system level access */
 	werr = drs_security_level_check(dce_call, NULL, SECURITY_DOMAIN_CONTROLLER, NULL);
 	if (W_ERROR_IS_OK(werr)) {
-		DEBUG(3,(__location__ ": doing DsBind with system_session\n"));
-		auth_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
-		connected_as_system = true;
+		DBG_NOTICE("doing DsBind with system_session\n");
+		b_state->sam_ctx_system = dcesrv_samdb_connect_as_system(b_state, dce_call);
+		if (b_state->sam_ctx_system == NULL) {
+			return WERR_DS_UNAVAILABLE;
+		}
+		b_state->sam_ctx = b_state->sam_ctx_system;
 	} else {
-		auth_info = dcesrv_call_session_info(dce_call);
-	}
+		b_state->sam_ctx = dcesrv_samdb_connect_as_user(b_state, dce_call);
+		if (b_state->sam_ctx == NULL) {
+			return WERR_DS_UNAVAILABLE;
+		}
 
-	/*
-	 * connect to the samdb
-	 */
-	b_state->sam_ctx = samdb_connect(
-		b_state,
-		dce_call->event_ctx,
-		dce_call->conn->dce_ctx->lp_ctx,
-		auth_info,
-		dce_call->conn->remote_address,
-		0);
-	if (!b_state->sam_ctx) {
-		return WERR_FOOBAR;
-	}
-
-	if (connected_as_system) {
-		b_state->sam_ctx_system = b_state->sam_ctx;
-	} else {
-		/* an RODC also needs system samdb access for secret
-		   attribute replication */
+		/*
+		 * an RODC also needs system samdb access for secret
+		 * attribute replication
+		 */
 		werr = drs_security_level_check(dce_call, NULL, SECURITY_RO_DOMAIN_CONTROLLER,
 						samdb_domain_sid(b_state->sam_ctx));
 		if (W_ERROR_IS_OK(werr)) {
-			b_state->sam_ctx_system
-			= samdb_connect(
-				b_state,
-				dce_call->event_ctx,
-				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx),
-				dce_call->conn->remote_address,
-				0);
-			if (!b_state->sam_ctx_system) {
-				return WERR_FOOBAR;
+			DBG_NOTICE("doing DsBind as RODC\n");
+			b_state->sam_ctx_system =
+				dcesrv_samdb_connect_as_system(b_state, dce_call);
+			if (b_state->sam_ctx_system == NULL) {
+				return WERR_DS_UNAVAILABLE;
 			}
 		}
 	}
