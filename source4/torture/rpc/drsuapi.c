@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
@@ -776,6 +777,8 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 	char *name = talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, rnd);
 
 	torture_assert(tctx, priv, "Invalid argument");
+
+	priv->admin_credentials = samba_cmdline_get_creds();
 
 	torture_comment(tctx, "Create DRSUAPI pipe\n");
 	status = torture_rpc_connection(tctx,
