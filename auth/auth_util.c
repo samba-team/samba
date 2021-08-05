@@ -26,26 +26,28 @@
 struct auth_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 					    const struct auth_session_info *src)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_session_info *dst;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(
 		&blob,
-		talloc_tos(),
+		frame,
 		src,
 		(ndr_push_flags_fn_t)ndr_push_auth_session_info);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_ERR("copy_session_info(): ndr_push_auth_session_info "
 			"failed: %s\n",
 			ndr_errstr(ndr_err));
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
 	dst = talloc(mem_ctx, struct auth_session_info);
 	if (dst == NULL) {
 		DBG_ERR("talloc failed\n");
-		TALLOC_FREE(blob.data);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
@@ -54,15 +56,16 @@ struct auth_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 		dst,
 		dst,
 		(ndr_pull_flags_fn_t)ndr_pull_auth_session_info);
-	TALLOC_FREE(blob.data);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_ERR("copy_session_info(): ndr_pull_auth_session_info "
 			"failed: %s\n",
 			ndr_errstr(ndr_err));
 		TALLOC_FREE(dst);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
+	TALLOC_FREE(frame);
 	return dst;
 }
