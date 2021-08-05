@@ -1792,9 +1792,43 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 	attrs.creationTime.tv_sec = ft->create_time.tv_sec;
 	attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
 
-	ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
-				    GPFS_WINATTR_SET_CREATION_TIME,
-				    &attrs);
+	if (!fsp->fsp_flags.is_pathref) {
+		ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
+					    GPFS_WINATTR_SET_CREATION_TIME,
+					    &attrs);
+		if (ret == -1 && errno != ENOSYS) {
+			DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
+			return -1;
+		}
+		return ret;
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		ret = gpfswrap_set_winattrs_path(p,
+						 GPFS_WINATTR_SET_CREATION_TIME,
+						 &attrs);
+		if (ret == -1 && errno != ENOSYS) {
+			DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
+			return -1;
+		}
+		return ret;
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+	ret = gpfswrap_set_winattrs_path(fsp->fsp_name->base_name,
+					 GPFS_WINATTR_SET_CREATION_TIME,
+					 &attrs);
 	if (ret == -1 && errno != ENOSYS) {
 		DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
 		return -1;
