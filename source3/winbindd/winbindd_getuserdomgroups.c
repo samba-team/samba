@@ -46,14 +46,15 @@ struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.sid[sizeof(request->data.sid)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getuserdomgroups %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.sid);
+	D_NOTICE("[%s (%u)] Winbind external command GETUSERDOMGROUPS start.\n"
+		 "sid=%s\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.sid);
 
 	if (!string_to_sid(&state->sid, request->data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  request->data.sid));
+		D_WARNING("Could not get convert sid %s from string\n",
+			  request->data.sid);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
@@ -89,10 +90,11 @@ NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 	struct winbindd_getuserdomgroups_state *state = tevent_req_data(
 		req, struct winbindd_getuserdomgroups_state);
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 	char *sidlist;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 
@@ -100,6 +102,9 @@ NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 	if (sidlist == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	D_NOTICE("Winbind external command GETUSERDOMGROUPS end.\n"
+		 "Received %u entries.\n",
+		 state->num_sids);
 	for (i=0; i<state->num_sids; i++) {
 		struct dom_sid_buf tmp;
 		sidlist = talloc_asprintf_append_buffer(
@@ -108,6 +113,7 @@ NTSTATUS winbindd_getuserdomgroups_recv(struct tevent_req *req,
 		if (sidlist == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		D_NOTICE("%u: %s\n", i, dom_sid_str_buf(&state->sids[i], &tmp));
 	}
 	response->extra_data.data = sidlist;
 	response->length += talloc_get_size(sidlist);
