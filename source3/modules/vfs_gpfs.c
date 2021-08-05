@@ -1714,7 +1714,8 @@ static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
 	}
 }
 
-static int smbd_gpfs_set_times(int fd, char *path, struct smb_file_time *ft)
+static int smbd_gpfs_set_times(struct files_struct *fsp,
+			       struct smb_file_time *ft)
 {
 	gpfs_timestruc_t gpfs_times[4];
 	int flags = 0;
@@ -1731,12 +1732,12 @@ static int smbd_gpfs_set_times(int fd, char *path, struct smb_file_time *ft)
 		return 0;
 	}
 
-	rc = gpfswrap_set_times(fd, flags, gpfs_times);
+	rc = gpfswrap_set_times(fsp_get_io_fd(fsp), flags, gpfs_times);
 
 	if (rc != 0 && errno != ENOSYS) {
 		DBG_WARNING("gpfs_set_times() returned with error %s for %s\n",
 			    strerror(errno),
-			    path);
+			    fsp_str_dbg(fsp));
 	}
 
 	return rc;
@@ -1758,9 +1759,7 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 
 	/* Try to use gpfs_set_times if it is enabled and available */
 	if (config->settimes) {
-		ret = smbd_gpfs_set_times(fsp_get_io_fd(fsp),
-					  fsp->fsp_name->base_name,
-					  ft);
+		ret = smbd_gpfs_set_times(fsp, ft);
 		if (ret == 0 || (ret == -1 && errno != ENOSYS)) {
 			return ret;
 		}
