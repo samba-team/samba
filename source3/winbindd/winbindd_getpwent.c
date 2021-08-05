@@ -47,9 +47,12 @@ struct tevent_req *winbindd_getpwent_send(TALLOC_CTX *mem_ctx,
 	state->num_users = 0;
 	state->cli = cli;
 
-	DBG_NOTICE("[%s (%u)] getpwent\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid);
+	D_NOTICE("[%s (%u)] Winbind external command GETPWENT start.\n"
+		 "The caller (%s) provided room for %d entries.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 cli->client_name,
+		 request->data.num_entries);
 
 	if (cli->pwent_state == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
@@ -88,8 +91,8 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	status = wb_next_pwent_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		DEBUG(10, ("winbindd_getpwent_done: done with %d users\n",
-			   (int)state->num_users));
+		D_DEBUG("winbindd_getpwent_done: done with %d users\n",
+			   (int)state->num_users);
 		TALLOC_FREE(state->cli->pwent_state);
 		tevent_req_done(req);
 		return;
@@ -99,14 +102,13 @@ static void winbindd_getpwent_done(struct tevent_req *subreq)
 	}
 	state->num_users += 1;
 	if (state->num_users >= state->max_users) {
-		DEBUG(10, ("winbindd_getpwent_done: Got enough users: %d\n",
-			   (int)state->num_users));
+		D_DEBUG("winbindd_getpwent_done: Got enough users: %d\n",
+			   (int)state->num_users);
 		tevent_req_done(req);
 		return;
 	}
 	if (state->cli->pwent_state == NULL) {
-		DEBUG(10, ("winbindd_getpwent_done: endpwent called in "
-			   "between\n"));
+		D_DEBUG("winbindd_getpwent_done: endpwent called in between\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
@@ -124,17 +126,35 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	struct winbindd_getpwent_state *state = tevent_req_data(
 		req, struct winbindd_getpwent_state);
 	NTSTATUS status;
+	int i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		TALLOC_FREE(state->cli->pwent_state);
-		DEBUG(5, ("getpwent failed: %s\n", nt_errstr(status)));
+		D_WARNING("getpwent failed: %s\n", nt_errstr(status));
 		return status;
 	}
+
+	D_NOTICE("Winbind external command GETPWENT end.\n"
+		 "Received %u entries.\n"
+		 "(name:passwd:uid:gid:gecos:dir:shell)\n",
+		 state->num_users);
 
 	if (state->num_users == 0) {
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
+	for (i = 0; i < state->num_users; i++) {
+		D_NOTICE("%d: %s:%s:%u:%u:%s:%s:%s\n",
+			i,
+			state->users[i].pw_name,
+			state->users[i].pw_passwd,
+			(unsigned int)state->users[i].pw_uid,
+			(unsigned int)state->users[i].pw_gid,
+			state->users[i].pw_gecos,
+			state->users[i].pw_dir,
+			state->users[i].pw_shell
+			);
+	}
 	response->data.num_entries = state->num_users;
 	response->extra_data.data = talloc_move(response, &state->users);
 	response->length += state->num_users * sizeof(struct winbindd_pw);
