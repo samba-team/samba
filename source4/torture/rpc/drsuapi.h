@@ -37,6 +37,7 @@ struct DsPrivate {
 	struct GUID domain_guid;
 	struct drsuapi_DsGetDCInfo2 dcinfo;
 	struct test_join *join;
+	struct cli_credentials *dc_credentials;
 };
 
 /**

@@ -774,7 +774,6 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 	NTSTATUS status;
 	int rnd = rand() % 1000;
 	char *name = talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, rnd);
-	struct cli_credentials *machine_credentials;
 
 	torture_assert(tctx, priv, "Invalid argument");
 
@@ -786,7 +785,7 @@ bool torture_drsuapi_tcase_setup_common(struct torture_context *tctx, struct DsP
 
 	torture_comment(tctx, "About to join domain with name %s\n", name);
 	priv->join = torture_join_domain(tctx, name, ACB_SVRTRUST,
-					 &machine_credentials);
+					 &priv->dc_credentials);
 	torture_assert(tctx, priv->join, "Failed to join as BDC");
 
 	if (!test_DsBind(priv->drs_pipe, tctx,
