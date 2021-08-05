@@ -45,14 +45,15 @@ struct tevent_req *winbindd_getpwsid_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.sid[sizeof(request->data.sid)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getpwsid %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.sid);
+	D_NOTICE("[%s (%u)] Winbind external command GETPWSID start.\n"
+		 "sid=%s\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.sid);
 
 	if (!string_to_sid(&state->sid, request->data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  request->data.sid));
+		D_WARNING("Could not get convert sid %s from string\n",
+			  request->data.sid);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
@@ -87,12 +88,22 @@ NTSTATUS winbindd_getpwsid_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
-			  dom_sid_str_buf(&state->sid, &buf),
-			  nt_errstr(status)));
+		 D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return status;
 	}
 	response->data.pw = state->pw;
+
+	D_NOTICE("Winbind external command GETPWSID end.\n"
+		 "(name:passwd:uid:gid:gecos:dir:shell)\n"
+		 "%s:%s:%u:%u:%s:%s:%s\n",
+		 state->pw.pw_name,
+		 state->pw.pw_passwd,
+		 (unsigned int)state->pw.pw_uid,
+		 (unsigned int)state->pw.pw_gid,
+		 state->pw.pw_gecos,
+		 state->pw.pw_dir,
+		 state->pw.pw_shell
+		 );
+
 	return NT_STATUS_OK;
 }
