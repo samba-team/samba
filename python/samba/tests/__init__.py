@@ -68,7 +68,7 @@ class TestCase(unittest.TestCase):
     """A Samba test case."""
 
     @classmethod
-    def generate_dynamic_test(cls, fnname, suffix, *args):
+    def generate_dynamic_test(cls, fnname, suffix, *args, doc=None):
         """
         fnname is something like "test_dynamic_sum"
         suffix is something like "1plus2"
@@ -81,6 +81,7 @@ class TestCase(unittest.TestCase):
         """
         def fn(self):
             getattr(self, "_%s_with_args" % fnname)(*args)
+        fn.__doc__ = doc
         setattr(cls, "%s_%s" % (fnname, suffix), fn)
 
     @classmethod
