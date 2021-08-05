@@ -60,10 +60,11 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 	/* Ensure null termination */
 	request->data.username[sizeof(request->data.username)-1]='\0';
 
-	DBG_NOTICE("[%s (%u)] getgroups %s\n",
-		   cli->client_name,
-		   (unsigned int)cli->pid,
-		   request->data.username);
+	D_NOTICE("[%s (%u)] Winbind external command GETGROUPS start.\n"
+		 "Searching groups for username '%s'.\n",
+		 cli->client_name,
+		 (unsigned int)cli->pid,
+		 request->data.username);
 
 	domuser = request->data.username;
 
@@ -80,7 +81,7 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 			       state->domname,
 			       state->username);
 	if (!ok) {
-		DEBUG(5, ("Could not parse domain user: %s\n", domuser));
+		D_WARNING("Could not parse domain user: %s\n", domuser);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
@@ -218,14 +219,14 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 				continue;
 			}
 
-			DEBUG(10, ("WARNING: skipping unix id (%u) for sid %s "
-				   "from group list because the idmap type "
-				   "is %s. "
-				   "This might be a security problem when ACLs "
-				   "contain DENY ACEs!\n",
-				   (unsigned)xids[i].id,
-				   dom_sid_str_buf(&state->sids[i], &sidbuf),
-				   debug_missing));
+			D_WARNING("WARNING: skipping unix id (%u) for sid %s "
+				  "from group list because the idmap type "
+				  "is %s. "
+				  "This might be a security problem when ACLs "
+				  "contain DENY ACEs!\n",
+				  (unsigned)xids[i].id,
+				  dom_sid_str_buf(&state->sids[i], &sidbuf),
+				  debug_missing);
 			continue;
 		}
 
@@ -251,21 +252,30 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 	struct winbindd_getgroups_state *state = tevent_req_data(
 		req, struct winbindd_getgroups_state);
 	NTSTATUS status;
+	int i;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
-		DEBUG(5, ("Could not convert sid %s: %s\n",
+		D_WARNING("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(&state->sid, &buf),
-			  nt_errstr(status)));
+			  nt_errstr(status));
 		return status;
 	}
 
 	response->data.num_entries = state->num_gids;
+
+	D_NOTICE("Winbind external command GETGROUPS end.\n"
+		 "Received %u entries.\n",
+		 response->data.num_entries);
+	for (i = 0; i < state->num_gids; i++) {
+		D_NOTICE("%d: GID %d\n", i, state->gids[i]);
+	}
 
 	if (state->num_gids > 0) {
 		response->extra_data.data = talloc_move(response,
 							&state->gids);
 		response->length += state->num_gids * sizeof(gid_t);
 	}
+
 	return NT_STATUS_OK;
 }
