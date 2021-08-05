@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_expand_msdfs.8">
+
+<refmeta>
+	<refentrytitle>vfs_expand_msdfs</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_expand_msdfs</refname>
+	<refpurpose>Expand msdfs links depending on client IP</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = expand_msdfs</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>With this module, the link target is not directly a
+	server and share, but this module expects the target to
+	reference a file, containing a table. The file is referenced
+	by means of the msdfs symlink target according to
+	msdfs:@table-filename@/share. The file table-filename is
+	supposed to contain a list of destinations that are looked at
+	from top to bottom:</para>
+
+	<programlisting>
+192.168.234 local.samba.org
+192.168 remote.samba.org
+ default.samba.org
+	</programlisting>
+
+	<para>With this, clients from network 192.168.234/24 are
+	redirected to host local.samba.org, clients from 192.168/16
+	are redirected to remote.samba.org and all other clients go to
+	default.samba.org.</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
