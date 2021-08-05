@@ -31,6 +31,109 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
 
+#if 0
+struct async_sleep_state {
+	struct smbd_server_connection *sconn;
+	files_struct *fsp;
+};
+
+static void smbd_fsctl_torture_async_sleep_done(struct tevent_req *subreq);
+
+static struct tevent_req *smbd_fsctl_torture_async_sleep_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				files_struct *fsp,
+				uint8_t msecs)
+{
+	struct async_sleep_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	bool ok;
+
+	subreq = tevent_req_create(mem_ctx,
+				&state,
+				struct async_sleep_state);
+	if (!subreq) {
+		return NULL;
+	}
+
+	/*
+	 * Store the conn separately, as the test is to
+	 * see if fsp is still a valid pointer, so we can't
+	 * do anything other than test it for entry in the
+	 * open files on this server connection.
+	 */
+	state->sconn = fsp->conn->sconn;
+	state->fsp = fsp;
+
+	/*
+	 * Just wait for the specified number of micro seconds,
+	 * to allow the client time to close fsp.
+	 */
+	ok = tevent_req_set_endtime(subreq,
+				    ev,
+				    timeval_current_ofs(0, msecs));
+	if (!ok) {
+		tevent_req_nterror(subreq, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(subreq, ev);
+	}
+
+	return subreq;
+}
+
+static files_struct *find_my_fsp(struct files_struct *fsp,
+				 void *private_data)
+{
+	struct files_struct *myfsp = (struct files_struct *)private_data;
+
+	if (fsp == myfsp) {
+		return myfsp;
+	}
+	return NULL;
+}
+
+static bool smbd_fsctl_torture_async_sleep_recv(struct tevent_req *subreq)
+{
+	tevent_req_received(subreq);
+	return true;
+}
+
+static void smbd_fsctl_torture_async_sleep_done(struct tevent_req *subreq)
+{
+	struct files_struct *found_fsp;
+	struct tevent_req *req = tevent_req_callback_data(
+					subreq,
+					struct tevent_req);
+	struct async_sleep_state *state = tevent_req_data(
+					subreq,
+					struct async_sleep_state);
+
+	/* Does state->fsp still exist on state->sconn ? */
+	found_fsp = files_forall(state->sconn,
+				 find_my_fsp,
+				 state->fsp);
+
+	smbd_fsctl_torture_async_sleep_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (found_fsp == NULL) {
+		/*
+		 * We didn't find it - return an error to the
+		 * smb2 ioctl request. Use NT_STATUS_FILE_CLOSED so
+		 * the client can tell the difference between
+		 * a bad fsp handle and
+		 *
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=14769
+		 *
+		 * This request should block file closure until it
+		 * has completed.
+		 */
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return;
+	}
+	tevent_req_done(req);
+}
+#endif
+
 struct tevent_req *smb2_ioctl_smbtorture(uint32_t ctl_code,
 					 struct tevent_context *ev,
 					 struct tevent_req *req,
