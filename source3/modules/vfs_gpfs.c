@@ -1732,13 +1732,45 @@ static int smbd_gpfs_set_times(struct files_struct *fsp,
 		return 0;
 	}
 
-	rc = gpfswrap_set_times(fsp_get_io_fd(fsp), flags, gpfs_times);
-	if (rc != 0) {
-		DBG_WARNING("gpfs_set_times() returned with error %s for %s\n",
-			    strerror(errno),
-			    fsp_str_dbg(fsp));
+	if (!fsp->fsp_flags.is_pathref) {
+		rc = gpfswrap_set_times(fsp_get_io_fd(fsp), flags, gpfs_times);
+		if (rc != 0) {
+			DBG_WARNING("gpfs_set_times(%s) failed: %s\n",
+				    fsp_str_dbg(fsp), strerror(errno));
+		}
+		return rc;
 	}
 
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		int fd = fsp_get_pathref_fd(fsp);
+		const char *p = NULL;
+		char buf[PATH_MAX];
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			return -1;
+		}
+
+		rc = gpfswrap_set_times_path(buf, flags, gpfs_times);
+		if (rc != 0) {
+			DBG_WARNING("gpfs_set_times_path(%s,%s) failed: %s\n",
+				    fsp_str_dbg(fsp), p, strerror(errno));
+		}
+		return rc;
+	}
+
+	/*
+	 * This is no longer a handle based call.
+	 */
+
+	rc = gpfswrap_set_times_path(fsp->fsp_name->base_name,
+				     flags,
+				     gpfs_times);
+	if (rc != 0) {
+		DBG_WARNING("gpfs_set_times_path(%s) failed: %s\n",
+			    fsp_str_dbg(fsp), strerror(errno));
+	}
 	return rc;
 }
 
