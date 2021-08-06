@@ -575,12 +575,12 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
-	
+
 	trust_direction = ldb_msg_find_attr_as_int(p->msg, "trustDirection", 0);
 
 	if (trust_direction != 0) {
 		/* Domain trust - we cannot check the sig, but we trust it for a correct PAC
-		   
+
 		   This is exactly where we should flag for SID
 		   validation when we do inter-foreest trusts
 		 */
@@ -768,7 +768,7 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(mem_ctx, 
+	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
 						  user_info_dc, pac_blob);
 
 	return nt_status;
