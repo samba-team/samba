@@ -325,8 +325,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 
 	status = rpc_read_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
