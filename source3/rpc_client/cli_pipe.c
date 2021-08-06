@@ -592,7 +592,6 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_api_pipe_state *state;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_api_pipe_state);
 	if (req == NULL) {
@@ -607,15 +606,15 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 		 * bytes. We check this here because we will receive
 		 * RPC_HEADER_LEN bytes in cli_trans_sock_send_done.
 		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto post_status;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	if (transport->trans_send != NULL) {
 		subreq = transport->trans_send(state, ev, data, data_len,
 					       max_rdata_len, transport->priv);
-		if (subreq == NULL) {
-			goto fail;
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, cli_api_pipe_trans_done, req);
 		return req;
@@ -627,18 +626,11 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	 */
 
 	subreq = rpc_write_send(state, ev, transport, data, data_len);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_api_pipe_write_done, req);
 	return req;
-
- post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void cli_api_pipe_trans_done(struct tevent_req *subreq)
