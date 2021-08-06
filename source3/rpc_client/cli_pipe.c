@@ -357,17 +357,8 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 
 static void get_complete_frag_got_rest(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = rpc_read_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
+	NTSTATUS status = rpc_read_recv(subreq);
+	return tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 static NTSTATUS get_complete_frag_recv(struct tevent_req *req)
