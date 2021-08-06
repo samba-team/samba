@@ -2335,15 +2335,7 @@ static struct tevent_req *rpccli_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS rpccli_bh_disconnect_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		tevent_req_received(req);
-		return status;
-	}
-
-	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 static bool rpccli_bh_ref_alloc(struct dcerpc_binding_handle *h)
