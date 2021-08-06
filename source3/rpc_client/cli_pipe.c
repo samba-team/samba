@@ -958,10 +958,10 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 						&rdata,
 						&state->reply_pdu);
 
-	DEBUG(10,("rpc_api_pipe: got frag len of %u at offset %u: %s\n",
-		  (unsigned)state->incoming_frag.length,
-		  (unsigned)state->reply_pdu_offset,
-		  nt_errstr(status)));
+	DBG_DEBUG("got frag len of %zu at offset %zu: %s\n",
+		  state->incoming_frag.length,
+		  state->reply_pdu_offset,
+		  nt_errstr(status));
 
 	if (state->pkt->ptype != DCERPC_PKT_FAULT && !NT_STATUS_IS_OK(status)) {
 		/*
