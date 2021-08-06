@@ -846,19 +846,8 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 static void rpc_api_pipe_auth3_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	NTSTATUS status;
-
-	status = rpc_write_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	tevent_req_done(req);
+	NTSTATUS status = rpc_write_recv(subreq);
+	return tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
