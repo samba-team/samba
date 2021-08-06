@@ -6846,6 +6846,84 @@ static bool test_ioctl_bug14607(struct torture_context *torture,
 }
 
 /*
+   basic regression test for BUG 14769
+   https://bugzilla.samba.org/show_bug.cgi?id=14769
+*/
+static bool test_ioctl_bug14769(struct torture_context *torture,
+				struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	const char *fname = "bug14769";
+	bool ret = false;
+	struct smb2_handle h;
+	struct smb2_ioctl ioctl;
+	struct smb2_close cl;
+	struct smb2_request *smb2arr[2] = { 0 };
+	uint8_t tosend_msec = 200;
+	DATA_BLOB send_buf = { &tosend_msec, 1 };
+
+	/* Create a test file. */
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testfile(tree, fname, &h);
+	torture_assert_ntstatus_ok(torture, status, "create bug14769");
+
+	/*
+	 * Send (not receive) the FSCTL.
+	 * This should go async with a wait time of 200 msec.
+	 */
+	ZERO_STRUCT(ioctl);
+	ioctl.in.file.handle = h;
+	ioctl.in.function = FSCTL_SMBTORTURE_FSP_ASYNC_SLEEP;
+	ioctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	ioctl.in.out = send_buf;
+
+	smb2arr[0] = smb2_ioctl_send(tree, &ioctl);
+	torture_assert_goto(torture,
+			    smb2arr[0] != NULL,
+			    ret,
+			    done,
+			    "smb2_ioctl_send failed\n");
+	/* Immediately send the close. */
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = h;
+	cl.in.flags = 0;
+	smb2arr[1] = smb2_close_send(tree, &cl);
+	torture_assert_goto(torture,
+			    smb2arr[1] != NULL,
+			    ret,
+			    done,
+			    "smb2_close_send failed\n");
+
+	/* Now get the FSCTL reply. */
+	/*
+	 * If we suffer from bug #14769 this will fail as
+	 * the ioctl will return with NT_STATUS_FILE_CLOSED,
+	 * as the close will have closed the handle without
+	 * waiting for the ioctl to complete. The server shouldn't
+	 * complete the close until the ioctl finishes.
+	 */
+	status = smb2_ioctl_recv(smb2arr[0], tree, &ioctl);
+	torture_assert_ntstatus_ok_goto(torture,
+					status,
+					ret,
+					done,
+					"smb2_ioctl_recv failed\n");
+
+	/* Followed by the close reply. */
+	status = smb2_close_recv(smb2arr[1], &cl);
+	torture_assert_ntstatus_ok_goto(torture,
+					status,
+					ret,
+					done,
+					"smb2_ioctl_close failed\n");
+	ret = true;
+
+  done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
+/*
  * testing of SMB2 ioctls
  */
 struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
@@ -6992,6 +7070,8 @@ struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 				     test_ioctl_dup_extents_dest_lck);
 	torture_suite_add_1smb2_test(suite, "bug14607",
 				     test_ioctl_bug14607);
+	torture_suite_add_1smb2_test(suite, "bug14769",
+				     test_ioctl_bug14769);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
