@@ -337,7 +337,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	}
 
 	if (!data_blob_realloc(NULL, state->pdu, state->frag_len)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		tevent_req_oom(req);
 		return;
 	}
 
