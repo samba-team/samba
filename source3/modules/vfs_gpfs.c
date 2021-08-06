@@ -1868,6 +1868,10 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
+	if (IS_IPC(handle->conn)) {
+		return 0;
+	}
+
 	gpfswrap_lib_init(0);
 
 	config = talloc_zero(handle->conn, struct gpfs_config_data);
@@ -1880,7 +1884,7 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 	check_fstype = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				    "check_fstype", true);
 
-	if (check_fstype && !IS_IPC(handle->conn)) {
+	if (check_fstype) {
 		const char *connectpath = handle->conn->connectpath;
 		struct statfs buf = { 0 };
 
