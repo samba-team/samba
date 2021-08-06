@@ -247,7 +247,6 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct get_complete_frag_state *state;
 	size_t received;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct get_complete_frag_state);
@@ -262,16 +261,15 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	received = pdu->length;
 	if (received < RPC_HEADER_LEN) {
 		if (!data_blob_realloc(mem_ctx, pdu, RPC_HEADER_LEN)) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
+			tevent_req_oom(req);
+			return tevent_req_post(req, ev);
 		}
 		subreq = rpc_read_send(state, state->ev,
 					state->cli->transport,
 					pdu->data + received,
 					RPC_HEADER_LEN - received);
-		if (subreq == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, get_complete_frag_got_header,
 					req);
@@ -284,35 +282,30 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	/*
-	 * Ensure we have frag_len bytes of data.
-	 */
-	if (received < state->frag_len) {
-		if (!data_blob_realloc(NULL, pdu, state->frag_len)) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
-		}
-		subreq = rpc_read_send(state, state->ev,
-					state->cli->transport,
-					pdu->data + received,
-					state->frag_len - received);
-		if (subreq == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
-		}
-		tevent_req_set_callback(subreq, get_complete_frag_got_rest,
-					req);
-		return req;
+	if (received >= state->frag_len) {
+		/*
+		 * Got the whole fragment
+		 */
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
-	status = NT_STATUS_OK;
- post_status:
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-	} else {
-		tevent_req_nterror(req, status);
+	if (!data_blob_realloc(NULL, pdu, state->frag_len)) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
-	return tevent_req_post(req, ev);
+
+	subreq = rpc_read_send(
+		state,
+		state->ev,
+		state->cli->transport,
+		pdu->data + received,
+		state->frag_len - received);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, get_complete_frag_got_rest, req);
+	return req;
 }
 
 static void get_complete_frag_got_header(struct tevent_req *subreq)
