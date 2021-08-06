@@ -123,8 +123,7 @@ static void rpc_read_done(struct tevent_req *subreq)
 
 	status = state->transport->read_recv(subreq, &received);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -198,8 +197,7 @@ static void rpc_write_done(struct tevent_req *subreq)
 
 	status = state->transport->write_recv(subreq, &written);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -875,9 +873,8 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 
 	status = cli_api_pipe_recv(subreq, state, &rdata, &rdata_len);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {;
 		DEBUG(5, ("cli_api_pipe failed: %s\n", nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -918,10 +915,9 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 	status = get_complete_frag_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(5, ("get_complete_frag failed: %s\n",
 			  nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -933,21 +929,20 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		 * For now do it sync...
 		 */
 		TALLOC_FREE(state->cli->transport);
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		tevent_req_oom(req);
 		return;
 	}
 
 	status = dcerpc_pull_ncacn_packet(state->pkt,
 					  &state->incoming_frag,
 					  state->pkt);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		/*
 		 * TODO: do a real async disconnect ...
 		 *
 		 * For now do it sync...
 		 */
 		TALLOC_FREE(state->cli->transport);
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -990,8 +985,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		 */
 		TALLOC_FREE(state->cli->transport);
 	}
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1045,7 +1039,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 			 * For now do it sync...
 			 */
 			TALLOC_FREE(state->cli->transport);
-			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			tevent_req_oom(req);
 			return;
 		}
 	}
@@ -1605,14 +1599,12 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
 	status = prepare_next_frag(state, &is_last_frag);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1648,8 +1640,7 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 
 	status = rpc_api_pipe_recv(subreq, state, NULL, &state->reply_pdu);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1896,11 +1887,10 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, NULL);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
 			  rpccli_pipe_txt(talloc_tos(), state->cli),
 			  nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -1940,10 +1930,9 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	status = dcerpc_pull_auth_trailer(pkt, talloc_tos(),
 					  &pkt->u.bind_ack.auth_info,
 					  &auth, NULL, true);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
 			  nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -2264,8 +2253,7 @@ static void rpccli_bh_raw_call_done(struct tevent_req *subreq)
 
 	status = rpc_api_pipe_req_recv(subreq, state, &state->out_data);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
