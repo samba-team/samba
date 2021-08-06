@@ -1039,7 +1039,15 @@ planoldpythontestsuite("ad_dc",
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
                        environ={'TEST_ENV': 'ad_dc'})
 
-plantestsuite_loadlist("samba.tests.ldap_upn_sam_account", "ad_dc",
+plantestsuite_loadlist("samba.tests.ldap_spn", "ad_dc",
+                       [python,
+                        f"{srcdir()}/python/samba/tests/ldap_spn.py",
+                        '$SERVER',
+                        '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST', '$LISTOPT'])
+
+plantestsuite_loadlist("samba.tests.ldap_upn_sam_account", "ad_dc_ntvfs",
                        [python,
                         f"{srcdir()}/python/samba/tests/ldap_upn_sam_account.py",
                         '$SERVER',
