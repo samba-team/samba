@@ -652,8 +652,7 @@ static void cli_api_pipe_trans_done(struct tevent_req *subreq)
 	status = state->transport->trans_recv(subreq, state, &state->rdata,
 					      &state->rdata_len);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);
@@ -669,8 +668,7 @@ static void cli_api_pipe_write_done(struct tevent_req *subreq)
 
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -704,8 +702,7 @@ static void cli_api_pipe_read_done(struct tevent_req *subreq)
 
 	status = state->transport->read_recv(subreq, &received);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	state->rdata_len = received;
