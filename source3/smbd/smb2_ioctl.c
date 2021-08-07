@@ -230,6 +230,21 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
+
+	/*
+	 * If the FSCTL has gone async on a file handle, remember
+	 * to add it to the list of async requests we need to wait
+	 * for on file handle close.
+	 */
+	if (in_fsp != NULL && tevent_req_is_in_progress(subreq)) {
+		bool ok;
+
+		ok = aio_add_req_to_fsp(in_fsp, subreq);
+		if (!ok) {
+			return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		}
+	}
+
 	tevent_req_set_callback(subreq, smbd_smb2_request_ioctl_done, req);
 
 	return smbd_smb2_request_pending_queue(req, subreq, 1000);
