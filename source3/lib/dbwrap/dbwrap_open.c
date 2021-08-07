@@ -149,6 +149,10 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			 * to be initialized.
 			 */
 			msg_ctx = global_messaging_context();
+			if (msg_ctx == NULL) {
+				DBG_ERR("Failed to initialize messaging\n");
+				return NULL;
+			}
 
 			conn = messaging_ctdb_connection();
 			if (conn == NULL) {
