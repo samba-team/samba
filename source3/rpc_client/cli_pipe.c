@@ -180,14 +180,11 @@ static struct tevent_req *rpc_write_send(TALLOC_CTX *mem_ctx,
 	DBG_INFO("data_to_write: %zu\n", size);
 
 	subreq = transport->write_send(state, ev, data, size, transport->priv);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, rpc_write_done, req);
 	return req;
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void rpc_write_done(struct tevent_req *subreq)
