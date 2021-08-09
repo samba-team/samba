@@ -595,13 +595,16 @@
 		</para>
 
 		<para>
-			If &pct;password is not specified, the user will be
+			If &pct;PASSWORD is not specified, the user will be
 			prompted. The client will first check the
-			<envar>USER</envar> environment variable, then the
-			<envar>LOGNAME</envar> variable and if either exists,
-			the string is uppercased. If these environmental
+			<envar>USER</envar> environment variable
+			(which is also permitted to also contain the
+			password seperated by a &pct;), then the
+			<envar>LOGNAME</envar> variable (which is not
+			permitted to contain a password) and if either exists,
+			the value is used. If these environmental
 			variables are not found, the username
-			<constant>GUEST</constant> is used.
+			found in a Kerberos Credentials cache may be used.
 		</para>
 
 		<para>
@@ -616,9 +619,15 @@
 		</para>
 
 		<para>
-			Be cautious about including passwords in scripts. For
-			security it is better to let the client ask for the
-			password if needed.
+			Be cautious about including passwords in scripts
+			or passing user-supplied values onto the command line. For
+			security it is better to let the Samba client tool ask for the
+			password if needed, or obtain the password once with <command>kinit</command>.
+		</para>
+		<para>
+			While Samba will attempt to scrub the password
+			from the process title (as seen in ps), this
+			is after startup and so is subject to a race.
 		</para>
 	</listitem>
 </varlistentry>
@@ -659,10 +668,31 @@
 			Specify the password on the commandline.
 		</para>
 
+		<para> Be cautious about including passwords in
+			scripts or passing user-supplied values onto
+			the command line. For security it is better to
+			let the Samba client tool ask for the password
+			if needed, or obtain the password once with
+			<command>kinit</command>.
+		</para>
+
+		<para> If --password is not specified,
+		       the tool will check the <envar>PASSWD</envar>
+		       environment variable, followed by <envar>PASSWD_FD</envar>
+		       which is expected to contain an open
+		       file descriptor (FD) number.
+		</para>
 		<para>
-			Be cautious about including passwords in scripts. For
-			security it is better to let the client ask for the
-			password if needed.
+		       Finally it will check <envar>PASSWD_FILE</envar> (containing
+		       a file path to be opened). The file should only
+		       contain the password. Make certain that the
+		       permissions on the file restrict
+		       access from unwanted users!
+		</para>
+		<para>
+			While Samba will attempt to scrub the password
+			from the process title (as seen in ps), this
+			is after startup and so is subject to a race.
 		</para>
 	</listitem>
 </varlistentry>
