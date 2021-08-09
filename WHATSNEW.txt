@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.15.  This is *not*
+This is the second release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -206,6 +206,27 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc1
+=======================
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14768: smbd/winbind should load the registry if configured
+   * BUG 14777: do not quote passed argument of configure script
+   * BUG 14779: Winbind should not start if the socket path is too long
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14607: tree connect failed: NT_STATUS_INVALID_PARAMETER
+   * BUG 14764: aes-256-gcm and aes-256-ccm doesn't work in the server
+
+o Ralph Boehme <slow@samba.org>
+   * BUG 14700: file owner not available when file unredable
+
+o Jeremy Allison <jra@samba.org>
+   * BUG 14607: tree connect failed: NT_STATUS_INVALID_PARAMETER
+   * BUG 14759: 4.15rc can leak meta-data about the directory containing the
+     share path
 
 
 KNOWN ISSUES
