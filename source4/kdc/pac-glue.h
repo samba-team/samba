@@ -69,3 +69,8 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       const char *client_name,
 				       const char *workstation,
 				       bool password_change);
+
+krb5_error_code samba_kdc_validate_pac_blob(
+		krb5_context context,
+		struct samba_kdc_entry *client_skdc_entry,
+		const krb5_pac pac);

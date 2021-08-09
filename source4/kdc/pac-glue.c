@@ -918,3 +918,59 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 	talloc_free(tmp_ctx);
 	return nt_status;
 }
+
+/* Does a parse and SID check, but no crypto. */
+krb5_error_code samba_kdc_validate_pac_blob(
+		krb5_context context,
+		struct samba_kdc_entry *client_skdc_entry,
+		const krb5_pac pac)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct auth_user_info_dc *pac_user_info = NULL;
+	struct dom_sid *client_sid = NULL;
+	struct dom_sid pac_sid;
+	krb5_error_code code;
+	bool ok;
+
+	code = kerberos_pac_to_user_info_dc(frame,
+					    pac,
+					    context,
+					    &pac_user_info,
+					    NULL,
+					    NULL);
+	if (code != 0) {
+		goto out;
+	}
+
+	if (pac_user_info->num_sids == 0) {
+		code = EINVAL;
+		goto out;
+	}
+
+	pac_sid = pac_user_info->sids[0];
+	client_sid = samdb_result_dom_sid(frame,
+					  client_skdc_entry->msg,
+					  "objectSid");
+
+	ok = dom_sid_equal(&pac_sid, client_sid);
+	if (!ok) {
+		struct dom_sid_buf buf1;
+		struct dom_sid_buf buf2;
+
+		DBG_ERR("SID mismatch between PAC and looked up client: "
+			"PAC[%s] != CLI[%s]\n",
+			dom_sid_str_buf(&pac_sid, &buf1),
+			dom_sid_str_buf(client_sid, &buf2));
+#if defined(KRB5KDC_ERR_CLIENT_NAME_MISMATCH) /* MIT */
+			code = KRB5KDC_ERR_CLIENT_NAME_MISMATCH;
+#else /* Heimdal (where this is an enum) */
+			code = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+#endif
+		goto out;
+	}
+
+	code = 0;
+out:
+	TALLOC_FREE(frame);
+	return code;
+}
