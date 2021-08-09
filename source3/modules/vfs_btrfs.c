@@ -460,11 +460,12 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 	const char *p = NULL;
 	int ret;
 	long flags = 0;
+	int fsp_fd = fsp_get_pathref_fd(fsp);
 	int fd = -1;
 	NTSTATUS status;
 
 	if (!fsp->fsp_flags.is_pathref) {
-		ret = ioctl(fd, FS_IOC_GETFLAGS, &flags);
+		ret = ioctl(fsp_fd, FS_IOC_GETFLAGS, &flags);
 		if (ret < 0) {
 			DBG_WARNING("FS_IOC_GETFLAGS failed: %s, fd %lld\n",
 				    strerror(errno), (long long)fd);
@@ -482,9 +483,7 @@ static NTSTATUS btrfs_fget_compression(struct vfs_handle_struct *handle,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	fd = fsp_get_pathref_fd(fsp);
-
-	p = sys_proc_fd_path(fd, buf, sizeof(buf));
+	p = sys_proc_fd_path(fsp_fd, buf, sizeof(buf));
 	if (p == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
