@@ -538,6 +538,15 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 		client_skdc_entry =
 			talloc_get_type_abort(client->e_data,
 					      struct samba_kdc_entry);
+
+		/*
+		 * Check the objectSID of the client and pac data are the same.
+		 * Does a parse and SID check, but no crypto.
+		 */
+		code = samba_kdc_validate_pac_blob(context, client_skdc_entry, *pac);
+		if (code != 0) {
+			goto done;
+		}
 	}
 
 	if (server == NULL) {
