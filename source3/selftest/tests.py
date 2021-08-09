@@ -1030,6 +1030,10 @@ plantestsuite("samba3.blackbox.aio-outstanding", "simpleserver:local",
                '$SERVER_IP',
                "aio_delay_inject"])
 
+plantestsuite("samba3.blackbox.deadtime", "simpleserver:local",
+              [os.path.join(samba3srcdir, "script/tests/test_deadtime.sh"),
+               '$SERVER_IP'])
+
 plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh")])
 
