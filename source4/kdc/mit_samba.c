@@ -528,6 +528,12 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	krb5_pac new_pac = NULL;
 	bool ok;
 
+	/* Create a memory context early so code can use talloc_stackframe() */
+	tmp_ctx = talloc_named(ctx, 0, "mit_samba_reget_pac context");
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
 	if (client != NULL) {
 		client_skdc_entry =
 			talloc_get_type_abort(client->e_data,
@@ -535,7 +541,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	}
 
 	if (server == NULL) {
-		return EINVAL;
+		code = EINVAL;
+		goto done;
 	}
 
 	server_skdc_entry =
@@ -545,20 +552,17 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	/* The account may be set not to want the PAC */
 	ok = samba_princ_needs_pac(server_skdc_entry);
 	if (!ok) {
-		return EINVAL;
+		code = EINVAL;
+		goto done;
 	}
 
 	if (krbtgt == NULL) {
-		return EINVAL;
+		code = EINVAL;
+		goto done;
 	}
 	krbtgt_skdc_entry =
 		talloc_get_type_abort(krbtgt->e_data,
 				      struct samba_kdc_entry);
-
-	tmp_ctx = talloc_named(ctx, 0, "mit_samba_reget_pac context");
-	if (tmp_ctx == NULL) {
-		return ENOMEM;
-	}
 
 	code = samba_krbtgt_is_in_db(krbtgt_skdc_entry,
 				     &is_in_db,
