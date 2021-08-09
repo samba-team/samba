@@ -946,9 +946,13 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
     bld.env.SAMBA_CATALOGS = 'file:///etc/xml/catalog file:///usr/local/share/xml/catalog file://' + bld.env.SAMBA_CATALOG
 
     for m in manpages.split():
-        source = m + '.xml'
+        source = [m + '.xml']
         if extra_source is not None:
             source = [source, extra_source]
+        # ${SRC[1]} and ${SRC[2]} are not referenced in the
+        # SAMBA_GENERATOR but trigger the dependency calculation so
+        # ensures that manpages are rebuilt when these change.
+        source += ['build/DTD/samba.entities', 'build/DTD/samba.build.version']
         bld.SAMBA_GENERATOR(m,
                             source=source,
                             target=m,
