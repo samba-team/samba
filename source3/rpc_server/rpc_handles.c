@@ -103,17 +103,35 @@ size_t num_pipe_handles(void)
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
+struct hnd_cnt {
+	bool _dummy;
+};
+
+static int hnd_cnt_destructor(struct hnd_cnt *cnt)
+{
+	num_handles--;
+	return 0;
+}
+
 bool create_policy_hnd(struct pipes_struct *p,
 		       struct policy_handle *hnd,
 		       uint8_t handle_type,
 		       void *data_ptr)
 {
 	struct dcesrv_handle *rpc_hnd = NULL;
+	struct hnd_cnt *cnt = NULL;
 
 	rpc_hnd = dcesrv_handle_create(p->dce_call, handle_type);
 	if (rpc_hnd == NULL) {
 		return false;
 	}
+
+	cnt = talloc_zero(rpc_hnd, struct hnd_cnt);
+	if (cnt == NULL) {
+		TALLOC_FREE(rpc_hnd);
+		return false;
+	}
+	talloc_set_destructor(cnt, hnd_cnt_destructor);
 
 	if (data_ptr != NULL) {
 		rpc_hnd->data = talloc_move(rpc_hnd, &data_ptr);
@@ -203,8 +221,6 @@ bool close_policy_hnd(struct pipes_struct *p,
 	}
 
 	TALLOC_FREE(rpc_hnd);
-
-	num_handles--;
 
 	return true;
 }
