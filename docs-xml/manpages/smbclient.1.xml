@@ -1193,16 +1193,10 @@
 <refsect1>
 	<title>ENVIRONMENT VARIABLES</title>
 
-	<para>The variable <envar>USER</envar> may contain the
-	username of the person	using the client. This information is
-	used only if the protocol  level is high enough to support
-	session-level passwords.</para>
-
-
-	<para>The variable <envar>PASSWD</envar> may contain
-	the password of the person using the client.  This information is
-	used only if the protocol level is high enough to support
-	session-level passwords. </para>
+	<para>See the <command>--user</command> and
+	<command>--password</command> options for details on ways to
+	specify a username and password via an environment variable.
+	</para>
 </refsect1>
 
 
