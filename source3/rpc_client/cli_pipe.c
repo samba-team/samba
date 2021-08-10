@@ -1180,8 +1180,19 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 {
 	uint16_t auth_len = auth_info->length;
 	NTSTATUS status;
-	union dcerpc_payload u;
-	struct dcerpc_ctx_list ctx_list;
+	struct dcerpc_ctx_list ctx_list = {
+		.context_id = 0,
+		.num_transfer_syntaxes = 1,
+		.abstract_syntax = *abstract,
+		.transfer_syntaxes = (struct ndr_syntax_id *)discard_const(transfer),
+	};
+	union dcerpc_payload u = {
+		.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN,
+		.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN,
+		.bind.num_contexts	= 1,
+		.bind.ctx_list		= &ctx_list,
+		.bind.auth_info		= *auth_info,
+	};
 	uint8_t pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 
 	if (auth_len) {
@@ -1191,18 +1202,6 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 	if (client_hdr_signing) {
 		pfc_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
-
-	ctx_list.context_id = 0;
-	ctx_list.num_transfer_syntaxes = 1;
-	ctx_list.abstract_syntax = *abstract;
-	ctx_list.transfer_syntaxes = (struct ndr_syntax_id *)discard_const(transfer);
-
-	u.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN;
-	u.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN;
-	u.bind.assoc_group_id	= 0x0;
-	u.bind.num_contexts	= 1;
-	u.bind.ctx_list		= &ctx_list;
-	u.bind.auth_info	= *auth_info;
 
 	status = dcerpc_push_ncacn_packet(mem_ctx,
 					  ptype, pfc_flags,
@@ -1534,11 +1533,11 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 
 	data_blob_free(&state->rpc_out);
 
-	ZERO_STRUCT(u.request);
-
-	u.request.alloc_hint	= total_left;
-	u.request.context_id	= 0;
-	u.request.opnum		= state->op_num;
+	u = (union dcerpc_payload) {
+		.request.alloc_hint	= total_left,
+		.request.context_id	= 0,
+		.request.opnum		= state->op_num,
+	};
 
 	if (state->object_uuid) {
 		flags |= DCERPC_PFC_FLAG_OBJECT_UUID;
@@ -1755,9 +1754,7 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 				DATA_BLOB *rpc_out)
 {
 	NTSTATUS status;
-	union dcerpc_payload u;
-
-	u.auth3._pad = 0;
+	union dcerpc_payload u = { .auth3._pad = 0, };
 
 	status = dcerpc_push_dcerpc_auth(mem_ctx,
 					 auth->auth_type,
