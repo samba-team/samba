@@ -1712,6 +1712,7 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 				const struct ndr_syntax_id *transfer)
 {
 	struct dcerpc_ack_ctx ctx;
+	bool equal;
 
 	if (r->secondary_address_size == 0) {
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
@@ -1724,8 +1725,8 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 	ctx = r->ctx_list[0];
 
 	/* check the transfer syntax */
-	if ((ctx.syntax.if_version != transfer->if_version) ||
-	     (memcmp(&ctx.syntax.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
+	equal = ndr_syntax_id_equal(&ctx.syntax, transfer);
+	if (!equal) {
 		DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;
 	}
