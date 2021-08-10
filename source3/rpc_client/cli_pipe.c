@@ -805,7 +805,6 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct rpc_api_pipe_state *state;
 	uint16_t max_recv_frag;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_api_pipe_state);
 	if (req == NULL) {
@@ -821,8 +820,8 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	 * Ensure we're not sending too much.
 	 */
 	if (data->length > cli->max_xmit_frag) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto post_status;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(talloc_tos(), cli)));
@@ -830,8 +829,8 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	if (state->expected_pkt_type == DCERPC_PKT_AUTH3) {
 		subreq = rpc_write_send(state, ev, cli->transport,
 					data->data, data->length);
-		if (subreq == NULL) {
-			goto fail;
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_auth3_done, req);
 		return req;
@@ -843,18 +842,11 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli_api_pipe_send(state, ev, cli->transport,
 				   data->data, data->length, max_recv_frag);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, rpc_api_pipe_trans_done, req);
 	return req;
-
- post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void rpc_api_pipe_auth3_done(struct tevent_req *subreq)
