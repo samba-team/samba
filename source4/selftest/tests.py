@@ -1122,6 +1122,8 @@ plantestsuite("samba4.sam.python(fl2008r2dc)", "fl2008r2dc", [python, os.path.jo
 plantestsuite("samba4.sam.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 plantestsuite("samba4.asq.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "asq.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 plantestsuite("samba4.user_account_control.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "user_account_control.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
+plantestsuite("samba4.priv_attrs.python(ad_dc_default)", "ad_dc_default", ["STRICT_CHECKING=0", python, os.path.join(DSDB_PYTEST_DIR, "priv_attrs.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
+plantestsuite("samba4.priv_attrs.strict.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "priv_attrs.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
 for env in ['ad_dc_default:local', 'schema_dc:local']:
     planoldpythontestsuite(env, "dsdb_schema_info",
