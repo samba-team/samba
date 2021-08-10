@@ -74,9 +74,9 @@ static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_con
 
 	info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 	return WERR_OK;
-}		
+}
 
-static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
+static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(struct ldb_context *ldb_ctx,
 						      TALLOC_CTX *mem_ctx,
 						      const char *alias_from,
 						      char **alias_to)
@@ -221,8 +221,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	dns_name = (const char *)component->data;
 
 	/* MAP it */
-	namestatus = LDB_lookup_spn_alias(smb_krb5_context->krb5_context, 
-					  sam_ctx, mem_ctx, 
+	namestatus = LDB_lookup_spn_alias(sam_ctx, mem_ctx,
 					  service, &new_service);
 
 	if (namestatus == DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
