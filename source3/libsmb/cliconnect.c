@@ -3361,6 +3361,8 @@ static void cli_full_connection_creds_enc_start(struct tevent_req *req);
 static void cli_full_connection_creds_enc_tcon(struct tevent_req *subreq);
 static void cli_full_connection_creds_enc_ver(struct tevent_req *subreq);
 static void cli_full_connection_creds_enc_done(struct tevent_req *subreq);
+static void cli_full_connection_creds_enc_tdis(struct tevent_req *req);
+static void cli_full_connection_creds_enc_finished(struct tevent_req *subreq);
 static void cli_full_connection_creds_tcon_start(struct tevent_req *req);
 static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq);
 
@@ -3588,7 +3590,8 @@ static void cli_full_connection_creds_enc_ver(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
-			cli_full_connection_creds_tcon_start(req);
+			/* disconnect ipc$ followed by the real tree connect */
+			cli_full_connection_creds_enc_tdis(req);
 			return;
 		}
 		DEBUG(10, ("%s: cli_unix_extensions_version "
@@ -3599,7 +3602,8 @@ static void cli_full_connection_creds_enc_ver(struct tevent_req *subreq)
 
 	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
 		if (encryption_state < SMB_ENCRYPTION_REQUIRED) {
-			cli_full_connection_creds_tcon_start(req);
+			/* disconnect ipc$ followed by the real tree connect */
+			cli_full_connection_creds_enc_tdis(req);
 			return;
 		}
 		DEBUG(10, ("%s: CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP "
@@ -3626,6 +3630,37 @@ static void cli_full_connection_creds_enc_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_smb1_setup_encryption_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/* disconnect ipc$ followed by the real tree connect */
+	cli_full_connection_creds_enc_tdis(req);
+}
+
+static void cli_full_connection_creds_enc_tdis(struct tevent_req *req)
+{
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	struct tevent_req *subreq = NULL;
+
+	subreq = cli_tdis_send(state, state->ev, state->cli);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_full_connection_creds_enc_finished,
+				req);
+}
+
+static void cli_full_connection_creds_enc_finished(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_tdis_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
