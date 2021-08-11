@@ -1659,6 +1659,8 @@ int main(int argc, const char **argv)
 	const struct dcesrv_endpoint_server *ep_server = NULL;
 	struct dcesrv_context *dce_ctx = NULL;
 	size_t winbindd_socket_dir_len = 0;
+	char *winbindd_priv_socket_dir = NULL;
+	size_t winbindd_priv_socket_dir_len = 0;
 
 	setproctitle_init(argc, discard_const(argv), environ);
 
@@ -1834,6 +1836,32 @@ int main(int argc, const char **argv)
 		DBG_ERR("'winbindd_socket_directory' parameter is empty\n");
 		exit(1);
 	}
+
+	winbindd_priv_socket_dir = get_winbind_priv_pipe_dir();
+	winbindd_priv_socket_dir_len = strlen(winbindd_priv_socket_dir);
+	if (winbindd_priv_socket_dir_len > 0) {
+		size_t winbindd_priv_socket_len =
+			winbindd_priv_socket_dir_len + 1 +
+			strlen(WINBINDD_SOCKET_NAME);
+		struct sockaddr_un un = {
+			.sun_family = AF_UNIX,
+		};
+		size_t sun_path_len = sizeof(un.sun_path);
+
+		if (winbindd_priv_socket_len >= sun_path_len) {
+			DBG_ERR("The winbind priviliged socket path [%s/%s] is too long "
+				"(%zu >= %zu)\n",
+				winbindd_priv_socket_dir,
+				WINBINDD_SOCKET_NAME,
+				winbindd_priv_socket_len,
+				sun_path_len);
+			exit(1);
+		}
+	} else {
+		DBG_ERR("'winbindd_priv_socket_directory' parameter is empty\n");
+		exit(1);
+	}
+	TALLOC_FREE(winbindd_priv_socket_dir);
 
 	if (!cluster_probe_ok()) {
 		exit(1);
