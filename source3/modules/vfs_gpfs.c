@@ -1616,11 +1616,6 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
 	int ret;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret == -1 && errno == EACCES) {
@@ -1635,11 +1630,6 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 			  struct smb_filename *smb_fname)
 {
 	int ret;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	if (ret == -1 && errno == EACCES) {
