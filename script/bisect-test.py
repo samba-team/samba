@@ -48,7 +48,7 @@ def find_git_root():
     '''get to the top of the git repo'''
     p = os.getcwd()
     while p != '/':
-        if os.path.isdir(os.path.join(p, ".git")):
+        if os.path.exists(os.path.join(p, ".git")):
             return p
         p = os.path.abspath(os.path.join(p, '..'))
     return None
