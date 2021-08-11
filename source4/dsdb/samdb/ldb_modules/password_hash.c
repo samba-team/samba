@@ -2479,6 +2479,59 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return LDB_SUCCESS;
 	}
 
+	if (io->u.is_krbtgt) {
+		size_t min = 196;
+		size_t max = 255;
+		size_t diff = max - min;
+		size_t len = max;
+		struct ldb_val *krbtgt_utf16 = NULL;
+
+		if (!io->ac->pwd_reset) {
+			return dsdb_module_werror(io->ac->module,
+					LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
+					WERR_DS_ATT_ALREADY_EXISTS,
+					"Password change on krbtgt not permitted!");
+		}
+
+		if (io->n.cleartext_utf16 == NULL) {
+			return dsdb_module_werror(io->ac->module,
+					LDB_ERR_UNWILLING_TO_PERFORM,
+					WERR_DS_INVALID_ATTRIBUTE_SYNTAX,
+					"Password reset on krbtgt requires UTF16!");
+		}
+
+		/*
+		 * Instead of taking the callers value,
+		 * we just generate a new random value here.
+		 *
+		 * Include null termination in the array.
+		 */
+		if (diff > 0) {
+			size_t tmp;
+
+			generate_random_buffer((uint8_t *)&tmp, sizeof(tmp));
+
+			tmp %= diff;
+
+			len = min + tmp;
+		}
+
+		krbtgt_utf16 = talloc_zero(io->ac, struct ldb_val);
+		if (krbtgt_utf16 == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		*krbtgt_utf16 = data_blob_talloc_zero(krbtgt_utf16,
+						      (len+1)*2);
+		if (krbtgt_utf16->data == NULL) {
+			return ldb_oom(ldb);
+		}
+		krbtgt_utf16->length = len * 2;
+		generate_secret_buffer(krbtgt_utf16->data,
+				       krbtgt_utf16->length);
+		io->n.cleartext_utf16 = krbtgt_utf16;
+	}
+
 	/* transform the old password (for password changes) */
 	ret = setup_given_passwords(io, &io->og);
 	if (ret != LDB_SUCCESS) {
@@ -3654,59 +3707,6 @@ static int setup_io(struct ph_context *ac,
 	} else {
 		/* this shouldn't happen */
 		return ldb_operr(ldb);
-	}
-
-	if (io->u.is_krbtgt) {
-		size_t min = 196;
-		size_t max = 255;
-		size_t diff = max - min;
-		size_t len = max;
-		struct ldb_val *krbtgt_utf16 = NULL;
-
-		if (!ac->pwd_reset) {
-			return dsdb_module_werror(ac->module,
-					LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
-					WERR_DS_ATT_ALREADY_EXISTS,
-					"Password change on krbtgt not permitted!");
-		}
-
-		if (io->n.cleartext_utf16 == NULL) {
-			return dsdb_module_werror(ac->module,
-					LDB_ERR_UNWILLING_TO_PERFORM,
-					WERR_DS_INVALID_ATTRIBUTE_SYNTAX,
-					"Password reset on krbtgt requires UTF16!");
-		}
-
-		/*
-		 * Instead of taking the callers value,
-		 * we just generate a new random value here.
-		 *
-		 * Include null termination in the array.
-		 */
-		if (diff > 0) {
-			size_t tmp;
-
-			generate_random_buffer((uint8_t *)&tmp, sizeof(tmp));
-
-			tmp %= diff;
-
-			len = min + tmp;
-		}
-
-		krbtgt_utf16 = talloc_zero(io->ac, struct ldb_val);
-		if (krbtgt_utf16 == NULL) {
-			return ldb_oom(ldb);
-		}
-
-		*krbtgt_utf16 = data_blob_talloc_zero(krbtgt_utf16,
-						      (len+1)*2);
-		if (krbtgt_utf16->data == NULL) {
-			return ldb_oom(ldb);
-		}
-		krbtgt_utf16->length = len * 2;
-		generate_secret_buffer(krbtgt_utf16->data,
-				       krbtgt_utf16->length);
-		io->n.cleartext_utf16 = krbtgt_utf16;
 	}
 
 	if (existing_msg != NULL) {
