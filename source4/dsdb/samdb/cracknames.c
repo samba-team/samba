@@ -101,10 +101,12 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 
 	service_dn = ldb_dn_new(tmp_ctx, ldb_ctx, "CN=Directory Service,CN=Windows NT,CN=Services");
 	if ( ! ldb_dn_add_base(service_dn, ldb_get_config_basedn(ldb_ctx))) {
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 	service_dn_str = ldb_dn_alloc_linearized(tmp_ctx, service_dn);
 	if ( ! service_dn_str) {
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
@@ -113,13 +115,15 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(1, ("ldb_search: dn: %s not found: %s\n", service_dn_str, ldb_errstring(ldb_ctx)));
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(1, ("ldb_search: dn: %s not found\n", service_dn_str));
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	} else if (res->count != 1) {
-		talloc_free(res);
 		DEBUG(1, ("ldb_search: dn: %s not found\n", service_dn_str));
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	}
 
