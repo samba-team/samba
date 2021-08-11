@@ -109,7 +109,7 @@ def vcs_dir_contents(path):
     """
     repo = path
     while repo != "/":
-        if os.path.isdir(os.path.join(repo, ".git")):
+        if os.path.exists(os.path.join(repo, ".git")):
             ls_files_cmd = [ 'git', 'ls-files', '--full-name',
                              os.path.relpath(path, repo) ]
             cwd = None
