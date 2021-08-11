@@ -1828,7 +1828,7 @@ int main(int argc, const char **argv)
 				"(%zu >= %zu)\n",
 				lp_winbindd_socket_directory(),
 				WINBINDD_SOCKET_NAME,
-				winbindd_socket_dir_len,
+				winbindd_socket_len,
 				sun_path_len);
 			exit(1);
 		}
