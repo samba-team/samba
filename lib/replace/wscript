@@ -483,8 +483,6 @@ def configure(conf):
                         headers='errno.h string.h stdio.h sys/syscall.h unistd.h sys/types.h sys/stat.h fcntl.h',
                         execute=True,
                         msg='Checking whether we have copy_file_range system call')
-    if conf.CONFIG_SET('HAVE_COPY_FILE_RANGE') or conf.CONFIG_SET('HAVE_SYSCALL_COPY_FILE_RANGE'):
-        conf.DEFINE('USE_COPY_FILE_RANGE', 1)
 
     conf.SET_TARGET_TYPE('attr', 'EMPTY')
 
