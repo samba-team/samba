@@ -2214,10 +2214,11 @@ static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req)
 	NTSTATUS status;
 	bool same_file;
 	bool ok;
+	static bool try_copy_file_range = true;
 
-#ifndef USE_COPY_FILE_RANGE
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
-#endif
+	if (!try_copy_file_range) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
 
 	same_file = file_id_equal(&state->src_fsp->file_id,
 				  &state->dst_fsp->file_id);
@@ -2286,6 +2287,11 @@ static NTSTATUS vfswrap_offload_copy_file_range(struct tevent_req *req)
 				  (intmax_t)state->remaining,
 				  strerror(errno));
 			switch (errno) {
+			case EOPNOTSUPP:
+			case ENOSYS:
+				try_copy_file_range = false;
+				status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+				break;
 			case EXDEV:
 				status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 				break;
