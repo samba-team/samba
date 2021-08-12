@@ -81,6 +81,12 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(struct ldb_context *ldb_ct
 						      const char *alias_from,
 						      char **alias_to)
 {
+	/*
+	 * Some of the logic of this function is mirrored in find_spn_alias()
+	 * in source4/dsdb.samdb/ldb_modules/samldb.c. If you change this to
+	 * not return the first matched alias, you will need to rethink that
+	 * function too.
+	 */
 	unsigned int i;
 	int ret;
 	struct ldb_result *res;
