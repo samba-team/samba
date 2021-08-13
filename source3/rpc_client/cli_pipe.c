@@ -1327,18 +1327,18 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	if (cli->max_xmit_frag < DCERPC_REQUEST_LENGTH
 					+ RPC_MAX_SIGN_SIZE) {
 		/* Server is screwed up ! */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto post_status;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	status = prepare_verification_trailer(state);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	status = prepare_next_frag(state, &is_last_frag);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	if (is_last_frag) {
@@ -1346,28 +1346,21 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					   &state->rpc_out,
 					   DCERPC_PKT_RESPONSE,
 					   state->call_id);
-		if (subreq == NULL) {
-			goto fail;
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_req_done, req);
 	} else {
 		subreq = rpc_write_send(state, ev, cli->transport,
 					state->rpc_out.data,
 					state->rpc_out.length);
-		if (subreq == NULL) {
-			goto fail;
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_req_write_done,
 					req);
 	}
 	return req;
-
- post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *state)
