@@ -1584,13 +1584,9 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	}
 
 	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
+
 	ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
 				    GPFS_WINATTR_SET_ATTRS, &attrs);
-
-	if (ret == -1 && errno == ENOSYS) {
-		return SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
-	}
-
 	if (ret == -1) {
 		DBG_WARNING("Setting winattrs failed for %s: %s\n",
 			    fsp->fsp_name->base_name, strerror(errno));
