@@ -122,7 +122,6 @@ def SAMBA_LIBRARY(bld, libname, source,
                   pyembed=False,
                   pyext=False,
                   target_type='LIBRARY',
-                  bundled_extension=False,
                   bundled_name=None,
                   link_name=None,
                   abi_directory=None,
@@ -232,10 +231,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             bundled_name = libname.replace('_', '-')
     else:
         assert (private_library == True and realname is None)
-        if abi_directory or vnum or soname:
-            bundled_extension=True
-        bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'),
-                                    bundled_extension)
+        bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'))
 
     ldflags = TO_LIST(ldflags)
     if bld.env['ENABLE_RELRO'] is True:
