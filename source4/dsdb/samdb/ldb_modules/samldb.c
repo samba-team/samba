@@ -1980,6 +1980,29 @@ static int samldb_check_user_account_control_invariants(struct samldb_ctx *ac,
 	return ret;
 }
 
+static int samldb_get_domain_secdesc(struct samldb_ctx *ac,
+				     struct security_descriptor **domain_sd)
+{
+	const char * const sd_attrs[] = {"ntSecurityDescriptor", NULL};
+	struct ldb_result *res;
+	struct ldb_dn *domain_dn = ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
+	int ret = dsdb_module_search_dn(ac->module, ac, &res,
+					domain_dn,
+					sd_attrs,
+					DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+					ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		return ldb_module_operr(ac->module);
+	}
+
+	return dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(ac->module),
+					    ac, res->msgs[0], domain_sd);
+
+}
+
 /**
  * Validate that the restriction in point 5 of MS-SAMR 3.1.1.8.10 userAccountControl is honoured
  *
@@ -1992,12 +2015,8 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 	size_t i;
 	int ret = 0;
 	bool need_acl_check = false;
-	struct ldb_result *res;
-	const char * const sd_attrs[] = {"ntSecurityDescriptor", NULL};
 	struct security_token *user_token;
 	struct security_descriptor *domain_sd;
-	struct ldb_dn *domain_dn = ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
-	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const struct uac_to_guid {
 		uint32_t uac;
 		uint32_t priv_to_change_from;
@@ -2083,21 +2102,7 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 
-	ret = dsdb_module_search_dn(ac->module, ac, &res,
-				    domain_dn,
-				    sd_attrs,
-				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
-				    ac->req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	if (res->count != 1) {
-		return ldb_module_operr(ac->module);
-	}
-
-	ret = dsdb_get_sd_from_ldb_message(ldb,
-					   ac, res->msgs[0], &domain_sd);
-
+	ret = samldb_get_domain_secdesc(ac, &domain_sd);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2159,6 +2164,8 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 			return ldb_module_operr(ac->module);
 		}
 		if (map[i].guid) {
+			struct ldb_dn *domain_dn
+				= ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
 			dsdb_acl_debug(domain_sd, acl_user_token(ac->module),
 				       domain_dn,
 				       true,
@@ -3491,7 +3498,98 @@ static char *refer_if_rodc(struct ldb_context *ldb, struct ldb_request *req,
 	return NULL;
 }
 
+/*
+ * Restrict all access to sensitive attributes.
+ *
+ * We don't want to even inspect the values, so we can use the same
+ * routine for ADD and MODIFY.
+ *
+ */
 
+static int samldb_check_sensitive_attributes(struct samldb_ctx *ac)
+{
+	struct ldb_message_element *el = NULL;
+	struct security_token *user_token = NULL;
+	int ret;
+
+	if (dsdb_module_am_system(ac->module)) {
+		return LDB_SUCCESS;
+	}
+
+	user_token = acl_user_token(ac->module);
+	if (user_token == NULL) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	el = ldb_msg_find_element(ac->msg, "sidHistory");
+	if (el) {
+               /*
+                * sidHistory is restricted to the (not implemented
+                * yet in Samba) DsAddSidHistory call (direct LDB access is
+                * as SYSTEM so will bypass this).
+		*
+		* If you want to modify this, say to merge domains,
+		* directly modify the sam.ldb as root.
+                */
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "sidHistory "
+				       "(entry %s) cannot be created "
+				       "or changed over LDAP!",
+				       ldb_dn_get_linearized(ac->msg->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	el = ldb_msg_find_element(ac->msg, "msDS-SecondaryKrbTgtNumber");
+	if (el) {
+		struct security_descriptor *domain_sd;
+		/*
+		 * msDS-SecondaryKrbTgtNumber allows the creator to
+		 * become an RODC, this is trusted as an RODC
+		 * account
+		 */
+		ret = samldb_get_domain_secdesc(ac, &domain_sd);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = acl_check_extended_right(ac, domain_sd,
+					       user_token,
+					       GUID_DRS_DS_INSTALL_REPLICA,
+					       SEC_ADS_CONTROL_ACCESS,
+					       NULL);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+					       "msDS-SecondaryKrbTgtNumber "
+					       "(entry %s) cannot be created "
+					       "or changed without "
+					       "DS-Install-Replica extended right!",
+					       ldb_dn_get_linearized(ac->msg->dn));
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "msDS-AllowedToDelegateTo");
+	if (el) {
+		/*
+		 * msDS-AllowedToDelegateTo is incredibly powerful,
+		 * given that it allows a server to become ANY USER on
+		 * the target server only listed by SPN so needs to be
+		 * protected just as the userAccountControl
+		 * UF_TRUSTED_FOR_DELEGATION is.
+		 */
+
+		bool have_priv = security_token_has_privilege(user_token,
+							      SEC_PRIV_ENABLE_DELEGATION);
+		if (have_priv == false) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+					       "msDS-AllowedToDelegateTo "
+					       "(entry %s) cannot be created "
+					       "or changed without SePrivEnableDelegation!",
+					       ldb_dn_get_linearized(ac->msg->dn));
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
+	}
+	return LDB_SUCCESS;
+}
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
@@ -3536,6 +3634,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "samldb_add: ldb_msg_copy_shallow failed!\n");
 		return ldb_operr(ldb);
+	}
+
+	ret = samldb_check_sensitive_attributes(ac);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
+		return ret;
 	}
 
 	el = ldb_msg_find_element(ac->msg, "fSMORoleOwner");
@@ -3743,6 +3847,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "samldb_modify: ldb_msg_copy_shallow failed!\n");
 		return ldb_operr(ldb);
+	}
+
+	ret = samldb_check_sensitive_attributes(ac);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ac);
+		return ret;
 	}
 
 	if (is_undelete == NULL) {
