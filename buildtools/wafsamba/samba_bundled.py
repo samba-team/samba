@@ -5,11 +5,8 @@ from waflib import Build, Options, Logs
 from waflib.Configure import conf
 from wafsamba import samba_utils
 
-def PRIVATE_NAME(bld, name, private_extension, private_library):
+def PRIVATE_NAME(bld, name, private_extension):
     '''possibly rename a library to include a bundled extension'''
-
-    if not private_library:
-        return name
 
     # we now use the same private name for libraries as the public name.
     # see http://git.samba.org/?p=tridge/junkcode.git;a=tree;f=shlib for a

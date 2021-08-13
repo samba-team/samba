@@ -235,7 +235,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if abi_directory or vnum or soname:
             bundled_extension=True
         bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'),
-                                    bundled_extension, private_library)
+                                    bundled_extension)
 
     ldflags = TO_LIST(ldflags)
     if bld.env['ENABLE_RELRO'] is True:
