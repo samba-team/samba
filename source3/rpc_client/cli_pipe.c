@@ -1367,7 +1367,6 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 {
 	struct pipe_auth_data *a = state->cli->auth;
 	struct dcerpc_sec_verification_trailer *t;
-	struct dcerpc_sec_vt *c = NULL;
 	struct ndr_push *ndr = NULL;
 	enum ndr_err_code ndr_err;
 	size_t align = 0;
@@ -1393,13 +1392,12 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 		if (t->commands == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		c = &t->commands[t->count.count++];
-		ZERO_STRUCTP(c);
-
-		c->command = DCERPC_SEC_VT_COMMAND_BITMASK1;
-		if (a->client_hdr_signing) {
-			c->u.bitmask1 = DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING;
-		}
+		t->commands[t->count.count++] = (struct dcerpc_sec_vt) {
+			.command = DCERPC_SEC_VT_COMMAND_BITMASK1,
+			.u.bitmask1 = (a->client_hdr_signing) ?
+				DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING :
+				0,
+		};
 		state->verify_bitmask1 = true;
 	}
 
@@ -1410,13 +1408,13 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 		if (t->commands == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		c = &t->commands[t->count.count++];
-		ZERO_STRUCTP(c);
-
-		c->command = DCERPC_SEC_VT_COMMAND_PCONTEXT;
-		c->u.pcontext.abstract_syntax = state->cli->abstract_syntax;
-		c->u.pcontext.transfer_syntax = state->cli->transfer_syntax;
-
+		t->commands[t->count.count++] = (struct dcerpc_sec_vt) {
+			.command = DCERPC_SEC_VT_COMMAND_PCONTEXT,
+			.u.pcontext.abstract_syntax =
+				state->cli->abstract_syntax,
+			.u.pcontext.transfer_syntax =
+				state->cli->transfer_syntax,
+		};
 		state->verify_pcontext = true;
 	}
 
@@ -1427,18 +1425,14 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 		if (t->commands == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		c = &t->commands[t->count.count++];
-		ZERO_STRUCTP(c);
-
-		c->command = DCERPC_SEC_VT_COMMAND_HEADER2;
-		c->u.header2.ptype = DCERPC_PKT_REQUEST;
-		c->u.header2.drep[0] = DCERPC_DREP_LE;
-		c->u.header2.drep[1] = 0;
-		c->u.header2.drep[2] = 0;
-		c->u.header2.drep[3] = 0;
-		c->u.header2.call_id = state->call_id;
-		c->u.header2.context_id = 0;
-		c->u.header2.opnum = state->op_num;
+		t->commands[t->count.count++] = (struct dcerpc_sec_vt) {
+			.command = DCERPC_SEC_VT_COMMAND_HEADER2,
+			.u.header2.ptype = DCERPC_PKT_REQUEST,
+			.u.header2.drep[0] = DCERPC_DREP_LE,
+			.u.header2.call_id = state->call_id,
+			.u.header2.context_id = 0,
+			.u.header2.opnum = state->op_num,
+		};
 	}
 
 	if (t->count.count == 0) {
@@ -1446,8 +1440,7 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 		return NT_STATUS_OK;
 	}
 
-	c = &t->commands[t->count.count - 1];
-	c->command |= DCERPC_SEC_VT_COMMAND_END;
+	t->commands[t->count.count - 1].command |= DCERPC_SEC_VT_COMMAND_END;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(dcerpc_sec_verification_trailer, t);
