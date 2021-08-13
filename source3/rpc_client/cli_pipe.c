@@ -1881,23 +1881,17 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		goto post_status;
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = rpc_api_pipe_send(state, ev, cli, &state->rpc_out,
 				   DCERPC_PKT_BIND_ACK, state->rpc_call_id);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, rpc_pipe_bind_step_one_done, req);
 	return req;
-
- post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
