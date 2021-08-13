@@ -59,85 +59,64 @@ check_PAC(krb5_context context,
 	  hdb_entry_ex *client,
 	  hdb_entry_ex *server,
 	  hdb_entry_ex *krbtgt,
+	  hdb_entry_ex *ticket_server,
 	  const EncryptionKey *server_check_key,
-	  const EncryptionKey *server_sign_key,
-	  const EncryptionKey *krbtgt_sign_key,
+	  const EncryptionKey *krbtgt_check_key,
 	  EncTicketPart *tkt,
-	  krb5_data *rspac,
-	  int *signedpath)
+	  krb5_boolean *kdc_issued,
+	  krb5_pac *ppac)
 {
-    AuthorizationData *ad = tkt->authorization_data;
-    unsigned i, j;
+    krb5_pac pac = NULL;
     krb5_error_code ret;
+    krb5_boolean signedticket;
 
-    if (ad == NULL || ad->len == 0)
-	return 0;
+    *kdc_issued = FALSE;
+    *ppac = NULL;
 
-    for (i = 0; i < ad->len; i++) {
-	AuthorizationData child;
+    ret = _krb5_kdc_pac_ticket_parse(context, tkt, &signedticket, &pac);
+    if (ret || pac == NULL)
+	return ret;
 
-	if (ad->val[i].ad_type != KRB5_AUTHDATA_IF_RELEVANT)
-	    continue;
+    /* Verify the server signature. */
+    ret = krb5_pac_verify(context, pac, tkt->authtime, client_principal,
+			  server_check_key, NULL);
+    if (ret) {
+	krb5_pac_free(context, pac);
+	return ret;
+    }
 
-	ret = decode_AuthorizationData(ad->val[i].ad_data.data,
-				       ad->val[i].ad_data.length,
-				       &child,
-				       NULL);
-	if (ret) {
-	    krb5_set_error_message(context, ret, "Failed to decode "
-				   "IF_RELEVANT with %d", ret);
-	    return ret;
-	}
-	for (j = 0; j < child.len; j++) {
-
-	    if (child.val[j].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
-		int signed_pac = 0;
-		krb5_pac pac;
-
-		/* Found PAC */
-		ret = krb5_pac_parse(context,
-				     child.val[j].ad_data.data,
-				     child.val[j].ad_data.length,
-				     &pac);
-		free_AuthorizationData(&child);
-		if (ret)
-		    return ret;
-
-		ret = krb5_pac_verify(context, pac, tkt->authtime,
-				      client_principal,
-				      server_check_key, NULL);
-		if (ret) {
-		    krb5_pac_free(context, pac);
-		    return ret;
-		}
-
-		ret = _kdc_pac_verify(context, client_principal,
-				      delegated_proxy_principal,
-				      client, server, krbtgt, &pac, &signed_pac);
-		if (ret) {
-		    krb5_pac_free(context, pac);
-		    return ret;
-		}
-
-		/*
-		 * Only re-sign PAC if we could verify it with the PAC
-		 * function. The no-verify case happens when we get in
-		 * a PAC from cross realm from a Windows domain and
-		 * that there is no PAC verification function.
-		 */
-		if (signed_pac) {
-		    *signedpath = 1;
-		    ret = _krb5_pac_sign(context, pac, tkt->authtime,
-					 client_principal,
-					 server_sign_key, krbtgt_sign_key, rspac);
-		}
+    /* Verify the KDC signatures. */
+    ret = _kdc_pac_verify(context, client_principal, delegated_proxy_principal,
+			  client, server, krbtgt, &pac);
+    if (ret == KRB5_PLUGIN_NO_HANDLE) {
+	/*
+	 * We can't verify the KDC signatures if the ticket was issued by
+	 * another realm's KDC.
+	 */
+	if (krb5_realm_compare(context, server->entry.principal,
+			       ticket_server->entry.principal)) {
+	    ret = krb5_pac_verify(context, pac, 0, NULL, NULL,
+				  krbtgt_check_key);
+	    if (ret) {
 		krb5_pac_free(context, pac);
-
 		return ret;
 	    }
 	}
-	free_AuthorizationData(&child);
+	/* Discard the PAC if the plugin didn't handle it */
+	krb5_pac_free(context, pac);
+	ret = krb5_pac_init(context, &pac);
+	if (ret)
+	    return ret;
+    } else if (ret) {
+	krb5_pac_free(context, pac);
+	return ret;
     }
+
+    *kdc_issued = signedticket ||
+		  krb5_principal_is_krbtgt(context,
+					   ticket_server->entry.principal);
+    *ppac = pac;
+
     return 0;
 }
 
@@ -499,11 +478,12 @@ static krb5_error_code
 tgs_make_reply(krb5_context context,
 	       krb5_kdc_configuration *config,
 	       KDC_REQ_BODY *b,
-	       krb5_const_principal tgt_name,
+	       krb5_principal tgt_name,
 	       const EncTicketPart *tgt,
 	       const krb5_keyblock *replykey,
 	       int rk_is_subkey,
 	       const EncryptionKey *serverkey,
+	       const EncryptionKey *krbtgtkey,
 	       const krb5_keyblock *sessionkey,
 	       krb5_kvno kvno,
 	       AuthorizationData *auth_data,
@@ -513,8 +493,9 @@ tgs_make_reply(krb5_context context,
 	       hdb_entry_ex *client,
 	       krb5_principal client_principal,
 	       hdb_entry_ex *krbtgt,
-	       krb5_enctype krbtgt_etype,
-	       const krb5_data *rspac,
+	       krb5_pac mspac,
+	       uint16_t rodc_id,
+	       krb5_boolean add_ticket_sig,
 	       const METHOD_DATA *enc_pa_data,
 	       const char **e_text,
 	       krb5_data *reply)
@@ -647,17 +628,6 @@ tgs_make_reply(krb5_context context,
     if (!server->entry.flags.proxiable)
         et.flags.proxiable = 0;
 
-    if(rspac->length) {
-	/*
-	 * No not need to filter out the any PAC from the
-	 * auth_data since it's signed by the KDC.
-	 */
-	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
-					  KRB5_AUTHDATA_WIN2K_PAC, rspac);
-	if (ret)
-	    goto out;
-    }
-
     if (auth_data) {
 	unsigned int i = 0;
 
@@ -724,6 +694,11 @@ tgs_make_reply(krb5_context context,
 	is_weak = 1;
     }
 
+    /* The PAC should be the last change to the ticket. */
+    ret = _krb5_kdc_pac_sign_ticket(context, mspac, tgt_name, serverkey,
+				    krbtgtkey, rodc_id, add_ticket_sig, &et);
+	if (ret)
+	    goto out;
 
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
@@ -910,6 +885,7 @@ tgs_parse_request(krb5_context context,
 		  int **cusec,
 		  AuthorizationData **auth_data,
 		  krb5_keyblock **replykey,
+		  Key **header_key,
 		  int *rk_is_subkey)
 {
     static char failed[] = "<unparse_name failed>";
@@ -1046,6 +1022,8 @@ tgs_parse_request(krb5_context context,
 	krb5_free_error_message(context, msg);
 	goto out;
     }
+
+    *header_key = tkey;
 
     {
 	krb5_authenticator auth;
@@ -1237,12 +1215,64 @@ eout:
 }
 
 static krb5_error_code
+db_fetch_client(krb5_context context,
+		krb5_kdc_configuration *config,
+		int flags,
+		krb5_principal cp,
+		const char *cpn,
+		const char *krbtgt_realm,
+		HDB **clientdb,
+		hdb_entry_ex **client_out)
+{
+    krb5_error_code ret;
+    hdb_entry_ex *client = NULL;
+
+    *client_out = NULL;
+
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
+			NULL, clientdb, &client);
+    if (ret == HDB_ERR_NOT_FOUND_HERE) {
+	/*
+	 * This is OK, we are just trying to find out if they have
+	 * been disabled or deleted in the meantime; missing secrets
+	 * are OK.
+	 */
+    } else if (ret) {
+	/*
+	 * If the client belongs to the same realm as our TGS, it
+	 * should exist in the local database.
+	 */
+	const char *msg;
+
+	if (strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
+	    if (ret == HDB_ERR_NOENTRY)
+		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	    kdc_log(context, config, 4, "Client no longer in database: %s", cpn);
+	    return ret;
+	}
+
+	msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 4, "Client not found in database: %s", msg);
+	krb5_free_error_message(context, msg);
+    } else if (client->entry.flags.invalid || !client->entry.flags.client) {
+	kdc_log(context, config, 4, "Client has invalid bit set");
+	_kdc_free_ent(context, client);
+	return KRB5KDC_ERR_POLICY;
+    }
+
+    *client_out = client;
+
+    return 0;
+}
+
+static krb5_error_code
 tgs_build_reply(krb5_context context,
 		krb5_kdc_configuration *config,
 		KDC_REQ *req,
 		KDC_REQ_BODY *b,
 		hdb_entry_ex *krbtgt,
 		krb5_enctype krbtgt_etype,
+		Key *tkey_check,
 		const krb5_keyblock *replykey,
 		int rk_is_subkey,
 		krb5_ticket *ticket,
@@ -1263,7 +1293,9 @@ tgs_build_reply(krb5_context context,
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
-    krb5_data rspac;
+    krb5_pac mspac = NULL;
+    uint16_t rodc_id;
+    krb5_boolean add_ticket_sig = FALSE;
 
     hdb_entry_ex *krbtgt_out = NULL;
 
@@ -1274,15 +1306,13 @@ tgs_build_reply(krb5_context context,
     int nloop = 0;
     EncTicketPart adtkt;
     char opt_str[128];
-    int signedpath = 0;
+    krb5_boolean kdc_issued = FALSE;
 
-    Key *tkey_check;
     Key *tkey_sign;
     int flags = HDB_F_FOR_TGS_REQ;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
-    krb5_data_zero(&rspac);
     memset(&enc_pa_data, 0, sizeof(enc_pa_data));
 
     s = b->sname;
@@ -1517,18 +1547,6 @@ server_lookup:
      * backward.
      */
 
-    /*
-     * Validate authoriation data
-     */
-
-    ret = hdb_enctype2key(context, &krbtgt->entry,
-			  krbtgt_etype, &tkey_check);
-    if(ret) {
-	kdc_log(context, config, 0,
-		    "Failed to find key for krbtgt PAC check");
-	goto out;
-    }
-
     /* Now refetch the primary krbtgt, and get the current kvno (the
      * sign check may have been on an old kvno, and the server may
      * have been an incoming trust) */
@@ -1589,41 +1607,14 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
-			NULL, &clientdb, &client);
-    if(ret == HDB_ERR_NOT_FOUND_HERE) {
-	/* This is OK, we are just trying to find out if they have
-	 * been disabled or deleted in the meantime, missing secrets
-	 * is OK */
-    } else if(ret){
-	const char *krbtgt_realm, *msg;
+    ret = db_fetch_client(context, config, flags, cp, cpn,
+			  krb5_principal_get_realm(context, krbtgt_out->entry.principal),
+			  &clientdb, &client);
+    if (ret)
+	goto out;
 
-	/*
-	 * If the client belongs to the same realm as our krbtgt, it
-	 * should exist in the local database.
-	 *
-	 */
-
-	krbtgt_realm = krb5_principal_get_realm(context, krbtgt_out->entry.principal);
-
-	if(strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
-	    if (ret == HDB_ERR_NOENTRY)
-		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-	    kdc_log(context, config, 1, "Client no longer in database: %s",
-		    cpn);
-	    goto out;
-	}
-
-	msg = krb5_get_error_message(context, ret);
-	kdc_log(context, config, 1, "Client not found in database: %s", msg);
-	krb5_free_error_message(context, msg);
-    }
-
-    ret = check_PAC(context, config, cp, NULL,
-		    client, server, krbtgt,
-		    &tkey_check->key,
-		    ekey, &tkey_sign->key,
-		    tgt, &rspac, &signedpath);
+    ret = check_PAC(context, config, cp, NULL, client, server, krbtgt, krbtgt,
+		    &tkey_check->key, &tkey_check->key, tgt, &kdc_issued, &mspac);
     if (ret) {
 	const char *msg = krb5_get_error_message(context, ret);
 	kdc_log(context, config, 0,
@@ -1760,26 +1751,14 @@ server_lookup:
 		goto out;
 
 	    /* If we were about to put a PAC into the ticket, we better fix it to be the right PAC */
-	    if(rspac.data) {
-		krb5_pac p = NULL;
-		krb5_data_free(&rspac);
-		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, &p);
+	    if (mspac) {
+		krb5_pac_free(context, mspac);
+		mspac = NULL;
+		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, &mspac);
 		if (ret) {
 		    kdc_log(context, config, 0, "PAC generation failed for -- %s",
 			    tpn);
 		    goto out;
-		}
-		if (p != NULL) {
-		    ret = _krb5_pac_sign(context, p, ticket->ticket.authtime,
-					 s4u2self_impersonated_client->entry.principal,
-					 ekey, &tkey_sign->key,
-					 &rspac);
-		    krb5_pac_free(context, p);
-		    if (ret) {
-			kdc_log(context, config, 0, "PAC signing failed for -- %s",
-				tpn);
-			goto out;
-		    }
 		}
 	    }
 
@@ -1823,21 +1802,24 @@ server_lookup:
 	&& b->additional_tickets->len != 0
 	&& b->kdc_options.enc_tkt_in_skey == 0)
     {
-	int ad_signedpath = 0;
+	hdb_entry_ex *adclient = NULL;
+	krb5_boolean ad_kdc_issued = FALSE;
 	Key *clientkey;
 	Ticket *t;
 
 	/*
-	 * Require that the KDC have issued the service's krbtgt (not
-	 * self-issued ticket with kimpersonate(1).
+	 * We require that the service's krbtgt has a PAC.
 	 */
-	if (!signedpath) {
+	if (mspac == NULL) {
 	    ret = KRB5KDC_ERR_BADOPTION;
 	    kdc_log(context, config, 0,
-		    "Constrained delegation done on service ticket %s/%s",
+		    "Constrained delegation without PAC %s/%s",
 		    cpn, spn);
 	    goto out;
 	}
+
+	krb5_pac_free(context, mspac);
+	mspac = NULL;
 
 	t = &b->additional_tickets->val[0];
 
@@ -1902,19 +1884,32 @@ server_lookup:
 	    goto out;
 	}
 
-	krb5_data_free(&rspac);
+	/* Try lookup the delegated client in DB */
+	ret = db_fetch_client(context, config, flags, tp, tpn,
+			      krb5_principal_get_realm(context, krbtgt_out->entry.principal),
+			      NULL, &adclient);
+	if (ret)
+	    goto out;
+
+	if (adclient != NULL) {
+	    ret = kdc_check_flags(context, config,
+				  adclient, tpn,
+				  server, spn,
+				  FALSE);
+	    if (ret) {
+		_kdc_free_ent(context, adclient);
+		goto out;
+	    }
+	}
 
 	/*
-	 * generate the PAC for the user.
-	 *
 	 * TODO: pass in t->sname and t->realm and build
 	 * a S4U_DELEGATION_INFO blob to the PAC.
 	 */
-	ret = check_PAC(context, config, tp, dp,
-			client, server, krbtgt,
-			&clientkey->key,
-			ekey, &tkey_sign->key,
-			&adtkt, &rspac, &ad_signedpath);
+	ret = check_PAC(context, config, tp, dp, adclient, server, krbtgt, client,
+			&clientkey->key, &tkey_check->key, &adtkt, &ad_kdc_issued, &mspac);
+	if (adclient)
+	    _kdc_free_ent(context, adclient);
 	if (ret) {
 	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
@@ -1925,13 +1920,12 @@ server_lookup:
 	    goto out;
 	}
 
-	if (!ad_signedpath) {
+	if (mspac == NULL || !ad_kdc_issued) {
 	    ret = KRB5KDC_ERR_BADOPTION;
 	    kdc_log(context, config, 0,
-		    "Ticket not signed with PAC nor SignedPath service %s failed "
-		    "for delegation to %s for client %s (%s)"
-		    "from %s",
-		    spn, tpn, dpn, cpn, from);
+		    "Ticket not signed with PAC; service %s failed for "
+		    "for delegation to %s for client %s (%s) from %s; (%s).",
+		    spn, tpn, dpn, cpn, from, mspac ? "Ticket unsigned" : "No PAC");
 	    goto out;
 	}
 
@@ -2001,6 +1995,25 @@ server_lookup:
     }
 
     /*
+     * Only add ticket signature if the requested server is not krbtgt, and
+     * either the header server is krbtgt or, in the case of renewal/validation
+     * if it was signed with PAC ticket signature and we verified it.
+     * Currently Heimdal only allows renewal of krbtgt anyway but that might
+     * change one day (see issue #763) so make sure to check for it.
+     */
+
+    if (kdc_issued &&
+	!krb5_principal_is_krbtgt(context, server->entry.principal))
+	add_ticket_sig = TRUE;
+
+    /*
+     * Active-Directory implementations use the high part of the kvno as the
+     * read-only-dc identifier, we need to embed it in the PAC KDC signatures.
+     */
+
+    rodc_id = krbtgt_out->entry.kvno >> 16;
+
+    /*
      *
      */
 
@@ -2012,6 +2025,7 @@ server_lookup:
 			 replykey,
 			 rk_is_subkey,
 			 ekey,
+			 &tkey_sign->key,
 			 &sessionkey,
 			 kvno,
 			 *auth_data,
@@ -2021,8 +2035,9 @@ server_lookup:
 			 client,
 			 cp,
 			 krbtgt_out,
-			 krbtgt_etype,
-			 &rspac,
+			 mspac,
+			 rodc_id,
+			 add_ticket_sig,
 			 &enc_pa_data,
 			 e_text,
 			 reply);
@@ -2035,7 +2050,6 @@ out:
     if (dpn)
 	free(dpn);
 
-    krb5_data_free(&rspac);
     krb5_free_keyblock_contents(context, &sessionkey);
     if(krbtgt_out)
 	_kdc_free_ent(context, krbtgt_out);
@@ -2060,6 +2074,9 @@ out:
 
     free_EncTicketPart(&adtkt);
 
+    if (mspac)
+	krb5_pac_free(context, mspac);
+
     return ret;
 }
 
@@ -2080,6 +2097,7 @@ _kdc_tgs_rep(krb5_context context,
     krb5_error_code ret;
     int i = 0;
     const PA_DATA *tgs_req;
+    Key *header_key = NULL;
 
     hdb_entry_ex *krbtgt = NULL;
     krb5_ticket *ticket = NULL;
@@ -2117,6 +2135,7 @@ _kdc_tgs_rep(krb5_context context,
 			    &csec, &cusec,
 			    &auth_data,
 			    &replykey,
+			    &header_key,
 			    &rk_is_subkey);
     if (ret == HDB_ERR_NOT_FOUND_HERE) {
 	/* kdc_log() is called in tgs_parse_request() */
@@ -2134,6 +2153,7 @@ _kdc_tgs_rep(krb5_context context,
 			  &req->req_body,
 			  krbtgt,
 			  krbtgt_etype,
+			  header_key,
 			  replykey,
 			  rk_is_subkey,
 			  ticket,
