@@ -751,6 +751,11 @@ HEIMDAL_KRB5_2.0 {
 		_krb5_get_host_realm_int;
 		_krb5_get_int;
 		_krb5_pac_sign;
+		_krb5_kdc_pac_sign_ticket;
+		_krb5_kdc_pac_ticket_parse;
+		_krb5_pac_get_kdc_checksum_info;
+		_kdc_tkt_insert_pac;
+		_kdc_tkt_add_if_relevant_ad;
 		_krb5_parse_moduli;
 		_krb5_pk_kdf;
 		_krb5_pk_load_id;

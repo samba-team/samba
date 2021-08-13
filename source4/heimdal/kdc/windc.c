@@ -77,8 +77,14 @@ _kdc_pac_generate(krb5_context context,
 		  krb5_pac *pac)
 {
     *pac = NULL;
-    if (windcft == NULL)
+    if (krb5_config_get_bool_default(context, NULL, FALSE, "realms",
+				     client->entry.principal->realm,
+				     "disable_pac", NULL))
 	return 0;
+    if (windcft == NULL) {
+	return krb5_pac_init(context, pac);
+    }
+
     if (windcft->pac_pk_generate != NULL && pk_reply_key != NULL)
 	return (windcft->pac_pk_generate)(windcctx, context,
 					  client, pk_reply_key, pac);
@@ -92,20 +98,17 @@ _kdc_pac_verify(krb5_context context,
 		hdb_entry_ex *client,
 		hdb_entry_ex *server,
 		hdb_entry_ex *krbtgt,
-		krb5_pac *pac,
-		int *verified)
+		krb5_pac *pac)
 {
     krb5_error_code ret;
 
     if (windcft == NULL)
-	return 0;
+	return KRB5_PLUGIN_NO_HANDLE;
 
     ret = windcft->pac_verify(windcctx, context,
 			      client_principal,
 			      delegated_proxy_principal,
 			      client, server, krbtgt, pac);
-    if (ret == 0)
-	*verified = 1;
     return ret;
 }
 
