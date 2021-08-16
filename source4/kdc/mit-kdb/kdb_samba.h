@@ -71,18 +71,11 @@ krb5_error_code kdb_samba_db_put_principal(krb5_context context,
 krb5_error_code kdb_samba_db_delete_principal(krb5_context context,
 					      krb5_const_principal princ);
 
-#if KRB5_KDB_API_VERSION >= 8
 krb5_error_code kdb_samba_db_iterate(krb5_context context,
 				     char *match_entry,
 				     int (*func)(krb5_pointer, krb5_db_entry *),
 				     krb5_pointer func_arg,
 				     krb5_flags iterflags);
-#else
-krb5_error_code kdb_samba_db_iterate(krb5_context context,
-				     char *match_entry,
-				     int (*func)(krb5_pointer, krb5_db_entry *),
-				     krb5_pointer func_arg);
-#endif
 
 /* from kdb_samba_masterkey.c */
 
@@ -114,21 +107,6 @@ krb5_error_code kdb_samba_dbekd_encrypt_key_data(krb5_context context,
 
 /* from kdb_samba_policies.c */
 
-#if KRB5_KDB_API_VERSION < 10
-krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
-					    unsigned int flags,
-					    krb5_const_principal client_princ,
-					    krb5_db_entry *client,
-					    krb5_db_entry *server,
-					    krb5_db_entry *krbtgt,
-					    krb5_keyblock *client_key,
-					    krb5_keyblock *server_key,
-					    krb5_keyblock *krbtgt_key,
-					    krb5_keyblock *session_key,
-					    krb5_timestamp authtime,
-					    krb5_authdata **tgt_auth_data,
-					    krb5_authdata ***signed_auth_data);
-#else
 krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    unsigned int flags,
 					    krb5_const_principal client_princ,
@@ -147,7 +125,6 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    void *authdata_info,
 					    krb5_data ***auth_indicators,
 					    krb5_authdata ***signed_auth_data);
-#endif
 
 krb5_error_code kdb_samba_db_check_policy_as(krb5_context context,
 					     krb5_kdc_req *kdcreq,
@@ -162,7 +139,6 @@ krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 						       const krb5_db_entry *server,
 						       krb5_const_principal proxy);
 
-#if KRB5_KDB_API_VERSION >= 9
 void kdb_samba_db_audit_as_req(krb5_context kcontext,
 			       krb5_kdc_req *request,
 			       const krb5_address *local_addr,
@@ -171,14 +147,6 @@ void kdb_samba_db_audit_as_req(krb5_context kcontext,
 			       krb5_db_entry *server,
 			       krb5_timestamp authtime,
 			       krb5_error_code error_code);
-#else
-void kdb_samba_db_audit_as_req(krb5_context kcontext,
-			       krb5_kdc_req *request,
-			       krb5_db_entry *client,
-			       krb5_db_entry *server,
-			       krb5_timestamp authtime,
-			       krb5_error_code error_code);
-#endif
 
 /* from kdb_samba_change_pwd.c */
 
