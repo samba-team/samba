@@ -1042,6 +1042,17 @@ defaulttasks.remove("samba-fuzz")
 # container where a simulated FIPS mode is possible.
 defaulttasks.remove("samba-fips")
 
+# The MIT build runs on a current Fedora where an up to date MIT KDC
+# is already packaged.  This avoids needing to backport a current MIT
+# to the default Ubuntu 18.04, particularly during development, and
+# the need to install on the shared sn-devel-184.
+
+defaulttasks.remove("samba-mitkrb5")
+defaulttasks.remove("samba-admem-mit")
+defaulttasks.remove("samba-addc-mit-1")
+defaulttasks.remove("samba-addc-mit-4a")
+defaulttasks.remove("samba-addc-mit-4b")
+
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
