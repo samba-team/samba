@@ -1006,14 +1006,26 @@ defaulttasks = list(tasks.keys())
 
 defaulttasks.remove("pass")
 defaulttasks.remove("fail")
+
+# The build tasks will be brought in by the test tasks as needed
 defaulttasks.remove("samba-def-build")
 defaulttasks.remove("samba-nt4-build")
 defaulttasks.remove("samba-mit-build")
 defaulttasks.remove("samba-h5l-build")
 defaulttasks.remove("samba-no-opath-build")
+
+# This is not a normal test, but a task to support manually running
+# one test under autobuild
 defaulttasks.remove("samba-test-only")
+
+# Only built on GitLab CI and not in the default autobuild because it
+# uses too much space (4GB of semi-static binaries)
 defaulttasks.remove("samba-fuzz")
+
+# The FIPS build runs only in GitLab CI on a current Fedora Docker
+# container where a simulated FIPS mode is possible.
 defaulttasks.remove("samba-fips")
+
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
