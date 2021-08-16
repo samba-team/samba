@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    libreplace tests
@@ -8,7 +8,7 @@
      ** NOTE! The following LGPL license applies to the talloc
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -127,7 +127,7 @@ static int test_strlcat(void)
 		return false;
 	}
 	if (strcmp(tmp, "bl") != 0) {
-		printf("failure: strlcat [\nexpected \"bl\", got \"%s\"\n]\n", 
+		printf("failure: strlcat [\nexpected \"bl\", got \"%s\"\n]\n",
 			   tmp);
 		return false;
 	}
@@ -179,7 +179,7 @@ static int test_strdup(void)
 	free(x);
 	printf("success: strdup\n");
 	return true;
-}	
+}
 
 static int test_setlinebuf(void)
 {
@@ -774,7 +774,7 @@ static int test_strtoull(void)
 	return true;
 }
 
-/* 
+/*
 FIXME:
 Types:
 bool
