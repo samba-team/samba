@@ -144,6 +144,42 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 						  uint8_t pauth_tag[64]);
 
 /**
+ * @brief Decypt cipher text using AEAD_AES_256_CBC_HMAC_SHA512 and the session
+ * key.
+ *
+ * This decrypts the cipher text using AEAD_AES_256_CBC_HMAC_SHA512 with the
+ * given content decryption key key. The plaintext will be zeroed as soon as the
+ * data blob is freed.
+ *
+ * @param mem_ctx       The memory context to allocate the plaintext on.
+ *
+ * @param ciphertext    The cipher text to decrypt.
+ *
+ * @param cdk           The content decryption key.
+ *
+ * @param key_salt      The salt used to calculate the encryption key.
+ *
+ * @param key_salt      The salt used to calculate the mac key.
+
+ * @param iv            The initialization vector used for the encryption.
+ *
+ * @param auth_tag[64]  The authentication blob to be verified.
+ *
+ * @param pplaintext    A pointer to a DATA_BLOB to store the plaintext.
+ *
+ * @return NT_STATUS_OK on success, an nt status error code otherwise.
+ */
+NTSTATUS
+samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
+						  const DATA_BLOB *ciphertext,
+						  const DATA_BLOB *cdk,
+						  const DATA_BLOB *key_salt,
+						  const DATA_BLOB *mac_salt,
+						  const DATA_BLOB *iv,
+						  const uint8_t auth_tag[64],
+						  DATA_BLOB *pplaintext);
+
+/**
  * @brief Check if weak crypto is allowed.
  *
  * @return true if weak crypo is allowed, false otherwise.

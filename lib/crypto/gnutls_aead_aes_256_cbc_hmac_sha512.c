@@ -238,3 +238,156 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS
+samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
+						  const DATA_BLOB *ciphertext,
+						  const DATA_BLOB *cdk,
+						  const DATA_BLOB *key_salt,
+						  const DATA_BLOB *mac_salt,
+						  const DATA_BLOB *iv,
+						  const uint8_t auth_tag[64],
+						  DATA_BLOB *pplaintext)
+{
+	gnutls_hmac_hd_t hmac_hnd = NULL;
+	gnutls_mac_algorithm_t hash_algo = GNUTLS_MAC_SHA512;
+	size_t hmac_size = gnutls_hmac_get_len(hash_algo);
+	uint8_t dec_key_data[32];
+	uint8_t mac_key_data[64];
+	gnutls_datum_t mac_key = {
+		.data = mac_key_data,
+		.size = sizeof(mac_key_data),
+	};
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_cipher_algorithm_t cipher_algo = GNUTLS_CIPHER_AES_256_CBC;
+	gnutls_datum_t dec_key = {
+		.data = dec_key_data,
+		.size = sizeof(dec_key_data),
+	};
+	gnutls_datum_t iv_datum = {
+		.data = iv->data,
+		.size = iv->length,
+	};
+	uint8_t version_byte = SAMR_AES_VERSION_BYTE;
+	uint8_t version_byte_len = SAMR_AES_VERSION_BYTE_LEN;
+	uint8_t auth_data[hmac_size];
+	uint8_t padding;
+	size_t i;
+	NTSTATUS status;
+	int cmp;
+	int rc;
+
+	if (cdk->length == 0 || ciphertext->length == 0 ||
+	    key_salt->length == 0 || mac_salt->length == 0 || iv->length == 0 ||
+	    pplaintext == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Calculate mac key */
+	status = calculate_mac_key(cdk, mac_salt, mac_key_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rc = gnutls_hmac_init(&hmac_hnd, hash_algo, mac_key.data, mac_key.size);
+	BURN_DATA(mac_key_data);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	rc = gnutls_hmac(hmac_hnd, &version_byte, sizeof(uint8_t));
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	rc = gnutls_hmac(hmac_hnd, iv->data, iv->length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	rc = gnutls_hmac(hmac_hnd, ciphertext->data, ciphertext->length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	rc = gnutls_hmac(hmac_hnd, &version_byte_len, sizeof(uint8_t));
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+	gnutls_hmac_deinit(hmac_hnd, auth_data);
+
+	cmp = memcmp(auth_data, auth_tag, sizeof(auth_data));
+	if (cmp != 0) {
+		return NT_STATUS_DECRYPTION_FAILED;
+	}
+
+	*pplaintext = data_blob_talloc_zero(mem_ctx, ciphertext->length);
+	if (pplaintext->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Calculate decryption key */
+	status = calculate_enc_key(cdk, key_salt, dec_key_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rc = gnutls_cipher_init(&cipher_hnd, cipher_algo, &dec_key, &iv_datum);
+	BURN_DATA(dec_key_data);
+	if (rc < 0) {
+		data_blob_free(pplaintext);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	rc = gnutls_cipher_decrypt2(cipher_hnd,
+				    ciphertext->data,
+				    ciphertext->length,
+				    pplaintext->data,
+				    pplaintext->length);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		data_blob_clear_free(pplaintext);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_DECRYPTION_FAILED);
+	}
+
+	/*
+	 * PKCS#7 padding
+	 *
+	 * TODO: Use gnutls_cipher_decrypt3()
+	 */
+
+	/*
+	 * The plaintext is always padded.
+	 *
+	 * We already checked for ciphertext->length == 0 above and the
+	 * pplaintext->length is equal to ciphertext->length here. We need to
+	 * remove the padding from the plaintext size.
+	 */
+	padding = pplaintext->data[pplaintext->length - 1];
+	if (padding == 0 || padding > 16) {
+		data_blob_clear_free(pplaintext);
+		return NT_STATUS_DECRYPTION_FAILED;
+	}
+
+	for (i = pplaintext->length - padding; i < pplaintext->length; i++) {
+		if (pplaintext->data[i] != padding) {
+			data_blob_clear_free(pplaintext);
+			return NT_STATUS_DECRYPTION_FAILED;
+		}
+	}
+
+	pplaintext->length -= padding;
+
+	return NT_STATUS_OK;
+}
