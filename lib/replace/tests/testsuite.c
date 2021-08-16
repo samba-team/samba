@@ -308,6 +308,8 @@ static int test_strndup(void)
 
 static int test_strnlen(void)
 {
+	char longlen[20] = { 0 };
+
 	printf("test: strnlen\n");
 	if (strnlen("bla", 2) != 2) {
 		printf("failure: strnlen [\nunexpected length\n]\n");
@@ -319,7 +321,9 @@ static int test_strnlen(void)
 		return false;
 	}
 
-	if (strnlen("some text", 20) != 9) {
+	memcpy(longlen, "some text", 10);
+
+	if (strnlen(longlen, 20) != 9) {
 		printf("failure: strnlen [\nunexpected length\n]\n");
 		return false;
 	}
