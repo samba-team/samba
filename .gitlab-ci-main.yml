@@ -234,10 +234,14 @@ samba-def-build:
 
 samba-mit-build:
   extends: .shared_template_build_only
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora34}
   stage: build_first
 
 .needs_samba-mit-build:
   extends: .shared_template_test_only
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora34}
   needs:
     - job: samba-mit-build
       artifacts: true
@@ -274,6 +278,8 @@ samba:
 
 samba-mitkrb5:
   extends: .shared_template
+  variables:
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_fedora34}
 
 samba-minimal-smbd:
   extends: .shared_template
