@@ -4622,11 +4622,9 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 	}
 
 	if (id18->nt_pwd_active) {
-
-		DATA_BLOB in, out;
-
-		in = data_blob_const(id18->nt_pwd.hash, 16);
-		out = data_blob_talloc_zero(mem_ctx, 16);
+		DATA_BLOB in = data_blob_const(id18->nt_pwd.hash, 16);
+		uint8_t outbuf[16] = { 0, };
+		DATA_BLOB out = data_blob_const(outbuf, sizeof(outbuf));
 
 		rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
 		if (rc != 0) {
@@ -4642,11 +4640,9 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 	}
 
 	if (id18->lm_pwd_active) {
-
-		DATA_BLOB in, out;
-
-		in = data_blob_const(id18->lm_pwd.hash, 16);
-		out = data_blob_talloc_zero(mem_ctx, 16);
+		DATA_BLOB in = data_blob_const(id18->lm_pwd.hash, 16);
+		uint8_t outbuf[16] = { 0, };
+		DATA_BLOB out = data_blob_const(outbuf, sizeof(outbuf));
 
 		rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
 		if (rc != 0) {
