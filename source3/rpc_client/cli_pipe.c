@@ -1471,6 +1471,7 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 	ndr_err = ndr_push_dcerpc_sec_verification_trailer(ndr,
 						NDR_SCALARS | NDR_BUFFERS,
 						t);
+	TALLOC_FREE(t);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
