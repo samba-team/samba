@@ -1322,10 +1322,7 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	state->op_num = op_num;
 	state->object_uuid = object_uuid;
 	state->req_data = req_data;
-	state->req_data_sent = 0;
 	state->call_id = get_rpc_call_id();
-	state->reply_pdu = data_blob_null;
-	state->rpc_out = data_blob_null;
 
 	if (cli->max_xmit_frag < DCERPC_REQUEST_LENGTH
 					+ RPC_MAX_SIGN_SIZE) {
