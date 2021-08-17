@@ -231,7 +231,7 @@ static void _cli_shutdown(struct cli_state *cli)
 	cli_nt_pipes_close(cli);
 
 	/*
-	 * tell our peer to free his resources.  Wihtout this, when an
+	 * tell our peer to free his resources.  Without this, when an
 	 * application attempts to do a graceful shutdown and calls
 	 * smbc_free_context() to clean up all connections, some connections
 	 * can remain active on the peer end, until some (long) timeout period
