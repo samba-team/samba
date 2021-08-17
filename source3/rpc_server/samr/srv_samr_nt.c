@@ -4711,7 +4711,11 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 
 	if (id21->fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
 		if (id21->nt_password_set) {
-			DATA_BLOB in, out;
+			DATA_BLOB in = data_blob_const(
+				id21->nt_owf_password.array, 16);
+			uint8_t outbuf[16] = { 0, };
+			DATA_BLOB out = data_blob_const(
+				outbuf, sizeof(outbuf));
 
 			if ((id21->nt_owf_password.length != 16) ||
 			    (id21->nt_owf_password.size != 16)) {
@@ -4721,9 +4725,6 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 			if (!session_key->length) {
 				return NT_STATUS_NO_USER_SESSION_KEY;
 			}
-
-			in = data_blob_const(id21->nt_owf_password.array, 16);
-			out = data_blob_talloc_zero(mem_ctx, 16);
 
 			rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
 			if (rc != 0) {
@@ -4738,7 +4739,11 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 
 	if (id21->fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
 		if (id21->lm_password_set) {
-			DATA_BLOB in, out;
+			DATA_BLOB in = data_blob_const(
+				id21->lm_owf_password.array, 16);
+			uint8_t outbuf[16] = { 0, };
+			DATA_BLOB out = data_blob_const(
+				outbuf, sizeof(outbuf));
 
 			if ((id21->lm_owf_password.length != 16) ||
 			    (id21->lm_owf_password.size != 16)) {
@@ -4748,9 +4753,6 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 			if (!session_key->length) {
 				return NT_STATUS_NO_USER_SESSION_KEY;
 			}
-
-			in = data_blob_const(id21->lm_owf_password.array, 16);
-			out = data_blob_talloc_zero(mem_ctx, 16);
 
 			rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
 			if (rc != 0) {
