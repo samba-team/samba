@@ -955,7 +955,7 @@ NTSTATUS _samr_EnumDomainUsers(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct samr_info *dinfo;
-	int num_account;
+	uint32_t num_account;
 	uint32_t enum_context = *r->in.resume_handle;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
@@ -1458,7 +1458,8 @@ NTSTATUS _samr_QueryDisplayInfo(struct pipes_struct *p,
 	NTSTATUS disp_ret = NT_STATUS_UNSUCCESSFUL;
 	uint32_t num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
-	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
+	uint32_t max_sam_entries = (ra_type == RA_WIN95) ?
+		MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
 	struct samr_displayentry *entries = NULL;
 
 	DEBUG(5,("_samr_QueryDisplayInfo: %d\n", __LINE__));
@@ -1782,8 +1783,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 	NTSTATUS status;
 	uint32_t *rid;
 	enum lsa_SidType *type;
-	int i;
-	int num_rids = r->in.num_names;
+	uint32_t i, num_rids = r->in.num_names;
 	struct samr_Ids rids, types;
 	uint32_t num_mapped = 0;
 	struct dom_sid_buf buf;
@@ -6943,8 +6943,7 @@ NTSTATUS _samr_GetDisplayEnumerationIndex(struct pipes_struct *p,
 	struct samr_info *dinfo;
 	uint32_t max_entries = (uint32_t) -1;
 	uint32_t enum_context = 0;
-	int i;
-	uint32_t num_account = 0;
+	uint32_t i, num_account = 0;
 	struct samr_displayentry *entries = NULL;
 	NTSTATUS status;
 
