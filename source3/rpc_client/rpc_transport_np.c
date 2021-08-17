@@ -146,16 +146,16 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 					"tevent_timer"));
 		}
 		return;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	}
+
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
 	status = rpc_transport_tstream_init(state,
 					    &stream,
 					    &state->transport);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
