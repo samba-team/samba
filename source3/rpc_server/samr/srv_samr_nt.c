@@ -3891,13 +3891,15 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 		can_add_account = true;
 	} else if (acb_info & ACB_WSTRUST) {
 		needed_priv = SEC_PRIV_MACHINE_ACCOUNT;
-		can_add_account = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_MACHINE_ACCOUNT);
+		can_add_account = security_token_has_privilege(
+			p->session_info->security_token, needed_priv);
 	} else if (acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$')) {
 		/* usrmgr.exe (and net rpc trustdom grant) creates a normal user
 		   account for domain trusts and changes the ACB flags later */
 		needed_priv = SEC_PRIV_ADD_USERS;
-		can_add_account = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_ADD_USERS);
+		can_add_account = security_token_has_privilege(
+			p->session_info->security_token, needed_priv);
 	} else if (lp_enable_privileges()) {
 		/* implicit assumption of a BDC or domain trust account here
 		 * (we already check the flags earlier) */
