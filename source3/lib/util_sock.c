@@ -254,6 +254,15 @@ int open_socket_in(
 	int val = rebind ? 1 : 0;
 	bool ok;
 
+	switch (addr.u.sa.sa_family) {
+	case AF_INET6:
+		addr.sa_socklen = sizeof(struct sockaddr_in6);
+		break;
+	case AF_INET:
+		addr.sa_socklen = sizeof(struct sockaddr_in);
+		break;
+	}
+
 	ok = samba_sockaddr_set_port(&addr, port);
 	if (!ok) {
 		ret = -EINVAL;
