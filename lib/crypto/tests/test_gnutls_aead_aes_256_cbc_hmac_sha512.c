@@ -209,6 +209,53 @@ static void torture_encrypt(void **state)
 	TALLOC_FREE(frame);
 }
 
+static void torture_encrypt_decrypt(void **state)
+{
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB cek = data_blob_const(session_key, sizeof(session_key));
+	const DATA_BLOB plaintext =
+		data_blob_const(plaintext_data, sizeof(plaintext_data));
+	DATA_BLOB iv = data_blob_const(salt_data, sizeof(salt_data));
+	DATA_BLOB cipher_text;
+	uint8_t auth_tag[64] = {0};
+	DATA_BLOB plaintext_decrypted;
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_encrypt(
+		frame,
+		&plaintext,
+		&cek,
+		&samr_aes256_enc_key_salt,
+		&samr_aes256_mac_key_salt,
+		&iv,
+		&cipher_text,
+		auth_tag);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_int_equal(cipher_text.length, 528);
+	assert_in_range(cipher_text.length,
+			plaintext.length,
+			plaintext.length + 16);
+	assert_non_null(cipher_text.data);
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+		frame,
+		&cipher_text,
+		&cek,
+		&samr_aes256_enc_key_salt,
+		&samr_aes256_mac_key_salt,
+		&iv,
+		auth_tag,
+		&plaintext_decrypted);
+	assert_true(NT_STATUS_IS_OK(status));
+	assert_non_null(plaintext_decrypted.data);
+	assert_int_equal(plaintext_decrypted.length, plaintext.length);
+	assert_memory_equal(plaintext_decrypted.data,
+			    plaintext.data,
+			    plaintext.length);
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -216,6 +263,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_enc_key),
 		cmocka_unit_test(torture_mac_key),
 		cmocka_unit_test(torture_encrypt),
+		cmocka_unit_test(torture_encrypt_decrypt),
 	};
 
 	if (argc == 2) {
