@@ -3895,7 +3895,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 			p->session_info->security_token, needed_priv);
 	} else if (acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$')) {
-		/* usrmgr.exe (and net rpc trustdom grant) creates a normal user
+		/* usrmgr.exe (and net rpc trustdom add) creates a normal user
 		   account for domain trusts and changes the ACB flags later */
 		needed_priv = SEC_PRIV_ADD_USERS;
 		can_add_account = security_token_has_privilege(
