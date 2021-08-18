@@ -127,6 +127,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   link_name=None,
                   abi_directory=None,
                   abi_match=None,
+                  orig_vscript_map=None,
                   hide_symbols=False,
                   manpages=None,
                   private_library=False,
@@ -158,6 +159,17 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if private_library and public_headers:
         raise Errors.WafError("private library '%s' must not have public header files" %
+                             libname)
+
+    if orig_vscript_map and not private_library:
+        raise Errors.WafError("public library '%s' must not have orig_vscript_map" %
+                             libname)
+
+    if orig_vscript_map and abi_directory:
+        raise Errors.WafError("private library '%s' with orig_vscript_map must not have abi_directory" %
+                             libname)
+    if orig_vscript_map and abi_match:
+        raise Errors.WafError("private library '%s' with orig_vscript_map must not have abi_match" %
                              libname)
 
     if LIB_MUST_BE_PRIVATE(bld, libname) and target_type not in ['PLUGIN']:
@@ -327,8 +339,11 @@ def SAMBA_LIBRARY(bld, libname, source,
             version = None
         if version:
             vscript = "%s.vscript" % libname
-            bld.ABI_VSCRIPT(version_libname, abi_directory, version, vscript,
-                            abi_match, private_library)
+            if orig_vscript_map:
+                bld.VSCRIPT_MAP_PRIVATE(version_libname, orig_vscript_map, version, vscript)
+            else:
+                bld.ABI_VSCRIPT(version_libname, abi_directory, version, vscript,
+                                abi_match, private_library)
             fullname = apply_pattern(bundled_name, bld.env.cshlib_PATTERN)
             fullpath = bld.path.find_or_declare(fullname)
             vscriptpath = bld.path.find_or_declare(vscript)
