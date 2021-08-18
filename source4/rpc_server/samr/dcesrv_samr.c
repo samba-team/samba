@@ -3631,6 +3631,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 	int ret;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ldb_context *sam_ctx;
+	DATA_BLOB session_key = data_blob_null;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
@@ -4076,6 +4077,44 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 		break;
 
+	case 31:
+		status = dcesrv_transport_session_key(dce_call, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_NOTICE("samr: failed to get session key: %s\n",
+				   nt_errstr(status));
+			goto done;
+		}
+
+		status = samr_set_password_aes(dce_call,
+					       mem_ctx,
+					       &session_key,
+					       sam_ctx,
+					       a_state->account_dn,
+					       a_state->domain_state->domain_dn,
+					       &r->in.info->info31.password);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		if (r->in.info->info31.password_expired > 0) {
+			const char *t = "0";
+			struct ldb_message_element *set_el = NULL;
+
+			if (r->in.info->info31.password_expired ==
+			    PASS_DONT_CHANGE_AT_NEXT_LOGON) {
+				t = "-1";
+			}
+
+			ret = ldb_msg_add_string(msg, "pwdLastSet", t);
+			if (ret != LDB_SUCCESS) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
+
+		break;
 	default:
 		/* many info classes are not valid for SetUserInfo */
 		status = NT_STATUS_INVALID_INFO_CLASS;
