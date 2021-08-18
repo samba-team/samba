@@ -143,11 +143,7 @@ _PUBLIC_ struct GUID GUID_random(void)
  */
 _PUBLIC_ struct GUID GUID_zero(void)
 {
-	struct GUID guid;
-
-	ZERO_STRUCT(guid);
-
-	return guid;
+	return (struct GUID) { .time_low = 0 };
 }
 
 _PUBLIC_ bool GUID_all_zero(const struct GUID *u)
