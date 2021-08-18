@@ -426,8 +426,28 @@ tasks = {
             "fileserver_smb1",
             "fileserver_smb1_done",
             "maptoguest",
-            "ktest", # ktest is also tested in samba and samba-mitkrb5
-                     # but is tested here against a system Heimdal
+            "ktest", # ktest is also tested in samba-ktest-mit samba
+                     # and samba-mitkrb5 but is tested here against
+                     # a system Heimdal
+            ])),
+            ("lcov", LCOV_CMD),
+            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+        ],
+    },
+
+    # This is a full build without the AD DC so we test the build with
+    # MIT Kerberos from the current system.  Runtime behaviour is
+    # confirmed via the ktest (static ccache and keytab) environment
+
+    "samba-ktest-mit": {
+        "sequence": [
+            ("random-sleep", random_sleep(300, 900)),
+            ("configure", "./configure.developer --without-ad-dc --with-system-mitkrb5 " + samba_configure_params),
+            ("make", "make -j"),
+            ("test", make_test(include_envs=[
+            "ktest", # ktest is also tested in fileserver, samba and
+                     # samba-mitkrb5 but is tested here against a
+                     # system MIT krb5
             ])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
