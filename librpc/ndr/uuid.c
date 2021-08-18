@@ -222,9 +222,9 @@ _PUBLIC_ char* GUID_buf_string(const struct GUID *guid,
 
 _PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
-	char *ret, *s = GUID_string(mem_ctx, guid);
-	ret = talloc_asprintf(mem_ctx, "{%s}", s);
-	talloc_free(s);
+	struct GUID_txt_buf buf;
+	char *ret = talloc_asprintf(
+		mem_ctx, "{%s}", GUID_buf_string(guid, &buf));
 	return ret;
 }
 
