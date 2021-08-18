@@ -680,6 +680,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
     if not enabled:
         return
 
+    dep_vars = TO_LIST(dep_vars)
     dep_vars.append('ruledeps')
     dep_vars.append('SAMBA_GENERATOR_VARS')
 
