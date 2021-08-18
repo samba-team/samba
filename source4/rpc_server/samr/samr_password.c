@@ -35,6 +35,7 @@
 #include "auth/auth_sam.h"
 #include "lib/param/loadparm.h"
 #include "librpc/rpc/dcerpc_helper.h"
+#include "librpc/rpc/dcerpc_samr.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -572,6 +573,58 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 					       DSDB_PASSWORD_RESET,
 					       NULL, NULL);
 	}
+
+	return nt_status;
+}
+
+NTSTATUS samr_set_password_aes(struct dcesrv_call_state *dce_call,
+			       TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *cdk,
+			       struct ldb_context *sam_ctx,
+			       struct ldb_dn *account_dn,
+			       struct ldb_dn *domain_dn,
+			       struct samr_EncryptedPasswordAES *pwbuf)
+{
+	DATA_BLOB pw_data = data_blob_null;
+	DATA_BLOB new_password = data_blob_null;
+	const DATA_BLOB ciphertext =
+		data_blob_const(pwbuf->cipher, pwbuf->cipher_len);
+	DATA_BLOB iv = data_blob_const(pwbuf->salt, sizeof(pwbuf->salt));
+	NTSTATUS nt_status = NT_STATUS_OK;
+	bool ok;
+
+	nt_status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+		mem_ctx,
+		&ciphertext,
+		cdk,
+		&samr_aes256_enc_key_salt,
+		&samr_aes256_mac_key_salt,
+		&iv,
+		pwbuf->auth_data,
+		&pw_data);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	ok = extract_pwd_blob_from_buffer514(mem_ctx,
+					     pw_data.data,
+					     &new_password);
+	TALLOC_FREE(pw_data.data);
+	if (!ok) {
+		DBG_NOTICE("samr: failed to decode password buffer\n");
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	nt_status = samdb_set_password(sam_ctx,
+				       mem_ctx,
+				       account_dn,
+				       domain_dn,
+				       &new_password,
+				       NULL,
+				       DSDB_PASSWORD_RESET,
+				       NULL,
+				       NULL);
+	TALLOC_FREE(new_password.data);
 
 	return nt_status;
 }
