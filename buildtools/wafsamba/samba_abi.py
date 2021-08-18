@@ -218,9 +218,12 @@ def abi_build_vscript(task):
     for f in task.inputs:
         fname = f.abspath(task.env)
         basename = os.path.basename(fname)
-        version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
-        versions.append(version)
-        abi_process_file(fname, version, symmap)
+        if basename.endswith(".sigs"):
+            version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
+            versions.append(version)
+            abi_process_file(fname, version, symmap)
+            continue
+        raise Errors.WafError('Unsupported input "%s"' % fname)
     if task.env.PRIVATE_LIBRARY:
         # For private libraries we need to inject
         # each public symbol explicitly into the
