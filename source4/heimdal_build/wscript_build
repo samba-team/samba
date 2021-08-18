@@ -215,51 +215,18 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
 def HEIMDAL_LIBRARY(libname, source, deps, version_script, includes=''):
     '''define a Heimdal library'''
 
-    obj_target = libname + '.objlist'
-
-    # first create a target for building the object files for this library
-    # by separating in this way, we avoid recompiling the C files
-    # separately for the install library and the build library
-    HEIMDAL_SUBSYSTEM(obj_target,
-                        source         = source,
-                        deps           = deps,
-                        includes       = includes,
-                        group          = 'main')
-
-    if not SET_TARGET_TYPE(bld, libname, "LIBRARY"):
-        return
-
-    # the library itself will depend on that object target
-    deps = TO_LIST(deps)
-    deps.append(obj_target)
-
-    ldflags = []
-
-    # FIXME: When building upstream heimdal, we should not be adding this
-    # suffix.
-    bundled_build = True
-    if bundled_build:
-        bundled_name = libname + '-samba4'
-    else:
-        bundled_name = libname
-    version = "%s_%s" % (Context.g_module.APPNAME, Context.g_module.VERSION)
-
-    features = 'c cshlib symlink_lib install_lib'
-
-    bld.set_group('main')
-    t = bld(
-        features        = features,
-        source          = [],
-        target          = bundled_name,
-        samba_deps      = deps,
-        samba_includes  = includes,
-        install_path    = None,
-        name            = libname,
-        ldflags         = ldflags,
-        vars            = [version],
-        private_library = bundled_build,
-        version_script  = heimdal_path(version_script, absolute=True),
-        )
+    cflags, cflags_end, allow_warnings = HEIMDAL_CFLAGS(use_hostcc=False,
+                                                        extra_cflags=[])
+    source = heimdal_paths(source)
+    orig_vscript_map = heimdal_path(version_script, absolute=False)
+    bld.SAMBA_LIBRARY(libname, source,
+                      deps=deps,
+                      includes=includes,
+                      cflags=cflags,
+                      cflags_end=cflags_end,
+                      allow_warnings=allow_warnings,
+                      private_library=True,
+                      orig_vscript_map=orig_vscript_map)
 
 def HEIMDAL_CFLAGS(use_hostcc=False, extra_cflags=[]):
     cflags_unpicky=[]
