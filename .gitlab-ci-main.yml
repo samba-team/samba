@@ -383,6 +383,13 @@ samba-fips:
 samba-fileserver:
   extends: .needs_samba-h5l-build-private
 
+# This is a full build without the AD DC so we test the build with MIT
+# Kerberos from the default system (Ubuntu 18.04 at this stage).
+# Runtime behaviour checked via the ktest (static ccache and keytab)
+# environment
+samba-ktest-mit:
+ extends: .shared_template
+
 samba-ad-dc-1:
   extends: .needs_samba-def-build-private
 
