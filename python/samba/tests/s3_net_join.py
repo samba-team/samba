@@ -49,7 +49,7 @@ class NetS3JoinTests(samba.tests.TestCaseInTempDir):
         super(NetS3JoinTests, self).tearDown()
 
     def test_net_join(self):
-        netbios_name = "NetJoinTest"
+        netbios_name = "S3NetJoinTest"
         machinepass  = "abcdefghij"
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
