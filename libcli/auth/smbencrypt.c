@@ -27,6 +27,7 @@
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
+#include "lib/util/bytearray.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -985,6 +986,31 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 	DEBUG(100,("multibyte len:%lu\n", (unsigned long int)*new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
+
+	return true;
+}
+
+#define MAX_PASSWORD_LEN 256
+
+/*
+ * [MS-SAMR] 2.2.6.32 This creates the buffer to be sent. It is of type
+ * SAMPR_USER_PASSWORD_AES.
+ */
+bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
+				   const char *password,
+				   uint32_t string_flags)
+{
+	ssize_t pw_len;
+
+	pw_len = _encode_pwd_buffer_from_str(buffer + 2,
+					     password,
+					     string_flags,
+					     ENCODE_ORDER_PASSWORD_FIRST);
+	if (pw_len < 0) {
+		return false;
+	}
+
+	PUSH_LE_U16(buffer, 0, pw_len);
 
 	return true;
 }

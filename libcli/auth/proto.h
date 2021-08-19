@@ -188,6 +188,21 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 		      size_t *new_pw_len,
 		      charset_t string_charset);
 
+/**
+ * @brief Encode an password buffer before we encrypt it.
+ *
+ * @param buffer[514]   The buffer to encode into.
+ *
+ * @param password      The password we want to encode into the buffer.
+ *
+ * @param string_flags  String flags for encoding (e.g. STR_UNICODE).
+ *
+ * @return true on success, false otherwise.
+ */
+bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
+				   const char *password,
+				   uint32_t string_flags);
+
 /***********************************************************
  Encode an arc4 password change buffer.
 ************************************************************/
