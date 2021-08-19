@@ -1474,6 +1474,8 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 				      O_RDONLY,
 				      &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* Ensure we return the actual error from status in errno. */
+		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
