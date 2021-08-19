@@ -130,10 +130,28 @@ def SAMBA_LIBRARY(bld, libname, source,
                   manpages=None,
                   private_library=False,
                   grouping_library=False,
+                  require_builtin_deps=False,
+                  provide_builtin_linking=False,
+                  builtin_cflags='',
                   allow_undefined_symbols=False,
                   allow_warnings=False,
                   enabled=True):
     '''define a Samba library'''
+
+    # We support:
+    # - LIBRARY: this can be use to link via -llibname
+    # - MODULE:  this is module from SAMBA_MODULE()
+    # - PYTHON:  a python C binding library
+    #
+    if target_type not in ['LIBRARY', 'MODULE', 'PYTHON']:
+        raise Errors.WafError("target_type[%s] not supported in SAMBA_LIBRARY('%s')" %
+                              (target_type, libname))
+
+    if require_builtin_deps:
+        # For now we only support require_builtin_deps only for libraries
+        if target_type not in ['LIBRARY']:
+            raise Errors.WafError("target_type[%s] not supported SAMBA_LIBRARY('%s', require_builtin_deps=True)" %
+                                  (target_type, libname))
 
     if private_library and public_headers:
         raise Errors.WafError("private library '%s' must not have public header files" %
@@ -161,10 +179,26 @@ def SAMBA_LIBRARY(bld, libname, source,
                             target=empty_c)
         source=empty_c
 
+    samba_deps = deps + ' ' + public_deps
+    samba_deps = TO_LIST(samba_deps)
+
     if BUILTIN_LIBRARY(bld, libname):
-        obj_target = libname
+        builtin_target = libname + '.builtin.objlist'
+        builtin_cflags_end = '-D_PUBLIC_=_PRIVATE_'
+        empty_target = libname
+        obj_target = None
     else:
+        if provide_builtin_linking:
+            builtin_target = libname + '.builtin.objlist'
+            builtin_cflags_end = '-D_PUBLIC_=_PRIVATE_'
+        else:
+            builtin_target = None
+        empty_target = None
         obj_target = libname + '.objlist'
+        if require_builtin_deps:
+            # hide the builtin deps from the callers
+            samba_deps = TO_LIST('')
+        dep_target = obj_target
 
     if group == 'libraries':
         subsystem_group = 'main'
@@ -174,27 +208,51 @@ def SAMBA_LIBRARY(bld, libname, source,
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
     # separately for the install library and the build library
-    bld.SAMBA_SUBSYSTEM(obj_target,
-                        source         = source,
-                        deps           = deps,
-                        public_deps    = public_deps,
-                        includes       = includes,
-                        public_headers = public_headers,
-                        public_headers_install = public_headers_install,
-                        private_headers= private_headers,
-                        header_path    = header_path,
-                        cflags         = cflags,
-                        cflags_end     = cflags_end,
-                        group          = subsystem_group,
-                        autoproto      = autoproto,
-                        autoproto_extra_source=autoproto_extra_source,
-                        depends_on     = depends_on,
-                        hide_symbols   = hide_symbols,
-                        allow_warnings = allow_warnings,
-                        pyembed        = pyembed,
-                        pyext          = pyext,
-                        local_include  = local_include,
-                        global_include = global_include)
+    if builtin_target:
+        __t = __SAMBA_SUBSYSTEM_BUILTIN(bld, builtin_target, source,
+                                        deps=deps,
+                                        public_deps=public_deps,
+                                        includes=includes,
+                                        header_path=header_path,
+                                        builtin_cflags=builtin_cflags,
+                                        builtin_cflags_end=builtin_cflags_end,
+                                        group=group,
+                                        depends_on=depends_on,
+                                        local_include=local_include,
+                                        global_include=global_include,
+                                        allow_warnings=allow_warnings)
+        builtin_subsystem = __t
+    else:
+        builtin_subsystem = None
+    if obj_target:
+        bld.SAMBA_SUBSYSTEM(obj_target,
+                            source         = source,
+                            deps           = deps,
+                            public_deps    = public_deps,
+                            includes       = includes,
+                            public_headers = public_headers,
+                            public_headers_install = public_headers_install,
+                            private_headers= private_headers,
+                            header_path    = header_path,
+                            cflags         = cflags,
+                            cflags_end     = cflags_end,
+                            group          = subsystem_group,
+                            autoproto      = autoproto,
+                            autoproto_extra_source=autoproto_extra_source,
+                            depends_on     = depends_on,
+                            hide_symbols   = hide_symbols,
+                            allow_warnings = allow_warnings,
+                            pyembed        = pyembed,
+                            pyext          = pyext,
+                            local_include  = local_include,
+                            __require_builtin_deps=require_builtin_deps,
+                            global_include = global_include)
+    else:
+        et = bld.SAMBA_SUBSYSTEM(empty_target,
+                                 source=[],
+                                 __force_empty=True,
+                                 __require_builtin_deps=True)
+        et.samba_builtin_subsystem = builtin_subsystem
 
     if BUILTIN_LIBRARY(bld, libname):
         return
@@ -203,9 +261,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         return
 
     # the library itself will depend on that object target
-    deps += ' ' + public_deps
-    deps = TO_LIST(deps)
-    deps.append(obj_target)
+    samba_deps.append(dep_target)
 
     realname = bld.map_shlib_extension(realname, python=(target_type=='PYTHON'))
     link_name = bld.map_shlib_extension(link_name, python=(target_type=='PYTHON'))
@@ -291,7 +347,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         target          = bundled_name,
         depends_on      = depends_on,
         samba_ldflags   = ldflags,
-        samba_deps      = deps,
+        samba_deps      = samba_deps,
         samba_includes  = includes,
         version_script  = vscript,
         version_libname = version_libname,
@@ -309,7 +365,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         abi_vnum        = abi_vnum,
         private_library = private_library,
         grouping_library=grouping_library,
-        allow_undefined_symbols=allow_undefined_symbols
+        allow_undefined_symbols=allow_undefined_symbols,
+        samba_require_builtin_deps=False,
+        samba_builtin_subsystem=builtin_subsystem,
         )
 
     if realname and not link_name:
@@ -565,6 +623,47 @@ def SAMBA_MODULE(bld, modname, source,
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
+def __SAMBA_SUBSYSTEM_BUILTIN(bld, builtin_target, source,
+                              deps='',
+                              public_deps='',
+                              includes='',
+                              public_headers=None,
+                              public_headers_install=True,
+                              private_headers=None,
+                              header_path=None,
+                              builtin_cflags='',
+                              builtin_cflags_end=None,
+                              group='main',
+                              autoproto=None,
+                              autoproto_extra_source='',
+                              depends_on='',
+                              local_include=True,
+                              global_include=True,
+                              allow_warnings=False):
+
+    bld.ASSERT(builtin_target.endswith('.builtin.objlist'),
+               "builtin_target[%s] does not end with '.builtin.objlist'" %
+               (builtin_target))
+    return bld.SAMBA_SUBSYSTEM(builtin_target, source,
+                               deps=deps,
+                               public_deps=public_deps,
+                               includes=includes,
+                               public_headers=public_headers,
+                               public_headers_install=public_headers_install,
+                               private_headers=private_headers,
+                               header_path=header_path,
+                               cflags=builtin_cflags,
+                               cflags_end=builtin_cflags_end,
+                               hide_symbols=True,
+                               group=group,
+                               target_type='BUILTIN',
+                               autoproto=autoproto,
+                               autoproto_extra_source=autoproto_extra_source,
+                               depends_on=depends_on,
+                               local_include=local_include,
+                               global_include=global_include,
+                               allow_warnings=allow_warnings,
+                               __require_builtin_deps=True)
 
 #################################################################
 def SAMBA_SUBSYSTEM(bld, modname, source,
@@ -579,6 +678,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     cflags='',
                     cflags_end=None,
                     group='main',
+                    target_type='SUBSYSTEM',
                     init_function_sentinel=None,
                     autoproto=None,
                     autoproto_extra_source='',
@@ -593,10 +693,20 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     vars=None,
                     subdir=None,
                     hide_symbols=False,
+                    __require_builtin_deps=False,
+                    provide_builtin_linking=False,
+                    builtin_cflags='',
                     allow_warnings=False,
                     pyext=False,
                     pyembed=False):
     '''define a Samba subsystem'''
+
+    # We support:
+    # - SUBSYSTEM: a normal subsystem from SAMBA_SUBSYSTEM()
+    # - BUILTIN:   a hidden subsystem from __SAMBA_SUBSYSTEM_BUILTIN()
+    if target_type not in ['SUBSYSTEM', 'BUILTIN']:
+        raise Errors.WafError("target_type[%s] not supported in SAMBA_SUBSYSTEM('%s')" %
+                              (target_type, modname))
 
     if not enabled:
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
@@ -613,7 +723,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                             target=empty_c)
         source=empty_c
 
-    if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
+    if not SET_TARGET_TYPE(bld, modname, target_type):
         return
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
@@ -648,6 +758,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         samba_subsystem= subsystem_name,
         samba_use_hostcc = use_hostcc,
         samba_use_global_deps = use_global_deps,
+        samba_require_builtin_deps = __require_builtin_deps,
+        samba_builtin_subsystem = None,
         )
 
     if cflags_end is not None:
@@ -658,6 +770,39 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     if public_headers is not None:
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path,
                            public_headers_install=public_headers_install)
+
+    if provide_builtin_linking:
+
+        if use_hostcc or pyext or pyembed:
+            raise Errors.WafError("subsystem[%s] provide_builtin_linking=True " +
+                                  "not allowed with use_hostcc=True" %
+                                  modname)
+
+        if pyext or pyembed:
+            raise Errors.WafError("subsystem[%s] provide_builtin_linking=True " +
+                                  "not allowed with pyext=True nor pyembed=True" %
+                                  modname)
+
+        if __require_builtin_deps:
+            raise Errors.WafError("subsystem[%s] provide_builtin_linking=True " +
+                                  "not allowed with __require_builtin_deps=True" %
+                                  modname)
+
+        builtin_target = modname + '.builtin.objlist'
+        tbuiltin = __SAMBA_SUBSYSTEM_BUILTIN(bld, builtin_target, source,
+                                             deps=deps,
+                                             public_deps=public_deps,
+                                             includes=includes,
+                                             header_path=header_path,
+                                             builtin_cflags=builtin_cflags,
+                                             builtin_cflags_end='-D_PUBLIC_=_PRIVATE_',
+                                             group=group,
+                                             depends_on=depends_on,
+                                             local_include=local_include,
+                                             global_include=global_include,
+                                             allow_warnings=allow_warnings)
+        t.samba_builtin_subsystem = tbuiltin
+
     return t
 
 

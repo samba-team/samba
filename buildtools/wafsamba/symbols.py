@@ -389,7 +389,7 @@ def build_library_names(bld, tgt_list):
         if t.samba_type in [ 'LIBRARY' ]:
             for obj in t.samba_deps_extended:
                 t2 = bld.get_tgen_by_name(obj)
-                if t2 and t2.samba_type in [ 'SUBSYSTEM', 'ASN1' ]:
+                if t2 and t2.samba_type in [ 'SUBSYSTEM', 'BUILTIN', 'ASN1' ]:
                     if not t.sname in t2.in_library:
                         t2.in_library.append(t.sname)
     bld.env.done_build_library_names = True
