@@ -775,6 +775,104 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 }
 
 
+static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *tctx,
+			       struct policy_handle *handle, bool makeshort,
+			       char **password)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	bool ret = true;
+	DATA_BLOB session_key;
+	char *newpass;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
+	int policy_min_pw_len = 0;
+
+	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_GetUserPwInfo_r(b, tctx, &pwp),
+		"GetUserPwInfo failed");
+	if (NT_STATUS_IS_OK(pwp.out.result)) {
+		policy_min_pw_len = pwp.out.info->min_password_length;
+	}
+	if (makeshort && policy_min_pw_len) {
+		newpass = samr_rand_pass_fixed_len(tctx, policy_min_pw_len - 1);
+	} else {
+		newpass = samr_rand_pass(tctx, policy_min_pw_len);
+	}
+
+	s.in.user_handle = handle;
+	s.in.info = &u;
+	s.in.level = 31;
+
+	u.info31.password_expired = 0;
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return false;
+	}
+
+	status = init_samr_CryptPasswordAES(tctx,
+					    newpass,
+					    &session_key,
+					    &u.info31.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPasswordEx failed");
+
+	torture_comment(tctx, "Testing SetUserInfo level 31 (set password aes)\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo_r(b, tctx, &s),
+		"SetUserInfo failed");
+	torture_comment(tctx, "(%s:%s) new_password[%s] status[%s]\n",
+			__location__, __FUNCTION__,
+			newpass, nt_errstr(s.out.result));
+	if (!NT_STATUS_IS_OK(s.out.result)) {
+		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(s.out.result));
+		ret = false;
+	} else {
+		*password = newpass;
+	}
+
+	/* This should break the key nicely */
+	session_key.data[0]++;
+
+	status = init_samr_CryptPasswordAES(tctx,
+					    newpass,
+					    &session_key,
+					    &u.info31.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPasswordEx failed");
+
+	/* Reset the key */
+	session_key.data[0]--;
+
+	torture_comment(tctx, "Testing SetUserInfo level 31 (set password aes) with wrong session key\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo_r(b, tctx, &s),
+		"SetUserInfo failed");
+	torture_comment(tctx, "(%s:%s) new_password[%s] status[%s]\n",
+			__location__, __FUNCTION__,
+			newpass, nt_errstr(s.out.result));
+	if (!NT_STATUS_EQUAL(s.out.result, NT_STATUS_WRONG_PASSWORD)) {
+		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u should have failed with WRONG_PASSWORD: %s\n",
+		       s.in.level, nt_errstr(s.out.result));
+		ret = false;
+	} else {
+		*password = newpass;
+	}
+
+	return ret;
+}
+
+
 static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tctx,
 			       struct policy_handle *handle, bool makeshort,
 			       char **password)
@@ -1259,6 +1357,10 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		u.info26.password_expired = password_expired;
 
 		break;
+	case 31:
+		u.info31.password_expired = password_expired;
+
+		break;
 	}
 
 	status = dcerpc_fetch_session_key(p, &session_key);
@@ -1335,6 +1437,13 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		torture_assert_ntstatus_ok(tctx,
 					   status,
 					   "init_samr_CryptPasswordEx failed");
+		break;
+	case 31:
+		status = init_samr_CryptPasswordAES(tctx,
+						    newpass,
+						    &session_key,
+						    &u.info31.password);
+
 		break;
 	}
 
@@ -3474,7 +3583,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 	int delay = 50000;
 	bool set_levels[] = { false, true };
 	bool query_levels[] = { false, true };
-	uint32_t levels[] = { 18, 21, 26, 23, 24, 25 }; /* Second half only used when TEST_ALL_LEVELS defined */
+	uint32_t levels[] = { 18, 21, 26, 23, 24, 25, 31 }; /* Second half only used when TEST_ALL_LEVELS defined */
 	uint32_t nonzeros[] = { 1, 24 };
 	uint32_t fields_present[] = {
 		0,
@@ -3844,6 +3953,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		case 18:
 		case 24:
 		case 26:
+		case 31:
 			f = ARRAY_SIZE(fields_present);
 			break;
 		}
@@ -5380,6 +5490,14 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
 				ret = false;
 			}
+		}
+
+		if (!test_SetUserPass_31(p, tctx, user_handle, false, &password)) {
+			ret = false;
+		}
+
+		if (!test_ChangePassword(p, tctx, base_acct_name, domain_handle, &password)) {
+			ret = false;
 		}
 
 		if (!test_SetUserPassEx(p, tctx, user_handle, false, &password)) {
