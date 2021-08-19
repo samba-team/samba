@@ -957,7 +957,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	ret &= check_stream_list(tree, tctx, fname, 4, four,
 				 io.smb2.out.file.handle);
-
+	CHECK_VALUE(ret, true);
 	smb2_util_close(tree, h1);
 	smb2_util_close(tree, h2);
 	smb2_util_close(tree, h3);
@@ -973,6 +973,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	ret &= check_stream_list(tree, tctx, fname, 4, four,
 				 io.smb2.out.file.handle);
 
+	CHECK_VALUE(ret, true);
 	for (i=0; i < 4; i++) {
 		NTTIME write_time;
 		uint64_t stream_size;
@@ -1114,6 +1115,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	ret &= check_stream_list(tree,tctx, fname, 5, five2,
 				 io.smb2.out.file.handle);
 
+	CHECK_VALUE(ret, true);
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sinfo.rename_information.in.file.handle = h1;
@@ -1138,6 +1140,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	ret &= check_stream_list(tree,tctx, fname, 5, five2,
 				 io.smb2.out.file.handle);
 
+	CHECK_VALUE(ret, true);
 	/* TODO: we need to test more rename combinations */
 
 done:
@@ -2062,6 +2065,5 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 					test_basefile_rename_with_open_stream);
 
 	suite->description = talloc_strdup(suite, "SMB2-STREAM tests");
-
 	return suite;
 }
