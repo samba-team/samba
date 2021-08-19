@@ -462,6 +462,11 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ncacn_np_secondary_endpoint,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
+NTSTATUS dcesrv_interface_register_b(struct dcesrv_context *dce_ctx,
+				   struct dcerpc_binding *binding,
+				   struct dcerpc_binding *binding2,
+				   const struct dcesrv_interface *iface,
+				   const struct security_descriptor *sd);
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
 NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
 				const char **ep_servers);

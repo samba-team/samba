@@ -177,10 +177,46 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd)
 {
+	struct dcerpc_binding *binding = NULL;
+	struct dcerpc_binding *binding2 = NULL;
+	NTSTATUS ret;
+
+	ret = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
+	if (NT_STATUS_IS_ERR(ret)) {
+		DBG_ERR("Trouble parsing binding string '%s'\n", ep_name);
+		goto out;
+	}
+
+	if (ncacn_np_secondary_endpoint != NULL) {
+		ret = dcerpc_parse_binding(dce_ctx,
+					   ncacn_np_secondary_endpoint,
+					   &binding2);
+		if (NT_STATUS_IS_ERR(ret)) {
+			DBG_ERR("Trouble parsing 2nd binding string '%s'\n",
+				ncacn_np_secondary_endpoint);
+			goto out;
+		}
+	}
+
+	ret = dcesrv_interface_register_b(dce_ctx,
+					  binding,
+					  binding2,
+					  iface,
+					  sd);
+out:
+	TALLOC_FREE(binding);
+	TALLOC_FREE(binding2);
+	return ret;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_interface_register_b(struct dcesrv_context *dce_ctx,
+					struct dcerpc_binding *binding,
+					struct dcerpc_binding *binding2,
+					const struct dcesrv_interface *iface,
+					const struct security_descriptor *sd)
+{
 	struct dcesrv_endpoint *ep;
 	struct dcesrv_if_list *ifl;
-	struct dcerpc_binding *binding;
-	struct dcerpc_binding *binding2 = NULL;
 	bool add_ep = false;
 	NTSTATUS status;
 	enum dcerpc_transport_t transport;
@@ -199,13 +235,6 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	 */
 	if (iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) {
 		use_single_process = false;
-	}
-
-	status = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("Trouble parsing binding string '%s'\n", ep_name));
-		return status;
 	}
 
 	transport = dcerpc_binding_get_transport(binding);
@@ -245,17 +274,8 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 	}
 
-	if (transport == NCACN_NP && ncacn_np_secondary_endpoint != NULL) {
+	if (transport == NCACN_NP && binding2 != NULL) {
 		enum dcerpc_transport_t transport2;
-
-		status = dcerpc_parse_binding(dce_ctx,
-					      ncacn_np_secondary_endpoint,
-					      &binding2);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Trouble parsing 2nd binding string '%s'\n",
-				  ncacn_np_secondary_endpoint));
-			return status;
-		}
 
 		transport2 = dcerpc_binding_get_transport(binding2);
 		SMB_ASSERT(transport2 == transport);
@@ -263,8 +283,10 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 
 	/* see if the interface is already registered on the endpoint */
 	if (find_interface_by_binding(dce_ctx, binding, iface)!=NULL) {
-		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
-			 iface->name, ep_name));
+		char *binding_string = dcerpc_binding_string(dce_ctx, binding);
+		DBG_ERR("Interface '%s' already registered on endpoint '%s'\n",
+			iface->name, binding_string);
+		TALLOC_FREE(binding_string);
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -299,8 +321,11 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ep->ep_description = talloc_move(ep, &binding);
-		ep->ep_2nd_description = talloc_move(ep, &binding2);
+		ep->ep_description = dcerpc_binding_dup(ep, binding);
+		if (transport == NCACN_NP && binding2 != NULL) {
+			ep->ep_2nd_description =
+				dcerpc_binding_dup(ep, binding2);
+		}
 		add_ep = true;
 
 		/* add mgmt interface */
@@ -367,9 +392,12 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * or there was already one on the endpoint
 		 */
 		if (ep->sd != NULL) {
-			DEBUG(0,("dcesrv_interface_register: interface '%s' failed to setup a security descriptor\n"
-			         "                           on endpoint '%s'\n",
-				iface->name, ep_name));
+			char *binding_string =
+				dcerpc_binding_string(dce_ctx, binding);
+			DBG_ERR("Interface '%s' failed to setup a security "
+				"descriptor on endpoint '%s'\n",
+				iface->name, binding_string);
+			TALLOC_FREE(binding_string);
 			if (add_ep) free(ep);
 			free(ifl);
 			return NT_STATUS_OBJECT_NAME_COLLISION;
