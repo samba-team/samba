@@ -3296,7 +3296,8 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		status = NT_STATUS_INVALID_INFO_CLASS;
+		goto done;
 	}
 
 	/* Get sam policy handle */
@@ -3356,16 +3357,19 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 						 &types,
 						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 		if (!NT_STATUS_IS_OK(result)) {
-			return result;
+			status = result;
+			goto done;
 		}
 		if (rids.count != 1) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
 		}
 		if (types.count != 1) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto done;
 		}
 
 		status = dcerpc_samr_OpenUser(b, frame,
@@ -3375,10 +3379,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 					      &user_pol,
 					      &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 		if (!NT_STATUS_IS_OK(result)) {
-			return result;
+			status = result;
+			goto done;
 		}
 	}
 
@@ -3398,7 +3403,8 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 						  &result);
 		break;
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("status: %s\n", nt_errstr(status)));
