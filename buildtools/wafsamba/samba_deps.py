@@ -718,8 +718,12 @@ def reduce_objects(bld, tgt_list):
                     dup = dup.difference(rely_on[t.sname])
                 if dup:
                     # Do not remove duplicates of BUILTINS
-                    d = next(iter(dup))
-                    if BUILTIN_LIBRARY(bld, d):
+                    for d in iter(dup.copy()):
+                        if BUILTIN_LIBRARY(bld, d):
+                            debug('deps: BUILTIN_LIBRARY SKIP: removing dups from %s of type %s: %s also in %s %s',
+                                  t.sname, t.samba_type, d, t2.samba_type, l)
+                            dup.remove(d)
+                    if len(dup) == 0:
                         continue
 
                     debug('deps: removing dups from %s of type %s: %s also in %s %s',
