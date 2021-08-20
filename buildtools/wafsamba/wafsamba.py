@@ -55,11 +55,12 @@ def SAMBA_BUILD_ENV(conf):
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH))
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH, "private"))
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, "modules"))
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, "plugins"))
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, 'python/samba/dcerpc'))
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
     mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, 'default'))
-    for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python')]:
+    for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('plugins', 'plugins'), ('python', 'python')]:
         link_target = os.path.join(conf.env.BUILD_DIRECTORY, 'default/' + target)
         if not os.path.lexists(link_target):
             symlink('../' + source, link_target)
@@ -141,15 +142,17 @@ def SAMBA_LIBRARY(bld, libname, source,
     # We support:
     # - LIBRARY: this can be use to link via -llibname
     # - MODULE:  this is module from SAMBA_MODULE()
+    # - PLUGIN:  this is plugin for external consumers to be
+    #            loaded via dlopen()
     # - PYTHON:  a python C binding library
     #
-    if target_type not in ['LIBRARY', 'MODULE', 'PYTHON']:
+    if target_type not in ['LIBRARY', 'MODULE', 'PLUGIN', 'PYTHON']:
         raise Errors.WafError("target_type[%s] not supported in SAMBA_LIBRARY('%s')" %
                               (target_type, libname))
 
     if require_builtin_deps:
-        # For now we only support require_builtin_deps only for libraries
-        if target_type not in ['LIBRARY']:
+        # For now we only support require_builtin_deps only for libraries, plugins
+        if target_type not in ['LIBRARY', 'PLUGIN']:
             raise Errors.WafError("target_type[%s] not supported SAMBA_LIBRARY('%s', require_builtin_deps=True)" %
                                   (target_type, libname))
 
@@ -157,7 +160,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         raise Errors.WafError("private library '%s' must not have public header files" %
                              libname)
 
-    if LIB_MUST_BE_PRIVATE(bld, libname):
+    if LIB_MUST_BE_PRIVATE(bld, libname) and target_type not in ['PLUGIN']:
         private_library = True
 
     if not enabled:
@@ -622,6 +625,71 @@ def SAMBA_MODULE(bld, modname, source,
 
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
+
+#################################################################
+def SAMBA_PLUGIN(bld, pluginname, source,
+                 deps='',
+                 includes='',
+                 vnum=None,
+                 soname=None,
+                 cflags='',
+                 ldflags='',
+                 local_include=True,
+                 global_include=True,
+                 vars=None,
+                 subdir=None,
+                 realname=None,
+                 keep_underscore=False,
+                 autoproto=None,
+                 autoproto_extra_source='',
+                 install_path=None,
+                 install=True,
+                 manpages=None,
+                 require_builtin_deps=True,
+                 allow_undefined_symbols=False,
+                 enabled=True):
+    '''define an external plugin.'''
+
+    bld.ASSERT(realname, "You must specify a realname for SAMBA_PLUGIN(%s)" % pluginname)
+
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
+    if subdir:
+        source = bld.SUBDIR(subdir, source)
+
+    build_name = "_plugin_%s" % (pluginname)
+    build_link_name = "plugins/%s" % (realname)
+
+    bld.SAMBA_LIBRARY(pluginname,
+                      source,
+                      bundled_name=build_name,
+                      link_name=build_link_name,
+                      target_type='PLUGIN',
+                      deps=deps,
+                      includes=includes,
+                      vnum=vnum,
+                      soname=soname,
+                      cflags=cflags,
+                      ldflags=ldflags,
+                      realname=realname,
+                      autoproto=autoproto,
+                      autoproto_extra_source=autoproto_extra_source,
+                      local_include=local_include,
+                      global_include=global_include,
+                      vars=vars,
+                      group='main',
+                      install_path=install_path,
+                      install=install,
+                      manpages=manpages,
+                      require_builtin_deps=require_builtin_deps,
+                      builtin_cflags=cflags,
+                      hide_symbols=True,
+                      public_headers=[],
+                      public_headers_install=False,
+                      pc_files=[],
+                      allow_undefined_symbols=allow_undefined_symbols,
+                      allow_warnings=False,
+                      enabled=enabled)
+Build.BuildContext.SAMBA_PLUGIN = SAMBA_PLUGIN
 
 def __SAMBA_SUBSYSTEM_BUILTIN(bld, builtin_target, source,
                               deps='',

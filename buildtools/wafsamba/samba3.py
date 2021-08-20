@@ -85,6 +85,11 @@ def SAMBA3_LIBRARY(bld, name, *args, **kwargs):
     return bld.SAMBA_LIBRARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_LIBRARY = SAMBA3_LIBRARY
 
+def SAMBA3_PLUGIN(bld, name, *args, **kwargs):
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_PLUGIN(name, *args, **kwargs)
+Build.BuildContext.SAMBA3_PLUGIN = SAMBA3_PLUGIN
+
 def SAMBA3_MODULE(bld, name, *args, **kwargs):
     s3_fix_kwargs(bld, kwargs)
     return bld.SAMBA_MODULE(name, *args, **kwargs)

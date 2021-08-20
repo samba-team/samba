@@ -252,7 +252,7 @@ def build_symbol_sets(bld, tgt_list):
             bld.env.public_symbols[name] = bld.env.public_symbols[name].union(t.public_symbols)
         else:
             bld.env.public_symbols[name] = t.public_symbols
-        if t.samba_type == 'LIBRARY':
+        if t.samba_type in ['LIBRARY', 'PLUGIN']:
             for dep in t.add_objects:
                 t2 = bld.get_tgen_by_name(dep)
                 bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
@@ -265,7 +265,7 @@ def build_symbol_sets(bld, tgt_list):
             bld.env.used_symbols[name] = bld.env.used_symbols[name].union(t.used_symbols)
         else:
             bld.env.used_symbols[name] = t.used_symbols
-        if t.samba_type == 'LIBRARY':
+        if t.samba_type in ['LIBRARY', 'PLUGIN']:
             for dep in t.add_objects:
                 t2 = bld.get_tgen_by_name(dep)
                 bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
@@ -281,7 +281,7 @@ def build_library_dict(bld, tgt_list):
     bld.env.library_dict = {}
 
     for t in tgt_list:
-        if t.samba_type in [ 'LIBRARY', 'PYTHON' ]:
+        if t.samba_type in [ 'LIBRARY', 'PLUGIN', 'PYTHON' ]:
             linkpath = os.path.realpath(t.link_task.outputs[0].abspath(bld.env))
             bld.env.library_dict[linkpath] = t.sname
 
@@ -296,7 +296,7 @@ def build_syslib_sets(bld, tgt_list):
     syslibs = {}
     objmap = {}
     for t in tgt_list:
-        if getattr(t, 'uselib', []) and t.samba_type in [ 'LIBRARY', 'BINARY', 'PYTHON' ]:
+        if getattr(t, 'uselib', []) and t.samba_type in [ 'LIBRARY', 'PLUGIN', 'BINARY', 'PYTHON' ]:
             for lib in t.uselib:
                 if lib in ['PYEMBED', 'PYEXT']:
                     lib = "python"
@@ -386,7 +386,7 @@ def build_library_names(bld, tgt_list):
         t.in_library = []
 
     for t in tgt_list:
-        if t.samba_type in [ 'LIBRARY' ]:
+        if t.samba_type in ['LIBRARY', 'PLUGIN']:
             for obj in t.samba_deps_extended:
                 t2 = bld.get_tgen_by_name(obj)
                 if t2 and t2.samba_type in [ 'SUBSYSTEM', 'BUILTIN', 'ASN1' ]:

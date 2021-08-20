@@ -69,7 +69,7 @@ def replace_refill_task_list(self):
                                 objpath = os.path.normpath(output.abspath(bld.env))
                                 expected.append(objpath)
                     for t in tlist:
-                        if ttype in ['LIBRARY','MODULE']:
+                        if ttype in ['LIBRARY', 'PLUGIN', 'MODULE']:
                             t = samba_utils.apply_pattern(t, bld.env.shlib_PATTERN)
                         if ttype == 'PYTHON':
                             t = samba_utils.apply_pattern(t, bld.env.pyext_PATTERN)
