@@ -570,6 +570,7 @@ Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 def SAMBA_SUBSYSTEM(bld, modname, source,
                     deps='',
                     public_deps='',
+                    __force_empty=False,
                     includes='',
                     public_headers=None,
                     public_headers_install=True,
@@ -603,7 +604,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     # remember empty subsystems, so we can strip the dependencies
     if ((source == '') or (source == [])):
-        if deps == '' and public_deps == '':
+        if not __force_empty and deps == '' and public_deps == '':
             SET_TARGET_TYPE(bld, modname, 'EMPTY')
             return
         empty_c = modname + '.empty.c'
