@@ -22,9 +22,11 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_allocate_uid_state {
+	struct tevent_context *ev;
 	uint64_t uid;
 };
 
+static void winbindd_allocate_uid_initialized(struct tevent_req *subreq);
 static void winbindd_allocate_uid_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
@@ -34,25 +36,57 @@ struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_allocate_uid_state *state;
-	struct dcerpc_binding_handle *child_binding_handle = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_allocate_uid_state);
 	if (req == NULL) {
 		return NULL;
 	}
+        state->ev = ev;
 
 	DEBUG(3, ("allocate_uid\n"));
 
-	child_binding_handle = idmap_child_handle();
-
-	subreq = dcerpc_wbint_AllocateUid_send(state, ev, child_binding_handle,
-					       &state->uid);
+	subreq = wb_parent_idmap_setup_send(state, ev);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, winbindd_allocate_uid_done, req);
+	tevent_req_set_callback(subreq, winbindd_allocate_uid_initialized, req);
 	return req;
+}
+
+static void winbindd_allocate_uid_initialized(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
+	struct winbindd_allocate_uid_state *state = tevent_req_data(
+		req, struct winbindd_allocate_uid_state);
+	const struct wb_parent_idmap_config *cfg = NULL;
+	NTSTATUS status;
+
+	status = wb_parent_idmap_setup_recv(subreq, &cfg);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (cfg->num_doms == 0) {
+		/*
+		 * idmap_tdb also returns UNSUCCESSFUL if a range is full
+		 */
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+        child_binding_handle = idmap_child_handle();
+
+        subreq = dcerpc_wbint_AllocateUid_send(state,
+					       state->ev,
+                                               child_binding_handle,
+					       &state->uid);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, winbindd_allocate_uid_done, req);
 }
 
 static void winbindd_allocate_uid_done(struct tevent_req *subreq)
