@@ -203,6 +203,24 @@ bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
 				   const char *password,
 				   uint32_t string_flags);
 
+/**
+ * @brief Extract AES password blob from buffer.
+ *
+ * This extracts the password from the in_buffer as a data blob. It should
+ * then contain an UTF-16 encoded password.
+ *
+ * @param mem_ctx       The memory context to allowcate the password on.
+ *
+ * @param in_buffer[514] The input buffer to extract the password from.
+ *
+ * @param new_password  A pointer to the store the extracted password blob.
+ *
+ * @return true on success, false otherwise.
+ */
+bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
+				     const uint8_t in_buffer[514],
+				     DATA_BLOB *new_password);
+
 /***********************************************************
  Encode an arc4 password change buffer.
 ************************************************************/

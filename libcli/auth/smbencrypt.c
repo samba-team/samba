@@ -1011,6 +1011,36 @@ bool encode_pwd_buffer514_from_str(uint8_t buffer[514],
 	return true;
 }
 
+bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
+				     const uint8_t in_buffer[514],
+				     DATA_BLOB *new_password)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("in_buffer: "));
+	dump_data(100, in_buffer, 514);
+#endif
+
+	new_password->length = PULL_LE_U16(in_buffer, 0);
+	if (new_password->length == 0 || new_password->length > 512) {
+		return false;
+	}
+
+	new_password->data =
+		talloc_memdup(mem_ctx, in_buffer + 2, new_password->length);
+	if (new_password->data == NULL) {
+		return false;
+	}
+	talloc_keep_secret(new_password->data);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("new_pwd_len: %zu\n", new_password->length));
+	DEBUG(100, ("new_pwd: "));
+	dump_data(100, new_password->data, new_password->length);
+#endif
+
+	return true;
+}
+
 /***********************************************************
  Encode an arc4 password change buffer.
 ************************************************************/
