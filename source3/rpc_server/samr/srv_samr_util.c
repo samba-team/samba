@@ -751,3 +751,18 @@ void copy_id26_to_sam_passwd(struct samu *to,
 
 	copy_id21_to_sam_passwd("INFO_26", to, &i);
 }
+
+void copy_pwd_expired_to_sam_passwd(struct samu *to,
+				    uint8_t password_expired)
+{
+	struct samr_UserInfo21 i = {
+		.fields_present	= SAMR_FIELD_EXPIRED_FLAG,
+		.password_expired = password_expired,
+	};
+
+	if (to == NULL) {
+		return;
+	}
+
+	copy_id21_to_sam_passwd("INFO_GENERIC", to, &i);
+}
