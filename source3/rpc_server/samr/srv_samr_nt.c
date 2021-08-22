@@ -49,6 +49,7 @@
 #include "lib/util/base64.h"
 #include "param/param.h"
 #include "librpc/rpc/dcerpc_helper.h"
+#include "librpc/rpc/dcerpc_samr.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -5024,6 +5025,76 @@ static bool set_user_info_pw(uint8_t *pass, const char *rhost, struct samu *pwd)
 	return True;
 }
 
+static bool
+set_user_info_pw_aes(DATA_BLOB *pw_data, const char *rhost, struct samu *pwd)
+{
+	uint32_t acct_ctrl;
+	DATA_BLOB new_password = {
+		.length = 0,
+	};
+	bool ok;
+
+	DBG_NOTICE("Attempting administrator password change for user %s\n",
+		   pdb_get_username(pwd));
+
+	acct_ctrl = pdb_get_acct_ctrl(pwd);
+
+	ok = decode_pwd_string_from_buffer514(talloc_tos(),
+					      pw_data->data,
+					      CH_UTF16,
+					      &new_password);
+	if (!ok) {
+		return false;
+	}
+
+	ok = pdb_set_plaintext_passwd(pwd, (char *)new_password.data);
+	if (!ok) {
+		return false;
+	}
+
+	/* if it's a trust account, don't update /etc/passwd */
+	if (((acct_ctrl & ACB_DOMTRUST) == ACB_DOMTRUST) ||
+	    ((acct_ctrl & ACB_WSTRUST) == ACB_WSTRUST) ||
+	    ((acct_ctrl & ACB_SVRTRUST) == ACB_SVRTRUST)) {
+		DBG_NOTICE("Changing trust account or non-unix-user password, "
+			   "not updating /etc/passwd\n");
+	} else {
+		/* update the UNIX password */
+		if (lp_unix_password_sync()) {
+			struct passwd *passwd;
+			const char *username;
+
+			username = pdb_get_username(pwd);
+			if (username == NULL) {
+				DBG_WARNING("User unkown\n");
+				return false;
+			}
+
+			passwd = Get_Pwnam_alloc(pwd, username);
+			if (passwd == NULL) {
+				DBG_WARNING("chgpasswd: Username does not "
+					    "exist on system !?!\n");
+			}
+
+			ok = chgpasswd(username,
+				       rhost,
+				       passwd,
+				       "",
+				       (char *)new_password.data,
+				       true);
+			if (!ok) {
+				return false;
+			}
+			TALLOC_FREE(passwd);
+		}
+	}
+	TALLOC_FREE(new_password.data);
+
+	DBG_NOTICE("pdb_update_pwd()\n");
+
+	return true;
+}
+
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
@@ -5132,6 +5203,34 @@ static NTSTATUS set_user_info_26(TALLOC_CTX *mem_ctx,
 	}
 
 	copy_pwd_expired_to_sam_passwd(pwd, id26->password_expired);
+
+	status = pdb_update_sam_account(pwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS set_user_info_31(TALLOC_CTX *mem_ctx,
+				 const char *rhost,
+				 DATA_BLOB *pw_data,
+				 uint8_t password_expired,
+				 struct samu *pwd)
+{
+	NTSTATUS status;
+	bool ok;
+
+	if (pw_data->length == 0 || pw_data->length > 514) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	ok = set_user_info_pw_aes(pw_data, rhost, pwd);
+	if (!ok) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	copy_pwd_expired_to_sam_passwd(pwd, password_expired);
 
 	status = pdb_update_sam_account(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5321,6 +5420,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		break;
 	case 24: /* UserInternal5Information */
 	case 26: /* UserInternal5InformationNew */
+	case 31: /* UserInternal5InformationNew */
 		acc_required = SAMR_USER_ACCESS_SET_PASSWORD;
 		break;
 	default:
@@ -5605,7 +5705,50 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 						  rhost,
 						  &info->info26, pwd);
 			break;
+		case 31: {
+			DATA_BLOB new_password = data_blob_null;
+			const DATA_BLOB ciphertext = data_blob_const(
+				info->info31.password.cipher,
+				info->info31.password.cipher_len);
+			DATA_BLOB iv = data_blob_const(
+				info->info31.password.salt,
+				sizeof(info->info31.password.salt));
 
+			status = session_extract_session_key(session_info,
+							     &session_key,
+							     KEY_USE_16BYTES);
+			if (!NT_STATUS_IS_OK(status)) {
+				break;
+			}
+
+			status =
+				samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+					p->mem_ctx,
+					&ciphertext,
+					&session_key,
+					&samr_aes256_enc_key_salt,
+					&samr_aes256_mac_key_salt,
+					&iv,
+					info->info31.password.auth_data,
+					&new_password);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("samba_gnutls_aead_aes_256_cbc_hmac_"
+					"sha512_decrypt "
+					"failed with %s\n",
+					nt_errstr(status));
+				status = NT_STATUS_WRONG_PASSWORD;
+				break;
+			}
+
+			status = set_user_info_31(p->mem_ctx,
+						  rhost,
+						  &new_password,
+						  info->info31.password_expired,
+						  pwd);
+			data_blob_clear(&new_password);
+
+			break;
+		}
 		default:
 			status = NT_STATUS_INVALID_INFO_CLASS;
 	}
