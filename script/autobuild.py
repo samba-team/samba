@@ -838,6 +838,10 @@ tasks = {
             ("nondevel-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("nondevel-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),
             ("nondevel-no-libldb", "find ./bin | grep -v 'module' | grep -v 'libldbsamba' | grep 'libldb' && exit 1; exit 0"),
+            ("nondevel-no-samba-nss_winbind", "ldd ./bin/plugins/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("nondevel-no-samba-nss_wins", "ldd ./bin/plugins/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("nondevel-no-samba-libwbclient", "ldd ./bin/shared/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
+            ("nondevel-no-samba-pam_winbind", "ldd ./bin/plugins/pam_winbind.so | grep -v 'libtalloc.so.2' | grep 'samba' && exit 1; exit 0"),
             ("nondevel-install", "make -j install"),
             ("nondevel-dist", "make dist"),
 
@@ -845,6 +849,10 @@ tasks = {
             ("prefix-no-private-libtdb", "find ${PREFIX_DIR} | grep -v 'libtdb-wrap' | grep 'private.*libtdb' && exit 1; exit 0"),
             ("prefix-no-private-libtevent", "find ${PREFIX_DIR} | grep -v 'libtevent-util' | grep 'private.*libtevent' && exit 1; exit 0"),
             ("prefix-no-private-libldb", "find ${PREFIX_DIR} | grep -v 'module' | grep -v 'libldbsamba' | grep 'private.*libldb' && exit 1; exit 0"),
+            ("prefix-no-samba-nss_winbind", "ldd ${PREFIX_DIR}/lib/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("prefix-no-samba-nss_wins", "ldd ${PREFIX_DIR}/lib/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("prefix-no-samba-libwbclient", "ldd ${PREFIX_DIR}/lib/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
+            ("prefix-no-samba-pam_winbind", "ldd ${PREFIX_DIR}/lib/security/pam_winbind.so | grep -v 'libtalloc.so.2' | grep 'samba' && exit 1; exit 0"),
 
             # retry with all modules shared
             ("allshared-distclean", "make distclean"),
@@ -854,6 +862,10 @@ tasks = {
             ("allshared-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("allshared-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),
             ("allshared-no-libldb", "find ./bin | grep -v 'module' | grep -v 'libldbsamba' | grep 'libldb' && exit 1; exit 0"),
+            ("allshared-no-samba-nss_winbind", "ldd ./bin/plugins/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("allshared-no-samba-nss_wins", "ldd ./bin/plugins/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
+            ("allshared-no-samba-libwbclient", "ldd ./bin/plugins/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
+            ("allshared-no-samba-pam_winbind", "ldd ./bin/plugins/pam_winbind.so | grep -v 'libtalloc.so.2' | grep 'samba' && exit 1; exit 0"),
         ],
     },
 
