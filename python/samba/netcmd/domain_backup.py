@@ -1004,7 +1004,12 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
     # sam.ldb must have a transaction started on it before backing up
     # everything in sam.ldb.d with the appropriate backup function.
+    #
+    # Obtains the sidForRestore (SID for the new DC) and returns it
+    # from under the transaction
     def backup_smb_dbs(self, private_dir, samdb, lp, logger):
+        sam_ldb_path = os.path.join(private_dir, 'sam.ldb')
+
         # First, determine if DB backend is MDB.  Assume not unless there is a
         # 'backendStore' attribute on @PARTITION containing the text 'mdb'
         store_label = "backendStore"
@@ -1012,11 +1017,24 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                            attrs=[store_label])
         mdb_backend = store_label in res[0] and str(res[0][store_label][0]) == 'mdb'
 
-        sam_ldb_path = os.path.join(private_dir, 'sam.ldb')
+        # This is needed to keep this variable in scope until the end
+        # of the transaction.
+        res_iterator = None
+
         copy_function = None
         if mdb_backend:
             logger.info('MDB backend detected.  Using mdb backup function.')
             copy_function = self.offline_mdb_copy
+
+            # We can't backup with a write transaction open, so get a
+            # read lock with a search_iterator().
+            #
+            # We have tests in lib/ldb/tests/python/api.py that the
+            # search iterator takes a read lock effective against a
+            # transaction.  This in turn will ensure there are no
+            # transactions on either the main or sub-database, even if
+            # the read locks were not enforced globally (they are).
+            res_iterator = samdb.search_iterator()
         else:
             logger.info('Starting transaction on ' + sam_ldb_path)
             copy_function = self.offline_tdb_copy
@@ -1034,8 +1052,15 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                 logger.info('   copying locked/related file ' + sam_file)
                 shutil.copyfile(sam_file, sam_file + self.backup_ext)
 
-        if not mdb_backend:
+        sid = get_sid_for_restore(samdb, logger)
+
+        if mdb_backend:
+            # Delete the iterator, release the read lock
+            del(res_iterator)
+        else:
             samdb.transaction_cancel()
+
+        return sid
 
     # Find where a path should go in the fixed backup archive structure.
     def get_arc_path(self, path, conf_paths):
@@ -1119,16 +1144,17 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
                       flags=ldb.FLG_DONT_CREATE_DB)
 
+        # Backup secrets, sam.ldb and their downstream files
         self.backup_secrets(paths.private_dir, lp, logger)
-        self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
+        sid = self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
 
         # Get the domain SID so we can later place it in the backup
         dom_sid_str = samdb.get_domain_sid()
         dom_sid = security.dom_sid(dom_sid_str)
 
-        sid = get_sid_for_restore(samdb, logger)
-
-        # Close the original samdb
+        # Close the original samdb, to avoid any confusion, we will
+        # not use this any more as the data has all been copied under
+        # the transaction
         samdb = None
 
         # Open the new backed up samdb, flag it as backed up, and write
