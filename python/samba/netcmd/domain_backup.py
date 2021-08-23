@@ -1048,6 +1048,9 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
             if sam_file.endswith('.ldb'):
                 logger.info('   backing up locked/related file ' + sam_file)
                 copy_function(sam_file)
+            elif sam_file.endswith('.tdb'):
+                logger.info('   tdbbackup of locked/related file ' + sam_file)
+                self.offline_tdb_copy(sam_file)
             else:
                 logger.info('   copying locked/related file ' + sam_file)
                 shutil.copyfile(sam_file, sam_file + self.backup_ext)
