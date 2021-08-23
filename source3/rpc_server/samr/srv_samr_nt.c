@@ -5131,7 +5131,7 @@ static NTSTATUS set_user_info_26(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	copy_id26_to_sam_passwd(pwd, id26);
+	copy_pwd_expired_to_sam_passwd(pwd, id26->password_expired);
 
 	status = pdb_update_sam_account(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
