@@ -378,6 +378,16 @@ static NTSTATUS find_ncalrpc_default_endpoint(struct dcesrv_context *dce_ctx,
 		goto out;
 	}
 
+	status = dcerpc_parse_binding(tmp_ctx, "ncalrpc:[WINBIND]", &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = dcesrv_find_endpoint(dce_ctx, binding, ep);
+	if (NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	status = dcerpc_parse_binding(tmp_ctx, "ncalrpc:[DEFAULT]", &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;

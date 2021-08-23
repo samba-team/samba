@@ -469,6 +469,7 @@ sub boilerplate_ep_server($)
 	$self->pidl("static NTSTATUS $name\__check_register_in_endpoint(const char *name, struct dcerpc_binding *binding) {");
 	$self->indent();
 	$self->pidl("enum dcerpc_transport_t transport = dcerpc_binding_get_transport(binding);");
+	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
 	$self->pidl("/* If service is disabled, do not register */");
 	$self->pidl("if (rpc_service_mode(name) == RPC_SERVICE_MODE_DISABLED) {");
@@ -487,6 +488,38 @@ sub boilerplate_ep_server($)
 	$self->pidl("return NT_STATUS_NOT_SUPPORTED;");
 	$self->deindent();
 	$self->pidl("}");
+
+	$self->pidl("");
+	$self->pidl("/*");
+	$self->pidl(" * If rpc service is external then change the default ncalrpc endpoint,");
+	$self->pidl(" * otherwise if the rpc daemon running this service is configured in");
+	$self->pidl(" * fork mode the forked process will race with main smbd to accept the");
+	$self->pidl(" * connections in the default ncalrpc socket, and the forked process");
+	$self->pidl(" * may not have the requested interface registered.");
+	$self->pidl(" * For example, in the ad_member test environment:");
+	$self->pidl(" *");
+	$self->pidl(" *   rpc_server:lsarpc = external");
+	$self->pidl(" *   rpc_server:samr = external");
+	$self->pidl(" *   rpc_server:netlogon = disabled");
+	$self->pidl(" *   rpc_daemon:lsasd = fork");
+	$self->pidl(" *");
+	$self->pidl(" * With these settings both, the main smbd and all the preforked lsasd");
+	$self->pidl(" * processes would be listening in the default ncalrpc socket if it is");
+	$self->pidl(" * not changed. If a client connection is accepted by one of the lsasd");
+	$self->pidl(" * worker processes and the client asks for an interface not registered");
+	$self->pidl(" * in these processes (winreg for example) it will get an error.");
+	$self->pidl(" */");
+	$self->pidl("if (rpc_service_mode(name) == RPC_SERVICE_MODE_EXTERNAL && transport == NCALRPC) {");
+	$self->indent();
+	$self->pidl("status = dcerpc_binding_set_string_option(binding, \"endpoint\", \"$uname\");");
+	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+	$self->indent();
+	$self->pidl("return status;");
+	$self->deindent();
+	$self->pidl("}");
+	$self->deindent();
+	$self->pidl("}");
+
 	$self->pidl("");
 	$self->pidl("return NT_STATUS_OK;");
 	$self->deindent();
@@ -499,6 +532,7 @@ sub boilerplate_ep_server($)
 	$self->pidl("uint32_t i;");
 	$self->pidl("NTSTATUS ret;");
 	$self->pidl("struct dcerpc_binding *binding;");
+	$self->pidl("struct dcerpc_binding *binding2 = NULL;");
 	$self->pidl("");
 	$self->pidlnoindent("#ifdef DCESRV_INTERFACE_$uname\_NCACN_NP_SECONDARY_ENDPOINT");
 	$self->pidl("const char *ncacn_np_secondary_endpoint = DCESRV_INTERFACE_$uname\_NCACN_NP_SECONDARY_ENDPOINT;");
@@ -525,9 +559,25 @@ sub boilerplate_ep_server($)
 	$self->pidl("continue;");
 	$self->deindent();
 	$self->pidl("}");
-	$self->pidl("talloc_free(binding);");
 	$self->pidl("");
-	$self->pidl("ret = dcesrv_interface_register(dce_ctx, name, ncacn_np_secondary_endpoint, &dcesrv_$name\_interface, NULL);");
+
+	$self->pidl("if (ncacn_np_secondary_endpoint != NULL) {");
+	$self->indent();
+	$self->pidl("ret = dcerpc_parse_binding(dce_ctx, ncacn_np_secondary_endpoint, &binding2);");
+	$self->pidl("if (NT_STATUS_IS_ERR(ret)) {");
+	$self->indent();
+	$self->pidl("DBG_ERR(\"Failed to parse 2nd binding string \'%s\'\\n\", ncacn_np_secondary_endpoint);");
+	$self->pidl("TALLOC_FREE(binding);");
+	$self->pidl("return ret;");
+	$self->deindent();
+	$self->pidl("}");
+	$self->deindent();
+	$self->pidl("}");
+	$self->pidl("");
+
+	$self->pidl("ret = dcesrv_interface_register_b(dce_ctx, binding, binding2, &dcesrv_$name\_interface, NULL);");
+	$self->pidl("TALLOC_FREE(binding);");
+	$self->pidl("TALLOC_FREE(binding2);");
 	$self->pidl("if (!NT_STATUS_IS_OK(ret)) {");
 	$self->indent();
 	$self->pidl("DBG_ERR(\"Failed to register endpoint \'%s\'\\n\",name);");
