@@ -1020,8 +1020,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         else:
             logger.info('Starting transaction on ' + sam_ldb_path)
             copy_function = self.offline_tdb_copy
-            sam_obj = Ldb(sam_ldb_path, lp=lp, flags=ldb.FLG_DONT_CREATE_DB)
-            sam_obj.transaction_start()
+            samdb.transaction_start()
 
         logger.info('   backing up ' + sam_ldb_path)
         self.offline_tdb_copy(sam_ldb_path)
@@ -1036,7 +1035,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                 shutil.copyfile(sam_file, sam_file + self.backup_ext)
 
         if not mdb_backend:
-            sam_obj.transaction_cancel()
+            samdb.transaction_cancel()
 
     # Find where a path should go in the fixed backup archive structure.
     def get_arc_path(self, path, conf_paths):
@@ -1071,9 +1070,6 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
                                'are running this command on an AD DC')
 
         check_targetdir(logger, targetdir)
-
-        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
-                      flags=ldb.FLG_RDONLY)
 
         # Iterating over the directories in this specific order ensures that
         # when the private directory contains hardlinks that are also contained
@@ -1117,7 +1113,12 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
                     all_files.append(full_path)
 
-        # Backup secrets, sam.ldb and their downstream files
+        # We would prefer to open with FLG_RDONLY but then we can't
+        # start a transaction which is the strong isolation we want
+        # for the backup.
+        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
+                      flags=ldb.FLG_DONT_CREATE_DB)
+
         self.backup_secrets(paths.private_dir, lp, logger)
         self.backup_smb_dbs(paths.private_dir, samdb, lp, logger)
 
