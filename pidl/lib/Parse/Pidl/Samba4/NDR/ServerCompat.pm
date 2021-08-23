@@ -470,6 +470,14 @@ sub boilerplate_ep_server($)
 	$self->indent();
 	$self->pidl("enum dcerpc_transport_t transport = dcerpc_binding_get_transport(binding);");
 	$self->pidl("");
+	$self->pidl("/* If service is disabled, do not register */");
+	$self->pidl("if (rpc_service_mode(name) == RPC_SERVICE_MODE_DISABLED) {");
+	$self->indent();
+	$self->pidl("return NT_STATUS_NOT_IMPLEMENTED;");
+	$self->deindent();
+	$self->pidl("}");
+
+	$self->pidl("");
 	$self->pidl("/* If service is embedded, register only for ncacn_np");
 	$self->pidl(" * see 8466b3c85e4b835e57e41776853093f4a0edc8b8");
 	$self->pidl(" */");

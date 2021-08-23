@@ -347,6 +347,24 @@
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail1\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail2\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail3\(ad_member\)
+# NETLOGON is disabled in any non-DC environments
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_2nd_cancel_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_08_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_cancel_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_cmpx_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_didnot_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_maybe_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_only_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests01\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests02\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests03\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests04\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests05\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_last_cancel_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_last_only_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_mix_requests\(ad_member\)
+^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_none_only_requests\(ad_member\)
+
 ^samba4.rpc.echo.*on.*with.object.echo.doublepointer.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.surrounding.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.enum.*nt4_dc
@@ -375,5 +393,4 @@
 # Disabling NTLM means you can't use samr to change the password
 ^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
-
 
