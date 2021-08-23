@@ -221,6 +221,25 @@ bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
 				     const uint8_t in_buffer[514],
 				     DATA_BLOB *new_password);
 
+/**
+ * @brief Decode AES password buffer to password in the given charset.
+ *
+ * @param mem_ctx       The memory context to allocate the deocded passwrod on.
+ *
+ * @param in_buffer[514] The in buffer with the decrypted password data.
+ *
+ * @param string_charset The charset to decode to.
+ *
+ * @param decoded_password A pointer to store the blob for the decoded password.
+ *                         It ensures that the password is NULL terminated.
+ *
+ * @return true on success, false otherwise.
+ */
+bool decode_pwd_string_from_buffer514(TALLOC_CTX *mem_ctx,
+				      const uint8_t in_buffer[514],
+				      charset_t string_charset,
+				      DATA_BLOB *decoded_password);
+
 /***********************************************************
  Encode an arc4 password change buffer.
 ************************************************************/

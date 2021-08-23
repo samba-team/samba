@@ -1041,6 +1041,36 @@ bool extract_pwd_blob_from_buffer514(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+bool decode_pwd_string_from_buffer514(TALLOC_CTX *mem_ctx,
+				      const uint8_t in_buffer[514],
+				      charset_t string_charset,
+				      DATA_BLOB *decoded_password)
+{
+	DATA_BLOB new_password = {
+		.length = 0,
+	};
+	bool ok;
+
+	ok = extract_pwd_blob_from_buffer514(mem_ctx, in_buffer, &new_password);
+	if (!ok) {
+		return false;
+	}
+
+	ok = convert_string_talloc(mem_ctx,
+				   string_charset,
+				   CH_UNIX,
+				   new_password.data,
+				   new_password.length,
+				   (void *)&decoded_password->data,
+				   &decoded_password->length);
+	data_blob_free(&new_password);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
 /***********************************************************
  Encode an arc4 password change buffer.
 ************************************************************/
