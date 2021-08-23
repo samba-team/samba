@@ -731,27 +731,6 @@ void copy_id25_to_sam_passwd(struct samu *to,
 	copy_id21_to_sam_passwd("INFO_25", to, &from->info);
 }
 
-/*************************************************************
- Copies a struct samr_UserInfo26 to a struct samu
-**************************************************************/
-
-void copy_id26_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo26 *from)
-{
-	struct samr_UserInfo21 i;
-
-	if (from == NULL || to == NULL) {
-		return;
-	}
-
-	ZERO_STRUCT(i);
-
-	i.fields_present	= SAMR_FIELD_EXPIRED_FLAG;
-	i.password_expired	= from->password_expired;
-
-	copy_id21_to_sam_passwd("INFO_26", to, &i);
-}
-
 void copy_pwd_expired_to_sam_passwd(struct samu *to,
 				    uint8_t password_expired)
 {

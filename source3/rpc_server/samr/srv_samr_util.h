@@ -61,8 +61,6 @@ void copy_id24_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo24 *from);
 void copy_id25_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo25 *from);
-void copy_id26_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo26 *from);
 void copy_pwd_expired_to_sam_passwd(struct samu *to,
 				    uint8_t password_expired);
 
