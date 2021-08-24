@@ -11,4 +11,5 @@ export SMBD_DONT_LOG_STDOUT=1
 export WINBINDD_DONT_LOG_STDOUT=1
 
 # Setup python path for lsp server
-export PYTHONPATH="$(pwd)/third_party/waf:$(pwd)/python:$(pwd)/selftest:$PYTHONPATH"
+PYTHONPATH="$(pwd)/third_party/waf:$(pwd)/python:$(pwd)/bin/python:$(pwd)/selftest:$PYTHONPATH"
+export PYTHONPATH
