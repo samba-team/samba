@@ -1568,6 +1568,11 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
 	}
 	TALLOC_FREE(mds_ctx->ino_path_map);
 
+	if (mds_ctx->conn != NULL) {
+		SMB_VFS_DISCONNECT(mds_ctx->conn);
+		conn_free(mds_ctx->conn);
+	}
+
 	ZERO_STRUCTP(mds_ctx);
 
 	return 0;
