@@ -696,6 +696,8 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 {
 	int ret;
 	void *ptr;
+	void *schema_parent = NULL;
+	bool is_already_parent;
 	struct dsdb_schema *old_schema;
 	old_schema = ldb_get_opaque(ldb, "dsdb_schema");
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
@@ -708,8 +710,9 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 	talloc_unlink(ldb, old_schema);
 
 	/* Reference schema on ldb if it wasn't done already */
-	ret = talloc_is_parent(ldb, schema);
-	if (ret == 0) {
+	schema_parent = talloc_parent(schema);
+	is_already_parent = (schema_parent == ldb);
+	if (!is_already_parent) {
 		ptr = talloc_reference(ldb, schema);
 		if (ptr == NULL) {
 			return ldb_oom(ldb);
@@ -773,10 +776,10 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	/* Don't write indices and attributes, it's expensive */
 	ret = dsdb_schema_set_indices_and_attributes(ldb, global_schema, SCHEMA_MEMORY_ONLY);
 	if (ret == LDB_SUCCESS) {
-		/* If ldb doesn't have a reference to the schema, make one,
-		 * just in case the original copy is replaced */
-		ret = talloc_is_parent(ldb, global_schema);
-		if (ret == 0) {
+		void *schema_parent = talloc_parent(global_schema);
+		bool is_already_parent =
+			(schema_parent == ldb);
+		if (!is_already_parent) {
 			ptr = talloc_reference(ldb, global_schema);
 			if (ptr == NULL) {
 				return ldb_oom(ldb);
@@ -807,7 +810,6 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 	dsdb_schema_refresh_fn refresh_fn;
 	struct ldb_module *loaded_from_module;
 	bool use_global_schema;
-	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(reference_ctx);
 	if (tmp_ctx == NULL) {
 		return NULL;
@@ -858,13 +860,28 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 	/* This removes the extra reference above */
 	talloc_free(tmp_ctx);
 
-	/* If ref ctx exists and doesn't already reference schema, then add
-	 * a reference.  Otherwise, just return schema.*/
-	ret = talloc_is_parent(reference_ctx, schema_out);
-	if ((ret == 1) || (!reference_ctx)) {
+	/*
+	 * If ref ctx exists and doesn't already reference schema, then add
+	 * a reference.  Otherwise, just return schema.
+	 *
+	 * We must use talloc_parent(), which is not quite free (there
+	 * is no direct parent pointer in talloc, only one on the
+	 * first child within a linked list), but is much cheaper than
+	 * talloc_is_parent() which walks the whole tree up to the top
+	 * looking for a potential grand-grand(etc)-parent.
+	 */
+	if (reference_ctx == NULL) {
 		return schema_out;
 	} else {
-		return talloc_reference(reference_ctx, schema_out);
+		void *schema_parent = talloc_parent(schema_out);
+		bool is_already_parent =
+			schema_parent == reference_ctx;
+		if (is_already_parent) {
+			return schema_out;
+		} else {
+			return talloc_reference(reference_ctx,
+						schema_out);
+		}
 	}
 }
 
