@@ -20,10 +20,11 @@
 import sys
 import os
 
-from ldb import SCOPE_BASE, SCOPE_SUBTREE
+from ldb import LdbError, ERR_OPERATIONS_ERROR, SCOPE_BASE, SCOPE_SUBTREE
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
+from samba import credentials
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
@@ -40,13 +41,20 @@ class LdapTests(KDCBaseTest):
     """
 
     def test_ldap(self):
+        self._run_ldap_test("ldapusr")
+
+    def test_ldap_no_pac(self):
+        self._run_ldap_test("ldapusr_nopac", include_pac=False,
+                            expect_anon=True, allow_error=True)
+
+    def _run_ldap_test(self, user_name, include_pac=True,
+                       expect_anon=False, allow_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
         # user are stored.
 
         samdb = self.get_samdb()
 
-        user_name = "ldapusr"
         mach_name = samdb.host_dns_name()
         service = "ldap"
 
@@ -62,7 +70,10 @@ class LdapTests(KDCBaseTest):
         (creds, cachefile) = self.create_ccache_with_user(user_credentials,
                                                           mach_credentials,
                                                           service,
-                                                          mach_name)
+                                                          mach_name,
+                                                          pac=include_pac)
+        # Remove the cached credentials file.
+        self.addCleanup(os.remove, cachefile.name)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
@@ -75,21 +86,60 @@ class LdapTests(KDCBaseTest):
         sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 
         # Connect to the machine account and retrieve the user SID.
+        try:
+            ldb_as_user = SamDB(url="ldap://%s" % mach_name,
+                                credentials=creds,
+                                lp=self.get_lp())
+        except LdbError as e:
+            if not allow_error:
+                self.fail()
+
+            enum, estr = e.args
+            self.assertEqual(ERR_OPERATIONS_ERROR, enum)
+            self.assertIn('NT_STATUS_ACCESS_DENIED', estr)
+            return
+
+        ldb_res = ldb_as_user.search('',
+                                     scope=SCOPE_BASE,
+                                     attrs=["tokenGroups"])
+        self.assertEqual(1, len(ldb_res))
+
+        token_groups = ldb_res[0]["tokenGroups"]
+        token_sid = ndr_unpack(security.dom_sid, token_groups[0])
+
+        if expect_anon:
+            # Ensure we got an anonymous token.
+            self.assertEqual(security.SID_NT_ANONYMOUS, str(token_sid))
+            token_sid = ndr_unpack(security.dom_sid, token_groups[1])
+            self.assertEqual(security.SID_NT_NETWORK, str(token_sid))
+            if len(token_groups) >= 3:
+                token_sid = ndr_unpack(security.dom_sid, token_groups[2])
+                self.assertEqual(security.SID_NT_THIS_ORGANISATION,
+                                 str(token_sid))
+        else:
+            # Ensure that they match.
+            self.assertEqual(sid, token_sid)
+
+    def test_ldap_anonymous(self):
+        samdb = self.get_samdb()
+        mach_name = samdb.host_dns_name()
+
+        anon_creds = credentials.Credentials()
+        anon_creds.set_anonymous()
+
+        # Connect to the machine account and retrieve the user SID.
         ldb_as_user = SamDB(url="ldap://%s" % mach_name,
-                            credentials=creds,
+                            credentials=anon_creds,
                             lp=self.get_lp())
         ldb_res = ldb_as_user.search('',
                                      scope=SCOPE_BASE,
                                      attrs=["tokenGroups"])
         self.assertEqual(1, len(ldb_res))
 
+        # Ensure we got an anonymous token.
         token_sid = ndr_unpack(security.dom_sid, ldb_res[0]["tokenGroups"][0])
-
-        # Ensure that they match.
-        self.assertEqual(sid, token_sid)
-
-        # Remove the cached credentials file.
-        os.remove(cachefile.name)
+        self.assertEqual(security.SID_NT_ANONYMOUS, str(token_sid))
+        self.assertEqual(len(ldb_res[0]["tokenGroups"]), 1)
 
 
 if __name__ == "__main__":

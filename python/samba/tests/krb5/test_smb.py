@@ -21,8 +21,10 @@ import sys
 import os
 
 from ldb import SCOPE_SUBTREE
+from samba import NTSTATUSError
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
+from samba.ntstatus import NT_STATUS_ACCESS_DENIED
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 
@@ -41,13 +43,20 @@ class SmbTests(KDCBaseTest):
     """
 
     def test_smb(self):
+        self._run_smb_test("smbusr")
+
+    def test_smb_no_pac(self):
+        self._run_smb_test("smbusr_nopac", include_pac=False,
+                           expect_error=True)
+
+    def _run_smb_test(self, user_name, include_pac=True,
+                      expect_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
         # user are stored.
 
         samdb = self.get_samdb()
 
-        user_name = "smbusr"
         mach_name = samdb.host_dns_name()
         service = "cifs"
         share = "tmp"
@@ -64,7 +73,10 @@ class SmbTests(KDCBaseTest):
         (creds, cachefile) = self.create_ccache_with_user(user_credentials,
                                                           mach_credentials,
                                                           service,
-                                                          mach_name)
+                                                          mach_name,
+                                                          pac=include_pac)
+        # Remove the cached credentials file.
+        self.addCleanup(os.remove, cachefile.name)
 
         # Set the Kerberos 5 credentials cache environment variable. This is
         # required because the codepath that gets run (gse_krb5) looks for it
@@ -95,15 +107,22 @@ class SmbTests(KDCBaseTest):
         self.addCleanup(s3_lp.set, "client max protocol", max_protocol)
         s3_lp.set("client max protocol", "NT1")
 
-        conn = libsmb.Conn(mach_name, share, lp=s3_lp, creds=creds)
+        try:
+            conn = libsmb.Conn(mach_name, share, lp=s3_lp, creds=creds)
+        except NTSTATUSError as e:
+            if not expect_error:
+                self.fail()
+
+            enum, _ = e.args
+            self.assertEqual(NT_STATUS_ACCESS_DENIED, enum)
+            return
+        else:
+            self.assertFalse(expect_error)
 
         (uid, gid, gids, sids, guest) = conn.posix_whoami()
 
         # Ensure that they match.
         self.assertEqual(sid, sids[0])
-
-        # Remove the cached credentials file.
-        os.remove(cachefile.name)
 
 
 if __name__ == "__main__":
