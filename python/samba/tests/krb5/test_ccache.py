@@ -21,10 +21,11 @@ import sys
 import os
 
 from ldb import SCOPE_SUBTREE
-from samba import gensec
+from samba import NTSTATUSError, gensec
 from samba.auth import AuthContext
 from samba.dcerpc import security
 from samba.ndr import ndr_unpack
+from samba.ntstatus import NT_STATUS_ACCESS_DENIED
 
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
@@ -41,11 +42,18 @@ class CcacheTests(KDCBaseTest):
     """
 
     def test_ccache(self):
+        self._run_ccache_test("ccacheusr")
+
+    def test_ccache_no_pac(self):
+        self._run_ccache_test("ccacheusr_nopac", include_pac=False,
+                              expect_anon=True, allow_error=True)
+
+    def _run_ccache_test(self, user_name, include_pac=True,
+                         expect_anon=False, allow_error=False):
         # Create a user account and a machine account, along with a Kerberos
         # credentials cache file where the service ticket authenticating the
         # user are stored.
 
-        user_name = "ccacheusr"
         mach_name = "ccachemac"
         service = "host"
 
@@ -67,7 +75,10 @@ class CcacheTests(KDCBaseTest):
         # ticket, to ensure that the krbtgt ticket doesn't also need to be
         # stored.
         (creds, cachefile) = self.create_ccache_with_user(user_credentials,
-                                                          mach_credentials)
+                                                          mach_credentials,
+                                                          pac=include_pac)
+        # Remove the cached credentials file.
+        self.addCleanup(os.remove, cachefile.name)
 
         # Authenticate in-process to the machine account using the user's
         # cached credentials.
@@ -117,16 +128,22 @@ class CcacheTests(KDCBaseTest):
         sid = ndr_unpack(security.dom_sid, ldb_res[0]["objectSid"][0])
 
         # Retrieve the SIDs from the security token.
-        session = gensec_server.session_info()
+        try:
+            session = gensec_server.session_info()
+        except NTSTATUSError as e:
+            if not allow_error:
+                self.fail()
+
+            enum, _ = e.args
+            self.assertEqual(NT_STATUS_ACCESS_DENIED, enum)
+            return
+
         token = session.security_token
         token_sids = token.sids
         self.assertGreater(len(token_sids), 0)
 
         # Ensure that they match.
         self.assertEqual(sid, token_sids[0])
-
-        # Remove the cached credentials file.
-        os.remove(cachefile.name)
 
 
 if __name__ == "__main__":
