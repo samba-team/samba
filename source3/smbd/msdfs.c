@@ -525,12 +525,7 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *mem_ctx,
 					    path,
 					    session_info);
 	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(c);
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 static void shuffle_strlist(char **list, int count)
