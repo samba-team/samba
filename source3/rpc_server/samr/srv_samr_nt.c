@@ -5240,6 +5240,63 @@ static NTSTATUS set_user_info_31(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS set_user_info_32(TALLOC_CTX *mem_ctx,
+				 const char *rhost,
+				 DATA_BLOB *pw_data,
+				 struct samr_UserInfo32 *id32,
+				 struct samu *pwd)
+{
+	NTSTATUS status;
+	bool ok;
+
+	if (pw_data->length == 0 || pw_data->length > 514) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	if (id32 == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id32->info.fields_present == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id32->info.fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if ((id32->info.fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+	    (id32->info.fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)) {
+		ok = set_user_info_pw_aes(pw_data, rhost, pwd);
+		if (!ok) {
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+	}
+
+	copy_id32_to_sam_passwd(pwd, id32);
+
+	status = pdb_update_sam_account(pwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * We need to "pdb_update_sam_account" before the unix primary group
+	 * is set, because the idealx scripts would also change the
+	 * sambaPrimaryGroupSid using the ldap replace method. pdb_ldap uses
+	 * the delete explicit / add explicit, which would then fail to find
+	 * the previous primaryGroupSid value.
+	 */
+	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID)) {
+		status = pdb_set_unix_primary_group(mem_ctx, pwd);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*************************************************************
 **************************************************************/
 
@@ -5422,6 +5479,11 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	case 26: /* UserInternal5InformationNew */
 	case 31: /* UserInternal5InformationNew */
 		acc_required = SAMR_USER_ACCESS_SET_PASSWORD;
+		break;
+	case 32:
+		fields = info->info32.info.fields_present;
+		acc_required =
+			samr_set_user_info_map_fields_to_access_mask(fields);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -5746,6 +5808,46 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 						  info->info31.password_expired,
 						  pwd);
 			data_blob_clear(&new_password);
+
+			break;
+		}
+		case 32: {
+			DATA_BLOB new_password = data_blob_null;
+			const DATA_BLOB ciphertext = data_blob_const(
+				info->info32.password.cipher,
+				info->info32.password.cipher_len);
+			DATA_BLOB iv = data_blob_const(
+				info->info32.password.salt,
+				sizeof(info->info32.password.salt));
+
+			status = session_extract_session_key(session_info,
+							     &session_key,
+							     KEY_USE_16BYTES);
+			if (!NT_STATUS_IS_OK(status)) {
+				break;
+			}
+
+			status =
+				samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+					p->mem_ctx,
+					&ciphertext,
+					&session_key,
+					&samr_aes256_enc_key_salt,
+					&samr_aes256_mac_key_salt,
+					&iv,
+					info->info32.password.auth_data,
+					&new_password);
+			if (!NT_STATUS_IS_OK(status)) {
+				status = NT_STATUS_WRONG_PASSWORD;
+				break;
+			}
+
+			status = set_user_info_32(p->mem_ctx,
+						  rhost,
+						  &new_password,
+						  &info->info32,
+						  pwd);
+			data_blob_clear_free(&new_password);
 
 			break;
 		}

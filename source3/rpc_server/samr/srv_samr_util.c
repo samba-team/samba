@@ -731,6 +731,15 @@ void copy_id25_to_sam_passwd(struct samu *to,
 	copy_id21_to_sam_passwd("INFO_25", to, &from->info);
 }
 
+void copy_id32_to_sam_passwd(struct samu *to, struct samr_UserInfo32 *from)
+{
+	if (from == NULL || to == NULL) {
+		return;
+	}
+
+	copy_id21_to_sam_passwd("INFO_32", to, &from->info);
+}
+
 void copy_pwd_expired_to_sam_passwd(struct samu *to,
 				    uint8_t password_expired)
 {
