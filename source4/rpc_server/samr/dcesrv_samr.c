@@ -4115,6 +4115,171 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		break;
+	case 32:
+		status = dcesrv_transport_session_key(dce_call, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_NOTICE("samr: failed to get session key: %s\n",
+				   nt_errstr(status));
+			goto done;
+		}
+
+		if (r->in.info->info32.info.fields_present == 0) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
+
+#define IFSET(bit) if (bit & r->in.info->info32.info.fields_present)
+		IFSET(SAMR_FIELD_LAST_LOGON)
+		{
+			SET_UINT64(msg, info32.info.last_logon, "lastLogon");
+		}
+		IFSET(SAMR_FIELD_LAST_LOGOFF)
+		{
+			SET_UINT64(msg, info32.info.last_logoff, "lastLogoff");
+		}
+		IFSET(SAMR_FIELD_ACCT_EXPIRY)
+		{
+			SET_UINT64(msg,
+				   info32.info.acct_expiry,
+				   "accountExpires");
+		}
+		IFSET(SAMR_FIELD_ACCOUNT_NAME)
+		{
+			SET_STRING(msg,
+				   info32.info.account_name,
+				   "samAccountName");
+		}
+		IFSET(SAMR_FIELD_FULL_NAME)
+		{
+			SET_STRING(msg, info32.info.full_name, "displayName");
+		}
+		IFSET(SAMR_FIELD_HOME_DIRECTORY)
+		{
+			SET_STRING(msg,
+				   info32.info.home_directory,
+				   "homeDirectory");
+		}
+		IFSET(SAMR_FIELD_HOME_DRIVE)
+		{
+			SET_STRING(msg, info32.info.home_drive, "homeDrive");
+		}
+		IFSET(SAMR_FIELD_LOGON_SCRIPT)
+		{
+			SET_STRING(msg, info32.info.logon_script, "scriptPath");
+		}
+		IFSET(SAMR_FIELD_PROFILE_PATH)
+		{
+			SET_STRING(msg,
+				   info32.info.profile_path,
+				   "profilePath");
+		}
+		IFSET(SAMR_FIELD_DESCRIPTION)
+		{
+			SET_STRING(msg, info32.info.description, "description");
+		}
+		IFSET(SAMR_FIELD_WORKSTATIONS)
+		{
+			SET_STRING(msg,
+				   info32.info.workstations,
+				   "userWorkstations");
+		}
+		IFSET(SAMR_FIELD_COMMENT)
+		{
+			SET_STRING(msg, info32.info.comment, "comment");
+		}
+		IFSET(SAMR_FIELD_PARAMETERS)
+		{
+			SET_PARAMETERS(msg,
+				       info32.info.parameters,
+				       "userParameters");
+		}
+		IFSET(SAMR_FIELD_PRIMARY_GID)
+		{
+			SET_UINT(msg,
+				 info32.info.primary_gid,
+				 "primaryGroupID");
+		}
+		IFSET(SAMR_FIELD_ACCT_FLAGS)
+		{
+			SET_AFLAGS(msg,
+				   info32.info.acct_flags,
+				   "userAccountControl");
+		}
+		IFSET(SAMR_FIELD_LOGON_HOURS)
+		{
+			SET_LHOURS(msg, info32.info.logon_hours, "logonHours");
+		}
+		IFSET(SAMR_FIELD_BAD_PWD_COUNT)
+		{
+			SET_UINT(msg,
+				 info32.info.bad_password_count,
+				 "badPwdCount");
+		}
+		IFSET(SAMR_FIELD_NUM_LOGONS)
+		{
+			SET_UINT(msg, info32.info.logon_count, "logonCount");
+		}
+		IFSET(SAMR_FIELD_COUNTRY_CODE)
+		{
+			SET_UINT(msg, info32.info.country_code, "countryCode");
+		}
+		IFSET(SAMR_FIELD_CODE_PAGE)
+		{
+			SET_UINT(msg, info32.info.code_page, "codePage");
+		}
+
+		/* password change fields */
+		IFSET(SAMR_FIELD_LAST_PWD_CHANGE)
+		{
+			status = NT_STATUS_ACCESS_DENIED;
+			goto done;
+		}
+
+		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT)
+		{
+			status = samr_set_password_aes(
+				dce_call,
+				mem_ctx,
+				&session_key,
+				a_state->sam_ctx,
+				a_state->account_dn,
+				a_state->domain_state->domain_dn,
+				&r->in.info->info32.password);
+		}
+		else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT)
+		{
+			status = samr_set_password_aes(
+				dce_call,
+				mem_ctx,
+				&session_key,
+				a_state->sam_ctx,
+				a_state->account_dn,
+				a_state->domain_state->domain_dn,
+				&r->in.info->info32.password);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		IFSET(SAMR_FIELD_EXPIRED_FLAG)
+		{
+			const char *t = "0";
+			struct ldb_message_element *set_el;
+			if (r->in.info->info32.info.password_expired ==
+			    PASS_DONT_CHANGE_AT_NEXT_LOGON) {
+				t = "-1";
+			}
+			if (ldb_msg_add_string(msg, "pwdLastSet", t) !=
+			    LDB_SUCCESS) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
+#undef IFSET
+
+		break;
 	default:
 		/* many info classes are not valid for SetUserInfo */
 		status = NT_STATUS_INVALID_INFO_CLASS;
