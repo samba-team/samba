@@ -1479,9 +1479,16 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x40      */
 
+	typedef [v1_enum] enum {
+		SAMR_CONNECT_FEATURE_RID_ONLY = 0x00000001,
+		SAMR_CONNECT_FEATURE_RESRVED1 = 0x00000002,
+		SAMR_CONNECT_FEATURE_RESRVED2 = 0x00000004,
+		SAMR_CONNECT_FEATURE_USE_AES  = 0x00000010
+	} samr_SupportedFeatures;
+
 	typedef struct {
 		samr_ConnectVersion client_version; /* w2k3 gives 3 */
-		uint32         unknown2; /* w2k3 gives 0 */
+		samr_SupportedFeatures supported_features;
 	} samr_ConnectInfo1;
 
 	typedef union {

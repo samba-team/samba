@@ -60,7 +60,7 @@ static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
 	uint32_t level_out = 0;
 
 	info.info1.client_version = 0;
-	info.info1.unknown2 = 0;
+	info.info1.supported_features = 0;
 	r5.in.system_name = "";
 	r5.in.level_in = 1;
 	r5.in.info_in = &info;

@@ -8580,7 +8580,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "Testing samr_Connect5\n");
 
 	info.info1.client_version = 0;
-	info.info1.unknown2 = 0;
+	info.info1.supported_features = 0;
 
 	r5.in.system_name = "";
 	r5.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;

@@ -4197,7 +4197,7 @@ NTSTATUS _samr_Connect5(struct pipes_struct *p,
 	struct samr_ConnectInfo1 info1;
 
 	info1.client_version = SAMR_CONNECT_AFTER_W2K;
-	info1.unknown2 = 0;
+	info1.supported_features = 0;
 
 	c.in.system_name	= r->in.system_name;
 	c.in.access_mask	= r->in.access_mask;
