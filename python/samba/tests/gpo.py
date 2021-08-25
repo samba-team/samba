@@ -42,6 +42,7 @@ from samba.vgp_issue_ext import vgp_issue_ext
 from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
 from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
+from samba.gp_firefox_ext import gp_firefox_ext
 import logging
 from samba.credentials import Credentials
 from samba.gp_msgs_ext import gp_msgs_ext
@@ -58,6 +59,7 @@ from configparser import ConfigParser
 from samba.gpclass import get_dc_hostname
 from samba import Ldb
 from samba.auth import system_session
+import json
 
 realm = os.environ.get('REALM')
 policies = realm + '/POLICIES'
@@ -225,6 +227,1661 @@ b"""
                 <Value>MY</Value>
         </Entry>
 </PolFile>
+"""
+
+firefox_reg_pol = \
+b"""
+<?xml version="1.0" encoding="utf-8"?>
+<PolFile num_entries="241" signature="PReg" version="1">
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>ExtensionSettings</ValueName>
+        <Value>{ &quot;*&quot;: { &quot;blocked_install_message&quot;: &quot;Custom error message.&quot;, &quot;install_sources&quot;: [&quot;about:addons&quot;,&quot;https://addons.mozilla.org/&quot;], &quot;installation_mode&quot;: &quot;blocked&quot;, &quot;allowed_types&quot;: [&quot;extension&quot;] }, &quot;uBlock0@raymondhill.net&quot;: { &quot;installation_mode&quot;: &quot;force_installed&quot;, &quot;install_url&quot;: &quot;https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi&quot; }, &quot;https-everywhere@eff.org&quot;: { &quot;installation_mode&quot;: &quot;allowed&quot; } }</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>ExtensionUpdate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>SearchSuggestEnabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>AppAutoUpdate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>AppUpdateURL</ValueName>
+        <Value>https://yoursite.com</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>BlockAboutAddons</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>BlockAboutConfig</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>BlockAboutProfiles</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>BlockAboutSupport</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>CaptivePortal</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="2" type_name="REG_EXPAND_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DefaultDownloadDirectory</ValueName>
+        <Value>${home}/Downloads</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableAppUpdate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableBuiltinPDFViewer</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableDefaultBrowserAgent</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableDeveloperTools</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableFeedbackCommands</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableFirefoxAccounts</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableFirefoxScreenshots</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableFirefoxStudies</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableForgetButton</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableFormHistory</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableMasterPasswordCreation</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisablePasswordReveal</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisablePocket</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisablePrivateBrowsing</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableProfileImport</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableProfileRefresh</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableSafeMode</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableSetDesktopBackground</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableSystemAddonUpdate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisableTelemetry</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisplayBookmarksToolbar</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DisplayMenuBar</ValueName>
+        <Value>default-on</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DontCheckDefaultBrowser</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="2" type_name="REG_EXPAND_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>DownloadDirectory</ValueName>
+        <Value>${home}/Downloads</Value>
+    </Entry>
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>Handlers</ValueName>
+        <Value>{ &quot;mimeTypes&quot;: { &quot;application/msword&quot;: { &quot;action&quot;: &quot;useSystemDefault&quot;, &quot;ask&quot;:  true } }, &quot;schemes&quot;: { &quot;mailto&quot;: { &quot;action&quot;: &quot;useHelperApp&quot;, &quot;ask&quot;:  true, &quot;handlers&quot;: [{ &quot;name&quot;: &quot;Gmail&quot;, &quot;uriTemplate&quot;: &quot;https://mail.google.com/mail/?extsrc=mailto&amp;url=%s&quot; }] } }, &quot;extensions&quot;: { &quot;pdf&quot;: { &quot;action&quot;: &quot;useHelperApp&quot;, &quot;ask&quot;:  true, &quot;handlers&quot;: [{ &quot;name&quot;: &quot;Adobe Acrobat&quot;, &quot;path&quot;: &quot;/usr/bin/acroread&quot; }] } } }</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>HardwareAcceleration</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>ManagedBookmarks</ValueName>
+        <Value>[ { &quot;toplevel_name&quot;: &quot;My managed bookmarks folder&quot; }, { &quot;url&quot;: &quot;example.com&quot;, &quot;name&quot;: &quot;Example&quot; }, { &quot;name&quot;: &quot;Mozilla links&quot;, &quot;children&quot;: [ { &quot;url&quot;: &quot;https://mozilla.org&quot;, &quot;name&quot;: &quot;Mozilla.org&quot; }, { &quot;url&quot;: &quot;https://support.mozilla.org/&quot;, &quot;name&quot;: &quot;SUMO&quot; } ] } ]</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>NetworkPrediction</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>NewTabPage</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>NoDefaultBookmarks</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>OfferToSaveLogins</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>OfferToSaveLoginsDefault</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>OverrideFirstRunPage</ValueName>
+        <Value>http://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>OverridePostUpdatePage</ValueName>
+        <Value>http://example.org</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>PasswordManagerEnabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>Preferences</ValueName>
+        <Value>{ &quot;accessibility.force_disabled&quot;: { &quot;Value&quot;: 1, &quot;Status&quot;: &quot;default&quot; }, &quot;browser.cache.disk.parent_directory&quot;: { &quot;Value&quot;: &quot;SOME_NATIVE_PATH&quot;, &quot;Status&quot;: &quot;user&quot; }, &quot;browser.tabs.warnOnClose&quot;: { &quot;Value&quot;: false, &quot;Status&quot;: &quot;locked&quot; } }</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>PrimaryPassword</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>PromptForDownloadLocation</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\RequestedLocales</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\RequestedLocales</Key>
+        <ValueName>1</ValueName>
+        <Value>de</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\RequestedLocales</Key>
+        <ValueName>2</ValueName>
+        <Value>en-US</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>SSLVersionMax</ValueName>
+        <Value>tls1.3</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>SSLVersionMin</ValueName>
+        <Value>tls1.3</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>SearchBar</ValueName>
+        <Value>unified</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication</Key>
+        <ValueName>PrivateBrowsing</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\AllowNonFQDN</Key>
+        <ValueName>NTLM</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\AllowNonFQDN</Key>
+        <ValueName>SPNEGO</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\AllowProxies</Key>
+        <ValueName>NTLM</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\AllowProxies</Key>
+        <ValueName>SPNEGO</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\Delegated</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\Delegated</Key>
+        <ValueName>1</ValueName>
+        <Value>mydomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\Delegated</Key>
+        <ValueName>1</ValueName>
+        <Value>https://myotherdomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\NTLM</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\NTLM</Key>
+        <ValueName>1</ValueName>
+        <Value>mydomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\NTLM</Key>
+        <ValueName>1</ValueName>
+        <Value>https://myotherdomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\SPNEGO</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\SPNEGO</Key>
+        <ValueName>1</ValueName>
+        <Value>mydomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Authentication\\SPNEGO</Key>
+        <ValueName>1</ValueName>
+        <Value>https://myotherdomain.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\1</Key>
+        <ValueName>Title</ValueName>
+        <Value>Example</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\1</Key>
+        <ValueName>URL</ValueName>
+        <Value>https://example.com</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\1</Key>
+        <ValueName>Favicon</ValueName>
+        <Value>https://example.com/favicon.ico</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\1</Key>
+        <ValueName>Placement</ValueName>
+        <Value>menu</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\1</Key>
+        <ValueName>Folder</ValueName>
+        <Value>FolderName</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\10</Key>
+        <ValueName>Title</ValueName>
+        <Value>Samba</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\10</Key>
+        <ValueName>URL</ValueName>
+        <Value>www.samba.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\10</Key>
+        <ValueName>Favicon</ValueName>
+        <Value/>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\10</Key>
+        <ValueName>Placement</ValueName>
+        <Value>toolbar</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Bookmarks\\10</Key>
+        <ValueName>Folder</ValueName>
+        <Value/>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies</Key>
+        <ValueName>AcceptThirdParty</ValueName>
+        <Value>never</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies</Key>
+        <ValueName>Default</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies</Key>
+        <ValueName>ExpireAtSessionEnd</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies</Key>
+        <ValueName>RejectTracker</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\AllowSession</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\AllowSession</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Cookies\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_RSA_WITH_3DES_EDE_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_RSA_WITH_AES_128_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_RSA_WITH_AES_128_GCM_SHA256</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_RSA_WITH_AES_256_CBC_SHA</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisabledCiphers</Key>
+        <ValueName>TLS_RSA_WITH_AES_256_GCM_SHA384</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisableSecurityBypass</Key>
+        <ValueName>InvalidCertificate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DisableSecurityBypass</Key>
+        <ValueName>SafeBrowsing</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS</Key>
+        <ValueName>Enabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS</Key>
+        <ValueName>ProviderURL</ValueName>
+        <Value>URL_TO_ALTERNATE_PROVIDER</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS\\ExcludedDomains</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\DNSOverHTTPS\\ExcludedDomains</Key>
+        <ValueName>1</ValueName>
+        <Value>example.com</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection</Key>
+        <ValueName>Value</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection</Key>
+        <ValueName>Cryptomining</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection</Key>
+        <ValueName>Fingerprinting</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection\\Exceptions</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EnableTrackingProtection\\Exceptions</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.com</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EncryptedMediaExtensions</Key>
+        <ValueName>Enabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\EncryptedMediaExtensions</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Install</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="2" type_name="REG_EXPAND_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Install</Key>
+        <ValueName>1</ValueName>
+        <Value>https://addons.mozilla.org/firefox/downloads/somefile.xpi</Value>
+    </Entry>
+    <Entry type="2" type_name="REG_EXPAND_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Install</Key>
+        <ValueName>2</ValueName>
+        <Value>//path/to/xpi</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Locked</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Locked</Key>
+        <ValueName>1</ValueName>
+        <Value>addon_id@mozilla.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Uninstall</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Extensions\\Uninstall</Key>
+        <ValueName>1</ValueName>
+        <Value>bad_addon_id@mozilla.org</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>Search</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>TopSites</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>Highlights</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>Pocket</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>Snippets</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FirefoxHome</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin</Key>
+        <ValueName>Default</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\FlashPlugin\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage</Key>
+        <ValueName>StartPage</ValueName>
+        <Value>homepage</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage</Key>
+        <ValueName>URL</ValueName>
+        <Value>http://example.com/</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage\\Additional</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage\\Additional</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Homepage\\Additional</Key>
+        <ValueName>2</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\InstallAddonsPermission</Key>
+        <ValueName>Default</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\InstallAddonsPermission\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\InstallAddonsPermission\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\InstallAddonsPermission\\Allow</Key>
+        <ValueName>2</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\LocalFileLinks</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\LocalFileLinks</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\LocalFileLinks</Key>
+        <ValueName>2</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PDFjs</Key>
+        <ValueName>EnablePermissions</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PDFjs</Key>
+        <ValueName>Enabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay</Key>
+        <ValueName>Default</ValueName>
+        <Value>block-audio</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Autoplay\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera</Key>
+        <ValueName>BlockNewRequests</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera\\Allow</Key>
+        <ValueName>2</ValueName>
+        <Value>https://example.org:1234</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Camera\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location</Key>
+        <ValueName>BlockNewRequests</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Location\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone</Key>
+        <ValueName>BlockNewRequests</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Microphone\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications</Key>
+        <ValueName>BlockNewRequests</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\Notifications\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality</Key>
+        <ValueName>BlockNewRequests</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.org</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Permissions\\VirtualReality\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>https://example.edu</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PictureInPicture</Key>
+        <ValueName>Enabled</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PictureInPicture</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PopupBlocking</Key>
+        <ValueName>Default</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PopupBlocking</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PopupBlocking\\Allow</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PopupBlocking\\Allow</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\PopupBlocking\\Allow</Key>
+        <ValueName>2</ValueName>
+        <Value>http://example.edu/</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>Locked</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>Mode</ValueName>
+        <Value>autoDetect</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>HTTPProxy</ValueName>
+        <Value>hostname</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>UseHTTPProxyForAllProtocols</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>SSLProxy</ValueName>
+        <Value>hostname</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>FTPProxy</ValueName>
+        <Value>hostname</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>SOCKSProxy</ValueName>
+        <Value>hostname</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>SOCKSVersion</ValueName>
+        <Value>5</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>Passthrough</ValueName>
+        <Value>&lt;local&gt;</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>AutoConfigURL</ValueName>
+        <Value>URL_TO_AUTOCONFIG</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>AutoLogin</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Proxy</Key>
+        <ValueName>UseProxyForDNS</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>SanitizeOnShutdown</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines</Key>
+        <ValueName>Default</ValueName>
+        <Value>Google</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines</Key>
+        <ValueName>PreventInstalls</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>Name</ValueName>
+        <Value>Example1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>URLTemplate</ValueName>
+        <Value>https://www.example.org/q={searchTerms}</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>Method</ValueName>
+        <Value>POST</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>IconURL</ValueName>
+        <Value>https://www.example.org/favicon.ico</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>Alias</ValueName>
+        <Value>example</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>Description</ValueName>
+        <Value>Description</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>SuggestURLTemplate</ValueName>
+        <Value>https://www.example.org/suggestions/q={searchTerms}</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Add\\1</Key>
+        <ValueName>PostData</ValueName>
+        <Value>name=value&amp;q={searchTerms}</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Remove</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SearchEngines\\Remove</Key>
+        <ValueName>1</ValueName>
+        <Value>Bing</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SupportMenu</Key>
+        <ValueName>Title</ValueName>
+        <Value>Support Menu</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SupportMenu</Key>
+        <ValueName>URL</ValueName>
+        <Value>http://example.com/support</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SupportMenu</Key>
+        <ValueName>AccessKey</ValueName>
+        <Value>S</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\UserMessaging</Key>
+        <ValueName>ExtensionRecommendations</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\UserMessaging</Key>
+        <ValueName>FeatureRecommendations</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\UserMessaging</Key>
+        <ValueName>WhatsNew</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\UserMessaging</Key>
+        <ValueName>UrlbarInterventions</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\UserMessaging</Key>
+        <ValueName>SkipOnboarding</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\WebsiteFilter\\Block</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\WebsiteFilter\\Block</Key>
+        <ValueName>1</ValueName>
+        <Value>&lt;all_urls&gt;</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\WebsiteFilter\\Exceptions</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\WebsiteFilter\\Exceptions</Key>
+        <ValueName>1</ValueName>
+        <Value>http://example.org/*</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>AllowedDomainsForApps</ValueName>
+        <Value>managedfirefox.com,example.com</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>BackgroundAppUpdate</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Certificates</Key>
+        <ValueName>ImportEnterpriseRoots</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Certificates\\Install</Key>
+        <ValueName>**delvals.</ValueName>
+        <Value> </Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Certificates\\Install</Key>
+        <ValueName>1</ValueName>
+        <Value>cert1.der</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\Certificates\\Install</Key>
+        <ValueName>2</ValueName>
+        <Value>/home/username/cert2.pem</Value>
+    </Entry>
+    <Entry type="1" type_name="REG_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox\\SecurityDevices</Key>
+        <ValueName>NAME_OF_DEVICE</ValueName>
+        <Value>PATH_TO_LIBRARY_FOR_DEVICE</Value>
+    </Entry>
+    <Entry type="4" type_name="REG_DWORD">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>ShowHomeButton</ValueName>
+        <Value>1</Value>
+    </Entry>
+    <Entry type="7" type_name="REG_MULTI_SZ">
+        <Key>Software\\Policies\\Mozilla\\Firefox</Key>
+        <ValueName>AutoLaunchProtocolsFromOrigins</ValueName>
+        <Value>[{&quot;protocol&quot;: &quot;zoommtg&quot;, &quot;allowed_origins&quot;: [&quot;https://somesite.zoom.us&quot;]}]</Value>
+    </Entry>
+</PolFile>
+"""
+
+firefox_json_expected = \
+"""
+{
+  "policies": {
+    "AppAutoUpdate": true,
+    "AllowedDomainsForApps": "managedfirefox.com,example.com",
+    "AppUpdateURL": "https://yoursite.com",
+    "Authentication": {
+      "SPNEGO": [
+        "mydomain.com",
+        "https://myotherdomain.com"
+      ],
+      "Delegated": [
+        "mydomain.com",
+        "https://myotherdomain.com"
+      ],
+      "NTLM": [
+        "mydomain.com",
+        "https://myotherdomain.com"
+      ],
+      "AllowNonFQDN": {
+        "SPNEGO": true,
+        "NTLM": true
+      },
+      "AllowProxies": {
+        "SPNEGO": true,
+        "NTLM": true
+      },
+      "Locked": true,
+      "PrivateBrowsing": true
+    },
+    "AutoLaunchProtocolsFromOrigins": [
+      {
+        "protocol": "zoommtg",
+        "allowed_origins": [
+          "https://somesite.zoom.us"
+        ]
+      }
+    ],
+    "BackgroundAppUpdate": true,
+    "BlockAboutAddons": true,
+    "BlockAboutConfig": true,
+    "BlockAboutProfiles": true,
+    "BlockAboutSupport": true,
+    "Bookmarks": [
+      {
+        "Title": "Example",
+        "URL": "https://example.com",
+        "Favicon": "https://example.com/favicon.ico",
+        "Placement": "menu",
+        "Folder": "FolderName"
+      },
+      {
+        "Title": "Samba",
+        "URL": "www.samba.org",
+        "Favicon": "",
+        "Placement": "toolbar",
+        "Folder": ""
+      }
+    ],
+    "CaptivePortal": true,
+    "Certificates": {
+      "ImportEnterpriseRoots": true,
+      "Install": [
+        "cert1.der",
+        "/home/username/cert2.pem"
+      ]
+    },
+    "Cookies": {
+      "Allow": [
+        "http://example.org/"
+      ],
+      "AllowSession": [
+        "http://example.edu/"
+      ],
+      "Block": [
+        "http://example.edu/"
+      ],
+      "Default": true,
+      "AcceptThirdParty": "never",
+      "ExpireAtSessionEnd": true,
+      "RejectTracker": true,
+      "Locked": true
+    },
+    "DisableSetDesktopBackground": true,
+    "DisableMasterPasswordCreation": true,
+    "DisableAppUpdate": true,
+    "DisableBuiltinPDFViewer": true,
+    "DisabledCiphers": {
+      "TLS_DHE_RSA_WITH_AES_128_CBC_SHA": true,
+      "TLS_DHE_RSA_WITH_AES_256_CBC_SHA": true,
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA": true,
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA": true,
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256": true,
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256": true,
+      "TLS_RSA_WITH_AES_128_CBC_SHA": true,
+      "TLS_RSA_WITH_AES_256_CBC_SHA": true,
+      "TLS_RSA_WITH_3DES_EDE_CBC_SHA": true,
+      "TLS_RSA_WITH_AES_128_GCM_SHA256": true,
+      "TLS_RSA_WITH_AES_256_GCM_SHA384": true
+    },
+    "DisableDefaultBrowserAgent": true,
+    "DisableDeveloperTools": true,
+    "DisableFeedbackCommands": true,
+    "DisableFirefoxScreenshots": true,
+    "DisableFirefoxAccounts": true,
+    "DisableFirefoxStudies": true,
+    "DisableForgetButton": true,
+    "DisableFormHistory": true,
+    "DisablePasswordReveal": true,
+    "DisablePocket": true,
+    "DisablePrivateBrowsing": true,
+    "DisableProfileImport": true,
+    "DisableProfileRefresh": true,
+    "DisableSafeMode": true,
+    "DisableSecurityBypass": {
+      "InvalidCertificate": true,
+      "SafeBrowsing": true
+    },
+    "DisableSystemAddonUpdate": true,
+    "DisableTelemetry": true,
+    "DisplayBookmarksToolbar": true,
+    "DisplayMenuBar": "default-on",
+    "DNSOverHTTPS": {
+      "Enabled": true,
+      "ProviderURL": "URL_TO_ALTERNATE_PROVIDER",
+      "Locked": true,
+      "ExcludedDomains": [
+        "example.com"
+      ]
+    },
+    "DontCheckDefaultBrowser": true,
+    "EnableTrackingProtection": {
+      "Value": true,
+      "Locked": true,
+      "Cryptomining": true,
+      "Fingerprinting": true,
+      "Exceptions": [
+        "https://example.com"
+      ]
+    },
+    "EncryptedMediaExtensions": {
+      "Enabled": true,
+      "Locked": true
+    },
+    "Extensions": {
+      "Install": [
+        "https://addons.mozilla.org/firefox/downloads/somefile.xpi",
+        "//path/to/xpi"
+      ],
+      "Uninstall": [
+        "bad_addon_id@mozilla.org"
+      ],
+      "Locked": [
+        "addon_id@mozilla.org"
+      ]
+    },
+    "ExtensionSettings": {
+      "*": {
+        "blocked_install_message": "Custom error message.",
+        "install_sources": [
+          "about:addons",
+          "https://addons.mozilla.org/"
+        ],
+        "installation_mode": "blocked",
+        "allowed_types": [
+          "extension"
+        ]
+      },
+      "uBlock0@raymondhill.net": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      },
+      "https-everywhere@eff.org": {
+        "installation_mode": "allowed"
+      }
+    },
+    "ExtensionUpdate": true,
+    "FlashPlugin": {
+      "Allow": [
+        "http://example.org/"
+      ],
+      "Block": [
+        "http://example.edu/"
+      ],
+      "Default": true,
+      "Locked": true
+    },
+    "Handlers": {
+      "mimeTypes": {
+        "application/msword": {
+          "action": "useSystemDefault",
+          "ask": true
+        }
+      },
+      "schemes": {
+        "mailto": {
+          "action": "useHelperApp",
+          "ask": true,
+          "handlers": [
+            {
+              "name": "Gmail",
+              "uriTemplate": "https://mail.google.com/mail/?extsrc=mailto&url=%s"
+            }
+          ]
+        }
+      },
+      "extensions": {
+        "pdf": {
+          "action": "useHelperApp",
+          "ask": true,
+          "handlers": [
+            {
+              "name": "Adobe Acrobat",
+              "path": "/usr/bin/acroread"
+            }
+          ]
+        }
+      }
+    },
+    "FirefoxHome": {
+      "Search": true,
+      "TopSites": true,
+      "Highlights": true,
+      "Pocket": true,
+      "Snippets": true,
+      "Locked": true
+    },
+    "HardwareAcceleration": true,
+    "Homepage": {
+      "URL": "http://example.com/",
+      "Locked": true,
+      "Additional": [
+        "http://example.org/",
+        "http://example.edu/"
+      ],
+      "StartPage": "homepage"
+    },
+    "InstallAddonsPermission": {
+      "Allow": [
+        "http://example.org/",
+        "http://example.edu/"
+      ],
+      "Default": true
+    },
+    "LocalFileLinks": [
+      "http://example.org/",
+      "http://example.edu/"
+    ],
+    "ManagedBookmarks": [
+      {
+        "toplevel_name": "My managed bookmarks folder"
+      },
+      {
+        "url": "example.com",
+        "name": "Example"
+      },
+      {
+        "name": "Mozilla links",
+        "children": [
+          {
+            "url": "https://mozilla.org",
+            "name": "Mozilla.org"
+          },
+          {
+            "url": "https://support.mozilla.org/",
+            "name": "SUMO"
+          }
+        ]
+      }
+    ],
+    "PrimaryPassword": true,
+    "NoDefaultBookmarks": true,
+    "OfferToSaveLogins": true,
+    "OfferToSaveLoginsDefault": true,
+    "OverrideFirstRunPage": "http://example.org",
+    "OverridePostUpdatePage": "http://example.org",
+    "PasswordManagerEnabled": true,
+    "PSFjs": {
+      "Enabled": true,
+      "EnablePermissions": true
+    },
+    "Permissions": {
+      "Camera": {
+        "Allow": [
+          "https://example.org",
+          "https://example.org:1234"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Microphone": {
+        "Allow": [
+          "https://example.org"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Location": {
+        "Allow": [
+          "https://example.org"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Notifications": {
+        "Allow": [
+          "https://example.org"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Autoplay": {
+        "Allow": [
+          "https://example.org"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "Default": "block-audio",
+        "Locked": true
+      },
+      "VirtualReality": {
+        "Allow": [
+          "https://example.org"
+        ],
+        "Block": [
+          "https://example.edu"
+        ],
+        "BlockNewRequests": true,
+        "Locked": true
+      }
+    },
+    "PictureInPicture": {
+      "Enabled": true,
+      "Locked": true
+    },
+    "PopupBlocking": {
+      "Allow": [
+        "http://example.org/",
+        "http://example.edu/"
+      ],
+      "Default": true,
+      "Locked": true
+    },
+    "Preferences": {
+      "accessibility.force_disabled": {
+        "Value": 1,
+        "Status": "default"
+      },
+      "browser.cache.disk.parent_directory": {
+        "Value": "SOME_NATIVE_PATH",
+        "Status": "user"
+      },
+      "browser.tabs.warnOnClose": {
+        "Value": false,
+        "Status": "locked"
+      }
+    },
+    "PromptForDownloadLocation": true,
+    "Proxy": {
+      "Mode": "autoDetect",
+      "Locked": true,
+      "HTTPProxy": "hostname",
+      "UseHTTPProxyForAllProtocols": true,
+      "SSLProxy": "hostname",
+      "FTPProxy": "hostname",
+      "SOCKSProxy": "hostname",
+      "SOCKSVersion": 5,
+      "Passthrough": "<local>",
+      "AutoConfigURL": "URL_TO_AUTOCONFIG",
+      "AutoLogin": true,
+      "UseProxyForDNS": true
+    },
+    "SanitizeOnShutdown": true,
+    "SearchEngines": {
+      "Add": [
+        {
+          "Name": "Example1",
+          "URLTemplate": "https://www.example.org/q={searchTerms}",
+          "Method": "POST",
+          "IconURL": "https://www.example.org/favicon.ico",
+          "Alias": "example",
+          "Description": "Description",
+          "PostData": "name=value&q={searchTerms}",
+          "SuggestURLTemplate": "https://www.example.org/suggestions/q={searchTerms}"
+        }
+      ],
+      "Remove": [
+        "Bing"
+      ],
+      "Default": "Google",
+      "PreventInstalls": true
+    },
+    "SearchSuggestEnabled": true,
+    "SecurityDevices": {
+      "NAME_OF_DEVICE": "PATH_TO_LIBRARY_FOR_DEVICE"
+    },
+    "ShowHomeButton": true,
+    "SSLVersionMax": "tls1.3",
+    "SSLVersionMin": "tls1.3",
+    "SupportMenu": {
+      "Title": "Support Menu",
+      "URL": "http://example.com/support",
+      "AccessKey": "S"
+    },
+    "UserMessaging": {
+      "WhatsNew": true,
+      "ExtensionRecommendations": true,
+      "FeatureRecommendations": true,
+      "UrlbarInterventions": true,
+      "SkipOnboarding": true
+    },
+    "WebsiteFilter": {
+      "Block": [
+        "<all_urls>"
+      ],
+      "Exceptions": [
+        "http://example.org/*"
+      ]
+    },
+    "DefaultDownloadDirectory": "${home}/Downloads",
+    "DownloadDirectory": "${home}/Downloads",
+    "NetworkPrediction": true,
+    "NewTabPage": true,
+    "RequestedLocales": ["de", "en-US"],
+    "SearchBar": "unified"
+  }
+}
 """
 
 def days2rel_nttime(val):
@@ -2066,3 +3723,61 @@ class GPOTests(tests.TestCase):
 
             # Unstage the Registry.pol file
             unstage_file(reg_pol)
+
+    def test_gp_firefox_ext(self):
+        local_path = self.lp.cache_path('gpo_cache')
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        reg_pol = os.path.join(local_path, policies, guid,
+                               'MACHINE/REGISTRY.POL')
+        logger = logging.getLogger('gpo_tests')
+        cache_dir = self.lp.get('cache directory')
+        store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        # Initialize the group policy extension
+        ext = gp_firefox_ext(logger, self.lp, machine_creds,
+                             machine_creds.get_username(), store)
+
+        ads = gpo.ADS_STRUCT(self.server, self.lp, machine_creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(machine_creds.get_username())
+
+        # Stage the Registry.pol file with test data
+        parser = GPPolParser()
+        parser.load_xml(etree.fromstring(firefox_reg_pol.strip()))
+        ret = stage_file(reg_pol, ndr_pack(parser.pol_file))
+        self.assertTrue(ret, 'Could not create the target %s' % reg_pol)
+
+        with TemporaryDirectory() as dname:
+            ext.process_group_policy([], gpos, dname)
+            policies_file = os.path.join(dname, 'policies.json')
+            with open(policies_file, 'r') as r:
+                policy_data = json.load(r)
+            expected_policy_data = json.loads(firefox_json_expected)
+            self.assertIn('policies', policy_data, 'Policies were not applied')
+            self.assertEqual(expected_policy_data['policies'].keys(),
+                             policy_data['policies'].keys(),
+                             'Firefox policies are missing')
+            for name in expected_policy_data['policies'].keys():
+                self.assertEqual(expected_policy_data['policies'][name],
+                                 policy_data['policies'][name],
+                                 'Policies were not applied')
+
+            # Verify RSOP does not fail
+            ext.rsop([g for g in gpos if g.name == guid][0])
+
+            # Unapply the policy
+            gp_db = store.get_gplog(machine_creds.get_username())
+            del_gpos = get_deleted_gpos_list(gp_db, [])
+            ext.process_group_policy(del_gpos, [], dname)
+            if os.path.exists(policies_file):
+                data = json.load(open(policies_file, 'r'))
+                if 'policies' in data.keys():
+                    self.assertEqual(len(data['policies'].keys()), 0,
+                                     'The policy was not unapplied')
+
+        # Unstage the Registry.pol file
+        unstage_file(reg_pol)
