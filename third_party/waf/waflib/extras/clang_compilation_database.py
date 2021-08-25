@@ -29,22 +29,9 @@ from waflib import Logs, TaskGen, Task, Build, Scripting
 
 Task.Task.keep_last_cmd = True
 
-@TaskGen.feature('c', 'cxx')
-@TaskGen.after_method('process_use')
-def collect_compilation_db_tasks(self):
-	"Add a compilation database entry for compiled tasks"
-	if not isinstance(self.bld, ClangDbContext):
-		return
-
-	tup = tuple(y for y in [Task.classes.get(x) for x in ('c', 'cxx')] if y)
-	for task in getattr(self, 'compiled_tasks', []):
-		if isinstance(task, tup):
-			self.bld.clang_compilation_database_tasks.append(task)
-
 class ClangDbContext(Build.BuildContext):
 	'''generates compile_commands.json by request'''
 	cmd = 'clangdb'
-	clang_compilation_database_tasks = []
 
 	def write_compilation_database(self):
 		"""
@@ -78,6 +65,8 @@ class ClangDbContext(Build.BuildContext):
 		Build dry run
 		"""
 		self.restore()
+		self.cur_tasks = []
+		self.clang_compilation_database_tasks = []
 
 		if not self.all_envs:
 			self.load_envs()
@@ -103,8 +92,21 @@ class ClangDbContext(Build.BuildContext):
 					lst = [tg]
 				else: lst = tg.tasks
 				for tsk in lst:
+					if tsk.__class__.__name__ == "swig":
+						tsk.runnable_status()
+						if hasattr(tsk, 'more_tasks'):
+							lst.extend(tsk.more_tasks)
+					# Not all dynamic tasks can be processed, in some cases
+					# one may have to call the method "run()" like this:
+					#elif tsk.__class__.__name__ == 'src2c':
+					#	tsk.run()
+					#	if hasattr(tsk, 'more_tasks'):
+					#		lst.extend(tsk.more_tasks)
+
 					tup = tuple(y for y in [Task.classes.get(x) for x in ('c', 'cxx')] if y)
 					if isinstance(tsk, tup):
+						self.clang_compilation_database_tasks.append(tsk)
+						tsk.nocache = True
 						old_exec = tsk.exec_command
 						tsk.exec_command = exec_command
 						tsk.run()

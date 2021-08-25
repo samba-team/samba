@@ -206,7 +206,7 @@ class utest(Task.Task):
 		self.ut_exec = getattr(self.generator, 'ut_exec', [self.inputs[0].abspath()])
 		ut_cmd = getattr(self.generator, 'ut_cmd', False)
 		if ut_cmd:
-			self.ut_exec = shlex.split(ut_cmd % ' '.join(self.ut_exec))
+			self.ut_exec = shlex.split(ut_cmd % Utils.shell_escape(self.ut_exec))
 
 		return self.exec_command(self.ut_exec)
 
