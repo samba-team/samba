@@ -737,7 +737,7 @@ WERROR regdb_init(void)
          * Clustered Samba can only work as root because we need messaging to
          * talk to ctdb which only works as root.
          */
-        if (lp_clustering() && geteuid() != 0) {
+        if (!uid_wrapper_enabled() && lp_clustering() && geteuid() != 0) {
                 DBG_ERR("Cluster mode requires running as root.\n");
 		return WERR_ACCESS_DENIED;
         }
