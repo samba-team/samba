@@ -327,7 +327,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 	dct = dict(zip(v, lst))
 	x = 'MACOSX_DEPLOYMENT_TARGET'
 	if dct[x]:
-		env[x] = conf.environ[x] = dct[x]
+		env[x] = conf.environ[x] = str(dct[x])
 	env.pyext_PATTERN = '%s' + dct['SO'] # not a mistake
 
 
