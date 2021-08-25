@@ -1,4 +1,5 @@
 from waflib import Logs
 
-Logs.info("\tSelected system MIT krb5 libraries, Heimdal use is disabled")
+if bld.__class__.__name__ != "ClangDbContext":
+    Logs.info("\tSelected system MIT krb5 libraries, Heimdal use is disabled")
 #bld.RECURSE('source4/heimdal_build')

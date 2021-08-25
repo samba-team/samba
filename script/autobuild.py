@@ -786,7 +786,6 @@ tasks = {
          "PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} "
          "./configure.developer ${PREFIX} "
          "--with-selftest-prefix=./bin/ab "
-         "--enable-clangdb "
          "--with-cluster-support "
          "--without-ad-dc "
          "--bundled-libraries=!tdb"),
