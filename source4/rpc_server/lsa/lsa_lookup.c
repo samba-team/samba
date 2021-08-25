@@ -663,25 +663,24 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	return status;
 }
 
+/* A random hexidecimal number (honest!) */
+#define LSA_SERVER_IMPLICIT_POLICY_STATE_MAGIC 0xc0c99e00
 
 /*
-  lsa_LookupSids3
-
-  Identical to LookupSids2, but doesn't take a policy handle
-  
+  Ensure we're operating on an schannel connection,
+  and use a lsa_policy_state cache on the connection.
 */
-NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
-				TALLOC_CTX *mem_ctx,
-				struct lsa_LookupSids3 *r)
+static NTSTATUS schannel_call_setup(struct dcesrv_call_state *dce_call,
+				    struct lsa_policy_state **_policy_state)
 {
+	struct lsa_policy_state *policy_state = NULL;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
-	struct dcesrv_lsa_LookupSids_base_state *state = NULL;
-	NTSTATUS status;
-
 	if (transport != NCACN_IP_TCP) {
-		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+		/* We can't call DCESRV_FAULT() in the sub-function */
+		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/*
@@ -693,8 +692,59 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	 */
 	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
 	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+		/* We can't call DCESRV_FAULT() in the sub-function */
+		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	/*
+	 * We don't have a policy handle on this call, so we want to
+	 * make a policy state and cache it for the life of the
+	 * connection, to avoid re-opening the DB each call.
+	 */
+	policy_state
+		= dcesrv_iface_state_find_conn(dce_call,
+					       LSA_SERVER_IMPLICIT_POLICY_STATE_MAGIC,
+					       struct lsa_policy_state);
+
+	if (policy_state == NULL) {
+		NTSTATUS status
+			= dcesrv_lsa_get_policy_state(dce_call,
+						      dce_call /* mem_ctx */,
+						      0, /* we skip access checks */
+						      &policy_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * This will talloc_steal() policy_state onto the
+		 * connection, which has longer lifetime than the
+		 * immidiate caller requires
+		 */
+		status = dcesrv_iface_state_store_conn(dce_call,
+						       LSA_SERVER_IMPLICIT_POLICY_STATE_MAGIC,
+						       policy_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	*_policy_state = policy_state;
+	return NT_STATUS_OK;
+}
+
+/*
+  lsa_LookupSids3
+
+  Identical to LookupSids2, but doesn't take a policy handle
+
+*/
+NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
+				TALLOC_CTX *mem_ctx,
+				struct lsa_LookupSids3 *r)
+{
+	struct dcesrv_lsa_LookupSids_base_state *state = NULL;
+	NTSTATUS status;
 
 	*r->out.domains = NULL;
 	r->out.names->count = 0;
@@ -706,16 +756,27 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->dce_call = dce_call;
-	state->mem_ctx = mem_ctx;
-
-	status = dcesrv_lsa_get_policy_state(state->dce_call, mem_ctx,
-					     0, /* we skip access checks */
-					     &state->policy_state);
+	/*
+	 * We don't have a policy handle on this call, so we want to
+	 * make a policy state and cache it for the life of the
+	 * connection, to avoid re-opening the DB each call.
+	 *
+	 * This also enforces that this is only available over
+	 * ncacn_ip_tcp and with SCHANNEL.
+	 *
+	 * schannel_call_setup may also set the fault state.
+	 *
+	 * state->policy_state is shared between all calls on this
+	 * connection and is moved with talloc_steal() under the
+	 * connection, not dce_call or state.
+	 */
+	status = schannel_call_setup(dce_call, &state->policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 	state->r.in.sids = r->in.sids;
 	state->r.in.level = r->in.level;
 	state->r.in.lookup_options = r->in.lookup_options;
@@ -1296,24 +1357,8 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames4 *r)
 {
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	struct dcesrv_lsa_LookupNames_base_state *state = NULL;
 	NTSTATUS status;
-
-	if (transport != NCACN_IP_TCP) {
-		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
-	}
-
-	/*
-	 * We don't have policy handles on this call. So this must be restricted
-	 * to crypto connections only.
-	 */
-	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
-	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
-	}
 
 	*r->out.domains = NULL;
 	r->out.sids->count = 0;
@@ -1328,9 +1373,21 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	state->dce_call = dce_call;
 	state->mem_ctx = mem_ctx;
 
-	status = dcesrv_lsa_get_policy_state(state->dce_call, state,
-					     0, /* we skip access checks */
-					     &state->policy_state);
+	/*
+	 * We don't have a policy handle on this call, so we want to
+	 * make a policy state and cache it for the life of the
+	 * connection, to avoid re-opening the DB each call.
+	 *
+	 * This also enforces that this is only available over
+	 * ncacn_ip_tcp and with SCHANNEL.
+	 *
+	 * schannel_call_setup may also set the fault state.
+	 *
+	 * state->policy_state is shared between all calls on this
+	 * connection and is moved with talloc_steal() under the
+	 * connection, not dce_call or state.
+	 */
+	status = schannel_call_setup(dce_call, &state->policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
