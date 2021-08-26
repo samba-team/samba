@@ -23,9 +23,4 @@ hg clone https://bitbucket.org/micktwomey/pyiso8601 "$WORKDIR/pyiso8601"
 rm -rf "$WORKDIR/pyiso8601/.hg"
 rsync -avz --delete "$WORKDIR/pyiso8601/" "$THIRD_PARTY_DIR/pyiso8601/"
 
-echo "Updating waf..."
-git clone git://git.samba.org/third_party/waf.waf15/ "$WORKDIR/waf"
-rm -rf "$WORKDIR/waf/.git"
-rsync -C -avz --delete "$WORKDIR/waf/" "$THIRD_PARTY_DIR/waf/"
-
 rm -rf "$WORKDIR"
