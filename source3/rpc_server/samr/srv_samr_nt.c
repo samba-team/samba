@@ -7399,5 +7399,42 @@ NTSTATUS _samr_SetDsrmPassword(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+void _samr_Opnum68NotUsedOnWire(struct pipes_struct *p,
+				struct samr_Opnum68NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+void _samr_Opnum69NotUsedOnWire(struct pipes_struct *p,
+				struct samr_Opnum69NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+void _samr_Opnum70NotUsedOnWire(struct pipes_struct *p,
+				struct samr_Opnum70NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+void _samr_Opnum71NotUsedOnWire(struct pipes_struct *p,
+				struct samr_Opnum71NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+void _samr_Opnum72NotUsedOnWire(struct pipes_struct *p,
+				struct samr_Opnum72NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+NTSTATUS _samr_ChangePasswordUser4(struct pipes_struct *p,
+				   struct samr_ChangePasswordUser4 *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_samr_scompat.c"

@@ -5075,6 +5075,40 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
+static void dcesrv_samr_Opnum68NotUsedOnWire(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_Opnum68NotUsedOnWire *r)
+{
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+static void dcesrv_samr_Opnum69NotUsedOnWire(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_Opnum69NotUsedOnWire *r)
+{
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+static void dcesrv_samr_Opnum70NotUsedOnWire(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_Opnum70NotUsedOnWire *r)
+{
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+static void dcesrv_samr_Opnum71NotUsedOnWire(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_Opnum71NotUsedOnWire *r)
+{
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+static void dcesrv_samr_Opnum72NotUsedOnWire(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct samr_Opnum72NotUsedOnWire *r)
+{
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_samr_s.c"

@@ -1628,4 +1628,38 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,switch_is(level)] samr_ValidatePasswordReq *req,
 		[out,ref,switch_is(level)] samr_ValidatePasswordRep **rep
 		);
+
+	/************************/
+	/* Function    0x44     */
+	/************************/
+	[todo] void samr_Opnum68NotUsedOnWire(void);
+
+	/************************/
+	/* Function    0x45     */
+	/************************/
+	[todo] void samr_Opnum69NotUsedOnWire(void);
+
+	/************************/
+	/* Function    0x46     */
+	/************************/
+	[todo] void samr_Opnum70NotUsedOnWire(void);
+
+	/************************/
+	/* Function    0x47     */
+	/************************/
+	[todo] void samr_Opnum71NotUsedOnWire(void);
+
+	/************************/
+	/* Function    0x48     */
+	/************************/
+	[todo] void samr_Opnum72NotUsedOnWire(void);
+
+	/************************/
+	/* Function    0x49     */
+	/************************/
+	[public] NTSTATUS samr_ChangePasswordUser4(
+		[in,unique] lsa_String *server,
+		[in,ref]    lsa_String *account,
+		[in,ref]    samr_EncryptedPasswordAES *password
+		);
 }
