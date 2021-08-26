@@ -869,7 +869,17 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 	}
 
-	ldb_set_timeout(samdb, lreq, req->timelimit);
+	{
+		time_t timeout = call->conn->limits.search_timeout;
+
+		if (timeout == 0
+		    || (req->timelimit != 0
+			&& req->timelimit < timeout))
+		{
+			timeout = req->timelimit;
+		}
+		ldb_set_timeout(samdb, lreq, timeout);
+	}
 
 	if (!call->conn->is_privileged) {
 		ldb_req_mark_untrusted(lreq);
