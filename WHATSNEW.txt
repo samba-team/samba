@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.15.  This is *not*
+This is the third release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -311,6 +311,30 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14760: vfs_streams_depot directory creation permissions and store
+     location problems.
+   * BUG 14766: vfs_ceph openat() doesn't cope with dirfsp != AT_FDCW.
+   * BUG 14769: smbd panic on force-close share during offload write.
+   * BUG 14805: OpenDir() loses the correct errno return.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14795: copy_file_range() may fail with EOPNOTSUPP.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14793: Start the SMB encryption as soon as possible.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14779: Winbind should not start if the socket path is too long.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 14760: vfs_streams_depot directory creation permissions and store
+     location problems.
 
 
 CHANGES SINCE 4.15.0rc1
