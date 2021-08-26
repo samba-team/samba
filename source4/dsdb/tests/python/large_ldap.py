@@ -23,6 +23,7 @@ import optparse
 import sys
 import os
 import random
+import time
 
 sys.path.insert(0, "bin/python")
 import samba
@@ -244,6 +245,68 @@ class LargeLDAPTest(samba.tests.TestCase):
         # Assert we don't get all the entries but still the error
         self.assertGreater(count, count_jpeg)
 
+    def test_timeout(self):
+        policy_dn = ldb.Dn(self.ldb,
+                           'CN=Default Query Policy,CN=Query-Policies,'
+                           'CN=Directory Service,CN=Windows NT,CN=Services,'
+                           f'{self.ldb.get_config_basedn().get_linearized()}')
+
+        # Get the current value of lDAPAdminLimits.
+        res = self.ldb.search(base=policy_dn,
+                              scope=ldb.SCOPE_BASE,
+                              attrs=['lDAPAdminLimits'])
+        msg = res[0]
+        admin_limits = msg['lDAPAdminLimits']
+
+        # Ensure we restore the previous value of the attribute.
+        admin_limits.set_flags(ldb.FLAG_MOD_REPLACE)
+        self.addCleanup(self.ldb.modify, msg)
+
+        # Temporarily lower the value of MaxQueryDuration so we can test
+        # timeout behaviour.
+        timeout = 5
+        query_duration = f'MaxQueryDuration={timeout}'.encode()
+
+        admin_limits = [limit for limit in admin_limits
+                        if not limit.lower().startswith(b'maxqueryduration=')]
+        admin_limits.append(query_duration)
+
+        # Set the new attribute value.
+        msg = ldb.Message(policy_dn)
+        msg['lDAPAdminLimits'] = ldb.MessageElement(admin_limits,
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    'lDAPAdminLimits')
+        self.ldb.modify(msg)
+
+        # Use a new connection so that the limits are reloaded.
+        samdb = SamDB(url, credentials=creds,
+                      session_info=system_session(lp),
+                      lp=lp)
+
+        # Create a large search expression that will take a long time to
+        # evaluate.
+        expression = '(anr=l)' * 10000
+        expression = f'(|{expression})'
+
+        # Perform the LDAP search.
+        prev = time.time()
+        with self.assertRaises(ldb.LdbError) as err:
+            samdb.search(base=self.ou_dn,
+                         scope=ldb.SCOPE_SUBTREE,
+                         expression=expression,
+                         attrs=['objectGUID'])
+        now = time.time()
+        duration = now - prev
+
+        # Ensure that we timed out.
+        enum, _ = err.exception.args
+        self.assertEqual(ldb.ERR_TIME_LIMIT_EXCEEDED, enum)
+
+        # Ensure that the time spent searching is within the limit we
+        # set.  We allow a margin of 100% over as the Samba timeout
+        # handling is not very accurate (and does not need to be)
+        self.assertLess(timeout - 1, duration)
+        self.assertLess(duration, timeout * 2)
 
 
 if "://" not in url:
