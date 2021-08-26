@@ -147,7 +147,6 @@ bench # don't run benchmarks in our selftest
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead
 ^samba4.blackbox.ktpass # this test isn't portable ...
-^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba4.smb2.mangle.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
 ^samba4.smb2.tcon.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
