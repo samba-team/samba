@@ -89,12 +89,10 @@ class cmd_spn_add(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
-        Option("--force", help="Force the addition of the spn"
-                               " even it exists already", action="store_true"),
     ]
     takes_args = ["name", "user"]
 
-    def run(self, name, user, H=None, force=False,
+    def run(self, name, user, H=None,
             credopts=None,
             sambaopts=None,
             versionopts=None):
@@ -105,7 +103,7 @@ class cmd_spn_add(Command):
         res = sam.search(
             expression="servicePrincipalName=%s" % ldb.binary_encode(name),
             scope=ldb.SCOPE_SUBTREE)
-        if len(res) != 0 and not force:
+        if len(res) != 0:
             raise CommandError("Service principal %s already"
                                " affected to another user" % name)
 
