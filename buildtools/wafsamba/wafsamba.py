@@ -558,6 +558,7 @@ def SAMBA_MODULE(bld, modname, source,
                       manpages=manpages,
                       allow_undefined_symbols=allow_undefined_symbols,
                       allow_warnings=allow_warnings,
+                      private_library=True,
                       install=install
                       )
 
