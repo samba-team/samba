@@ -120,3 +120,6 @@
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_unarmored_as_req.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_outer_no_sname.ad_dc
 ^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_outer_no_sname.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_no_sname.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_fast_tgs_no_sname.ad_dc
+^samba.tests.krb5.fast_tests.samba.tests.krb5.fast_tests.FAST_Tests.test_simple_tgs_no_sname.ad_dc
