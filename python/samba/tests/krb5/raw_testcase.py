@@ -1553,6 +1553,9 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
         kdc_options = kdc_exchange_dict['kdc_options']
 
+        # Parameters specific to the inner request body
+        inner_req = kdc_exchange_dict['inner_req']
+
         # Parameters specific to the outer request body
         outer_req = kdc_exchange_dict['outer_req']
 
@@ -1582,6 +1585,12 @@ class RawKerberosTest(TestCaseInTempDir):
             EncAuthorizationData_usage=EncAuthorizationData_usage)
 
         inner_req_body = dict(req_body)
+        if inner_req is not None:
+            for key, value in inner_req.items():
+                if value is not None:
+                    inner_req_body[key] = value
+                else:
+                    del inner_req_body[key]
         if outer_req is not None:
             for key, value in outer_req.items():
                 if value is not None:
@@ -1734,6 +1743,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          armor_subkey=None,
                          auth_data=None,
                          kdc_options='',
+                         inner_req=None,
                          outer_req=None):
         kdc_exchange_dict = {
             'req_msg_type': KRB_AS_REQ,
@@ -1765,6 +1775,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'armor_subkey': armor_subkey,
             'auth_data': auth_data,
             'kdc_options': kdc_options,
+            'inner_req': inner_req,
             'outer_req': outer_req
         }
         if expected_cname_private is not None:
@@ -1802,6 +1813,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           auth_data=None,
                           body_checksum_type=None,
                           kdc_options='',
+                          inner_req=None,
                           outer_req=None):
         kdc_exchange_dict = {
             'req_msg_type': KRB_TGS_REQ,
@@ -1833,6 +1845,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'auth_data': auth_data,
             'authenticator_subkey': authenticator_subkey,
             'kdc_options': kdc_options,
+            'inner_req': inner_req,
             'outer_req': outer_req
         }
         if expected_cname_private is not None:
