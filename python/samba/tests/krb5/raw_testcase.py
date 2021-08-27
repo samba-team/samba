@@ -2328,6 +2328,7 @@ class RawKerberosTest(TestCaseInTempDir):
         fast_error = None
         fx_fast = None
         pac_options = None
+        pw_salt = None
         for pa in rep_padata:
             patype = self.getElementValue(pa, 'padata-type')
             pavalue = self.getElementValue(pa, 'padata-value')
@@ -2380,6 +2381,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 pac_options = pavalue
                 self.assertIsNotNone(pac_options)
                 continue
+            if patype == PADATA_PW_SALT:
+                self.assertIsNone(pw_salt)
+                pw_salt = pavalue
+                self.assertIsNotNone(pw_salt)
+                continue
 
         if fast_cookie is not None:
             kdc_exchange_dict['fast_cookie'] = fast_cookie
@@ -2394,6 +2400,14 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if pac_options is not None:
             self.check_pac_options_claims_support(pac_options)
+
+        if pw_salt is not None:
+            self.assertEqual(12, len(pw_salt))
+
+            status = int.from_bytes(pw_salt[:4], 'little')
+            flags = int.from_bytes(pw_salt[8:], 'little')
+
+            self.assertEqual(3, flags)
 
         if enc_challenge is not None:
             if not sent_enc_challenge:
