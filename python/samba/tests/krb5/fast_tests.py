@@ -1340,7 +1340,9 @@ class FAST_Tests(KDCBaseTest):
                 auth_data = None
 
             if not use_fast:
+                self.assertNotIn('inner_req', kdc_dict)
                 self.assertNotIn('outer_req', kdc_dict)
+            inner_req = kdc_dict.pop('inner_req', None)
             outer_req = kdc_dict.pop('outer_req', None)
 
             if rep_type == KRB_AS_REP:
@@ -1370,6 +1372,7 @@ class FAST_Tests(KDCBaseTest):
                     armor_tgt=armor_tgt,
                     armor_subkey=armor_subkey,
                     kdc_options=kdc_options,
+                    inner_req=inner_req,
                     outer_req=outer_req)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
@@ -1398,6 +1401,7 @@ class FAST_Tests(KDCBaseTest):
                     auth_data=auth_data,
                     body_checksum_type=None,
                     kdc_options=kdc_options,
+                    inner_req=inner_req,
                     outer_req=outer_req)
 
             repeat = kdc_dict.pop('repeat', 1)
