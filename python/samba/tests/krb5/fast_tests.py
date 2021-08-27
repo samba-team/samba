@@ -105,6 +105,79 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_simple_no_sname(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_username = krbtgt_creds.get_username()
+        krbtgt_realm = krbtgt_creds.get_realm()
+        expected_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': False,
+                'sname': None,
+                'expected_sname': expected_sname
+            }
+        ])
+
+    def test_simple_tgs_no_sname(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_username = krbtgt_creds.get_username()
+        krbtgt_realm = krbtgt_creds.get_realm()
+        expected_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': False,
+                'gen_tgt_fn': self.get_user_tgt,
+                'sname': None,
+                'expected_sname': expected_sname
+            }
+        ])
+
+    def test_fast_no_sname(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_username = krbtgt_creds.get_username()
+        krbtgt_realm = krbtgt_creds.get_realm()
+        expected_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'sname': None,
+                'expected_sname': expected_sname
+            }
+        ])
+
+    def test_fast_tgs_no_sname(self):
+        krbtgt_creds = self.get_krbtgt_creds()
+        krbtgt_username = krbtgt_creds.get_username()
+        krbtgt_realm = krbtgt_creds.get_realm()
+        expected_sname = self.PrincipalName_create(
+            name_type=NT_SRV_INST, names=[krbtgt_username, krbtgt_realm])
+
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None,
+                'sname': None,
+                'expected_sname': expected_sname
+            }
+        ])
+
     def test_simple_tgs_wrong_principal(self):
         mach_creds = self.get_mach_creds()
         mach_name = mach_creds.get_username()
@@ -1137,11 +1210,17 @@ class FAST_Tests(KDCBaseTest):
             cname = client_cname if rep_type == KRB_AS_REP else None
             crealm = client_realm
 
+            if 'sname' in kdc_dict:
+                sname = kdc_dict.pop('sname')
+            else:
+                if rep_type == KRB_AS_REP:
+                    sname = krbtgt_sname
+                else:  # KRB_TGS_REP
+                    sname = target_sname
+
             if rep_type == KRB_AS_REP:
-                sname = krbtgt_sname
                 srealm = krbtgt_realm
             else:  # KRB_TGS_REP
-                sname = target_sname
                 srealm = target_realm
 
             expected_cname = kdc_dict.pop('expected_cname', client_cname)
