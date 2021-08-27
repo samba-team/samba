@@ -178,6 +178,34 @@ class FAST_Tests(KDCBaseTest):
             }
         ])
 
+    def test_fast_inner_no_sname(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_AS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': True,
+                'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
+                'gen_armor_tgt_fn': self.get_mach_tgt,
+                'inner_req': {
+                    'sname': None  # should be ignored
+                }
+            }
+        ])
+
+    def test_fast_tgs_inner_no_sname(self):
+        self._run_test_sequence([
+            {
+                'rep_type': KRB_TGS_REP,
+                'expected_error_mode': KDC_ERR_GENERIC,
+                'use_fast': True,
+                'gen_tgt_fn': self.get_user_tgt,
+                'fast_armor': None,
+                'inner_req': {
+                    'sname': None  # should be ignored
+                }
+            }
+        ])
+
     def test_simple_tgs_wrong_principal(self):
         mach_creds = self.get_mach_creds()
         mach_name = mach_creds.get_username()
