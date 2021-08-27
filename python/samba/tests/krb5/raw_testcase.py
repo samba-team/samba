@@ -82,6 +82,7 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PAC_REQUEST,
     PADATA_PK_AS_REQ,
     PADATA_PK_AS_REP_19,
+    PADATA_PW_SALT,
     PADATA_SUPPORTED_ETYPES
 )
 import samba.tests.krb5.kcrypto as kcrypto
@@ -2187,8 +2188,7 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 self.assertElementEqualPrincipal(rep, 'sname', expected_sname)
             self.assertElementMissing(rep, 'e-text')
-        if (expected_error_mode in (KDC_ERR_GENERIC,
-                                    KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS)
+        if (expected_error_mode == KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS
                 or (rep_msg_type == KRB_TGS_REP
                     and not sent_fast)
                 or (sent_fast and fast_armor_type is not None
@@ -2198,10 +2198,17 @@ class RawKerberosTest(TestCaseInTempDir):
             return rep
         edata = self.getElementValue(rep, 'e-data')
         if self.strict_checking:
-            self.assertIsNotNone(edata)
+            if expected_error_mode != KDC_ERR_GENERIC:
+                # Predicting whether an ERR_GENERIC error contains e-data is
+                # more complicated.
+                self.assertIsNotNone(edata)
         if edata is not None:
-            rep_padata = self.der_decode(edata,
-                                         asn1Spec=krb5_asn1.METHOD_DATA())
+            if rep_msg_type == KRB_TGS_REP and not sent_fast:
+                rep_padata = [self.der_decode(edata,
+                                              asn1Spec=krb5_asn1.PA_DATA())]
+            else:
+                rep_padata = self.der_decode(edata,
+                                             asn1Spec=krb5_asn1.METHOD_DATA())
             self.assertGreater(len(rep_padata), 0)
 
             if sent_fast:
@@ -2218,15 +2225,13 @@ class RawKerberosTest(TestCaseInTempDir):
                     expect_strengthen_key=False)
 
                 rep_padata = fast_response['padata']
-        else:
-            rep_padata = []
 
-        etype_info2 = self.check_rep_padata(kdc_exchange_dict,
-                                            callback_dict,
-                                            rep,
-                                            rep_padata)
+            etype_info2 = self.check_rep_padata(kdc_exchange_dict,
+                                                callback_dict,
+                                                rep,
+                                                rep_padata)
 
-        kdc_exchange_dict['preauth_etype_info2'] = etype_info2
+            kdc_exchange_dict['preauth_etype_info2'] = etype_info2
 
         return rep
 
@@ -2279,10 +2284,13 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_patypes += (PADATA_FX_COOKIE,)
 
         if rep_msg_type == KRB_TGS_REP:
-            sent_claims = self.sent_claims(kdc_exchange_dict)
-            if sent_claims and expected_error_mode != 0:
-                expected_patypes += (PADATA_PAC_OPTIONS,)
-        else:
+            if not sent_fast and expected_error_mode != 0:
+                expected_patypes += (PADATA_PW_SALT,)
+            else:
+                sent_claims = self.sent_claims(kdc_exchange_dict)
+                if sent_claims and expected_error_mode not in (0, KDC_ERR_GENERIC):
+                    expected_patypes += (PADATA_PAC_OPTIONS,)
+        elif expected_error_mode != KDC_ERR_GENERIC:
             if expect_etype_info:
                 self.assertGreater(len(expect_etype_info2), 0)
                 expected_patypes += (PADATA_ETYPE_INFO,)
@@ -2458,8 +2466,11 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNone(pk_as_rep19)
             return None
 
-        if self.strict_checking:
-            self.assertIsNotNone(etype_info2)
+        if expected_error_mode != KDC_ERR_GENERIC:
+            if self.strict_checking:
+                self.assertIsNotNone(etype_info2)
+        else:
+            self.assertIsNone(etype_info2)
         if expect_etype_info:
             self.assertIsNotNone(etype_info)
         else:
@@ -2468,7 +2479,7 @@ class RawKerberosTest(TestCaseInTempDir):
         if unexpect_etype_info:
             self.assertIsNone(etype_info)
 
-        if self.strict_checking:
+        if expected_error_mode != KDC_ERR_GENERIC and self.strict_checking:
             self.assertGreaterEqual(len(etype_info2), 1)
             self.assertEqual(len(etype_info2), len(expect_etype_info2))
             for i in range(0, len(etype_info2)):
@@ -2495,7 +2506,8 @@ class RawKerberosTest(TestCaseInTempDir):
                 self.assertIsNotNone(salt)
                 self.assertEqual(len(salt), 0)
 
-        if expected_error_mode != KDC_ERR_PREAUTH_FAILED:
+        if expected_error_mode not in (KDC_ERR_PREAUTH_FAILED,
+                                       KDC_ERR_GENERIC):
             if sent_fast:
                 self.assertIsNotNone(enc_challenge)
                 if self.strict_checking:
