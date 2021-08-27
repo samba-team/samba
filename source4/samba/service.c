@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "../lib/util/dlinklist.h"
 #include "samba/process_model.h"
+#include "lib/util/samba_modules.h"
 
 #undef strcasecmp
 
@@ -111,6 +112,29 @@ NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 		}
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS samba_service_init(void)
+{
+#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
+	STATIC_service_MODULES_PROTO;
+	init_module_fn static_init[] = { STATIC_service_MODULES };
+	init_module_fn *shared_init = NULL;
+	static bool initialised;
+
+	if (initialised) {
+		return NT_STATUS_OK;
+	}
+	initialised = true;
+
+	shared_init = load_samba_modules(NULL, "service");
+
+	run_init_functions(NULL, static_init);
+	run_init_functions(NULL, shared_init);
+
+	TALLOC_FREE(shared_init);
 
 	return NT_STATUS_OK;
 }

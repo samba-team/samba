@@ -40,7 +40,6 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "cluster/cluster.h"
 #include "dynconfig/dynconfig.h"
-#include "lib/util/samba_modules.h"
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
 #include "lib/util/tfork.h"
@@ -510,10 +509,6 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	int opt;
 	int ret;
 	poptContext pc;
-#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
-	STATIC_service_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_service_MODULES };
-	init_module_fn *shared_init;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;
 	const char *model = "prefork";
@@ -705,12 +700,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	process_model_init(lp_ctx);
 
-	shared_init = load_samba_modules(mem_ctx, "service");
-
-	run_init_functions(mem_ctx, static_init);
-	run_init_functions(mem_ctx, shared_init);
-
-	TALLOC_FREE(shared_init);
+	samba_service_init();
 
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */

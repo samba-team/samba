@@ -75,6 +75,8 @@ struct service_details {
 	void (*post_fork) (struct task_server *, struct process_details *);
 };
 
+NTSTATUS samba_service_init(void);
+
 #include "samba/service_proto.h"
 
 #endif /* __SERVICE_H__ */
