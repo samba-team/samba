@@ -2504,8 +2504,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 if self.strict_checking:
                     self.assertIsNone(enc_challenge)
             if not sent_enc_challenge:
-                self.assertIsNotNone(pk_as_req)
-                self.assertIsNotNone(pk_as_rep19)
+                if self.strict_checking:
+                    self.assertIsNotNone(pk_as_req)
+                    self.assertIsNotNone(pk_as_rep19)
             else:
                 self.assertIsNone(pk_as_req)
                 self.assertIsNone(pk_as_rep19)
