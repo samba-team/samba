@@ -89,7 +89,7 @@ class UserAccountControlTests(samba.tests.TestCase):
     def add_computer_ldap(self, computername, others=None, samdb=None):
         if samdb is None:
             samdb = self.samdb
-        dn = "CN=%s,OU=test_computer_ou1,%s" % (computername, self.base_dn)
+        dn = "CN=%s,%s" % (computername, self.OU)
         domainname = ldb.Dn(self.samdb, self.samdb.domain_dn()).canonical_str().replace("/", "")
         samaccountname = "%s$" % computername
         dnshostname = "%s.%s" % (computername, domainname)
@@ -130,8 +130,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.unpriv_user_pw = "samba123@"
         self.unpriv_creds = self.get_creds(self.unpriv_user, self.unpriv_user_pw)
 
-        delete_force(self.admin_samdb, "CN=testcomputer-t,OU=test_computer_ou1,%s" % (self.base_dn))
-        delete_force(self.admin_samdb, "OU=test_computer_ou1,%s" % (self.base_dn))
+        self.OU = "OU=test_computer_ou1,%s" % (self.base_dn)
+
+        delete_force(self.admin_samdb, self.OU, controls=["tree_delete:0"])
         delete_force(self.admin_samdb, "CN=%s,CN=Users,%s" % (self.unpriv_user, self.base_dn))
 
         self.admin_samdb.newuser(self.unpriv_user, self.unpriv_user_pw)
@@ -150,27 +151,27 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
         self.sd_utils = sd_utils.SDUtils(self.admin_samdb)
+        self.admin_samdb.create_ou(self.OU)
 
-        self.admin_samdb.create_ou("OU=test_computer_ou1," + self.base_dn)
         self.unpriv_user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.unpriv_user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         self.add_computer_ldap("testcomputer-t")
 
-        self.sd_utils.modify_sd_on_dn("OU=test_computer_ou1," + self.base_dn, old_sd)
+        self.sd_utils.modify_sd_on_dn(self.OU, old_sd)
 
         self.computernames = ["testcomputer-0"]
 
         # Get the SD of the template account, then force it to match
         # what we expect for SeMachineAccountPrivilege accounts, so we
         # can confirm we created the accounts correctly
-        self.sd_reference_cc = self.sd_utils.read_sd_on_dn("CN=testcomputer-t,OU=test_computer_ou1,%s" % (self.base_dn))
+        self.sd_reference_cc = self.sd_utils.read_sd_on_dn("CN=testcomputer-t,%s" % (self.OU))
 
-        self.sd_reference_modify = self.sd_utils.read_sd_on_dn("CN=testcomputer-t,OU=test_computer_ou1,%s" % (self.base_dn))
+        self.sd_reference_modify = self.sd_utils.read_sd_on_dn("CN=testcomputer-t,%s" % (self.OU))
         for ace in self.sd_reference_modify.dacl.aces:
             if ace.type == security.SEC_ACE_TYPE_ACCESS_ALLOWED and ace.trustee == self.unpriv_user_sid:
                 ace.access_mask = ace.access_mask | security.SEC_ADS_SELF_WRITE | security.SEC_ADS_WRITE_PROP
@@ -190,9 +191,8 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
-
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
         sd = ldb.MessageElement((ndr_pack(self.sd_reference_modify)),
@@ -275,9 +275,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
         self.add_computer_ldap(computername)
@@ -391,9 +391,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
         self.add_computer_ldap(computername)
@@ -445,9 +445,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         computername = self.computernames[0]
         self.add_computer_ldap(computername, others={"userAccountControl": [str(account_type)]})
@@ -620,9 +620,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
         # These bits are privileged, but authenticated users have that CAR by default, so this is a pain to test
@@ -636,7 +636,7 @@ class UserAccountControlTests(samba.tests.TestCase):
         for bit in bits:
             try:
                 self.add_computer_ldap(computername, others={"userAccountControl": [str(bit)]})
-                delete_force(self.admin_samdb, "CN=%s,OU=test_computer_ou1,%s" % (computername, self.base_dn))
+                delete_force(self.admin_samdb, "CN=%s,%s" % (computername, self.OU))
                 if bit in priv_bits:
                     self.fail("Unexpectdly able to set userAccountControl bit 0x%08X on %s" % (bit, computername))
 
@@ -658,9 +658,9 @@ class UserAccountControlTests(samba.tests.TestCase):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
-        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+        old_sd = self.sd_utils.read_sd_on_dn(self.OU)
 
-        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace(self.OU, mod)
         try:
             # When creating a new object, you can not ever set the primaryGroupID
             self.add_computer_ldap(computername, others={"primaryGroupID": [str(security.DOMAIN_RID_ADMINS)]})
