@@ -144,6 +144,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         self.unpriv_user_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
         self.unpriv_user_dn = res[0].dn
+        self.addCleanup(self.admin_samdb.delete, self.unpriv_user_dn)
 
         self.samdb = SamDB(url=ldaphost, credentials=self.unpriv_creds, lp=lp)
 
@@ -153,6 +154,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         self.sd_utils = sd_utils.SDUtils(self.admin_samdb)
         self.admin_samdb.create_ou(self.OU)
+        self.addCleanup(self.admin_samdb.delete, self.OU, ["tree_delete:1"])
 
         self.unpriv_user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.unpriv_user_sid)
@@ -179,14 +181,6 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         # Now reconnect without domain admin rights
         self.samdb = SamDB(url=ldaphost, credentials=self.unpriv_creds, lp=lp)
-
-    def tearDown(self):
-        super(UserAccountControlTests, self).tearDown()
-        for computername in self.computernames:
-            delete_force(self.admin_samdb, "CN=%s,OU=test_computer_ou1,%s" % (computername, self.base_dn))
-        delete_force(self.admin_samdb, "CN=testcomputer-t,OU=test_computer_ou1,%s" % (self.base_dn))
-        delete_force(self.admin_samdb, "OU=test_computer_ou1,%s" % (self.base_dn))
-        delete_force(self.admin_samdb, "CN=%s,CN=Users,%s" % (self.unpriv_user, self.base_dn))
 
     def test_add_computer_sd_cc(self):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
