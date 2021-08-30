@@ -33,6 +33,7 @@
 #include "lib/util/dlinklist.h"
 #include "dsdb/kcc/garbage_collect_tombstones.h"
 #include "dsdb/kcc/scavenge_dns_records.h"
+#include "libds/common/flag_mapping.h"
 
 #undef strcasecmp
 
@@ -1401,6 +1402,30 @@ static PyObject *py_dsdb_load_udv_v2(PyObject *self, PyObject *args)
 	return pylist;
 }
 
+static PyObject *py_dsdb_user_account_control_flag_bit_to_string(PyObject *self, PyObject *args)
+{
+	const char *str;
+	long long uf;
+	if (!PyArg_ParseTuple(args, "L", &uf)) {
+		return NULL;
+	}
+
+	if (uf > UINT32_MAX) {
+		return PyErr_Format(PyExc_OverflowError, "No UF_ flags are over UINT32_MAX");
+	}
+	if (uf < 0) {
+		return PyErr_Format(PyExc_KeyError, "No UF_ flags are less then zero");
+	}
+
+	str = dsdb_user_account_control_flag_bit_to_string(uf);
+	if (str == NULL) {
+		return PyErr_Format(PyExc_KeyError,
+				    "No such UF_ flag 0x%08x",
+				    (unsigned int)uf);
+	}
+	return PyUnicode_FromString(str);
+}
+
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
@@ -1482,6 +1507,11 @@ static PyMethodDef py_dsdb_methods[] = {
 		"_dsdb_allocate_rid(samdb)"
 		" -> RID" },
 	{ "_dsdb_load_udv_v2", (PyCFunction)py_dsdb_load_udv_v2, METH_VARARGS, NULL },
+	{ "user_account_control_flag_bit_to_string",
+	        (PyCFunction)py_dsdb_user_account_control_flag_bit_to_string,
+	        METH_VARARGS,
+	        "user_account_control_flag_bit_to_string(bit)"
+                " -> string name" },
 	{0}
 };
 

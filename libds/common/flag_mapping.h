@@ -31,5 +31,6 @@ uint32_t ds_uf2atype(uint32_t uf);
 uint32_t ds_gtype2atype(uint32_t gtype);
 enum lsa_SidType ds_atype_map(uint32_t atype);
 uint32_t ds_uf2prim_group_rid(uint32_t uf);
+const char *dsdb_user_account_control_flag_bit_to_string(uint32_t uf);
 
 #endif /* __LIBDS_COMMON_FLAG_MAPPING_H__ */
