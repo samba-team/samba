@@ -96,6 +96,16 @@ class UserAccountControlTests(samba.tests.TestCase):
             cls.generate_dynamic_test("test_uac_bits_unrelated_modify",
                                       account_type_str, account_type)
 
+        for bit in bits:
+            try:
+                bit_str = dsdb.user_account_control_flag_bit_to_string(bit)
+            except KeyError:
+                bit_str = hex(bit)
+
+            cls.generate_dynamic_test("test_uac_bits_add",
+                                      bit_str, bit, bit_str)
+
+
     def add_computer_ldap(self, computername, others=None, samdb=None):
         if samdb is None:
             samdb = self.samdb
@@ -612,7 +622,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                                  UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD,
                                  "bit 0X%08x should have been removed" % bit)
 
-    def test_uac_bits_add(self):
+    def _test_uac_bits_add_with_args(self, bit, bit_str):
         computername = self.computernames[0]
 
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
@@ -631,24 +641,30 @@ class UserAccountControlTests(samba.tests.TestCase):
         priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
                          UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
 
-        for bit in bits:
-            try:
-                self.add_computer_ldap(computername, others={"userAccountControl": [str(bit)]})
-                delete_force(self.admin_samdb, "CN=%s,%s" % (computername, self.OU))
-                if bit in priv_bits:
-                    self.fail("Unexpectdly able to set userAccountControl bit 0x%08X on %s" % (bit, computername))
+        try:
+            self.add_computer_ldap(computername, others={"userAccountControl": [str(bit)]})
+            delete_force(self.admin_samdb, "CN=%s,%s" % (computername, self.OU))
+            if bit in priv_bits:
+                self.fail("Unexpectdly able to set userAccountControl bit 0x%08X (%s) on %s"
+                          % (bit, bit_str, computername))
 
-            except LdbError as e4:
-                (enum, estr) = e4.args
-                if bit in invalid_bits:
-                    self.assertEqual(enum, ldb.ERR_OTHER, "Invalid bit 0x%08X was able to be set on %s" % (bit, computername))
-                    # No point going on, try the next bit
-                    continue
-                elif bit in priv_bits:
-                    self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
-                    continue
-                else:
-                    self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, computername, estr))
+        except LdbError as e4:
+            (enum, estr) = e4.args
+            if bit in invalid_bits:
+                self.assertEqual(enum,
+                                 ldb.ERR_OTHER,
+                                 "Invalid bit 0x%08X (%s) was able to be set on %s"
+                                 % (bit,
+                                    bit_str,
+                                    computername))
+            elif bit in priv_bits:
+                self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            else:
+                self.fail("Unable to set userAccountControl bit 0x%08X (%s) on %s: %s"
+                          % (bit,
+                             bit_str,
+                             computername,
+                             estr))
 
     def test_primarygroupID_cc_add(self):
         computername = self.computernames[0]
