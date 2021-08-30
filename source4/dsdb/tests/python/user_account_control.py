@@ -104,6 +104,9 @@ class UserAccountControlTests(samba.tests.TestCase):
             cls.generate_dynamic_test("test_uac_bits_add",
                                       bit_str, bit, bit_str)
 
+            cls.generate_dynamic_test("test_uac_bits_set",
+                                      bit_str, bit, bit_str)
+
 
     def add_computer_ldap(self, computername, others=None, samdb=None):
         if samdb is None:
@@ -400,7 +403,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         self.assertEqual(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE)
 
-    def test_uac_bits_set(self):
+    def _test_uac_bits_set_with_args(self, bit, bit_str):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
@@ -434,25 +437,27 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
-        for bit in bits:
-            m = ldb.Message()
-            m.dn = res[0].dn
-            m["userAccountControl"] = ldb.MessageElement(str(bit | UF_PASSWD_NOTREQD),
-                                                         ldb.FLAG_MOD_REPLACE, "userAccountControl")
-            try:
-                self.samdb.modify(m)
-                if (bit in priv_bits):
-                    self.fail("Unexpectedly able to set userAccountControl bit 0x%08X on %s" % (bit, m.dn))
-            except LdbError as e:
-                (enum, estr) = e.args
-                if bit in invalid_bits:
-                    self.assertEqual(enum, ldb.ERR_OTHER, "was not able to set 0x%08X on %s" % (bit, m.dn))
-                    # No point going on, try the next bit
-                    continue
-                elif (bit in priv_bits):
-                    self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
-                else:
-                    self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["userAccountControl"] = ldb.MessageElement(str(bit | UF_PASSWD_NOTREQD),
+                                                     ldb.FLAG_MOD_REPLACE, "userAccountControl")
+        try:
+            self.samdb.modify(m)
+            if (bit in priv_bits):
+                self.fail("Unexpectedly able to set userAccountControl bit 0x%08X (%s), on %s"
+                          % (bit, bit_str, m.dn))
+        except LdbError as e:
+            (enum, estr) = e.args
+            if bit in invalid_bits:
+                self.assertEqual(enum,
+                                 ldb.ERR_OTHER,
+                                 "was not able to set 0x%08X (%s) on %s"
+                                 % (bit, bit_str, m.dn))
+            elif (bit in priv_bits):
+                self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+            else:
+                self.fail("Unable to set userAccountControl bit 0x%08X (%s) on %s: %s"
+                          % (bit, bit_str, m.dn, estr))
 
     def _test_uac_bits_unrelated_modify_with_args(self, account_type):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
