@@ -18,6 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* Please keep this list in sync with the flag_mapping.c and pydsdb.c */
+
 /* User flags for "userAccountControl" */
 #define UF_SCRIPT	 			0x00000001  /* NT or Lan Manager Login script must be executed */
 #define UF_ACCOUNTDISABLE			0x00000002
@@ -52,6 +54,9 @@
 #define UF_NO_AUTH_DATA_REQUIRED		0x02000000
 #define UF_PARTIAL_SECRETS_ACCOUNT		0x04000000
 #define UF_USE_AES_KEYS                         0x08000000
+
+/* Please keep this list in sync with the flag_mapping.c and pydsdb.c */
+
 
 #define UF_TRUST_ACCOUNT_MASK (\
 		UF_INTERDOMAIN_TRUST_ACCOUNT |\
