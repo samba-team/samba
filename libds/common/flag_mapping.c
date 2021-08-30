@@ -164,3 +164,53 @@ uint32_t ds_uf2prim_group_rid(uint32_t uf)
 
 	return prim_group_rid;
 }
+
+#define FLAG(x) { .name = #x, .uf = x }
+struct {
+	const char *name;
+	uint32_t uf;
+} user_account_control_name_map[] = {
+	FLAG(UF_SCRIPT),
+	FLAG(UF_ACCOUNTDISABLE),
+	FLAG(UF_00000004),
+	FLAG(UF_HOMEDIR_REQUIRED),
+	FLAG(UF_LOCKOUT),
+	FLAG(UF_PASSWD_NOTREQD),
+	FLAG(UF_PASSWD_CANT_CHANGE),
+	FLAG(UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED),
+
+	FLAG(UF_TEMP_DUPLICATE_ACCOUNT),
+	FLAG(UF_NORMAL_ACCOUNT),
+	FLAG(UF_00000400),
+	FLAG(UF_INTERDOMAIN_TRUST_ACCOUNT),
+
+	FLAG(UF_WORKSTATION_TRUST_ACCOUNT),
+	FLAG(UF_SERVER_TRUST_ACCOUNT),
+	FLAG(UF_00004000),
+	FLAG(UF_00008000),
+
+	FLAG(UF_DONT_EXPIRE_PASSWD),
+	FLAG(UF_MNS_LOGON_ACCOUNT),
+	FLAG(UF_SMARTCARD_REQUIRED),
+	FLAG(UF_TRUSTED_FOR_DELEGATION),
+
+	FLAG(UF_NOT_DELEGATED),
+	FLAG(UF_USE_DES_KEY_ONLY),
+	FLAG(UF_DONT_REQUIRE_PREAUTH),
+	FLAG(UF_PASSWORD_EXPIRED),
+	FLAG(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION),
+	FLAG(UF_NO_AUTH_DATA_REQUIRED),
+	FLAG(UF_PARTIAL_SECRETS_ACCOUNT),
+	FLAG(UF_USE_AES_KEYS)
+};
+
+const char *dsdb_user_account_control_flag_bit_to_string(uint32_t uf)
+{
+	int i;
+	for (i=0; i < ARRAY_SIZE(user_account_control_name_map); i++) {
+		if (uf == user_account_control_name_map[i].uf) {
+			return user_account_control_name_map[i].name;
+		}
+	}
+	return NULL;
+}
