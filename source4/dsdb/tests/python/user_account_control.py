@@ -27,7 +27,7 @@ from samba.samdb import SamDB
 from samba.dcerpc import samr, security, lsa
 from samba.credentials import Credentials
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.tests import delete_force
+from samba.tests import delete_force, DynamicTestCase
 from samba import gensec, sd_utils
 from samba.credentials import DONT_USE_KERBEROS
 from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
@@ -41,6 +41,7 @@ from samba.dsdb import UF_SCRIPT, UF_ACCOUNTDISABLE, UF_00000004, UF_HOMEDIR_REQ
     UF_TRUSTED_FOR_DELEGATION, UF_NOT_DELEGATED, UF_USE_DES_KEY_ONLY, UF_DONT_REQUIRE_PREAUTH, \
     UF_PASSWORD_EXPIRED, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION, UF_NO_AUTH_DATA_REQUIRED, \
     UF_PARTIAL_SECRETS_ACCOUNT, UF_USE_AES_KEYS
+from samba import dsdb
 
 
 parser = optparse.OptionParser("user_account_control.py [options] <host>")
@@ -86,7 +87,15 @@ bits = [UF_SCRIPT, UF_ACCOUNTDISABLE, UF_00000004, UF_HOMEDIR_REQUIRED,
 account_types = set([UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT])
 
 
+@DynamicTestCase
 class UserAccountControlTests(samba.tests.TestCase):
+    @classmethod
+    def setUpDynamicTestCases(cls):
+        for account_type in [UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT]:
+            account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+            cls.generate_dynamic_test("test_uac_bits_unrelated_modify",
+                                      account_type_str, account_type)
+
     def add_computer_ldap(self, computername, others=None, samdb=None):
         if samdb is None:
             samdb = self.samdb
@@ -436,7 +445,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                 else:
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
-    def uac_bits_unrelated_modify_helper(self, account_type):
+    def _test_uac_bits_unrelated_modify_with_args(self, account_type):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
@@ -602,12 +611,6 @@ class UserAccountControlTests(samba.tests.TestCase):
                 self.assertEqual(int(res[0]["userAccountControl"][0]),
                                  UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD,
                                  "bit 0X%08x should have been removed" % bit)
-
-    def test_uac_bits_unrelated_modify_normal(self):
-        self.uac_bits_unrelated_modify_helper(UF_NORMAL_ACCOUNT)
-
-    def test_uac_bits_unrelated_modify_workstation(self):
-        self.uac_bits_unrelated_modify_helper(UF_WORKSTATION_TRUST_ACCOUNT)
 
     def test_uac_bits_add(self):
         computername = self.computernames[0]
