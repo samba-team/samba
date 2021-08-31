@@ -713,8 +713,8 @@ tasks = {
         "sequence": [
             ("random-sleep", random_sleep(1, 1)),
             ("test", make_test(include_envs=[
-            "fl2000dc",
-            "fl2003dc",
+            "fl2008dc",
+            "fl2008r2dc",
             ])),
             ("lcov", LCOV_CMD),
             ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
