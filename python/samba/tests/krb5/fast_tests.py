@@ -20,6 +20,7 @@
 import functools
 import os
 import sys
+import collections
 
 import ldb
 
@@ -37,6 +38,7 @@ from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_GENERIC,
+    KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_NOT_US,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_PREAUTH_REQUIRED,
@@ -115,7 +117,7 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC, KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': False,
                 'sname': None,
                 'expected_sname': expected_sname
@@ -132,7 +134,7 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC, KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': False,
                 'gen_tgt_fn': self.get_user_tgt,
                 'sname': None,
@@ -169,7 +171,7 @@ class FAST_Tests(KDCBaseTest):
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
-                'expected_error_mode': KDC_ERR_GENERIC,
+                'expected_error_mode': (KDC_ERR_GENERIC, KDC_ERR_S_PRINCIPAL_UNKNOWN),
                 'use_fast': True,
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
@@ -1147,7 +1149,12 @@ class FAST_Tests(KDCBaseTest):
             self.assertIn(rep_type, (KRB_AS_REP, KRB_TGS_REP))
 
             expected_error_mode = kdc_dict.pop('expected_error_mode')
-            self.assertIn(expected_error_mode, range(240))
+            if expected_error_mode == 0:
+                expected_error_mode = ()
+            elif not isinstance(expected_error_mode, collections.abc.Container):
+                expected_error_mode = (expected_error_mode,)
+            for error in expected_error_mode:
+                self.assertIn(error, range(240))
 
             use_fast = kdc_dict.pop('use_fast')
             self.assertIs(type(use_fast), bool)
@@ -1158,7 +1165,7 @@ class FAST_Tests(KDCBaseTest):
 
                 if fast_armor_type is not None:
                     self.assertIn('gen_armor_tgt_fn', kdc_dict)
-                elif expected_error_mode != KDC_ERR_GENERIC:
+                elif KDC_ERR_GENERIC not in expected_error_mode:
                     self.assertNotIn('gen_armor_tgt_fn', kdc_dict)
 
                 gen_armor_tgt_fn = kdc_dict.pop('gen_armor_tgt_fn', None)
@@ -1182,7 +1189,7 @@ class FAST_Tests(KDCBaseTest):
                 self.assertNotIn('gen_tgt_fn', kdc_dict)
                 tgt = None
 
-            if expected_error_mode != 0:
+            if len(expected_error_mode) != 0:
                 check_error_fn = self.generic_check_kdc_error
                 check_rep_fn = None
             else:
@@ -1396,7 +1403,7 @@ class FAST_Tests(KDCBaseTest):
                                                  realm=crealm,
                                                  sname=sname,
                                                  etypes=etypes)
-                if expected_error_mode == 0:
+                if len(expected_error_mode) == 0:
                     self.check_reply(rep, rep_type)
 
                     fast_cookie = None
@@ -1410,7 +1417,7 @@ class FAST_Tests(KDCBaseTest):
                     else:
                         fast_cookie = None
 
-                    if expected_error_mode == KDC_ERR_PREAUTH_REQUIRED:
+                    if KDC_ERR_PREAUTH_REQUIRED in expected_error_mode:
                         preauth_etype_info2 = (
                             kdc_exchange_dict['preauth_etype_info2'])
                     else:
