@@ -21,6 +21,7 @@ import os
 from datetime import datetime, timezone
 import tempfile
 import binascii
+import collections
 
 from collections import namedtuple
 import ldb
@@ -598,7 +599,10 @@ class KDCBaseTest(RawKerberosTest):
         """
         self.assertIsNotNone(rep)
         self.assertEqual(rep['msg-type'], KRB_ERROR, "rep = {%s}" % rep)
-        self.assertEqual(rep['error-code'], expected, "rep = {%s}" % rep)
+        if isinstance(expected, collections.abc.Container):
+            self.assertIn(rep['error-code'], expected, "rep = {%s}" % rep)
+        else:
+            self.assertEqual(rep['error-code'], expected, "rep = {%s}" % rep)
 
     def tgs_req(self, cname, sname, realm, ticket, key, etypes):
         '''Send a TGS-REQ, returns the response and the decrypted and
