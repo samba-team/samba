@@ -996,7 +996,7 @@ _kdc_as_rep(krb5_context context,
 	flags |= HDB_F_CANON;
 
     if(b->sname == NULL){
-	ret = KRB5KRB_ERR_GENERIC;
+	ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 	e_text = "No server in request";
     } else{
 	ret = _krb5_principalname2krb5_principal (context,
@@ -1012,7 +1012,7 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
     if(b->cname == NULL){
-	ret = KRB5KRB_ERR_GENERIC;
+	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	e_text = "No client in request";
     } else {
 	ret = _krb5_principalname2krb5_principal (context,
