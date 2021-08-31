@@ -106,13 +106,11 @@ class AsReqKerberosTests(KDCBaseTest):
             expected_salt=expected_salt,
             kdc_options=str(initial_kdc_options))
 
-        rep = self._generic_kdc_exchange(kdc_exchange_dict,
-                                         cname=cname,
-                                         realm=realm,
-                                         sname=sname,
-                                         etypes=initial_etypes)
-
-        return kdc_exchange_dict['preauth_etype_info2']
+        self._generic_kdc_exchange(kdc_exchange_dict,
+                                   cname=cname,
+                                   realm=realm,
+                                   sname=sname,
+                                   etypes=initial_etypes)
 
     def _test_as_req_no_preauth_with_args(self, etype_idx, pac):
         name, etypes = self.etype_test_permutation_by_idx(etype_idx)
@@ -121,7 +119,7 @@ class AsReqKerberosTests(KDCBaseTest):
         else:
             pa_pac = self.KERB_PA_PAC_REQUEST_create(pac)
             padata = [pa_pac]
-        return self._test_as_req_nopreauth(
+        self._test_as_req_nopreauth(
                      initial_padata=padata,
                      initial_etypes=etypes,
                      initial_kdc_options=krb5_asn1.KDCOptions('forwardable'))
