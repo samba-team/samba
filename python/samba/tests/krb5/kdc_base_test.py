@@ -201,6 +201,7 @@ class KDCBaseTest(RawKerberosTest):
             creds.set_workstation(name)
         else:
             creds.set_workstation('')
+        creds.set_dn(dn)
         #
         # Save the account name so it can be deleted in tearDownClass
         self.accounts.add(dn)
@@ -441,6 +442,7 @@ class KDCBaseTest(RawKerberosTest):
 
             kvno = int(res[0]['msDS-KeyVersionNumber'][0])
             creds.set_kvno(kvno)
+            creds.set_dn(dn)
 
             keys = self.get_keys(samdb, dn)
             self.creds_set_keys(creds, keys)
