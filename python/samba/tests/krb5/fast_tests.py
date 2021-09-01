@@ -1466,7 +1466,7 @@ class FAST_Tests(KDCBaseTest):
 
         samdb = self.get_samdb()
 
-        krbtgt_rid = 502
+        krbtgt_rid = security.DOMAIN_RID_KRBTGT
         krbtgt_sid = '%s-%d' % (samdb.get_domain_sid(), krbtgt_rid)
 
         res = samdb.search(base='<SID=%s>' % krbtgt_sid,
