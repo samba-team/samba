@@ -896,6 +896,24 @@ class RawKerberosTest(TestCaseInTempDir):
         else:
             self.assertIsNone(v)
 
+    def assertElementFlags(self, obj, elem, expected, unexpected):
+        v = self.getElementValue(obj, elem)
+        self.assertIsNotNone(v)
+        if expected is not None:
+            self.assertIsInstance(expected, krb5_asn1.KDCOptions)
+            for i, flag in enumerate(expected):
+                if flag == 1:
+                    self.assertEqual('1', v[i],
+                                     f"'{expected.namedValues[i]}' "
+                                     f"expected in {v}")
+        if unexpected is not None:
+            self.assertIsInstance(unexpected, krb5_asn1.KDCOptions)
+            for i, flag in enumerate(unexpected):
+                if flag == 1:
+                    self.assertEqual('0', v[i],
+                                     f"'{unexpected.namedValues[i]}' "
+                                     f"unexpected in {v}")
+
     def get_KerberosTimeWithUsec(self, epoch=None, offset=None):
         if epoch is None:
             epoch = time.time()
@@ -1761,6 +1779,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          expected_anon=False,
                          expected_srealm=None,
                          expected_sname=None,
+                         expected_flags=None,
+                         unexpected_flags=None,
                          ticket_decryption_key=None,
                          generate_fast_fn=None,
                          generate_fast_armor_fn=None,
@@ -1801,6 +1821,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_flags': expected_flags,
+            'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
@@ -1837,6 +1859,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           expected_anon=False,
                           expected_srealm=None,
                           expected_sname=None,
+                          expected_flags=None,
+                          unexpected_flags=None,
                           ticket_decryption_key=None,
                           generate_fast_fn=None,
                           generate_fast_armor_fn=None,
@@ -1877,6 +1901,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
+            'expected_flags': expected_flags,
+            'unexpected_flags': unexpected_flags,
             'ticket_decryption_key': ticket_decryption_key,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
@@ -2092,6 +2118,8 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
 
+        expected_flags = kdc_exchange_dict.get('expected_flags')
+        unexpected_flags = kdc_exchange_dict.get('unexpected_flags')
 
         ticket = self.getElementValue(rep, 'ticket')
 
@@ -2101,7 +2129,9 @@ class RawKerberosTest(TestCaseInTempDir):
 
         ticket_session_key = None
         if ticket_private is not None:
-            self.assertElementPresent(ticket_private, 'flags')
+            self.assertElementFlags(ticket_private, 'flags',
+                                    expected_flags,
+                                    unexpected_flags)
             self.assertElementPresent(ticket_private, 'key')
             ticket_key = self.getElementValue(ticket_private, 'key')
             self.assertIsNotNone(ticket_key)
@@ -2137,7 +2167,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                     kdc_exchange_dict['nonce'])
             # TODO self.assertElementPresent(encpart_private,
             #                                'key-expiration')
-            self.assertElementPresent(encpart_private, 'flags')
+            self.assertElementFlags(ticket_private, 'flags',
+                                    expected_flags,
+                                    unexpected_flags)
             self.assertElementPresent(encpart_private, 'authtime')
             if self.strict_checking:
                 self.assertElementPresent(encpart_private, 'starttime')
@@ -2843,6 +2875,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           etypes,
                           padata,
                           kdc_options,
+                          expected_flags=None,
+                          unexpected_flags=None,
                           preauth_key=None,
                           ticket_decryption_key=None,
                           pac_request=None,
@@ -2886,6 +2920,8 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
+            expected_flags=expected_flags,
+            unexpected_flags=unexpected_flags,
             kdc_options=str(kdc_options),
             pac_request=pac_request,
             pac_options=pac_options)
