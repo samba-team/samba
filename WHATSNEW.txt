@@ -70,18 +70,19 @@ client that is in the allow list and NOT in the deny list.
 "server multi channel support" no longer experimental
 -----------------------------------------------------
 
-This option is enabled by default starting with to 4.15 (on Linux and FreeBSD).
+This option is enabled by default starting with 4.15 (on Linux and FreeBSD).
 Due to dependencies on kernel APIs of Linux or FreeBSD, it's only possible
 to use this feature on Linux and FreeBSD for now.
+
 
 samba-tool available without the ad-dc
 --------------------------------------
 
-The samba-tool command is now available when samba is configured
---without-ad-dc. Not all features will work, and some ad-dc specific options
-have been disabled. The samba-tool domain options, for example, are limited
+The 'samba-tool' command is now available when samba is configured
+"--without-ad-dc". Not all features will work, and some ad-dc specific options
+have been disabled. The 'samba-tool domain' options, for example, are limited
 when no ad-dc is present. Samba must still be built with ads in order to enable
-samba-tool.
+'samba-tool'.
 
 
 Improved command line user experience
@@ -98,7 +99,7 @@ simplified and provides better control for encryption, singing and kerberos.
 Also several command line options have a smb.conf variable to control the
 default now.
 
-All tools are logging to stderr by default. You can use --debug-stdout to
+All tools are logging to stderr by default. You can use "--debug-stdout" to
 change the behavior.
 
 ### Common parser:
@@ -158,23 +159,24 @@ to redirect ticket requests to the right DC. This is e.g. needed for one way
 trusts. The options `winbind use krb5 enterprise principals` and
 `winbind scan trusted domains` will be deprecated in one of the next releases.
 
+
 Support for Offline Domain Join (ODJ)
 -------------------------------------
 
 The net utility is now able to support the offline domain join feature
 as known from the Windows djoin.exe command for many years. Samba's
-implementation is accessible via the "net offlinejoin" subcommand. It
+implementation is accessible via the 'net offlinejoin' subcommand. It
 can provision computers and request offline joining for both Windows
 and Unix machines. It is also possible to provision computers from
-Windows (using djoin.exe) and use the generated data in Samba's net
+Windows (using djoin.exe) and use the generated data in Samba's 'net'
 utility. The existing options for the provisioning and joining steps
 are documented in the net(8) manpage.
 
 
-samba-tool dns zoneoptions for aging control
---------------------------------------------
+'samba-tool dns zoneoptions' for aging control
+----------------------------------------------
 
-The samba-tool dns zoneoptions command can be used to turn aging on
+The 'samba-tool dns zoneoptions' command can be used to turn aging on
 and off, alter the refresh and no-refresh periods, and manipulate the
 timestamps of existing records.
 
@@ -193,8 +195,8 @@ step process will help prevent the temporary loss of dynamic records
 if scavenging happens before their first renewal.
 
 
-Marking old records as static or dynamic with samba-tool
---------------------------------------------------------
+Marking old records as static or dynamic with 'samba-tool'
+----------------------------------------------------------
 
 A bug in Samba versions prior to 4.9 meant records that were meant to
 be static were marked as dynamic and vice versa. To fix the timestamps
@@ -205,7 +207,7 @@ preferably before turning aging on.
    --mark-records-dynamic-regex
    --mark-records-static-regex
 
-The --mark-old-records-static option will make records older than the
+The "--mark-old-records-static" option will make records older than the
 specified date static (that is, with a zero timestamp). For example,
 if you upgraded to Samba 4.9 in November 2018, you could use ensure no
 old records will be mistakenly interpreted as dynamic using the
@@ -226,7 +228,7 @@ These options are deliberately long and cumbersome to type, so people
 have a chance to think before they get to the end. You can make a
 mess if you get it wrong.
 
-All samba-tool dns zoneoptions modes can be given a --dry-run/-n
+All 'samba-tool dns zoneoptions' modes can be given a "--dry-run/-n"
 argument that allows you to inspect the likely results before going
 ahead.
 
@@ -262,13 +264,13 @@ where aging was enabled (and hence tombstone timestamps were used).
 samba-tool dns update and RPC changes
 -------------------------------------
 
-The dnsserver DCERPC pipe can be used by samba-tool and Windows tools
+The dnsserver DCERPC pipe can be used by 'samba-tool' and Windows tools
 to manipulate dns records on the remote server. A bug in Samba meant
 it was not possible to update an existing DNS record to change the
 TTL. The general behaviour of RPC updates is now closer to that of
 Windows.
 
-samba-tool dns update is now a bit more careful in rejecting and
+'samba-tool dns update' is now a bit more careful in rejecting and
 warning you about malformed IPv4 and IPv6 addresses.
 
 
