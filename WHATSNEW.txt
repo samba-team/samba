@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.15.  This is *not*
+This is the fourth release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -313,6 +313,13 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc3
+=======================
+
+o  Bjoern Jacke <bj@sernet.de>
+   * BUG 14800: util_sock: fix assignment of sa_socklen.
 
 
 CHANGES SINCE 4.15.0rc2
