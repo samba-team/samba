@@ -197,6 +197,7 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     winbindd_idmap.c
                     winbindd_locator.c
                     winbindd_ndr.c
+                    winbindd_traceid.c
                     wb_lookupsid.c
                     wb_lookupsids.c
                     wb_lookupname.c
