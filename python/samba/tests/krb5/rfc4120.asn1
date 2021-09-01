@@ -632,6 +632,7 @@ KDCOptionsValues      ::= BIT STRING { -- KerberosFlags
         opt-hardware-auth(11),
         unused12(12),
         unused13(13),
+        cname-in-addl-tkt(14),
 -- Canonicalize is used by RFC 6806
         canonicalize(15),
 -- 26 was unused in 1510
