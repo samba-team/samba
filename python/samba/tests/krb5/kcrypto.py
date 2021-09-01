@@ -478,6 +478,7 @@ class _ChecksumProfile(object):
     # define:
     #   * checksum
     #   * verify (if verification is not just checksum-and-compare)
+    #   * checksum_len
     @classmethod
     def verify(cls, key, keyusage, text, cksum):
         expected = cls.checksum(key, keyusage, text)
@@ -503,6 +504,10 @@ class _SimplifiedChecksum(_ChecksumProfile):
         if key.enctype != cls.enc.enctype:
             raise ValueError('Wrong key type for checksum')
         super(_SimplifiedChecksum, cls).verify(key, keyusage, text, cksum)
+
+    @classmethod
+    def checksum_len(cls):
+        return cls.macsize
 
 
 class _SHA1AES128(_SimplifiedChecksum):
@@ -533,12 +538,20 @@ class _HMACMD5(_ChecksumProfile):
             raise ValueError('Wrong key type for checksum')
         super(_HMACMD5, cls).verify(key, keyusage, text, cksum)
 
+    @classmethod
+    def checksum_len(cls):
+        return hashes.MD5.digest_size
+
 
 class _MD5(_ChecksumProfile):
     @classmethod
     def checksum(cls, key, keyusage, text):
         # This is unkeyed!
         return SIMPLE_HASH(text, hashes.MD5)
+
+    @classmethod
+    def checksum_len(cls):
+        return hashes.MD5.digest_size
 
 
 class _SHA1(_ChecksumProfile):
@@ -547,6 +560,10 @@ class _SHA1(_ChecksumProfile):
         # This is unkeyed!
         return SIMPLE_HASH(text, hashes.SHA1)
 
+    @classmethod
+    def checksum_len(cls):
+        return hashes.SHA1.digest_size
+
 
 class _CRC32(_ChecksumProfile):
     @classmethod
@@ -554,6 +571,10 @@ class _CRC32(_ChecksumProfile):
         # This is unkeyed!
         cksum = (~crc32(text, 0xffffffff)) & 0xffffffff
         return pack('<I', cksum)
+
+    @classmethod
+    def checksum_len(cls):
+        return 4
 
 
 _enctype_table = {
@@ -641,6 +662,11 @@ def verify_checksum(cksumtype, key, keyusage, text, cksum):
     # malformed checksum.
     c = _get_checksum_profile(cksumtype)
     c.verify(key, keyusage, text, cksum)
+
+
+def checksum_len(cksumtype):
+    c = _get_checksum_profile(cksumtype)
+    return c.checksum_len()
 
 
 def prfplus(key, pepper, ln):
