@@ -116,7 +116,7 @@ class KDCBaseTest(RawKerberosTest):
             lp = self.get_lp()
 
             session = system_session()
-            type(self)._ldb = SamDB(url="ldap://%s" % self.host,
+            type(self)._ldb = SamDB(url="ldap://%s" % self.dc_host,
                                     session_info=session,
                                     credentials=creds,
                                     lp=lp)
