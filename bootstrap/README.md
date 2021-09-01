@@ -32,7 +32,7 @@ Just calculate the sha1sum for consistency checks:
  bootstrap/template.py --sha1sum
 
 The checksum needs to be added as `SAMBA_CI_CONTAINER_TAG` in
-the toplevel .gitlab-ci.yml file.
+the toplevel .gitlab-ci-main.yml file.
 
 ## User Stories
 
