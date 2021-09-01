@@ -1798,6 +1798,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          check_kdc_private_fn=None,
                          callback_dict=None,
                          expected_error_mode=0,
+                         expected_status=None,
                          client_as_etypes=None,
                          expected_salt=None,
                          authenticator_subkey=None,
@@ -1841,6 +1842,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
+            'expected_status': expected_status,
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
@@ -1879,6 +1881,7 @@ class RawKerberosTest(TestCaseInTempDir):
                           check_padata_fn=None,
                           check_kdc_private_fn=None,
                           expected_error_mode=0,
+                          expected_status=None,
                           callback_dict=None,
                           tgt=None,
                           armor_key=None,
@@ -1923,6 +1926,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
+            'expected_status': expected_status,
             'tgt': tgt,
             'body_checksum_type': body_checksum_type,
             'armor_key': armor_key,
@@ -2540,7 +2544,12 @@ class RawKerberosTest(TestCaseInTempDir):
             status = int.from_bytes(pw_salt[:4], 'little')
             flags = int.from_bytes(pw_salt[8:], 'little')
 
+            expected_status = kdc_exchange_dict['expected_status']
+            self.assertEqual(expected_status, status)
+
             self.assertEqual(3, flags)
+        else:
+            self.assertIsNone(kdc_exchange_dict.get('expected_status'))
 
         if enc_challenge is not None:
             if not sent_enc_challenge:
