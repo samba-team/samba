@@ -261,6 +261,8 @@ class KerberosCredentials(Credentials):
 
         self.forced_salt = None
 
+        self.dn = None
+
     def set_as_supported_enctypes(self, value):
         self.as_supported_enctypes = int(value)
 
@@ -326,6 +328,12 @@ class KerberosCredentials(Credentials):
             salt_string = self.get_realm().upper() + self.get_username()
 
         return salt_string.encode('utf-8')
+
+    def set_dn(self, dn):
+        self.dn = dn
+
+    def get_dn(self):
+        return self.dn
 
 
 class KerberosTicketCreds:
