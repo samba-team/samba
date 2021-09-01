@@ -2120,6 +2120,9 @@ class RawKerberosTest(TestCaseInTempDir):
         canon_pos = len(tuple(krb5_asn1.KDCOptions('canonicalize'))) - 1
         canonicalize = (canon_pos < len(kdc_options)
                         and kdc_options[canon_pos] == '1')
+        renewable_pos = len(tuple(krb5_asn1.KDCOptions('renewable'))) - 1
+        renewable = (renewable_pos < len(kdc_options)
+                     and kdc_options[renewable_pos] == '1')
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
         expected_cname = kdc_exchange_dict['expected_cname']
@@ -2158,7 +2161,11 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(ticket_private, 'starttime')
             self.assertElementPresent(ticket_private, 'endtime')
-            # TODO self.assertElementPresent(ticket_private, 'renew-till')
+            if renewable:
+                if self.strict_checking:
+                    self.assertElementPresent(ticket_private, 'renew-till')
+            else:
+                self.assertElementMissing(ticket_private, 'renew-till')
             # TODO self.assertElementMissing(ticket_private, 'caddr')
             self.assertElementPresent(ticket_private, 'authorization-data')
 
@@ -2183,7 +2190,11 @@ class RawKerberosTest(TestCaseInTempDir):
             if self.strict_checking:
                 self.assertElementPresent(encpart_private, 'starttime')
             self.assertElementPresent(encpart_private, 'endtime')
-            # TODO self.assertElementPresent(encpart_private, 'renew-till')
+            if renewable:
+                if self.strict_checking:
+                    self.assertElementPresent(encpart_private, 'renew-till')
+            else:
+                self.assertElementMissing(encpart_private, 'renew-till')
             self.assertElementEqualUTF8(encpart_private, 'srealm',
                                         expected_srealm)
             self.assertElementEqualPrincipal(encpart_private, 'sname',
