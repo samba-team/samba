@@ -218,7 +218,8 @@ class Ldb(_Ldb):
 
         :param ldif_path: Path to LDIF file.
         """
-        self.add_ldif(open(ldif_path, 'r').read())
+        with open(ldif_path, 'r') as ldif_file:
+            self.add_ldif(ldif_file.read())
 
     def add_ldif(self, ldif, controls=None):
         """Add data based on a LDIF string.
@@ -280,10 +281,11 @@ def read_and_sub_file(file_name, subst_vars):
     :param file_name: File to be read (typically from setup directory)
      param subst_vars: Optional variables to subsitute in the file.
     """
-    data = open(file_name, 'r', encoding="utf-8").read()
-    if subst_vars is not None:
-        data = substitute_var(data, subst_vars)
-        check_all_substituted(data)
+    with open(file_name, 'r', encoding="utf-8") as data_file:
+        data = data_file.read()
+        if subst_vars is not None:
+            data = substitute_var(data, subst_vars)
+            check_all_substituted(data)
     return data
 
 
