@@ -120,7 +120,7 @@ class EncryptedData(univ.Sequence):
 
 EncryptedData.componentType = namedtype.NamedTypes(
     namedtype.NamedType('etype', EncryptionType().subtype(explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
-    namedtype.OptionalNamedType('kvno', UInt32().subtype(explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
+    namedtype.OptionalNamedType('kvno', Int32().subtype(explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))),
     namedtype.NamedType('cipher', univ.OctetString().subtype(explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2)))
 )
 
