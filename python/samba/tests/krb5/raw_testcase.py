@@ -995,7 +995,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def EncryptedData_create(self, key, usage, plaintext):
         # EncryptedData   ::= SEQUENCE {
         #         etype   [0] Int32 -- EncryptionType --,
-        #         kvno    [1] UInt32 OPTIONAL,
+        #         kvno    [1] Int32 OPTIONAL,
         #         cipher  [2] OCTET STRING -- ciphertext
         # }
         ciphertext = key.encrypt(usage, plaintext)
