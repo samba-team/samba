@@ -295,6 +295,9 @@ interface security
 	const string SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY = "S-1-18-1";
 	const string SID_SERVICE_ASSERTED_IDENTITY = "S-1-18-2";
 
+	const string SID_COMPOUNDED_AUTHENTICATION = "S-1-5-21-0-0-0-496";
+	const string SID_CLAIMS_VALID = "S-1-5-21-0-0-0-497";
+
 	/*
 	 * http://technet.microsoft.com/en-us/library/hh509017(v=ws.10).aspx
 	 */
