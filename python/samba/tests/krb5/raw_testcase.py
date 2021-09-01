@@ -418,6 +418,7 @@ class RawKerberosTest(TestCaseInTempDir):
         super().setUpClass()
 
         cls.host = samba.tests.env_get_var_value('SERVER')
+        cls.dc_host = samba.tests.env_get_var_value('DC_SERVER')
 
         # A dictionary containing credentials that have already been
         # obtained.
@@ -452,10 +453,10 @@ class RawKerberosTest(TestCaseInTempDir):
         if self.do_hexdump:
             sys.stderr.write("disconnect[%s]\n" % reason)
 
-    def _connect_tcp(self):
+    def _connect_tcp(self, host):
         tcp_port = 88
         try:
-            self.a = socket.getaddrinfo(self.host, tcp_port, socket.AF_UNSPEC,
+            self.a = socket.getaddrinfo(host, tcp_port, socket.AF_UNSPEC,
                                         socket.SOCK_STREAM, socket.SOL_TCP,
                                         0)
             self.s = socket.socket(self.a[0][0], self.a[0][1], self.a[0][2])
@@ -468,11 +469,11 @@ class RawKerberosTest(TestCaseInTempDir):
             self.s.close()
             raise
 
-    def connect(self):
+    def connect(self, host):
         self.assertNotConnected()
-        self._connect_tcp()
+        self._connect_tcp(host)
         if self.do_hexdump:
-            sys.stderr.write("connected[%s]\n" % self.host)
+            sys.stderr.write("connected[%s]\n" % host)
 
     def env_get_var(self, varname, prefix,
                     fallback_default=True,
@@ -819,8 +820,10 @@ class RawKerberosTest(TestCaseInTempDir):
             req,
             asn1_print=None,
             hexdump=None,
-            timeout=None):
-        self.connect()
+            timeout=None,
+            to_rodc=False):
+        host = self.host if to_rodc else self.dc_host
+        self.connect(host)
         try:
             self.send_pdu(req, asn1_print=asn1_print, hexdump=hexdump)
             rep = self.recv_pdu(
@@ -1747,7 +1750,9 @@ class RawKerberosTest(TestCaseInTempDir):
                                                    req_body=req_body,
                                                    asn1Spec=req_asn1Spec())
 
-        rep = self.send_recv_transaction(req_decoded)
+        to_rodc = kdc_exchange_dict['to_rodc']
+
+        rep = self.send_recv_transaction(req_decoded, to_rodc=to_rodc)
         self.assertIsNotNone(rep)
 
         msg_type = self.getElementValue(rep, 'msg-type')
@@ -1804,7 +1809,8 @@ class RawKerberosTest(TestCaseInTempDir):
                          inner_req=None,
                          outer_req=None,
                          pac_request=None,
-                         pac_options=None):
+                         pac_options=None,
+                         to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
         elif not isinstance(expected_error_mode, collections.abc.Container):
@@ -1846,7 +1852,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'inner_req': inner_req,
             'outer_req': outer_req,
             'pac_request': pac_request,
-            'pac_options': pac_options
+            'pac_options': pac_options,
+            'to_rodc': to_rodc
         }
         if callback_dict is None:
             callback_dict = {}
@@ -1884,7 +1891,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           inner_req=None,
                           outer_req=None,
                           pac_request=None,
-                          pac_options=None):
+                          pac_options=None,
+                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
         elif not isinstance(expected_error_mode, collections.abc.Container):
@@ -1926,7 +1934,8 @@ class RawKerberosTest(TestCaseInTempDir):
             'inner_req': inner_req,
             'outer_req': outer_req,
             'pac_request': pac_request,
-            'pac_options': pac_options
+            'pac_options': pac_options,
+            'to_rodc': to_rodc
         }
         if callback_dict is None:
             callback_dict = {}
@@ -2880,7 +2889,8 @@ class RawKerberosTest(TestCaseInTempDir):
                           preauth_key=None,
                           ticket_decryption_key=None,
                           pac_request=None,
-                          pac_options=None):
+                          pac_options=None,
+                          to_rodc=False):
 
         def _generate_padata_copy(_kdc_exchange_dict,
                                   _callback_dict,
@@ -2924,7 +2934,8 @@ class RawKerberosTest(TestCaseInTempDir):
             unexpected_flags=unexpected_flags,
             kdc_options=str(kdc_options),
             pac_request=pac_request,
-            pac_options=pac_options)
+            pac_options=pac_options,
+            to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=cname,
