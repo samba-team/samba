@@ -49,7 +49,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_INST,
-    NT_WELLKNOWN,
     PADATA_FX_COOKIE,
     PADATA_FX_FAST,
     PADATA_PAC_OPTIONS
@@ -1028,14 +1027,6 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_fast_hide_client_names(self):
-        user_creds = self.get_client_creds()
-        user_name = user_creds.get_username()
-        user_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                               names=[user_name])
-
-        expected_cname = self.PrincipalName_create(
-            name_type=NT_WELLKNOWN, names=['WELLKNOWN', 'ANONYMOUS'])
-
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
@@ -1044,7 +1035,7 @@ class FAST_Tests(KDCBaseTest):
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
                 'fast_options': '01',  # hide client names
-                'expected_cname': expected_cname
+                'expected_anon': True
             },
             {
                 'rep_type': KRB_AS_REP,
@@ -1054,20 +1045,11 @@ class FAST_Tests(KDCBaseTest):
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
                 'fast_options': '01',  # hide client names
-                'expected_cname': expected_cname,
-                'expected_cname_private': user_cname
+                'expected_anon': True
             }
         ])
 
     def test_fast_tgs_hide_client_names(self):
-        user_creds = self.get_client_creds()
-        user_name = user_creds.get_username()
-        user_cname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                               names=[user_name])
-
-        expected_cname = self.PrincipalName_create(
-            name_type=NT_WELLKNOWN, names=['WELLKNOWN', 'ANONYMOUS'])
-
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
@@ -1076,8 +1058,7 @@ class FAST_Tests(KDCBaseTest):
                 'gen_tgt_fn': self.get_user_tgt,
                 'fast_armor': None,
                 'fast_options': '01',  # hide client names
-                'expected_cname': expected_cname,
-                'expected_cname_private': user_cname
+                'expected_anon': True
             }
         ])
 
@@ -1259,8 +1240,8 @@ class FAST_Tests(KDCBaseTest):
                 srealm = target_realm
 
             expected_cname = kdc_dict.pop('expected_cname', client_cname)
-            expected_cname_private = kdc_dict.pop('expected_cname_private',
-                                                  None)
+            expected_anon = kdc_dict.pop('expected_anon',
+                                         False)
             expected_crealm = kdc_dict.pop('expected_crealm', client_realm)
             expected_sname = kdc_dict.pop('expected_sname', sname)
             expected_srealm = kdc_dict.pop('expected_srealm', srealm)
@@ -1384,7 +1365,7 @@ class FAST_Tests(KDCBaseTest):
                 kdc_exchange_dict = self.as_exchange_dict(
                     expected_crealm=expected_crealm,
                     expected_cname=expected_cname,
-                    expected_cname_private=expected_cname_private,
+                    expected_anon=expected_anon,
                     expected_srealm=expected_srealm,
                     expected_sname=expected_sname,
                     ticket_decryption_key=krbtgt_decryption_key,
@@ -1413,7 +1394,7 @@ class FAST_Tests(KDCBaseTest):
                 kdc_exchange_dict = self.tgs_exchange_dict(
                     expected_crealm=expected_crealm,
                     expected_cname=expected_cname,
-                    expected_cname_private=expected_cname_private,
+                    expected_anon=expected_anon,
                     expected_srealm=expected_srealm,
                     expected_sname=expected_sname,
                     ticket_decryption_key=target_decryption_key,
