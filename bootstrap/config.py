@@ -20,6 +20,9 @@ Manage dependencies and bootstrap environments for Samba.
 
 Config file for packages and templates.
 
+Update the lists in this file to require new packages in the
+container images used in GitLab CI
+
 Author: Joe Guo <joeg@catalyst.net.nz>
 """
 import os
