@@ -59,6 +59,10 @@ testit "We should be able to unregister the name $NAME.$REALM" $VALGRIND $net_to
 testit "The name $NAME.$REALM $IPADDRESS should not be there any longer" dig @$SERVER +short -t a $NAME.$REALM | grep -q $IPADDRESS && failed=`expr $failed + 1`
 testit "The name $NAME.$REALM $IP6ADDRESS should not be there any longer" dig @$SERVER +short -t aaaa $NAME.$REALM | grep -q $IP6ADDRESS && failed=`expr $failed + 1`
 
+# prime the kpasswd server, see "git blame" for an explanation
+$VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD
+$VALGRIND $net_tool user delete $UNPRIVUSER -U$DC_USERNAME%$DC_PASSWORD
+
 # This should be an expect_failure test ...
 testit "Adding an unprivileged user" $VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
