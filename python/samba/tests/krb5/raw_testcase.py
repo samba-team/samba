@@ -1721,7 +1721,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def as_exchange_dict(self,
                          expected_crealm=None,
                          expected_cname=None,
-                         expected_cname_private=None,
+                         expected_anon=False,
                          expected_srealm=None,
                          expected_sname=None,
                          ticket_decryption_key=None,
@@ -1759,6 +1759,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'rep_encpart_asn1Spec': krb5_asn1.EncASRepPart,
             'expected_crealm': expected_crealm,
             'expected_cname': expected_cname,
+            'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'ticket_decryption_key': ticket_decryption_key,
@@ -1784,10 +1785,6 @@ class RawKerberosTest(TestCaseInTempDir):
             'inner_req': inner_req,
             'outer_req': outer_req
         }
-        if expected_cname_private is not None:
-            kdc_exchange_dict['expected_cname_private'] = (
-                expected_cname_private)
-
         if callback_dict is None:
             callback_dict = {}
 
@@ -1796,7 +1793,7 @@ class RawKerberosTest(TestCaseInTempDir):
     def tgs_exchange_dict(self,
                           expected_crealm=None,
                           expected_cname=None,
-                          expected_cname_private=None,
+                          expected_anon=False,
                           expected_srealm=None,
                           expected_sname=None,
                           ticket_decryption_key=None,
@@ -1834,6 +1831,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'rep_encpart_asn1Spec': krb5_asn1.EncTGSRepPart,
             'expected_crealm': expected_crealm,
             'expected_cname': expected_cname,
+            'expected_anon': expected_anon,
             'expected_srealm': expected_srealm,
             'expected_sname': expected_sname,
             'ticket_decryption_key': ticket_decryption_key,
@@ -1859,10 +1857,6 @@ class RawKerberosTest(TestCaseInTempDir):
             'inner_req': inner_req,
             'outer_req': outer_req
         }
-        if expected_cname_private is not None:
-            kdc_exchange_dict['expected_cname_private'] = (
-                expected_cname_private)
-
         if callback_dict is None:
             callback_dict = {}
 
@@ -1874,7 +1868,7 @@ class RawKerberosTest(TestCaseInTempDir):
                               rep):
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
-        expected_cname = kdc_exchange_dict['expected_cname']
+        expected_anon = kdc_exchange_dict['expected_anon']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
@@ -1888,6 +1882,12 @@ class RawKerberosTest(TestCaseInTempDir):
         padata = self.getElementValue(rep, 'padata')
         if self.strict_checking:
             self.assertElementEqualUTF8(rep, 'crealm', expected_crealm)
+            if expected_anon:
+                expected_cname = self.PrincipalName_create(
+                    name_type=NT_WELLKNOWN,
+                    names=['WELLKNOWN', 'ANONYMOUS'])
+            else:
+                expected_cname = kdc_exchange_dict['expected_cname']
             self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
         self.assertElementPresent(rep, 'ticket')
         ticket = self.getElementValue(rep, 'ticket')
@@ -2042,14 +2042,11 @@ class RawKerberosTest(TestCaseInTempDir):
                         and kdc_options[canon_pos] == '1')
 
         expected_crealm = kdc_exchange_dict['expected_crealm']
+        expected_cname = kdc_exchange_dict['expected_cname']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
 
-        try:
-            expected_cname = kdc_exchange_dict['expected_cname_private']
-        except KeyError:
-            expected_cname = kdc_exchange_dict['expected_cname']
 
         ticket = self.getElementValue(rep, 'ticket')
 
@@ -2182,7 +2179,7 @@ class RawKerberosTest(TestCaseInTempDir):
 
         rep_msg_type = kdc_exchange_dict['rep_msg_type']
 
-        expected_cname = kdc_exchange_dict['expected_cname']
+        expected_anon = kdc_exchange_dict['expected_anon']
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
@@ -2203,7 +2200,10 @@ class RawKerberosTest(TestCaseInTempDir):
         # error-code checked above
         if self.strict_checking:
             self.assertElementMissing(rep, 'crealm')
-            if expected_cname['name-type'] == NT_WELLKNOWN and not inner:
+            if expected_anon and not inner:
+                expected_cname = self.PrincipalName_create(
+                    name_type=NT_WELLKNOWN,
+                    names=['WELLKNOWN', 'ANONYMOUS'])
                 self.assertElementEqualPrincipal(rep, 'cname', expected_cname)
             else:
                 self.assertElementMissing(rep, 'cname')
