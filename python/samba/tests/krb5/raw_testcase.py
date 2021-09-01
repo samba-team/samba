@@ -2166,7 +2166,8 @@ class RawKerberosTest(TestCaseInTempDir):
                     self.assertElementPresent(ticket_private, 'renew-till')
             else:
                 self.assertElementMissing(ticket_private, 'renew-till')
-            # TODO self.assertElementMissing(ticket_private, 'caddr')
+            if self.strict_checking:
+                self.assertElementEqual(ticket_private, 'caddr', [])
             self.assertElementPresent(ticket_private, 'authorization-data')
 
         encpart_session_key = None
@@ -2199,7 +2200,8 @@ class RawKerberosTest(TestCaseInTempDir):
                                         expected_srealm)
             self.assertElementEqualPrincipal(encpart_private, 'sname',
                                              expected_sname)
-            # TODO self.assertElementMissing(encpart_private, 'caddr')
+            if self.strict_checking:
+                self.assertElementEqual(encpart_private, 'caddr', [])
 
             sent_claims = self.sent_claims(kdc_exchange_dict)
 
