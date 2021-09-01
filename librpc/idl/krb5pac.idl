@@ -112,7 +112,8 @@ interface krb5pac
 		PAC_TYPE_KDC_CHECKSUM = 7,
 		PAC_TYPE_LOGON_NAME = 10,
 		PAC_TYPE_CONSTRAINED_DELEGATION = 11,
-		PAC_TYPE_UPN_DNS_INFO = 12
+		PAC_TYPE_UPN_DNS_INFO = 12,
+		PAC_TYPE_TICKET_CHECKSUM = 16
 	} PAC_TYPE;
 
 	typedef struct {
@@ -128,6 +129,7 @@ interface krb5pac
 		[case(PAC_TYPE_CONSTRAINED_DELEGATION)][subcontext(0xFFFFFC01)]
 			PAC_CONSTRAINED_DELEGATION_CTR constrained_delegation;
 		[case(PAC_TYPE_UPN_DNS_INFO)]	PAC_UPN_DNS_INFO upn_dns_info;
+		[case(PAC_TYPE_TICKET_CHECKSUM)]	PAC_SIGNATURE_DATA ticket_checksum;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for
