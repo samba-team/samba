@@ -2130,6 +2130,8 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
 
+        rep_msg_type = kdc_exchange_dict['rep_msg_type']
+
         expected_flags = kdc_exchange_dict.get('expected_flags')
         unexpected_flags = kdc_exchange_dict.get('unexpected_flags')
 
@@ -2182,8 +2184,13 @@ class RawKerberosTest(TestCaseInTempDir):
             self.assertElementPresent(encpart_private, 'last-req')
             self.assertElementEqual(encpart_private, 'nonce',
                                     kdc_exchange_dict['nonce'])
-            # TODO self.assertElementPresent(encpart_private,
-            #                                'key-expiration')
+            if rep_msg_type == KRB_AS_REP:
+                if self.strict_checking:
+                    self.assertElementPresent(encpart_private,
+                                              'key-expiration')
+            else:
+                self.assertElementMissing(encpart_private,
+                                          'key-expiration')
             self.assertElementFlags(ticket_private, 'flags',
                                     expected_flags,
                                     unexpected_flags)
