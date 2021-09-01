@@ -74,7 +74,7 @@ class AsReqKerberosTests(KDCBaseTest):
         expected_cname = cname
         expected_srealm = realm
         expected_sname = sname
-        expected_salt = client_creds.get_forced_salt()
+        expected_salt = client_creds.get_salt()
 
         if any(etype in client_as_etypes and etype in initial_etypes
                for etype in (kcrypto.Enctype.AES256,
@@ -142,7 +142,7 @@ class AsReqKerberosTests(KDCBaseTest):
         expected_cname = cname
         expected_srealm = realm
         expected_sname = sname
-        expected_salt = client_creds.get_forced_salt()
+        expected_salt = client_creds.get_salt()
 
         till = self.get_KerberosTime(offset=36000)
 
