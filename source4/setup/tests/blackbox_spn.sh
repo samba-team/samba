@@ -24,6 +24,8 @@ testit "readdspn" $PYTHON $samba_tool spn add FOO/bar Administrator $CONFIG
 testit_expect_failure "failexistingspn" $PYTHON $samba_tool spn add FOO/bar Guest $CONFIG
 testit_expect_failure "faildelspnnotgooduser" $PYTHON $samba_tool spn delete FOO/bar krbtgt $CONFIG
 testit "deluserspn" $PYTHON $samba_tool spn delete FOO/bar $CONFIG
+testit "readd_spn_guest" $PYTHON $samba_tool spn add FOO/bar Guest $CONFIG
+testit "deluserspn_guest" $PYTHON $samba_tool spn delete FOO/bar Guest $CONFIG
 testit_expect_failure "faildelspn" $PYTHON $samba_tool spn delete FOO/bar $CONFIG
 testit_expect_failure "failaddspn" $PYTHON $samba_tool spn add FOO/bar nonexistinguser $CONFIG
 
