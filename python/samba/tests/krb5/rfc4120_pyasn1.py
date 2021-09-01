@@ -649,6 +649,7 @@ KDCOptionsValues.namedValues = namedval.NamedValues(
     ('opt-hardware-auth', 11),
     ('unused12', 12),
     ('unused13', 13),
+    ('cname-in-addl-tkt', 14),
     ('canonicalize', 15),
     ('disable-transited-check', 26),
     ('renewable-ok', 27),
