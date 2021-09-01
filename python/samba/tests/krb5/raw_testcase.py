@@ -2559,7 +2559,7 @@ class RawKerberosTest(TestCaseInTempDir):
                     current_time = time.time()
 
                     self.assertLess(current_time - 300, rep_time)
-                    self.assertLess(rep_time, current_time)
+                    self.assertLess(rep_time, current_time + 300)
 
         if all(etype not in client_as_etypes or etype not in proposed_etypes
                for etype in (kcrypto.Enctype.AES256,
