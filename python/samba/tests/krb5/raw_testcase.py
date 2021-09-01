@@ -2043,8 +2043,9 @@ class RawKerberosTest(TestCaseInTempDir):
                 ticket_session_key = self.EncryptionKey_import(ticket_key)
             self.assertElementEqualUTF8(ticket_private, 'crealm',
                                         expected_crealm)
-            self.assertElementEqualPrincipal(ticket_private, 'cname',
-                                             expected_cname)
+            if self.strict_checking:
+                self.assertElementEqualPrincipal(ticket_private, 'cname',
+                                                 expected_cname)
             self.assertElementPresent(ticket_private, 'transited')
             self.assertElementPresent(ticket_private, 'authtime')
             if self.strict_checking:
