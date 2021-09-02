@@ -1574,6 +1574,9 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_error_mode = kdc_exchange_dict['expected_error_mode']
         kdc_options = kdc_exchange_dict['kdc_options']
 
+        pac_request = kdc_exchange_dict['pac_request']
+        pac_options = kdc_exchange_dict['pac_options']
+
         # Parameters specific to the inner request body
         inner_req = kdc_exchange_dict['inner_req']
 
@@ -1619,6 +1622,14 @@ class RawKerberosTest(TestCaseInTempDir):
                 else:
                     del req_body[key]
 
+        additional_padata = []
+        if pac_request is not None:
+            pa_pac_request = self.KERB_PA_PAC_REQUEST_create(pac_request)
+            additional_padata.append(pa_pac_request)
+        if pac_options is not None:
+            pa_pac_options = self.get_pa_pac_options(pac_options)
+            additional_padata.append(pa_pac_options)
+
         if req_msg_type == KRB_AS_REQ:
             tgs_req = None
             tgs_req_padata = None
@@ -1637,6 +1648,8 @@ class RawKerberosTest(TestCaseInTempDir):
             fast_padata, req_body = generate_fast_padata_fn(kdc_exchange_dict,
                                                             callback_dict,
                                                             req_body)
+
+            fast_padata += additional_padata
         else:
             fast_padata = []
 
@@ -1700,6 +1713,9 @@ class RawKerberosTest(TestCaseInTempDir):
 
         if outer_padata is not None:
             padata += outer_padata
+
+        if fast is None:
+            padata += additional_padata
 
         if not padata:
             padata = None
@@ -1766,7 +1782,9 @@ class RawKerberosTest(TestCaseInTempDir):
                          auth_data=None,
                          kdc_options='',
                          inner_req=None,
-                         outer_req=None):
+                         outer_req=None,
+                         pac_request=None,
+                         pac_options=None):
         if expected_error_mode == 0:
             expected_error_mode = ()
         elif not isinstance(expected_error_mode, collections.abc.Container):
@@ -1804,7 +1822,9 @@ class RawKerberosTest(TestCaseInTempDir):
             'auth_data': auth_data,
             'kdc_options': kdc_options,
             'inner_req': inner_req,
-            'outer_req': outer_req
+            'outer_req': outer_req,
+            'pac_request': pac_request,
+            'pac_options': pac_options
         }
         if callback_dict is None:
             callback_dict = {}
@@ -1838,7 +1858,9 @@ class RawKerberosTest(TestCaseInTempDir):
                           body_checksum_type=None,
                           kdc_options='',
                           inner_req=None,
-                          outer_req=None):
+                          outer_req=None,
+                          pac_request=None,
+                          pac_options=None):
         if expected_error_mode == 0:
             expected_error_mode = ()
         elif not isinstance(expected_error_mode, collections.abc.Container):
@@ -1876,7 +1898,9 @@ class RawKerberosTest(TestCaseInTempDir):
             'authenticator_subkey': authenticator_subkey,
             'kdc_options': kdc_options,
             'inner_req': inner_req,
-            'outer_req': outer_req
+            'outer_req': outer_req,
+            'pac_request': pac_request,
+            'pac_options': pac_options
         }
         if callback_dict is None:
             callback_dict = {}
@@ -2820,7 +2844,9 @@ class RawKerberosTest(TestCaseInTempDir):
                           padata,
                           kdc_options,
                           preauth_key=None,
-                          ticket_decryption_key=None):
+                          ticket_decryption_key=None,
+                          pac_request=None,
+                          pac_options=None):
 
         def _generate_padata_copy(_kdc_exchange_dict,
                                   _callback_dict,
@@ -2860,7 +2886,9 @@ class RawKerberosTest(TestCaseInTempDir):
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
-            kdc_options=str(kdc_options))
+            kdc_options=str(kdc_options),
+            pac_request=pac_request,
+            pac_options=pac_options)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=cname,
