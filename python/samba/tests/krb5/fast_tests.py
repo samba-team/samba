@@ -179,18 +179,12 @@ class FAST_Tests(KDCBaseTest):
         ])
 
     def test_simple_tgs_wrong_principal(self):
-        mach_creds = self.get_mach_creds()
-        mach_name = mach_creds.get_username()
-        expected_cname = self.PrincipalName_create(
-            name_type=NT_PRINCIPAL, names=[mach_name])
-
         self._run_test_sequence([
             {
                 'rep_type': KRB_TGS_REP,
                 'expected_error_mode': 0,
                 'use_fast': False,
-                'gen_tgt_fn': self.get_mach_tgt,
-                'expected_cname': expected_cname
+                'gen_tgt_fn': self.get_mach_tgt
             }
         ])
 
@@ -1193,7 +1187,12 @@ class FAST_Tests(KDCBaseTest):
             else:  # KRB_TGS_REP
                 srealm = target_realm
 
-            expected_cname = kdc_dict.pop('expected_cname', client_cname)
+            if rep_type == KRB_TGS_REP:
+                tgt_cname = tgt.cname
+            else:
+                tgt_cname = client_cname
+
+            expected_cname = kdc_dict.pop('expected_cname', tgt_cname)
             expected_anon = kdc_dict.pop('expected_anon',
                                          False)
             expected_crealm = kdc_dict.pop('expected_crealm', client_realm)
