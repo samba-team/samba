@@ -1136,8 +1136,6 @@ class FAST_Tests(KDCBaseTest):
                                                        'canonicalize,'
                                                        'renewable-ok'))
 
-        pac_request = self.get_pa_pac_request()
-
         client_creds = self.get_client_creds()
         target_creds = self.get_service_creds()
         krbtgt_creds = self.get_krbtgt_creds()
@@ -1293,7 +1291,7 @@ class FAST_Tests(KDCBaseTest):
                                       _callback_dict,
                                       req_body,
                                       padata):
-                return padata, req_body
+                return list(padata), req_body
 
             def _check_padata_preauth_key(_kdc_exchange_dict,
                                           _callback_dict,
@@ -1303,14 +1301,8 @@ class FAST_Tests(KDCBaseTest):
                 return preauth_key, as_rep_usage
 
             pac_options = kdc_dict.pop('pac_options', '1')  # claims support
-            pac_options = self.get_pa_pac_options(pac_options)
 
             kdc_options = kdc_dict.pop('kdc_options', kdc_options_default)
-
-            if rep_type == KRB_AS_REP:
-                padata = [pac_request, pac_options]
-            else:
-                padata = [pac_options]
 
             gen_padata_fn = kdc_dict.pop('gen_padata_fn', None)
             if gen_padata_fn is not None:
@@ -1321,10 +1313,10 @@ class FAST_Tests(KDCBaseTest):
                     client_creds,
                     preauth_etype_info2[0],
                     client_creds.get_kvno())
-                gen_padata = gen_padata_fn(preauth_key, armor_key)
-                padata.insert(0, gen_padata)
+                padata = [gen_padata_fn(preauth_key, armor_key)]
             else:
                 preauth_key = None
+                padata = []
 
             if rep_type == KRB_AS_REP:
                 check_padata_fn = _check_padata_preauth_key
@@ -1388,7 +1380,9 @@ class FAST_Tests(KDCBaseTest):
                     armor_subkey=armor_subkey,
                     kdc_options=kdc_options,
                     inner_req=inner_req,
-                    outer_req=outer_req)
+                    outer_req=outer_req,
+                    pac_request=True,
+                    pac_options=pac_options)
             else:  # KRB_TGS_REP
                 kdc_exchange_dict = self.tgs_exchange_dict(
                     expected_crealm=expected_crealm,
@@ -1417,7 +1411,9 @@ class FAST_Tests(KDCBaseTest):
                     body_checksum_type=None,
                     kdc_options=kdc_options,
                     inner_req=inner_req,
-                    outer_req=outer_req)
+                    outer_req=outer_req,
+                    pac_request=None,
+                    pac_options=pac_options)
 
             repeat = kdc_dict.pop('repeat', 1)
             for _ in range(repeat):
