@@ -34,6 +34,8 @@ from samba.drs_utils import drsuapi_connect
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2008,
+    DS_GUID_COMPUTERS_CONTAINER,
+    DS_GUID_USERS_CONTAINER,
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_NORMAL_ACCOUNT
 )
@@ -158,7 +160,10 @@ class KDCBaseTest(RawKerberosTest):
            which is used by tearDownClass to clean up the created accounts.
         '''
         if ou is None:
-            ou = ldb.domain_dn()
+            guid = (DS_GUID_COMPUTERS_CONTAINER if machine_account
+                    else DS_GUID_USERS_CONTAINER)
+
+            ou = ldb.get_wellknown_dn(ldb.get_default_basedn(), guid)
 
         dn = "CN=%s,%s" % (name, ou)
 
