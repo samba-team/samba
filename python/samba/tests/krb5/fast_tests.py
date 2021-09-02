@@ -51,7 +51,6 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_SRV_INST,
     PADATA_FX_COOKIE,
     PADATA_FX_FAST,
-    PADATA_PAC_OPTIONS
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 import samba.tests.krb5.kcrypto as kcrypto
@@ -1465,19 +1464,6 @@ class FAST_Tests(KDCBaseTest):
             self.assertNotEqual(0, len(cookie))
 
         return self.PA_DATA_create(PADATA_FX_COOKIE, cookie)
-
-    def get_pa_pac_request(self, request_pac=True):
-        pac_request = self.KERB_PA_PAC_REQUEST_create(request_pac)
-
-        return pac_request
-
-    def get_pa_pac_options(self, options):
-        pac_options = self.PA_PAC_OPTIONS_create(options)
-        pac_options = self.der_encode(pac_options,
-                                      asn1Spec=krb5_asn1.PA_PAC_OPTIONS())
-        pac_options = self.PA_DATA_create(PADATA_PAC_OPTIONS, pac_options)
-
-        return pac_options
 
     def check_kdc_fast_support(self):
         # Check that the KDC supports FAST
