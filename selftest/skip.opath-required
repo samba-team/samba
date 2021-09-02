@@ -7,3 +7,7 @@
 # These fail because become_root() doesn't work in make test
 ^samba3.blackbox.dropbox.*
 ^samba3.raw.samba3hide.*
+# This fails because of BUG: https://bugzilla.samba.org/show_bug.cgi?id=14816
+# which causes the server to hang when trying to open a pathref fifo without O_PATH.
+# We need to add O_NONBLOCK to make this work.
+^samba3.blackbox.fifo
