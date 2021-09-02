@@ -1794,7 +1794,6 @@ class RawKerberosTest(TestCaseInTempDir):
                          generate_padata_fn=None,
                          check_error_fn=None,
                          check_rep_fn=None,
-                         check_padata_fn=None,
                          check_kdc_private_fn=None,
                          callback_dict=None,
                          expected_error_mode=0,
@@ -1802,6 +1801,7 @@ class RawKerberosTest(TestCaseInTempDir):
                          client_as_etypes=None,
                          expected_salt=None,
                          authenticator_subkey=None,
+                         preauth_key=None,
                          armor_key=None,
                          armor_tgt=None,
                          armor_subkey=None,
@@ -1838,7 +1838,6 @@ class RawKerberosTest(TestCaseInTempDir):
             'generate_padata_fn': generate_padata_fn,
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
-            'check_padata_fn': check_padata_fn,
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
@@ -1846,6 +1845,7 @@ class RawKerberosTest(TestCaseInTempDir):
             'client_as_etypes': client_as_etypes,
             'expected_salt': expected_salt,
             'authenticator_subkey': authenticator_subkey,
+            'preauth_key': preauth_key,
             'armor_key': armor_key,
             'armor_tgt': armor_tgt,
             'armor_subkey': armor_subkey,
@@ -1878,7 +1878,6 @@ class RawKerberosTest(TestCaseInTempDir):
                           generate_padata_fn=None,
                           check_error_fn=None,
                           check_rep_fn=None,
-                          check_padata_fn=None,
                           check_kdc_private_fn=None,
                           expected_error_mode=0,
                           expected_status=None,
@@ -1922,7 +1921,6 @@ class RawKerberosTest(TestCaseInTempDir):
             'generate_padata_fn': generate_padata_fn,
             'check_error_fn': check_error_fn,
             'check_rep_fn': check_rep_fn,
-            'check_padata_fn': check_padata_fn,
             'check_kdc_private_fn': check_kdc_private_fn,
             'callback_dict': callback_dict,
             'expected_error_mode': expected_error_mode,
@@ -1956,7 +1954,6 @@ class RawKerberosTest(TestCaseInTempDir):
         expected_srealm = kdc_exchange_dict['expected_srealm']
         expected_sname = kdc_exchange_dict['expected_sname']
         ticket_decryption_key = kdc_exchange_dict['ticket_decryption_key']
-        check_padata_fn = kdc_exchange_dict['check_padata_fn']
         check_kdc_private_fn = kdc_exchange_dict['check_kdc_private_fn']
         rep_encpart_asn1Spec = kdc_exchange_dict['rep_encpart_asn1Spec']
         msg_type = kdc_exchange_dict['rep_msg_type']
@@ -2004,41 +2001,37 @@ class RawKerberosTest(TestCaseInTempDir):
 
         ticket_checksum = None
 
-        encpart_decryption_key = None
-        self.assertIsNotNone(check_padata_fn)
-        if check_padata_fn is not None:
-            # See if we can get the decryption key from the preauth phase
-            encpart_decryption_key, encpart_decryption_usage = (
-                check_padata_fn(kdc_exchange_dict, callback_dict,
-                                rep, padata))
+        # Get the decryption key for the encrypted part
+        encpart_decryption_key, encpart_decryption_usage = (
+            self.get_preauth_key(kdc_exchange_dict))
 
-            if armor_key is not None:
-                pa_dict = self.get_pa_dict(padata)
+        if armor_key is not None:
+            pa_dict = self.get_pa_dict(padata)
 
-                if PADATA_FX_FAST in pa_dict:
-                    fx_fast_data = pa_dict[PADATA_FX_FAST]
-                    fast_response = self.check_fx_fast_data(kdc_exchange_dict,
-                                                            fx_fast_data,
-                                                            armor_key,
-                                                            finished=True)
+            if PADATA_FX_FAST in pa_dict:
+                fx_fast_data = pa_dict[PADATA_FX_FAST]
+                fast_response = self.check_fx_fast_data(kdc_exchange_dict,
+                                                        fx_fast_data,
+                                                        armor_key,
+                                                        finished=True)
 
-                    if 'strengthen-key' in fast_response:
-                        strengthen_key = self.EncryptionKey_import(
-                            fast_response['strengthen-key'])
-                        encpart_decryption_key = (
-                            self.generate_strengthen_reply_key(
-                                strengthen_key,
-                                encpart_decryption_key))
+                if 'strengthen-key' in fast_response:
+                    strengthen_key = self.EncryptionKey_import(
+                        fast_response['strengthen-key'])
+                    encpart_decryption_key = (
+                        self.generate_strengthen_reply_key(
+                            strengthen_key,
+                            encpart_decryption_key))
 
-                    fast_finished = fast_response.get('finished', None)
-                    if fast_finished is not None:
-                        ticket_checksum = fast_finished['ticket-checksum']
+                fast_finished = fast_response.get('finished')
+                if fast_finished is not None:
+                    ticket_checksum = fast_finished['ticket-checksum']
 
-                    self.check_rep_padata(kdc_exchange_dict,
-                                          callback_dict,
-                                          rep,
-                                          fast_response['padata'],
-                                          error_code=0)
+                self.check_rep_padata(kdc_exchange_dict,
+                                      callback_dict,
+                                      rep,
+                                      fast_response['padata'],
+                                      error_code=0)
 
         ticket_private = None
         self.assertIsNotNone(ticket_decryption_key)
@@ -2558,13 +2551,7 @@ class RawKerberosTest(TestCaseInTempDir):
                 armor_key = kdc_exchange_dict['armor_key']
                 self.assertIsNotNone(armor_key)
 
-                check_padata_fn = kdc_exchange_dict['check_padata_fn']
-                padata = self.getElementValue(rep, 'padata')
-                self.assertIsNotNone(check_padata_fn)
-                preauth_key, _ = check_padata_fn(kdc_exchange_dict,
-                                                 callback_dict,
-                                                 rep,
-                                                 padata)
+                preauth_key, _ = self.get_preauth_key(kdc_exchange_dict)
 
                 kdc_challenge_key = self.generate_kdc_challenge_key(
                     armor_key, preauth_key)
@@ -2790,21 +2777,25 @@ class RawKerberosTest(TestCaseInTempDir):
 
         return padata, req_body
 
-    def check_simple_tgs_padata(self,
-                                kdc_exchange_dict,
-                                callback_dict,
-                                rep,
-                                padata):
-        tgt = kdc_exchange_dict['tgt']
-        authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
-        if authenticator_subkey is not None:
-            subkey = authenticator_subkey
-            subkey_usage = KU_TGS_REP_ENC_PART_SUB_KEY
-        else:
-            subkey = tgt.session_key
-            subkey_usage = KU_TGS_REP_ENC_PART_SESSION
+    def get_preauth_key(self, kdc_exchange_dict):
+        msg_type = kdc_exchange_dict['rep_msg_type']
 
-        return subkey, subkey_usage
+        if msg_type == KRB_AS_REP:
+            key = kdc_exchange_dict['preauth_key']
+            usage = KU_AS_REP_ENC_PART
+        else:  # KRB_TGS_REP
+            authenticator_subkey = kdc_exchange_dict['authenticator_subkey']
+            if authenticator_subkey is not None:
+                key = authenticator_subkey
+                usage = KU_TGS_REP_ENC_PART_SUB_KEY
+            else:
+                tgt = kdc_exchange_dict['tgt']
+                key = tgt.session_key
+                usage = KU_TGS_REP_ENC_PART_SESSION
+
+        self.assertIsNotNone(key)
+
+        return key, usage
 
     def generate_armor_key(self, subkey, session_key):
         armor_key = kcrypto.cf2(subkey.key,
@@ -2926,13 +2917,6 @@ class RawKerberosTest(TestCaseInTempDir):
                                   req_body):
             return padata, req_body
 
-        def _check_padata_preauth_key(_kdc_exchange_dict,
-                                      _callback_dict,
-                                      rep,
-                                      padata):
-            as_rep_usage = KU_AS_REP_ENC_PART
-            return preauth_key, as_rep_usage
-
         if not expected_error_mode:
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
@@ -2954,13 +2938,13 @@ class RawKerberosTest(TestCaseInTempDir):
             generate_padata_fn=generate_padata_fn,
             check_error_fn=check_error_fn,
             check_rep_fn=check_rep_fn,
-            check_padata_fn=_check_padata_preauth_key,
             check_kdc_private_fn=self.generic_check_kdc_private,
             expected_error_mode=expected_error_mode,
             client_as_etypes=client_as_etypes,
             expected_salt=expected_salt,
             expected_flags=expected_flags,
             unexpected_flags=unexpected_flags,
+            preauth_key=preauth_key,
             kdc_options=str(kdc_options),
             pac_request=pac_request,
             pac_options=pac_options,

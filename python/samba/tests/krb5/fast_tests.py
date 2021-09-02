@@ -45,7 +45,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_UNKNOWN_CRITICAL_FAST_OPTIONS,
     KRB_AS_REP,
     KRB_TGS_REP,
-    KU_AS_REP_ENC_PART,
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_INST,
@@ -1114,8 +1113,6 @@ class FAST_Tests(KDCBaseTest):
         fast_cookie = None
         preauth_etype_info2 = None
 
-        preauth_key = None
-
         for kdc_dict in test_sequence:
             rep_type = kdc_dict.pop('rep_type')
             self.assertIn(rep_type, (KRB_AS_REP, KRB_TGS_REP))
@@ -1249,13 +1246,6 @@ class FAST_Tests(KDCBaseTest):
                                       padata):
                 return list(padata), req_body
 
-            def _check_padata_preauth_key(_kdc_exchange_dict,
-                                          _callback_dict,
-                                          _rep,
-                                          _padata):
-                as_rep_usage = KU_AS_REP_ENC_PART
-                return preauth_key, as_rep_usage
-
             pac_options = kdc_dict.pop('pac_options', '1')  # claims support
 
             kdc_options = kdc_dict.pop('kdc_options', kdc_options_default)
@@ -1273,11 +1263,6 @@ class FAST_Tests(KDCBaseTest):
             else:
                 preauth_key = None
                 padata = []
-
-            if rep_type == KRB_AS_REP:
-                check_padata_fn = _check_padata_preauth_key
-            else:
-                check_padata_fn = self.check_simple_tgs_padata
 
             if use_fast:
                 inner_padata = padata
@@ -1332,13 +1317,13 @@ class FAST_Tests(KDCBaseTest):
                     generate_padata_fn=generate_padata_fn,
                     check_error_fn=check_error_fn,
                     check_rep_fn=check_rep_fn,
-                    check_padata_fn=check_padata_fn,
                     check_kdc_private_fn=self.generic_check_kdc_private,
                     callback_dict={},
                     expected_error_mode=expected_error_mode,
                     client_as_etypes=etypes,
                     expected_salt=expected_salt,
                     authenticator_subkey=authenticator_subkey,
+                    preauth_key=preauth_key,
                     auth_data=auth_data,
                     armor_key=armor_key,
                     armor_tgt=armor_tgt,
@@ -1365,7 +1350,6 @@ class FAST_Tests(KDCBaseTest):
                     generate_padata_fn=generate_padata_fn,
                     check_error_fn=check_error_fn,
                     check_rep_fn=check_rep_fn,
-                    check_padata_fn=check_padata_fn,
                     check_kdc_private_fn=self.generic_check_kdc_private,
                     expected_error_mode=expected_error_mode,
                     callback_dict={},
