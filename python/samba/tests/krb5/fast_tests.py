@@ -1108,7 +1108,7 @@ class FAST_Tests(KDCBaseTest):
         target_sname = self.PrincipalName_create(
             name_type=NT_SRV_INST, names=[target_service, target_username])
         target_decryption_key = self.TicketDecryptionKey_from_creds(
-            target_creds, etype=kcrypto.Enctype.RC4)
+            target_creds)
 
         fast_cookie = None
         preauth_etype_info2 = None
