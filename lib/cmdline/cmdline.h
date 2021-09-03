@@ -46,9 +46,17 @@ enum smb_cmdline_popt_options {
 	SAMBA_CMDLINE_POPT_OPT_CONNECTION,
 	SAMBA_CMDLINE_POPT_OPT_CREDENTIALS,
 	SAMBA_CMDLINE_POPT_OPT_VERSION,
+	SAMBA_CMDLINE_POPT_OPT_DAEMON,
 	SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB,
 	SAMBA_CMDLINE_POPT_OPT_LEGACY_S3,
 	SAMBA_CMDLINE_POPT_OPT_LEGACY_S4,
+};
+
+struct samba_cmdline_daemon_cfg {
+	bool daemon;
+	bool interactive;
+	bool fork;
+	bool no_process_group;
 };
 
 /**
@@ -113,6 +121,15 @@ struct cli_credentials *samba_cmdline_get_creds(void);
  * @see POPT_COMMON_VERSION
  */
 struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt);
+
+/**
+ * @brief Get a pointer to the poptOptions for daemons
+ *
+ * @return A pointer to the daemon options
+ *
+ * @see POPT_COMMON_DAEMON
+ */
+struct samba_cmdline_daemon_cfg *samba_cmdline_get_daemon_cfg(void);
 
 /**
  * @brief Burn secrets on the command line.
@@ -247,6 +264,18 @@ poptContext samba_popt_get_context(const char * name,
 	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_VERSION), \
 	.val        = 0, \
 	.descrip    = "Version options:", \
+	.argDescrip = NULL },
+
+/**
+ * @brief A popt structure for daemon options.
+ */
+#define POPT_COMMON_DAEMON { \
+	.longName   = NULL, \
+	.shortName  = '\0', \
+	.argInfo    = POPT_ARG_INCLUDE_TABLE, \
+	.arg        = samba_cmdline_get_popt(SAMBA_CMDLINE_POPT_OPT_DAEMON), \
+	.val        = 0, \
+	.descrip    = "Daemon options:", \
 	.argDescrip = NULL },
 
 /**

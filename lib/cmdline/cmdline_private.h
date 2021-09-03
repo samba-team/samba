@@ -34,6 +34,10 @@ enum {
 	OPT_USE_KERBEROS_CCACHE,
 	OPT_USE_WINBIND_CCACHE,
 	OPT_CLIENT_PROTECTION,
+	OPT_DAEMON,
+	OPT_INTERACTIVE,
+	OPT_FORK,
+	OPT_NO_PROCESS_GROUP,
 };
 
 typedef bool (*samba_cmdline_load_config)(void);
