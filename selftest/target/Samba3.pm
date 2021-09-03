@@ -715,7 +715,8 @@ sub provision_ad_member
 	    $extra_member_options,
 	    $force_fips_mode,
 	    $offline_logon,
-	    $no_nss_winbind) = @_;
+	    $no_nss_winbind,
+	    $sync_pw2keytab) = @_;
 
 	if (defined($offline_logon) && defined($no_nss_winbind)) {
 		warn ("Offline logon incompatible with no nss winbind\n");
@@ -769,6 +770,26 @@ sub provision_ad_member
 		$extra_member_options = "";
 	}
 
+	my $dns_and_netbios = "";
+	my $keytab = "";
+	if (defined($sync_pw2keytab)) {
+		$dns_and_netbios = "
+	additional dns hostnames =  host1.example.com host2.other.com
+	netbios aliases = NETBIOS1 NETBIOS2 NETBIOS3
+	";
+		$keytab = "
+	sync machine password to keytab = \\
+	\"$prefix_abs/keytab0:account_name:machine_password\", \\
+	\"$prefix_abs/keytab0k:account_name:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab1:sync_spns:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab1k:sync_spns:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab2:spn_prefixes=imap,smtp:additional_dns_hostnames:netbios_aliases:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab2k:spn_prefixes=imap,smtp:additional_dns_hostnames:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab3:spns=wurst/brot\@$dcvars->{REALM}:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab3k:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\"
+	";
+	}
+
 	my $member_options = "
 	security = ads
         workgroup = $dcvars->{DOMAIN}
@@ -787,6 +808,8 @@ sub provision_ad_member
 	# Begin extra member options
 	$extra_member_options
 	# End extra member options
+	$dns_and_netbios
+	$keytab
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
@@ -1691,6 +1714,7 @@ sub setup_ad_member_idmap_nss
 					     $extra_member_options,
 					     undef,
 					     undef,
+					     1,
 					     1);
 
 	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
