@@ -28,6 +28,7 @@ static TALLOC_CTX *cmdline_mem_ctx;
 static struct loadparm_context *cmdline_lp_ctx;
 static struct cli_credentials *cmdline_creds;
 static samba_cmdline_load_config cmdline_load_config_fn;
+static struct samba_cmdline_daemon_cfg cmdline_daemon_cfg;
 
 /* PRIVATE */
 bool samba_cmdline_set_talloc_ctx(TALLOC_CTX *mem_ctx)
@@ -58,6 +59,10 @@ bool samba_cmdline_init_common(TALLOC_CTX *mem_ctx)
 	if (!ok) {
 		return false;
 	}
+
+	cmdline_daemon_cfg = (struct samba_cmdline_daemon_cfg) {
+		.fork = true,
+	};
 
 	fault_setup();
 
@@ -110,6 +115,11 @@ bool samba_cmdline_set_creds(struct cli_credentials *creds)
 struct cli_credentials *samba_cmdline_get_creds(void)
 {
 	return cmdline_creds;
+}
+
+struct samba_cmdline_daemon_cfg *samba_cmdline_get_daemon_cfg(void)
+{
+	return &cmdline_daemon_cfg;
 }
 
 void samba_cmdline_burn(int argc, char *argv[])
@@ -1135,6 +1145,73 @@ static struct poptOption popt_common_version[] = {
 };
 
 /**********************************************************
+ * DAEMON POPT
+ **********************************************************/
+
+static void popt_daemon_callback(poptContext ctx,
+				 enum poptCallbackReason reason,
+				 const struct poptOption *opt,
+				 const char *arg,
+				 const void *data)
+{
+	switch(opt->val) {
+	case OPT_DAEMON:
+		cmdline_daemon_cfg.daemon = true;
+		break;
+	case OPT_INTERACTIVE:
+		cmdline_daemon_cfg.interactive = true;
+		cmdline_daemon_cfg.fork = false;
+		break;
+	case OPT_FORK:
+		cmdline_daemon_cfg.fork = false;
+		break;
+	case OPT_NO_PROCESS_GROUP:
+		cmdline_daemon_cfg.no_process_group = true;
+		break;
+	}
+}
+
+static struct poptOption popt_common_daemon[] = {
+	{
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)popt_daemon_callback
+	},
+	{
+		.longName   = "daemon",
+		.shortName  = 'D',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = OPT_DAEMON,
+		.descrip    = "Become a daemon (default)" ,
+	},
+	{
+		.longName   = "interactive",
+		.shortName  = 'i',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = OPT_INTERACTIVE,
+		.descrip    = "Run interactive (not a daemon) and log to stdout",
+	},
+	{
+		.longName   = "foreground",
+		.shortName  = 'F',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = OPT_FORK,
+		.descrip    = "Run daemon in foreground (for daemontools, etc.)",
+	},
+	{
+		.longName   = "no-process-group",
+		.shortName  = '\0',
+		.argInfo    = POPT_ARG_NONE,
+		.arg        = NULL,
+		.val        = OPT_NO_PROCESS_GROUP,
+		.descrip    = "Don't create a new process group" ,
+	},
+	POPT_TABLEEND
+};
+
+/**********************************************************
  * LEGACY S3 POPT
  **********************************************************/
 
@@ -1269,6 +1346,9 @@ struct poptOption *samba_cmdline_get_popt(enum smb_cmdline_popt_options opt)
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_VERSION:
 		return popt_common_version;
+		break;
+	case SAMBA_CMDLINE_POPT_OPT_DAEMON:
+		return popt_common_daemon;
 		break;
 	case SAMBA_CMDLINE_POPT_OPT_SAMBA_LDB:
 		return popt_common_samba_ldb;
