@@ -1538,10 +1538,7 @@ extern void build_options(bool screen);
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	bool is_daemon = false;
-	bool interactive = false;
-	bool Fork = true;
-	bool no_process_group = false;
+	struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg = NULL;
 	bool log_stdout = false;
 	char *ports = NULL;
 	char *profile_level = NULL;
@@ -1550,46 +1547,8 @@ extern void build_options(bool screen);
 	bool print_build_options = False;
 	bool serving_printers = false;
 	struct server_id main_server_id = {0};
-        enum {
-		OPT_DAEMON = 1000,
-		OPT_INTERACTIVE,
-		OPT_FORK,
-		OPT_NO_PROCESS_GROUP,
-	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{
-			.longName   = "daemon",
-			.shortName  = 'D',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_DAEMON,
-			.descrip    = "Become a daemon (default)" ,
-		},
-		{
-			.longName   = "interactive",
-			.shortName  = 'i',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_INTERACTIVE,
-			.descrip    = "Run interactive (not a daemon) and log to stdout",
-		},
-		{
-			.longName   = "foreground",
-			.shortName  = 'F',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_FORK,
-			.descrip    = "Run daemon in foreground (for daemontools, etc.)",
-		},
-		{
-			.longName   = "no-process-group",
-			.shortName  = '\0',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_NO_PROCESS_GROUP,
-			.descrip    = "Don't create a new process group" ,
-		},
 		{
 			.longName   = "build-options",
 			.shortName  = 'b',
@@ -1615,6 +1574,7 @@ extern void build_options(bool screen);
 			.descrip    = "Set profiling level","PROFILE_LEVEL",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_DAEMON
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1674,6 +1634,8 @@ extern void build_options(bool screen);
 		exit(ENOMEM);
 	}
 
+	cmdline_daemon_cfg = samba_cmdline_get_daemon_cfg();
+
 	pc = samba_popt_get_context(getprogname(),
 				    argc,
 				    argv,
@@ -1686,18 +1648,6 @@ extern void build_options(bool screen);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt)  {
-		case OPT_DAEMON:
-			is_daemon = true;
-			break;
-		case OPT_INTERACTIVE:
-			interactive = true;
-			break;
-		case OPT_FORK:
-			Fork = false;
-			break;
-		case OPT_NO_PROCESS_GROUP:
-			no_process_group = true;
-			break;
 		case 'b':
 			print_build_options = True;
 			break;
@@ -1712,13 +1662,8 @@ extern void build_options(bool screen);
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 
-	if (interactive) {
-		Fork = False;
+        if (cmdline_daemon_cfg->interactive) {
 		log_stdout = True;
-	}
-
-	if (!log_stdout) {
-		setup_logging(argv[0], DEBUG_FILE);
 	}
 
 	if (print_build_options) {
@@ -1733,11 +1678,11 @@ extern void build_options(bool screen);
 
 	set_remote_machine_name("smbd", False);
 
-	if (interactive && (DEBUGLEVEL >= 9)) {
+	if (cmdline_daemon_cfg->interactive && (DEBUGLEVEL >= 9)) {
 		talloc_enable_leak_report();
 	}
 
-	if (log_stdout && Fork) {
+	if (log_stdout && cmdline_daemon_cfg->fork) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
@@ -1879,23 +1824,25 @@ extern void build_options(bool screen);
 	main_server_id = messaging_server_id(msg_ctx);
 	set_profile_level(profiling_level, &main_server_id);
 
-	if (!is_daemon && !is_a_socket(0)) {
-		if (!interactive) {
+	if (!cmdline_daemon_cfg->daemon && !is_a_socket(0)) {
+		if (!cmdline_daemon_cfg->interactive) {
 			DEBUG(3, ("Standard input is not a socket, "
 				  "assuming -D option\n"));
 		}
 
 		/*
-		 * Setting is_daemon here prevents us from eventually calling
+		 * Setting "daemon" here prevents us from eventually calling
 		 * the open_sockets_inetd()
 		 */
 
-		is_daemon = True;
+		cmdline_daemon_cfg->daemon = true;
 	}
 
-	if (is_daemon && !interactive) {
+	if (cmdline_daemon_cfg->daemon && !cmdline_daemon_cfg->interactive) {
 		DEBUG(3, ("Becoming a daemon.\n"));
-		become_daemon(Fork, no_process_group, log_stdout);
+		become_daemon(cmdline_daemon_cfg->fork,
+			      cmdline_daemon_cfg->no_process_group,
+			      log_stdout);
 	} else {
 		daemon_status("smbd", "Starting process ...");
 	}
@@ -1905,8 +1852,11 @@ extern void build_options(bool screen);
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive && !no_process_group)
+	if (cmdline_daemon_cfg->interactive &&
+	    !cmdline_daemon_cfg->no_process_group)
+	{
 		setpgid( (pid_t)0, (pid_t)0);
+	}
 #endif
 
 	if (!directory_exist(lp_lock_directory()))
@@ -1915,7 +1865,7 @@ extern void build_options(bool screen);
 	if (!directory_exist(lp_pid_directory()))
 		mkdir(lp_pid_directory(), 0755);
 
-	if (is_daemon)
+	if (cmdline_daemon_cfg->daemon)
 		pidfile_create(lp_pid_directory(), "smbd");
 
 	status = reinit_after_fork(msg_ctx, ev_ctx, false, NULL);
@@ -1923,7 +1873,7 @@ extern void build_options(bool screen);
 		exit_daemon("reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
 
-	if (!interactive) {
+	if (!cmdline_daemon_cfg->interactive) {
 		/*
 		 * Do not initialize the parent-child-pipe before becoming a
 		 * daemon: this is used to detect a died parent in the child
@@ -1939,7 +1889,7 @@ extern void build_options(bool screen);
 	if (!parent) {
 		exit_server("talloc(struct smbd_parent_context) failed");
 	}
-	parent->interactive = interactive;
+	parent->interactive = cmdline_daemon_cfg->interactive;
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
 	parent->dce_ctx = dce_ctx;
@@ -2020,11 +1970,17 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot init leases", EACCES);
 	}
 
-	if (!smbd_notifyd_init(msg_ctx, interactive, &parent->notifyd)) {
+	if (!smbd_notifyd_init(
+		    msg_ctx,
+		    cmdline_daemon_cfg->interactive,
+		    &parent->notifyd)) {
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
-	if (!cleanupd_init(msg_ctx, interactive, &parent->cleanupd)) {
+	if (!cleanupd_init(
+		    msg_ctx,
+		    cmdline_daemon_cfg->interactive,
+		    &parent->cleanupd)) {
 		exit_daemon("Samba cannot init the cleanupd", EACCES);
 	}
 
@@ -2105,7 +2061,7 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot setup ep pipe", EACCES);
 	}
 
-	if (!interactive) {
+	if (!cmdline_daemon_cfg->interactive) {
 		daemon_ready("smbd");
 	}
 
@@ -2115,7 +2071,7 @@ extern void build_options(bool screen);
 	/* only start other daemons if we are running as a daemon
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */
-	if (is_daemon && !interactive) {
+	if (cmdline_daemon_cfg->daemon && !cmdline_daemon_cfg->interactive) {
 
 		if (rpc_epmapper_daemon() == RPC_DAEMON_FORK) {
 			start_epmd(ev_ctx, msg_ctx, dce_ctx);
@@ -2158,7 +2114,7 @@ extern void build_options(bool screen);
 		}
 	}
 
-	if (!is_daemon) {
+	if (!cmdline_daemon_cfg->daemon) {
 		int ret, sock;
 
 		/* inetd mode */
@@ -2211,7 +2167,7 @@ extern void build_options(bool screen);
 	/* make sure we always have a valid stackframe */
 	frame = talloc_stackframe();
 
-	if (!Fork) {
+	if (!cmdline_daemon_cfg->fork) {
 		/* if we are running in the foreground then look for
 		   EOF on stdin, and exit if it happens. This allows
 		   us to die if the parent process dies
