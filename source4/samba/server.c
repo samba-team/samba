@@ -505,10 +505,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 			    int argc,
 			    const char *argv[])
 {
-	bool opt_daemon = false;
-	bool opt_fork = true;
-	bool opt_interactive = false;
-	bool opt_no_process_group = false;
+	struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg = NULL;
 	bool db_is_backup = false;
 	int opt;
 	int ret;
@@ -523,36 +520,11 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	int max_runtime = 0;
 	struct stat st;
 	enum {
-		OPT_DAEMON = 1000,
-		OPT_FOREGROUND,
-		OPT_INTERACTIVE,
-		OPT_PROCESS_MODEL,
+		OPT_PROCESS_MODEL = 1000,
 		OPT_SHOW_BUILD,
-		OPT_NO_PROCESS_GROUP,
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{
-			.longName   = "daemon",
-			.shortName  = 'D',
-			.argInfo    = POPT_ARG_NONE,
-			.val        = OPT_DAEMON,
-			.descrip    = "Become a daemon (default)",
-		},
-		{
-			.longName   = "foreground",
-			.shortName  = 'F',
-			.argInfo    = POPT_ARG_NONE,
-			.val        = OPT_FOREGROUND,
-			.descrip    = "Run the daemon in foreground",
-		},
-		{
-			.longName   = "interactive",
-			.shortName  = 'i',
-			.argInfo    = POPT_ARG_NONE,
-			.val        = OPT_INTERACTIVE,
-			.descrip    = "Run interactive (not a daemon)",
-		},
 		{
 			.longName   = "model",
 			.shortName  = 'M',
@@ -576,13 +548,8 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 			.val        = OPT_SHOW_BUILD,
 			.descrip    = "show build info",
 		},
-		{
-			.longName   = "no-process-group",
-			.argInfo    = POPT_ARG_NONE,
-			.val        = OPT_NO_PROCESS_GROUP,
-			.descrip    = "Don't create a new process group",
-		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_DAEMON
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -590,7 +557,6 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	struct tevent_signal *se = NULL;
 	struct samba_tevent_trace_state *samba_tevent_trace_state = NULL;
 	struct loadparm_context *lp_ctx = NULL;
-	bool log_stdout = false;
 	bool ok;
 
 	setproctitle("root process");
@@ -603,6 +569,8 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
+
+	cmdline_daemon_cfg = samba_cmdline_get_daemon_cfg();
 
 	pc = samba_popt_get_context(binary_name,
 				    argc,
@@ -617,23 +585,11 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
-		case OPT_DAEMON:
-			opt_daemon = true;
-			break;
-		case OPT_FOREGROUND:
-			opt_fork = false;
-			break;
-		case OPT_INTERACTIVE:
-			opt_interactive = true;
-			break;
 		case OPT_PROCESS_MODEL:
 			model = poptGetOptArg(pc);
 			break;
 		case OPT_SHOW_BUILD:
 			show_build();
-			break;
-		case OPT_NO_PROCESS_GROUP:
-			opt_no_process_group = true;
 			break;
 		default:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
@@ -643,15 +599,16 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (opt_daemon && opt_interactive) {
+	if (cmdline_daemon_cfg->daemon && cmdline_daemon_cfg->interactive) {
 		fprintf(stderr,"\nERROR: "
 			"Option -i|--interactive is "
 			"not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		return 1;
-	} else if (!opt_interactive && opt_fork) {
+	} else if (!cmdline_daemon_cfg->interactive &&
+		   cmdline_daemon_cfg->fork) {
 		/* default is --daemon */
-		opt_daemon = true;
+		cmdline_daemon_cfg->daemon = true;
 	}
 
 	poptFreeContext(pc);
@@ -660,16 +617,6 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 
 	talloc_enable_null_tracking();
 
-	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
-	if (opt_interactive) {
-		log_stdout = true;
-	}
-
-	if (log_stdout) {
-		setup_logging(binary_name, DEBUG_STDOUT);
-	} else {
-		setup_logging(binary_name, DEBUG_FILE);
-	}
 	setup_signals();
 
 	/* we want total control over the permissions on created files,
@@ -695,10 +642,12 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	if (opt_daemon) {
+	if (cmdline_daemon_cfg->daemon) {
 		DBG_NOTICE("Becoming a daemon.\n");
-		become_daemon(opt_fork, opt_no_process_group, false);
-	} else if (!opt_interactive) {
+		become_daemon(cmdline_daemon_cfg->fork,
+			      cmdline_daemon_cfg->no_process_group,
+			      false);
+	} else if (!cmdline_daemon_cfg->interactive) {
 		daemon_status("samba", "Starting process...");
 	}
 
@@ -794,7 +743,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 				  samba_tevent_trace_callback,
 				  samba_tevent_trace_state);
 
-	if (opt_interactive) {
+	if (cmdline_daemon_cfg->interactive) {
 		/* terminate when stdin goes away */
 		stdin_event_flags = TEVENT_FD_READ;
 	} else {
@@ -807,8 +756,11 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	 * If we're interactive we want to set our own process group for
 	 * signal management, unless --no-process-group specified.
 	 */
-	if (opt_interactive && !opt_no_process_group)
+	if (cmdline_daemon_cfg->interactive &&
+	    !cmdline_daemon_cfg->no_process_group)
+	{
 		setpgid((pid_t)0, (pid_t)0);
+	}
 #endif
 
 	/* catch EOF on stdin */
@@ -1014,7 +966,7 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!opt_interactive) {
+	if (!cmdline_daemon_cfg->interactive) {
 		daemon_ready("samba");
 	}
 
