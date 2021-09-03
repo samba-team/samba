@@ -670,6 +670,15 @@ for env in ["nt4_member", "ad_member"]:
     plantestsuite("samba3.blackbox.net_cred_change", "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_net_cred_change.sh"), configuration])
 
 plantestsuite("samba3.blackbox.net_cred_change_at", "ad_member_s3_join:local", [os.path.join(samba3srcdir, "script/tests/test_net_cred_change_at.sh"), configuration, '$DC_SERVER'])
+plantestsuite(
+    "samba3.blackbox.update_keytab",
+    "ad_member_idmap_nss:local",
+    [
+        os.path.join(samba3srcdir, "script/tests/test_update_keytab.sh"),
+        "$DOMAIN",
+        configuration,
+    ],
+)
 
 env = "ad_member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
