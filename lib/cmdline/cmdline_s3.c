@@ -55,9 +55,18 @@ static bool _samba_cmdline_load_config_s3(void)
 	case SAMBA_CMDLINE_CONFIG_CLIENT:
 		ok = lp_load_client(config_file);
 		break;
-	case SAMBA_CMDLINE_CONFIG_SERVER:
+        case SAMBA_CMDLINE_CONFIG_SERVER:
+	{
+		const struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg =
+			samba_cmdline_get_daemon_cfg();
+
+		if (!cmdline_daemon_cfg->interactive) {
+			setup_logging(getprogname(), DEBUG_FILE);
+		}
+
 		ok = lp_load_global(config_file);
 		break;
+	}
 	}
 
 	if (!ok) {
