@@ -1594,49 +1594,10 @@ static void winbindd_addr_changed(struct tevent_req *req)
 
 int main(int argc, const char **argv)
 {
-	static bool is_daemon = False;
-	static bool Fork = True;
 	static bool log_stdout = False;
-	static bool no_process_group = False;
-	enum {
-		OPT_DAEMON = 1000,
-		OPT_FORK,
-		OPT_NO_PROCESS_GROUP
-	};
+	struct samba_cmdline_daemon_cfg *cmdline_daemon_cfg = NULL;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{
-			.longName   = "foreground",
-			.shortName  = 'F',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_FORK,
-			.descrip    = "Daemon in foreground mode",
-		},
-		{
-			.longName   = "no-process-group",
-			.shortName  = 0,
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_NO_PROCESS_GROUP,
-			.descrip    = "Don't create a new process group",
-		},
-		{
-			.longName   = "daemon",
-			.shortName  = 'D',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = OPT_DAEMON,
-			.descrip    = "Become a daemon (default)",
-		},
-		{
-			.longName   = "interactive",
-			.shortName  = 'i',
-			.argInfo    = POPT_ARG_NONE,
-			.arg        = NULL,
-			.val        = 'i',
-			.descrip    = "Interactive mode",
-		},
 		{
 			.longName   = "no-caching",
 			.shortName  = 'n',
@@ -1646,6 +1607,7 @@ int main(int argc, const char **argv)
 			.descrip    = "Disable caching",
 		},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_DAEMON
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1693,6 +1655,8 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
+	cmdline_daemon_cfg = samba_cmdline_get_daemon_cfg();
+
 	pc = samba_popt_get_context(getprogname(), argc, argv, long_options, 0);
 	if (pc == NULL) {
 		DBG_ERR("Failed to setup popt parser!\n");
@@ -1702,19 +1666,6 @@ int main(int argc, const char **argv)
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-			/* Don't become a daemon */
-		case OPT_DAEMON:
-			is_daemon = True;
-			break;
-		case 'i':
-			interactive = True;
-			break;
-                case OPT_FORK:
-			Fork = false;
-			break;
-		case OPT_NO_PROCESS_GROUP:
-			no_process_group = true;
-			break;
 		case 'n':
 			opt_nocache = true;
 			break;
@@ -1739,7 +1690,7 @@ int main(int argc, const char **argv)
 	set_remote_machine_name("winbindd", False);
 
 	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
-	if (is_daemon && interactive) {
+	if (cmdline_daemon_cfg->daemon && cmdline_daemon_cfg->interactive) {
 		d_fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
@@ -1747,12 +1698,18 @@ int main(int argc, const char **argv)
 	}
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
-	if (interactive) {
-		Fork = true;
+	if (cmdline_daemon_cfg->interactive) {
+		/*
+		 * libcmdline POPT_DAEMON callback sets "fork" to false if "-i"
+		 * for interactive is passed on the commandline. Set it back to
+		 * true. TODO: check if this is correct, smbd and nmbd don't do
+		 * this.
+		 */
+		cmdline_daemon_cfg->fork = true;
 		log_stdout = true;
 	}
 
-	if (log_stdout && Fork) {
+	if (log_stdout && cmdline_daemon_cfg->fork) {
 		d_fprintf(stderr, "\nERROR: "
 			  "Can't log to stdout (-S) unless daemon is in foreground +(-F) or interactive (-i)\n\n");
 		poptPrintUsage(pc, stderr, 0);
@@ -1770,11 +1727,6 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if (log_stdout) {
-		setup_logging("winbindd", DEBUG_STDOUT);
-	} else {
-		setup_logging("winbindd", DEBUG_FILE);
-	}
 	reopen_logs();
 
 	DEBUG(0,("winbindd version %s started.\n", samba_version_string()));
@@ -1938,7 +1890,9 @@ int main(int argc, const char **argv)
 	BlockSignals(False, SIGCHLD);
 
 	if (!interactive) {
-		become_daemon(Fork, no_process_group, log_stdout);
+		become_daemon(cmdline_daemon_cfg->fork,
+			      cmdline_daemon_cfg->no_process_group,
+			      log_stdout);
 	} else {
 		daemon_status("winbindd", "Starting process ...");
 	}
@@ -1950,8 +1904,11 @@ int main(int argc, const char **argv)
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive && !no_process_group)
+	if (cmdline_daemon_cfg->interactive &&
+	    !cmdline_daemon_cfg->no_process_group)
+	{
 		setpgid( (pid_t)0, (pid_t)0);
+	}
 #endif
 
 	TimeInit();
@@ -1985,7 +1942,8 @@ int main(int argc, const char **argv)
 		exit_daemon(nt_errstr(status), map_errno_from_nt_status(status));
 	}
 
-	winbindd_register_handlers(global_messaging_context(), !Fork);
+	winbindd_register_handlers(global_messaging_context(),
+				   !cmdline_daemon_cfg->fork);
 
 	if (!messaging_parent_dgm_cleanup_init(global_messaging_context())) {
 		exit(1);
