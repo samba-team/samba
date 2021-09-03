@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 import tempfile
 import binascii
 import collections
+import secrets
 
 from collections import namedtuple
 import ldb
@@ -37,7 +38,10 @@ from samba.dsdb import (
     DS_GUID_COMPUTERS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
     UF_WORKSTATION_TRUST_ACCOUNT,
-    UF_NORMAL_ACCOUNT
+    UF_NO_AUTH_DATA_REQUIRED,
+    UF_NORMAL_ACCOUNT,
+    UF_NOT_DELEGATED,
+    UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
 )
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
@@ -88,8 +92,16 @@ class KDCBaseTest(RawKerberosTest):
 
         cls._functional_level = None
 
+        # An identifier to ensure created accounts have unique names. Windows
+        # caches accounts based on usernames, so account names being different
+        # across test runs avoids previous test runs affecting the results.
+        cls.account_base = f'krb5_{secrets.token_hex(5)}_'
+        cls.account_id = 0
+
         # A set containing DNs of accounts created as part of testing.
         cls.accounts = set()
+
+        cls.account_cache = {}
 
     @classmethod
     def tearDownClass(cls):
@@ -322,24 +334,113 @@ class KDCBaseTest(RawKerberosTest):
         creds.set_tgs_supported_enctypes(supported_enctypes)
         creds.set_ap_supported_enctypes(supported_enctypes)
 
+    def get_cached_creds(self, *,
+                         machine_account,
+                         opts=None):
+        if opts is None:
+            opts = {}
+
+        opts_default = {
+            'no_auth_data_required': False,
+            'supported_enctypes': None,
+            'not_delegated': False,
+            'allowed_to_delegate_to': None,
+            'trusted_to_auth_for_delegation': False,
+            'fast_support': False
+        }
+
+        account_opts = {
+            'machine_account': machine_account,
+            **opts_default,
+            **opts
+        }
+
+        cache_key = tuple(sorted(account_opts.items()))
+
+        creds = self.account_cache.get(cache_key)
+        if creds is None:
+            creds = self.create_account_opts(**account_opts)
+            self.account_cache[cache_key] = creds
+
+        return creds
+
+    def create_account_opts(self, *,
+                            machine_account,
+                            no_auth_data_required,
+                            supported_enctypes,
+                            not_delegated,
+                            allowed_to_delegate_to,
+                            trusted_to_auth_for_delegation,
+                            fast_support):
+        if machine_account:
+            self.assertFalse(not_delegated)
+        else:
+            self.assertIsNone(allowed_to_delegate_to)
+            self.assertFalse(trusted_to_auth_for_delegation)
+
+        samdb = self.get_samdb()
+
+        user_name = self.account_base + str(self.account_id)
+        type(self).account_id += 1
+
+        user_account_control = 0
+        if trusted_to_auth_for_delegation:
+            user_account_control |= UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
+        if not_delegated:
+            user_account_control |= UF_NOT_DELEGATED
+        if no_auth_data_required:
+            user_account_control |= UF_NO_AUTH_DATA_REQUIRED
+
+        details = {}
+
+        enctypes = supported_enctypes
+        if fast_support:
+            fast_bits = (security.KERB_ENCTYPE_FAST_SUPPORTED |
+                         security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
+                         security.KERB_ENCTYPE_CLAIMS_SUPPORTED)
+            enctypes = (enctypes or 0) | fast_bits
+
+        if enctypes is not None:
+            details['msDS-SupportedEncryptionTypes'] = str(enctypes)
+
+        if allowed_to_delegate_to:
+            details['msDS-AllowedToDelegateTo'] = allowed_to_delegate_to
+
+        if machine_account:
+            spn = 'host/' + user_name
+        else:
+            spn = None
+
+        creds, dn = self.create_account(samdb, user_name,
+                                        machine_account=machine_account,
+                                        spn=spn,
+                                        additional_details=details,
+                                        account_control=user_account_control)
+
+        res = samdb.search(base=dn,
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['msDS-KeyVersionNumber'])
+        kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+        creds.set_kvno(kvno)
+
+        keys = self.get_keys(samdb, dn)
+        self.creds_set_keys(creds, keys)
+
+        if machine_account:
+            if supported_enctypes is not None:
+                tgs_enctypes = supported_enctypes
+            else:
+                tgs_enctypes = security.KERB_ENCTYPE_RC4_HMAC_MD5
+
+            creds.set_tgs_supported_enctypes(tgs_enctypes)
+
+        return creds
+
     def get_client_creds(self,
                          allow_missing_password=False,
                          allow_missing_keys=True):
         def create_client_account():
-            samdb = self.get_samdb()
-
-            creds, dn = self.create_account(samdb, 'kdctestclient')
-
-            res = samdb.search(base=dn,
-                               scope=ldb.SCOPE_BASE,
-                               attrs=['msDS-KeyVersionNumber'])
-            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
-            creds.set_kvno(kvno)
-
-            keys = self.get_keys(samdb, dn)
-            self.creds_set_keys(creds, keys)
-
-            return creds
+            return self.get_cached_creds(machine_account=False)
 
         c = self._get_krb5_creds(prefix='CLIENT',
                                  allow_missing_password=allow_missing_password,
@@ -351,32 +452,8 @@ class KDCBaseTest(RawKerberosTest):
                        allow_missing_password=False,
                        allow_missing_keys=True):
         def create_mach_account():
-            samdb = self.get_samdb()
-
-            mach_name = 'kdctestmac'
-            details = {
-                'msDS-SupportedEncryptionTypes': str(
-                    security.KERB_ENCTYPE_FAST_SUPPORTED |
-                    security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
-                    security.KERB_ENCTYPE_CLAIMS_SUPPORTED
-                )
-            }
-
-            creds, dn = self.create_account(samdb, mach_name,
-                                            machine_account=True,
-                                            spn='host/' + mach_name,
-                                            additional_details=details)
-
-            res = samdb.search(base=dn,
-                               scope=ldb.SCOPE_BASE,
-                               attrs=['msDS-KeyVersionNumber'])
-            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
-            creds.set_kvno(kvno)
-
-            keys = self.get_keys(samdb, dn)
-            self.creds_set_keys(creds, keys)
-
-            return creds
+            return self.get_cached_creds(machine_account=True,
+                                         opts={'fast_support': True})
 
         c = self._get_krb5_creds(prefix='MAC',
                                  allow_missing_password=allow_missing_password,
@@ -388,32 +465,12 @@ class KDCBaseTest(RawKerberosTest):
                           allow_missing_password=False,
                           allow_missing_keys=True):
         def create_service_account():
-            samdb = self.get_samdb()
-
-            mach_name = 'kdctestservice'
-            details = {
-                'msDS-SupportedEncryptionTypes': str(
-                    security.KERB_ENCTYPE_FAST_SUPPORTED |
-                    security.KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED |
-                    security.KERB_ENCTYPE_CLAIMS_SUPPORTED
-                )
-            }
-
-            creds, dn = self.create_account(samdb, mach_name,
-                                            machine_account=True,
-                                            spn='host/' + mach_name,
-                                            additional_details=details)
-
-            res = samdb.search(base=dn,
-                               scope=ldb.SCOPE_BASE,
-                               attrs=['msDS-KeyVersionNumber'])
-            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
-            creds.set_kvno(kvno)
-
-            keys = self.get_keys(samdb, dn)
-            self.creds_set_keys(creds, keys)
-
-            return creds
+            return self.get_cached_creds(
+                machine_account=True,
+                opts={
+                    'trusted_to_auth_for_delegation': True,
+                    'fast_support': True
+                })
 
         c = self._get_krb5_creds(prefix='SERVICE',
                                  allow_missing_password=allow_missing_password,
