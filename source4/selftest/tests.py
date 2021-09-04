@@ -1223,6 +1223,18 @@ planoldpythontestsuite(env, "ridalloc_exop",
                        environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
+# This test can pollute the environment a little by creating and
+# deleting DCs which can get into the replication state for a while.
+#
+# The setting of DC1 to $DC_SERVER means that it will join towards and
+# operate on schema_dc.  This matters most when running
+# test_samba_tool_replicate_local as this sets up a full temp DC and
+# does new replication to it, which can show up in the replication
+# topology.
+#
+# That is why this test is run on the isolated environment and not on
+# those connected with ad_dc (vampiredc/promoteddc)
+
 env = 'schema_pair_dc'
 planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
@@ -1237,11 +1249,6 @@ planoldpythontestsuite(env, "getnc_schema",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc']:
-    planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
-                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
-                           name="samba4.drs.samba_tool_drs.python(%s)" % env,
-                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs_showrepl",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.samba_tool_drs_showrepl.python(%s)" % env,
