@@ -254,16 +254,12 @@ do
     cp $x $OUT/
     bin=`basename $x`
 
-    # Changing RPATH (not RUNPATH, but we can't tell here which was
-    # set) is critical, otherwise libraries used by libraries won't be
-    # found on the oss-fuzz target host.  Sadly this is only possible
-    # with clang or ld.bfd on Ubuntu 16.04 (this script is only run on
-    # that).
+    # This means the copied libraries are found on the runner.
     #
-    # chrpath --convert only allows RPATH to be changed to RUNPATH,
-    # not the other way around, and we really don't want RUNPATH.
-    #
-    # This means the copied libraries are found on the runner
+    # The binaries should we built with RPATH, not RUNPATH, to allow
+    # libraries used by libraries to be found. This command retains the
+    # RPATH/RUNPATH header and only changes the path. We later verify this
+    # in the check_build.sh script.
     chrpath -r '$ORIGIN/lib' $OUT/$bin
 
     # Truncate the original binary to save space
