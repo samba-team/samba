@@ -52,6 +52,7 @@
 #include "rpc_server/rpc_config.h"
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
+#include "winbindd_traceid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -421,7 +422,18 @@ static struct tevent_req *process_request_send(
 	enum winbindd_cmd cmd = cli_state->request->cmd;
 	size_t i;
 	bool ok;
+	static uint64_t request_index = 1;
 
+	/*
+	 * debug traceid values:
+	 * 0   .. inactive
+	 * 1   .. not processing a winbind request, but in other code (timers)
+	 * >=2 .. winbind request processing
+	 */
+	if (debug_traceid_get() != 0) {
+		request_index = ++request_index == 0 ? 2 : request_index;
+		debug_traceid_set(request_index);
+	}
 	req = tevent_req_create(mem_ctx, &state,
 				struct process_request_state);
 	if (req == NULL) {
@@ -1623,6 +1635,9 @@ int main(int argc, const char **argv)
 		exit_daemon("Winbindd reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}
 
+	if (lp_winbind_debug_traceid()) {
+		winbind_debug_traceid_setup(global_event_context());
+	}
 	ok = initialize_password_db(true, global_event_context());
 	if (!ok) {
 		exit_daemon("Failed to initialize passdb backend! "
