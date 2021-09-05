@@ -1,0 +1,13 @@
+<samba:parameter name="winbind debug traceid"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+    With this boolean parameter enabled, the per request unique traceid
+    will be displayed in the debug header for winbind processes.
+    </para>
+
+</description>
+<value type="default">no</value>
+</samba:parameter>
