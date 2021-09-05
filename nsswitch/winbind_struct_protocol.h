@@ -61,8 +61,9 @@ typedef char fstring[FSTRING_LEN];
  * 29: added "authoritative" to response.data.auth
  * 30: added "validation_level" and "info6" to response.data.auth
  * 31: added "client_name" to the request
+ * 32: added "traceid" to the request
  */
-#define WINBIND_INTERFACE_VERSION 31
+#define WINBIND_INTERFACE_VERSION 32
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -253,6 +254,7 @@ struct winbindd_request {
 	uint32_t flags;          /* flags relevant *only* to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
 	char client_name[32];	/* The client process sending the request */
+	uint64_t traceid;	/* debug traceid is sent from parent to child */
 
 	union {
 		fstring winsreq;     /* WINS request */

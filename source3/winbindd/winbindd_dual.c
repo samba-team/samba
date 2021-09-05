@@ -33,6 +33,7 @@
 #include "nsswitch/wb_reqtrans.h"
 #include "secrets.h"
 #include "../lib/util/select.h"
+#include "winbindd_traceid.h"
 #include "../libcli/security/security.h"
 #include "system/select.h"
 #include "messages.h"
@@ -221,6 +222,8 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->request, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	state->request->traceid = debug_traceid_get();
 
 	if (request->extra_data.data != NULL) {
 		state->request->extra_data.data = talloc_memdup(
@@ -1625,6 +1628,7 @@ static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	struct child_handler_state *state =
 		(struct child_handler_state *)private_data;
 	NTSTATUS status;
+	uint64_t parent_traceid;
 
 	/* fetch a request from the main daemon */
 	status = child_read_request(state->cli.sock, state->cli.request);
@@ -1633,6 +1637,10 @@ static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		/* we lost contact with our parent */
 		_exit(0);
 	}
+
+	/* read traceid from request */
+	parent_traceid = state->cli.request->traceid;
+	debug_traceid_set(parent_traceid);
 
 	DEBUG(4,("child daemon request %d\n",
 		 (int)state->cli.request->cmd));
@@ -1746,6 +1754,11 @@ static bool fork_domain_child(struct winbindd_child *child)
 	close(fdpair[1]);
 
 	status = winbindd_reinit_after_fork(child, child->logfilename);
+
+	/* setup callbacks again, one of them is removed in reinit_after_fork */
+	if (lp_winbind_debug_traceid()) {
+		winbind_debug_traceid_setup(global_event_context());
+	}
 
 	nwritten = sys_write(state.cli.sock, &status, sizeof(status));
 	if (nwritten != sizeof(status)) {
