@@ -99,8 +99,9 @@ simplified and provides better control for encryption, signing and kerberos.
 Also several command line options have a smb.conf variable to control the
 default now.
 
-All tools are logging to stderr by default. You can use "--debug-stdout" to
-change the behavior.
+All tools are now logging to stderr by default. You can use "--debug-stdout" to
+change the behavior. All servers will log to stderr at early startup until logging
+is setup to go to a file by default.
 
 ### Common parser:
 
