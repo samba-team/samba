@@ -27,7 +27,7 @@
 
 /** Check a plaintext username/password
  *
- * Cannot deal with an encrupted password in any manner whatsoever,
+ * Cannot deal with an encrypted password in any manner whatsoever,
  * unless the account has a null password.
  **/
 
