@@ -87,7 +87,7 @@ systemOnly: FALSE
 
     def test_AddIndexedAttribute(self):
         # create names for an attribute to add
-        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-IdxAttr-")
         ldif = self._make_attr_ldif(attr_name, attr_dn, 1,
                                     "searchFlags: %d" % samba.dsdb.SEARCH_FLAG_ATTINDEX)
 
@@ -111,7 +111,7 @@ systemOnly: FALSE
 
     def test_AddUnIndexedAttribute(self):
         # create names for an attribute to add
-        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-UnIdxAttr-")
         ldif = self._make_attr_ldif(attr_name, attr_dn, 2)
 
         # add the new attribute
@@ -134,7 +134,7 @@ systemOnly: FALSE
 
     def test_AddTwoIndexedAttributes(self):
         # create names for an attribute to add
-        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-2IdxAttr-")
         ldif = self._make_attr_ldif(attr_name, attr_dn, 3,
                                     "searchFlags: %d" % samba.dsdb.SEARCH_FLAG_ATTINDEX)
 
