@@ -94,7 +94,7 @@ other, some options meant different in different tools.
 
 These should be stories of the past now. A new command line parser has been
 implemented with sanity checking. Also the command line interface has been
-simplified and provides better control for encryption, singing and kerberos.
+simplified and provides better control for encryption, signing and kerberos.
 
 Also several command line options have a smb.conf variable to control the
 default now.
