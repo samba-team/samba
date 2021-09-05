@@ -38,19 +38,12 @@
 static bool is_our_machine_account(const char *username)
 {
 	bool ret;
-	char *truncname = NULL;
 	size_t ulen = strlen(username);
 
 	if (ulen == 0 || username[ulen-1] != '$') {
 		return false;
 	}
-	truncname = SMB_STRDUP(username);
-	if (!truncname) {
-		return false;
-	}
-	truncname[ulen-1] = '\0';
-	ret = strequal(truncname, lp_netbios_name());
-	SAFE_FREE(truncname);
+	ret = strnequal(username, lp_netbios_name(), ulen-1);
 	return ret;
 }
 
