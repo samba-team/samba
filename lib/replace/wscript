@@ -456,32 +456,10 @@ def configure(conf):
     conf.CHECK_FUNCS('getprogname')
     if not conf.CHECK_FUNCS('copy_file_range'):
         conf.CHECK_CODE('''
-                        int src_fd = -1, dst_fd = -1, ret;
-                        ssize_t written;
-                        char src[]="/tmp/test.XXXXXX";
-                        char dst[]="/tmp/test.XXXXXX";
-                        src_fd = mkstemp(src);
-                        if (src_fd == -1) {ret = 1; goto cleanup;}
-                        dst_fd = mkstemp(dst);
-                        if (dst_fd == -1) {ret = 2; goto cleanup;}
-                        written = pwrite(src_fd, "x", 1, 0);
-                        if (written != 1) {ret = 3; goto cleanup;}
-                        written = syscall(SYS_copy_file_range,src_fd,0,dst_fd,0,1,0);
-                        if (written != 1) {
-                            printf("SYS_copy_file_range failed: %s", strerror(errno));
-                            ret = 4; goto cleanup;
-                        }
-                        ret = 0;
-                    cleanup:
-                        if (src_fd != -1) close(src_fd);
-                        if (dst_fd != -1) close(dst_fd);
-                        unlink(src);
-                        unlink(dst);
-                        return ret;
+syscall(SYS_copy_file_range,0,NULL,0,NULL,0,0);
                         ''',
                         'HAVE_SYSCALL_COPY_FILE_RANGE',
-                        headers='errno.h string.h stdio.h sys/syscall.h unistd.h sys/types.h sys/stat.h fcntl.h',
-                        execute=True,
+                        headers='sys/syscall.h unistd.h',
                         msg='Checking whether we have copy_file_range system call')
 
     conf.SET_TARGET_TYPE('attr', 'EMPTY')
