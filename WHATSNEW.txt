@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.15.  This is *not*
+This is the fifth release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -314,6 +314,31 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc4
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14809: Shares with variable substitutions cause core dump upon
+     connection from MacOS Big Sur 11.5.2.
+   * BUG 14816: Fix pathref open of a filesystem fifo in the DISABLE_OPATH
+     build.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14815: A subset of tests from Samba's selftest system were not being
+     run, while others were run twice.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14771: Some VFS operations on pathref (O_PATH) handles fail on GPFS.
+   * BUG 14787: net conf list crashes when run as normal user,
+   * BUG 14803: smbd/winbindd started in daemon mode generate output on
+     stderr/stdout.
+   * BUG 14804: winbindd can crash because idmap child state is not fully
+     initialized.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14771: Some VFS operations on pathref (O_PATH) handles fail on GPFS.
 
 
 CHANGES SINCE 4.15.0rc3
