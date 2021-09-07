@@ -1017,19 +1017,6 @@ class FAST_Tests(KDCBaseTest):
         # challenge is only considered a replay if the ciphertext is identical
         # to a previous challenge. Windows does not perform this check.
 
-        class GenerateEncChallengePadataReplay:
-            def __init__(replay):
-                replay._padata = None
-
-            def __call__(replay, key, armor_key):
-                if replay._padata is None:
-                    client_challenge_key = (
-                        self.generate_client_challenge_key(armor_key, key))
-                    replay._padata = self.get_challenge_pa_data(
-                        client_challenge_key)
-
-                return replay._padata
-
         self._run_test_sequence([
             {
                 'rep_type': KRB_AS_REP,
@@ -1042,28 +1029,72 @@ class FAST_Tests(KDCBaseTest):
                 'rep_type': KRB_AS_REP,
                 'expected_error_mode': 0,
                 'use_fast': True,
-                'gen_padata_fn': GenerateEncChallengePadataReplay(),
+                'gen_padata_fn': self.generate_enc_challenge_padata_replay,
                 'fast_armor': FX_FAST_ARMOR_AP_REQUEST,
                 'gen_armor_tgt_fn': self.get_mach_tgt,
                 'repeat': 2
             }
         ])
 
-    def generate_enc_timestamp_padata(self, key, _armor_key):
-        return self.get_enc_timestamp_pa_data_from_key(key)
+    def generate_enc_timestamp_padata(self,
+                                      kdc_exchange_dict,
+                                      callback_dict,
+                                      req_body):
+        key = kdc_exchange_dict['preauth_key']
 
-    def generate_enc_challenge_padata(self, key, armor_key, skew=0):
+        padata = self.get_enc_timestamp_pa_data_from_key(key)
+        return [padata], req_body
+
+    def generate_enc_challenge_padata(self,
+                                      kdc_exchange_dict,
+                                      callback_dict,
+                                      req_body,
+                                      skew=0):
+        armor_key = kdc_exchange_dict['armor_key']
+        key = kdc_exchange_dict['preauth_key']
+
         client_challenge_key = (
             self.generate_client_challenge_key(armor_key, key))
-        return self.get_challenge_pa_data(client_challenge_key, skew=skew)
+        padata = self.get_challenge_pa_data(client_challenge_key, skew=skew)
+        return [padata], req_body
 
-    def generate_enc_challenge_padata_wrong_key_kdc(self, key, armor_key):
+    def generate_enc_challenge_padata_wrong_key_kdc(self,
+                                      kdc_exchange_dict,
+                                      callback_dict,
+                                      req_body):
+        armor_key = kdc_exchange_dict['armor_key']
+        key = kdc_exchange_dict['preauth_key']
+
         kdc_challenge_key = (
             self.generate_kdc_challenge_key(armor_key, key))
-        return self.get_challenge_pa_data(kdc_challenge_key)
+        padata = self.get_challenge_pa_data(kdc_challenge_key)
+        return [padata], req_body
 
-    def generate_enc_challenge_padata_wrong_key(self, key, _armor_key):
-        return self.get_challenge_pa_data(key)
+    def generate_enc_challenge_padata_wrong_key(self,
+                                                kdc_exchange_dict,
+                                                callback_dict,
+                                                req_body):
+        key = kdc_exchange_dict['preauth_key']
+
+        padata = self.get_challenge_pa_data(key)
+        return [padata], req_body
+
+    def generate_enc_challenge_padata_replay(self,
+                                             kdc_exchange_dict,
+                                             callback_dict,
+                                             req_body):
+        padata = callback_dict.get('replay_padata')
+
+        if padata is None:
+            armor_key = kdc_exchange_dict['armor_key']
+            key = kdc_exchange_dict['preauth_key']
+
+            client_challenge_key = (
+                self.generate_client_challenge_key(armor_key, key))
+            padata = self.get_challenge_pa_data(client_challenge_key)
+            callback_dict['replay_padata'] = padata
+
+        return [padata], req_body
 
     def generate_empty_fast(self,
                             _kdc_exchange_dict,
@@ -1251,35 +1282,25 @@ class FAST_Tests(KDCBaseTest):
             kdc_options = kdc_dict.pop('kdc_options', kdc_options_default)
 
             gen_padata_fn = kdc_dict.pop('gen_padata_fn', None)
-            if gen_padata_fn is not None:
-                self.assertEqual(KRB_AS_REP, rep_type)
+
+            if rep_type == KRB_AS_REP and gen_padata_fn is not None:
                 self.assertIsNotNone(preauth_etype_info2)
 
                 preauth_key = self.PasswordKey_from_etype_info2(
                     client_creds,
                     preauth_etype_info2[0],
                     client_creds.get_kvno())
-                padata = [gen_padata_fn(preauth_key, armor_key)]
             else:
                 preauth_key = None
-                padata = []
 
             if use_fast:
-                inner_padata = padata
-                outer_padata = []
+                generate_fast_padata_fn = gen_padata_fn
+                generate_padata_fn = (functools.partial(_generate_padata_copy,
+                                                         padata=[fast_cookie])
+                                       if fast_cookie is not None else None)
             else:
-                inner_padata = []
-                outer_padata = padata
-
-            if use_fast and fast_cookie is not None:
-                outer_padata.append(fast_cookie)
-
-            generate_fast_padata_fn = (functools.partial(_generate_padata_copy,
-                                                         padata=inner_padata)
-                                       if inner_padata else None)
-            generate_padata_fn = (functools.partial(_generate_padata_copy,
-                                                    padata=outer_padata)
-                                  if outer_padata else None)
+                generate_fast_padata_fn = None
+                generate_padata_fn = gen_padata_fn
 
             gen_authdata_fn = kdc_dict.pop('gen_authdata_fn', None)
             if gen_authdata_fn is not None:
