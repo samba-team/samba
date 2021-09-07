@@ -323,7 +323,7 @@ samba-libs:
 samba-fuzz:
   extends: .shared_template
   variables:
-    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu1604}
+    SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu2004}
 
 ctdb:
   extends: .shared_template
