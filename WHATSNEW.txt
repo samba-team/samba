@@ -1,4 +1,59 @@
                    ===============================
+                   Release Notes for Samba 4.13.11
+                         September 07, 2021
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.13 release series.
+
+
+Changes since 4.13.10
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14769: smbd panic on force-close share during offload write.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14731: Fix returned attributes on fake quota file handle and avoid
+     hitting the VFS.
+   * BUG 14783: smbd "deadtime" parameter doesn't work anymore.
+   * BUG 14787: net conf list crashes when run as normal user.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14607: Work around special SMB2 READ response behavior of NetApp Ontap
+     7.3.7.
+   * BUG 14793: Start the SMB encryption as soon as possible.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14792: Winbind should not start if the socket path for the privileged
+     pipe is too long.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ===============================
                    Release Notes for Samba 4.13.10
                             July 14, 2021
                    ===============================
@@ -61,8 +116,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
