@@ -589,8 +589,8 @@ def call_samba_tool(d, op="add", zone=None):
     try:
         cmd = cmd_dns()
         if opts.verbose:
-            print("Calling samba-tool dns %s -k no -P %s" % (op, args))
-        ret = cmd._run("dns", op, "-k", "no", "-P", *args)
+            print(f'Calling samba-tool dns {op} --use-kerberos off -P {args}')
+        ret = cmd._run("dns", op, "--use-kerberos", "off", "-P", *args)
         if ret == -1:
             if opts.fail_immediately:
                 sys.exit(1)
