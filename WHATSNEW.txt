@@ -52,6 +52,14 @@ Starting from Jan 21th 2021, all Samba releases will be signed with the new key.
 
 See also GPG_AA99442FB680B620_replaces_6F33915B6568B7EA.txt
 
+New minimum version for the experimental MIT KDC
+------------------------------------------------
+
+The build of the AD DC using the system MIT Kerberos, an
+experimental feature, now requires MIT Kerberos 1.19.  An up-to-date
+Fedora 34 has this version and has backported fixes for the KDC crash
+bugs CVE-2021-37750 and CVE-2021-36222
+
 
 NEW FEATURES/CHANGES
 ====================
@@ -274,6 +282,15 @@ Windows.
 'samba-tool dns update' is now a bit more careful in rejecting and
 warning you about malformed IPv4 and IPv6 addresses.
 
+CVE-2021-3671: Crash in Heimdal KDC and updated security release policy
+-----------------------------------------------------------------------
+
+An unuthenticated user can crash the AD DC KDC by omitting the server
+name in a TGS-REQ.  Per Samba's updated security process a specific
+security release was not made for this issue as it is a recoverable
+Denial Of Service.
+
+See https://wiki.samba.org/index.php/Samba_Security_Proces
 
 REMOVED FEATURES
 ================
