@@ -425,7 +425,7 @@ void stat_cache_delete(const char *name)
 
 	lname = talloc_asprintf(talloc_tos(),
 				STAT_CACHE_TWRP_TOKEN,
-				(uintmax_t)0,
+				(uint64_t)0,
 				upper);
 	TALLOC_FREE(upper);
 	if (lname == NULL) {
