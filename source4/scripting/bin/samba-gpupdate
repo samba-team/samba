@@ -47,6 +47,7 @@ from samba.vgp_access_ext import vgp_access_ext
 from samba.gp_gnome_settings_ext import gp_gnome_settings_ext
 from samba.gp_cert_auto_enroll_ext import gp_cert_auto_enroll_ext
 from samba.gp_firefox_ext import gp_firefox_ext
+from samba.gp_chromium_ext import gp_chromium_ext, gp_chrome_ext
 from samba.credentials import Credentials
 import logging
 
@@ -123,6 +124,8 @@ if __name__ == "__main__":
         gp_extensions.append(gp_gnome_settings_ext)
         gp_extensions.append(gp_cert_auto_enroll_ext)
         gp_extensions.append(gp_firefox_ext)
+        gp_extensions.append(gp_chromium_ext)
+        gp_extensions.append(gp_chrome_ext)
         gp_extensions.extend(machine_exts)
     elif opts.target == 'User':
         gp_extensions.append(gp_user_scripts_ext)
