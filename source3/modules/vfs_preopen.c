@@ -642,7 +642,7 @@ static int preopen_openat(struct vfs_handle_struct *handle,
 	new_end = new_start + new_digits;
 
 	DBG_PREFIX(state->founddigits_dbglvl, (
-		   "Pattern(idx=%zd) found num_digits[%d] start_offset[%zd] parsed_num[%lu] fullpath[%s]\n",
+		   "Pattern(idx=%zd) found num_digits[%d] start_offset[%zd] parsed_num[%"PRIu64"] fullpath[%s]\n",
 		   match_idx, new_digits, new_start, num, new_template));
 
 	if (state->last_match_idx != match_idx) {
