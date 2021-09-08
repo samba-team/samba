@@ -93,15 +93,6 @@ static bool become_gid(gid_t gid)
 }
 
 /****************************************************************************
- Become the specified uid and gid.
-****************************************************************************/
-
-static bool become_id(uid_t uid, gid_t gid)
-{
-	return become_gid(gid) && become_uid(uid);
-}
-
-/****************************************************************************
  Drop back to root privileges in order to change to another user.
 ****************************************************************************/
 
@@ -237,12 +228,19 @@ bool push_sec_ctx(void)
 	return True;
 }
 
+#ifndef HAVE_DARWIN_INITGROUPS
+/****************************************************************************
+ Become the specified uid and gid.
+****************************************************************************/
+
+static bool become_id(uid_t uid, gid_t gid)
+{
+	return become_gid(gid) && become_uid(uid);
+}
+
 /****************************************************************************
  Change UNIX security context. Calls panic if not successful so no return value.
 ****************************************************************************/
-
-#ifndef HAVE_DARWIN_INITGROUPS
-
 /* Normal credential switch path. */
 
 static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
