@@ -897,9 +897,7 @@ struct smbd_server_connection {
 		struct kernel_oplocks *kernel_ops;
 	} oplocks;
 
-	struct {
-		struct notify_mid_map *notify_mid_maps;
-	} smb1;
+	struct notify_mid_map *notify_mid_maps;
 
 	struct pthreadpool_tevent *pool;
 

@@ -366,7 +366,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 	DLIST_ADD_END(fsp->notify->requests, request);
 
 	map->mid = request->req->mid;
-	DLIST_ADD(sconn->smb1.notify_mid_maps, map);
+	DLIST_ADD(sconn->notify_mid_maps, map);
 
 	return NT_STATUS_OK;
 }
@@ -396,7 +396,7 @@ static void change_notify_remove_request(struct smbd_server_connection *sconn,
 	}
 
 	DLIST_REMOVE(fsp->notify->requests, req);
-	DLIST_REMOVE(sconn->smb1.notify_mid_maps, req->mid_map);
+	DLIST_REMOVE(sconn->notify_mid_maps, req->mid_map);
 	TALLOC_FREE(req);
 }
 
@@ -443,7 +443,7 @@ bool remove_pending_change_notify_requests_by_mid(
 {
 	struct notify_mid_map *map;
 
-	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
+	for (map = sconn->notify_mid_maps; map; map = map->next) {
 		if (map->mid == mid) {
 			break;
 		}
@@ -462,7 +462,7 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 	struct smbd_server_connection *sconn = smbreq->sconn;
 	struct notify_mid_map *map;
 
-	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
+	for (map = sconn->notify_mid_maps; map; map = map->next) {
 		if (map->req->req == smbreq) {
 			break;
 		}
