@@ -70,7 +70,7 @@ char* audit_get_timestamp(TALLOC_CTX *frame)
 
 	strftime(buffer, sizeof(buffer)-1, "%a, %d %b %Y %H:%M:%S", tm_info);
 	strftime(tz, sizeof(tz)-1, "%Z", tm_info);
-	ts = talloc_asprintf(frame, "%s.%06ld %s", buffer, tv.tv_usec, tz);
+	ts = talloc_asprintf(frame, "%s.%06ld %s", buffer, (long)tv.tv_usec, tz);
 	if (ts == NULL) {
 		DBG_ERR("Out of memory formatting time stamp\n");
 	}
