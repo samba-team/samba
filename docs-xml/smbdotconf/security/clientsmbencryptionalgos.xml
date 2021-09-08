@@ -9,13 +9,13 @@
 	<para>It is also possible to remove individual algorithms from the default list,
 	by prefixing them with '-'. This can avoid having to specify a hardcoded list.
 	</para>
-	<para>Note: that the removal of aes-128-ccm from the list will result
+	<para>Note: that the removal of AES-128-CCM from the list will result
 	in SMB3_00 and SMB3_02 being unavailable, as it is the default and only
 	available algorithm for these dialects.
 	</para>
 </description>
 
-<value type="default">aes-128-gcm, aes-128-ccm, aes-256-gcm, aes-256-ccm</value>
-<value type="example">aes-256-gcm</value>
-<value type="example">-aes-128-gcm -aes-128-ccm</value>
+<value type="default">AES-128-GCM, AES-128-CCM, AES-256-GCM, AES-256-CCM</value>
+<value type="example">AES-256-GCM</value>
+<value type="example">-AES-128-GCM -AES-128-CCM</value>
 </samba:parameter>

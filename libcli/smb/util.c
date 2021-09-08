@@ -466,9 +466,9 @@ enum smb_encryption_setting smb_encryption_setting_translate(const char *str)
 }
 
 static const struct enum_list enum_smb3_signing_algorithms[] = {
-	{SMB2_SIGNING_AES128_GMAC, "aes-128-gmac"},
-	{SMB2_SIGNING_AES128_CMAC, "aes-128-cmac"},
-	{SMB2_SIGNING_HMAC_SHA256, "hmac-sha-256"},
+	{SMB2_SIGNING_AES128_GMAC, "AES-128-GMAC"},
+	{SMB2_SIGNING_AES128_CMAC, "AES-128-CMAC"},
+	{SMB2_SIGNING_HMAC_SHA256, "HMAC-SHA256"},
 	{-1, NULL}
 };
 
@@ -488,10 +488,10 @@ const char *smb3_signing_algorithm_name(uint16_t algo)
 }
 
 static const struct enum_list enum_smb3_encryption_algorithms[] = {
-	{SMB2_ENCRYPTION_AES128_GCM, "aes-128-gcm"},
-	{SMB2_ENCRYPTION_AES128_CCM, "aes-128-ccm"},
-	{SMB2_ENCRYPTION_AES256_GCM, "aes-256-gcm"},
-	{SMB2_ENCRYPTION_AES256_CCM, "aes-256-ccm"},
+	{SMB2_ENCRYPTION_AES128_GCM, "AES-128-GCM"},
+	{SMB2_ENCRYPTION_AES128_CCM, "AES-128-CCM"},
+	{SMB2_ENCRYPTION_AES256_GCM, "AES-256-GCM"},
+	{SMB2_ENCRYPTION_AES256_CCM, "AES-256-CCM"},
 	{-1, NULL}
 };
 

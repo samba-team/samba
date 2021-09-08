@@ -9,14 +9,14 @@
 	<para>It is also possible to remove individual algorithms from the default list,
 	by prefixing them with '-'. This can avoid having to specify a hardcoded list.
 	</para>
-	<para>Note: that the removal of aes-128-cmac from the list will result
-	in SMB3_00 and SMB3_02 being unavailable, and the removal od hmac-sha-256
+	<para>Note: that the removal of AES-128-CMAC from the list will result
+	in SMB3_00 and SMB3_02 being unavailable, and the removal of HMAC-SHA256
 	will result in SMB2_02 and SMB2_10 being unavailable, as these are the default and only
 	available algorithms for these dialects.
 	</para>
 </description>
 
-<value type="default">aes-128-gmac, aes-128-cmac, hmac-sha-256</value>
-<value type="example">aes-128-cmac, hmac-sha-256</value>
-<value type="example">-aes-128-cmac</value>
+<value type="default">AES-128-GMAC, AES-128-CMAC, HMAC-SHA256</value>
+<value type="example">AES-128-CMAC, HMAC-SHA256</value>
+<value type="example">-AES-128-CMAC</value>
 </samba:parameter>
