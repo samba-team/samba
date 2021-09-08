@@ -292,6 +292,14 @@ Denial Of Service.
 
 See https://wiki.samba.org/index.php/Samba_Security_Proces
 
+samba-tool domain backup offline with the LMDB backend
+------------------------------------------------------
+
+samba-tool domain backup offline, when operating with the LMDB backend
+now correctly takes out locks against concurrent modification of the
+database during the backup.  If you use this tool on a Samba AD DC
+using LMDB, you should upgrade to this release for safer backups.
+
 REMOVED FEATURES
 ================
 
