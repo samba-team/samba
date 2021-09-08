@@ -250,6 +250,10 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         res = ldb_system.search(userdn, attrs=['unicodePwd'])
         self.assertTrue('unicodePwd' in res[0])
 
+        # force replication here to flush any pending preloads (this
+        # was a racy test).
+        self.force_replication()
+
         newpass = userpass + '!'
 
         # Forcing replication should blank out password (when changed)
