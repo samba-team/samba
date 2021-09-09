@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fifth release candidate of Samba 4.15.  This is *not*
+This is the sixth release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -339,6 +339,36 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc5
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14806: Address a signifcant performance regression in database access
+     in the AD DC since Samba 4.12.
+   * BUG 14807: Fix performance regression in lsa_LookupSids3/LookupNames4 since
+     Samba 4.9 by using an explicit database handle cache.
+   * BUG 14817: An unuthenticated user can crash the AD DC KDC by omitting the
+     server name in a TGS-REQ.
+   * BUG 14818: Address flapping samba_tool_drs_showrepl test.
+   * BUG 14819: Address flapping dsdb_schema_attributes test.
+
+o  Luke Howard <lukeh@padl.com>
+   * BUG 14817: An unuthenticated user can crash the AD DC KDC by omitting the
+     server name in a TGS-REQ.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14817: An unuthenticated user can crash the AD DC KDC by omitting the
+     server name in a TGS-REQ.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14817: An unuthenticated user can crash the AD DC KDC by omitting the
+     server name in a TGS-REQ.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 14817: An unuthenticated user can crash the AD DC KDC by omitting the
+     server name in a TGS-REQ.
 
 
 CHANGES SINCE 4.15.0rc4
