@@ -131,9 +131,11 @@ Options removed:
 
 ### Duplicates in command line utils
 
-ldbadd/ldbsearch/ldbdel/ldbmodify/ldbrename:
--e is not available for --editor anymore
--s is not used for --configfile anymore
+ldbadd/ldbdel/ldbedit/ldbmodify/ldbrename/ldbsearch:
+-e is still available as an alias for --editor,
+   as it used to be.
+-s is no longer reported as an alias for --configfile,
+   it never worked that way as it was shadowed by '-s' for '--scope'.
 
 ndrdump:
 -l is not available for --load-dso anymore
