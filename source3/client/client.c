@@ -6536,7 +6536,11 @@ int main(int argc,char *argv[])
 			break;
 		case 'B':
 			return(do_smb_browse());
-
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
 		}
 	}
 
