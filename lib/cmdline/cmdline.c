@@ -487,9 +487,8 @@ static struct poptOption popt_common_config[] = {
 	},
 	{
 		.longName   = "configfile",
-		.shortName  = 's',
 		.argInfo    = POPT_ARG_STRING,
-		.val        = 's',
+		.val        = OPT_CONFIGFILE,
 		.descrip    = "Use alternative configuration file",
 		.argDescrip = "CONFIGFILE",
 	},
