@@ -194,6 +194,11 @@ int main(int argc, const char *argv[])
 				goto done;
 			}
 			break;
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(c));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
 		}
 	}
 
