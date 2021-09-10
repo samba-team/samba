@@ -256,8 +256,9 @@ class DCJoinContext(object):
 
         ctx.del_noerror(res[0].dn, recursive=True)
 
-        if "msDS-Krbtgtlink" in res[0]:
-            ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
+        krbtgt_dn = res[0].get('msDS-KrbTgtLink', idx=0)
+        if krbtgt_dn is not None:
+            ctx.new_krbtgt_dn = krbtgt_dn
             ctx.del_noerror(ctx.new_krbtgt_dn)
 
         res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
@@ -336,7 +337,7 @@ class DCJoinContext(object):
                                attrs=["msDS-krbTgtLink", "userAccountControl", "serverReferenceBL", "rIDSetReferences"])
         if len(res) == 0:
             raise Exception("Could not find domain member account '%s' to promote to a DC, use 'samba-tool domain join' instead'" % ctx.samname)
-        if "msDS-krbTgtLink" in res[0] or "serverReferenceBL" in res[0] or "rIDSetReferences" in res[0]:
+        if "msDS-KrbTgtLink" in res[0] or "serverReferenceBL" in res[0] or "rIDSetReferences" in res[0]:
             raise Exception("Account '%s' appears to be an active DC, use 'samba-tool domain join' if you must re-create this account" % ctx.samname)
         if (int(res[0]["userAccountControl"][0]) & (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
                                                     samba.dsdb.UF_SERVER_TRUST_ACCOUNT) == 0):
