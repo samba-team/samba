@@ -279,7 +279,7 @@ testit "test smbclient kerberos=required" \
     failed=$(expr $failed + 1)
 
 kerberos_kinit $samba_kinit ${USERNAME}@${REALM} ${PASSWORD}
-cmd='$samba_smbclient //${SERVER}/tmp --use-krb5-ccache=$KRB5CCNAME ---configfile=${CONFIGURATION} -c "ls; quit"'
+cmd='$samba_smbclient //${SERVER}/tmp --use-krb5-ccache=$KRB5CCNAME --configfile=${CONFIGURATION} -c "ls; quit"'
 testit "test smbclient kerberos=required ccache" \
     test_smbclient || \
     failed=$(expr $failed + 1)
