@@ -77,6 +77,13 @@ int main(int argc, char **argv)
 	}
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
 	}
 
 	ev_ctx = s4_event_context_init(NULL);
