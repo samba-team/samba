@@ -27,6 +27,7 @@ int main(int argc, const char **argv)
 	poptContext pc;
 	char *count_str = NULL;
 	int i, count = 1;
+	int opt;
 	bool ok;
 
 	struct poptOption long_options[] = {
@@ -70,7 +71,15 @@ int main(int argc, const char **argv)
 	}
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file>");
 
-	while(poptGetNextOpt(pc) != -1);
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+	}
 
 	if (poptPeekArg(pc)) {
 		config_file = poptGetArg(pc);
