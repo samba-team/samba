@@ -120,7 +120,7 @@ class SmbCaclsBlockboxTestBase(BlackboxTestCase):
 
     def file_ace_check(self, remotepath, ace):
         smbcacls_args = self.build_test_cmd("smbcacls",
-                            ["//%s/%s" % (self.server, self.share), "--get",
+                            ["//%s/%s" % (self.server, self.share),
                             remotepath])
         try:
             output = self.check_output(smbcacls_args)
