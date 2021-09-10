@@ -34,7 +34,7 @@
 		<arg choice="opt">--leak-report-full</arg>
 		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
 		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
-		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
+		<arg choice="opt">-m|--max-protocol=MAXPROTOCOL</arg>
 		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
 		<arg choice="opt">--netbios-scope=SCOPE</arg>
 		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>

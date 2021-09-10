@@ -690,7 +690,7 @@ static struct poptOption popt_common_connection[] = {
 		.argDescrip = "SOCKETOPTIONS",
 	},
 	{
-		.longName   = "maxprotocol",
+		.longName   = "max-protocol",
 		.shortName  = 'm',
 		.argInfo    = POPT_ARG_STRING,
 		.val        = 'm',

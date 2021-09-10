@@ -556,9 +556,9 @@
 </varlistentry>
 '>
 
-<!ENTITY cmdline.common.connection.maxprotocol '
+<!ENTITY cmdline.common.connection.max-protocol '
 <varlistentry>
-	<term>-m|--maxprotocol=MAXPROTOCOL</term>
+	<term>-m|--max-protocol=MAXPROTOCOL</term>
 	<listitem>
 		<para>
 			The value of the parameter (a string) is the highest
@@ -577,7 +577,7 @@
 <!ENTITY cmdline.common.connection '
 &cmdline.common.connection.nameresolve;
 &cmdline.common.connection.socketoptions;
-&cmdline.common.connection.maxprotocol;
+&cmdline.common.connection.max-protocol;
 &cmdline.common.connection.netbiosname;
 &cmdline.common.connection.netbiosscope;
 &cmdline.common.connection.workgroup;
