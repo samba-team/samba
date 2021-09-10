@@ -469,6 +469,7 @@ int main(int argc, const char *argv[])
 	struct cmd_set	**cmd_set;
 	struct conn_struct_tos *c = NULL;
 	struct vfs_state *vfs;
+	int opt;
 	int i;
 	char *filename = NULL;
 	char *cwd = NULL;
@@ -531,8 +532,15 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	while(poptGetNextOpt(pc) != -1);
-
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+	}
 
 	poptFreeContext(pc);
 
