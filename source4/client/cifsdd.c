@@ -669,7 +669,13 @@ int main(int argc, char *argv[])
 	}
 
 	while ((i = poptGetNextOpt(pctx)) != -1) {
-		;
+		switch (i) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pctx, 0), poptStrerror(i));
+			poptPrintUsage(pctx, stderr, 0);
+			exit(1);
+		}
 	}
 
 	for (dd_args = poptGetArgs(pctx); dd_args && *dd_args; ++dd_args) {
