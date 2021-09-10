@@ -62,53 +62,6 @@
 		<arg choice="opt">-V|--version</arg>
 		<arg choice="opt">-c|--command=STRING</arg>
 	</cmdsynopsis>
-
-	<cmdsynopsis>
-		<command>smbclient</command>
-		<arg choice="req">servicename</arg>
-		<arg choice="opt">password</arg>
-		<arg choice="opt">-?|--help</arg>
-		<arg choice="opt">--usage</arg>
-		<arg choice="opt">-M|--message=HOST</arg>
-		<arg choice="opt">-I|--ip-address=IP</arg>
-		<arg choice="opt">-E|--stderr</arg>
-		<arg choice="opt">-L|--list=HOST</arg>
-		<arg choice="opt">-T|--tar=&lt;c|x&gt;IXFvgbNan</arg>
-		<arg choice="opt">-D|--directory=DIR</arg>
-		<arg choice="opt">-b|--send-buffer=BYTES</arg>
-		<arg choice="opt">-t|--timeout=SECONDS</arg>
-		<arg choice="opt">-p|--port=PORT</arg>
-		<arg choice="opt">-g|--grepable</arg>
-		<arg choice="opt">-q|--quiet</arg>
-		<arg choice="opt">-B|--browse</arg>
-		<arg choice="opt">-d|--debuglevel=DEBUGLEVEL</arg>
-		<arg choice="opt">--debug-stdout</arg>
-		<arg choice="opt">-s|--configfile=CONFIGFILE</arg>
-		<arg choice="opt">--option=name=value</arg>
-		<arg choice="opt">-l|--log-basename=LOGFILEBASE</arg>
-		<arg choice="opt">--leak-report</arg>
-		<arg choice="opt">--leak-report-full</arg>
-		<arg choice="opt">-R|--name-resolve=NAME-RESOLVE-ORDER</arg>
-		<arg choice="opt">-O|--socket-options=SOCKETOPTIONS</arg>
-		<arg choice="opt">-n|--netbiosname=NETBIOSNAME</arg>
-		<arg choice="opt">-W|--workgroup=WORKGROUP</arg>
-		<arg choice="opt">--realm=REALM</arg>
-		<arg choice="opt">--netbios-scope=SCOPE</arg>
-		<arg choice="opt">-m|--maxprotocol=MAXPROTOCOL</arg>
-		<arg choice="opt">-U|--user=[DOMAIN/]USERNAME%[PASSWORD]</arg>
-		<arg choice="opt">-N|--no-pass</arg>
-		<arg choice="opt">--password=STRING</arg>
-		<arg choice="opt">--pw-nt-hash</arg>
-		<arg choice="opt">-A|--authentication-file=FILE</arg>
-		<arg choice="opt">-P|--machine-pass</arg>
-		<arg choice="opt">--simple-bind-dn=DN</arg>
-		<arg choice="opt">--use-kerberos=desired|required|off</arg>
-		<arg choice="opt">--use-krb5-ccache=CCACHE</arg>
-		<arg choice="opt">--use-winbind-ccache</arg>
-		<arg choice="opt">--client-protection=sign|encrypt|off</arg>
-		<arg choice="opt">-V|--version</arg>
-		<arg choice="opt">-k|--kerberos=STRING</arg>
-	</cmdsynopsis>
 </refsynopsisdiv>
 
 <refsect1>
