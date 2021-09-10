@@ -1198,6 +1198,12 @@ out_free:
 				result = 1;
 				goto done;
 			}
+			break;
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
 		}
 	}
 
