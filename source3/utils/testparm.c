@@ -672,6 +672,7 @@ static void do_per_share_checks(int s)
 	const char *config_file = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	int opt;
 	int s;
 	static int silent_mode = False;
 	static int show_all_parameters = False;
@@ -776,7 +777,15 @@ static void do_per_share_checks(int s)
 
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
-	while(poptGetNextOpt(pc) != -1);
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+	}
 
 	if (show_all_parameters) {
 		show_parameter_list();
