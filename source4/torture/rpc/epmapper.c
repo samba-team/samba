@@ -251,19 +251,13 @@ static bool test_Map_full(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_binding_set_abstract_syntax");
 
 	ok = test_Insert(tctx, h, obj, annotation, b);
-	if (!ok) {
-		return false;
-	}
+	torture_assert(tctx, ok, "test_Insert failed");
 
 	ok = test_Map_tcpip(tctx, h, obj);
-	if (!ok) {
-		return false;
-	}
+	torture_assert(tctx, ok, "test_Map_tcpip failed");
 
 	ok = test_Delete(tctx, h, annotation, b);
-	if (!ok) {
-		return false;
-	}
+	torture_assert(tctx, ok, "test_Delete failed");
 
 	return true;
 }
