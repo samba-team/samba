@@ -554,6 +554,7 @@ int main(int argc, const char **argv)
 	struct samu *in = NULL;
 	NTSTATUS rv;
 	int i;
+	int opt;
 	struct timeval tv;
 	bool error = False;
 	struct passwd *pwd;
@@ -593,7 +594,15 @@ int main(int argc, const char **argv)
 
 	poptSetOtherOptionHelp(pc, "backend[:settings] username");
 
-	while(poptGetNextOpt(pc) != -1);
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case POPT_ERROR_BADOPT:
+			fprintf(stderr, "\nInvalid option %s: %s\n\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			poptPrintUsage(pc, stderr, 0);
+			exit(1);
+		}
+	}
 
 	poptFreeContext(pc);
 
