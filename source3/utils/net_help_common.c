@@ -64,7 +64,7 @@ int net_common_flags_usage(struct net_context *c, int argc, const char **argv)
 	d_printf(_("\t-R|--name-resolve=NAME-RESOLVE-ORDER\tUse these name "
 		   "resolution services only\n"));
 	d_printf(_("\t-O|--socket-options=SOCKETOPTIONS\tsocket options to use\n"));
-	d_printf(_("\t-m|--maxprotocol=MAXPROTOCOL\t\tSet max protocol level\n"));
+	d_printf(_("\t-m|--max-protocol=MAXPROTOCOL\t\tSet max protocol level\n"));
 	d_printf(_("\t-n|--netbiosname=NETBIOSNAME\t\tPrimary netbios name\n"));
 	d_printf(_("\t--netbios-scope=SCOPE\t\t\tUse this Netbios scope\n"));
 	d_printf(_("\t-W|--workgroup=WORKGROUP\t\tSet the workgroup name\n"));
