@@ -104,6 +104,9 @@ These should be stories of the past now. A new command line parser has been
 implemented with sanity checking. Also the command line interface has been
 simplified and provides better control for encryption, signing and kerberos.
 
+Previously many tools silently ignored unknown options. To prevent unexpected
+behaviour all tools will now consistently reject unknown options.
+
 Also several command line options have a smb.conf variable to control the
 default now.
 
