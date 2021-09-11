@@ -658,10 +658,11 @@ static unsigned int estimate_ea_size(files_struct *fsp)
 		return 0;
 	}
 
-	mem_ctx = talloc_stackframe();
 	if (!lp_ea_support(SNUM(fsp->conn))) {
 		return 0;
 	}
+
+	mem_ctx = talloc_stackframe();
 
 	/* If this is a stream fsp, then we need to instead find the
 	 * estimated ea len from the main file, not the stream
