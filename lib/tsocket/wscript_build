@@ -7,3 +7,9 @@ bld.SAMBA_SUBSYSTEM('LIBTSOCKET',
 	public_headers='tsocket.h tsocket_internal.h',
 	)
 
+bld.SAMBA_BINARY('test_tsocket_bsd_addr',
+                 source='tests/test_bsd_addr.c',
+                 deps='cmocka replace LIBTSOCKET',
+                 local_include=False,
+                 for_selftest=True)
+
