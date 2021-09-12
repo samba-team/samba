@@ -1,0 +1,11 @@
+# We do not want user account control account type swapping, so we mark these as knownfail
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_mod_lock_UF_NORMAL_ACCOUNT_computer_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_mod_lock_UF_NORMAL_ACCOUNT_user_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_mod_lock_UF_SERVER_TRUST_ACCOUNT_computer_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_mod_lock_UF_WORKSTATION_TRUST_ACCOUNT_computer_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_NORMAL_ACCOUNT_UF_WORKSTATION_TRUST_ACCOUNT_deladd
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_NORMAL_ACCOUNT_UF_WORKSTATION_TRUST_ACCOUNT_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_SERVER_TRUST_ACCOUNT_UF_NORMAL_ACCOUNT_deladd
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_SERVER_TRUST_ACCOUNT_UF_NORMAL_ACCOUNT_replace
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_WORKSTATION_TRUST_ACCOUNT_UF_NORMAL_ACCOUNT_deladd
+^samba4.user_account_control.python\(.*\).__main__.UserAccountControlTests.test_objectclass_uac_mod_lock_UF_WORKSTATION_TRUST_ACCOUNT_UF_NORMAL_ACCOUNT_replace
