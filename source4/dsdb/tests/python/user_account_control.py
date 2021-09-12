@@ -90,6 +90,41 @@ account_types = set([UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_
 class UserAccountControlTests(samba.tests.TestCase):
     @classmethod
     def setUpDynamicTestCases(cls):
+        for account_type in [UF_NORMAL_ACCOUNT,
+                             UF_WORKSTATION_TRUST_ACCOUNT,
+                             UF_SERVER_TRUST_ACCOUNT]:
+            account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+            for objectclass in ["computer", "user"]:
+                test_name = f"{account_type_str}_{objectclass}"
+                cls.generate_dynamic_test("test_objectclass_uac_lock",
+                                          test_name,
+                                          account_type,
+                                          objectclass)
+
+        for account_type in [UF_NORMAL_ACCOUNT,
+                             UF_WORKSTATION_TRUST_ACCOUNT,
+                             UF_SERVER_TRUST_ACCOUNT]:
+            account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+            for account_type2 in [UF_NORMAL_ACCOUNT,
+                                  UF_WORKSTATION_TRUST_ACCOUNT,
+                                  UF_SERVER_TRUST_ACCOUNT]:
+                for how in ["replace", "deladd"]:
+                    account_type2_str = dsdb.user_account_control_flag_bit_to_string(account_type2)
+                    test_name = f"{account_type_str}_{account_type2_str}_{how}"
+                    cls.generate_dynamic_test("test_objectclass_uac_mod_lock",
+                                              test_name,
+                                              account_type,
+                                              account_type2,
+                                              how)
+            for objectclass in ["user", "computer"]:
+                for how in ["replace", "deladd"]:
+                    test_name = f"{account_type_str}_{objectclass}_{how}"
+                    cls.generate_dynamic_test("test_objectclass_mod_lock",
+                                              test_name,
+                                              account_type,
+                                              objectclass,
+                                              how)
+
         for account_type in [UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT]:
             account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
             cls.generate_dynamic_test("test_uac_bits_unrelated_modify",
@@ -843,6 +878,136 @@ class UserAccountControlTests(samba.tests.TestCase):
             "primaryGroupID")
         self.admin_samdb.modify(m)
 
+    def _test_objectclass_uac_lock_with_args(self,
+                                             account_type,
+                                             objectclass):
+        name = "oc_uac_lock$"
+        dn = "CN=%s,%s" % (name, self.OU)
+        msg_dict = {
+            "dn": dn,
+            "objectclass": objectclass,
+            "samAccountName": name,
+            "userAccountControl": str(account_type | UF_PASSWD_NOTREQD)}
+
+        account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+
+        print(f"Adding account {name} as {account_type_str} with objectclass {objectclass}")
+
+        if (objectclass == "user" \
+            and account_type == UF_NORMAL_ACCOUNT):
+            self.admin_samdb.add(msg_dict)
+        elif objectclass == "computer":
+            self.admin_samdb.add(msg_dict)
+        else:
+            self.assertRaisesLdbError(ldb.ERR_OBJECT_CLASS_VIOLATION,
+                                      "Should have been unable to {account_type_str} on {objectclass}",
+                                      self.admin_samdb.add, msg_dict)
+
+    def _test_objectclass_uac_mod_lock_with_args(self,
+                                                 account_type,
+                                                 account_type2,
+                                                 how):
+        name = "uac_mod_lock$"
+        dn = "CN=%s,%s" % (name, self.OU)
+        if account_type == UF_NORMAL_ACCOUNT:
+            objectclass = "user"
+        else:
+            objectclass = "computer"
+
+        msg_dict = {
+            "dn": dn,
+            "objectclass": objectclass,
+            "samAccountName": name,
+            "userAccountControl": str(account_type | UF_PASSWD_NOTREQD)}
+
+        account_type_str \
+            = dsdb.user_account_control_flag_bit_to_string(account_type)
+        account_type2_str \
+            = dsdb.user_account_control_flag_bit_to_string(account_type2)
+
+        print(f"Adding account {name} as {account_type_str} with objectclass {objectclass}")
+
+        self.admin_samdb.add(msg_dict)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.admin_samdb, dn)
+        if how == "replace":
+            m["userAccountControl"] = ldb.MessageElement(str(account_type2 | UF_PASSWD_NOTREQD),
+                                                         ldb.FLAG_MOD_REPLACE, "userAccountControl")
+        elif how == "deladd":
+            m["0userAccountControl"] = ldb.MessageElement([],
+                                                          ldb.FLAG_MOD_DELETE, "userAccountControl")
+            m["1userAccountControl"] = ldb.MessageElement(str(account_type2 | UF_PASSWD_NOTREQD),
+                                                          ldb.FLAG_MOD_ADD, "userAccountControl")
+        else:
+            raise ValueError(f"{how} was not a valid argument")
+
+        if (account_type in [UF_SERVER_TRUST_ACCOUNT,
+                            UF_WORKSTATION_TRUST_ACCOUNT]) and \
+            (account_type2 in [UF_SERVER_TRUST_ACCOUNT,
+                               UF_WORKSTATION_TRUST_ACCOUNT]):
+            self.admin_samdb.modify(m)
+        elif (account_type == account_type2):
+            self.admin_samdb.modify(m)
+        else:
+            self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                      f"Should have been unable to change {account_type_str} to {account_type2_str}",
+                                      self.admin_samdb.modify, m)
+
+    def _test_objectclass_mod_lock_with_args(self,
+                                             account_type,
+                                             objectclass,
+                                             how):
+        name = "uac_mod_lock$"
+        dn = "CN=%s,%s" % (name, self.OU)
+        if objectclass == "computer":
+            new_objectclass = ["top",
+                               "person",
+                               "organizationalPerson",
+                               "user"]
+        elif objectclass == "user":
+            new_objectclass = ["top",
+                               "person",
+                               "organizationalPerson",
+                               "user",
+                               "computer"]
+
+        msg_dict = {
+            "dn": dn,
+            "objectclass": objectclass,
+            "samAccountName": name,
+            "userAccountControl": str(account_type | UF_PASSWD_NOTREQD)}
+
+        account_type_str = dsdb.user_account_control_flag_bit_to_string(account_type)
+
+        print(f"Adding account {name} as {account_type_str} with objectclass {objectclass}")
+
+        try:
+            self.admin_samdb.add(msg_dict)
+            if (objectclass == "user" \
+                and account_type != UF_NORMAL_ACCOUNT):
+                self.fail("Able to create {account_type_str} on {objectclass}")
+        except LdbError as e:
+            (enum, estr) = e.args
+            self.assertEqual(enum, ldb.ERR_OBJECT_CLASS_VIOLATION)
+
+        if objectclass == "user" and account_type != UF_NORMAL_ACCOUNT:
+            return
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.admin_samdb, dn)
+        if how == "replace":
+            m["objectclass"] = ldb.MessageElement(new_objectclass,
+                                                  ldb.FLAG_MOD_REPLACE, "objectclass")
+        elif how == "adddel":
+            m["0objectclass"] = ldb.MessageElement([],
+                                                   ldb.FLAG_MOD_DELETE, "objectclass")
+            m["1objectclass"] = ldb.MessageElement(new_objectclass,
+                                                   ldb.FLAG_MOD_ADD, "objectclass")
+
+        self.assertRaisesLdbError(ldb.ERR_UNWILLING_TO_PERFORM,
+                                  "Should have been unable Able to change objectclass of a {objectclass}",
+                                  self.admin_samdb.modify, m)
 
 runner = SubunitTestRunner()
 rc = 0
