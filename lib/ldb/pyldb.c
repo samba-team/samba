@@ -1804,6 +1804,7 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 	struct ldb_message *diff;
 	struct ldb_context *ldb;
 	PyObject *py_ret;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	if (!PyArg_ParseTuple(args, "OO", &py_msg_old, &py_msg_new))
 		return NULL;
@@ -1818,19 +1819,32 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
-	ldb_ret = ldb_msg_difference(ldb, ldb,
+	ldb_ret = ldb_msg_difference(ldb, mem_ctx,
 	                             pyldb_Message_AsMessage(py_msg_old),
 	                             pyldb_Message_AsMessage(py_msg_new),
 	                             &diff);
 	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
 		PyErr_SetString(PyExc_RuntimeError, "Failed to generate the Ldb Message diff");
+		return NULL;
+	}
+
+	diff = ldb_msg_copy(mem_ctx, diff);
+	if (diff == NULL) {
+		PyErr_NoMemory();
 		return NULL;
 	}
 
 	py_ret = PyLdbMessage_FromMessage(diff);
 
-	talloc_unlink(ldb, diff);
+	talloc_free(mem_ctx);
 
 	return py_ret;
 }
