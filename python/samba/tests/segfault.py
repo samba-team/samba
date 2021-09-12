@@ -210,3 +210,15 @@ class SegfaultTests(samba.tests.TestCase):
         rec = TXTRecord(["a", "b", "c"])
         rec.wType = dnsp.DNS_TYPE_A
         rec.data
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_msg_diff(self):
+        samdb = self.get_samdb()
+
+        msg = ldb.Message()
+        msg.dn = ldb.Dn(samdb, '')
+        diff = samdb.msg_diff(msg, msg)
+
+        del msg
+        diff.dn
