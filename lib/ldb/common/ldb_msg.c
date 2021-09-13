@@ -876,8 +876,10 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
 
-	msg2->dn = ldb_dn_copy(msg2, msg2->dn);
-	if (msg2->dn == NULL) goto failed;
+	if (msg2->dn != NULL) {
+		msg2->dn = ldb_dn_copy(msg2, msg2->dn);
+		if (msg2->dn == NULL) goto failed;
+	}
 
 	for (i=0;i<msg2->num_elements;i++) {
 		struct ldb_message_element *el = &msg2->elements[i];
