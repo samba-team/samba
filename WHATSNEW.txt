@@ -64,6 +64,16 @@ bugs CVE-2021-37750 and CVE-2021-36222
 NEW FEATURES/CHANGES
 ====================
 
+VFS
+---
+
+The effort to modernize Samba's VFS interface is complete and Samba 4.15.0 ships
+with a modernized VFS designed for the post SMB1 world.
+
+For details please refer to the documentation at source3/modules/The_New_VFS.txt
+or visit the <https://wiki.samba.org/index.php/The_New_VFS>.
+
+
 Bind DLZ: add the ability to set allow/deny lists for zone transfer clients
 ---------------------------------------------------------------------------
 
