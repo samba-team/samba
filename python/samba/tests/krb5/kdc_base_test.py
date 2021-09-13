@@ -89,6 +89,7 @@ class KDCBaseTest(RawKerberosTest):
         cls._lp = None
 
         cls._ldb = None
+        cls._rodc_ldb = None
 
         cls._functional_level = None
 
@@ -136,6 +137,30 @@ class KDCBaseTest(RawKerberosTest):
                                     lp=lp)
 
         return self._ldb
+
+    def get_rodc_samdb(self):
+        if self._rodc_ldb is None:
+            creds = self.get_admin_creds()
+            lp = self.get_lp()
+
+            session = system_session()
+            type(self)._rodc_ldb = SamDB(url="ldap://%s" % self.host,
+                                         session_info=session,
+                                         credentials=creds,
+                                         lp=lp,
+                                         am_rodc=True)
+
+        return self._rodc_ldb
+
+    def get_server_dn(self, samdb):
+        server = samdb.get_serverName()
+
+        res = samdb.search(base=server,
+                           scope=ldb.SCOPE_BASE,
+                           attrs=['serverReference'])
+        dn = ldb.Dn(samdb, res[0]['serverReference'][0].decode('utf8'))
+
+        return dn
 
     def get_domain_functional_level(self, ldb):
         if self._functional_level is None:
@@ -476,6 +501,55 @@ class KDCBaseTest(RawKerberosTest):
                                  allow_missing_password=allow_missing_password,
                                  allow_missing_keys=allow_missing_keys,
                                  fallback_creds_fn=create_service_account)
+        return c
+
+    def get_rodc_krbtgt_creds(self,
+                              require_keys=True,
+                              require_strongest_key=False):
+        if require_strongest_key:
+            self.assertTrue(require_keys)
+
+        def download_rodc_krbtgt_creds():
+            samdb = self.get_samdb()
+            rodc_samdb = self.get_rodc_samdb()
+
+            rodc_dn = self.get_server_dn(rodc_samdb)
+
+            res = samdb.search(rodc_dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['msDS-KrbTgtLink'])
+            krbtgt_dn = res[0]['msDS-KrbTgtLink'][0]
+
+            res = samdb.search(krbtgt_dn,
+                               scope=ldb.SCOPE_BASE,
+                               attrs=['sAMAccountName',
+                                      'msDS-KeyVersionNumber',
+                                      'msDS-SecondaryKrbTgtNumber'])
+            krbtgt_dn = res[0].dn
+            username = str(res[0]['sAMAccountName'])
+
+            creds = KerberosCredentials()
+            creds.set_domain(self.env_get_var('DOMAIN', 'RODC_KRBTGT'))
+            creds.set_realm(self.env_get_var('REALM', 'RODC_KRBTGT'))
+            creds.set_username(username)
+
+            kvno = int(res[0]['msDS-KeyVersionNumber'][0])
+            krbtgt_number = int(res[0]['msDS-SecondaryKrbTgtNumber'][0])
+
+            rodc_kvno = krbtgt_number << 16 | kvno
+            creds.set_kvno(rodc_kvno)
+            creds.set_dn(krbtgt_dn)
+
+            keys = self.get_keys(samdb, krbtgt_dn)
+            self.creds_set_keys(creds, keys)
+
+            return creds
+
+        c = self._get_krb5_creds(prefix='RODC_KRBTGT',
+                                 allow_missing_password=True,
+                                 allow_missing_keys=not require_keys,
+                                 require_strongest_key=require_strongest_key,
+                                 fallback_creds_fn=download_rodc_krbtgt_creds)
         return c
 
     def get_krbtgt_creds(self,
