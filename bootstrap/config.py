@@ -399,17 +399,6 @@ DEB_DISTS = {
             'liburing-dev': '',   # not available
         }
     },
-    'ubuntu1604': {
-        'docker_image': 'ubuntu:16.04',
-        'vagrant_box': 'ubuntu/xenial64',
-        'replace': {
-            'python3-gpg': 'python3-gpgme',
-            'glusterfs-common': '',
-            'libcephfs-dev': '',
-            'liburing-dev': '',   # not available
-            'libtracker-sparql-2.0-dev': '', # not available
-        }
-    },
     'ubuntu1804': {
         'docker_image': 'ubuntu:18.04',
         'vagrant_box': 'ubuntu/bionic64',
