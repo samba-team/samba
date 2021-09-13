@@ -298,6 +298,31 @@ class TestCase(unittest.TestCase):
 
             self.fail(msg)
 
+    def assertRaisesLdbError(self, errcode, message, f, *args, **kwargs):
+        """Assert a function raises a particular LdbError."""
+        try:
+            f(*args, **kwargs)
+        except ldb.LdbError as e:
+            (num, msg) = e.args
+            if num != errcode:
+                lut = {v: k for k, v in vars(ldb).items()
+                       if k.startswith('ERR_') and isinstance(v, int)}
+                self.fail("%s, expected "
+                          "LdbError %s, (%d) "
+                          "got %s (%d) "
+                          "%s" % (message,
+                                  lut.get(errcode), errcode,
+                                  lut.get(num), num,
+                                  msg))
+        else:
+            lut = {v: k for k, v in vars(ldb).items()
+                   if k.startswith('ERR_') and isinstance(v, int)}
+            self.fail("%s, expected "
+                      "LdbError %s, (%d) "
+                      "but we got success" % (message,
+                                              lut.get(errcode),
+                                              errcode))
+
 
 class LdbTestCase(TestCase):
     """Trivial test case for running tests against a LDB."""

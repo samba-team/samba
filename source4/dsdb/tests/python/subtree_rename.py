@@ -201,31 +201,6 @@ class SubtreeRenameTests(samba.tests.TestCase):
                                 attrs=['objectGUID'])
         return str(misc.GUID(res[0]['objectGUID'][0]))
 
-    def assertRaisesLdbError(self, errcode, message, f, *args, **kwargs):
-        """Assert a function raises a particular LdbError."""
-        try:
-            f(*args, **kwargs)
-        except ldb.LdbError as e:
-            (num, msg) = e.args
-            if num != errcode:
-                lut = {v: k for k, v in vars(ldb).items()
-                       if k.startswith('ERR_') and isinstance(v, int)}
-                self.fail("%s, expected "
-                          "LdbError %s, (%d) "
-                          "got %s (%d) "
-                          "%s" % (message,
-                                  lut.get(errcode), errcode,
-                                  lut.get(num), num,
-                                  msg))
-        else:
-            lut = {v: k for k, v in vars(ldb).items()
-                   if k.startswith('ERR_') and isinstance(v, int)}
-            self.fail("%s, expected "
-                      "LdbError %s, (%d) "
-                      "but we got success" % (message,
-                                              lut.get(errcode),
-                                              errcode))
-
     def test_la_move_ou_tree(self):
         tag = 'move_tree'
 
