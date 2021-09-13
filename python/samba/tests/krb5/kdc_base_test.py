@@ -378,6 +378,16 @@ class KDCBaseTest(RawKerberosTest):
                            exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET,
                            rodc=True)
 
+    def reveal_account_to_mock_rodc(self, dn):
+        samdb = self.get_samdb()
+        rodc_ctx = self.get_mock_rodc_ctx()
+
+        self.get_secrets(
+            samdb,
+            dn,
+            destination_dsa_guid=rodc_ctx.ntds_guid,
+            source_dsa_invocation_id=misc.GUID(samdb.invocation_id))
+
     def check_revealed(self, dn, rodc_dn, revealed=True):
         samdb = self.get_samdb()
 
@@ -555,8 +565,11 @@ class KDCBaseTest(RawKerberosTest):
 
         opts_default = {
             'allowed_replication': False,
+            'allowed_replication_mock': False,
             'denied_replication': False,
+            'denied_replication_mock': False,
             'revealed_to_rodc': False,
+            'revealed_to_mock_rodc': False,
             'no_auth_data_required': False,
             'supported_enctypes': None,
             'not_delegated': False,
@@ -583,8 +596,11 @@ class KDCBaseTest(RawKerberosTest):
     def create_account_opts(self, *,
                             machine_account,
                             allowed_replication,
+                            allowed_replication_mock,
                             denied_replication,
+                            denied_replication_mock,
                             revealed_to_rodc,
+                            revealed_to_mock_rodc,
                             no_auth_data_required,
                             supported_enctypes,
                             not_delegated,
@@ -681,6 +697,40 @@ class KDCBaseTest(RawKerberosTest):
         if denied_replication:
             # Deny replicating this account's secrets to the RODC.
             self.add_to_group(dn, rodc_dn, 'msDS-NeverRevealGroup')
+
+        # Handle secret replication to the mock RODC.
+
+        if allowed_replication_mock or revealed_to_mock_rodc:
+            # Allow replicating this account's secrets if requested, or allow
+            # it only temporarily if we want to add the account to the mock
+            # RODC's msDS-RevealedUsers.
+            rodc_ctx = self.get_mock_rodc_ctx()
+            mock_rodc_dn = ldb.Dn(samdb, rodc_ctx.acct_dn)
+
+            allowed_mock_cleanup = self.add_to_group(
+                dn, mock_rodc_dn,
+                'msDS-RevealOnDemandGroup')
+
+            if revealed_to_mock_rodc:
+                # Request replicating this account's secrets to the mock RODC,
+                # which updates msDS-RevealedUsers.
+                self.reveal_account_to_mock_rodc(dn)
+
+            if not allowed_replication_mock:
+                # If we don't want replicating secrets to be allowed for this
+                # account, disable it again.
+                samdb.modify(allowed_mock_cleanup)
+
+            self.check_revealed(dn,
+                                mock_rodc_dn,
+                                revealed=revealed_to_mock_rodc)
+
+        if denied_replication_mock:
+            # Deny replicating this account's secrets to the mock RODC.
+            rodc_ctx = self.get_mock_rodc_ctx()
+            mock_rodc_dn = ldb.Dn(samdb, rodc_ctx.acct_dn)
+
+            self.add_to_group(dn, mock_rodc_dn, 'msDS-NeverRevealGroup')
 
         return creds
 
