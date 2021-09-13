@@ -250,7 +250,9 @@ class KDCBaseTest(RawKerberosTest):
 
         return (creds, dn)
 
-    def get_keys(self, samdb, dn):
+    def get_secrets(self, samdb, dn,
+                    destination_dsa_guid,
+                    source_dsa_invocation_id):
         admin_creds = self.get_admin_creds()
 
         dns_hostname = samdb.host_dns_name()
@@ -258,15 +260,13 @@ class KDCBaseTest(RawKerberosTest):
                                             self.get_lp(),
                                             admin_creds)
 
-        destination_dsa_guid = misc.GUID(samdb.get_ntds_GUID())
-
         req = drsuapi.DsGetNCChangesRequest8()
 
         req.destination_dsa_guid = destination_dsa_guid
-        req.source_dsa_invocation_id = misc.GUID()
+        req.source_dsa_invocation_id = source_dsa_invocation_id
 
         naming_context = drsuapi.DsReplicaObjectIdentifier()
-        naming_context.dn = str(dn)
+        naming_context.dn = dn
 
         req.naming_context = naming_context
 
@@ -299,8 +299,24 @@ class KDCBaseTest(RawKerberosTest):
         req.mapping_ctr.mappings = None
 
         _, ctr = bind.DsGetNCChanges(handle, 8, req)
+
+        self.assertEqual(1, ctr.object_count)
+
         identifier = ctr.first_object.object.identifier
         attributes = ctr.first_object.object.attribute_ctr.attributes
+
+        self.assertEqual(dn, identifier.dn)
+
+        return bind, identifier, attributes
+
+    def get_keys(self, samdb, dn):
+        admin_creds = self.get_admin_creds()
+
+        bind, identifier, attributes = self.get_secrets(
+            samdb,
+            str(dn),
+            destination_dsa_guid=misc.GUID(samdb.get_ntds_GUID()),
+            source_dsa_invocation_id=misc.GUID())
 
         rid = identifier.sid.split()[1]
 
