@@ -185,8 +185,6 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 		return 0;
 	}
 
-	kernel_flock(fsp_get_io_fd(fsp), share_access, access_mask);
-
 	ret = set_gpfs_sharemode(fsp, access_mask, share_access);
 
 	END_PROFILE(syscall_kernel_flock);
