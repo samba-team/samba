@@ -99,30 +99,47 @@ attrs = {"sidHistory":
          {"value": ndr_pack(security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)),
           "priv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS},
-        "msDS-AllowedToDelegateTo":
+
+         "msDS-AllowedToDelegateTo":
          {"value": f"host/{host}",
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS},
-        "userAccountControl-a2d-user":
+
+         "userAccountControl-a2d-user":
          {"attr": "userAccountControl",
-          "value": str(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION|UF_NORMAL_ACCOUNT),
-          "priv-error": ldb.ERR_UNWILLING_TO_PERFORM,
-          "unpriv-add-error": ldb.ERR_UNWILLING_TO_PERFORM,
+          "value": str(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION|UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD),
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS},
-        "userAccountControl-a2d-computer":
+
+         "userAccountControl-a2d-computer":
          {"attr": "userAccountControl",
           "value": str(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION|UF_WORKSTATION_TRUST_ACCOUNT),
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
           "only-1": "computer"},
-        "userAccountControl-DC":
+
+         # This flag makes many legitimate authenticated clients
+         # send a forwardable ticket-granting-ticket to the server
+         "userAccountControl-t4d-user":
+         {"attr": "userAccountControl",
+          "value": str(UF_TRUSTED_FOR_DELEGATION|UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD),
+          "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS},
+
+         "userAccountControl-t4d-computer":
+         {"attr": "userAccountControl",
+          "value": str(UF_TRUSTED_FOR_DELEGATION|UF_WORKSTATION_TRUST_ACCOUNT),
+          "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
+          "only-1": "computer"},
+
+         "userAccountControl-DC":
          {"attr": "userAccountControl",
           "value": str(UF_SERVER_TRUST_ACCOUNT),
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
           "only-2": "computer"},
-        "userAccountControl-RODC":
+
+         "userAccountControl-RODC":
          {"attr": "userAccountControl",
           "value": str(UF_PARTIAL_SECRETS_ACCOUNT|UF_WORKSTATION_TRUST_ACCOUNT),
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS,
           "only-1": "computer"},
+
          "msDS-SecondaryKrbTgtNumber":
          {"value": "65536",
           "unpriv-error": ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS},
@@ -369,13 +386,6 @@ class PrivAttrsTests(samba.tests.TestCase):
             self.fail(f"{test_name}: Unexpectedly able to set {attr} on {m.dn}")
         except LdbError as e5:
             (enum, estr) = e5.args
-            if attr == "userAccountControl" and sd == "default":
-                # We get a different error if we try and swap between
-                # being a computer back to being a user when created with "Create child" permissions
-                if (int(attrs[test_name]["value"]) & UF_NORMAL_ACCOUNT) \
-                   and objectclass == "computer" and permission == "CC":
-                    self.assertGotLdbError(ldb.ERR_UNWILLING_TO_PERFORM, enum)
-                    return
             self.assertGotLdbError(attrs[test_name]["unpriv-error"], enum)
 
 
