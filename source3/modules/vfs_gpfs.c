@@ -176,7 +176,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	/*
 	 * A named stream fsp will have the basefile open in the fsp
 	 * fd, so lacking a distinct fd for the stream we have to skip
-	 * kernel_flock and set_gpfs_sharemode for stream.
+	 * set_gpfs_sharemode for stream.
 	 */
 	if (is_named_stream(fsp->fsp_name)) {
 		DBG_NOTICE("Not requesting GPFS sharemode on stream: %s/%s\n",
