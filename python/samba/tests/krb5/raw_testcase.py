@@ -294,6 +294,9 @@ class KerberosCredentials(Credentials):
         return self._get_krb5_etypes(self.ap_supported_enctypes)
 
     def set_kvno(self, kvno):
+        # Sign-extend from 32 bits.
+        if kvno & 1 << 31:
+            kvno |= -1 << 31
         self.kvno = kvno
 
     def get_kvno(self):
