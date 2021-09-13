@@ -5,14 +5,14 @@
 <description>
 	<para>
 	This parameter controls whether SMB share modes are
-	translated into UNIX flocks.
+	translated into file system specific sharemode calls.
 	</para>
 
 	<para>
 	Kernel share modes provide a minimal level of interoperability
 	with local UNIX processes and NFS operations by preventing
-	access with flocks corresponding to the SMB share modes.
-	Generally, it is very desirable to leave this enabled.
+	access corresponding to the SMB share modes. This requires
+	a file system specific VFS module with proper support.
 	</para>
 
 	<para>
@@ -21,11 +21,12 @@
 	</para>
 
 	<para>
-	This parameter defaults to <constant>yes</constant> and
-	is translated to a no-op on systems that do not have the
-	 necessary kernel flock support.
+	This parameter defaults to <constant>no</constant>. Setting
+	it to <constant>yes</constant> requires a file system module
+	that supports file system sharemodes, otherwise attempts to
+	access files will fail with a sharing violation.
 	</para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
