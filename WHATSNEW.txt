@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the sixth release candidate of Samba 4.15.  This is *not*
+This is the seventh release candidate of Samba 4.15.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -354,6 +354,30 @@ smb.conf changes
   server smb3 encryption algorithms       New             see man smb.conf
   winbind use krb5 enterprise principals  Changed         Yes
   winbind scan trusted domains            Changed         No
+
+
+CHANGES SINCE 4.15.0rc6
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14791: All the ways to specify a password are not documented.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14790: vfs_btrfs compression support broken.
+   * BUG 14828: Problems with commandline parsing.
+   * BUG 14829: smbd crashes when "ea support" is set to no.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14825: "{client,server} smb3 {signing,encryption} algorithms" should
+     use the same strings as smbstatus output.
+   * BUG 14828: Problems with commandline parsing.
+
+o  Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+   * BUG 8773: smbd fails to run as root because it belongs to more than 16
+     groups on MacOS X.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14784: Fix CTDB flag/status update race conditions.
 
 
 CHANGES SINCE 4.15.0rc5
