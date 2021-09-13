@@ -4054,10 +4054,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * Beware: streams implementing VFS modules may
 		 * implement streams in a way that fsp will have the
 		 * basefile open in the fsp fd, so lacking a distinct
-		 * fd for the stream kernel_flock will apply on the
-		 * basefile which is wrong. The actual check is
-		 * deferred to the VFS module implementing the
-		 * kernel_flock call.
+		 * fd for the stream the file-system sharemode will
+		 * apply on the basefile which is wrong. The actual
+		 * check is deferred to the VFS module implementing
+		 * the file-system sharemode call.
 		 */
 		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
 		if(ret_flock == -1 ){
