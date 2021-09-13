@@ -471,39 +471,6 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
 #endif	/* HAVE_LINUX_FALLOCATE */
 }
 
-#ifdef HAVE_KERNEL_SHARE_MODES
-#ifndef LOCK_MAND
-#define LOCK_MAND	32	/* This is a mandatory flock */
-#define LOCK_READ	64	/* ... Which allows concurrent read operations */
-#define LOCK_WRITE	128	/* ... Which allows concurrent write operations */
-#define LOCK_RW		192	/* ... Which allows concurrent read & write ops */
-#endif
-#endif
-
-/*******************************************************************
- A flock() wrapper that will perform the kernel flock.
-********************************************************************/
-
-void kernel_flock(int fd, uint32_t share_access, uint32_t access_mask)
-{
-#ifdef HAVE_KERNEL_SHARE_MODES
-	int kernel_mode = 0;
-	if (share_access == FILE_SHARE_WRITE) {
-		kernel_mode = LOCK_MAND|LOCK_WRITE;
-	} else if (share_access == FILE_SHARE_READ) {
-		kernel_mode = LOCK_MAND|LOCK_READ;
-	} else if (share_access == FILE_SHARE_NONE) {
-		kernel_mode = LOCK_MAND;
-	}
-	if (kernel_mode) {
-		flock(fd, kernel_mode);
-	}
-#endif
-	;
-}
-
-
-
 /*******************************************************************
  An fdopendir wrapper.
 ********************************************************************/
