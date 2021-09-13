@@ -165,21 +165,6 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
     if conf.CHECK_DECLS('F_SETLEASE', headers='linux/fcntl.h', reverse=True):
         conf.DEFINE('HAVE_KERNEL_OPLOCKS_LINUX', 1)
 
-    # Check for kernel share modes
-    conf.CHECK_CODE('''
-#include <sys/types.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/file.h>
-#ifndef LOCK_MAND
-#define LOCK_MAND        32
-#define LOCK_READ        64
-#endif
-main() {
-        exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
-}''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
-        msg="Checking for kernel share modes")
-
     # check for fam libs
     samba_fam_libs=None
     check_for_fam=False
