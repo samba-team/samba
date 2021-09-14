@@ -2808,7 +2808,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap page size", "1000");
 
-	lpcfg_do_global_parameter(lp_ctx, "kernel share modes", "yes");
+	lpcfg_do_global_parameter(lp_ctx, "kernel share modes", "no");
 
 	lpcfg_do_global_parameter(lp_ctx, "strict locking", "Auto");
 
