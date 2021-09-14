@@ -33,12 +33,23 @@ installed in /var/lib/samba/private/certs.
 REMOVED FEATURES
 ================
 
+No longer using Linux mandatory locks for sharemodes
+====================================================
+
+smbd mapped sharemodes to Linux mandatory locks. This code in the Linux kernel
+was broken for a long time, and is planned to be removed with Linux 5.15. This
+Samba release removes the usage of mandatory locks for sharemodes and the
+"kernel share modes" config parameter is changed to default to "no". The Samba
+VFS interface is kept, so that file-system specific VFS modules can still use
+private calls for enforcing sharemodes.
+
 
 smb.conf changes
 ================
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  kernel share modes                      New default     No
 
 
 KNOWN ISSUES
