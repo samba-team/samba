@@ -3018,10 +3018,8 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 				uint32_t share_access, uint32_t access_mask)
 {
-	START_PROFILE(syscall_kernel_flock);
-	kernel_flock(fsp_get_io_fd(fsp), share_access, access_mask);
-	END_PROFILE(syscall_kernel_flock);
-	return 0;
+	errno = ENOTSUP;
+	return -1;
 }
 
 static int vfswrap_fcntl(vfs_handle_struct *handle, files_struct *fsp, int cmd,
