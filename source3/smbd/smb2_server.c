@@ -4903,7 +4903,14 @@ static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, siz
 	}
 
 	if (state->pktlen > 0) {
-		if (state->doing_receivefile && !is_smb2_recvfile_write(state)) {
+		if (!state->doing_receivefile) {
+			/*
+			 * we have all the data.
+			 */
+			goto got_full;
+		}
+
+		if (!is_smb2_recvfile_write(state)) {
 			size_t ofs = state->pktlen;
 
 			/*
@@ -4932,8 +4939,8 @@ static NTSTATUS smbd_smb2_advance_incoming(struct smbXsrv_connection *xconn, siz
 		}
 
 		/*
-		 * Either this is a receivefile write so we've
-		 * done a short read, or if not we have all the data.
+		 * This is a receivefile write so we've
+		 * done a short read.
 		 */
 		goto got_full;
 	}
