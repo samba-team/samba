@@ -3211,6 +3211,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		case FSCTL_VALIDATE_NEGOTIATE_INFO:
 			call = &_root_ioctl_call;
 			break;
+		case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
+			call = &_root_ioctl_call;
+			break;
 		}
 	}
 
