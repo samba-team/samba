@@ -27,6 +27,10 @@
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
+#include "lib/cmdline/popt_common.h"
+#include "libcli/resolve/resolve.h"
+#include "lib/param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #define FNAME	"testfsctl.dat"
 #define FNAME2	"testfsctl2.dat"
@@ -6846,11 +6850,114 @@ static bool test_ioctl_bug14607(struct torture_context *torture,
 }
 
 /*
+   basic regression test for BUG 14788,
+   with FSCTL_VALIDATE_NEGOTIATE_INFO
+   https://bugzilla.samba.org/show_bug.cgi?id=14788
+*/
+static bool test_ioctl_bug14788_VALIDATE_NEGOTIATE(struct torture_context *torture,
+				struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(torture, "host", NULL);
+	const char *share = torture_setting_string(torture, "share", NULL);
+	const char *noperm_share = torture_setting_string(torture, "noperm_share", "noperm");
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_tree *tree = NULL;
+	struct smb2_session *session = NULL;
+	uint16_t noperm_flags = 0;
+	const char *noperm_unc = NULL;
+	struct smb2_tree *noperm_tree = NULL;
+	uint32_t timeout_msec;
+	struct tevent_req *subreq = NULL;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(torture, "Can't test without SMB 3 support");
+	}
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+	options.min_protocol = PROTOCOL_SMB3_00;
+	options.max_protocol = PROTOCOL_SMB3_02;
+
+	status = smb2_connect(torture,
+			      host,
+			      lpcfg_smb_ports(torture->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(torture->lp_ctx),
+			      credentials,
+			      &tree,
+			      torture->ev,
+			      &options,
+			      lpcfg_socket_options(torture->lp_ctx),
+			      lpcfg_gensec_settings(torture, torture->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok(torture, status, "smb2_connect options failed");
+	session = tree->session;
+	transport = session->transport;
+
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+
+	subreq = smb2cli_validate_negotiate_info_send(torture,
+						      torture->ev,
+						      transport->conn,
+						      timeout_msec,
+						      session->smbXcli,
+						      tree->smbXcli);
+	torture_assert(torture,
+		       tevent_req_poll_ntstatus(subreq, torture->ev, &status),
+		       "tevent_req_poll_ntstatus");
+	status = smb2cli_validate_negotiate_info_recv(subreq);
+	torture_assert_ntstatus_ok(torture, status, "smb2cli_validate_negotiate_info");
+
+	noperm_unc = talloc_asprintf(torture, "\\\\%s\\%s", host, noperm_share);
+	torture_assert(torture, noperm_unc != NULL, "talloc_asprintf");
+
+	noperm_tree = smb2_tree_init(session, torture, false);
+	torture_assert(torture, noperm_tree != NULL, "smb2_tree_init");
+
+	status = smb2cli_raw_tcon(transport->conn,
+				  SMB2_HDR_FLAG_SIGNED,
+				  0, /* clear_flags */
+				  timeout_msec,
+				  session->smbXcli,
+				  noperm_tree->smbXcli,
+				  noperm_flags,
+				  noperm_unc);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_BAD_NETWORK_NAME)) {
+		torture_skip(torture, talloc_asprintf(torture,
+			     "noperm_unc[%s] %s",
+			     noperm_unc, nt_errstr(status)));
+	}
+	torture_assert_ntstatus_ok(torture, status,
+				   talloc_asprintf(torture,
+				   "smb2cli_tcon(%s)",
+				   noperm_unc));
+
+	subreq = smb2cli_validate_negotiate_info_send(torture,
+						      torture->ev,
+						      transport->conn,
+						      timeout_msec,
+						      session->smbXcli,
+						      noperm_tree->smbXcli);
+	torture_assert(torture,
+		       tevent_req_poll_ntstatus(subreq, torture->ev, &status),
+		       "tevent_req_poll_ntstatus");
+	status = smb2cli_validate_negotiate_info_recv(subreq);
+	torture_assert_ntstatus_ok(torture, status, "smb2cli_validate_negotiate_info noperm");
+
+	return true;
+}
+
+/*
  * testing of SMB2 ioctls
  */
 struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "ioctl");
+	struct torture_suite *bug14788 = torture_suite_create(ctx, "bug14788");
 
 	torture_suite_add_1smb2_test(suite, "shadow_copy",
 				     test_ioctl_get_shadow_copy);
@@ -6992,6 +7099,10 @@ struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 				     test_ioctl_dup_extents_dest_lck);
 	torture_suite_add_1smb2_test(suite, "bug14607",
 				     test_ioctl_bug14607);
+
+	torture_suite_add_1smb2_test(bug14788, "VALIDATE_NEGOTIATE",
+				     test_ioctl_bug14788_VALIDATE_NEGOTIATE);
+	torture_suite_add_suite(suite, bug14788);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
