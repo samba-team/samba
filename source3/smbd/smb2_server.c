@@ -3097,7 +3097,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		const uint8_t *body = SMBD_SMB2_IN_BODY_PTR(req);
 		size_t body_size = SMBD_SMB2_IN_BODY_LEN(req);
 		uint32_t in_ctl_code;
-		size_t needed = 4;
+		size_t needed = 8;
 
 		if (needed > body_size) {
 			return smbd_smb2_request_error(req,
