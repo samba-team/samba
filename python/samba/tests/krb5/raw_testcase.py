@@ -2193,7 +2193,7 @@ class RawKerberosTest(TestCaseInTempDir):
             else:
                 self.assertElementMissing(encpart_private,
                                           'key-expiration')
-            self.assertElementFlags(ticket_private, 'flags',
+            self.assertElementFlags(encpart_private, 'flags',
                                     expected_flags,
                                     unexpected_flags)
             self.assertElementPresent(encpart_private, 'authtime')
