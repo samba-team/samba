@@ -42,6 +42,8 @@ from samba.tests import TestCaseInTempDir
 
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
+    AD_IF_RELEVANT,
+    AD_WIN2K_PAC,
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_GENERIC,
     KDC_ERR_PREAUTH_FAILED,
@@ -2847,6 +2849,49 @@ class RawKerberosTest(TestCaseInTempDir):
                                         KU_FAST_FINISHED,
                                         ticket_blob)
         self.assertEqual(expected_checksum, checksum)
+
+    def replace_pac(self, auth_data, new_pac, expect_pac=True):
+        if new_pac is not None:
+            self.assertElementEqual(new_pac, 'ad-type', AD_WIN2K_PAC)
+            self.assertElementPresent(new_pac, 'ad-data')
+
+        new_auth_data = []
+
+        ad_relevant = None
+        old_pac = None
+
+        for authdata_elem in auth_data:
+            if authdata_elem['ad-type'] == AD_IF_RELEVANT:
+                ad_relevant = self.der_decode(
+                    authdata_elem['ad-data'],
+                    asn1Spec=krb5_asn1.AD_IF_RELEVANT())
+
+                relevant_elems = []
+                for relevant_elem in ad_relevant:
+                    if relevant_elem['ad-type'] == AD_WIN2K_PAC:
+                        self.assertIsNone(old_pac, 'Multiple PACs detected')
+                        old_pac = relevant_elem['ad-data']
+
+                        if new_pac is not None:
+                            relevant_elems.append(new_pac)
+                    else:
+                        relevant_elems.append(relevant_elem)
+                if expect_pac:
+                    self.assertIsNotNone(old_pac, 'Expected PAC')
+
+                ad_relevant = self.der_encode(
+                    relevant_elems,
+                    asn1Spec=krb5_asn1.AD_IF_RELEVANT())
+
+                authdata_elem = self.AuthorizationData_create(AD_IF_RELEVANT,
+                                                              ad_relevant)
+
+            new_auth_data.append(authdata_elem)
+
+        if expect_pac:
+            self.assertIsNotNone(ad_relevant, 'Expected AD-RELEVANT')
+
+        return new_auth_data, old_pac
 
     def get_outer_pa_dict(self, kdc_exchange_dict):
         return self.get_pa_dict(kdc_exchange_dict['req_padata'])
