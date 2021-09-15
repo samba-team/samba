@@ -1413,11 +1413,25 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	switch(ac->type) {
 	case SAMLDB_TYPE_USER: {
+		bool is_computer_objectclass;
 		bool uac_generated = false, uac_add_flags = false;
-
+		uint32_t default_user_account_control = UF_NORMAL_ACCOUNT;
 		/* Step 1.2: Default values */
 		ret = dsdb_user_obj_set_defaults(ldb, ac->msg, ac->req);
 		if (ret != LDB_SUCCESS) return ret;
+
+		is_computer_objectclass
+			= (samdb_find_attribute(ldb,
+						 ac->msg,
+						"objectclass",
+						"computer")
+			   != NULL);
+
+		if (is_computer_objectclass) {
+			default_user_account_control
+				= UF_WORKSTATION_TRUST_ACCOUNT;
+		}
+
 
 		/* On add operations we might need to generate a
 		 * "userAccountControl" (if it isn't specified). */
@@ -1425,7 +1439,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		if ((el == NULL) && (ac->req->operation == LDB_ADD)) {
 			ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
 						 "userAccountControl",
-						 UF_NORMAL_ACCOUNT);
+						 default_user_account_control);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -1444,11 +1458,14 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			raw_uac = user_account_control;
 			/*
 			 * "userAccountControl" = 0 or missing one of
-			 * the types means "UF_NORMAL_ACCOUNT".  See
-			 * MS-SAMR 3.1.1.8.10 point 8
+			 * the types means "UF_NORMAL_ACCOUNT"
+			 * or "UF_WORKSTATION_TRUST_ACCOUNT" (if a computer).
+			 * See MS-SAMR 3.1.1.8.10 point 8
 			 */
 			if ((user_account_control & UF_ACCOUNT_TYPE_MASK) == 0) {
-				user_account_control = UF_NORMAL_ACCOUNT | user_account_control;
+				user_account_control
+					= default_user_account_control
+					| user_account_control;
 				uac_generated = true;
 			}
 
