@@ -927,22 +927,26 @@ planoldpythontestsuite("fl2008r2dc:local", "samba.tests.krb5.xrealm_tests")
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ccache",
                        environ={
                            'ADMIN_USERNAME': '$USERNAME',
-                           'ADMIN_PASSWORD': '$PASSWORD'
+                           'ADMIN_PASSWORD': '$PASSWORD',
+                           'STRICT_CHECKING': '0'
                        })
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_ldap",
                        environ={
                            'ADMIN_USERNAME': '$USERNAME',
-                           'ADMIN_PASSWORD': '$PASSWORD'
+                           'ADMIN_PASSWORD': '$PASSWORD',
+                           'STRICT_CHECKING': '0'
                        })
 planoldpythontestsuite("ad_dc_default", "samba.tests.krb5.test_rpc",
                        environ={
                            'ADMIN_USERNAME': '$USERNAME',
-                           'ADMIN_PASSWORD': '$PASSWORD'
+                           'ADMIN_PASSWORD': '$PASSWORD',
+                           'STRICT_CHECKING': '0'
                        })
 planoldpythontestsuite("ad_dc_smb1", "samba.tests.krb5.test_smb",
                        environ={
                            'ADMIN_USERNAME': '$USERNAME',
-                           'ADMIN_PASSWORD': '$PASSWORD'
+                           'ADMIN_PASSWORD': '$PASSWORD',
+                           'STRICT_CHECKING': '0'
                        })
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
@@ -1545,7 +1549,8 @@ planpythontestsuite(
     "samba.tests.krb5.kdc_tgs_tests",
     environ={
         'ADMIN_USERNAME': '$USERNAME',
-        'ADMIN_PASSWORD': '$PASSWORD'
+        'ADMIN_PASSWORD': '$PASSWORD',
+        'STRICT_CHECKING': '0'
     })
 planpythontestsuite(
     "ad_dc",
@@ -1560,7 +1565,8 @@ planpythontestsuite(
     "samba.tests.krb5.ms_kile_client_principal_lookup_tests",
     environ={
         'ADMIN_USERNAME': '$USERNAME',
-        'ADMIN_PASSWORD': '$PASSWORD'
+        'ADMIN_PASSWORD': '$PASSWORD',
+        'STRICT_CHECKING': '0'
     })
 
 for env in [
