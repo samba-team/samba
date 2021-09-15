@@ -67,7 +67,6 @@ static const struct smbd_smb2_dispatch_table {
 	bool need_tcon;
 	bool as_root;
 	uint16_t fileid_ofs;
-	bool allow_invalid_fileid;
 	bool modify;
 } smbd_smb2_table[] = {
 #define _OP(o) .opcode = o, .name = #o
@@ -132,7 +131,6 @@ static const struct smbd_smb2_dispatch_table {
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
-		.allow_invalid_fileid = true,
 		.modify = true,
 	},{
 		_OP(SMB2_OP_CANCEL),
@@ -3323,16 +3321,12 @@ skipped_signing:
 				return smbd_smb2_request_error(req,
 						req->compound_create_err);
 			}
-			if (!call->allow_invalid_fileid) {
-				return smbd_smb2_request_error(req,
-						NT_STATUS_FILE_CLOSED);
-			}
-
-			if (file_id_persistent != UINT64_MAX) {
-				return smbd_smb2_request_error(req,
-						NT_STATUS_FILE_CLOSED);
-			}
-			if (file_id_volatile != UINT64_MAX) {
+			/*
+			 * smbd_smb2_request_process_ioctl()
+			 * has more checks in order to return more
+			 * detailed error codes...
+			 */
+			if (opcode != SMB2_OP_IOCTL) {
 				return smbd_smb2_request_error(req,
 						NT_STATUS_FILE_CLOSED);
 			}
