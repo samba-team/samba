@@ -913,12 +913,11 @@ class KDCBaseTest(RawKerberosTest):
                                  fallback_creds_fn=download_krbtgt_creds)
         return c
 
-    def as_req(self, cname, sname, realm, etypes, padata=None):
+    def as_req(self, cname, sname, realm, etypes, padata=None, kdc_options=0):
         '''Send a Kerberos AS_REQ, returns the undecoded response
         '''
 
         till = self.get_KerberosTime(offset=36000)
-        kdc_options = 0
 
         req = self.AS_REQ_create(padata=padata,
                                  kdc_options=str(kdc_options),
