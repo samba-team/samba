@@ -412,7 +412,9 @@ int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 		switch (ret) {
 		case EAI_FAIL:
 		case EAI_NONAME:
+#ifdef EAI_ADDRFAMILY
 		case EAI_ADDRFAMILY:
+#endif
 			errno = EINVAL;
 			break;
 		}
