@@ -52,7 +52,11 @@ from samba.samdb import SamDB, dsdb_Dn
 
 from samba.tests import delete_force
 import samba.tests.krb5.kcrypto as kcrypto
-from samba.tests.krb5.raw_testcase import KerberosCredentials, RawKerberosTest
+from samba.tests.krb5.raw_testcase import (
+    KerberosCredentials,
+    KerberosTicketCreds,
+    RawKerberosTest
+)
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     AD_IF_RELEVANT,
@@ -66,7 +70,6 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_AS_REP_ENC_PART,
     KU_ENC_CHALLENGE_CLIENT,
     KU_PA_ENC_TIMESTAMP,
-    KU_TGS_REP_ENC_PART_SUB_KEY,
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_HST,
@@ -1063,49 +1066,56 @@ class KDCBaseTest(RawKerberosTest):
         else:
             self.assertEqual(rep['error-code'], expected, "rep = {%s}" % rep)
 
-    def tgs_req(self, cname, sname, realm, ticket, key, etypes):
+    def tgs_req(self, cname, sname, realm, ticket, key, etypes,
+                expected_error_mode=0):
         '''Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
         '''
 
         kdc_options = "0"
-        till = self.get_KerberosTime(offset=36000)
-        padata = []
 
         subkey = self.RandomKey(key.etype)
 
         (ctime, cusec) = self.get_KerberosTimeWithUsec()
 
-        req = self.TGS_REQ_create(padata=padata,
-                                  cusec=cusec,
-                                  ctime=ctime,
-                                  ticket=ticket,
-                                  kdc_options=str(kdc_options),
-                                  cname=cname,
-                                  realm=realm,
-                                  sname=sname,
-                                  from_time=None,
-                                  till_time=till,
-                                  renew_time=None,
-                                  nonce=0x7ffffffe,
-                                  etypes=etypes,
-                                  addresses=None,
-                                  EncAuthorizationData=None,
-                                  EncAuthorizationData_key=None,
-                                  additional_tickets=None,
-                                  ticket_session_key=key,
-                                  authenticator_subkey=subkey)
-        rep = self.send_recv_transaction(req)
-        self.assertIsNotNone(rep)
+        tgt = KerberosTicketCreds(ticket,
+                                  key,
+                                  crealm=realm,
+                                  cname=cname)
 
-        msg_type = rep['msg-type']
-        enc_part = None
-        if msg_type == KRB_TGS_REP:
-            enc_part = subkey.decrypt(
-                KU_TGS_REP_ENC_PART_SUB_KEY, rep['enc-part']['cipher'])
-            enc_part = self.der_decode(
-                enc_part, asn1Spec=krb5_asn1.EncTGSRepPart())
-        return (rep, enc_part)
+        if not expected_error_mode:
+            check_error_fn = None
+            check_rep_fn = self.generic_check_kdc_rep
+        else:
+            check_error_fn = self.generic_check_kdc_error
+            check_rep_fn = None
+
+        kdc_exchange_dict = self.tgs_exchange_dict(
+            expected_crealm=realm,
+            expected_cname=cname,
+            expected_srealm=realm,
+            expected_sname=sname,
+            expected_error_mode=expected_error_mode,
+            check_error_fn=check_error_fn,
+            check_rep_fn=check_rep_fn,
+            check_kdc_private_fn=self.generic_check_kdc_private,
+            tgt=tgt,
+            authenticator_subkey=subkey,
+            kdc_options=str(kdc_options))
+
+        rep = self._generic_kdc_exchange(kdc_exchange_dict,
+                                         cname=None,
+                                         realm=realm,
+                                         sname=sname,
+                                         etypes=etypes)
+
+        if expected_error_mode:
+            enc_part = None
+        else:
+            ticket_creds = kdc_exchange_dict['rep_ticket_creds']
+            enc_part = ticket_creds.encpart_private
+
+        return rep, enc_part
 
     # Named tuple to contain values of interest when the PAC is decoded.
     PacData = namedtuple(
