@@ -1067,7 +1067,8 @@ class KDCBaseTest(RawKerberosTest):
             self.assertEqual(rep['error-code'], expected, "rep = {%s}" % rep)
 
     def tgs_req(self, cname, sname, realm, ticket, key, etypes,
-                expected_error_mode=0, padata=None, kdc_options=0):
+                expected_error_mode=0, padata=None, kdc_options=0,
+                to_rodc=False):
         '''Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
         '''
@@ -1106,7 +1107,8 @@ class KDCBaseTest(RawKerberosTest):
             generate_padata_fn=generate_padata if padata is not None else None,
             tgt=tgt,
             authenticator_subkey=subkey,
-            kdc_options=str(kdc_options))
+            kdc_options=str(kdc_options),
+            to_rodc=to_rodc)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=None,
