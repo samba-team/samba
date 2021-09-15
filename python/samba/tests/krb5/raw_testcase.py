@@ -2039,7 +2039,6 @@ class RawKerberosTest(TestCaseInTempDir):
                                       error_code=0)
 
         ticket_private = None
-        self.assertIsNotNone(ticket_decryption_key)
         if ticket_decryption_key is not None:
             self.assertElementEqual(ticket_encpart, 'etype',
                                     ticket_decryption_key.etype)
