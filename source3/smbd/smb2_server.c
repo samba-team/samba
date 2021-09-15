@@ -3077,7 +3077,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
 		}
-	} else if (opcode == SMB2_OP_IOCTL) {
+	}
+
+	if (opcode == SMB2_OP_IOCTL) {
 		/*
 		 * Some special IOCTL calls don't require
 		 * file, tcon nor session.
